@@ -1,0 +1,62 @@
+name: CobbleBR Loom build
+
+on:
+  push:
+    branches:
+      - build/cobblebr-loom
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore source tree
+        shell: bash
+        run: |
+          cat bootstrap/source.b64.part* | base64 -d > /tmp/cobblebr-source.tar.gz
+          echo "9d7f9157f0c60a3d85d98fe56b3aa1cb4c2a7e3c57887a5a93c5fabe1a7f54e2  /tmp/cobblebr-source.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/cobblebr-source.tar.gz
+          test -f src/main/resources/fabric.mod.json
+          test -f src/main/java/vn/svframe/cobblebr/CobbleBattleRoyale.java
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Loom remap build
+        run: gradle --no-daemon clean remapJar sourcesJar
+
+      - name: Verify remapped artifact
+        shell: bash
+        run: |
+          ls -lh build/libs
+          JAR="$(find build/libs -maxdepth 1 -type f -name 'CobbleBR-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          test -n "$JAR"
+          unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
+          sha256sum "$JAR" | tee build/libs/SHA256.txt
+
+      - name: Upload Loom artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CobbleBR-Loom-remapped
+          path: |
+            build/libs/*.jar
+            build/libs/SHA256.txt
+            build/libs/fabric.mod.built.json
+          if-no-files-found: error
