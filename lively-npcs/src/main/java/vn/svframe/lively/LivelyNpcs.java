@@ -28,7 +28,9 @@ import vn.svframe.lively.persistence.NpcStateRegistry;
 import vn.svframe.lively.persistence.NpcStateStore;
 import vn.svframe.lively.persistence.SimulationStateStore;
 import vn.svframe.lively.persistence.WorldHistoryJournal;
+import vn.svframe.lively.simulation.BusinessSimulationService;
 import vn.svframe.lively.simulation.CausalSimulationService;
+import vn.svframe.lively.simulation.FamilyProgressionService;
 import vn.svframe.lively.skin.SkinConfig;
 import vn.svframe.lively.skin.SkinResolver;
 
@@ -57,6 +59,8 @@ public final class LivelyNpcs implements ModInitializer {
     private NpcAutonomyService autonomy;
     private LivingWorldDirectorService director;
     private CausalSimulationService causalSimulation;
+    private FamilyProgressionService familyProgression;
+    private BusinessSimulationService businessSimulation;
 
     @Override
     public void onInitialize() {
@@ -66,6 +70,8 @@ public final class LivelyNpcs implements ModInitializer {
 
         director = new LivingWorldDirectorService();
         causalSimulation = new CausalSimulationService();
+        familyProgression = new FamilyProgressionService();
+        businessSimulation = new BusinessSimulationService();
 
         stateRegistry = new NpcStateRegistry(new NpcStateStore(config.resolve("state")));
         LivelyApi.installStateRegistry(stateRegistry);
@@ -119,6 +125,8 @@ public final class LivelyNpcs implements ModInitializer {
             autonomy.tick(server, tick);
             director.tick(tick);
             causalSimulation.tick(tick);
+            familyProgression.tick(tick);
+            businessSimulation.tick(tick);
             if (tick % 20L == 0L) {
                 Instant now = Instant.now();
                 LivelyApi.profiler().measure("world-events", () -> LivelyApi.events().advance(now));
