@@ -40,6 +40,21 @@ final class CognitionThreatTest {
     }
 
     @Test
+    void recentDangerMemoryCanTipAnAmbiguousThreatIntoAction() {
+        UUID npcId = new UUID(30L, 3L);
+        NpcSnapshot.MemoryView memory = new NpcSnapshot.MemoryView(UUID.randomUUID(), Instant.now(),
+                "fled_from_threat", Map.of("source", "player"), .95D, 1D);
+        NpcSnapshot npc = new NpcSnapshot(npcId, 2L, Instant.now(), "NPC", "civilian", Map.of("brave", 0D),
+                Map.of(), Map.of(), Map.of(), List.of(memory));
+        WorldSnapshot ambiguous = new WorldSnapshot(3L, "minecraft:overworld", 100L,
+                List.of(new WorldSnapshot.ObservedEntity(new UUID(31L, 2L), "player", .36D)), Map.of());
+
+        var decision = new LivelyAiEngine().decide(npc, ambiguous).orElseThrow();
+        assertEquals("respond_to_threat", decision.goal().type());
+        assertTrue(Double.parseDouble(decision.goal().context().get("memory_threat")) > .70D);
+    }
+
+    @Test
     void perceptionLookupDoesNotCreateFakeSocialRelationships() {
         SocialEngine social = new SocialEngine();
         ActorId npc = new ActorId(new UUID(32L, 1L), ActorId.Kind.NPC);
