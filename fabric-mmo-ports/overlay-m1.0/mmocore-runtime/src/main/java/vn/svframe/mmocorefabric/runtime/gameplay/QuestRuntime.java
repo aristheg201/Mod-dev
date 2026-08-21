@@ -1,17 +1,140 @@
 package vn.svframe.mmocorefabric.runtime.gameplay;
+
 import java.util.*;
+
 public final class QuestRuntime {
- public enum Status{LOCKED,AVAILABLE,ACTIVE,COMPLETE,COOLDOWN}
- public record Objective(String id,int required){public Objective{if(required<1)throw new IllegalArgumentException();}}
- public record Definition(String id,String parent,int minLevel,String profession,int professionLevel,long cooldownMillis,List<Objective> objectives){public Definition{id=norm(id);parent=parent==null?"":norm(parent);profession=profession==null?"":norm(profession);objectives=List.copyOf(objectives);}}
- public record Snapshot(Status status,Map<String,Integer> progress,long cooldownUntil){public Snapshot{progress=Map.copyOf(progress);}}
- public static final class State{private Status status=Status.AVAILABLE;private final Map<String,Integer> progress=new HashMap<>();private long cooldownUntil;public Status status(long now){if(status==Status.COOLDOWN&&now>=cooldownUntil)status=Status.AVAILABLE;return status;}public Map<String,Integer> progress(){return Map.copyOf(progress);}private Snapshot snapshot(){return new Snapshot(status,progress,cooldownUntil);}private void restore(Snapshot s){status=s.status();progress.clear();progress.putAll(s.progress());cooldownUntil=s.cooldownUntil();}}
- private final Map<String,Definition> defs=new LinkedHashMap<>();private final Map<UUID,Map<String,State>> states=new HashMap<>();
- public synchronized void register(Definition d){defs.put(d.id(),d);} public synchronized void clearDefinitions(){defs.clear();} public synchronized Map<String,Definition> definitions(){return Map.copyOf(defs);} public synchronized State state(UUID p,String id){require(id);return states.computeIfAbsent(p,x->new HashMap<>()).computeIfAbsent(norm(id),x->new State());}
- public synchronized boolean start(UUID p,String id,int level,java.util.function.ToIntFunction<String> professionLevel,long now){Definition d=require(id);State s=state(p,id);if(s.status(now)!=Status.AVAILABLE)return false;if(level<d.minLevel())return false;if(!d.parent().isEmpty()&&state(p,d.parent()).status(now)!=Status.COMPLETE)return false;if(!d.profession().isEmpty()&&professionLevel.applyAsInt(d.profession())<d.professionLevel())return false;s.status=Status.ACTIVE;s.progress.clear();return true;}
- public synchronized boolean progress(UUID p,String id,String objective,int amount,long now){Definition d=require(id);State s=state(p,id);if(s.status(now)!=Status.ACTIVE||amount<=0)return false;Objective o=d.objectives().stream().filter(x->x.id().equalsIgnoreCase(objective)).findFirst().orElse(null);if(o==null)return false;s.progress.merge(o.id(),amount,(a,b)->Math.min(o.required(),a+b));boolean done=d.objectives().stream().allMatch(x->s.progress.getOrDefault(x.id(),0)>=x.required());if(done)s.status=Status.COMPLETE;return done;}
- public synchronized void finish(UUID p,String id,long now){Definition d=require(id);State s=state(p,id);if(s.status(now)!=Status.COMPLETE)throw new IllegalStateException();if(d.cooldownMillis()>0){s.status=Status.COOLDOWN;s.cooldownUntil=now+d.cooldownMillis();}}
- public synchronized void cancel(UUID p,String id){State s=state(p,id);s.status=Status.AVAILABLE;s.progress.clear();}
- public synchronized Map<String,Snapshot> snapshot(UUID p){Map<String,Snapshot> out=new HashMap<>();states.getOrDefault(p,Map.of()).forEach((k,v)->out.put(k,v.snapshot()));return Map.copyOf(out);} public synchronized void restore(UUID p,Map<String,Snapshot> snapshot){if(snapshot.isEmpty()){states.remove(p);return;}Map<String,State> out=new HashMap<>();snapshot.forEach((k,v)->{State s=new State();s.restore(v);out.put(norm(k),s);});states.put(p,out);} public synchronized void forget(UUID p){states.remove(p);}
- private Definition require(String id){Definition d=defs.get(norm(id));if(d==null)throw new IllegalArgumentException("unknown quest "+id);return d;}private static String norm(String s){return Objects.requireNonNull(s).trim().toLowerCase(Locale.ROOT);}
+    public enum Status { LOCKED, AVAILABLE, ACTIVE, COMPLETE, COOLDOWN }
+
+    public record Objective(String id, int required, String type, List<String> triggers) {
+        public Objective {
+            id = norm(id);
+            if (required < 1) throw new IllegalArgumentException("required < 1");
+            type = Objects.requireNonNullElse(type, "");
+            triggers = List.copyOf(triggers);
+        }
+        public Objective(String id, int required) { this(id, required, "", List.of()); }
+    }
+
+    public record Definition(String id, List<String> parents, int minLevel, String profession,
+                             int professionLevel, long cooldownMillis, List<Objective> objectives) {
+        public Definition {
+            id = norm(id);
+            parents = parents.stream().map(QuestRuntime::norm).toList();
+            profession = profession == null ? "" : norm(profession);
+            objectives = List.copyOf(objectives);
+            if (minLevel < 0 || professionLevel < 0 || cooldownMillis < 0) throw new IllegalArgumentException();
+        }
+        public Definition(String id, String parent, int minLevel, String profession, int professionLevel,
+                          long cooldownMillis, List<Objective> objectives) {
+            this(id, parent == null || parent.isBlank() ? List.of() : List.of(parent), minLevel,
+                    profession, professionLevel, cooldownMillis, objectives);
+        }
+    }
+
+    public record Snapshot(Status status, Map<String, Integer> progress, long cooldownUntil) {
+        public Snapshot {
+            status = Objects.requireNonNull(status);
+            progress = Map.copyOf(progress);
+            if (cooldownUntil < 0) throw new IllegalArgumentException("cooldownUntil < 0");
+        }
+    }
+
+    public static final class State {
+        private Status status = Status.AVAILABLE;
+        private final Map<String, Integer> progress = new HashMap<>();
+        private long cooldownUntil;
+
+        public Status status(long now) {
+            if (status == Status.COOLDOWN && now >= cooldownUntil) status = Status.AVAILABLE;
+            return status;
+        }
+        public Map<String, Integer> progress() { return Map.copyOf(progress); }
+        public long cooldownUntil() { return cooldownUntil; }
+        private Snapshot snapshot() { return new Snapshot(status, progress, cooldownUntil); }
+        private void restore(Snapshot snapshot) {
+            status = snapshot.status();
+            progress.clear();
+            progress.putAll(snapshot.progress());
+            cooldownUntil = snapshot.cooldownUntil();
+        }
+    }
+
+    private final Map<String, Definition> definitions = new LinkedHashMap<>();
+    private final Map<UUID, Map<String, State>> states = new HashMap<>();
+
+    public synchronized void register(Definition definition) { definitions.put(definition.id(), definition); }
+    public synchronized void clearDefinitions() { definitions.clear(); }
+    public synchronized Map<String, Definition> definitions() { return Map.copyOf(definitions); }
+    public synchronized State state(UUID player, String id) {
+        require(id);
+        return states.computeIfAbsent(player, ignored -> new HashMap<>()).computeIfAbsent(norm(id), ignored -> new State());
+    }
+
+    public synchronized boolean start(UUID player, String id, int level,
+                                      java.util.function.ToIntFunction<String> professionLevel, long now) {
+        Definition definition = require(id);
+        State state = state(player, id);
+        if (state.status(now) != Status.AVAILABLE) return false;
+        if (level < definition.minLevel()) return false;
+        for (String parent : definition.parents()) if (state(player, parent).status(now) != Status.COMPLETE) return false;
+        if (!definition.profession().isEmpty() && professionLevel.applyAsInt(definition.profession()) < definition.professionLevel()) return false;
+        state.status = Status.ACTIVE;
+        state.progress.clear();
+        return true;
+    }
+
+    public synchronized boolean progress(UUID player, String id, String objective, int amount, long now) {
+        Definition definition = require(id);
+        State state = state(player, id);
+        if (state.status(now) != Status.ACTIVE || amount <= 0) return false;
+        Objective wanted = definition.objectives().stream().filter(o -> o.id().equalsIgnoreCase(objective)).findFirst().orElse(null);
+        if (wanted == null) return false;
+        state.progress.merge(wanted.id(), amount, (a, b) -> Math.min(wanted.required(), a + b));
+        boolean done = definition.objectives().stream().allMatch(o -> state.progress.getOrDefault(o.id(), 0) >= o.required());
+        if (done) state.status = Status.COMPLETE;
+        return done;
+    }
+
+    public synchronized void finish(UUID player, String id, long now) {
+        Definition definition = require(id);
+        State state = state(player, id);
+        if (state.status(now) != Status.COMPLETE) throw new IllegalStateException("quest is not complete");
+        if (definition.cooldownMillis() > 0) {
+            state.status = Status.COOLDOWN;
+            state.cooldownUntil = Math.addExact(now, definition.cooldownMillis());
+        }
+    }
+
+    public synchronized void cancel(UUID player, String id) {
+        State state = state(player, id);
+        state.status = Status.AVAILABLE;
+        state.progress.clear();
+        state.cooldownUntil = 0;
+    }
+
+    public synchronized Map<String, Snapshot> snapshot(UUID player) {
+        Map<String, Snapshot> out = new HashMap<>();
+        states.getOrDefault(player, Map.of()).forEach((key, value) -> out.put(key, value.snapshot()));
+        return Map.copyOf(out);
+    }
+
+    public synchronized void restore(UUID player, Map<String, Snapshot> snapshot) {
+        if (snapshot.isEmpty()) { states.remove(player); return; }
+        Map<String, State> out = new HashMap<>();
+        snapshot.forEach((key, value) -> {
+            State state = new State();
+            state.restore(value);
+            out.put(norm(key), state);
+        });
+        states.put(player, out);
+    }
+
+    public synchronized void forget(UUID player) { states.remove(player); }
+
+    private Definition require(String id) {
+        Definition definition = definitions.get(norm(id));
+        if (definition == null) throw new IllegalArgumentException("unknown quest " + id);
+        return definition;
+    }
+    private static String norm(String value) { return Objects.requireNonNull(value).trim().toLowerCase(Locale.ROOT); }
 }
