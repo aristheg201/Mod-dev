@@ -3,8 +3,10 @@ package vn.svframe.lively.crime;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.actor.ActorSnapshot;
 import vn.svframe.lively.actor.ActorRegistry;
+import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.model.NpcSnapshot;
 import vn.svframe.lively.persistence.NpcStateRegistry;
+import vn.svframe.lively.quest.QuestRuntime;
 import vn.svframe.lively.social.SocialEngine;
 
 import java.time.Instant;
@@ -50,9 +52,9 @@ public final class InvestigationService {
                 crimeId.toString().equals(memory.facts().get("crime")) ||
                         crime.facts().getOrDefault("event", "").equals(memory.facts().get("event")));
         if (!listedWitness && !remembered) {
-            return Optional.of(record(crime, witness, null, Outcome.PARTIAL, 0.20D,
+            return Optional.of(finish(record(crime, witness, null, Outcome.PARTIAL, 0.20D,
                     "Tôi không trực tiếp thấy chuyện đó. Tôi chỉ có thể nói những gì mình nghe được.",
-                    Map.of("direct_witness", "false")));
+                    Map.of("direct_witness", "false")), crime, interviewer));
         }
 
         double fear = snapshot == null ? 0.2D : snapshot.trait("fearful");
@@ -64,36 +66,36 @@ public final class InvestigationService {
         double cooperation = clamp01(0.55D + trust * 0.25D - fear * 0.20D - relationFear * 0.25D);
 
         if (cooperation < 0.22D) {
-            return Optional.of(record(crime, witness, null, Outcome.REFUSED, 0.15D,
-                    "Tôi không muốn dính thêm vào chuyện này.", Map.of("direct_witness", Boolean.toString(listedWitness))));
+            return Optional.of(finish(record(crime, witness, null, Outcome.REFUSED, 0.15D,
+                    "Tôi không muốn dính thêm vào chuyện này.", Map.of("direct_witness", Boolean.toString(listedWitness))), crime, interviewer));
         }
 
         double reliability = clamp01(0.50D + observant * 0.30D + cooperation * 0.12D - fear * 0.12D);
         if (deceptive >= 0.68D && cooperation < 0.72D) {
             ActorId falseSubject = plausibleFalseSubject(crime, witness).orElse(null);
             if (falseSubject != null) {
-                return Optional.of(record(crime, witness, falseSubject, Outcome.DECEPTIVE, Math.min(0.38D, reliability),
+                return Optional.of(finish(record(crime, witness, falseSubject, Outcome.DECEPTIVE, Math.min(0.38D, reliability),
                         "Tôi thấy " + display(falseSubject) + " quanh khu vực đó. Tôi sẽ chỉ nói vậy thôi.",
-                        Map.of("direct_witness", "true", "intentional_deception", "true")));
+                        Map.of("direct_witness", "true", "intentional_deception", "true")), crime, interviewer));
             }
         }
 
         if (reliability < 0.52D) {
             ActorId mistaken = plausibleFalseSubject(crime, witness).orElse(crime.perpetrator());
-            return Optional.of(record(crime, witness, mistaken, Outcome.MISTAKEN, reliability,
+            return Optional.of(finish(record(crime, witness, mistaken, Outcome.MISTAKEN, reliability,
                     "Tôi không chắc. Có thể là " + display(mistaken) + ", nhưng ký ức của tôi không rõ.",
-                    Map.of("direct_witness", Boolean.toString(listedWitness), "uncertain", "true")));
+                    Map.of("direct_witness", Boolean.toString(listedWitness), "uncertain", "true")), crime, interviewer));
         }
 
         ActorId subject = crime.perpetrator();
         if (subject == null) {
-            return Optional.of(record(crime, witness, null, Outcome.PARTIAL, reliability,
-                    "Tôi nhớ được bối cảnh, nhưng không nhận ra ai đủ chắc để chỉ mặt.", Map.of("direct_witness", "true")));
+            return Optional.of(finish(record(crime, witness, null, Outcome.PARTIAL, reliability,
+                    "Tôi nhớ được bối cảnh, nhưng không nhận ra ai đủ chắc để chỉ mặt.", Map.of("direct_witness", "true")), crime, interviewer));
         }
         String motive = crime.motive().isBlank() ? "không rõ động cơ" : "có vẻ liên quan tới " + crime.motive();
-        return Optional.of(record(crime, witness, subject, Outcome.TRUTHFUL, reliability,
+        return Optional.of(finish(record(crime, witness, subject, Outcome.TRUTHFUL, reliability,
                 "Tôi thấy " + display(subject) + " liên quan trực tiếp. " + motive + ".",
-                Map.of("direct_witness", "true", "motive", crime.motive())));
+                Map.of("direct_witness", "true", "motive", crime.motive())), crime, interviewer));
     }
 
     public List<CrimeEngine.SuspectScore> suspects(UUID crimeId) {
@@ -102,6 +104,19 @@ public final class InvestigationService {
                 .sorted(Comparator.comparing((ActorId actor) -> actor.kind().name()).thenComparing(actor -> actor.uuid().toString()))
                 .limit(256).collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
         return crimes.rankSuspects(crimeId, Set.copyOf(candidates));
+    }
+
+    private Statement finish(Statement statement, CrimeEngine.Crime crime, ActorId interviewer) {
+        if (interviewer == null || interviewer.kind() != ActorId.Kind.PLAYER || statement.outcome() == Outcome.REFUSED) return statement;
+        String eventId = crime.facts().get("event");
+        String target = eventId == null || eventId.isBlank() ? crime.id().toString() : eventId;
+        Map<String, String> facts = new HashMap<>();
+        facts.put("crime", crime.id().toString());
+        if (eventId != null && !eventId.isBlank()) facts.put("event", eventId);
+        facts.put("witness", statement.witness().uuid().toString());
+        facts.put("outcome", statement.outcome().name());
+        LivelyApi.quests().signal(interviewer, QuestRuntime.ObjectiveType.INVESTIGATION, target, 1L, facts);
+        return statement;
     }
 
     private Statement record(CrimeEngine.Crime crime, ActorId witness, ActorId subject, Outcome outcome,
