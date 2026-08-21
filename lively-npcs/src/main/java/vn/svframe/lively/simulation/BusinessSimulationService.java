@@ -6,15 +6,20 @@ import vn.svframe.lively.economy.EconomyEngine;
 import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** Bounded autonomous business lifecycle: discovery, staffing, hours, payroll and configured stock bootstrap. */
+/** Bounded autonomous business lifecycle: discovery, staffing, hours, payroll, hidden markets and stock bootstrap. */
 public final class BusinessSimulationService {
     private static final long PULSE_TICKS = 1200L;
+    private static final long UNDERWORLD_RUMOR_TICKS = 24_000L;
     private static final int MAX_BUSINESSES_PER_PULSE = 128;
+    private final ConcurrentHashMap<UUID, Long> lastUnderworldRumor = new ConcurrentHashMap<>();
     private long lastPulse;
 
     public void tick(long tick) {
@@ -22,7 +27,7 @@ public final class BusinessSimulationService {
         lastPulse = tick;
         discoverBusinesses();
         staffBusinesses();
-        operateBusinesses();
+        operateBusinesses(tick);
     }
 
     private void discoverBusinesses() {
@@ -35,11 +40,17 @@ public final class BusinessSimulationService {
             if (name == null || name.isBlank()) continue;
             ActorId owner = new ActorId(npc.id(), ActorId.Kind.NPC);
             if (owners.contains(owner)) continue;
+            String kind = npc.metadata().getOrDefault("business.kind", "shop").trim().toLowerCase(java.util.Locale.ROOT);
+            boolean blackMarket = kind.equals("black_market") || kind.equals("underworld") || Boolean.parseBoolean(npc.metadata().getOrDefault("business.illegal", "false"));
             String location = npc.metadata().getOrDefault("business.location", npc.metadata().get("work.structure"));
             EconomyEngine.Business business = LivelyApi.economy().createBusiness(owner, name, location,
-                    Map.of("kind", npc.metadata().getOrDefault("business.kind", "shop"),
+                    Map.of("kind", kind,
                             "wage", npc.metadata().getOrDefault("business.wage", "0"),
-                            "auto_hire", npc.metadata().getOrDefault("business.auto_hire", "true")));
+                            "auto_hire", npc.metadata().getOrDefault("business.auto_hire", blackMarket ? "false" : "true"),
+                            "hidden", npc.metadata().getOrDefault("business.hidden", Boolean.toString(blackMarket)),
+                            "access_trust", npc.metadata().getOrDefault("business.access_trust", blackMarket ? "0.35" : "0"),
+                            "risk", npc.metadata().getOrDefault("business.risk", blackMarket ? "0.65" : "0"),
+                            "illegal", Boolean.toString(blackMarket)));
             long initial = longValue(npc.metadata().get("business.initial_balance"), 0L, 0L, 10_000_000_000_000L);
             LivelyApi.economy().ensureWallet(owner, initial);
             bootstrapStock(business, npc.metadata());
@@ -81,7 +92,7 @@ public final class BusinessSimulationService {
         }
     }
 
-    private void operateBusinesses() {
+    private void operateBusinesses(long tick) {
         EconomyEngine.Snapshot economy = LivelyApi.economy().snapshot();
         for (EconomyEngine.Business business : economy.businesses().values().stream().limit(MAX_BUSINESSES_PER_PULSE).toList()) {
             if (business.locationId() != null) {
@@ -93,11 +104,30 @@ public final class BusinessSimulationService {
             }
             long wage = longValue(business.facts().get("wage"), 0L, 0L, 1_000_000_000L);
             if (business.open() && wage > 0L) LivelyApi.economy().payroll(business.id(), wage);
+            if (business.open() && Boolean.parseBoolean(business.facts().getOrDefault("illegal", "false"))) emitUnderworldRumor(business, tick);
         }
+    }
+
+    private void emitUnderworldRumor(EconomyEngine.Business business, long tick) {
+        long previous = lastUnderworldRumor.getOrDefault(business.id(), Long.MIN_VALUE / 2L);
+        if (tick - previous < UNDERWORLD_RUMOR_TICKS) return;
+        lastUnderworldRumor.put(business.id(), tick);
+        double risk = doubleValue(business.facts().get("risk"), .65D, 0D, 1D);
+        String location = business.locationId() == null ? "một chỗ kín" : business.locationId();
+        try {
+            LivelyApi.social().createRumor("criminal_underworld", business.owner(), business.owner(),
+                    "Có người đang giao dịch hàng khó giải thích quanh " + location + ".",
+                    .28D + risk * .24D, .40D + risk * .35D, Duration.ofDays(2));
+        } catch (IllegalArgumentException ignored) { }
     }
 
     private static long longValue(String raw, long fallback, long min, long max) {
         try { return Math.max(min, Math.min(max, Long.parseLong(raw == null ? Long.toString(fallback) : raw.trim()))); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
+
+    private static double doubleValue(String raw, double fallback, double min, double max) {
+        try { return Math.max(min, Math.min(max, Double.parseDouble(raw == null ? Double.toString(fallback) : raw.trim()))); }
         catch (NumberFormatException ignored) { return fallback; }
     }
 }
