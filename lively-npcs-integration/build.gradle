@@ -14,4 +14,11 @@ dependencies {
     // Cobblemon exposes Kotlin collection types in its Java-visible API. Keep the marker/runtime types
     // on the compile classpath only; the server already receives Kotlin through Cobblemon's runtime stack.
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.1.20"
+
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
 }
