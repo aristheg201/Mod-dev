@@ -60,13 +60,8 @@ public final class CrimeEngine {
         if (crimes.size() >= 100_000) throw new IllegalStateException("crime_limit");
         long rev = revision.incrementAndGet();
         Crime crime = new Crime(UUID.randomUUID(), type, victim, perpetrator, locationId, Instant.now(), Status.OPEN,
-                motive, witnesses, sanitizeFacts(facts));
+                motive, witnesses, sanitizeFacts(facts), rev);
         crimes.put(crime.id(), crime); return crime;
-    }
-
-    private Crime new Crime(UUID id, Type type, ActorId victim, ActorId perpetrator, String locationId, Instant occurredAt,
-                            Status status, String motive, Set<ActorId> witnesses, Map<String, String> facts) {
-        return new Crime(id, type, victim, perpetrator, locationId, occurredAt, status, motive, witnesses, facts, revision.get());
     }
 
     public Optional<Crime> status(UUID crimeId, Status next) {
