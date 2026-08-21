@@ -74,7 +74,7 @@ public final class WorldChronicleEngine {
                     .limit(MAX_ENTRIES).forEach(item -> {
                         Map<String, String> facts = new LinkedHashMap<>(item.facts());
                         WorldEventEngine.Category category = category(facts.get("category"));
-                        String seed = facts.getOrDefault("seed", item.subjectId());
+                        String seed = facts.getOrDefault("seed", item.subject());
                         String structure = blankToNull(facts.get("structure"));
                         double intensity = number(facts.get("intensity"), .5D);
                         double significance = Math.max(.15D, Math.min(1D, .28D + intensity * .62D));
