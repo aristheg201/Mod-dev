@@ -52,43 +52,78 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p lively-npcs/run
+          mkdir -p lively-npcs/run lively-npcs/build
           printf 'eula=true\n' > lively-npcs/run/eula.txt
-          set +e
-          timeout --signal=TERM --kill-after=15s 120s gradle --no-daemon :lively-npcs:runServer > lively-npcs/build/server-smoke.log 2>&1
-          code=$?
-          set -e
-          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            cat lively-npcs/build/server-smoke.log
-            exit "$code"
-          fi
-          grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' lively-npcs/build/server-smoke.log
-          grep -q 'Done (' lively-npcs/build/server-smoke.log
-          if grep -E 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage' lively-npcs/build/server-smoke.log; then
-            cat lively-npcs/build/server-smoke.log
+          log=lively-npcs/build/server-smoke.log
+          setsid gradle --no-daemon :lively-npcs:runServer > "$log" 2>&1 &
+          pid=$!
+          ready=0
+          for _ in $(seq 1 120); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage' "$log"; then
+              kill -TERM -"$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+              cat "$log"
+              exit 1
+            fi
+            if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" && grep -q 'Done (' "$log"; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            kill -TERM -"$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            cat "$log"
             exit 1
           fi
+          kill -TERM -"$pid" 2>/dev/null || true
+          for _ in $(seq 1 10); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 1
+          done
+          kill -KILL -"$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
       - name: Cobblemon integration server boot smoke
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p lively-npcs-integration/run
+          mkdir -p lively-npcs-integration/run lively-npcs-integration/build
           printf 'eula=true\n' > lively-npcs-integration/run/eula.txt
-          set +e
-          timeout --signal=TERM --kill-after=15s 150s gradle --no-daemon :lively-npcs-integration:runServer > lively-npcs-integration/build/server-smoke.log 2>&1
-          code=$?
-          set -e
-          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            cat lively-npcs-integration/build/server-smoke.log
-            exit "$code"
-          fi
-          grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' lively-npcs-integration/build/server-smoke.log
-          grep -q 'Lively NPCs Integration initialized; Cobblemon=true' lively-npcs-integration/build/server-smoke.log
-          grep -q 'Done (' lively-npcs-integration/build/server-smoke.log
-          if grep -E 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed' lively-npcs-integration/build/server-smoke.log; then
-            cat lively-npcs-integration/build/server-smoke.log
+          log=lively-npcs-integration/build/server-smoke.log
+          setsid gradle --no-daemon :lively-npcs-integration:runServer > "$log" 2>&1 &
+          pid=$!
+          ready=0
+          for _ in $(seq 1 150); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed' "$log"; then
+              kill -TERM -"$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+              cat "$log"
+              exit 1
+            fi
+            if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" \
+              && grep -q 'Lively NPCs Integration initialized; Cobblemon=true' "$log" \
+              && grep -q 'Done (' "$log"; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            kill -TERM -"$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            cat "$log"
             exit 1
           fi
+          kill -TERM -"$pid" 2>/dev/null || true
+          for _ in $(seq 1 10); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 1
+          done
+          kill -KILL -"$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
       - name: Verify both mod artifacts
         shell: bash
         run: |
