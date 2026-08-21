@@ -16,6 +16,7 @@
       "vn.svframe.lively.world.SemanticActivityBootstrap",
       "vn.svframe.lively.social.RumorPropagationBootstrap",
       "vn.svframe.lively.faction.FactionActionBootstrap",
+      "vn.svframe.lively.schedule.ScheduleSynthesisBootstrap",
       "vn.svframe.lively.memory.MemoryMaintenanceBootstrap"
     ]
   },
