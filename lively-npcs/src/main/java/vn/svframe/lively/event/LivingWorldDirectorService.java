@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -81,30 +82,80 @@ public final class LivingWorldDirectorService implements AutoCloseable {
                 Map.of("kind", "villain_emergence", "candidate", top.actor().uuid().toString(), "reason", top.reason())));
     }
 
+    /**
+     * Signals are derived from independent state sources so the world can create new tensions rather than
+     * requiring a pre-existing event of the same category. This avoids the old crime-needs-crime feedback loop.
+     */
     private Map<String, Double> signals() {
-        double crime = LivelyApi.crime().snapshot().crimes().values().stream()
+        var crimeSnapshot = LivelyApi.crime().snapshot();
+        double openCrime = crimeSnapshot.crimes().values().stream()
                 .filter(value -> value.status() == CrimeEngine.Status.OPEN || value.status() == CrimeEngine.Status.INVESTIGATING).count();
-        var stocks = LivelyApi.economy().snapshot().stocks().values();
+
+        var economy = LivelyApi.economy().snapshot();
+        var stocks = economy.stocks().values();
         double scarcity = stocks.isEmpty() ? 0D : stocks.stream()
-                .mapToDouble(stock -> Math.max(0D, 1D - stock.quantity() / (double) Math.max(1L, stock.targetQuantity()))).average().orElse(0D);
-        var relations = LivelyApi.factions().snapshot().relations().values();
-        double conflict = relations.isEmpty() ? 0D : relations.stream().mapToDouble(value -> value.hostility()).average().orElse(0D);
-        double rumors = Math.min(1D, LivelyApi.social().snapshot().rumors().size() / 20D);
-        return Map.of("crime", Math.min(1D, crime / 8D), "criminal_underworld", Math.min(1D, crime / 10D),
-                "mystery", Math.min(1D, crime / 12D + rumors * .25D), "economic_crisis", scarcity, "economic", scarcity,
-                "faction_conflict", conflict, "political_tension", Math.min(1D, conflict * .7D + rumors * .3D));
+                .mapToDouble(stock -> Math.max(0D, 1D - stock.quantity() / (double) Math.max(1L, stock.targetQuantity())))
+                .average().orElse(0D);
+        double illegalBusiness = Math.min(1D, economy.businesses().values().stream()
+                .filter(business -> Boolean.parseBoolean(business.facts().getOrDefault("illegal", "false"))).count() / 4D);
+
+        var factionRelations = LivelyApi.factions().snapshot().relations().values();
+        double factionConflict = factionRelations.isEmpty() ? 0D : factionRelations.stream()
+                .mapToDouble(value -> value.hostility()).average().orElse(0D);
+
+        var social = LivelyApi.social().snapshot();
+        double rumors = Math.min(1D, social.rumors().size() / 20D);
+        double underworldRumors = Math.min(1D, social.rumors().values().stream()
+                .filter(rumor -> rumor.topic().toLowerCase(Locale.ROOT).contains("underworld")
+                        || rumor.topic().toLowerCase(Locale.ROOT).startsWith("crime:"))
+                .count() / 8D);
+        double socialHostility = social.relationships().isEmpty() ? 0D : social.relationships().values().stream()
+                .mapToDouble(value -> value.hostility()).average().orElse(0D);
+
+        var actorSnapshot = LivelyApi.actors().snapshot();
+        double creatureDensity = Math.min(1D, actorSnapshot.actors().keySet().stream()
+                .filter(actor -> actor.kind() == ActorId.Kind.CREATURE).count() / 24D);
+
+        var structures = LivelyApi.structures().snapshot().structures().values();
+        double ancientSites = Math.min(1D, structures.stream().filter(structure -> {
+            String type = structure.type().toLowerCase(Locale.ROOT);
+            return type.contains("ancient") || type.contains("ruin") || type.contains("temple")
+                    || type.contains("shrine") || type.contains("archaeolog") || type.contains("fossil");
+        }).count() / 3D);
+
+        double crimeSignal = Math.min(1D, openCrime / 8D);
+        double underworld = clamp01(openCrime / 12D + illegalBusiness * .46D + underworldRumors * .28D
+                + socialHostility * .16D + scarcity * .10D);
+        double mystery = clamp01(openCrime / 16D + rumors * .20D + ancientSites * .48D + underworldRumors * .12D);
+        double political = clamp01(factionConflict * .62D + socialHostility * .18D + rumors * .20D);
+        double migration = clamp01(creatureDensity * .78D + scarcity * .08D + rumors * .06D);
+
+        return Map.of(
+                "crime", crimeSignal,
+                "criminal_underworld", underworld,
+                "mystery", mystery,
+                "ancient_mystery", clamp01(mystery * .72D + ancientSites * .28D),
+                "economic_crisis", scarcity,
+                "economic", scarcity,
+                "faction_conflict", factionConflict,
+                "political_tension", political,
+                "pokemon_migration", migration,
+                "migration", migration);
     }
 
     private void installDefaultSeeds() {
         if (!LivelyApi.storySeeds().snapshot().isEmpty()) return;
         LivelyApi.storySeeds().register(new StorySeedEngine.Seed("criminal_underworld", WorldEventEngine.Category.CRIME, .65D, true, Map.of()));
         LivelyApi.storySeeds().register(new StorySeedEngine.Seed("mystery", WorldEventEngine.Category.MYSTERY, .55D, true, Map.of()));
+        LivelyApi.storySeeds().register(new StorySeedEngine.Seed("ancient_mystery", WorldEventEngine.Category.MYSTERY, .48D, true, Map.of("source", "ancient_site")));
+        LivelyApi.storySeeds().register(new StorySeedEngine.Seed("pokemon_migration", WorldEventEngine.Category.MIGRATION, .50D, true, Map.of("semantic_only", "true")));
         LivelyApi.storySeeds().register(new StorySeedEngine.Seed("economic_crisis", WorldEventEngine.Category.ECONOMIC, .50D, true, Map.of()));
         LivelyApi.storySeeds().register(new StorySeedEngine.Seed("faction_conflict", WorldEventEngine.Category.FACTION_CONFLICT, .60D, true, Map.of()));
         LivelyApi.storySeeds().register(new StorySeedEngine.Seed("political_tension", WorldEventEngine.Category.POLITICAL, .45D, true, Map.of()));
     }
 
     @Override public void close() { LivelyApi.events().removeListener(listener); }
+    private static double clamp01(double value) { return Math.max(0D, Math.min(1D, value)); }
     private static String title(WorldEventEngine.WorldEvent event) { return "World arc: " + event.seed(); }
     private static String questTitle(WorldEventEngine.WorldEvent event) {
         return switch (event.category()) {
@@ -112,6 +163,7 @@ public final class LivingWorldDirectorService implements AutoCloseable {
             case MYSTERY -> "Làm rõ bí ẩn: " + event.seed();
             case ECONOMIC -> "Nguồn cung bất ổn: " + event.seed();
             case FACTION_CONFLICT -> "Xung đột: " + event.seed();
+            case MIGRATION -> "Theo dấu di cư: " + event.seed();
             case DISASTER -> "Ứng phó: " + event.seed();
             default -> "Tìm hiểu: " + event.seed();
         };
