@@ -22,13 +22,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Vanilla player-model NPC with asynchronous Mojang/signed custom skin support and no client mod requirement. */
 public final class PlayerModelBody implements NpcBody {
+    private static final long PROFILE_PROPAGATION_TICKS = 20L;
+
     private final UUID npcId;
     private final SkinResolver skins;
     private final AtomicLong generation = new AtomicLong();
+    private final ConcurrentHashMap<UUID, Long> tabRemovalAt = new ConcurrentHashMap<>();
     private volatile CompletableFuture<GameProfile> profileFuture;
     private volatile GameProfile profile;
     private volatile FakePlayer fake;
@@ -90,6 +94,7 @@ public final class PlayerModelBody implements NpcBody {
         visible = false;
         fake = null;
         profile = null;
+        tabRemovalAt.clear();
         if (current == null) return;
         int entityId = current.getId();
         UUID entityUuid = current.getUuid();
@@ -150,6 +155,7 @@ public final class PlayerModelBody implements NpcBody {
         current.setCustomName(Text.literal(definition.name()));
         current.setCustomNameVisible(definition.nameVisible());
         long tick = server.getTicks();
+        flushTabRemovals(server, current, tick);
         if (tick - lastSyncTick >= 10L) {
             lastSyncTick = tick;
             syncPosition(server);
@@ -163,11 +169,21 @@ public final class PlayerModelBody implements NpcBody {
         if (current == null || current.isRemoved()) return;
         viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, current));
         viewer.networkHandler.sendPacket(new EntitySpawnS2CPacket(current, 0, current.getBlockPos()));
-        // The profile only needs to be in the tab list long enough for the spawn/skin data to reach the client.
-        // Remove the tab entry afterward while leaving the player-model entity visible in the world.
-        viewer.getServer().execute(() -> {
-            if (fake == current && visible) viewer.networkHandler.sendPacket(new PlayerRemoveS2CPacket(List.of(current.getUuid())));
-        });
+        // Vanilla clients need the GameProfile to remain in the player list briefly so signed texture data can be
+        // consumed reliably. One second is long enough without leaving NPCs permanently visible in the tab list.
+        tabRemovalAt.put(viewer.getUuid(), viewer.getServer().getTicks() + PROFILE_PROPAGATION_TICKS);
+    }
+
+    private void flushTabRemovals(MinecraftServer server, FakePlayer current, long tick) {
+        for (var entry : List.copyOf(tabRemovalAt.entrySet())) {
+            if (tick < entry.getValue()) continue;
+            UUID viewerId = entry.getKey();
+            if (!tabRemovalAt.remove(viewerId, entry.getValue())) continue;
+            ServerPlayerEntity viewer = server.getPlayerManager().getPlayer(viewerId);
+            if (viewer != null && fake == current && visible) {
+                viewer.networkHandler.sendPacket(new PlayerRemoveS2CPacket(List.of(current.getUuid())));
+            }
+        }
     }
 
     private void syncPosition(MinecraftServer server) {
