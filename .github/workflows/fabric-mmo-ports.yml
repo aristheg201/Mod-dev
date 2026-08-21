@@ -8,6 +8,13 @@ on:
       - 'fabric-mmo-ports/bootstrap-m0.8/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'fabric-mmo-ports/bootstrap-m0.8/**'
+      - '.github/workflows/fabric-mmo-ports.yml'
+      - '.fabric-mmo-build-trigger'
   workflow_dispatch:
 
 permissions:
