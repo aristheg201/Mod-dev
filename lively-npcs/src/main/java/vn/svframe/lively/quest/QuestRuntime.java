@@ -5,6 +5,7 @@ import vn.svframe.lively.actor.ActorId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Persistent quest state machine with bounded objectives, runtime signals and isolated lifecycle listeners. */
+/** Persistent quest state machine with bounded objectives, runtime signals, stages and branch choices. */
 public final class QuestRuntime {
     public enum Status { OFFERED, ACTIVE, COMPLETED, FAILED, EXPIRED, CANCELLED }
     public enum ObjectiveType { DELIVERY, COLLECTION, EXPLORATION, COMBAT, SOCIAL, ESCORT, INVESTIGATION, CUSTOM }
@@ -26,6 +27,7 @@ public final class QuestRuntime {
                             Map<String, String> facts) {
         public Objective {
             Objects.requireNonNull(id); Objects.requireNonNull(type);
+            if (id.isBlank() || id.length() > 96) throw new IllegalArgumentException("invalid objective id");
             target = target == null ? "" : target;
             required = Math.max(1L, required);
             facts = Map.copyOf(facts == null ? Map.of() : facts);
@@ -63,6 +65,9 @@ public final class QuestRuntime {
     public Quest create(ActorId issuer, ActorId owner, String title, List<Objective> objectives, Duration ttl,
                         Map<String, String> facts) {
         if (objectives == null || objectives.isEmpty() || objectives.size() > 32) throw new IllegalArgumentException("invalid objectives");
+        HashSet<String> ids = new HashSet<>();
+        for (Objective objective : objectives) if (!ids.add(objective.id())) throw new IllegalArgumentException("duplicate objective id " + objective.id());
+        validateDependencies(objectives, ids);
         Instant now = Instant.now();
         Quest quest = new Quest(UUID.randomUUID(), issuer, owner, title, objectives, Map.of(), Status.OFFERED, now,
                 ttl == null ? null : now.plus(ttl), facts == null ? Map.of() : facts, revision.incrementAndGet());
@@ -103,11 +108,12 @@ public final class QuestRuntime {
         quests.computeIfPresent(id, (key, old) -> {
             if (old.status() != Status.ACTIVE) return old;
             Objective target = old.objectives().stream().filter(value -> value.id().equals(objective)).findFirst().orElse(null);
-            if (target == null) return old;
+            if (target == null || !isAvailable(old, target)) return old;
             Map<String, Long> progress = new HashMap<>(old.progress());
-            progress.merge(objective, delta, QuestRuntime::saturatingAdd);
-            boolean done = old.objectives().stream().filter(value -> !value.optional())
-                    .allMatch(value -> progress.getOrDefault(value.id(), 0L) >= value.required());
+            long remaining = Math.max(0L, target.required() - progress.getOrDefault(target.id(), 0L));
+            if (remaining <= 0L) return old;
+            progress.merge(objective, Math.min(delta, remaining), QuestRuntime::saturatingAdd);
+            boolean done = questComplete(old.objectives(), progress);
             before.set(old);
             Quest next = new Quest(old.id(), old.issuer(), old.owner(), old.title(), old.objectives(), progress,
                     done ? Status.COMPLETED : old.status(), old.createdAt(), old.expiresAt(), old.facts(), revision.incrementAndGet());
@@ -136,13 +142,35 @@ public final class QuestRuntime {
         int progressed = 0;
         for (Quest quest : byOwner(owner).stream().filter(value -> value.status() == Status.ACTIVE).limit(128).toList()) {
             for (Objective objective : quest.objectives()) {
-                if (objective.type() != type || quest.progress().getOrDefault(objective.id(), 0L) >= objective.required()) continue;
+                if (objective.type() != type || !isAvailable(quest, objective)
+                        || quest.progress().getOrDefault(objective.id(), 0L) >= objective.required()) continue;
                 if (!matchesSignal(objective, target, signalFacts)) continue;
                 if (progress(quest.id(), objective.id(), boundedAmount).isPresent()) progressed++;
                 break;
             }
         }
         return progressed;
+    }
+
+    /** Available means stage/prerequisites are satisfied and another branch alternative has not already been chosen. */
+    public boolean isAvailable(Quest quest, Objective objective) {
+        if (quest == null || objective == null || quest.status() != Status.ACTIVE) return false;
+        if (!dependenciesSatisfied(quest, objective)) return false;
+        if (!lowerStagesSatisfied(quest, stage(objective))) return false;
+        String group = branchGroup(objective);
+        if (!group.isBlank()) {
+            for (Objective sibling : quest.objectives()) {
+                if (sibling.id().equals(objective.id()) || !group.equals(branchGroup(sibling))) continue;
+                if (quest.progress().getOrDefault(sibling.id(), 0L) > 0L) return false;
+            }
+        }
+        return true;
+    }
+
+    public List<Objective> availableObjectives(Quest quest) {
+        if (quest == null) return List.of();
+        return quest.objectives().stream().filter(objective -> isAvailable(quest, objective)
+                && quest.progress().getOrDefault(objective.id(), 0L) < objective.required()).toList();
     }
 
     /** Atomic, persistent idempotency marker used by reward/integration services. */
@@ -175,6 +203,77 @@ public final class QuestRuntime {
     }
     public List<Quest> publicOffers() {
         return quests.values().stream().filter(Quest::publicOffer).filter(quest -> !quest.expired(Instant.now())).toList();
+    }
+
+    private static boolean questComplete(List<Objective> objectives, Map<String, Long> progress) {
+        Set<String> checkedGroups = new HashSet<>();
+        for (Objective objective : objectives) {
+            if (objective.optional()) continue;
+            String group = branchGroup(objective);
+            if (group.isBlank()) {
+                if (!complete(objective, progress)) return false;
+                continue;
+            }
+            if (!checkedGroups.add(group)) continue;
+            boolean oneComplete = objectives.stream().filter(candidate -> !candidate.optional() && group.equals(branchGroup(candidate)))
+                    .anyMatch(candidate -> complete(candidate, progress));
+            if (!oneComplete) return false;
+        }
+        return true;
+    }
+
+    private static boolean dependenciesSatisfied(Quest quest, Objective objective) {
+        String raw = objective.facts().getOrDefault("requires", "");
+        if (raw.isBlank()) return true;
+        for (String id : raw.split(",")) {
+            String required = id.trim();
+            if (required.isEmpty()) continue;
+            Objective dependency = quest.objectives().stream().filter(candidate -> candidate.id().equals(required)).findFirst().orElse(null);
+            if (dependency == null || !complete(dependency, quest.progress())) return false;
+        }
+        return true;
+    }
+
+    private static boolean lowerStagesSatisfied(Quest quest, int targetStage) {
+        Set<String> checkedGroups = new HashSet<>();
+        for (Objective objective : quest.objectives()) {
+            if (objective.optional() || stage(objective) >= targetStage) continue;
+            String group = branchGroup(objective);
+            if (group.isBlank()) {
+                if (!complete(objective, quest.progress())) return false;
+            } else if (checkedGroups.add(group)) {
+                boolean oneComplete = quest.objectives().stream()
+                        .filter(candidate -> !candidate.optional() && stage(candidate) < targetStage && group.equals(branchGroup(candidate)))
+                        .anyMatch(candidate -> complete(candidate, quest.progress()));
+                if (!oneComplete) return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean complete(Objective objective, Map<String, Long> progress) {
+        return progress.getOrDefault(objective.id(), 0L) >= objective.required();
+    }
+
+    private static int stage(Objective objective) {
+        try { return Math.max(1, Math.min(64, Integer.parseInt(objective.facts().getOrDefault("stage", "1")))); }
+        catch (NumberFormatException ignored) { return 1; }
+    }
+
+    private static String branchGroup(Objective objective) {
+        String value = objective.facts().get("branch_group");
+        return value == null ? "" : value.trim();
+    }
+
+    private static void validateDependencies(List<Objective> objectives, Set<String> ids) {
+        for (Objective objective : objectives) {
+            String raw = objective.facts().getOrDefault("requires", "");
+            for (String dependency : raw.split(",")) {
+                String id = dependency.trim();
+                if (!id.isEmpty() && !ids.contains(id)) throw new IllegalArgumentException("unknown objective dependency " + id);
+                if (objective.id().equals(id)) throw new IllegalArgumentException("objective cannot require itself");
+            }
+        }
     }
 
     private static boolean matchesSignal(Objective objective, String target, Map<String, String> signalFacts) {
