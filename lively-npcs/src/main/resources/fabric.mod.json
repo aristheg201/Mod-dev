@@ -9,7 +9,8 @@
   "entrypoints": {
     "main": [
       "vn.svframe.lively.LivelyNpcs",
-      "vn.svframe.lively.admin.NpcWizardBootstrap"
+      "vn.svframe.lively.admin.NpcWizardBootstrap",
+      "vn.svframe.lively.world.SemanticActivityBootstrap"
     ]
   },
   "depends": {
