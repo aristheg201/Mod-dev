@@ -48,6 +48,26 @@ jobs:
           gradle-version: '8.10.2'
       - name: Tests and Loom remap build
         run: gradle --no-daemon clean test remapJar
+      - name: Dedicated server boot smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lively-npcs/run
+          printf 'eula=true\n' > lively-npcs/run/eula.txt
+          set +e
+          timeout --signal=TERM --kill-after=15s 120s gradle --no-daemon :lively-npcs:runServer > lively-npcs/build/server-smoke.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            cat lively-npcs/build/server-smoke.log
+            exit "$code"
+          fi
+          grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' lively-npcs/build/server-smoke.log
+          grep -q 'Done (' lively-npcs/build/server-smoke.log
+          if grep -E 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage' lively-npcs/build/server-smoke.log; then
+            cat lively-npcs/build/server-smoke.log
+            exit 1
+          fi
       - name: Verify both mod artifacts
         shell: bash
         run: |
@@ -74,6 +94,7 @@ jobs:
           path: |
             lively-npcs/build/libs/*.jar
             lively-npcs/build/libs/fabric.mod.built.json
+            lively-npcs/build/server-smoke.log
             lively-npcs-integration/build/libs/*.jar
             lively-npcs-integration/build/libs/fabric.mod.built.json
             SHA256.txt
