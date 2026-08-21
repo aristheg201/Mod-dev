@@ -53,6 +53,7 @@ public final class LivelyNpcs implements ModInitializer {
 
     private final AtomicLong ticks = new AtomicLong();
     private final AtomicLong historySequence = new AtomicLong();
+    private final DialogueService dialogueService = new DialogueService();
     private volatile CompletableFuture<Void> pendingAutosave = CompletableFuture.completedFuture(null);
     private volatile MinecraftServer activeServer;
 
@@ -72,6 +73,7 @@ public final class LivelyNpcs implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        dialogueService.install();
         SelectionWand.install();
         LivelyCommands.install();
 
@@ -97,6 +99,7 @@ public final class LivelyNpcs implements ModInitializer {
         if (activeServer != null) stopSession(activeServer);
 
         LivelyApi.resetServerSessionState();
+        dialogueService.bindSession();
         ticks.set(0L);
         historySequence.set(0L);
         pendingAutosave = CompletableFuture.completedFuture(null);
@@ -151,8 +154,6 @@ public final class LivelyNpcs implements ModInitializer {
             };
             LivelyApi.events().addListener(historyListener);
 
-            DialogueService dialogueService = new DialogueService();
-            dialogueService.install();
             npcRuntime.restoreSpawned(server);
             LOGGER.info("Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers");
             LOGGER.info("Lively world-scoped state root: {}", worldData);
@@ -211,6 +212,7 @@ public final class LivelyNpcs implements ModInitializer {
         } catch (RuntimeException error) {
             LOGGER.error("Lively final state flush failed", error);
         } finally {
+            dialogueService.reset();
             if (stateRegistry != null) stateRegistry.close();
             if (simulationStore != null) simulationStore.close();
             stateRegistry = null; npcRuntime = null; historyJournal = null; simulationStore = null; skinResolver = null;
