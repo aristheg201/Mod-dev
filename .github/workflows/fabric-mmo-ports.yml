@@ -7,6 +7,7 @@ on:
     paths:
       - 'fabric-mmo-ports/bootstrap-m0.8/**'
       - 'fabric-mmo-ports/overlay-m0.9/**'
+      - 'fabric-mmo-ports/overlay-m1.0/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
   pull_request:
@@ -15,6 +16,7 @@ on:
     paths:
       - 'fabric-mmo-ports/bootstrap-m0.8/**'
       - 'fabric-mmo-ports/overlay-m0.9/**'
+      - 'fabric-mmo-ports/overlay-m1.0/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
   workflow_dispatch:
@@ -41,7 +43,7 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Restore source workspace and M0.9 overlay
+      - name: Restore source workspace and overlays
         shell: bash
         run: |
           set -euo pipefail
@@ -51,6 +53,7 @@ jobs:
           echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
           cp -a fabric-mmo-ports/overlay-m0.9/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.0/. build/mmo-workspace/
           find build/mmo-workspace -type f | wc -l
 
       - name: Normalize Fabric metadata version
@@ -79,10 +82,13 @@ jobs:
         run: |
           set -euo pipefail
           cd build/mmo-workspace/fabric-platform
-          mkdir -p run server-smoke/run
+          mkdir -p run server-smoke/run/config
+          rm -rf server-smoke/run/config/MMOCore
+          cp -a server-smoke/fixtures/MMOCore server-smoke/run/config/MMOCore
           printf 'eula=true\n' > run/eula.txt
           printf 'eula=true\n' > server-smoke/run/eula.txt
           gradle --no-daemon --stacktrace :server-smoke:runServer 2>&1 | tee ../../fabric-server-boot.log
+          grep -q 'MMOCORE_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
           grep -q 'FABRIC_MMO_DEDICATED_SERVER_BOOT=PASS' ../../fabric-server-boot.log
 
       - name: Verify four remapped Fabric jars
@@ -105,7 +111,7 @@ jobs:
       - name: Upload four Fabric JARs
         uses: actions/upload-artifact@v4
         with:
-          name: FabricMMO-Ports-0.9.0-dev
+          name: FabricMMO-Ports-M1.0-dev
           path: build/fabric-mmo-jars/
           if-no-files-found: error
           retention-days: 14
