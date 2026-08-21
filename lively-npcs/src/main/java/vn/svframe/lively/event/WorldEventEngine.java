@@ -14,11 +14,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /** Persistent causal event state. It changes semantic world state, never terrain directly. */
 public final class WorldEventEngine {
     public enum Category { CRIME, SOCIAL, ECONOMIC, FACTION_CONFLICT, FESTIVAL, DISASTER, MYSTERY, MIGRATION, POLITICAL, DISCOVERY }
     public enum Phase { PROPOSED, ACTIVE, RESOLVING, FINISHED, CANCELLED }
+
+    public interface Listener {
+        default void onStarted(WorldEvent event) {}
+        default void onFinished(WorldEvent event) {}
+        default void onCancelled(WorldEvent event) {}
+    }
 
     public record EventProposal(
             Category category, String seed, String structureId, Set<ActorId> participants,
@@ -41,10 +48,14 @@ public final class WorldEventEngine {
             participants = Set.copyOf(participants); facts = Map.copyOf(facts);
         }
         public boolean expired(Instant now) { return !expiresAt.isAfter(now); }
+        public WorldEvent withPhase(Phase next) {
+            return new WorldEvent(id, category, seed, structureId, participants, intensity, startedAt, expiresAt, next, facts);
+        }
     }
 
     private final ConcurrentHashMap<UUID, WorldEvent> active = new ConcurrentHashMap<>();
     private final List<WorldEvent> history = java.util.Collections.synchronizedList(new ArrayList<>());
+    private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
     private final SemanticStructureRegistry structures;
     private final WorldMutationPolicy mutationPolicy;
     private final int maxActive;
@@ -54,6 +65,9 @@ public final class WorldEventEngine {
         this.mutationPolicy = Objects.requireNonNull(mutationPolicy);
         this.maxActive = Math.max(1, Math.min(10_000, maxActive));
     }
+
+    public void addListener(Listener listener) { listeners.addIfAbsent(Objects.requireNonNull(listener)); }
+    public void removeListener(Listener listener) { listeners.remove(listener); }
 
     public Validation validate(EventProposal proposal) {
         Objects.requireNonNull(proposal);
@@ -77,22 +91,36 @@ public final class WorldEventEngine {
         WorldEvent event = new WorldEvent(UUID.randomUUID(), proposal.category(), proposal.seed(), proposal.structureId(), proposal.participants(),
                 proposal.intensity(), now, now.plus(proposal.duration()), Phase.ACTIVE, proposal.facts());
         active.put(event.id(), event);
+        listeners.forEach(listener -> safe(() -> listener.onStarted(event)));
         return Optional.of(event);
+    }
+
+    public Optional<WorldEvent> cancel(UUID eventId) {
+        WorldEvent event = active.remove(eventId);
+        if (event == null) return Optional.empty();
+        WorldEvent cancelled = event.withPhase(Phase.CANCELLED);
+        history.add(cancelled);
+        listeners.forEach(listener -> safe(() -> listener.onCancelled(cancelled)));
+        return Optional.of(cancelled);
     }
 
     public int advance(Instant now) {
         int finished = 0;
         for (WorldEvent event : List.copyOf(active.values())) {
             if (!event.expired(now)) continue;
-            WorldEvent completed = new WorldEvent(event.id(), event.category(), event.seed(), event.structureId(), event.participants(),
-                    event.intensity(), event.startedAt(), event.expiresAt(), Phase.FINISHED, event.facts());
-            if (active.remove(event.id(), event)) { history.add(completed); finished++; }
+            WorldEvent completed = event.withPhase(Phase.FINISHED);
+            if (active.remove(event.id(), event)) {
+                history.add(completed); finished++;
+                listeners.forEach(listener -> safe(() -> listener.onFinished(completed)));
+            }
         }
         return finished;
     }
 
     public List<WorldEvent> activeEvents() { return List.copyOf(active.values()); }
     public List<WorldEvent> history() { synchronized (history) { return List.copyOf(history); } }
+
+    private static void safe(Runnable task) { try { task.run(); } catch (RuntimeException ignored) { } }
 
     public record Validation(boolean allowed, String reason) {
         public static Validation allow() { return new Validation(true, "accepted"); }
