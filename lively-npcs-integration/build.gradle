@@ -8,11 +8,13 @@ dependencies {
     implementation project(':lively-npcs')
 
     // Exact Cobblemon 1.7.3 Fabric artifact published by Modrinth.
-    // Compile-only: the Integration JAR remains optional when Cobblemon is absent.
+    // Keep it compile-only for the shipped JAR, but load the same exact artifact in Loom's dev runtime
+    // so CI can boot the real Integration + Cobblemon mixin/entrypoint stack.
     modCompileOnly "maven.modrinth:MdwFAVRL:kF7CvxTo"
+    modRuntimeOnly "maven.modrinth:MdwFAVRL:kF7CvxTo"
 
     // Cobblemon exposes Kotlin collection types in its Java-visible API. Keep the marker/runtime types
-    // on the compile classpath only; the server already receives Kotlin through Cobblemon's runtime stack.
+    // on the compile classpath only; Cobblemon supplies Fabric Language Kotlin in its runtime artifact.
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.1.20"
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
