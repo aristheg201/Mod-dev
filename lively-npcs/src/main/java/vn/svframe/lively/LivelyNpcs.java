@@ -42,6 +42,7 @@ import vn.svframe.lively.world.StructureCapabilityScanner;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -147,13 +148,17 @@ public final class LivelyNpcs implements ModInitializer {
             try {
                 var history = historyJournal.readAll();
                 history.stream().mapToLong(WorldHistoryJournal.Entry::sequence).max().ifPresent(historySequence::set);
-                LOGGER.info("Lively world history loaded: {} records", history.size());
+                LivelyApi.chronicle().rebuild(history);
+                LOGGER.info("Lively world history loaded: {} records, {} chronicle eras", history.size(), LivelyApi.chronicle().eras().size());
             } catch (IOException error) {
                 LOGGER.error("Lively world history validation failed", error);
             }
             historyListener = new WorldEventEngine.Listener() {
                 @Override public void onStarted(WorldEventEngine.WorldEvent event) { journal("event_started", event); }
-                @Override public void onFinished(WorldEventEngine.WorldEvent event) { journal("event_finished", event); }
+                @Override public void onFinished(WorldEventEngine.WorldEvent event) {
+                    LivelyApi.chronicle().record(event);
+                    journal("event_finished", event);
+                }
                 @Override public void onCancelled(WorldEventEngine.WorldEvent event) { journal("event_cancelled", event); }
             };
             LivelyApi.events().addListener(historyListener);
@@ -261,9 +266,17 @@ public final class LivelyNpcs implements ModInitializer {
         WorldHistoryJournal journal = historyJournal;
         if (journal == null) return;
         try {
-            journal.append(new WorldHistoryJournal.Entry(historySequence.incrementAndGet(), Instant.now(), type, event.id().toString(),
-                    Map.of("category", event.category().name(), "seed", event.seed(), "phase", event.phase().name(),
-                            "structure", event.structureId() == null ? "" : event.structureId())));
+            Map<String, String> facts = new HashMap<>();
+            facts.put("category", event.category().name());
+            facts.put("seed", event.seed());
+            facts.put("phase", event.phase().name());
+            facts.put("structure", event.structureId() == null ? "" : event.structureId());
+            facts.put("intensity", Double.toString(event.intensity()));
+            String kind = event.facts().get("kind");
+            if (kind != null && !kind.isBlank()) facts.put("kind", kind);
+            String eraBreak = event.facts().get("era_break");
+            if (eraBreak != null) facts.put("era_break", eraBreak);
+            journal.append(new WorldHistoryJournal.Entry(historySequence.incrementAndGet(), Instant.now(), type, event.id().toString(), facts));
         } catch (IOException error) {
             LOGGER.error("Failed to append Lively world history record {}", type, error);
         }
