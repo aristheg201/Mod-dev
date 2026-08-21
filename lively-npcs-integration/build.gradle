@@ -3,7 +3,9 @@ base {
 }
 
 dependencies {
-    modImplementation project(path: ':lively-npcs', configuration: 'namedElements')
+    // Compile against the core project without asking Loom to remap/read a dev JAR during configuration.
+    // Lively NPCs Integration remains a separate JAR and declares livelynpcs as a runtime mod dependency.
+    implementation project(':lively-npcs')
 
     // Exact Cobblemon 1.7.3 Fabric artifact published by Modrinth.
     // Compile-only: the Integration JAR remains optional when Cobblemon is absent.
