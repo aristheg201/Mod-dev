@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.lively.api.LivelyApi;
+import vn.svframe.lively.integration.cobblemon.CobblemonBattleKnowledge;
 import vn.svframe.lively.integration.cobblemon.LivelyCobblemonBattleAI;
 
 import java.util.List;
@@ -28,11 +29,13 @@ public abstract class NPCBattleActorMixin {
     @Inject(method = "win", at = @At("TAIL"), remap = false)
     private void lively$rememberWin(List<? extends BattleActor> winners, List<? extends BattleActor> losers, CallbackInfo ci) {
         lively$rememberOutcome("battle_won", losers);
+        lively$cleanupBattleKnowledge();
     }
 
     @Inject(method = "lose", at = @At("TAIL"), remap = false)
     private void lively$rememberLoss(List<? extends BattleActor> winners, List<? extends BattleActor> losers, CallbackInfo ci) {
         lively$rememberOutcome("battle_lost", winners);
+        lively$cleanupBattleKnowledge();
     }
 
     private void lively$rememberOutcome(String type, List<? extends BattleActor> opponents) {
@@ -42,8 +45,13 @@ public abstract class NPCBattleActorMixin {
         if (LivelyApi.states() == null) return;
         String opponentIds = opponents.stream().map(actor -> actor.getUuid().toString()).collect(Collectors.joining(","));
         LivelyApi.states().get(npc.getUuid()).ifPresent(state -> state.remember(
-                type,
-                Map.of("opponents", opponentIds, "skill", Integer.toString(self.getSkill())),
-                0.82D, 1D));
+                type, Map.of("opponents", opponentIds, "skill", Integer.toString(self.getSkill())), 0.82D, 1D));
+    }
+
+    private void lively$cleanupBattleKnowledge() {
+        NPCBattleActor self = (NPCBattleActor) (Object) this;
+        try {
+            if (self.getBattle() != null) CobblemonBattleKnowledge.unregisterBattle(self.getBattle().getBattleId());
+        } catch (RuntimeException ignored) { }
     }
 }
