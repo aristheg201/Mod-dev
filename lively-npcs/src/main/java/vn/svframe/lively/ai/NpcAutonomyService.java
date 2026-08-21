@@ -21,6 +21,7 @@ import vn.svframe.lively.schedule.ScheduleEngine;
 import vn.svframe.lively.social.SocialEngine;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ public final class NpcAutonomyService implements AutoCloseable {
     private final LivelyAiEngine engine = new LivelyAiEngine();
     private final ConcurrentHashMap<UUID, Long> socialCooldown = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastNeedTick = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Long> nextDecisionTick = new ConcurrentHashMap<>();
 
     private AiScheduler scheduler;
     private List<NpcDefinition> definitions = List.of();
@@ -77,7 +79,7 @@ public final class NpcAutonomyService implements AutoCloseable {
             syncActors();
             applySchedules(server);
             simulateNeeds(tick);
-            runDecisions(server);
+            runDecisions(server, tick);
         }
         if (tick % 80L == 0L) socialPulse(tick);
     }
@@ -93,6 +95,10 @@ public final class NpcAutonomyService implements AutoCloseable {
         scheduleCursor = normalize(scheduleCursor, definitions.size());
         socialCursor = normalize(socialCursor, definitions.size());
         decisionCursor = normalize(decisionCursor, Math.max(1, activeDefinitions().size()));
+        if (nextDecisionTick.size() > definitions.size() * 2 + 128) {
+            Set<UUID> live = definitions.stream().map(NpcDefinition::id).collect(java.util.stream.Collectors.toSet());
+            nextDecisionTick.keySet().removeIf(id -> !live.contains(id));
+        }
     }
 
     private void syncActors() {
@@ -154,14 +160,15 @@ public final class NpcAutonomyService implements AutoCloseable {
         needCursor = advance(needCursor, count, definitions.size());
     }
 
-    private void runDecisions(MinecraftServer server) {
+    private void runDecisions(MinecraftServer server, long tick) {
         ensureScheduler(server);
         List<NpcDefinition> active = activeDefinitions();
         if (active.isEmpty()) return;
-        int attempts = Math.min(active.size(), DECISIONS_PER_PULSE * 3);
+        int attempts = Math.min(active.size(), DECISIONS_PER_PULSE * 4);
         int submitted = 0;
         for (int i = 0; i < attempts && submitted < DECISIONS_PER_PULSE; i++) {
             NpcDefinition d = active.get((decisionCursor + i) % active.size());
+            if (nextDecisionTick.getOrDefault(d.id(), 0L) > tick) continue;
             NpcState state = states.get(d.id()).orElse(null);
             if (state == null) continue;
             NpcSnapshot npc = state.snapshot(32);
@@ -169,8 +176,18 @@ public final class NpcAutonomyService implements AutoCloseable {
             AiScheduler.Submission submission = scheduler.submit(new AiScheduler.TaskKey(d.id(), "cognition"), AiScheduler.Priority.NORMAL,
                     npc.revision(), state::revision,
                     () -> engine.decide(npc, world).orElse(null),
-                    decision -> { if (decision != null) applyDecision(server, d.id(), decision.action()); });
-            if (submission.accepted()) submitted++;
+                    decision -> {
+                        if (decision == null) return;
+                        Instant startedAt = Instant.now();
+                        boolean success = applyDecision(server, d.id(), decision);
+                        long nowTick = server.getTicks();
+                        nextDecisionTick.merge(d.id(), nowTick + actionCooldown(decision.action().type()), Math::max);
+                        recordActionOutcome(d.id(), decision, success, startedAt);
+                    });
+            if (submission.accepted()) {
+                nextDecisionTick.put(d.id(), tick + 20L);
+                submitted++;
+            }
         }
         decisionCursor = advance(decisionCursor, Math.max(1, attempts), active.size());
     }
@@ -304,99 +321,140 @@ public final class NpcAutonomyService implements AutoCloseable {
         return threat;
     }
 
-    private void applyDecision(MinecraftServer server, UUID npcId, AiAction action) {
+    private boolean applyDecision(MinecraftServer server, UUID npcId, Decision decision) {
         NpcDefinition d = npcs.get(npcId).orElse(null);
-        if (d == null) return;
-        switch (action.type()) {
-            case "travel_home" -> {
-                String home = d.metadata().get("home.structure");
-                if (home != null) navigation.goToStructure(npcId, home);
-            }
-            case "perform_occupation" -> {
-                String work = d.metadata().get("work.structure");
-                if (work != null && navigation.goToStructure(npcId, work)) {
-                    states.get(npcId).ifPresent(state -> state.setNeed("money", Math.max(0D, state.snapshot(1).need("money") - .08D)));
-                }
-            }
-            case "seek_food" -> nearestStructure(d, "restaurant", "shop", "market")
-                    .ifPresent(id -> navigation.goToStructure(npcId, id));
+        if (d == null) return false;
+        return switch (decision.action().type()) {
+            case "travel_home" -> goToMetadataStructure(d, "home.structure");
+            case "perform_occupation" -> performOccupation(d);
+            case "seek_food" -> seekFood(d);
             case "start_dialogue" -> startNearbyDialogue(server, d);
             case "consume_food" -> consumeFood(d);
-            case "flee" -> fleeFromThreat(server, d);
-            case "defend" -> defendAgainstThreat(server, d);
+            case "flee" -> flee(server, d);
+            case "defend" -> defend(server, d);
             case "offer_trade" -> offerTrade(server, d);
-            default -> states.get(npcId).ifPresent(state ->
-                    state.remember("ai_decision", Map.of("action", action.type()), .08D, 1D));
-        }
+            default -> {
+                states.get(npcId).ifPresent(state -> state.remember("ai_decision",
+                        Map.of("action", decision.action().type()), .08D, 1D));
+                yield false;
+            }
+        };
     }
 
-    private void consumeFood(NpcDefinition d) {
+    private boolean performOccupation(NpcDefinition d) {
+        String work = d.metadata().get("work.structure");
+        if (work == null || work.isBlank()) return false;
+        boolean accepted = navigation.goToStructure(d.id(), work);
+        if (accepted) {
+            states.get(d.id()).ifPresent(state -> state.setNeed("money",
+                    Math.max(0D, state.snapshot(1).need("money") - .015D)));
+        }
+        return accepted;
+    }
+
+    private boolean goToMetadataStructure(NpcDefinition d, String key) {
+        String structure = d.metadata().get(key);
+        return structure != null && !structure.isBlank() && navigation.goToStructure(d.id(), structure);
+    }
+
+    private boolean startNearbyDialogue(MinecraftServer server, NpcDefinition d) {
+        DialogueService dialogues = LivelyApi.dialogues();
+        if (dialogues == null) return false;
+        Vec3d p = npcs.position(d.id()).orElse(null);
+        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        if (p == null) return false;
+        ServerPlayerEntity player = server.getPlayerManager().getPlayerList().stream()
+                .filter(candidate -> candidate.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey)
+                        && candidate.getPos().squaredDistanceTo(p) <= 16D
+                        && dialogues.session(candidate.getUuid()).isEmpty())
+                .findFirst().orElse(null);
+        if (player == null) return false;
+        dialogues.start(player, d.id(), d.name(), d.role());
+        states.get(d.id()).ifPresent(state -> state.remember("dialogue_started",
+                Map.of("player", player.getUuid().toString()), .14D, 1D));
+        return true;
+    }
+
+    private boolean consumeFood(NpcDefinition d) {
         Vec3d position = npcs.position(d.id()).orElse(null);
         String worldKey = npcs.worldKey(d.id()).orElse(d.world());
-        if (position == null) return;
+        if (position == null) return false;
         boolean foodAvailable = LivelyApi.structures().at(worldKey, position.x, position.y, position.z).stream().anyMatch(structure -> {
             String type = structure.type().toLowerCase(Locale.ROOT);
             return Set.of("restaurant", "shop", "market", "inn", "home").contains(type)
                     || structure.capabilities().contains("cook") || structure.capabilities().contains("trade");
         });
         if (!foodAvailable) {
-            nearestStructure(d, "restaurant", "shop", "market").ifPresent(id -> navigation.goToStructure(d.id(), id));
-            return;
+            seekFood(d);
+            return false;
         }
-        states.get(d.id()).ifPresent(state -> {
-            state.setNeed("hunger", Math.max(0D, state.snapshot(1).need("hunger") - .20D));
-            state.remember("semantic_meal", Map.of("world", worldKey), .12D, 1D);
-        });
+        NpcState state = states.get(d.id()).orElse(null);
+        if (state == null) return false;
+        double before = state.snapshot(1).need("hunger");
+        double after = Math.max(0D, before - .20D);
+        state.setNeed("hunger", after);
+        state.remember("semantic_meal", Map.of("world", worldKey), .12D, 1D);
+        return after < before;
     }
 
-    private void fleeFromThreat(MinecraftServer server, NpcDefinition d) {
+    private boolean seekFood(NpcDefinition d) {
+        Optional<String> structure = nearestStructure(d, "restaurant", "shop", "market", "inn");
+        return structure.filter(id -> navigation.goToStructure(d.id(), id)).isPresent();
+    }
+
+    private boolean flee(MinecraftServer server, NpcDefinition d) {
         ThreatObservation threat = highestThreat(server, d).orElse(null);
         Vec3d origin = threat == null ? dangerousEventOrigin(d).orElse(null) : threat.position();
         String worldKey = npcs.worldKey(d.id()).orElse(d.world());
         if (origin == null) {
             String home = d.metadata().get("home.structure");
-            if (home != null) navigation.goToStructure(d.id(), home);
-            return;
+            return home != null && navigation.goToStructure(d.id(), home);
         }
         double strength = threat == null ? environmentThreat(d, worldKey, npcs.position(d.id()).orElse(origin)) : threat.threat();
         double distance = 10D + strength * 14D;
-        if (navigation.flee(d.id(), worldKey, origin, distance)) {
+        boolean accepted = navigation.flee(d.id(), worldKey, origin, distance);
+        if (accepted) {
             states.get(d.id()).ifPresent(state -> state.remember("fled_from_threat",
                     Map.of("source", threat == null ? "world_event" : threat.actor().uuid().toString(),
                             "threat", Double.toString(strength)), .48D, 1D));
         }
+        return accepted;
     }
 
-    private void defendAgainstThreat(MinecraftServer server, NpcDefinition d) {
+    private boolean defend(MinecraftServer server, NpcDefinition d) {
         ThreatObservation threat = highestThreat(server, d).orElse(null);
-        if (threat == null) return;
+        if (threat == null) return false;
         navigation.stop(d.id());
-        npcs.lookAt(server, d.id(), threat.position());
-        states.get(d.id()).ifPresent(state -> state.remember("defensive_stance",
-                Map.of("against", threat.actor().uuid().toString(), "threat", Double.toString(threat.threat())), .42D, 1D));
+        boolean facing = npcs.lookAt(server, d.id(), threat.position());
+        if (facing) {
+            states.get(d.id()).ifPresent(state -> state.remember("defensive_stance",
+                    Map.of("against", threat.actor().uuid().toString(), "threat", Double.toString(threat.threat())), .42D, 1D));
+        }
+        return facing;
     }
 
-    private void offerTrade(MinecraftServer server, NpcDefinition d) {
+    private boolean offerTrade(MinecraftServer server, NpcDefinition d) {
         ActorId owner = new ActorId(d.id(), ActorId.Kind.NPC);
         List<EconomyEngine.Business> businesses = LivelyApi.economy().businessesByOwner(owner).stream()
                 .filter(EconomyEngine.Business::open).toList();
-        if (businesses.isEmpty()) return;
+        if (businesses.isEmpty()) return false;
         Vec3d position = npcs.position(d.id()).orElse(null);
         String worldKey = npcs.worldKey(d.id()).orElse(d.world());
         DialogueService dialogues = LivelyApi.dialogues();
         NpcState state = states.get(d.id()).orElse(null);
-        if (position == null || dialogues == null || state == null) return;
+        if (position == null || dialogues == null || state == null) return false;
 
-        server.getPlayerManager().getPlayerList().stream()
-                .filter(player -> player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey))
-                .filter(player -> player.getPos().squaredDistanceTo(position) <= 25D)
-                .filter(player -> dialogues.session(player.getUuid()).isEmpty())
-                .filter(player -> businesses.stream().anyMatch(business -> canOfferBusiness(state, player, business)))
-                .findFirst().ifPresent(player -> {
-                    dialogues.start(player, d.id(), d.name(), d.role());
-                    state.setNeed("money", Math.max(0D, state.snapshot(1).need("money") - .06D));
-                    state.remember("trade_offered", Map.of("player", player.getUuid().toString()), .16D, 1D);
-                });
+        ServerPlayerEntity player = server.getPlayerManager().getPlayerList().stream()
+                .filter(candidate -> candidate.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey))
+                .filter(candidate -> candidate.getPos().squaredDistanceTo(position) <= 25D)
+                .filter(candidate -> dialogues.session(candidate.getUuid()).isEmpty())
+                .filter(candidate -> businesses.stream().anyMatch(business -> canOfferBusiness(state, candidate, business)))
+                .findFirst().orElse(null);
+        if (player == null) return false;
+        dialogues.start(player, d.id(), d.name(), d.role());
+        state.setNeed("money", Math.max(0D, state.snapshot(1).need("money") - .06D));
+        state.remember("trade_offered", Map.of("player", player.getUuid().toString()), .16D, 1D);
+        return true;
     }
 
     private boolean canOfferBusiness(NpcState state, ServerPlayerEntity player, EconomyEngine.Business business) {
@@ -404,6 +462,26 @@ public final class NpcAutonomyService implements AutoCloseable {
         ActorId playerActor = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
         double reputation = LivelyApi.social().reputation(playerActor, SocialEngine.ReputationScope.GLOBAL, "");
         return BusinessAccessPolicy.evaluate(business, trust, reputation).allowed();
+    }
+
+    private void recordActionOutcome(UUID npcId, Decision decision, boolean success, Instant startedAt) {
+        states.get(npcId).ifPresent(state -> state.remember("action_outcome",
+                Map.of("action", decision.action().type(),
+                        "goal", decision.goal().type(),
+                        "success", Boolean.toString(success),
+                        "score", Double.toString(decision.score()),
+                        "started_at", startedAt.toString()),
+                success ? .20D : .30D, 1D));
+    }
+
+    private static long actionCooldown(String action) {
+        return switch (action) {
+            case "flee", "defend" -> 20L;
+            case "travel_home", "perform_occupation", "seek_food" -> 40L;
+            case "consume_food" -> 60L;
+            case "start_dialogue", "offer_trade" -> 100L;
+            default -> 40L;
+        };
     }
 
     private Optional<ThreatObservation> highestThreat(MinecraftServer server, NpcDefinition d) {
@@ -442,7 +520,7 @@ public final class NpcAutonomyService implements AutoCloseable {
                 .map(event -> LivelyApi.structures().get(event.structureId()).orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .filter(structure -> structure.bounds().world().equals(worldKey) && inside(structure.bounds(), position))
-                .max(Comparator.comparingDouble(structure -> center(structure.bounds()).squaredDistanceTo(position) * -1D))
+                .min(Comparator.comparingDouble(structure -> center(structure.bounds()).squaredDistanceTo(position)))
                 .map(structure -> center(structure.bounds()));
     }
 
@@ -455,20 +533,6 @@ public final class NpcAutonomyService implements AutoCloseable {
                         && wanted.contains(structure.type().toLowerCase(Locale.ROOT)))
                 .min(Comparator.comparingDouble(structure -> center(structure.bounds()).squaredDistanceTo(p)))
                 .map(SemanticStructureRegistry.Structure::id);
-    }
-
-    private void startNearbyDialogue(MinecraftServer server, NpcDefinition d) {
-        if (!Boolean.parseBoolean(d.metadata().getOrDefault("dialogue.auto", "false"))) return;
-        DialogueService dialogues = LivelyApi.dialogues();
-        if (dialogues == null) return;
-        Vec3d p = npcs.position(d.id()).orElse(null);
-        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
-        if (p == null) return;
-        server.getPlayerManager().getPlayerList().stream()
-                .filter(player -> player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey)
-                        && player.getPos().squaredDistanceTo(p) <= 16D
-                        && dialogues.session(player.getUuid()).isEmpty())
-                .findFirst().ifPresent(player -> dialogues.start(player, d.id(), d.name(), d.role()));
     }
 
     private List<NpcDefinition> activeDefinitions() {
@@ -522,6 +586,7 @@ public final class NpcAutonomyService implements AutoCloseable {
         if (scheduler != null) scheduler.close();
         socialCooldown.clear();
         lastNeedTick.clear();
+        nextDecisionTick.clear();
         definitions = List.of();
     }
 }
