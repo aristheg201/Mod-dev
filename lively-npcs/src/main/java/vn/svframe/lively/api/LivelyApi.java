@@ -26,6 +26,7 @@ import vn.svframe.lively.social.RomanceEngine;
 import vn.svframe.lively.social.SocialEngine;
 import vn.svframe.lively.world.BlockCapabilityRegistry;
 import vn.svframe.lively.world.SemanticStructureRegistry;
+import vn.svframe.lively.world.StructureCapabilityScanner;
 import vn.svframe.lively.world.WorldMutationPolicy;
 
 import java.util.List;
@@ -61,6 +62,7 @@ public final class LivelyApi {
     private static volatile NpcRuntime npcs;
     private static volatile WorldNavigationService worldNavigation;
     private static volatile NpcAutonomyService autonomy;
+    private static volatile StructureCapabilityScanner structureScanner;
     private static volatile PermissionBridge permissions = PermissionBridge.vanilla();
     private static volatile EconomyBridge externalEconomy = EconomyBridge.unavailable();
     private static volatile HologramBridge holograms = HologramBridge.unavailable();
@@ -102,6 +104,8 @@ public final class LivelyApi {
     public static void installWorldNavigation(WorldNavigationService service) { worldNavigation = service; }
     public static NpcAutonomyService autonomy() { return autonomy; }
     public static void installAutonomy(NpcAutonomyService service) { autonomy = service; }
+    public static StructureCapabilityScanner structureScanner() { return structureScanner; }
+    public static void installStructureScanner(StructureCapabilityScanner scanner) { structureScanner = scanner; }
     public static PermissionBridge permissions() { return permissions; }
     public static void installPermissionBridge(PermissionBridge bridge) { permissions = bridge == null ? PermissionBridge.vanilla() : bridge; }
     public static EconomyBridge externalEconomy() { return externalEconomy; }
