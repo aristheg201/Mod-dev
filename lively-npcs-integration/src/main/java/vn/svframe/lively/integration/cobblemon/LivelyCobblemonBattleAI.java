@@ -21,11 +21,13 @@ import vn.svframe.lively.combat.CombatCortex;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
-/** Cobblemon 1.7.3 BattleAI binding. It only reasons over battle-visible state plus Lively NPC memory. */
+/** Cobblemon 1.7.3 BattleAI binding. It reasons only over battle-visible state and legitimately revealed memory. */
 public final class LivelyCobblemonBattleAI implements BattleAI {
     private final UUID npcId;
     private final int skill;
@@ -38,23 +40,42 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
     @Override
     public ShowdownActionResponse choose(ActiveBattlePokemon active, PokemonBattle battle, BattleSide side,
                                          ShowdownMoveset moveset, boolean forceSwitch) {
-        CandidateSet candidates = candidates(active, moveset, forceSwitch);
+        CobblemonBattleKnowledge.register(npcId, battle, active.getActor());
+        CandidateSet raw = candidates(active, battle, moveset, forceSwitch);
+        CandidateSet candidates = coordinated(active, battle, raw);
         if (candidates.responses().isEmpty()) return PassActionResponse.INSTANCE;
 
+        var snapshot = LivelyApi.states() == null ? null : LivelyApi.states().snapshot(npcId).orElse(null);
         CombatCortex.CombatState state = new CombatCortex.CombatState(
-                battle.getTurn(), battle.getTurn(), aggression(), caution(),
+                battle.getTurn(), battle.getTurn(), aggression(snapshot), caution(snapshot),
                 List.copyOf(candidates.actions()), features(active, side));
         Optional<CombatCortex.Decision> decision = LivelyApi.combat().choose(
                 state, this::simulate, CombatCortex.SearchBudget.trainer(skill));
         if (decision.isEmpty()) return PassActionResponse.INSTANCE;
         rememberDecision(battle, decision.get());
+        CobblemonBattleKnowledge.rememberIntent(battle, active, decision.get().action());
         return candidates.responses().getOrDefault(decision.get().action().id(), PassActionResponse.INSTANCE);
     }
 
-    private CandidateSet candidates(ActiveBattlePokemon active, ShowdownMoveset moveset, boolean forceSwitch) {
+    private CandidateSet coordinated(ActiveBattlePokemon active, PokemonBattle battle, CandidateSet raw) {
         List<CombatCortex.CombatAction> actions = new ArrayList<>();
         Map<String, ShowdownActionResponse> responses = new LinkedHashMap<>();
-        addSwitches(active, moveset, forceSwitch, actions, responses);
+        for (CombatCortex.CombatAction action : raw.actions()) {
+            double penalty = CobblemonBattleKnowledge.coordinationPenalty(npcId, battle, active, action);
+            if (penalty >= 0.99D) continue;
+            double value = clamp01(action.immediateValue() * (1D - penalty));
+            Map<String, String> metadata = new LinkedHashMap<>(action.metadata());
+            if (penalty > 0D) metadata.put("coordination_penalty", Double.toString(penalty));
+            actions.add(new CombatCortex.CombatAction(action.id(), value, action.risk(), metadata));
+            responses.put(action.id(), raw.responses().get(action.id()));
+        }
+        return new CandidateSet(actions, responses);
+    }
+
+    private CandidateSet candidates(ActiveBattlePokemon active, PokemonBattle battle, ShowdownMoveset moveset, boolean forceSwitch) {
+        List<CombatCortex.CombatAction> actions = new ArrayList<>();
+        Map<String, ShowdownActionResponse> responses = new LinkedHashMap<>();
+        addSwitches(active, battle, moveset, forceSwitch, actions, responses);
         if (!forceSwitch && moveset != null) addMoves(active, moveset, actions, responses);
         return new CandidateSet(actions, responses);
     }
@@ -94,7 +115,7 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         actions.add(new CombatCortex.CombatAction(id, value, risk, metadata)); responses.put(id, response);
     }
 
-    private void addSwitches(ActiveBattlePokemon active, ShowdownMoveset moveset, boolean forceSwitch,
+    private void addSwitches(ActiveBattlePokemon active, PokemonBattle battle, ShowdownMoveset moveset, boolean forceSwitch,
                              List<CombatCortex.CombatAction> actions, Map<String, ShowdownActionResponse> responses) {
         if (!forceSwitch && moveset != null && moveset.getTrapped()) return;
         for (BattlePokemon reserve : active.getActor().getPokemonList()) {
@@ -103,7 +124,7 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
             if (moveset != null && !response.isValid(active, moveset, forceSwitch)) continue;
             double hp = fraction(reserve.getHealth(), reserve.getMaxHealth());
             double currentHp = fraction(active.getBattlePokemon().getHealth(), active.getBattlePokemon().getMaxHealth());
-            double matchup = reserveMatchup(reserve, active.getSide().getOppositeSide().getActivePokemon());
+            double matchup = reserveMatchup(reserve, active.getSide().getOppositeSide().getActivePokemon(), battle.getBattleId());
             double value = forceSwitch ? 0.42D + hp * 0.30D + matchup * 0.28D
                     : 0.12D + hp * 0.24D + (1D - currentHp) * 0.16D + matchup * 0.26D;
             String id = "switch:" + reserve.getUuid();
@@ -126,22 +147,52 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
     private double moveValue(ActiveBattlePokemon active, Targetable target, MoveTemplate template, String gimmick) {
         double power = Math.max(0D, Math.min(250D, template.getPower())) / 250D;
         double accuracy = normalizeAccuracy(template.getAccuracy());
-        double value = power > 0D ? 0.18D + power * 0.62D * accuracy : 0.28D;
+        boolean status = template.getDamageCategory() != null && "status".equalsIgnoreCase(template.getDamageCategory().getName());
+        double value = power > 0D ? 0.18D + power * 0.62D * accuracy : statusUtility(template, active);
         if (template.getPriority() > 0) value += Math.min(0.12D, template.getPriority() * 0.035D);
-        if (hasStab(active, template.getElementalType())) value += 0.10D;
+        if (hasStab(active, template.getElementalType()) && power > 0D) value += 0.10D;
+        double effectiveness = 1D;
+        double targetHp = 1D;
         if (target instanceof ActiveBattlePokemon targetPokemon) {
-            double targetHp = fraction(targetPokemon.getBattlePokemon().getHealth(), targetPokemon.getBattlePokemon().getMaxHealth());
-            double effectiveness = TypeMatchup.multiplier(template.getElementalType(), targetPokemon.getBattlePokemon().getEffectedPokemon().getTypes());
+            targetHp = fraction(targetPokemon.getBattlePokemon().getHealth(), targetPokemon.getBattlePokemon().getMaxHealth());
+            effectiveness = TypeMatchup.multiplier(template.getElementalType(), targetPokemon.getBattlePokemon().getEffectedPokemon().getTypes());
             if (power > 0D) {
                 value += (1D - targetHp) * 0.12D;
                 value += effectivenessBonus(effectiveness);
             }
         }
-        if (gimmick != null) value += 0.09D;
+        if (gimmick != null) value += gimmickTiming(active, targetHp, effectiveness, power);
         return clamp01(value);
     }
 
-    private double reserveMatchup(BattlePokemon reserve, List<ActiveBattlePokemon> opponents) {
+    private double statusUtility(MoveTemplate template, ActiveBattlePokemon active) {
+        String name = normalizeMove(template.getName());
+        double ownHp = fraction(active.getBattlePokemon().getHealth(), active.getBattlePokemon().getMaxHealth());
+        if (Set.of("recover", "roost", "slackoff", "softboiled", "milkdrink", "synthesis", "moonlight", "morningsun", "rest").contains(name)) {
+            return clamp01(0.18D + (1D - ownHp) * 0.72D);
+        }
+        if (Set.of("protect", "detect", "kingsshield", "spikyshield", "banefulbunker").contains(name)) return 0.42D;
+        if (Set.of("swordsdance", "nastyplot", "dragondance", "calmmind", "bulkup", "quiverdance", "shellsmash").contains(name)) {
+            return ownHp > 0.55D ? 0.54D : 0.30D;
+        }
+        if (Set.of("stealthrock", "spikes", "toxicspikes", "stickyweb", "tailwind", "trickroom", "reflect", "lightscreen", "auroraveil").contains(name)) return 0.50D;
+        Double[] chances = template.getEffectChances();
+        double chance = 0D;
+        if (chances != null) for (Double c : chances) if (c != null) chance = Math.max(chance, c > 1D ? c / 100D : c);
+        return clamp01(0.30D + Math.min(0.18D, chance * 0.18D));
+    }
+
+    private double gimmickTiming(ActiveBattlePokemon active, double targetHp, double effectiveness, double power) {
+        double ownHp = fraction(active.getBattlePokemon().getHealth(), active.getBattlePokemon().getMaxHealth());
+        double value = 0.015D;
+        if (ownHp < 0.42D) value += 0.07D;
+        if (targetHp > 0.45D && power > 0.25D) value += 0.035D;
+        if (effectiveness >= 2D) value += 0.055D;
+        if (targetHp < 0.15D && power > 0.35D) value -= 0.055D;
+        return value;
+    }
+
+    private double reserveMatchup(BattlePokemon reserve, List<ActiveBattlePokemon> opponents, UUID battleId) {
         if (opponents.isEmpty()) return 0.5D;
         double bestOffense = 1D;
         double worstIncoming = 1D;
@@ -150,8 +201,17 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
                 if (move == null || move.getCurrentPp() <= 0) continue;
                 bestOffense = Math.max(bestOffense, TypeMatchup.multiplier(move.getType(), opponent.getBattlePokemon().getEffectedPokemon().getTypes()));
             }
-            for (ElementalType opponentType : opponent.getBattlePokemon().getEffectedPokemon().getTypes()) {
-                worstIncoming = Math.max(worstIncoming, TypeMatchup.multiplier(opponentType, reserve.getEffectedPokemon().getTypes()));
+            CobblemonBattleKnowledge.RevealedPokemon known = CobblemonBattleKnowledge.known(npcId, battleId, opponent.getBattlePokemon().getUuid());
+            if (!known.moves().isEmpty()) {
+                for (String moveName : known.moves()) {
+                    MoveTemplate template = Moves.getByNameOrDummy(moveName);
+                    worstIncoming = Math.max(worstIncoming,
+                            TypeMatchup.multiplier(template.getElementalType(), reserve.getEffectedPokemon().getTypes()));
+                }
+            } else {
+                for (ElementalType opponentType : opponent.getBattlePokemon().getEffectedPokemon().getTypes()) {
+                    worstIncoming = Math.max(worstIncoming, TypeMatchup.multiplier(opponentType, reserve.getEffectedPokemon().getTypes()));
+                }
             }
         }
         double offensiveScore = bestOffense >= 4D ? 1D : bestOffense >= 2D ? 0.8D : bestOffense < 1D ? 0.25D : 0.5D;
@@ -169,9 +229,7 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
 
     private boolean hasStab(ActiveBattlePokemon active, ElementalType moveType) {
         if (moveType == null) return false;
-        for (ElementalType type : active.getBattlePokemon().getEffectedPokemon().getTypes()) {
-            if (moveType.equals(type)) return true;
-        }
+        for (ElementalType type : active.getBattlePokemon().getEffectedPokemon().getTypes()) if (moveType.equals(type)) return true;
         return false;
     }
 
@@ -181,61 +239,48 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         double failureValue = -Math.max(0.05D, action.risk() * 0.35D);
         CombatCortex.CombatState next = new CombatCortex.CombatState(
                 state.revision(), state.turn() + 1, state.aggression(), state.caution(), state.legalActions(), state.features());
-        return List.of(new CombatCortex.Outcome(successValue, hit, next),
-                new CombatCortex.Outcome(failureValue, 1D - hit, next));
+        return List.of(new CombatCortex.Outcome(successValue, hit, next), new CombatCortex.Outcome(failureValue, 1D - hit, next));
     }
 
     private void rememberDecision(PokemonBattle battle, CombatCortex.Decision decision) {
         if (LivelyApi.states() == null) return;
-        LivelyApi.states().get(npcId).ifPresent(state -> state.remember(
-                "battle_decision",
-                Map.of(
-                        "turn", Integer.toString(battle.getTurn()),
-                        "action", decision.action().id(),
-                        "budget_exhausted", Boolean.toString(decision.budgetExhausted())),
-                0.30D, 1D));
+        LivelyApi.states().get(npcId).ifPresent(state -> state.remember("battle_decision",
+                Map.of("turn", Integer.toString(battle.getTurn()), "action", decision.action().id(),
+                        "budget_exhausted", Boolean.toString(decision.budgetExhausted())), 0.30D, 1D));
     }
 
     private Map<String, Double> features(ActiveBattlePokemon active, BattleSide side) {
         double ownHp = fraction(active.getBattlePokemon().getHealth(), active.getBattlePokemon().getMaxHealth());
         double opponentHp = side.getOppositeSide().getActivePokemon().stream()
-                .mapToDouble(p -> fraction(p.getBattlePokemon().getHealth(), p.getBattlePokemon().getMaxHealth()))
-                .average().orElse(1D);
+                .mapToDouble(p -> fraction(p.getBattlePokemon().getHealth(), p.getBattlePokemon().getMaxHealth())).average().orElse(1D);
         long healthyReserve = active.getActor().getPokemonList().stream().filter(BattlePokemon::canBeSentOut).count();
-        return Map.of("own_hp", ownHp, "opponent_hp", opponentHp, "healthy_reserve", (double) healthyReserve,
-                "npc_skill", (double) skill);
+        return Map.of("own_hp", ownHp, "opponent_hp", opponentHp, "healthy_reserve", (double) healthyReserve, "npc_skill", (double) skill);
     }
 
-    private double aggression() {
-        double brave = npcTrait("brave", 0.5D);
-        double greedy = npcTrait("greedy", 0.5D);
-        return clamp01(0.30D + skill * 0.09D + brave * 0.16D + greedy * 0.04D + recentOutcomeBalance() * 0.05D);
+    private double aggression(vn.svframe.lively.model.NpcSnapshot snapshot) {
+        double brave = snapshot == null ? 0.5D : snapshot.trait("brave");
+        double greedy = snapshot == null ? 0.5D : snapshot.trait("greedy");
+        return clamp01(0.30D + skill * 0.09D + brave * 0.16D + greedy * 0.04D + recentOutcomeBalance(snapshot) * 0.05D);
     }
 
-    private double caution() {
-        double brave = npcTrait("brave", 0.5D);
-        double suspicious = npcTrait("suspicious", 0.5D);
-        return clamp01(0.76D - skill * 0.07D - brave * 0.14D + suspicious * 0.10D - recentOutcomeBalance() * 0.04D);
+    private double caution(vn.svframe.lively.model.NpcSnapshot snapshot) {
+        double brave = snapshot == null ? 0.5D : snapshot.trait("brave");
+        double suspicious = snapshot == null ? 0.5D : snapshot.trait("suspicious");
+        return clamp01(0.76D - skill * 0.07D - brave * 0.14D + suspicious * 0.10D - recentOutcomeBalance(snapshot) * 0.04D);
     }
 
-    private double recentOutcomeBalance() {
-        if (LivelyApi.states() == null) return 0D;
-        return LivelyApi.states().snapshot(npcId).map(snapshot -> {
-            double sum = 0D; int count = 0;
-            for (var memory : snapshot.recentMemories()) {
-                if (memory.type().equals("battle_won")) { sum += 1D; count++; }
-                else if (memory.type().equals("battle_lost")) { sum -= 1D; count++; }
-                if (count >= 8) break;
-            }
-            return count == 0 ? 0D : Math.max(-1D, Math.min(1D, sum / count));
-        }).orElse(0D);
+    private double recentOutcomeBalance(vn.svframe.lively.model.NpcSnapshot snapshot) {
+        if (snapshot == null) return 0D;
+        double sum = 0D; int count = 0;
+        for (var memory : snapshot.recentMemories()) {
+            if (memory.type().equals("battle_won")) { sum += 1D; count++; }
+            else if (memory.type().equals("battle_lost")) { sum -= 1D; count++; }
+            if (count >= 8) break;
+        }
+        return count == 0 ? 0D : Math.max(-1D, Math.min(1D, sum / count));
     }
 
-    private double npcTrait(String key, double fallback) {
-        if (LivelyApi.states() == null) return fallback;
-        return LivelyApi.states().snapshot(npcId).map(snapshot -> snapshot.trait(key)).orElse(fallback);
-    }
-
+    private static String normalizeMove(String name) { return name == null ? "" : name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", ""); }
     private static double normalizeAccuracy(double value) { if (value <= 0D) return 1D; return clamp01(value > 1D ? value / 100D : value); }
     private static double fraction(int value, int max) { return max <= 0 ? 0D : clamp01((double) value / (double) max); }
     private static double clamp01(double value) { return Math.max(0D, Math.min(1D, value)); }
