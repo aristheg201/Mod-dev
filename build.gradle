@@ -1,45 +1,40 @@
 plugins {
-    id 'fabric-loom' version "${loom_version}"
+    id 'fabric-loom' version "${loom_version}" apply false
 }
 
-version = project.mod_version
-group = project.maven_group
+subprojects {
+    apply plugin: 'fabric-loom'
 
-base {
-    archivesName = project.archives_base_name
-}
+    version = rootProject.mod_version
+    group = rootProject.maven_group
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-}
-
-processResources {
-    inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
-        filter { line -> line.replace('"version": "0.1.0-internal.2"', '"version": "' + project.version + '"') }
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.fabricmc.net/' }
     }
-}
 
-tasks.withType(JavaCompile).configureEach {
-    options.release = 21
-    options.encoding = 'UTF-8'
-}
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings "net.fabricmc:yarn:${rootProject.yarn_mappings}:v2"
+        modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-    withSourcesJar()
-}
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 21
+        options.encoding = 'UTF-8'
+    }
 
-tasks.named('jar') {
-    from('INTERNAL-BUILD.md') {
-        into ''
+    java {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+        withSourcesJar()
+    }
+
+    processResources {
+        inputs.property 'version', project.version
+        filesMatching('fabric.mod.json') {
+            expand version: project.version
+        }
     }
 }

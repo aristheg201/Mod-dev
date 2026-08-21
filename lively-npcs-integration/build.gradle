@@ -1,0 +1,7 @@
+base {
+    archivesName = 'Lively-NPCs-Integration'
+}
+
+dependencies {
+    modImplementation project(path: ':lively-npcs', configuration: 'namedElements')
+}
