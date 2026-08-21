@@ -10,4 +10,8 @@ dependencies {
     // Exact Cobblemon 1.7.3 Fabric artifact published by Modrinth.
     // Compile-only: the Integration JAR remains optional when Cobblemon is absent.
     modCompileOnly "maven.modrinth:MdwFAVRL:kF7CvxTo"
+
+    // Cobblemon exposes Kotlin collection types in its Java-visible API. Keep the marker/runtime types
+    // on the compile classpath only; the server already receives Kotlin through Cobblemon's runtime stack.
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.1.20"
 }
