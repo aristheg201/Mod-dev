@@ -11,9 +11,8 @@ import vn.svframe.lively.combat.CombatCortex;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * It deliberately never reads an opponent's unrevealed moveset, held item or ability from server state.
  */
 public final class CobblemonBattleKnowledge {
+    private static final Set<String> TEAM_SETUP = Set.of(
+            "stealthrock", "spikes", "toxicspikes", "stickyweb",
+            "tailwind", "trickroom", "reflect", "lightscreen", "auroraveil",
+            "sunnyday", "raindance", "sandstorm", "snowscape", "hail",
+            "electricterrain", "grassyterrain", "mistyterrain", "psychicterrain");
+
     public record RevealedPokemon(Set<String> moves, String ability, String item) {
         public RevealedPokemon {
             moves = Set.copyOf(moves);
@@ -34,7 +39,7 @@ public final class CobblemonBattleKnowledge {
     private record Observer(UUID npcId, UUID actorId) {}
     private record KnowledgeKey(UUID npcId, UUID battleId, UUID pokemonId) {}
     private record TurnKey(UUID battleId, UUID actorId, int turn) {}
-    private record Intent(UUID activePokemonId, String kind, String target, String switchPokemon, String gimmick, double value) {}
+    private record Intent(UUID activePokemonId, String kind, String move, String target, String switchPokemon, String gimmick, double value) {}
 
     private static final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Observer>> OBSERVERS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<KnowledgeKey, MutableKnowledge> KNOWLEDGE = new ConcurrentHashMap<>();
@@ -116,6 +121,7 @@ public final class CobblemonBattleKnowledge {
         Map<UUID, Intent> intents = INTENTS.get(key);
         if (intents == null || intents.isEmpty()) return 0D;
         String kind = candidate.metadata().getOrDefault("kind", "");
+        String move = normalize(candidate.metadata().getOrDefault("move", ""));
         String target = candidate.metadata().getOrDefault("target", "");
         String switchPokemon = candidate.metadata().getOrDefault("pokemon", "");
         String gimmick = candidate.metadata().getOrDefault("gimmick", "");
@@ -124,6 +130,9 @@ public final class CobblemonBattleKnowledge {
             if (intent.activePokemonId().equals(active.getBattlePokemon().getUuid())) continue;
             if (kind.equals("switch") && !switchPokemon.isBlank() && switchPokemon.equals(intent.switchPokemon())) penalty = Math.max(penalty, 1D);
             if (!gimmick.isBlank() && gimmick.equals(intent.gimmick())) penalty = Math.max(penalty, 0.92D);
+            if (kind.equals("move") && TEAM_SETUP.contains(move) && move.equals(intent.move())) {
+                penalty = Math.max(penalty, 0.96D);
+            }
             if (kind.equals("move") && !target.isBlank() && !target.equals("auto") && target.equals(intent.target()) && intent.value() >= 0.72D) {
                 penalty = Math.max(penalty, 0.16D);
             }
@@ -136,8 +145,9 @@ public final class CobblemonBattleKnowledge {
         TurnKey key = new TurnKey(battle.getBattleId(), active.getActor().getUuid(), battle.getTurn());
         INTENTS.computeIfAbsent(key, ignored -> new ConcurrentHashMap<>()).put(active.getBattlePokemon().getUuid(),
                 new Intent(active.getBattlePokemon().getUuid(), action.metadata().getOrDefault("kind", ""),
-                        action.metadata().getOrDefault("target", ""), action.metadata().getOrDefault("pokemon", ""),
-                        action.metadata().getOrDefault("gimmick", ""), action.immediateValue()));
+                        normalize(action.metadata().getOrDefault("move", "")), action.metadata().getOrDefault("target", ""),
+                        action.metadata().getOrDefault("pokemon", ""), action.metadata().getOrDefault("gimmick", ""),
+                        action.immediateValue()));
         INTENTS.keySet().removeIf(old -> old.battleId().equals(battle.getBattleId()) && old.turn() + 2 < battle.getTurn());
     }
 
@@ -149,6 +159,10 @@ public final class CobblemonBattleKnowledge {
     }
 
     public static int activeBattleCount() { return OBSERVERS.size(); }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
 
     private static final class MutableKnowledge {
         final Set<String> moves = ConcurrentHashMap.newKeySet();
