@@ -15,7 +15,7 @@ public final class ScheduleEngine {
                                 int priority, boolean mandatory, Map<String, String> constraints) {
         public ScheduleEntry {
             if (startMinute < 0 || startMinute >= 1440 || endMinute < 0 || endMinute > 1440 || startMinute == endMinute) throw new IllegalArgumentException("invalid schedule range");
-            Objects.requireNonNull(activity); constraints = Map.copyOf(constraints); priority = Math.max(0, Math.min(100, priority));
+            Objects.requireNonNull(activity); constraints = Map.copyOf(constraints == null ? Map.of() : constraints); priority = Math.max(0, Math.min(100, priority));
         }
         public boolean active(int minute) {
             return startMinute < endMinute ? minute >= startMinute && minute < endMinute : minute >= startMinute || minute < endMinute;
@@ -29,9 +29,12 @@ public final class ScheduleEngine {
     private final ConcurrentHashMap<String, Occupation> occupations = new ConcurrentHashMap<>();
 
     public void setSchedule(ActorId actor, List<ScheduleEntry> entries) {
+        Objects.requireNonNull(actor); Objects.requireNonNull(entries);
         if (entries.size() > 128) throw new IllegalArgumentException("schedule too large");
         schedules.put(actor, entries.stream().sorted(Comparator.comparingInt(ScheduleEntry::startMinute)).toList());
     }
+    public boolean hasSchedule(ActorId actor) { return schedules.containsKey(actor) && !schedules.getOrDefault(actor, List.of()).isEmpty(); }
+    public List<ScheduleEntry> schedule(ActorId actor) { return schedules.getOrDefault(actor, List.of()); }
     public Optional<ScheduleEntry> current(ActorId actor, int minuteOfDay) {
         return schedules.getOrDefault(actor, List.of()).stream().filter(e -> e.active(minuteOfDay))
                 .max(Comparator.comparingInt(ScheduleEntry::priority));
