@@ -27,6 +27,7 @@ import vn.svframe.lively.npc.NpcDefinitionStore;
 import vn.svframe.lively.npc.NpcRuntime;
 import vn.svframe.lively.npc.PlayerModelBody;
 import vn.svframe.lively.npc.VanillaEntityBody;
+import vn.svframe.lively.persistence.LegacyWorldStateMigration;
 import vn.svframe.lively.persistence.NpcStateRegistry;
 import vn.svframe.lively.persistence.NpcStateStore;
 import vn.svframe.lively.persistence.SimulationStateStore;
@@ -109,6 +110,9 @@ public final class LivelyNpcs implements ModInitializer {
         Path worldData = server.getSavePath(WorldSavePath.ROOT).resolve("livelynpcs");
 
         try {
+            if (LegacyWorldStateMigration.importIfNeeded(globalConfig, worldData)) {
+                LOGGER.info("Imported legacy config-scoped Lively state into {}. Original files were retained.", worldData);
+            }
             simulationStore = new SimulationStateStore(worldData.resolve("state").resolve("simulation.json"));
             simulationStore.load().ifPresent(this::restoreSimulation);
 
