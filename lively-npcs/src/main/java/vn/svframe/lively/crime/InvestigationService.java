@@ -58,8 +58,9 @@ public final class InvestigationService {
         double fear = snapshot == null ? 0.2D : snapshot.trait("fearful");
         double deceptive = snapshot == null ? 0D : snapshot.trait("deceptive");
         double observant = snapshot == null ? 0.5D : Math.max(snapshot.trait("observant"), snapshot.trait("perceptive"));
-        double trust = interviewer == null ? 0D : social.relationship(witness, interviewer).trust();
-        double relationFear = interviewer == null ? 0D : social.relationship(witness, interviewer).fear();
+        SocialEngine.Relationship interviewerRelation = interviewer == null ? null : social.findRelationship(witness, interviewer).orElse(null);
+        double trust = interviewerRelation == null ? 0D : interviewerRelation.trust();
+        double relationFear = interviewerRelation == null ? 0D : interviewerRelation.fear();
         double cooperation = clamp01(0.55D + trust * 0.25D - fear * 0.20D - relationFear * 0.25D);
 
         if (cooperation < 0.22D) {
@@ -98,8 +99,9 @@ public final class InvestigationService {
     public List<CrimeEngine.SuspectScore> suspects(UUID crimeId) {
         Set<ActorId> candidates = actors.snapshot().actors().keySet().stream()
                 .filter(actor -> actor.kind() == ActorId.Kind.NPC || actor.kind() == ActorId.Kind.PLAYER)
-                .limit(256).collect(java.util.stream.Collectors.toUnmodifiableSet());
-        return crimes.rankSuspects(crimeId, candidates);
+                .sorted(Comparator.comparing((ActorId actor) -> actor.kind().name()).thenComparing(actor -> actor.uuid().toString()))
+                .limit(256).collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        return crimes.rankSuspects(crimeId, Set.copyOf(candidates));
     }
 
     private Statement record(CrimeEngine.Crime crime, ActorId witness, ActorId subject, Outcome outcome,
@@ -122,7 +124,8 @@ public final class InvestigationService {
         List<ActorId> candidates = new ArrayList<>(actors.snapshot().actors().keySet());
         candidates.remove(witness); candidates.remove(crime.victim()); candidates.remove(crime.perpetrator());
         return candidates.stream().filter(actor -> actor.kind() == ActorId.Kind.NPC || actor.kind() == ActorId.Kind.PLAYER)
-                .sorted(Comparator.comparingDouble((ActorId actor) -> social.relationship(witness, actor).hostility()).reversed()
+                .sorted(Comparator.comparingDouble((ActorId actor) -> social.findRelationship(witness, actor)
+                                .map(SocialEngine.Relationship::hostility).orElse(0D)).reversed()
                         .thenComparing(actor -> actor.uuid().toString())).findFirst();
     }
 
