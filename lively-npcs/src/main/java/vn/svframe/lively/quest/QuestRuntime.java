@@ -9,21 +9,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Persistent quest state machine with bounded objectives and isolated lifecycle listeners. */
+/** Persistent quest state machine with bounded objectives, runtime signals and isolated lifecycle listeners. */
 public final class QuestRuntime {
     public enum Status { OFFERED, ACTIVE, COMPLETED, FAILED, EXPIRED, CANCELLED }
     public enum ObjectiveType { DELIVERY, COLLECTION, EXPLORATION, COMBAT, SOCIAL, ESCORT, INVESTIGATION, CUSTOM }
+    private static final Set<String> SIGNAL_KEYS = Set.of("event", "structure", "species", "actor", "npc", "crime", "battle", "location");
 
     public record Objective(String id, ObjectiveType type, String target, long required, boolean optional, boolean hidden,
                             Map<String, String> facts) {
         public Objective {
             Objects.requireNonNull(id); Objects.requireNonNull(type);
+            target = target == null ? "" : target;
             required = Math.max(1L, required);
             facts = Map.copyOf(facts == null ? Map.of() : facts);
         }
@@ -122,6 +125,26 @@ public final class QuestRuntime {
         return Optional.of(next);
     }
 
+    /**
+     * Applies one semantic runtime signal to matching active objectives for an owner. Matching is bounded and only
+     * uses explicit target/fact aliases, so unrelated events cannot accidentally complete a quest.
+     */
+    public int signal(ActorId owner, ObjectiveType type, String target, long amount, Map<String, String> facts) {
+        if (owner == null || type == null || amount <= 0L) return 0;
+        long boundedAmount = Math.min(1_000_000L, amount);
+        Map<String, String> signalFacts = facts == null ? Map.of() : Map.copyOf(facts);
+        int progressed = 0;
+        for (Quest quest : byOwner(owner).stream().filter(value -> value.status() == Status.ACTIVE).limit(128).toList()) {
+            for (Objective objective : quest.objectives()) {
+                if (objective.type() != type || quest.progress().getOrDefault(objective.id(), 0L) >= objective.required()) continue;
+                if (!matchesSignal(objective, target, signalFacts)) continue;
+                if (progress(quest.id(), objective.id(), boundedAmount).isPresent()) progressed++;
+                break;
+            }
+        }
+        return progressed;
+    }
+
     /** Atomic, persistent idempotency marker used by reward/integration services. */
     public boolean markFactIfAbsent(UUID id, String key, String value) {
         if (key == null || key.isBlank() || key.length() > 96 || value == null || value.length() > 512) return false;
@@ -152,6 +175,22 @@ public final class QuestRuntime {
     }
     public List<Quest> publicOffers() {
         return quests.values().stream().filter(Quest::publicOffer).filter(quest -> !quest.expired(Instant.now())).toList();
+    }
+
+    private static boolean matchesSignal(Objective objective, String target, Map<String, String> signalFacts) {
+        String expected = objective.target();
+        if (expected.isBlank() || expected.equals("*")) return true;
+        if (same(expected, target)) return true;
+        for (String key : SIGNAL_KEYS) {
+            String objectiveFact = objective.facts().get(key);
+            String signalFact = signalFacts.get(key);
+            if (same(expected, signalFact) || same(objectiveFact, target) || same(objectiveFact, signalFact)) return true;
+        }
+        return false;
+    }
+
+    private static boolean same(String left, String right) {
+        return left != null && right != null && !left.isBlank() && !right.isBlank() && left.equalsIgnoreCase(right);
     }
 
     private Optional<Quest> mutateStatus(UUID id, Status expected, Status next) {
