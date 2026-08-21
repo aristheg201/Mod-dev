@@ -25,6 +25,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Enforce core dependency boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE '^import (com\.cobblemon\.|net\.luckperms\.|vn\.beconomy\.|com\.beconomy\.|.*holodisplay)' lively-npcs/src/main/java; then
+            echo 'Lively Core imported an ecosystem implementation. Move it to lively-npcs-integration.' >&2
+            exit 1
+          fi
+          if grep -RInE '^import (com\.openai\.|com\.anthropic\.|com\.google\.genai\.)' lively-npcs/src/main/java lively-npcs-integration/src/main/java; then
+            echo 'External/cloud AI dependency is forbidden in Lively.' >&2
+            exit 1
+          fi
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
@@ -39,12 +51,21 @@ jobs:
       - name: Verify both mod artifacts
         shell: bash
         run: |
+          set -euo pipefail
           CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
           INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
           test -n "$CORE"
           test -n "$INTEGRATION"
+          unzip -t "$CORE"
+          unzip -t "$INTEGRATION"
           unzip -p "$CORE" fabric.mod.json > lively-npcs/build/libs/fabric.mod.built.json
           unzip -p "$INTEGRATION" fabric.mod.json > lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"id": "livelynpcs"' lively-npcs/build/libs/fabric.mod.built.json
+          grep -q '"id": "livelynpcs_integration"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          if jar tf "$CORE" | grep -q '^vn/svframe/lively/integration/'; then
+            echo 'Integration implementation leaked into core JAR.' >&2
+            exit 1
+          fi
           sha256sum "$CORE" "$INTEGRATION" | tee SHA256.txt
       - name: Upload Lively artifacts
         uses: actions/upload-artifact@v4
