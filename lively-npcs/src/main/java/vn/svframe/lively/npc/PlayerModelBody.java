@@ -19,7 +19,6 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,7 +61,6 @@ public final class PlayerModelBody implements NpcBody {
             fake.setInvulnerable(definition.invulnerable());
             fake.setNoGravity(!definition.gravity());
             fake.setSilent(definition.silent());
-            // onPlayerConnected adds the ServerPlayerEntity to the world's entity lookup/tracker without logging it in.
             world.onPlayerConnected(fake);
             visible = true;
             for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) showTo(viewer);
@@ -87,10 +85,7 @@ public final class PlayerModelBody implements NpcBody {
         if (!spawned()) return;
         ServerWorld target = world(server, worldKey);
         if (target == null) return;
-        if (fake.getServerWorld() != target) {
-            despawn(server);
-            return; // runtime will respawn on next explicit spawn after definition has moved worlds.
-        }
+        if (fake.getServerWorld() != target) { despawn(server); return; }
         fake.refreshPositionAndAngles(position.x, position.y, position.z, yaw, pitch);
         syncPosition(server);
     }
@@ -124,13 +119,12 @@ public final class PlayerModelBody implements NpcBody {
         if (fake == null) return;
         viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, fake));
         viewer.networkHandler.sendPacket(new EntitySpawnS2CPacket(fake, 0, fake.getBlockPos()));
-        // Keep the profile just long enough for vanilla clients to resolve the skin, then remove it from tab-list state.
         viewer.getServer().execute(() -> viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_LISTED, fake)));
     }
 
     private void syncPosition(MinecraftServer server) {
         if (fake == null) return;
-        EntityPositionS2CPacket packet = EntityPositionS2CPacket.create(fake);
+        EntityPositionS2CPacket packet = new EntityPositionS2CPacket(fake);
         for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) viewer.networkHandler.sendPacket(packet);
     }
 
