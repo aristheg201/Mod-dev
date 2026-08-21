@@ -31,6 +31,7 @@ import vn.svframe.lively.world.StructureCapabilityScanner;
 import vn.svframe.lively.world.WorldMutationPolicy;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class LivelyApi {
@@ -120,4 +121,29 @@ public final class LivelyApi {
     public static void installWaypointBridge(WaypointBridge bridge) { waypoints = bridge == null ? WaypointBridge.unavailable() : bridge; }
     public static ClaimBridge claims() { return claims; }
     public static void installClaimBridge(ClaimBridge bridge) { claims = bridge == null ? ClaimBridge.permissive() : bridge; }
+
+    /** Clears all world-scoped state before another dedicated/integrated server session is loaded in this JVM. */
+    public static synchronized void resetServerSessionState() {
+        ACTORS.clear();
+        STRUCTURES.restore(new SemanticStructureRegistry.Snapshot(0L, Map.of()));
+        SOCIAL.restore(new SocialEngine.Snapshot(0L, Map.of(), Map.of(), Map.of()));
+        ROMANCE.restore(Map.of());
+        FAMILY.restore(new FamilyEngine.Snapshot(0L, Map.of(), Map.of()));
+        CRIME.restore(new CrimeEngine.Snapshot(0L, Map.of(), Map.of()));
+        ECONOMY.restore(new EconomyEngine.Snapshot(0L, Map.of(), Map.of(), Map.of(), List.of()));
+        FACTIONS.restore(new FactionEngine.Snapshot(0L, Map.of(), Map.of()));
+        QUESTS.restore(new QuestRuntime.Snapshot(0L, Map.of()));
+        SCHEDULES.restore(new ScheduleEngine.Snapshot(Map.of(), Map.of()));
+        STORY_ARCS.restore(Map.of());
+        STORY_SEEDS.restore(Map.of());
+        EVENTS.restore(new WorldEventEngine.Snapshot(Map.of(), List.of()));
+        PROFILER.clear();
+        dialogues = null;
+        states = null;
+        npcs = null;
+        worldNavigation = null;
+        autonomy = null;
+        structureScanner = null;
+        investigation = null;
+    }
 }
