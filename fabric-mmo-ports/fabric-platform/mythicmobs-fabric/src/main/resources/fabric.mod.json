@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "mythicmobsfabric",
+  "version": "${version}",
+  "name": "MythicMobs Fabric",
+  "environment": "server",
+  "entrypoints": { "main": ["vn.svframe.mythicmobsfabric.MythicMobsFabricMod"] },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

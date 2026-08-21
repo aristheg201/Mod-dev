@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "mmocorefabric",
+  "version": "${version}",
+  "name": "MMOCore Fabric",
+  "environment": "server",
+  "entrypoints": { "main": ["vn.svframe.mmocorefabric.MMOCoreFabricMod"] },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "mythiclibfabric": ">=0.8.0-dev"
+  }
+}
