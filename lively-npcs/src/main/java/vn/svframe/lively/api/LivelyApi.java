@@ -5,6 +5,7 @@ import vn.svframe.lively.admin.AdminService;
 import vn.svframe.lively.ai.NpcAutonomyService;
 import vn.svframe.lively.combat.CombatCortex;
 import vn.svframe.lively.crime.CrimeEngine;
+import vn.svframe.lively.crime.InvestigationService;
 import vn.svframe.lively.dialogue.DialogueService;
 import vn.svframe.lively.economy.EconomyEngine;
 import vn.svframe.lively.event.StoryArcEngine;
@@ -63,6 +64,7 @@ public final class LivelyApi {
     private static volatile WorldNavigationService worldNavigation;
     private static volatile NpcAutonomyService autonomy;
     private static volatile StructureCapabilityScanner structureScanner;
+    private static volatile InvestigationService investigation;
     private static volatile PermissionBridge permissions = PermissionBridge.vanilla();
     private static volatile EconomyBridge externalEconomy = EconomyBridge.unavailable();
     private static volatile HologramBridge holograms = HologramBridge.unavailable();
@@ -85,6 +87,8 @@ public final class LivelyApi {
     public static RomanceEngine romance() { return ROMANCE; }
     public static FamilyEngine family() { return FAMILY; }
     public static CrimeEngine crime() { return CRIME; }
+    public static InvestigationService investigation() { return investigation; }
+    public static void installInvestigationService(InvestigationService service) { investigation = service; }
     public static EconomyEngine economy() { return ECONOMY; }
     public static FactionEngine factions() { return FACTIONS; }
     public static QuestRuntime quests() { return QUESTS; }
