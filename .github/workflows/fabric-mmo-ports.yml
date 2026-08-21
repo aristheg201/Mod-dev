@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -76,15 +76,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/fabric-mmo-jars
-          while IFS= read -r jar; do
-            name="$(basename "$jar")"
-            case "$name" in
-              *-sources.jar|*-dev.jar) continue ;;
-            esac
-            cp "$jar" build/fabric-mmo-jars/
-          done < <(find build/mmo-workspace/fabric-platform -path '*/build/libs/*.jar' -type f | sort)
-          count="$(find build/fabric-mmo-jars -maxdepth 1 -name '*.jar' -type f | wc -l)"
-          test "$count" -eq 4
+          cp build/mmo-workspace/fabric-platform/mmocore-fabric/build/libs/MMOCore-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          cp build/mmo-workspace/fabric-platform/mmoitems-fabric/build/libs/MMOItems-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          cp build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          cp build/mmo-workspace/fabric-platform/mythicmobs-fabric/build/libs/MythicMobs-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          test "$(find build/fabric-mmo-jars -maxdepth 1 -name '*.jar' -type f | wc -l)" -eq 4
           for jar in build/fabric-mmo-jars/*.jar; do
             echo "==> $jar"
             unzip -p "$jar" fabric.mod.json | tee /dev/stderr | grep -q '"environment": "server"'
