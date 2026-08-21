@@ -25,25 +25,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-
       - name: Tests and Loom remap build
         run: gradle --no-daemon clean test remapJar
-
       - name: Verify both mod artifacts
         shell: bash
         run: |
-          find lively-npcs/build/libs lively-npcs-integration/build/libs -maxdepth 1 -type f -name '*.jar' -print
           CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
           INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
           test -n "$CORE"
@@ -51,11 +46,10 @@ jobs:
           unzip -p "$CORE" fabric.mod.json > lively-npcs/build/libs/fabric.mod.built.json
           unzip -p "$INTEGRATION" fabric.mod.json > lively-npcs-integration/build/libs/fabric.mod.built.json
           sha256sum "$CORE" "$INTEGRATION" | tee SHA256.txt
-
       - name: Upload Lively artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Lively-living-world
+          name: Lively-native-npc-runtime
           path: |
             lively-npcs/build/libs/*.jar
             lively-npcs/build/libs/fabric.mod.built.json

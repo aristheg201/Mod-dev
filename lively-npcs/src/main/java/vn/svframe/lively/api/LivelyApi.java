@@ -13,6 +13,7 @@ import vn.svframe.lively.event.WorldEventEngine;
 import vn.svframe.lively.faction.FactionEngine;
 import vn.svframe.lively.memory.MemoryPolicy;
 import vn.svframe.lively.navigation.NavigationCortex;
+import vn.svframe.lively.npc.NpcRuntime;
 import vn.svframe.lively.performance.PerformanceProfiler;
 import vn.svframe.lively.persistence.NpcStateRegistry;
 import vn.svframe.lively.quest.QuestRuntime;
@@ -52,9 +53,9 @@ public final class LivelyApi {
     private static final AdminService ADMIN = new AdminService();
     private static volatile DialogueService dialogues;
     private static volatile NpcStateRegistry states;
+    private static volatile NpcRuntime npcs;
 
     private LivelyApi() {}
-
     public static CombatCortex combat() { return COMBAT_CORTEX; }
     public static NavigationCortex navigation() { return NAVIGATION_CORTEX; }
     public static ActorRegistry actors() { return ACTORS; }
@@ -82,4 +83,6 @@ public final class LivelyApi {
     public static void installDialogueService(DialogueService service) { dialogues = service; }
     public static NpcStateRegistry states() { return states; }
     public static void installStateRegistry(NpcStateRegistry registry) { states = registry; }
+    public static NpcRuntime npcs() { return npcs; }
+    public static void installNpcRuntime(NpcRuntime runtime) { npcs = runtime; }
 }
