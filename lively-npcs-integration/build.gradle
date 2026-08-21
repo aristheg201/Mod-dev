@@ -7,15 +7,13 @@ dependencies {
     // Lively NPCs Integration remains a separate JAR and declares livelynpcs as a runtime mod dependency.
     implementation project(':lively-npcs')
 
-    // Exact Cobblemon 1.7.3 Fabric artifact used by the server. Keep it non-transitive because the
-    // published Maven metadata exposes raw intermediary Fabric modules that do not belong in Loom's
-    // named development runtime. The actual Cobblemon JAR already contains its verified
-    // fabric-language-kotlin 1.13.6+kotlin.2.2.20 jar-in-jar, matching how the production server loads it.
+    // Exact Cobblemon 1.7.3 Fabric artifact used by the server. Keep it compile-only and non-transitive.
+    // Production runtime compatibility is verified by CI in a standalone Fabric server using remapped
+    // Lively JARs + the real Cobblemon artifact, rather than Loom's named development namespace.
     modCompileOnly("maven.modrinth:MdwFAVRL:kF7CvxTo") { transitive = false }
-    modRuntimeOnly("maven.modrinth:MdwFAVRL:kF7CvxTo") { transitive = false }
 
     // Cobblemon exposes Kotlin collection types in its Java-visible API. Compile only; runtime Kotlin
-    // comes from Cobblemon's bundled language adapter and the Integration JAR never bundles Kotlin.
+    // comes from Cobblemon's bundled fabric-language-kotlin jar-in-jar.
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.3.10"
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
