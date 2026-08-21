@@ -63,9 +63,12 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         for (CombatCortex.CombatAction action : raw.actions()) {
             double penalty = CobblemonBattleKnowledge.coordinationPenalty(npcId, battle, active, action);
             if (penalty >= 0.99D) continue;
-            double value = clamp01(action.immediateValue() * (1D - penalty));
+            double knowledgeFactor = revealedKnowledgeFactor(battle, action);
+            if (knowledgeFactor <= 0.01D) continue;
+            double value = clamp01(action.immediateValue() * (1D - penalty) * knowledgeFactor);
             Map<String, String> metadata = new LinkedHashMap<>(action.metadata());
             if (penalty > 0D) metadata.put("coordination_penalty", Double.toString(penalty));
+            if (Math.abs(knowledgeFactor - 1D) > .001D) metadata.put("revealed_knowledge_factor", Double.toString(knowledgeFactor));
             actions.add(new CombatCortex.CombatAction(action.id(), value, action.risk(), metadata));
             responses.put(action.id(), raw.responses().get(action.id()));
         }
@@ -76,28 +79,28 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         List<CombatCortex.CombatAction> actions = new ArrayList<>();
         Map<String, ShowdownActionResponse> responses = new LinkedHashMap<>();
         addSwitches(active, battle, moveset, forceSwitch, actions, responses);
-        if (!forceSwitch && moveset != null) addMoves(active, moveset, actions, responses);
+        if (!forceSwitch && moveset != null) addMoves(active, battle, moveset, actions, responses);
         return new CandidateSet(actions, responses);
     }
 
-    private void addMoves(ActiveBattlePokemon active, ShowdownMoveset moveset,
+    private void addMoves(ActiveBattlePokemon active, PokemonBattle battle, ShowdownMoveset moveset,
                           List<CombatCortex.CombatAction> actions, Map<String, ShowdownActionResponse> responses) {
         for (InBattleMove move : moveset.getMoves()) {
             if (move == null || !move.canBeUsed()) continue;
             List<String> gimmicks = gimmicks(moveset);
             List<Targetable> targets = move.mustBeUsed() ? List.of() : move.getTargets(active);
             if (targets.isEmpty()) {
-                for (String gimmick : gimmicks) addMoveCandidate(active, moveset, move, null, gimmick, actions, responses);
+                for (String gimmick : gimmicks) addMoveCandidate(active, battle, moveset, move, null, gimmick, actions, responses);
             } else {
                 for (Targetable target : targets) {
                     if (target == null) continue;
-                    for (String gimmick : gimmicks) addMoveCandidate(active, moveset, move, target, gimmick, actions, responses);
+                    for (String gimmick : gimmicks) addMoveCandidate(active, battle, moveset, move, target, gimmick, actions, responses);
                 }
             }
         }
     }
 
-    private void addMoveCandidate(ActiveBattlePokemon active, ShowdownMoveset moveset, InBattleMove move,
+    private void addMoveCandidate(ActiveBattlePokemon active, PokemonBattle battle, ShowdownMoveset moveset, InBattleMove move,
                                   Targetable target, String gimmick, List<CombatCortex.CombatAction> actions,
                                   Map<String, ShowdownActionResponse> responses) {
         String targetPnx = target == null ? null : target.getPNX();
@@ -109,10 +112,22 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         double risk = Math.max(0.02D, 1D - accuracy);
         String id = "move:" + move.getId() + ":" + (targetPnx == null ? "auto" : targetPnx) + ":" + (gimmick == null ? "none" : gimmick);
         Map<String, String> metadata = new LinkedHashMap<>();
-        metadata.put("kind", "move"); metadata.put("move", move.getId());
+        metadata.put("kind", "move");
+        metadata.put("move", move.getId());
         metadata.put("target", targetPnx == null ? "auto" : targetPnx);
+        if (template.getElementalType() != null) metadata.put("move_type", normalizeMove(template.getElementalType().getName()));
+        if (template.getDamageCategory() != null) metadata.put("category", normalizeMove(template.getDamageCategory().getName()));
+        metadata.put("power", Double.toString(Math.max(0D, template.getPower())));
+        if (target instanceof ActiveBattlePokemon targetPokemon) {
+            metadata.put("target_pokemon", targetPokemon.getBattlePokemon().getUuid().toString());
+            double hp = fraction(targetPokemon.getBattlePokemon().getHealth(), targetPokemon.getBattlePokemon().getMaxHealth());
+            metadata.put("target_hp", Double.toString(hp));
+            double effectiveness = TypeMatchup.multiplier(template.getElementalType(), targetPokemon.getBattlePokemon().getEffectedPokemon().getTypes());
+            metadata.put("effectiveness", Double.toString(effectiveness));
+        }
         if (gimmick != null) metadata.put("gimmick", gimmick);
-        actions.add(new CombatCortex.CombatAction(id, value, risk, metadata)); responses.put(id, response);
+        actions.add(new CombatCortex.CombatAction(id, value, risk, metadata));
+        responses.put(id, response);
     }
 
     private void addSwitches(ActiveBattlePokemon active, PokemonBattle battle, ShowdownMoveset moveset, boolean forceSwitch,
@@ -147,7 +162,6 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
     private double moveValue(ActiveBattlePokemon active, Targetable target, MoveTemplate template, String gimmick) {
         double power = Math.max(0D, Math.min(250D, template.getPower())) / 250D;
         double accuracy = normalizeAccuracy(template.getAccuracy());
-        boolean status = template.getDamageCategory() != null && "status".equalsIgnoreCase(template.getDamageCategory().getName());
         double value = power > 0D ? 0.18D + power * 0.62D * accuracy : statusUtility(template, active);
         if (template.getPriority() > 0) value += Math.min(0.12D, template.getPriority() * 0.035D);
         if (hasStab(active, template.getElementalType()) && power > 0D) value += 0.10D;
@@ -163,6 +177,49 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         }
         if (gimmick != null) value += gimmickTiming(active, targetHp, effectiveness, power);
         return clamp01(value);
+    }
+
+    private double revealedKnowledgeFactor(PokemonBattle battle, CombatCortex.CombatAction action) {
+        if (!"move".equals(action.metadata().get("kind"))) return 1D;
+        String rawTarget = action.metadata().get("target_pokemon");
+        String rawMove = action.metadata().get("move");
+        if (rawTarget == null || rawMove == null) return 1D;
+        UUID targetId;
+        try { targetId = UUID.fromString(rawTarget); }
+        catch (IllegalArgumentException ignored) { return 1D; }
+
+        CobblemonBattleKnowledge.RevealedPokemon known = CobblemonBattleKnowledge.known(npcId, battle.getBattleId(), targetId);
+        if (known.moves().isEmpty() && known.ability().isBlank() && known.item().isBlank()) return 1D;
+        MoveTemplate template = Moves.getByNameOrDummy(rawMove);
+        double power = Math.max(0D, template.getPower());
+        if (power <= 0D || template.getElementalType() == null) return 1D;
+
+        String type = normalizeMove(template.getElementalType().getName());
+        String ability = normalizeMove(known.ability());
+        String item = normalizeMove(known.item());
+        double effectiveness = number(action.metadata().get("effectiveness"), 1D);
+        double targetHp = number(action.metadata().get("target_hp"), 1D);
+
+        if (knownImmunity(type, ability, item)) return 0.015D;
+        if (ability.endsWith("wonderguard") && effectiveness <= 1D) return 0.03D;
+
+        double factor = 1D;
+        String category = action.metadata().getOrDefault("category", "");
+        if (item.endsWith("assaultvest") && category.equals("special")) factor *= .88D;
+        if ((item.endsWith("focussash") || ability.endsWith("sturdy")) && targetHp >= .995D) factor *= .92D;
+        if (item.endsWith("leftovers") || item.endsWith("blacksludge")) factor *= 1.025D;
+        return Math.max(.01D, Math.min(1.15D, factor));
+    }
+
+    private static boolean knownImmunity(String type, String ability, String item) {
+        return switch (type) {
+            case "ground" -> ability.endsWith("levitate") || ability.endsWith("eartheater") || item.endsWith("airballoon");
+            case "water" -> ability.endsWith("waterabsorb") || ability.endsWith("stormdrain") || ability.endsWith("dryskin");
+            case "fire" -> ability.endsWith("flashfire") || ability.endsWith("wellbakedbody");
+            case "electric" -> ability.endsWith("voltabsorb") || ability.endsWith("lightningrod") || ability.endsWith("motordrive");
+            case "grass" -> ability.endsWith("sapsipper");
+            default -> false;
+        };
     }
 
     private double statusUtility(MoveTemplate template, ActiveBattlePokemon active) {
@@ -280,6 +337,10 @@ public final class LivelyCobblemonBattleAI implements BattleAI {
         return count == 0 ? 0D : Math.max(-1D, Math.min(1D, sum / count));
     }
 
+    private static double number(String raw, double fallback) {
+        try { return raw == null ? fallback : Double.parseDouble(raw); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
     private static String normalizeMove(String name) { return name == null ? "" : name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", ""); }
     private static double normalizeAccuracy(double value) { if (value <= 0D) return 1D; return clamp01(value > 1D ? value / 100D : value); }
     private static double fraction(int value, int max) { return max <= 0 ? 0D : clamp01((double) value / (double) max); }
