@@ -19,6 +19,7 @@ import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.economy.EconomyEngine;
 import vn.svframe.lively.event.WorldEventEngine;
 import vn.svframe.lively.npc.NpcDefinition;
+import vn.svframe.lively.quest.QuestRuntime;
 import vn.svframe.lively.social.SocialEngine;
 
 import java.time.Duration;
@@ -44,7 +45,6 @@ public final class CobblemonWorldAwarenessService {
     private static final long MIGRATION_COOLDOWN_MS = Duration.ofMinutes(30).toMillis();
     private static final int MIGRATION_THRESHOLD = 14;
     private static final int MAX_TRACKED_SPAWNS = 4096;
-    private static final double OBSERVER_RADIUS_SQ = 48D * 48D;
     private static final int SPATIAL_CELL = 64;
     private static final long SPATIAL_REFRESH_TICKS = 100L;
 
@@ -163,6 +163,7 @@ public final class CobblemonWorldAwarenessService {
         rememberNearby(player.getServerWorld().getRegistryKey().getValue().toString(), player.getPos(),
                 "pokemon_capture_observed", facts, rare ? .75D : .38D);
         socialResponseNearby(player, rare, facts);
+        LivelyApi.quests().signal(playerActor, QuestRuntime.ObjectiveType.COLLECTION, species, 1L, facts);
         changePokemonMarket(species, -.02D, rare ? .04D : .015D);
     }
 
@@ -191,6 +192,7 @@ public final class CobblemonWorldAwarenessService {
     private void onBattleVictory(BattleVictoryEvent event) {
         MinecraftServer active = server;
         if (active == null || event == null) return;
+        String battleId = event.getBattle().getBattleId().toString();
         for (var winner : event.getWinners()) {
             for (UUID playerId : winner.getPlayerUUIDs()) {
                 ServerPlayerEntity player = active.getPlayerManager().getPlayer(playerId);
@@ -199,8 +201,10 @@ public final class CobblemonWorldAwarenessService {
                 LivelyApi.actors().upsert(actor, player.getName().getString(), Map.of(),
                         Map.of("world", player.getServerWorld().getRegistryKey().getValue().toString()), Set.of("player", "trainer"));
                 LivelyApi.social().changeReputation(actor, SocialEngine.ReputationScope.GLOBAL, "", .0025D);
-                rememberNearby(player.getServerWorld().getRegistryKey().getValue().toString(), player.getPos(), "trainer_battle_victory_observed",
-                        Map.of("player", playerId.toString(), "battle", event.getBattle().getBattleId().toString()), .30D);
+                Map<String, String> facts = Map.of("player", playerId.toString(), "battle", battleId);
+                rememberNearby(player.getServerWorld().getRegistryKey().getValue().toString(), player.getPos(),
+                        "trainer_battle_victory_observed", facts, .30D);
+                LivelyApi.quests().signal(actor, QuestRuntime.ObjectiveType.COMBAT, "cobblemon:battle", 1L, facts);
             }
         }
     }
@@ -264,10 +268,12 @@ public final class CobblemonWorldAwarenessService {
         if (LivelyApi.events().activeEvents().stream().anyMatch(event -> event.seed().equals(seed))) return;
         long rareCount = samples.stream().filter(SpawnSample::rare).count();
         double intensity = Math.min(1D, .32D + samples.size() / 40D + rareCount * .08D);
-        Set<ActorId> participants = nearbyNpcActors(first.world(), average(samples), 96D, 24);
+        Vec3d center = average(samples);
+        Set<ActorId> participants = nearbyNpcActors(first.world(), center, 96D, 24);
         var proposal = new WorldEventEngine.EventProposal(WorldEventEngine.Category.MIGRATION, seed, null, participants,
                 intensity, Duration.ofHours(2), Map.of(
                 "kind", "pokemon_migration", "species", first.species(), "world", first.world(),
+                "x", compact(center.x), "y", compact(center.y), "z", compact(center.z), "radius", "24",
                 "observed_spawns", Integer.toString(samples.size()), "rare_observations", Long.toString(rareCount),
                 "physical_world_mutation", "false"));
         if (LivelyApi.events().start(proposal).isPresent()) {
