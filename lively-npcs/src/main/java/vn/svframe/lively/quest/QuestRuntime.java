@@ -45,6 +45,7 @@ public final class QuestRuntime {
     public interface Listener {
         default void onCreated(Quest quest) {}
         default void onClaimed(Quest quest) {}
+        default void onProgressed(Quest before, Quest after) {}
         default void onStatusChanged(Quest before, Quest after) {}
         default void onCompleted(Quest quest) {}
     }
@@ -101,7 +102,7 @@ public final class QuestRuntime {
             Objective target = old.objectives().stream().filter(value -> value.id().equals(objective)).findFirst().orElse(null);
             if (target == null) return old;
             Map<String, Long> progress = new HashMap<>(old.progress());
-            progress.merge(objective, delta, (a, b) -> saturatingAdd(a, b));
+            progress.merge(objective, delta, QuestRuntime::saturatingAdd);
             boolean done = old.objectives().stream().filter(value -> !value.optional())
                     .allMatch(value -> progress.getOrDefault(value.id(), 0L) >= value.required());
             before.set(old);
@@ -113,6 +114,7 @@ public final class QuestRuntime {
         Quest next = changed.get();
         if (next == null) return Optional.empty();
         Quest old = before.get();
+        notifyProgressed(old, next);
         if (old.status() != next.status()) {
             notifyStatus(old, next);
             if (next.status() == Status.COMPLETED) notifyCompleted(next);
@@ -186,6 +188,7 @@ public final class QuestRuntime {
 
     private void notifyCreated(Quest quest) { for (Listener listener : listeners) safe(() -> listener.onCreated(quest)); }
     private void notifyClaimed(Quest quest) { for (Listener listener : listeners) safe(() -> listener.onClaimed(quest)); }
+    private void notifyProgressed(Quest before, Quest after) { for (Listener listener : listeners) safe(() -> listener.onProgressed(before, after)); }
     private void notifyStatus(Quest before, Quest after) { for (Listener listener : listeners) safe(() -> listener.onStatusChanged(before, after)); }
     private void notifyCompleted(Quest quest) { for (Listener listener : listeners) safe(() -> listener.onCompleted(quest)); }
     private static void safe(Runnable callback) { try { callback.run(); } catch (RuntimeException ignored) {} }
