@@ -1,0 +1,18 @@
+display:
+  name: Smoke Knight
+max-level: 100
+exp-curve: levels
+attributes:
+  max-health:
+    base: 20
+    per-level: 0.1
+skills:
+  SLASH:
+    level: 1
+    max-level: 5
+skill-slots:
+  0:
+    name: Slash
+    formula: <ACTIVE>
+    unlocked-by-default: true
+    can-manually-bind: true
