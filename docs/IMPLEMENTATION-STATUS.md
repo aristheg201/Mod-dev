@@ -1,4 +1,4 @@
-# Lively implementation status - dev.3
+# Lively implementation status - dev.4
 
 ## Verified target stack
 
@@ -7,60 +7,56 @@
 - Mega Showdown Fabric 1.8.4 for Cobblemon 1.7.3
 - Cobblemon compile-only: `maven.modrinth:MdwFAVRL:kF7CvxTo`
 
-The Cobblemon/Mega Showdown versions above come from the current server mod archive. The Maven coordinate is the official Modrinth artifact for Cobblemon 1.7.3 Fabric / Minecraft 1.21.1.
-
 ## Core implemented
 
-- offline domain-specific utility cognition; no external LLM/cloud AI dependency
-- immutable NPC/world snapshots for worker reasoning
-- atomic mutable `NpcState`: traits, needs, structured beliefs, relationships, bounded memories
-- versioned per-NPC `.lnpc` persistence with CRC32, size/count bounds and atomic replacement
-- async state preload/save registry, periodic autosave and shutdown flush
-- bounded prioritized AI scheduler with stale-revision protection
-- server-authoritative typed-action validation
-- lightweight Vietnamese/English NLU
-- chat-isolated HYBRID dialogue with rotating nonce and input throttling
-- dialogue writes structured memory/belief/relationship state
-- causal quest proposals with validation
-- budgeted immutable-graph A* Navigation Cortex
-- Combat Cortex with cheap fallback plus depth/beam/node/time budgets
-- core regression tests for state corruption, navigation and combat timeout fallback
+- offline domain-specific cognition; no external LLM/cloud dependency
+- generic `ActorId` / `ActorSnapshot` / `ActorRegistry` for NPCs, players, creatures, factions and system actors
+- immutable worker snapshots and atomic mutable NPC state
+- traits, needs, beliefs, relationships and bounded memories
+- CRC/versioned per-NPC persistence, async preload/save, autosave and shutdown flush
+- chat-isolated HYBRID dialogue with local NLU and structured memory updates
+- causal quest proposals
+- budgeted A* navigation cortex
+- combat cortex with depth/beam/node/time budgets and non-biased cheap fallback
+- semantic structure registry with bounds, capabilities, points and operational state
+- bounded world event engine and story director working on causal tensions/event proposals
+- simulation LOD: ACTIVE / NEARBY / DISTANT / DORMANT with staggered cadence
+- world-integrity boundary with explicit mutation classes: NONE / TRANSIENT / SEMANTIC / PERSISTENT
+- AI-generated block set/break, explosion, fire, fluid, container mutation, NBT mutation, commands and persistent transforms are rejected by policy
+- persistent physical transformations require ADMIN source plus explicit registered/allowlisted transform and structure id
+- transient effects require safe action type and bounded TTL
+- semantic disasters/events do not modify the underlying Minecraft structure
 
 ## Cobblemon Integration implemented
 
 - opt-in NPC dialogue using command tag `lively`
-- direct Cobblemon 1.7.3 `BattleAI.choose()` implementation backed by Lively Combat Cortex
-- NPC battle actor mixin swaps AI only for NPCs tagged `lively` or `lively_combat`
-- native legal move/switch responses validated by Cobblemon
+- direct Cobblemon 1.7.3 `BattleAI.choose()` backed by Lively Combat Cortex
+- NPC battle actor mixin swaps AI only for `lively` / `lively_combat`
+- native legal moves/switches validated by Cobblemon
 - Mega / Ultra Burst / Z-Move / Dynamax / Terastallization candidates when exposed by `ShowdownMoveset`
-- move scoring now includes accuracy, power, priority, STAB and standard type effectiveness
-- switch scoring considers reserve HP, offensive type coverage and defensive type risk against currently visible opponents
-- unknown/custom elemental types deliberately fall back to neutral rather than inventing effectiveness
-- AI does not inspect unrevealed player moves/items merely because the server could access them
-- battle aggression/caution uses the same NPC personality traits (`brave`, `greedy`, `suspicious`) as overworld cognition
-- every selected battle action is written into memory
-- NPC battle `win` / `lose` hooks write high-importance outcome memories with opponent actor IDs
-- recent battle outcome balance slightly adjusts future aggression/caution, providing bounded experience adaptation without live neural-network training
-- combat remains synchronous but hard-budgeted because Cobblemon requires an immediate AI choice
+- power, accuracy, priority, STAB and type-effectiveness scoring
+- matchup-aware switching using visible opponent typing and own known moves
+- fair-play boundary against unrevealed player move/item inspection
+- shared NPC personality and battle outcome memories
 
 ## Verification performed
 
-- Java 21 compilation passed for game-agnostic core after dev.2 changes
-- state persistence round-trip and CRC smoke tests passed
-- A* route smoke test passed
-- combat timeout regression passed after fixing first-action bias
-- Cobblemon battle signatures were verified directly with `javap` against the production-server 1.7.3 JAR
-- Gradle wiring targets the official Cobblemon 1.7.3 Modrinth Maven artifact
+- Java 21 compilation passed for new actor/world/event/story/LOD/world-integrity core classes
+- local dev.4 smoke test confirmed AI persistent block mutation rejection
+- local dev.4 smoke test confirmed semantic disaster can exist without changing structure state
+- local dev.4 smoke test confirmed story proposal generation and DORMANT LOD classification
+- prior persistence round-trip/CRC, A* and combat-timeout regression tests remain in the repository
+- added JUnit `WorldIntegrityTest` covering persistent grief actions, semantic disasters, bounded story proposals and LOD
+- added GitHub `Lively Loom build` workflow for Java 21, Gradle 8.10.2, tests, `remapJar`, two-JAR verification, SHA256 and artifact upload
 
 ## Still incomplete
 
-- ability-aware and held-item-aware reasoning using only legitimately known information
-- revealed-opponent-move observation and per-opponent tendency model
-- doubles-aware joint action / target synergy planning
-- richer status/setup/hazard/value modelling
-- live Minecraft navigation graph sampling, invalidation, door/jump/water rules and movement application
-- full NPC lifecycle unload persistence wiring
-- economy, faction and emergent-story simulation
-- production config schemas/migrations/admin tooling
-- broader fuzz/soak/security regression suite
-- full Fabric Loom remap build in this execution environment: there is no Gradle binary/wrapper available and the attempted Gradle distribution download failed; no remap build is falsely claimed
+- persistent world event/history store and migrations
+- live Minecraft structure selection/admin commands and capability scanning
+- live navigation graph sampling/invalidation/movement application
+- social/romance/gossip/reputation simulation
+- crime/evidence/investigation engine
+- economy/business/faction simulation
+- richer setup/status/hazard/ability/known-item battle reasoning
+- doubles-aware joint battle planning
+- broader fuzz/soak/security tests

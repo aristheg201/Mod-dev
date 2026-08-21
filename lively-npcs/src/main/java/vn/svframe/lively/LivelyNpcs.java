@@ -12,6 +12,7 @@ import vn.svframe.lively.persistence.NpcStateRegistry;
 import vn.svframe.lively.persistence.NpcStateStore;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,7 +38,9 @@ public final class LivelyNpcs implements ModInitializer {
         dialogueService.install();
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (ticks.incrementAndGet() % 6000L != 0L || !pendingAutosave.isDone()) return;
+            long tick = ticks.incrementAndGet();
+            if (tick % 20L == 0L) LivelyApi.events().advance(Instant.now());
+            if (tick % 6000L != 0L || !pendingAutosave.isDone()) return;
             pendingAutosave = stateRegistry.saveAll().whenComplete((ignored, error) -> {
                 if (error != null) LOGGER.error("Lively NPC state autosave failed", error);
             });
@@ -52,6 +55,6 @@ public final class LivelyNpcs implements ModInitializer {
                 stateRegistry.close();
             }
         });
-        LOGGER.info("Lively NPCs initialized: offline AI, persistent state, dialogue, navigation and combat cortex ready");
+        LOGGER.info("Lively NPCs initialized: offline AI, actor/world state, event/story director, world-integrity boundary, persistence, dialogue, navigation and combat ready");
     }
 }
