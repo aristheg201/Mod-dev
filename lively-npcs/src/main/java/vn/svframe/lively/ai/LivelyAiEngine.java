@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /**
  * Offline domain-specific cognition. The core intentionally has no LLM provider.
- * Utility selects goals/actions while richer planners can be registered later.
+ * Utility selects goals/actions from immutable perception, memory and personality state.
  */
 public final class LivelyAiEngine {
     public Optional<Decision> decide(NpcSnapshot npc, WorldSnapshot world) {
@@ -21,10 +21,14 @@ public final class LivelyAiEngine {
         addNeed(goals, "socialize", npc.need("social"));
         addNeed(goals, "rest", npc.need("fatigue"));
 
-        double threat = world.entities().stream()
+        double entityThreat = world.entities().stream()
                 .mapToDouble(WorldSnapshot.ObservedEntity::threat)
                 .max().orElse(0D);
-        if (threat > 0.60D) goals.add(new Goal("respond_to_threat", threat, Map.of()));
+        double environmentThreat = clamp01(world.signals().getOrDefault("environment_threat", 0D));
+        double threat = Math.max(entityThreat, environmentThreat);
+        if (threat > 0.45D) goals.add(new Goal("respond_to_threat", threat, Map.of(
+                "entity_threat", Double.toString(entityThreat),
+                "environment_threat", Double.toString(environmentThreat))));
         if (goals.isEmpty()) goals.add(new Goal("maintain_routine", 0.25D, Map.of()));
 
         return goals.stream()
@@ -48,18 +52,21 @@ public final class LivelyAiEngine {
             case "socialize" -> List.of(new AiAction("start_dialogue", Map.of(), 0.70D, AiAction.Risk.LOW));
             case "rest" -> List.of(new AiAction("travel_home", Map.of(), 0.75D, AiAction.Risk.LOW));
             case "respond_to_threat" -> List.of(
-                    new AiAction("flee", Map.of(), 0.90D, AiAction.Risk.LOW),
-                    new AiAction("defend", Map.of(), 0.60D, AiAction.Risk.MEDIUM));
+                    new AiAction("flee", goal.context(), 0.90D, AiAction.Risk.LOW),
+                    new AiAction("defend", goal.context(), 0.60D, AiAction.Risk.MEDIUM));
             default -> List.of(new AiAction("perform_occupation", Map.of("role", npc.role()), 0.35D, AiAction.Risk.LOW));
         };
     }
 
     private double score(NpcSnapshot npc, Goal goal, AiAction action) {
         double score = 0.55D * goal.priority() + 0.45D * action.utility();
-        if (action.type().equals("defend")) score += 0.20D * npc.trait("brave");
-        if (action.type().equals("flee")) score += 0.20D * (1D - npc.trait("brave"));
+        if (action.type().equals("defend")) score += 0.24D * npc.trait("brave") + 0.08D * npc.trait("loyal");
+        if (action.type().equals("flee")) score += 0.24D * (1D - npc.trait("brave"));
         if (action.type().equals("start_dialogue")) score += 0.15D * npc.trait("friendly");
-        if (action.type().equals("offer_trade")) score += 0.12D * npc.trait("greedy");
+        if (action.type().equals("offer_trade")) score += 0.16D * npc.trait("greedy") + 0.08D * npc.trait("ambitious");
+        if (action.type().equals("perform_occupation")) score += 0.08D * npc.trait("diligent");
         return score;
     }
+
+    private static double clamp01(double value) { return Math.max(0D, Math.min(1D, value)); }
 }
