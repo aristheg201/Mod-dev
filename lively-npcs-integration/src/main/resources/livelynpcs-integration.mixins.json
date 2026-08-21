@@ -6,7 +6,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "AIBattleActorAccessor",
-    "NPCBattleActorMixin"
+    "NPCBattleActorMixin",
+    "BattleRevealInstructionMixin$MoveReveal",
+    "BattleRevealInstructionMixin$AbilityReveal",
+    "BattleRevealInstructionMixin$ItemReveal",
+    "BattleRevealInstructionMixin$EndItemReveal"
   ],
   "injectors": {
     "defaultRequire": 1
