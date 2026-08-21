@@ -43,8 +43,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test "$(find fabric-mmo-ports/bootstrap-m0.8/chunks -maxdepth 1 -name 'part*' -type f | wc -l)" -eq 10
           mkdir -p build/mmo-workspace
-          base64 -d fabric-mmo-ports/bootstrap-m0.8/workspace.tar.gz.b64 > build/mmo-workspace.tar.gz
+          cat fabric-mmo-ports/bootstrap-m0.8/chunks/part* | base64 -d > build/mmo-workspace.tar.gz
           echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
           find build/mmo-workspace -type f | wc -l
