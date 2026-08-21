@@ -22,24 +22,163 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
-/** Vanilla player-model NPC with Mojang/signed custom skin support and no client mod requirement. */
+/** Vanilla player-model NPC with asynchronous Mojang/signed custom skin support and no client mod requirement. */
 public final class PlayerModelBody implements NpcBody {
-    private final UUID npcId; private final SkinResolver skins; private FakePlayer fake; private CompletableFuture<GameProfile> profileFuture; private GameProfile profile; private boolean visible; private long lastSyncTick;
-    public PlayerModelBody(UUID npcId,SkinResolver skins){this.npcId=npcId;this.skins=skins;}
-    @Override public UUID npcId(){return npcId;} @Override public NpcDefinition.BodyType type(){return NpcDefinition.BodyType.PLAYER;} @Override public boolean spawned(){return visible&&fake!=null;}
-    @Override public Optional<UUID> entityUuid(){return fake==null?Optional.empty():Optional.of(fake.getUuid());} @Override public Optional<Vec3d> position(){return fake==null?Optional.empty():Optional.of(fake.getPos());}
-    @Override public Optional<String> worldKey(){return fake==null?Optional.empty():Optional.of(fake.getServerWorld().getRegistryKey().getValue().toString());}
+    private final UUID npcId;
+    private final SkinResolver skins;
+    private final AtomicLong generation = new AtomicLong();
+    private volatile CompletableFuture<GameProfile> profileFuture;
+    private volatile GameProfile profile;
+    private volatile FakePlayer fake;
+    private volatile boolean visible;
+    private long lastSyncTick;
 
-    @Override public void spawn(MinecraftServer server,NpcDefinition definition){if(spawned()||profileFuture!=null)return;ServerWorld world=world(server,definition.world());if(world==null)throw new IllegalArgumentException("unknown world "+definition.world());
-        profileFuture=skins.resolve(server,npcId,definition.skinName(),definition.name());profileFuture.whenComplete((resolved,error)->{final GameProfile resolvedProfile=error==null&&resolved!=null?resolved:new GameProfile(npcId,"LivelyNPC");server.execute(()->{profileFuture=null;profile=resolvedProfile;fake=FakePlayer.get(world,profile);fake.refreshPositionAndAngles(definition.x(),definition.y(),definition.z(),definition.yaw(),definition.pitch());fake.setCustomName(Text.literal(definition.name()));fake.setCustomNameVisible(definition.nameVisible());fake.setInvulnerable(definition.invulnerable());fake.setNoGravity(!definition.gravity());fake.setSilent(definition.silent());world.onPlayerConnected(fake);visible=true;for(ServerPlayerEntity viewer:server.getPlayerManager().getPlayerList())showTo(viewer);});});}
-    @Override public void despawn(MinecraftServer server){if(fake!=null){int entityId=fake.getId();for(ServerPlayerEntity viewer:server.getPlayerManager().getPlayerList()){viewer.networkHandler.sendPacket(new EntitiesDestroyS2CPacket(new int[]{entityId}));viewer.networkHandler.sendPacket(new PlayerRemoveS2CPacket(List.of(npcId)));}fake.discard();}fake=null;profile=null;profileFuture=null;visible=false;}
-    @Override public void teleport(MinecraftServer server,String worldKey,Vec3d position,float yaw,float pitch){if(!spawned())return;ServerWorld target=world(server,worldKey);if(target==null)return;if(fake.getServerWorld()!=target){despawn(server);return;}fake.refreshPositionAndAngles(position.x,position.y,position.z,yaw,pitch);syncPosition(server);}
-    @Override public void moveStep(MinecraftServer server,String worldKey,Vec3d position,float yaw,float pitch){if(!spawned()||!worldKey().orElse("").equals(worldKey))return;fake.refreshPositionAndAngles(position.x,position.y,position.z,yaw,pitch);fake.setHeadYaw(yaw);syncPosition(server);}
-    @Override public void lookAt(MinecraftServer server,Vec3d target){if(!spawned())return;Vec3d delta=target.subtract(fake.getPos());double horizontal=Math.sqrt(delta.x*delta.x+delta.z*delta.z);float yaw=(float)Math.toDegrees(Math.atan2(-delta.x,delta.z));float pitch=(float)-Math.toDegrees(Math.atan2(delta.y,horizontal));fake.setYaw(yaw);fake.setPitch(pitch);fake.setHeadYaw(yaw);byte head=(byte)Math.floor(yaw*256.0F/360.0F);for(ServerPlayerEntity viewer:server.getPlayerManager().getPlayerList())viewer.networkHandler.sendPacket(new EntitySetHeadYawS2CPacket(fake,head));}
-    @Override public void tick(MinecraftServer server,NpcDefinition definition){if(!spawned())return;fake.setInvulnerable(definition.invulnerable());fake.setNoGravity(!definition.gravity());fake.setSilent(definition.silent());fake.setCustomName(Text.literal(definition.name()));fake.setCustomNameVisible(definition.nameVisible());long tick=server.getTicks();if(tick-lastSyncTick>=10L){lastSyncTick=tick;syncPosition(server);}}
-    @Override public void onViewerJoin(ServerPlayerEntity player,NpcDefinition definition){if(spawned())showTo(player);}
-    private void showTo(ServerPlayerEntity viewer){if(fake==null)return;viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER,fake));viewer.networkHandler.sendPacket(new EntitySpawnS2CPacket(fake,0,fake.getBlockPos()));viewer.getServer().execute(()->viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_LISTED,fake)));}
-    private void syncPosition(MinecraftServer server){if(fake==null)return;EntityPositionS2CPacket packet=new EntityPositionS2CPacket(fake);for(ServerPlayerEntity viewer:server.getPlayerManager().getPlayerList())viewer.networkHandler.sendPacket(packet);}
-    private static ServerWorld world(MinecraftServer server,String key){Identifier id=Identifier.tryParse(key);return id==null?null:server.getWorld(RegistryKey.of(RegistryKeys.WORLD,id));}
+    public PlayerModelBody(UUID npcId, SkinResolver skins) {
+        this.npcId = npcId;
+        this.skins = skins;
+    }
+
+    @Override public UUID npcId() { return npcId; }
+    @Override public NpcDefinition.BodyType type() { return NpcDefinition.BodyType.PLAYER; }
+    @Override public boolean spawned() { return visible && fake != null && !fake.isRemoved(); }
+    @Override public Optional<UUID> entityUuid() { return fake == null ? Optional.empty() : Optional.of(fake.getUuid()); }
+    @Override public Optional<Vec3d> position() { return fake == null ? Optional.empty() : Optional.of(fake.getPos()); }
+    @Override public Optional<String> worldKey() { return fake == null ? Optional.empty() : Optional.of(fake.getServerWorld().getRegistryKey().getValue().toString()); }
+
+    @Override
+    public synchronized void spawn(MinecraftServer server, NpcDefinition definition) {
+        if (spawned() || profileFuture != null) return;
+        ServerWorld world = world(server, definition.world());
+        if (world == null) throw new IllegalArgumentException("unknown world " + definition.world());
+
+        long ticket = generation.incrementAndGet();
+        CompletableFuture<GameProfile> pending = skins.resolve(server, npcId, definition.skinName(), definition.name());
+        profileFuture = pending;
+        pending.whenComplete((resolved, error) -> {
+            GameProfile resolvedProfile = error == null && resolved != null ? resolved : new GameProfile(npcId, "LivelyNPC");
+            server.execute(() -> finishSpawn(server, world, definition, pending, ticket, resolvedProfile));
+        });
+    }
+
+    private synchronized void finishSpawn(MinecraftServer server, ServerWorld world, NpcDefinition definition,
+                                          CompletableFuture<GameProfile> pending, long ticket, GameProfile resolvedProfile) {
+        if (generation.get() != ticket || profileFuture != pending || pending.isCancelled() || spawned()) return;
+        profileFuture = null;
+        profile = resolvedProfile;
+        FakePlayer created = FakePlayer.get(world, profile);
+        fake = created;
+        created.refreshPositionAndAngles(definition.x(), definition.y(), definition.z(), definition.yaw(), definition.pitch());
+        created.setCustomName(Text.literal(definition.name()));
+        created.setCustomNameVisible(definition.nameVisible());
+        created.setInvulnerable(definition.invulnerable());
+        created.setNoGravity(!definition.gravity());
+        created.setSilent(definition.silent());
+        world.onPlayerConnected(created);
+        visible = true;
+        for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) showTo(viewer);
+    }
+
+    @Override
+    public synchronized void despawn(MinecraftServer server) {
+        generation.incrementAndGet();
+        CompletableFuture<GameProfile> pending = profileFuture;
+        profileFuture = null;
+        if (pending != null) pending.cancel(true);
+        FakePlayer current = fake;
+        visible = false;
+        fake = null;
+        profile = null;
+        if (current == null) return;
+        int entityId = current.getId();
+        UUID entityUuid = current.getUuid();
+        for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) {
+            viewer.networkHandler.sendPacket(new EntitiesDestroyS2CPacket(new int[]{entityId}));
+            viewer.networkHandler.sendPacket(new PlayerRemoveS2CPacket(List.of(entityUuid)));
+        }
+        current.discard();
+    }
+
+    @Override
+    public void teleport(MinecraftServer server, String worldKey, Vec3d position, float yaw, float pitch) {
+        FakePlayer current = fake;
+        if (!spawned() || current == null) return;
+        ServerWorld target = world(server, worldKey);
+        if (target == null) return;
+        if (current.getServerWorld() != target) {
+            despawn(server);
+            return;
+        }
+        current.refreshPositionAndAngles(position.x, position.y, position.z, yaw, pitch);
+        syncPosition(server);
+    }
+
+    @Override
+    public void moveStep(MinecraftServer server, String worldKey, Vec3d position, float yaw, float pitch) {
+        FakePlayer current = fake;
+        if (!spawned() || current == null || !worldKey().orElse("").equals(worldKey)) return;
+        current.refreshPositionAndAngles(position.x, position.y, position.z, yaw, pitch);
+        current.setHeadYaw(yaw);
+        syncPosition(server);
+    }
+
+    @Override
+    public void lookAt(MinecraftServer server, Vec3d target) {
+        FakePlayer current = fake;
+        if (!spawned() || current == null) return;
+        Vec3d delta = target.subtract(current.getPos());
+        double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
+        float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
+        float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, horizontal));
+        current.setYaw(yaw);
+        current.setPitch(pitch);
+        current.setHeadYaw(yaw);
+        byte head = (byte) Math.floor(yaw * 256.0F / 360.0F);
+        for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) {
+            viewer.networkHandler.sendPacket(new EntitySetHeadYawS2CPacket(current, head));
+        }
+    }
+
+    @Override
+    public void tick(MinecraftServer server, NpcDefinition definition) {
+        FakePlayer current = fake;
+        if (!spawned() || current == null) return;
+        current.setInvulnerable(definition.invulnerable());
+        current.setNoGravity(!definition.gravity());
+        current.setSilent(definition.silent());
+        current.setCustomName(Text.literal(definition.name()));
+        current.setCustomNameVisible(definition.nameVisible());
+        long tick = server.getTicks();
+        if (tick - lastSyncTick >= 10L) {
+            lastSyncTick = tick;
+            syncPosition(server);
+        }
+    }
+
+    @Override public void onViewerJoin(ServerPlayerEntity player, NpcDefinition definition) { if (spawned()) showTo(player); }
+
+    private void showTo(ServerPlayerEntity viewer) {
+        FakePlayer current = fake;
+        if (current == null || current.isRemoved()) return;
+        viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, current));
+        viewer.networkHandler.sendPacket(new EntitySpawnS2CPacket(current, 0, current.getBlockPos()));
+        // The profile only needs to be in the tab list long enough for the spawn/skin data to reach the client.
+        // Remove the tab entry afterward while leaving the player-model entity visible in the world.
+        viewer.getServer().execute(() -> {
+            if (fake == current && visible) viewer.networkHandler.sendPacket(new PlayerRemoveS2CPacket(List.of(current.getUuid())));
+        });
+    }
+
+    private void syncPosition(MinecraftServer server) {
+        FakePlayer current = fake;
+        if (current == null || current.isRemoved()) return;
+        EntityPositionS2CPacket packet = new EntityPositionS2CPacket(current);
+        for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) viewer.networkHandler.sendPacket(packet);
+    }
+
+    private static ServerWorld world(MinecraftServer server, String key) {
+        Identifier id = Identifier.tryParse(key);
+        return id == null ? null : server.getWorld(RegistryKey.of(RegistryKeys.WORLD, id));
+    }
 }
