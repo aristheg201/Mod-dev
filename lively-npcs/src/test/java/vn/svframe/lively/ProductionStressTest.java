@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,14 +30,14 @@ final class ProductionStressTest {
         for (int i = 0; i < actors; i++) {
             ActorId actor = new ActorId(new UUID(7L, i + 1L), ActorId.Kind.NPC);
             ids.add(actor);
-            registry.upsert(actor, "NPC_" + i, Map.of("friendly", (i % 10) / 10D), Map.of("town", "town_" + (i % 20)), java.util.Set.of("npc"));
+            registry.upsert(actor, "NPC_" + i, Map.of("friendly", (i % 10) / 10D), Map.of("town", "town_" + (i % 20)), Set.of("npc"));
             economy.ensureWallet(actor, 100_000L);
         }
 
         for (int i = 0; i < 25_000; i++) {
             ActorId a = ids.get(i % actors);
             ActorId b = ids.get((i * 37 + 17) % actors);
-            if (a.equals(b)) b = ids.get((b.uuid().hashCode() + 1 & Integer.MAX_VALUE) % actors);
+            if (a.equals(b)) b = ids.get((i + 1) % actors);
             social.apply(a, b, new SocialEngine.SocialDelta(.001D, .002D, .001D, 0D, 0D, .001D, .005D, "stress_contact", Map.of()));
         }
 
@@ -48,9 +49,10 @@ final class ProductionStressTest {
 
         for (int i = 0; i < 1_000; i++) {
             ActorId suspect = ids.get(i);
-            CrimeEngine.Crime c = crime.create(CrimeEngine.CrimeType.THEFT, suspect, ids.get((i + 1) % actors), "market_" + (i % 20), Map.of("stress", "true"));
-            crime.addEvidence(c.id(), new CrimeEngine.Evidence(UUID.randomUUID(), CrimeEngine.EvidenceType.WITNESS, suspect,
-                    .7D, java.time.Instant.now(), "stress witness", Map.of()));
+            ActorId victim = ids.get((i + 1) % actors);
+            CrimeEngine.Crime crimeRecord = crime.create(CrimeEngine.Type.THEFT, victim, suspect, "market_" + (i % 20),
+                    "stress motive", Set.of(), Map.of("stress", "true"));
+            crime.addEvidence(crimeRecord.id(), CrimeEngine.EvidenceType.WITNESS, victim, suspect, .7D, .8D, true, Map.of("stress", "true"));
         }
 
         SocialEngine.Rumor rumor = social.createRumor("stress", ids.get(1), ids.get(0), "test rumor", .9D, .5D, Duration.ofHours(1));
@@ -61,6 +63,6 @@ final class ProductionStressTest {
         assertEquals(actors + 1, economy.snapshot().wallets().size());
         assertEquals(5_000, economy.snapshot().ledger().size());
         assertEquals(1_000, crime.snapshot().crimes().size());
-        assertTrue(crime.snapshot().evidence().size() >= 1_000);
+        assertEquals(1_000, crime.snapshot().evidence().size());
     }
 }
