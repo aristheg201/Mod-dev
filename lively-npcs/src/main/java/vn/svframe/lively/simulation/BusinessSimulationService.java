@@ -7,8 +7,11 @@ import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -25,23 +28,25 @@ public final class BusinessSimulationService {
     public void tick(long tick) {
         if (tick - lastPulse < PULSE_TICKS || LivelyApi.npcs() == null) return;
         lastPulse = tick;
-        discoverBusinesses();
-        staffBusinesses();
+        Map<UUID, NpcDefinition> npcSnapshot = LivelyApi.npcs().snapshot();
+        discoverBusinesses(npcSnapshot);
+        staffBusinesses(npcSnapshot);
         operateBusinesses(tick);
     }
 
-    private void discoverBusinesses() {
+    private void discoverBusinesses(Map<UUID, NpcDefinition> npcs) {
         Set<ActorId> owners = new HashSet<>();
-        LivelyApi.economy().snapshot().businesses().values().forEach(b -> owners.add(b.owner()));
+        LivelyApi.economy().snapshot().businesses().values().forEach(business -> owners.add(business.owner()));
         int created = 0;
-        for (NpcDefinition npc : LivelyApi.npcs().snapshot().values().stream().sorted(Comparator.comparing(n -> n.id().toString())).toList()) {
+        for (NpcDefinition npc : npcs.values().stream().sorted(Comparator.comparing(value -> value.id().toString())).toList()) {
             if (created >= MAX_BUSINESSES_PER_PULSE) break;
             String name = npc.metadata().get("business.name");
             if (name == null || name.isBlank()) continue;
             ActorId owner = new ActorId(npc.id(), ActorId.Kind.NPC);
             if (owners.contains(owner)) continue;
             String kind = npc.metadata().getOrDefault("business.kind", "shop").trim().toLowerCase(java.util.Locale.ROOT);
-            boolean blackMarket = kind.equals("black_market") || kind.equals("underworld") || Boolean.parseBoolean(npc.metadata().getOrDefault("business.illegal", "false"));
+            boolean blackMarket = kind.equals("black_market") || kind.equals("underworld")
+                    || Boolean.parseBoolean(npc.metadata().getOrDefault("business.illegal", "false"));
             String location = npc.metadata().getOrDefault("business.location", npc.metadata().get("work.structure"));
             EconomyEngine.Business business = LivelyApi.economy().createBusiness(owner, name, location,
                     Map.of("kind", kind,
@@ -54,7 +59,8 @@ public final class BusinessSimulationService {
             long initial = longValue(npc.metadata().get("business.initial_balance"), 0L, 0L, 10_000_000_000_000L);
             LivelyApi.economy().ensureWallet(owner, initial);
             bootstrapStock(business, npc.metadata());
-            owners.add(owner); created++;
+            owners.add(owner);
+            created++;
         }
     }
 
@@ -68,43 +74,61 @@ public final class BusinessSimulationService {
                 long quantity = Long.parseLong(parts[0].trim());
                 long target = Long.parseLong(parts[1].trim());
                 long price = Long.parseLong(parts[2].trim());
-                double demand = parts.length > 3 ? Double.parseDouble(parts[3].trim()) : 0.5D;
-                double supply = parts.length > 4 ? Double.parseDouble(parts[4].trim()) : 0.5D;
+                double demand = parts.length > 3 ? Double.parseDouble(parts[3].trim()) : .5D;
+                double supply = parts.length > 4 ? Double.parseDouble(parts[4].trim()) : .5D;
                 LivelyApi.economy().setStock(business.id(), item, quantity, target, price, demand, supply);
             } catch (NumberFormatException ignored) { }
         }
     }
 
-    private void staffBusinesses() {
+    /** One NPC pass builds workplace candidates; businesses then consume those buckets without nested full scans. */
+    private void staffBusinesses(Map<UUID, NpcDefinition> npcs) {
         EconomyEngine.Snapshot economy = LivelyApi.economy().snapshot();
-        for (EconomyEngine.Business business : economy.businesses().values().stream().limit(MAX_BUSINESSES_PER_PULSE).toList()) {
-            if (!Boolean.parseBoolean(business.facts().getOrDefault("auto_hire", "true")) || business.employees().size() >= 16) continue;
-            for (NpcDefinition candidate : LivelyApi.npcs().snapshot().values()) {
-                ActorId actor = new ActorId(candidate.id(), ActorId.Kind.NPC);
-                if (actor.equals(business.owner()) || business.employees().contains(actor)) continue;
-                String workplace = candidate.metadata().get("work.structure");
-                if (workplace == null || !workplace.equals(business.locationId())) continue;
-                boolean employedElsewhere = economy.businesses().values().stream().anyMatch(b -> b.employees().contains(actor));
-                if (employedElsewhere) continue;
-                LivelyApi.economy().assignEmployee(business.id(), actor);
-                if (LivelyApi.economy().business(business.id()).map(b -> b.employees().size() >= 16).orElse(true)) break;
+        Map<String, List<ActorId>> byWorkplace = new HashMap<>();
+        for (NpcDefinition npc : npcs.values()) {
+            String workplace = npc.metadata().get("work.structure");
+            if (workplace == null || workplace.isBlank()) continue;
+            byWorkplace.computeIfAbsent(workplace, ignored -> new ArrayList<>())
+                    .add(new ActorId(npc.id(), ActorId.Kind.NPC));
+        }
+        byWorkplace.values().forEach(list -> list.sort(Comparator.comparing(actor -> actor.uuid().toString())));
+
+        Set<ActorId> employed = new HashSet<>();
+        for (EconomyEngine.Business business : economy.businesses().values()) employed.addAll(business.employees());
+
+        for (EconomyEngine.Business business : economy.businesses().values().stream()
+                .sorted(Comparator.comparing(value -> value.id().toString())).limit(MAX_BUSINESSES_PER_PULSE).toList()) {
+            if (!Boolean.parseBoolean(business.facts().getOrDefault("auto_hire", "true")) || business.employees().size() >= 16
+                    || business.locationId() == null) continue;
+            int slots = 16 - business.employees().size();
+            for (ActorId candidate : byWorkplace.getOrDefault(business.locationId(), List.of())) {
+                if (slots <= 0) break;
+                if (candidate.equals(business.owner()) || employed.contains(candidate)) continue;
+                if (LivelyApi.economy().assignEmployee(business.id(), candidate).isPresent()) {
+                    employed.add(candidate);
+                    slots--;
+                }
             }
         }
     }
 
     private void operateBusinesses(long tick) {
         EconomyEngine.Snapshot economy = LivelyApi.economy().snapshot();
-        for (EconomyEngine.Business business : economy.businesses().values().stream().limit(MAX_BUSINESSES_PER_PULSE).toList()) {
+        for (EconomyEngine.Business business : economy.businesses().values().stream()
+                .sorted(Comparator.comparing(value -> value.id().toString())).limit(MAX_BUSINESSES_PER_PULSE).toList()) {
             if (business.locationId() != null) {
                 boolean shouldOpen = LivelyApi.structures().get(business.locationId())
                         .map(SemanticStructureRegistry.Structure::state)
-                        .map(state -> state == SemanticStructureRegistry.OperationalState.OPEN || state == SemanticStructureRegistry.OperationalState.FESTIVAL)
+                        .map(state -> state == SemanticStructureRegistry.OperationalState.OPEN
+                                || state == SemanticStructureRegistry.OperationalState.FESTIVAL)
                         .orElse(true);
                 if (shouldOpen != business.open()) LivelyApi.economy().setOpen(business.id(), shouldOpen);
             }
             long wage = longValue(business.facts().get("wage"), 0L, 0L, 1_000_000_000L);
             if (business.open() && wage > 0L) LivelyApi.economy().payroll(business.id(), wage);
-            if (business.open() && Boolean.parseBoolean(business.facts().getOrDefault("illegal", "false"))) emitUnderworldRumor(business, tick);
+            if (business.open() && Boolean.parseBoolean(business.facts().getOrDefault("illegal", "false"))) {
+                emitUnderworldRumor(business, tick);
+            }
         }
     }
 
