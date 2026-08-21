@@ -2,21 +2,48 @@ package vn.svframe.lively.quest;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** Read-only world checks for exploration, semantic delivery and escort completion. */
+/** Read-only world/interaction checks for exploration, social, semantic delivery and escort completion. */
 public final class QuestWorldProgressionBootstrap implements ModInitializer {
+    private final ConcurrentHashMap<UUID, Long> lastInteractionSignal = new ConcurrentHashMap<>();
+
     @Override
     public void onInitialize() {
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (world.isClient || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity serverPlayer)
+                    || LivelyApi.npcs() == null) return ActionResult.PASS;
+            UUID npcId = LivelyApi.npcs().npcForEntity(entity.getUuid()).orElse(null);
+            if (npcId == null) return ActionResult.PASS;
+            long tick = serverPlayer.getServer().getTicks();
+            long previous = lastInteractionSignal.getOrDefault(serverPlayer.getUuid(), Long.MIN_VALUE / 2L);
+            if (tick - previous >= 20L) {
+                lastInteractionSignal.put(serverPlayer.getUuid(), tick);
+                ActorId owner = new ActorId(serverPlayer.getUuid(), ActorId.Kind.PLAYER);
+                LivelyApi.quests().signal(owner, QuestRuntime.ObjectiveType.SOCIAL, npcId.toString(), 1L,
+                        Map.of("actor", npcId.toString(), "npc", npcId.toString()));
+            }
+            return ActionResult.PASS;
+        });
+
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTicks() % 20L != 0L) return;
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) progress(player);
+            if (server.getTicks() % 1200L == 0L && lastInteractionSignal.size() > 4096) {
+                long cutoff = server.getTicks() - 1200L;
+                lastInteractionSignal.entrySet().removeIf(entry -> entry.getValue() < cutoff);
+            }
         });
     }
 
