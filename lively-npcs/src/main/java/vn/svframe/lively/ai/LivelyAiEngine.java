@@ -1,19 +1,24 @@
 package vn.svframe.lively.ai;
 
+import vn.svframe.lively.memory.MemoryPolicy;
 import vn.svframe.lively.model.NpcSnapshot;
 import vn.svframe.lively.model.WorldSnapshot;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Offline domain-specific cognition. The core intentionally has no LLM provider.
- * Utility selects goals/actions from immutable perception, memory and personality state.
+ * Utility selects goals/actions from immutable perception, decayed memory and personality state.
  */
 public final class LivelyAiEngine {
+    private final MemoryPolicy memoryPolicy = new MemoryPolicy();
+
     public Optional<Decision> decide(NpcSnapshot npc, WorldSnapshot world) {
         List<Goal> goals = new ArrayList<>();
         addNeed(goals, "satisfy_hunger", npc.need("hunger"));
@@ -25,16 +30,33 @@ public final class LivelyAiEngine {
                 .mapToDouble(WorldSnapshot.ObservedEntity::threat)
                 .max().orElse(0D);
         double environmentThreat = clamp01(world.signals().getOrDefault("environment_threat", 0D));
-        double threat = Math.max(entityThreat, environmentThreat);
+        double memoryThreat = rememberedDanger(npc, Instant.now());
+        double currentThreat = Math.max(entityThreat, environmentThreat);
+        double threat = currentThreat > .18D ? clamp01(currentThreat + memoryThreat * .18D) : currentThreat;
         if (threat > 0.45D) goals.add(new Goal("respond_to_threat", threat, Map.of(
                 "entity_threat", Double.toString(entityThreat),
-                "environment_threat", Double.toString(environmentThreat))));
+                "environment_threat", Double.toString(environmentThreat),
+                "memory_threat", Double.toString(memoryThreat))));
         if (goals.isEmpty()) goals.add(new Goal("maintain_routine", 0.25D, Map.of()));
 
         return goals.stream()
                 .flatMap(goal -> actions(npc, goal).stream().map(action ->
                         new Decision(npc.id(), npc.revision(), world.revision(), goal, action, score(npc, goal, action))))
                 .max(Comparator.comparingDouble(Decision::score));
+    }
+
+    private double rememberedDanger(NpcSnapshot npc, Instant now) {
+        return npc.recentMemories().stream()
+                .filter(LivelyAiEngine::dangerousMemory)
+                .mapToDouble(memory -> memoryPolicy.recallScore(memory, now))
+                .max().orElse(0D);
+    }
+
+    private static boolean dangerousMemory(NpcSnapshot.MemoryView memory) {
+        String type = memory.type().toLowerCase(Locale.ROOT);
+        return type.contains("threat") || type.contains("crime") || type.equals("battle_lost")
+                || type.equals("fled_from_threat") || type.equals("defensive_stance")
+                || "THREAT".equalsIgnoreCase(memory.facts().getOrDefault("intent", ""));
     }
 
     private static void addNeed(List<Goal> goals, String type, double priority) {
