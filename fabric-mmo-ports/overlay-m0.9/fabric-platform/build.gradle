@@ -32,18 +32,22 @@ subprojects {
 }
 
 project(':mmocore-fabric') {
-    dependencies { modImplementation project(':mythiclib-fabric') }
+    dependencies {
+        implementation project(path: ':mythiclib-fabric', configuration: 'namedElements')
+    }
 }
 
 project(':mmoitems-fabric') {
-    dependencies { modImplementation project(':mythiclib-fabric') }
+    dependencies {
+        implementation project(path: ':mythiclib-fabric', configuration: 'namedElements')
+    }
 }
 
 project(':server-smoke') {
     dependencies {
-        modImplementation project(':mythiclib-fabric')
-        modImplementation project(':mmocore-fabric')
-        modImplementation project(':mmoitems-fabric')
-        modImplementation project(':mythicmobs-fabric')
+        implementation project(path: ':mythiclib-fabric', configuration: 'namedElements')
+        implementation project(path: ':mmocore-fabric', configuration: 'namedElements')
+        implementation project(path: ':mmoitems-fabric', configuration: 'namedElements')
+        implementation project(path: ':mythicmobs-fabric', configuration: 'namedElements')
     }
 }
