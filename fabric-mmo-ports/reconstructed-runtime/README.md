@@ -11,7 +11,7 @@ cd fabric-mmo-rebuild
 ./build-offline.sh
 ```
 
-Source archive SHA-256: `3b959b4308885486f0c60d3c2fde5c6b5d986d3ec6e8fde9a6ef2b31b59fa202`
+Source archive SHA-256: `bf34d2d8a6c8711bf5fa8769f02443c1b8fede9167cb0ec770e207098c79cb89`
 
 Java 21 smoke gates in this slice:
 
