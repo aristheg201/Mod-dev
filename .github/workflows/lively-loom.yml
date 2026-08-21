@@ -85,18 +85,44 @@ jobs:
           done
           kill -KILL -"$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
-      - name: Cobblemon integration server boot smoke
+      - name: Cobblemon production server boot smoke
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p lively-npcs-integration/run lively-npcs-integration/build
-          printf 'eula=true\n' > lively-npcs-integration/run/eula.txt
-          log=lively-npcs-integration/build/server-smoke.log
-          setsid gradle --no-daemon :lively-npcs-integration:runServer > "$log" 2>&1 &
+          smoke=lively-npcs-integration/build/production-smoke
+          log=lively-npcs-integration/build/production-server-smoke.log
+          rm -rf "$smoke"
+          mkdir -p "$smoke/mods" lively-npcs-integration/build
+
+          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          COBBLEMON="$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL/kF7CvxTo" -type f -name '*.jar' | head -n1)"
+          FABRIC_API_VERSION="$(awk -F= '$1 == "fabric_api_version" { print $2 }' gradle.properties)"
+          FABRIC_API="$(find "$HOME/.gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/$FABRIC_API_VERSION" -type f -name 'fabric-api-*.jar' | head -n1)"
+          test -f "$CORE"
+          test -f "$INTEGRATION"
+          test -f "$COBBLEMON"
+          test -f "$FABRIC_API"
+
+          cp "$CORE" "$INTEGRATION" "$COBBLEMON" "$FABRIC_API" "$smoke/mods/"
+          curl --fail --silent --show-error --location \
+            https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.2/fabric-installer-1.1.2.jar \
+            --output "$smoke/fabric-installer.jar"
+          java -jar "$smoke/fabric-installer.jar" server -mcversion 1.21.1 -loader 0.18.4 -downloadMinecraft -dir "$smoke"
+          LAUNCHER="$(find "$smoke" -maxdepth 1 -type f -name 'fabric-server*.jar' ! -name 'fabric-installer.jar' | head -n1)"
+          test -f "$LAUNCHER"
+          printf 'eula=true\n' > "$smoke/eula.txt"
+          printf 'online-mode=false\nview-distance=4\nsimulation-distance=4\n' > "$smoke/server.properties"
+
+          pushd "$smoke" >/dev/null
+          launcher_name="$(basename "$LAUNCHER")"
+          setsid java -Xms512M -Xmx2G -jar "$launcher_name" nogui > "../production-server-smoke.log" 2>&1 &
           pid=$!
+          popd >/dev/null
+
           ready=0
-          for _ in $(seq 1 150); do
-            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed' "$log"; then
+          for _ in $(seq 1 240); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed|Uncaught exception in thread "main"' "$log"; then
               kill -TERM -"$pid" 2>/dev/null || true
               wait "$pid" 2>/dev/null || true
               cat "$log"
@@ -118,7 +144,7 @@ jobs:
             exit 1
           fi
           kill -TERM -"$pid" 2>/dev/null || true
-          for _ in $(seq 1 10); do
+          for _ in $(seq 1 15); do
             kill -0 "$pid" 2>/dev/null || break
             sleep 1
           done
@@ -153,6 +179,6 @@ jobs:
             lively-npcs/build/server-smoke.log
             lively-npcs-integration/build/libs/*.jar
             lively-npcs-integration/build/libs/fabric.mod.built.json
-            lively-npcs-integration/build/server-smoke.log
+            lively-npcs-integration/build/production-server-smoke.log
             SHA256.txt
           if-no-files-found: error
