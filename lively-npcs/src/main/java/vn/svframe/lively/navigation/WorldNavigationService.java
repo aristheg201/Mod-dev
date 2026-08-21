@@ -115,7 +115,7 @@ public final class WorldNavigationService implements AutoCloseable {
             if (task.cancelled || npcs.get(task.npcId).isEmpty()) { tasks.remove(task.npcId, task); continue; }
             updateDynamicTarget(server, task, tick);
             if (task.builder != null) { sample(server, task); continue; }
-            if (task.planning) continue;
+            if (task.planning || tick < task.retryAt) continue;
             if (task.path == null || task.pathIndex >= task.path.size()) {
                 if (nearTarget(task)) {
                     if (task.mode == Mode.FOLLOW || task.mode == Mode.ESCORT) continue;
@@ -153,6 +153,7 @@ public final class WorldNavigationService implements AutoCloseable {
         task.target = position; task.world = world;
         if (changed && !nearTarget(task) && tick - task.lastRepath >= REPATH_INTERVAL) {
             task.path = null; task.builder = null; task.planning = false; task.lastRepath = tick;
+            task.noPathFailures = 0; task.retryAt = 0L; task.reason = "target_moved"; task.phase = "repath";
         }
     }
 
@@ -168,7 +169,8 @@ public final class WorldNavigationService implements AutoCloseable {
         CacheKey cacheKey = CacheKey.of(task.world, current, segment);
         CachedPath cached = cache.get(cacheKey);
         if (cached != null && server.getTicks() - cached.createdTick <= CACHE_TTL_TICKS && validateCached(world, cached.path)) {
-            task.path = cached.path; task.pathIndex = Math.min(1, cached.path.size() - 1); task.phase = "moving_cached"; task.reason = ""; return;
+            task.path = cached.path; task.pathIndex = Math.min(1, cached.path.size() - 1); task.phase = "moving_cached"; task.reason = "";
+            task.noPathFailures = 0; task.retryAt = 0L; return;
         }
 
         int minX = (int) Math.floor(Math.min(current.x, segment.x)) - 6;
@@ -216,8 +218,20 @@ public final class WorldNavigationService implements AutoCloseable {
                 Task current = tasks.get(task.npcId);
                 if (current != task || current.revision != expected || current.cancelled) return;
                 current.planning = false;
-                if (path.isEmpty()) { current.reason = "no_path"; current.phase = "blocked"; return; }
+                if (path.isEmpty()) {
+                    current.noPathFailures++;
+                    current.reason = "no_path:" + current.noPathFailures;
+                    if (NavigationRetryPolicy.abandon(current.mode, current.noPathFailures)) {
+                        current.phase = "abandoned";
+                        tasks.remove(current.npcId, current);
+                    } else {
+                        current.retryAt = server.getTicks() + NavigationRetryPolicy.delayTicks(current.noPathFailures);
+                        current.phase = "backoff";
+                    }
+                    return;
+                }
                 current.path = path; current.pathIndex = Math.min(1, path.size() - 1); current.phase = "moving"; current.reason = "";
+                current.noPathFailures = 0; current.retryAt = 0L;
                 if (cache.size() < MAX_CACHE) cache.put(snapshot.cacheKey, new CachedPath(path, server.getTicks()));
             });
         });
@@ -230,7 +244,7 @@ public final class WorldNavigationService implements AutoCloseable {
         if (tick % 10L == 0L) {
             ServerWorld world = world(server, task.world);
             if (world == null || classify(world, node) == null) {
-                task.path = null; task.reason = "path_invalidated"; task.phase = "repath"; return;
+                task.path = null; task.reason = "path_invalidated"; task.phase = "repath"; task.retryAt = tick + REPATH_INTERVAL; return;
             }
         }
         Vec3d target = new Vec3d(node.getX() + 0.5D, node.getY(), node.getZ() + 0.5D);
@@ -394,7 +408,8 @@ public final class WorldNavigationService implements AutoCloseable {
     private static final class Task {
         final UUID npcId; final long revision; final Mode mode; final UUID trackedEntity; final double stopDistance;
         volatile String world; volatile Vec3d target; volatile SnapshotBuilder builder; volatile boolean planning, cancelled;
-        volatile List<BlockPos> path; volatile int pathIndex; volatile long lastTargetRefresh, lastRepath;
+        volatile List<BlockPos> path; volatile int pathIndex; volatile long lastTargetRefresh, lastRepath, retryAt;
+        volatile int noPathFailures;
         volatile String phase = "queued", reason = "";
         Task(UUID npcId, long revision, Mode mode, String world, Vec3d target, UUID trackedEntity, double stopDistance) {
             this.npcId = npcId; this.revision = revision; this.mode = mode; this.world = world; this.target = target;
