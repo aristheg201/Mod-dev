@@ -105,6 +105,12 @@ public final class SocialEngine {
                 RelationshipType.STRANGER, 0L, Instant.now(), List.of()));
     }
 
+    /** Reads a relationship without creating a synthetic STRANGER record merely because something was observed. */
+    public Optional<Relationship> findRelationship(ActorId a, ActorId b) {
+        if (a == null || b == null || a.equals(b)) return Optional.empty();
+        return Optional.ofNullable(relationships.get(Pair.normalized(a, b)));
+    }
+
     public Relationship apply(ActorId a, ActorId b, SocialDelta delta) {
         Objects.requireNonNull(delta);
         Pair pair = Pair.normalized(a, b);
