@@ -1,0 +1,76 @@
+package vn.svframe.lively.quest;
+
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.math.Vec3d;
+import vn.svframe.lively.actor.ActorId;
+import vn.svframe.lively.api.LivelyApi;
+import vn.svframe.lively.world.SemanticStructureRegistry;
+
+import java.util.Map;
+
+/** Read-only world checks for exploration, semantic delivery and escort completion. */
+public final class QuestWorldProgressionBootstrap implements ModInitializer {
+    @Override
+    public void onInitialize() {
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 20L != 0L) return;
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) progress(player);
+        });
+    }
+
+    private void progress(ServerPlayerEntity player) {
+        ActorId owner = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
+        for (QuestRuntime.Quest quest : LivelyApi.quests().byOwner(owner).stream()
+                .filter(value -> value.status() == QuestRuntime.Status.ACTIVE).limit(64).toList()) {
+            for (QuestRuntime.Objective objective : quest.objectives()) {
+                if (quest.progress().getOrDefault(objective.id(), 0L) >= objective.required()) continue;
+                boolean complete = switch (objective.type()) {
+                    case EXPLORATION -> atDestination(player, objective);
+                    case DELIVERY -> Boolean.parseBoolean(objective.facts().getOrDefault("semantic_delivery", "false"))
+                            && atDestination(player, objective);
+                    case ESCORT -> atDestination(player, objective) && escortArrived(quest, objective);
+                    default -> false;
+                };
+                if (complete) LivelyApi.quests().progress(quest.id(), objective.id(), 1L);
+            }
+        }
+    }
+
+    private boolean escortArrived(QuestRuntime.Quest quest, QuestRuntime.Objective objective) {
+        if (quest.issuer() == null || quest.issuer().kind() != ActorId.Kind.NPC || LivelyApi.npcs() == null) return false;
+        Vec3d position = LivelyApi.npcs().position(quest.issuer().uuid()).orElse(null);
+        String world = LivelyApi.npcs().worldKey(quest.issuer().uuid()).orElse(null);
+        return position != null && world != null && atDestination(world, position, objective);
+    }
+
+    private boolean atDestination(ServerPlayerEntity player, QuestRuntime.Objective objective) {
+        return atDestination(player.getServerWorld().getRegistryKey().getValue().toString(), player.getPos(), objective);
+    }
+
+    private boolean atDestination(String world, Vec3d position, QuestRuntime.Objective objective) {
+        String structureId = objective.facts().getOrDefault("structure", objective.target());
+        SemanticStructureRegistry.Structure structure = LivelyApi.structures().get(structureId).orElse(null);
+        if (structure != null) return structure.bounds().world().equals(world) && inside(structure.bounds(), position);
+
+        Map<String, String> facts = objective.facts();
+        String targetWorld = facts.get("world");
+        if (targetWorld == null || !targetWorld.equals(world)) return false;
+        try {
+            double x = Double.parseDouble(facts.get("x"));
+            double y = Double.parseDouble(facts.get("y"));
+            double z = Double.parseDouble(facts.get("z"));
+            double radius = Math.max(1D, Math.min(32D, Double.parseDouble(facts.getOrDefault("radius", "3"))));
+            return position.squaredDistanceTo(new Vec3d(x, y, z)) <= radius * radius;
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean inside(SemanticStructureRegistry.Bounds bounds, Vec3d position) {
+        return position.x >= bounds.minX() && position.x <= bounds.maxX() + 1D
+                && position.y >= bounds.minY() && position.y <= bounds.maxY() + 1D
+                && position.z >= bounds.minZ() && position.z <= bounds.maxZ() + 1D;
+    }
+}
