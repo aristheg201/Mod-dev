@@ -7,7 +7,10 @@
   "authors": ["SVFrame Studio"],
   "environment": "*",
   "entrypoints": {
-    "main": ["vn.svframe.lively.LivelyNpcs"]
+    "main": [
+      "vn.svframe.lively.LivelyNpcs",
+      "vn.svframe.lively.admin.NpcWizardBootstrap"
+    ]
   },
   "depends": {
     "fabricloader": ">=0.18.4",
