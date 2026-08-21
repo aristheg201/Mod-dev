@@ -7,6 +7,9 @@ import net.minecraft.util.math.Vec3d;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.dialogue.DialogueService;
+import vn.svframe.lively.economy.BusinessAccessPolicy;
+import vn.svframe.lively.economy.EconomyEngine;
+import vn.svframe.lively.event.WorldEventEngine;
 import vn.svframe.lively.model.NpcSnapshot;
 import vn.svframe.lively.model.NpcState;
 import vn.svframe.lively.model.WorldSnapshot;
@@ -22,7 +25,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -101,7 +106,7 @@ public final class NpcAutonomyService implements AutoCloseable {
             social.putAll(snapshot.needs());
             LivelyApi.actors().upsert(new ActorId(d.id(), ActorId.Kind.NPC), d.name(), social,
                     Map.of("role", d.role(), "world", d.world()),
-                    Set.of("npc", d.bodyType().name().toLowerCase(java.util.Locale.ROOT)));
+                    Set.of("npc", d.bodyType().name().toLowerCase(Locale.ROOT)));
         }
         actorCursor = advance(actorCursor, count, definitions.size());
     }
@@ -144,6 +149,7 @@ public final class NpcAutonomyService implements AutoCloseable {
             state.setNeed("hunger", clamp01(snapshot.need("hunger") + .0025D * scale));
             state.setNeed("fatigue", clamp01(snapshot.need("fatigue") + .0015D * scale));
             state.setNeed("social", clamp01(snapshot.need("social") + .001D * scale));
+            state.setNeed("money", clamp01(snapshot.need("money") + .00035D * scale));
         }
         needCursor = advance(needCursor, count, definitions.size());
     }
@@ -159,7 +165,7 @@ public final class NpcAutonomyService implements AutoCloseable {
             NpcState state = states.get(d.id()).orElse(null);
             if (state == null) continue;
             NpcSnapshot npc = state.snapshot(32);
-            WorldSnapshot world = captureWorld(server, d);
+            WorldSnapshot world = captureWorld(server, d, npc);
             AiScheduler.Submission submission = scheduler.submit(new AiScheduler.TaskKey(d.id(), "cognition"), AiScheduler.Priority.NORMAL,
                     npc.revision(), state::revision,
                     () -> engine.decide(npc, world).orElse(null),
@@ -234,27 +240,68 @@ public final class NpcAutonomyService implements AutoCloseable {
         return best;
     }
 
-    private WorldSnapshot captureWorld(MinecraftServer server, NpcDefinition d) {
-        Vec3d p = npcs.position(d.id()).orElse(new Vec3d(d.x(), d.y(), d.z()));
+    private WorldSnapshot captureWorld(MinecraftServer server, NpcDefinition d, NpcSnapshot npc) {
+        Vec3d position = npcs.position(d.id()).orElse(new Vec3d(d.x(), d.y(), d.z()));
         String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        ActorId self = new ActorId(d.id(), ActorId.Kind.NPC);
         List<WorldSnapshot.ObservedEntity> entities = new ArrayList<>();
+
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             if (entities.size() >= MAX_OBSERVED_ENTITIES) break;
-            if (player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey)
-                    && player.getPos().squaredDistanceTo(p) <= 32D * 32D) {
-                entities.add(new WorldSnapshot.ObservedEntity(player.getUuid(), "player", 0D));
-            }
+            if (!player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey)
+                    || player.getPos().squaredDistanceTo(position) > 32D * 32D) continue;
+            ActorId observed = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
+            entities.add(new WorldSnapshot.ObservedEntity(player.getUuid(), "player", perceivedThreat(npc, self, observed)));
         }
         for (NpcDefinition other : definitions) {
             if (entities.size() >= MAX_OBSERVED_ENTITIES) break;
             if (other.id().equals(d.id()) || !other.spawned()) continue;
             String otherWorld = npcs.worldKey(other.id()).orElse(other.world());
             if (!worldKey.equals(otherWorld)) continue;
-            if (npcs.position(other.id()).map(q -> q.squaredDistanceTo(p) <= 24D * 24D).orElse(false)) {
-                entities.add(new WorldSnapshot.ObservedEntity(other.id(), "npc", 0D));
+            if (npcs.position(other.id()).map(q -> q.squaredDistanceTo(position) <= 24D * 24D).orElse(false)) {
+                ActorId observed = new ActorId(other.id(), ActorId.Kind.NPC);
+                entities.add(new WorldSnapshot.ObservedEntity(other.id(), "npc", perceivedThreat(npc, self, observed)));
             }
         }
-        return new WorldSnapshot(System.nanoTime(), worldKey, server.getTicks(), entities, Map.of());
+
+        double environmentThreat = environmentThreat(d, worldKey, position);
+        return new WorldSnapshot(System.nanoTime(), worldKey, server.getTicks(), entities,
+                Map.of("environment_threat", environmentThreat));
+    }
+
+    private double perceivedThreat(NpcSnapshot npc, ActorId self, ActorId observed) {
+        NpcSnapshot.RelationshipView local = npc.relationship(observed.uuid());
+        SocialEngine.Relationship social = LivelyApi.social().findRelationship(self, observed).orElse(null);
+        double reputation = LivelyApi.social().reputation(observed, SocialEngine.ReputationScope.GLOBAL, "");
+        double hostility = social == null ? 0D : social.hostility();
+        double typeBonus = social == null ? 0D : switch (social.type()) {
+            case ENEMY -> .18D;
+            case RIVAL -> .08D;
+            default -> 0D;
+        };
+        return clamp01(local.fear() * .34D + local.suspicion() * .18D + Math.max(0D, -local.trust()) * .12D
+                + hostility * .24D + Math.max(0D, -reputation) * .08D + typeBonus);
+    }
+
+    private double environmentThreat(NpcDefinition d, String worldKey, Vec3d position) {
+        double threat = 0D;
+        for (WorldEventEngine.WorldEvent event : LivelyApi.events().activeEvents()) {
+            double category = switch (event.category()) {
+                case DISASTER -> 1D;
+                case CRIME, FACTION_CONFLICT -> .78D;
+                case POLITICAL -> .48D;
+                case MYSTERY -> .36D;
+                default -> .20D;
+            };
+            boolean relevant = event.participants().contains(new ActorId(d.id(), ActorId.Kind.NPC));
+            if (!relevant && event.structureId() != null) {
+                SemanticStructureRegistry.Structure structure = LivelyApi.structures().get(event.structureId()).orElse(null);
+                relevant = structure != null && structure.bounds().world().equals(worldKey)
+                        && inside(structure.bounds(), position);
+            }
+            if (relevant) threat = Math.max(threat, clamp01(event.intensity() * category));
+        }
+        return threat;
     }
 
     private void applyDecision(MinecraftServer server, UUID npcId, AiAction action) {
@@ -267,25 +314,145 @@ public final class NpcAutonomyService implements AutoCloseable {
             }
             case "perform_occupation" -> {
                 String work = d.metadata().get("work.structure");
-                if (work != null) navigation.goToStructure(npcId, work);
+                if (work != null && navigation.goToStructure(npcId, work)) {
+                    states.get(npcId).ifPresent(state -> state.setNeed("money", Math.max(0D, state.snapshot(1).need("money") - .08D)));
+                }
             }
             case "seek_food" -> nearestStructure(d, "restaurant", "shop", "market")
                     .ifPresent(id -> navigation.goToStructure(npcId, id));
             case "start_dialogue" -> startNearbyDialogue(server, d);
-            case "consume_food" -> states.get(npcId).ifPresent(state ->
-                    state.setNeed("hunger", Math.max(0D, state.snapshot(1).need("hunger") - .20D)));
+            case "consume_food" -> consumeFood(d);
+            case "flee" -> fleeFromThreat(server, d);
+            case "defend" -> defendAgainstThreat(server, d);
+            case "offer_trade" -> offerTrade(server, d);
             default -> states.get(npcId).ifPresent(state ->
                     state.remember("ai_decision", Map.of("action", action.type()), .08D, 1D));
         }
     }
 
-    private java.util.Optional<String> nearestStructure(NpcDefinition d, String... types) {
+    private void consumeFood(NpcDefinition d) {
+        Vec3d position = npcs.position(d.id()).orElse(null);
+        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        if (position == null) return;
+        boolean foodAvailable = LivelyApi.structures().at(worldKey, position.x, position.y, position.z).stream().anyMatch(structure -> {
+            String type = structure.type().toLowerCase(Locale.ROOT);
+            return Set.of("restaurant", "shop", "market", "inn", "home").contains(type)
+                    || structure.capabilities().contains("cook") || structure.capabilities().contains("trade");
+        });
+        if (!foodAvailable) {
+            nearestStructure(d, "restaurant", "shop", "market").ifPresent(id -> navigation.goToStructure(d.id(), id));
+            return;
+        }
+        states.get(d.id()).ifPresent(state -> {
+            state.setNeed("hunger", Math.max(0D, state.snapshot(1).need("hunger") - .20D));
+            state.remember("semantic_meal", Map.of("world", worldKey), .12D, 1D);
+        });
+    }
+
+    private void fleeFromThreat(MinecraftServer server, NpcDefinition d) {
+        ThreatObservation threat = highestThreat(server, d).orElse(null);
+        Vec3d origin = threat == null ? dangerousEventOrigin(d).orElse(null) : threat.position();
+        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        if (origin == null) {
+            String home = d.metadata().get("home.structure");
+            if (home != null) navigation.goToStructure(d.id(), home);
+            return;
+        }
+        double strength = threat == null ? environmentThreat(d, worldKey, npcs.position(d.id()).orElse(origin)) : threat.threat();
+        double distance = 10D + strength * 14D;
+        if (navigation.flee(d.id(), worldKey, origin, distance)) {
+            states.get(d.id()).ifPresent(state -> state.remember("fled_from_threat",
+                    Map.of("source", threat == null ? "world_event" : threat.actor().uuid().toString(),
+                            "threat", Double.toString(strength)), .48D, 1D));
+        }
+    }
+
+    private void defendAgainstThreat(MinecraftServer server, NpcDefinition d) {
+        ThreatObservation threat = highestThreat(server, d).orElse(null);
+        if (threat == null) return;
+        navigation.stop(d.id());
+        npcs.lookAt(server, d.id(), threat.position());
+        states.get(d.id()).ifPresent(state -> state.remember("defensive_stance",
+                Map.of("against", threat.actor().uuid().toString(), "threat", Double.toString(threat.threat())), .42D, 1D));
+    }
+
+    private void offerTrade(MinecraftServer server, NpcDefinition d) {
+        ActorId owner = new ActorId(d.id(), ActorId.Kind.NPC);
+        List<EconomyEngine.Business> businesses = LivelyApi.economy().businessesByOwner(owner).stream()
+                .filter(EconomyEngine.Business::open).toList();
+        if (businesses.isEmpty()) return;
+        Vec3d position = npcs.position(d.id()).orElse(null);
+        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        DialogueService dialogues = LivelyApi.dialogues();
+        NpcState state = states.get(d.id()).orElse(null);
+        if (position == null || dialogues == null || state == null) return;
+
+        server.getPlayerManager().getPlayerList().stream()
+                .filter(player -> player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey))
+                .filter(player -> player.getPos().squaredDistanceTo(position) <= 25D)
+                .filter(player -> dialogues.session(player.getUuid()).isEmpty())
+                .filter(player -> businesses.stream().anyMatch(business -> canOfferBusiness(state, player, business)))
+                .findFirst().ifPresent(player -> {
+                    dialogues.start(player, d.id(), d.name(), d.role());
+                    state.setNeed("money", Math.max(0D, state.snapshot(1).need("money") - .06D));
+                    state.remember("trade_offered", Map.of("player", player.getUuid().toString()), .16D, 1D);
+                });
+    }
+
+    private boolean canOfferBusiness(NpcState state, ServerPlayerEntity player, EconomyEngine.Business business) {
+        double trust = state.snapshot(1).relationship(player.getUuid()).trust();
+        ActorId playerActor = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
+        double reputation = LivelyApi.social().reputation(playerActor, SocialEngine.ReputationScope.GLOBAL, "");
+        return BusinessAccessPolicy.evaluate(business, trust, reputation).allowed();
+    }
+
+    private Optional<ThreatObservation> highestThreat(MinecraftServer server, NpcDefinition d) {
+        NpcSnapshot npc = states.snapshot(d.id()).orElse(null);
+        Vec3d position = npcs.position(d.id()).orElse(null);
+        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        if (npc == null || position == null) return Optional.empty();
+        ActorId self = new ActorId(d.id(), ActorId.Kind.NPC);
+        ThreatObservation best = null;
+
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            if (!player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey)
+                    || player.getPos().squaredDistanceTo(position) > 32D * 32D) continue;
+            ActorId actor = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
+            double threat = perceivedThreat(npc, self, actor);
+            if (best == null || threat > best.threat()) best = new ThreatObservation(actor, player.getPos(), threat);
+        }
+        for (NpcDefinition other : definitions) {
+            if (other.id().equals(d.id()) || !other.spawned()) continue;
+            String otherWorld = npcs.worldKey(other.id()).orElse(other.world());
+            Vec3d otherPos = npcs.position(other.id()).orElse(null);
+            if (!worldKey.equals(otherWorld) || otherPos == null || otherPos.squaredDistanceTo(position) > 24D * 24D) continue;
+            ActorId actor = new ActorId(other.id(), ActorId.Kind.NPC);
+            double threat = perceivedThreat(npc, self, actor);
+            if (best == null || threat > best.threat()) best = new ThreatObservation(actor, otherPos, threat);
+        }
+        return best == null || best.threat() < .35D ? Optional.empty() : Optional.of(best);
+    }
+
+    private Optional<Vec3d> dangerousEventOrigin(NpcDefinition d) {
+        Vec3d position = npcs.position(d.id()).orElse(null);
+        String worldKey = npcs.worldKey(d.id()).orElse(d.world());
+        if (position == null) return Optional.empty();
+        return LivelyApi.events().activeEvents().stream()
+                .filter(event -> event.intensity() >= .45D && event.structureId() != null)
+                .map(event -> LivelyApi.structures().get(event.structureId()).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .filter(structure -> structure.bounds().world().equals(worldKey) && inside(structure.bounds(), position))
+                .max(Comparator.comparingDouble(structure -> center(structure.bounds()).squaredDistanceTo(position) * -1D))
+                .map(structure -> center(structure.bounds()));
+    }
+
+    private Optional<String> nearestStructure(NpcDefinition d, String... types) {
         Vec3d p = npcs.position(d.id()).orElse(new Vec3d(d.x(), d.y(), d.z()));
         Set<String> wanted = Set.of(types);
         String worldKey = npcs.worldKey(d.id()).orElse(d.world());
         return LivelyApi.structures().snapshot().structures().values().stream()
                 .filter(structure -> structure.bounds().world().equals(worldKey)
-                        && wanted.contains(structure.type().toLowerCase(java.util.Locale.ROOT)))
+                        && wanted.contains(structure.type().toLowerCase(Locale.ROOT)))
                 .min(Comparator.comparingDouble(structure -> center(structure.bounds()).squaredDistanceTo(p)))
                 .map(SemanticStructureRegistry.Structure::id);
     }
@@ -311,6 +478,12 @@ public final class NpcAutonomyService implements AutoCloseable {
     private static Vec3d center(SemanticStructureRegistry.Bounds bounds) {
         return new Vec3d((bounds.minX() + bounds.maxX() + 1) / 2D, bounds.minY() + 1D,
                 (bounds.minZ() + bounds.maxZ() + 1) / 2D);
+    }
+
+    private static boolean inside(SemanticStructureRegistry.Bounds bounds, Vec3d position) {
+        return position.x >= bounds.minX() && position.x <= bounds.maxX() + 1D
+                && position.y >= bounds.minY() && position.y <= bounds.maxY() + 1D
+                && position.z >= bounds.minZ() && position.z <= bounds.maxZ() + 1D;
     }
 
     private static int minuteOfDay(long time) {
@@ -342,6 +515,7 @@ public final class NpcAutonomyService implements AutoCloseable {
         }
     }
     private record SpatialNpc(NpcDefinition definition, Vec3d position, String world) {}
+    private record ThreatObservation(ActorId actor, Vec3d position, double threat) {}
 
     @Override
     public void close() {
