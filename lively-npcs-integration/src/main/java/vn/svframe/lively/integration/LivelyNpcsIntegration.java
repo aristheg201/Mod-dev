@@ -11,11 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.integration.cobblemon.CobblemonIntegrationBootstrap;
+import vn.svframe.lively.integration.cobblemon.CobblemonWorldAwarenessService;
 
 /** External-mod bridge. Core AI remains independent from Cobblemon and the rest of the server ecosystem. */
 public final class LivelyNpcsIntegration implements ModInitializer {
     public static final String MOD_ID = "livelynpcs_integration";
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    private final CobblemonWorldAwarenessService worldAwareness = new CobblemonWorldAwarenessService();
 
     @Override
     public void onInitialize() {
@@ -23,6 +25,7 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         boolean cobblemon = FabricLoader.getInstance().isModLoaded("cobblemon");
         if (cobblemon) {
             CobblemonIntegrationBootstrap.installIfPresent();
+            worldAwareness.install();
             ServerLifecycleEvents.SERVER_STARTED.register(server -> {
                 boolean installed = CobblemonIntegrationBootstrap.installNpcBodyProvider(server);
                 LOGGER.info("Lively Cobblemon body provider bound and spawned bodies restored for server session={}", installed);
