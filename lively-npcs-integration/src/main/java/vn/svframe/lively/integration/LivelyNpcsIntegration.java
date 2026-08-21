@@ -9,9 +9,13 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.integration.cobblemon.CobblemonIntegrationBootstrap;
 import vn.svframe.lively.integration.cobblemon.CobblemonWorldAwarenessService;
+import vn.svframe.lively.quest.QuestRuntime;
+
+import java.util.Map;
 
 /** External-mod bridge. Core AI remains independent from Cobblemon and the rest of the server ecosystem. */
 public final class LivelyNpcsIntegration implements ModInitializer {
@@ -43,6 +47,10 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             if (world.isClient || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity serverPlayer)) return ActionResult.PASS;
             if (!entity.getCommandTags().contains("lively") || !looksLikeCobblemonNpc(entity.getClass()) || LivelyApi.dialogues() == null) return ActionResult.PASS;
+            ActorId owner = new ActorId(serverPlayer.getUuid(), ActorId.Kind.PLAYER);
+            String npc = entity.getUuid().toString();
+            LivelyApi.quests().signal(owner, QuestRuntime.ObjectiveType.SOCIAL, npc, 1L,
+                    Map.of("actor", npc, "npc", npc));
             LivelyApi.dialogues().start(serverPlayer, entity.getUuid(), entity.getName().getString(), "cobblemon_npc");
             return ActionResult.SUCCESS;
         });
