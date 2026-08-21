@@ -160,11 +160,11 @@ public final class NpcAutonomyService implements AutoCloseable {
             if (state == null) continue;
             NpcSnapshot npc = state.snapshot(32);
             WorldSnapshot world = captureWorld(server, d);
-            boolean accepted = scheduler.submit(new AiScheduler.TaskKey(d.id(), "cognition"), AiScheduler.Priority.NORMAL,
+            AiScheduler.Submission submission = scheduler.submit(new AiScheduler.TaskKey(d.id(), "cognition"), AiScheduler.Priority.NORMAL,
                     npc.revision(), state::revision,
                     () -> engine.decide(npc, world).orElse(null),
                     decision -> { if (decision != null) applyDecision(server, d.id(), decision.action()); });
-            if (accepted) submitted++;
+            if (submission.accepted()) submitted++;
         }
         decisionCursor = advance(decisionCursor, Math.max(1, attempts), active.size());
     }
