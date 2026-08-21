@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,12 +45,22 @@ public final class CobblemonWorldAwarenessService {
     private static final int MIGRATION_THRESHOLD = 14;
     private static final int MAX_TRACKED_SPAWNS = 4096;
     private static final double OBSERVER_RADIUS_SQ = 48D * 48D;
+    private static final int SPATIAL_CELL = 64;
+    private static final long SPATIAL_REFRESH_TICKS = 100L;
 
     private record SpawnSample(long at, ActorId actor, String world, String species, Vec3d position, boolean rare) {}
+    private record NpcSample(UUID id, String world, Vec3d position) {}
+    private record SpatialCell(String world, int x, int z) {
+        static SpatialCell of(String world, Vec3d position) {
+            return new SpatialCell(world, Math.floorDiv((int) Math.floor(position.x), SPATIAL_CELL),
+                    Math.floorDiv((int) Math.floor(position.z), SPATIAL_CELL));
+        }
+    }
 
     private final ConcurrentHashMap<String, ArrayDeque<SpawnSample>> spawns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ActorId, Long> creatureExpiry = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> migrationCooldown = new ConcurrentHashMap<>();
+    private volatile Map<SpatialCell, List<NpcSample>> spatial = Map.of();
     private volatile MinecraftServer server;
     private volatile boolean installed;
 
@@ -78,6 +89,8 @@ public final class CobblemonWorldAwarenessService {
         spawns.clear();
         creatureExpiry.clear();
         migrationCooldown.clear();
+        spatial = Map.of();
+        rebuildSpatialIndex();
     }
 
     private void stopSession(MinecraftServer stopping) {
@@ -86,12 +99,14 @@ public final class CobblemonWorldAwarenessService {
         spawns.clear();
         creatureExpiry.clear();
         migrationCooldown.clear();
+        spatial = Map.of();
         server = null;
     }
 
     private void onSpawn(PokemonEntity entity) {
         MinecraftServer active = server;
-        if (active == null || entity == null || entity.getWorld().isClient()) return;
+        if (active == null || entity == null || entity.getWorld().isClient()
+                || entity.getCommandTags().contains("lively_body")) return;
         Pokemon pokemon = entity.getPokemon();
         if (pokemon == null) return;
         String world = entity.getWorld().getRegistryKey().getValue().toString();
@@ -191,10 +206,48 @@ public final class CobblemonWorldAwarenessService {
     }
 
     private void tick(MinecraftServer active) {
-        if (server != active || active.getTicks() % 1200L != 0L) return;
+        if (server != active) return;
+        long tick = active.getTicks();
+        if (tick % SPATIAL_REFRESH_TICKS == 0L) rebuildSpatialIndex();
+        if (tick % 1200L != 0L) return;
         long now = System.currentTimeMillis();
         pruneCreatures(now);
         for (Map.Entry<String, ArrayDeque<SpawnSample>> entry : spawns.entrySet()) evaluateMigration(entry.getKey(), entry.getValue(), now);
+    }
+
+    private void rebuildSpatialIndex() {
+        if (LivelyApi.npcs() == null) { spatial = Map.of(); return; }
+        Map<SpatialCell, List<NpcSample>> mutable = new LinkedHashMap<>();
+        for (NpcDefinition npc : LivelyApi.npcs().snapshot().values()) {
+            if (!npc.spawned()) continue;
+            String world = LivelyApi.npcs().worldKey(npc.id()).orElse(npc.world());
+            Vec3d position = LivelyApi.npcs().position(npc.id()).orElse(null);
+            if (world == null || position == null) continue;
+            mutable.computeIfAbsent(SpatialCell.of(world, position), ignored -> new ArrayList<>())
+                    .add(new NpcSample(npc.id(), world, position));
+        }
+        Map<SpatialCell, List<NpcSample>> frozen = new LinkedHashMap<>();
+        mutable.forEach((cell, values) -> frozen.put(cell, List.copyOf(values)));
+        spatial = Map.copyOf(frozen);
+    }
+
+    private List<NpcSample> nearby(String world, Vec3d position, double radius, int limit) {
+        if (world == null || position == null || limit <= 0) return List.of();
+        SpatialCell center = SpatialCell.of(world, position);
+        int cells = Math.max(1, (int) Math.ceil(radius / SPATIAL_CELL));
+        double radiusSq = radius * radius;
+        ArrayList<NpcSample> result = new ArrayList<>();
+        for (int dx = -cells; dx <= cells && result.size() < limit; dx++) {
+            for (int dz = -cells; dz <= cells && result.size() < limit; dz++) {
+                for (NpcSample sample : spatial.getOrDefault(new SpatialCell(world, center.x() + dx, center.z() + dz), List.of())) {
+                    if (sample.position().squaredDistanceTo(position) <= radiusSq) {
+                        result.add(sample);
+                        if (result.size() >= limit) break;
+                    }
+                }
+            }
+        }
+        return List.copyOf(result);
     }
 
     private void evaluateMigration(String key, ArrayDeque<SpawnSample> queue, long now) {
@@ -226,14 +279,11 @@ public final class CobblemonWorldAwarenessService {
     }
 
     private void socialResponseNearby(ServerPlayerEntity player, boolean rare, Map<String, String> facts) {
-        if (LivelyApi.npcs() == null) return;
+        if (LivelyApi.states() == null) return;
         ActorId playerActor = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
         String world = player.getServerWorld().getRegistryKey().getValue().toString();
-        for (NpcDefinition npc : LivelyApi.npcs().snapshot().values()) {
-            if (!npc.spawned() || !world.equals(LivelyApi.npcs().worldKey(npc.id()).orElse(npc.world()))) continue;
-            Vec3d pos = LivelyApi.npcs().position(npc.id()).orElse(null);
-            if (pos == null || pos.squaredDistanceTo(player.getPos()) > OBSERVER_RADIUS_SQ) continue;
-            ActorId observer = new ActorId(npc.id(), ActorId.Kind.NPC);
+        for (NpcSample sample : nearby(world, player.getPos(), 48D, 128)) {
+            ActorId observer = new ActorId(sample.id(), ActorId.Kind.NPC);
             LivelyApi.social().apply(observer, playerActor, new SocialEngine.SocialDelta(
                     .003D, .001D, rare ? .018D : .006D, rare ? .004D : 0D, 0D, 0D, .008D,
                     "pokemon_capture_observed", facts));
@@ -241,25 +291,15 @@ public final class CobblemonWorldAwarenessService {
     }
 
     private void rememberNearby(String world, Vec3d position, String type, Map<String, String> facts, double importance) {
-        if (LivelyApi.npcs() == null || LivelyApi.states() == null) return;
-        for (NpcDefinition npc : LivelyApi.npcs().snapshot().values()) {
-            if (!npc.spawned() || !world.equals(LivelyApi.npcs().worldKey(npc.id()).orElse(npc.world()))) continue;
-            Vec3d observer = LivelyApi.npcs().position(npc.id()).orElse(null);
-            if (observer == null || observer.squaredDistanceTo(position) > OBSERVER_RADIUS_SQ) continue;
-            LivelyApi.states().get(npc.id()).ifPresent(state -> state.remember(type, facts, importance, 1D));
+        if (LivelyApi.states() == null) return;
+        for (NpcSample sample : nearby(world, position, 48D, 128)) {
+            LivelyApi.states().get(sample.id()).ifPresent(state -> state.remember(type, facts, importance, 1D));
         }
     }
 
     private Set<ActorId> nearbyNpcActors(String world, Vec3d center, double radius, int limit) {
-        if (LivelyApi.npcs() == null) return Set.of();
-        double radiusSq = radius * radius;
         Set<ActorId> result = new HashSet<>();
-        for (NpcDefinition npc : LivelyApi.npcs().snapshot().values()) {
-            if (result.size() >= limit || !npc.spawned()) continue;
-            if (!world.equals(LivelyApi.npcs().worldKey(npc.id()).orElse(npc.world()))) continue;
-            Vec3d pos = LivelyApi.npcs().position(npc.id()).orElse(null);
-            if (pos != null && pos.squaredDistanceTo(center) <= radiusSq) result.add(new ActorId(npc.id(), ActorId.Kind.NPC));
-        }
+        for (NpcSample sample : nearby(world, center, radius, limit)) result.add(new ActorId(sample.id(), ActorId.Kind.NPC));
         return Set.copyOf(result);
     }
 
