@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Read-only world/interaction checks for exploration, social, semantic delivery and escort completion. */
 public final class QuestWorldProgressionBootstrap implements ModInitializer {
     private final ConcurrentHashMap<UUID, Long> lastInteractionSignal = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Boolean> spatialInside = new ConcurrentHashMap<>();
 
     @Override
     public void onInitialize() {
@@ -40,10 +41,7 @@ public final class QuestWorldProgressionBootstrap implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTicks() % 20L != 0L) return;
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) progress(player);
-            if (server.getTicks() % 1200L == 0L && lastInteractionSignal.size() > 4096) {
-                long cutoff = server.getTicks() - 1200L;
-                lastInteractionSignal.entrySet().removeIf(entry -> entry.getValue() < cutoff);
-            }
+            if (server.getTicks() % 1200L == 0L) cleanup(server.getTicks());
         });
     }
 
@@ -53,6 +51,9 @@ public final class QuestWorldProgressionBootstrap implements ModInitializer {
                 .filter(value -> value.status() == QuestRuntime.Status.ACTIVE).limit(64).toList()) {
             for (QuestRuntime.Objective objective : quest.objectives()) {
                 if (quest.progress().getOrDefault(objective.id(), 0L) >= objective.required()) continue;
+                if (objective.type() != QuestRuntime.ObjectiveType.EXPLORATION
+                        && objective.type() != QuestRuntime.ObjectiveType.DELIVERY
+                        && objective.type() != QuestRuntime.ObjectiveType.ESCORT) continue;
                 boolean complete = switch (objective.type()) {
                     case EXPLORATION -> atDestination(player, objective);
                     case DELIVERY -> Boolean.parseBoolean(objective.facts().getOrDefault("semantic_delivery", "false"))
@@ -60,7 +61,14 @@ public final class QuestWorldProgressionBootstrap implements ModInitializer {
                     case ESCORT -> atDestination(player, objective) && escortArrived(quest, objective);
                     default -> false;
                 };
-                if (complete) LivelyApi.quests().progress(quest.id(), objective.id(), 1L);
+                String key = spatialKey(player.getUuid(), quest.id(), objective.id());
+                boolean wasInside = spatialInside.getOrDefault(key, false);
+                if (complete) {
+                    spatialInside.put(key, true);
+                    if (!wasInside) LivelyApi.quests().progress(quest.id(), objective.id(), 1L);
+                } else if (wasInside) {
+                    spatialInside.remove(key);
+                }
             }
         }
     }
@@ -93,6 +101,34 @@ public final class QuestWorldProgressionBootstrap implements ModInitializer {
         } catch (RuntimeException ignored) {
             return false;
         }
+    }
+
+    private void cleanup(long tick) {
+        if (lastInteractionSignal.size() > 4096) {
+            long cutoff = tick - 1200L;
+            lastInteractionSignal.entrySet().removeIf(entry -> entry.getValue() < cutoff);
+        }
+        if (spatialInside.size() > 16_384) {
+            spatialInside.keySet().removeIf(key -> !activeSpatialKey(key));
+        }
+    }
+
+    private boolean activeSpatialKey(String key) {
+        String[] parts = key.split("/", 3);
+        if (parts.length != 3) return false;
+        try {
+            UUID player = UUID.fromString(parts[0]);
+            UUID quest = UUID.fromString(parts[1]);
+            ActorId owner = new ActorId(player, ActorId.Kind.PLAYER);
+            return LivelyApi.quests().byOwner(owner).stream().anyMatch(value -> value.id().equals(quest)
+                    && value.status() == QuestRuntime.Status.ACTIVE);
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private static String spatialKey(UUID player, UUID quest, String objective) {
+        return player + "/" + quest + "/" + objective.replace('/', '_');
     }
 
     private static boolean inside(SemanticStructureRegistry.Bounds bounds, Vec3d position) {
