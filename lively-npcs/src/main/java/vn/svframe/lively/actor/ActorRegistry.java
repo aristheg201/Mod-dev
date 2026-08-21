@@ -24,6 +24,7 @@ public final class ActorRegistry {
 
     public Optional<ActorSnapshot> get(ActorId id) { return Optional.ofNullable(actors.get(id)); }
     public boolean remove(ActorId id) { boolean removed = actors.remove(id) != null; if (removed) revision.incrementAndGet(); return removed; }
+    public void clear() { actors.clear(); revision.set(0L); }
     public Snapshot snapshot() { return new Snapshot(revision.get(), Map.copyOf(actors)); }
 
     public record Snapshot(long revision, Map<ActorId, ActorSnapshot> actors) {
