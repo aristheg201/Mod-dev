@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - feature/lively-npcs
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lively-npcs/**'
+      - 'lively-npcs-integration/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/lively-loom.yml'
   workflow_dispatch:
 
 permissions:
@@ -34,8 +44,8 @@ jobs:
         shell: bash
         run: |
           find lively-npcs/build/libs lively-npcs-integration/build/libs -maxdepth 1 -type f -name '*.jar' -print
-          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
-          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
           test -n "$CORE"
           test -n "$INTEGRATION"
           unzip -p "$CORE" fabric.mod.json > lively-npcs/build/libs/fabric.mod.built.json
