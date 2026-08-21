@@ -127,9 +127,16 @@ public final class NpcRuntime {
         NpcBody body = bodies.get(id); if (body == null || !body.spawned()) return false; body.lookAt(server, target); return true;
     }
     public boolean interact(ServerPlayerEntity player, UUID entityUuid, DialogueService dialogues) {
-        UUID npcId = entityToNpc.get(entityUuid); if (npcId == null) return false; NpcDefinition definition = definitions.get(npcId); if (definition == null) return false;
-        dialogues.start(player, npcId, definition.name(), definition.role());
-        states.get(npcId).ifPresent(state -> state.remember("physical_interaction", Map.of("player", player.getUuid().toString()), 0.20D, 1D));
+        UUID npcId = entityToNpc.get(entityUuid); if (npcId == null) return false;
+        NpcDefinition definition = definitions.get(npcId); if (definition == null) return false;
+        NpcState state = states.get(npcId).orElse(null);
+        NpcIdentityPolicy.Resolution identity = NpcIdentityPolicy.resolve(definition, state, player);
+        dialogues.start(player, npcId, identity.displayName(), definition.role());
+        if (state != null) {
+            state.remember("physical_interaction", Map.of("player", player.getUuid().toString()), 0.20D, 1D);
+            if (identity.revealed()) state.remember("identity_revealed",
+                    Map.of("player", player.getUuid().toString(), "identity", identity.displayName()), .72D, 1D);
+        }
         NpcBody body = bodies.get(npcId); if (body != null) body.onInteract(player); return true;
     }
     public void tick(MinecraftServer server) {
