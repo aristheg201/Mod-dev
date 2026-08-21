@@ -1,0 +1,93 @@
+name: Fabric MMO Ports
+
+on:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - 'fabric-mmo-ports/bootstrap-m0.8/**'
+      - '.github/workflows/fabric-mmo-ports.yml'
+      - '.fabric-mmo-build-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 8.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+
+      - name: Restore M0.8 source workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/mmo-workspace
+          base64 -d fabric-mmo-ports/bootstrap-m0.8/workspace.tar.gz.b64 > build/mmo-workspace.tar.gz
+          echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
+          find build/mmo-workspace -type f | wc -l
+
+      - name: Normalize Fabric metadata version
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/mmo-workspace/fabric-platform -path '*/src/main/resources/fabric.mod.json' -print0 | xargs -0 sed -i 's/${version}/0.8.0-dev/g'
+
+      - name: Java 21 runtime smoke gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace
+          chmod +x build-offline.sh
+          ./build-offline.sh
+
+      - name: Fabric Loom remapJar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          gradle --no-daemon --stacktrace clean remapJar
+
+      - name: Verify four remapped Fabric jars
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/fabric-mmo-jars
+          while IFS= read -r jar; do
+            name="$(basename "$jar")"
+            case "$name" in
+              *-sources.jar|*-dev.jar) continue ;;
+            esac
+            cp "$jar" build/fabric-mmo-jars/
+          done < <(find build/mmo-workspace/fabric-platform -path '*/build/libs/*.jar' -type f | sort)
+          count="$(find build/fabric-mmo-jars -maxdepth 1 -name '*.jar' -type f | wc -l)"
+          test "$count" -eq 4
+          for jar in build/fabric-mmo-jars/*.jar; do
+            echo "==> $jar"
+            unzip -p "$jar" fabric.mod.json | tee /dev/stderr | grep -q '"environment": "server"'
+            unzip -l "$jar" | grep -q '/runtime/'
+          done
+          sha256sum build/fabric-mmo-jars/*.jar | tee build/fabric-mmo-jars/SHA256SUMS
+
+      - name: Upload four Fabric JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Ports-0.8.0-dev
+          path: build/fabric-mmo-jars/
+          if-no-files-found: error
+          retention-days: 14
