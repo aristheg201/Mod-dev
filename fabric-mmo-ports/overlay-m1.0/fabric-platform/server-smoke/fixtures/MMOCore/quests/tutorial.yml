@@ -1,0 +1,10 @@
+level-req:
+  main: 1
+  mining: 1
+parent: []
+delay: 12
+objectives:
+  1:
+    type: 'mineblock{type="STONE";amount=3}'
+    triggers:
+    - 'message{format="done"}'
