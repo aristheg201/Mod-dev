@@ -8,6 +8,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
+      "vn.svframe.lively.quest.QuestWorldProgressionBootstrap",
       "vn.svframe.lively.LivelyNpcs",
       "vn.svframe.lively.admin.NpcWizardBootstrap",
       "vn.svframe.lively.admin.ChronicleCommandsBootstrap",
