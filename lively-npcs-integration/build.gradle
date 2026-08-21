@@ -7,15 +7,17 @@ dependencies {
     // Lively NPCs Integration remains a separate JAR and declares livelynpcs as a runtime mod dependency.
     implementation project(':lively-npcs')
 
-    // Exact Cobblemon 1.7.3 Fabric artifact published by Modrinth.
-    // Keep it compile-only for the shipped JAR, but load the same exact artifact in Loom's dev runtime
-    // so CI can boot the real Integration + Cobblemon mixin/entrypoint stack.
-    modCompileOnly "maven.modrinth:MdwFAVRL:kF7CvxTo"
-    modRuntimeOnly "maven.modrinth:MdwFAVRL:kF7CvxTo"
+    // Exact Cobblemon 1.7.3 Fabric artifact used by the server. The Modrinth Maven metadata exposes
+    // transitive Fabric dependencies as already-built intermediary jars, which cannot be dropped raw
+    // into Loom's named development runtime. Keep Cobblemon itself non-transitive and let Loom supply
+    // the Fabric API from the root project plus the exact Fabric Language Kotlin runtime explicitly.
+    modCompileOnly("maven.modrinth:MdwFAVRL:kF7CvxTo") { transitive = false }
+    modRuntimeOnly("maven.modrinth:MdwFAVRL:kF7CvxTo") { transitive = false }
+    modRuntimeOnly "net.fabricmc:fabric-language-kotlin:1.13.9+kotlin.2.3.10"
 
-    // Cobblemon exposes Kotlin collection types in its Java-visible API. Keep the marker/runtime types
-    // on the compile classpath only; Cobblemon supplies Fabric Language Kotlin in its runtime artifact.
-    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.1.20"
+    // Cobblemon exposes Kotlin collection types in its Java-visible API. The compile marker is kept
+    // separate from the runtime language adapter so the Integration JAR never bundles Kotlin itself.
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.3.10"
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
