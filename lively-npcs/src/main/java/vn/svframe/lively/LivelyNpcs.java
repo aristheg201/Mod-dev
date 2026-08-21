@@ -33,6 +33,7 @@ import vn.svframe.lively.simulation.CausalSimulationService;
 import vn.svframe.lively.simulation.FamilyProgressionService;
 import vn.svframe.lively.skin.SkinConfig;
 import vn.svframe.lively.skin.SkinResolver;
+import vn.svframe.lively.world.StructureCapabilityScanner;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -61,6 +62,7 @@ public final class LivelyNpcs implements ModInitializer {
     private CausalSimulationService causalSimulation;
     private FamilyProgressionService familyProgression;
     private BusinessSimulationService businessSimulation;
+    private StructureCapabilityScanner structureScanner;
 
     @Override
     public void onInitialize() {
@@ -72,6 +74,8 @@ public final class LivelyNpcs implements ModInitializer {
         causalSimulation = new CausalSimulationService();
         familyProgression = new FamilyProgressionService();
         businessSimulation = new BusinessSimulationService();
+        structureScanner = new StructureCapabilityScanner();
+        LivelyApi.installStructureScanner(structureScanner);
 
         stateRegistry = new NpcStateRegistry(new NpcStateStore(config.resolve("state")));
         LivelyApi.installStateRegistry(stateRegistry);
@@ -121,6 +125,7 @@ public final class LivelyNpcs implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             long tick = ticks.incrementAndGet();
             npcRuntime.tick(server);
+            structureScanner.tick(server);
             navigation.tick(server);
             autonomy.tick(server, tick);
             director.tick(tick);
