@@ -39,7 +39,13 @@ public final class LivelyNpcs implements ModInitializer {
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             long tick = ticks.incrementAndGet();
-            if (tick % 20L == 0L) LivelyApi.events().advance(Instant.now());
+            if (tick % 20L == 0L) {
+                Instant now = Instant.now();
+                LivelyApi.profiler().measure("world-events", () -> LivelyApi.events().advance(now));
+                LivelyApi.profiler().measure("quest-expiry", () -> LivelyApi.quests().expire(now));
+                LivelyApi.profiler().measure("rumor-expiry", () -> LivelyApi.social().expireRumors(now));
+            }
+            if (tick % 1200L == 0L) LivelyApi.profiler().measure("market-tick", () -> { LivelyApi.economy().marketTick(); return 0; });
             if (tick % 6000L != 0L || !pendingAutosave.isDone()) return;
             pendingAutosave = stateRegistry.saveAll().whenComplete((ignored, error) -> {
                 if (error != null) LOGGER.error("Lively NPC state autosave failed", error);
@@ -55,6 +61,6 @@ public final class LivelyNpcs implements ModInitializer {
                 stateRegistry.close();
             }
         });
-        LOGGER.info("Lively NPCs initialized: offline AI, actor/world state, event/story director, world-integrity boundary, persistence, dialogue, navigation and combat ready");
+        LOGGER.info("Lively NPCs initialized: autonomous AI, social/romance, crime/investigation, economy/business, faction, quest/story, semantic world, navigation, performance and world-integrity systems ready");
     }
 }

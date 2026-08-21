@@ -1,13 +1,26 @@
 package vn.svframe.lively.api;
 
 import vn.svframe.lively.actor.ActorRegistry;
+import vn.svframe.lively.admin.AdminService;
 import vn.svframe.lively.combat.CombatCortex;
+import vn.svframe.lively.crime.CrimeEngine;
 import vn.svframe.lively.dialogue.DialogueService;
+import vn.svframe.lively.economy.EconomyEngine;
+import vn.svframe.lively.event.StoryArcEngine;
 import vn.svframe.lively.event.StoryDirector;
+import vn.svframe.lively.event.StorySeedEngine;
 import vn.svframe.lively.event.WorldEventEngine;
+import vn.svframe.lively.faction.FactionEngine;
+import vn.svframe.lively.memory.MemoryPolicy;
 import vn.svframe.lively.navigation.NavigationCortex;
+import vn.svframe.lively.performance.PerformanceProfiler;
 import vn.svframe.lively.persistence.NpcStateRegistry;
+import vn.svframe.lively.quest.QuestRuntime;
+import vn.svframe.lively.schedule.ScheduleEngine;
 import vn.svframe.lively.simulation.SimulationLodController;
+import vn.svframe.lively.social.RomanceEngine;
+import vn.svframe.lively.social.SocialEngine;
+import vn.svframe.lively.world.BlockCapabilityRegistry;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 import vn.svframe.lively.world.WorldMutationPolicy;
 
@@ -20,10 +33,23 @@ public final class LivelyApi {
     private static final NavigationCortex NAVIGATION_CORTEX = new NavigationCortex();
     private static final ActorRegistry ACTORS = new ActorRegistry();
     private static final SemanticStructureRegistry STRUCTURES = new SemanticStructureRegistry();
+    private static final BlockCapabilityRegistry BLOCK_CAPABILITIES = new BlockCapabilityRegistry();
     private static final WorldMutationPolicy WORLD_MUTATIONS = WorldMutationPolicy.secureDefaults();
     private static final WorldEventEngine EVENTS = new WorldEventEngine(STRUCTURES, WORLD_MUTATIONS, 128);
     private static final StoryDirector STORY = new StoryDirector();
+    private static final StoryArcEngine STORY_ARCS = new StoryArcEngine();
+    private static final StorySeedEngine STORY_SEEDS = new StorySeedEngine();
     private static final SimulationLodController LOD = new SimulationLodController();
+    private static final SocialEngine SOCIAL = new SocialEngine();
+    private static final RomanceEngine ROMANCE = new RomanceEngine(SOCIAL, ACTORS);
+    private static final CrimeEngine CRIME = new CrimeEngine();
+    private static final EconomyEngine ECONOMY = new EconomyEngine();
+    private static final FactionEngine FACTIONS = new FactionEngine();
+    private static final QuestRuntime QUESTS = new QuestRuntime();
+    private static final ScheduleEngine SCHEDULES = new ScheduleEngine();
+    private static final PerformanceProfiler PROFILER = new PerformanceProfiler();
+    private static final MemoryPolicy MEMORY_POLICY = new MemoryPolicy();
+    private static final AdminService ADMIN = new AdminService();
     private static volatile DialogueService dialogues;
     private static volatile NpcStateRegistry states;
 
@@ -33,10 +59,23 @@ public final class LivelyApi {
     public static NavigationCortex navigation() { return NAVIGATION_CORTEX; }
     public static ActorRegistry actors() { return ACTORS; }
     public static SemanticStructureRegistry structures() { return STRUCTURES; }
+    public static BlockCapabilityRegistry blockCapabilities() { return BLOCK_CAPABILITIES; }
     public static WorldMutationPolicy worldMutations() { return WORLD_MUTATIONS; }
     public static WorldEventEngine events() { return EVENTS; }
     public static StoryDirector story() { return STORY; }
+    public static StoryArcEngine storyArcs() { return STORY_ARCS; }
+    public static StorySeedEngine storySeeds() { return STORY_SEEDS; }
     public static SimulationLodController simulationLod() { return LOD; }
+    public static SocialEngine social() { return SOCIAL; }
+    public static RomanceEngine romance() { return ROMANCE; }
+    public static CrimeEngine crime() { return CRIME; }
+    public static EconomyEngine economy() { return ECONOMY; }
+    public static FactionEngine factions() { return FACTIONS; }
+    public static QuestRuntime quests() { return QUESTS; }
+    public static ScheduleEngine schedules() { return SCHEDULES; }
+    public static PerformanceProfiler profiler() { return PROFILER; }
+    public static MemoryPolicy memoryPolicy() { return MEMORY_POLICY; }
+    public static AdminService admin() { return ADMIN; }
     public static List<CombatAdapter> combatAdapters() { return List.copyOf(COMBAT); }
     public static void registerCombatAdapter(CombatAdapter adapter) { COMBAT.addIfAbsent(adapter); }
     public static DialogueService dialogues() { return dialogues; }
