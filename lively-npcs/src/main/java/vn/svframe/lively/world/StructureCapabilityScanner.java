@@ -10,10 +10,8 @@ import vn.svframe.lively.api.LivelyApi;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Main-thread, budgeted semantic scan. Reads blocks only and never mutates Minecraft world state. */
@@ -28,10 +26,12 @@ public final class StructureCapabilityScanner {
 
     private final ArrayDeque<String> queue = new ArrayDeque<>();
     private final ConcurrentHashMap<String, Scan> scans = new ConcurrentHashMap<>();
+    private final Set<String> completed = ConcurrentHashMap.newKeySet();
 
     public synchronized boolean request(String structureId) {
         SemanticStructureRegistry.Structure structure = LivelyApi.structures().get(structureId).orElse(null);
         if (structure == null || structure.bounds().volume() > MAX_VOLUME || scans.containsKey(structureId) || queue.size() >= MAX_QUEUE) return false;
+        completed.remove(structureId);
         Scan scan = new Scan(structure);
         scans.put(structureId, scan);
         queue.addLast(structureId);
@@ -40,13 +40,16 @@ public final class StructureCapabilityScanner {
 
     public Optional<Status> status(String structureId) {
         Scan scan = scans.get(structureId);
-        if (scan == null) return Optional.empty();
+        if (scan == null) return completed.contains(structureId)
+                ? Optional.of(new Status(structureId, 0L, 0L, "complete", LivelyApi.structures().get(structureId).map(SemanticStructureRegistry.Structure::capabilities).orElse(Set.of())))
+                : Optional.empty();
         return Optional.of(new Status(structureId, scan.scanned, scan.total, scan.phase, scan.capabilities));
     }
 
     public int activeCount() { return scans.size(); }
 
     public void tick(MinecraftServer server) {
+        ensureQueued();
         String id;
         synchronized (this) { id = queue.peekFirst(); }
         if (id == null) return;
@@ -70,12 +73,28 @@ public final class StructureCapabilityScanner {
         if (scan.done()) complete(scan, "complete", true);
     }
 
+    private void ensureQueued() {
+        synchronized (this) {
+            if (!queue.isEmpty() || queue.size() >= MAX_QUEUE) return;
+            for (SemanticStructureRegistry.Structure structure : LivelyApi.structures().snapshot().structures().values()) {
+                if (completed.contains(structure.id()) || scans.containsKey(structure.id())) continue;
+                if (!structure.capabilities().isEmpty()) { completed.add(structure.id()); continue; }
+                if (structure.bounds().volume() > MAX_VOLUME) { completed.add(structure.id()); continue; }
+                Scan scan = new Scan(structure);
+                scans.put(structure.id(), scan);
+                queue.addLast(structure.id());
+                break;
+            }
+        }
+    }
+
     private void complete(Scan scan, String phase, boolean apply) {
         scan.phase = phase;
         if (apply) {
             LivelyApi.structures().addCapabilities(scan.structure.id(), scan.capabilities);
             scan.points.forEach((name, pos) -> LivelyApi.structures().setPointIfAbsent(scan.structure.id(), name,
                     pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D));
+            completed.add(scan.structure.id());
         }
         scans.remove(scan.structure.id());
         synchronized (this) {
