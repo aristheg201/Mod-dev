@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "vn.svframe.lively.integration.mixin",
+  "plugin": "vn.svframe.lively.integration.mixin.LivelyIntegrationMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AIBattleActorAccessor",
+    "NPCBattleActorMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

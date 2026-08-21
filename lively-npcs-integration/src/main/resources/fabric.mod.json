@@ -9,6 +9,9 @@
   "entrypoints": {
     "main": ["vn.svframe.lively.integration.LivelyNpcsIntegration"]
   },
+  "mixins": [
+    "livelynpcs-integration.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.18.4",
     "minecraft": "1.21.1",
@@ -17,6 +20,6 @@
     "livelynpcs": ">=0.1.0"
   },
   "suggests": {
-    "cobblemon": "*"
+    "cobblemon": "1.7.x"
   }
 }

@@ -11,6 +11,15 @@ subprojects {
     repositories {
         mavenCentral()
         maven { url = 'https://maven.fabricmc.net/' }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Modrinth'
+                    url = 'https://api.modrinth.com/maven'
+                }
+            }
+            filter { includeGroup 'maven.modrinth' }
+        }
     }
 
     dependencies {

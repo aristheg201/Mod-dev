@@ -8,10 +8,9 @@ import net.minecraft.util.ActionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.svframe.lively.api.LivelyApi;
+import vn.svframe.lively.integration.cobblemon.CobblemonIntegrationBootstrap;
 
-/**
- * External-mod bridge. Core AI remains independent from Cobblemon and other ecosystem APIs.
- */
+/** External-mod bridge. Core AI remains independent from Cobblemon and other ecosystem APIs. */
 public final class LivelyNpcsIntegration implements ModInitializer {
     public static final String MOD_ID = "livelynpcs_integration";
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
@@ -21,7 +20,10 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         boolean cobblemon = FabricLoader.getInstance().isModLoaded("cobblemon");
         LOGGER.info("Lively NPCs Integration initialized; Cobblemon present={}", cobblemon);
 
-        if (cobblemon) installCobblemonNpcInteraction();
+        if (cobblemon) {
+            CobblemonIntegrationBootstrap.installIfPresent();
+            installCobblemonNpcInteraction();
+        }
     }
 
     private void installCobblemonNpcInteraction() {
@@ -31,7 +33,7 @@ public final class LivelyNpcsIntegration implements ModInitializer {
             if (!looksLikeCobblemonNpc(entity.getClass())) return ActionResult.PASS;
             if (LivelyApi.dialogues() == null) return ActionResult.PASS;
 
-            LivelyApi.dialogues().start(serverPlayer, entity.getUuid(), entity.getName().getString());
+            LivelyApi.dialogues().start(serverPlayer, entity.getUuid(), entity.getName().getString(), "cobblemon_npc");
             return ActionResult.SUCCESS;
         });
     }

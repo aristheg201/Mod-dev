@@ -4,17 +4,16 @@ import vn.svframe.lively.model.NpcSnapshot;
 
 import java.util.Optional;
 
-/** Causal quest proposal from NPC state; rewards remain typed and bounded. */
 public final class QuestCortex {
     public record QuestProposal(String type, String target, int amount, long rewardBudget, long sourceRevision) {}
 
     public Optional<QuestProposal> propose(NpcSnapshot npc) {
-        String missing = npc.beliefs().get("missing_resource");
+        String missing = npc.beliefValue("missing_resource");
         if (missing != null && !missing.isBlank()) {
             int amount = Math.max(1, Math.min(16, (int) Math.ceil(1D + npc.need("money") * 4D)));
             return Optional.of(new QuestProposal("fetch_resource", missing, amount, amount * 250L, npc.revision()));
         }
-        String missingCreature = npc.beliefs().get("missing_creature");
+        String missingCreature = npc.beliefValue("missing_creature");
         if (missingCreature != null && !missingCreature.isBlank()) {
             return Optional.of(new QuestProposal("locate_creature", missingCreature, 1, 1500L, npc.revision()));
         }

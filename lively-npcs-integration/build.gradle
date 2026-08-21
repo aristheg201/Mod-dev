@@ -4,4 +4,8 @@ base {
 
 dependencies {
     modImplementation project(path: ':lively-npcs', configuration: 'namedElements')
+
+    // Exact Cobblemon 1.7.3 Fabric artifact published by Modrinth.
+    // Compile-only: the Integration JAR remains optional when Cobblemon is absent.
+    modCompileOnly "maven.modrinth:MdwFAVRL:kF7CvxTo"
 }
