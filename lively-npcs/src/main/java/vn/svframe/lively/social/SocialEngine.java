@@ -109,7 +109,9 @@ public final class SocialEngine {
         Objects.requireNonNull(delta);
         Pair pair = Pair.normalized(a, b);
         Relationship next = relationships.compute(pair, (key, old) -> {
-            Relationship base = old == null ? relationship(a, b) : old;
+            Relationship base = old == null
+                    ? new Relationship(key, 0D, 0D, 0D, 0D, 0D, 0D, 0D, RelationshipType.STRANGER, 0L, Instant.now(), List.of())
+                    : old;
             List<Evidence> evidence = new ArrayList<>(base.evidence());
             double importance = Math.max(Math.abs(delta.trust()), Math.max(Math.abs(delta.affection()), Math.abs(delta.respect())));
             evidence.add(new Evidence(UUID.randomUUID(), Instant.now(), delta.reason(), signed(importance), delta.facts()));
