@@ -5,6 +5,7 @@ import vn.svframe.lively.actor.ActorId;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Crime simulation is evidence-based and semantic. It never mutates terrain or player containers. */
 public final class CrimeEngine {
@@ -30,6 +32,9 @@ public final class CrimeEngine {
         }
         public Crime withStatus(Status next, long nextRevision) {
             return new Crime(id, type, victim, perpetrator, locationId, occurredAt, next, motive, witnesses, facts, nextRevision);
+        }
+        public Crime withFacts(Map<String, String> nextFacts, long nextRevision) {
+            return new Crime(id, type, victim, perpetrator, locationId, occurredAt, status, motive, witnesses, nextFacts, nextRevision);
         }
     }
 
@@ -55,13 +60,45 @@ public final class CrimeEngine {
         if (crimes.size() >= 100_000) throw new IllegalStateException("crime_limit");
         long rev = revision.incrementAndGet();
         Crime crime = new Crime(UUID.randomUUID(), type, victim, perpetrator, locationId, Instant.now(), Status.OPEN,
-                motive, witnesses, facts, rev);
+                motive, witnesses, sanitizeFacts(facts));
         crimes.put(crime.id(), crime); return crime;
     }
 
+    private Crime new Crime(UUID id, Type type, ActorId victim, ActorId perpetrator, String locationId, Instant occurredAt,
+                            Status status, String motive, Set<ActorId> witnesses, Map<String, String> facts) {
+        return new Crime(id, type, victim, perpetrator, locationId, occurredAt, status, motive, witnesses, facts, revision.get());
+    }
+
     public Optional<Crime> status(UUID crimeId, Status next) {
-        long rev = revision.incrementAndGet();
-        return Optional.ofNullable(crimes.computeIfPresent(crimeId, (id, old) -> old.withStatus(next, rev)));
+        Objects.requireNonNull(next);
+        AtomicReference<Crime> changed = new AtomicReference<>();
+        crimes.computeIfPresent(crimeId, (id, old) -> {
+            if (old.status() == next) { changed.set(old); return old; }
+            Crime value = old.withStatus(next, revision.incrementAndGet());
+            changed.set(value);
+            return value;
+        });
+        return Optional.ofNullable(changed.get());
+    }
+
+    /** Adds bounded semantic metadata such as charged suspect, review time or wrong-charge history. */
+    public Optional<Crime> updateFacts(UUID crimeId, Map<String, String> changes) {
+        if (changes == null || changes.isEmpty() || changes.size() > 32) return Optional.empty();
+        AtomicReference<Crime> changed = new AtomicReference<>();
+        crimes.computeIfPresent(crimeId, (id, old) -> {
+            Map<String, String> facts = new HashMap<>(old.facts());
+            boolean modified = false;
+            for (Map.Entry<String, String> entry : changes.entrySet()) {
+                String key = entry.getKey(); String value = entry.getValue();
+                if (key == null || key.isBlank() || key.length() > 64 || value == null || value.length() > 512) continue;
+                String previous = facts.put(key, value);
+                if (!Objects.equals(previous, value)) modified = true;
+            }
+            Crime value = modified ? old.withFacts(facts, revision.incrementAndGet()) : old;
+            changed.set(value);
+            return value;
+        });
+        return Optional.ofNullable(changed.get());
     }
 
     public Evidence addEvidence(UUID crimeId, EvidenceType type, ActorId source, ActorId subject,
@@ -69,7 +106,7 @@ public final class CrimeEngine {
         if (!crimes.containsKey(crimeId)) throw new IllegalArgumentException("unknown crime");
         if (evidence.size() >= 1_000_000) throw new IllegalStateException("evidence_limit");
         Evidence item = new Evidence(UUID.randomUUID(), crimeId, type, source, subject, reliability, relevance,
-                Instant.now(), publicKnowledge, facts);
+                Instant.now(), publicKnowledge, sanitizeFacts(facts));
         evidence.put(item.id(), item); revision.incrementAndGet(); return item;
     }
 
@@ -94,7 +131,8 @@ public final class CrimeEngine {
             double score = unit(motive * 0.22D + opportunity * 0.23D + support * 0.55D - alibi * 0.65D);
             scores.add(new SuspectScore(candidate, score, unit(motive), unit(opportunity), unit(support), unit(alibi), List.copyOf(ids)));
         }
-        scores.sort(Comparator.comparingDouble(SuspectScore::score).reversed());
+        scores.sort(Comparator.comparingDouble(SuspectScore::score).reversed()
+                .thenComparing(score -> score.suspect().uuid().toString()));
         return List.copyOf(scores);
     }
 
@@ -105,6 +143,18 @@ public final class CrimeEngine {
 
     public record Snapshot(long revision, Map<UUID, Crime> crimes, Map<UUID, Evidence> evidence) {
         public Snapshot { crimes = Map.copyOf(crimes); evidence = Map.copyOf(evidence); }
+    }
+
+    private static Map<String, String> sanitizeFacts(Map<String, String> raw) {
+        if (raw == null || raw.isEmpty()) return Map.of();
+        HashMap<String, String> result = new HashMap<>();
+        for (Map.Entry<String, String> entry : raw.entrySet()) {
+            if (result.size() >= 128) break;
+            String key = entry.getKey(), value = entry.getValue();
+            if (key == null || key.isBlank() || key.length() > 64 || value == null || value.length() > 512) continue;
+            result.put(key, value);
+        }
+        return Map.copyOf(result);
     }
     private static double unit(double v) { return Math.max(0D, Math.min(1D, v)); }
 }
