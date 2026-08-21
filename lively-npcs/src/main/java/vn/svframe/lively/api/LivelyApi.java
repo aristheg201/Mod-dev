@@ -11,6 +11,7 @@ import vn.svframe.lively.economy.EconomyEngine;
 import vn.svframe.lively.event.StoryArcEngine;
 import vn.svframe.lively.event.StoryDirector;
 import vn.svframe.lively.event.StorySeedEngine;
+import vn.svframe.lively.event.WorldChronicleEngine;
 import vn.svframe.lively.event.WorldEventEngine;
 import vn.svframe.lively.faction.FactionEngine;
 import vn.svframe.lively.memory.MemoryPolicy;
@@ -43,6 +44,7 @@ public final class LivelyApi {
     private static final BlockCapabilityRegistry BLOCK_CAPABILITIES = new BlockCapabilityRegistry();
     private static final WorldMutationPolicy WORLD_MUTATIONS = WorldMutationPolicy.secureDefaults();
     private static final WorldEventEngine EVENTS = new WorldEventEngine(STRUCTURES, WORLD_MUTATIONS, 128);
+    private static final WorldChronicleEngine CHRONICLE = new WorldChronicleEngine();
     private static final StoryDirector STORY = new StoryDirector();
     private static final StoryArcEngine STORY_ARCS = new StoryArcEngine();
     private static final StorySeedEngine STORY_SEEDS = new StorySeedEngine();
@@ -80,6 +82,7 @@ public final class LivelyApi {
     public static BlockCapabilityRegistry blockCapabilities() { return BLOCK_CAPABILITIES; }
     public static WorldMutationPolicy worldMutations() { return WORLD_MUTATIONS; }
     public static WorldEventEngine events() { return EVENTS; }
+    public static WorldChronicleEngine chronicle() { return CHRONICLE; }
     public static StoryDirector story() { return STORY; }
     public static StoryArcEngine storyArcs() { return STORY_ARCS; }
     public static StorySeedEngine storySeeds() { return STORY_SEEDS; }
@@ -137,6 +140,7 @@ public final class LivelyApi {
         STORY_ARCS.restore(Map.of());
         STORY_SEEDS.restore(Map.of());
         EVENTS.restore(new WorldEventEngine.Snapshot(Map.of(), List.of()));
+        CHRONICLE.clear();
         PROFILER.clear();
         dialogues = null;
         states = null;
