@@ -3,12 +3,15 @@ package vn.svframe.lively.event;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.crime.CrimeEngine;
+import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.quest.QuestRuntime;
+import vn.svframe.lively.world.SemanticStructureRegistry;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,11 +61,7 @@ public final class LivingWorldDirectorService implements AutoCloseable {
     private void onEventFinished(WorldEventEngine.WorldEvent event) {
         arcForEvent(event).ifPresent(arc -> {
             double tensionDelta = event.intensity() >= .72D ? .08D : event.intensity() >= .45D ? .02D : -.04D;
-            StoryArcEngine.Arc next = LivelyApi.storyArcs().advance(arc.id(), tensionDelta).orElse(null);
-            if (next == null) return;
-            if (next.state() == StoryArcEngine.State.RESOLVED) {
-                LivelyApi.chronicle().latest(1).stream().findFirst();
-            }
+            LivelyApi.storyArcs().advance(arc.id(), tensionDelta);
         });
     }
 
@@ -77,6 +76,8 @@ public final class LivingWorldDirectorService implements AutoCloseable {
     }
 
     private void createQuest(WorldEventEngine.WorldEvent event) {
+        ActorId issuer = event.participants().stream().filter(actor -> actor.kind() == ActorId.Kind.NPC)
+                .sorted(Comparator.comparing(actor -> actor.uuid().toString())).findFirst().orElse(SYSTEM);
         QuestRuntime.ObjectiveType type = switch (event.category()) {
             case CRIME, MYSTERY -> QuestRuntime.ObjectiveType.INVESTIGATION;
             case MIGRATION, DISCOVERY -> QuestRuntime.ObjectiveType.EXPLORATION;
@@ -84,19 +85,85 @@ public final class LivingWorldDirectorService implements AutoCloseable {
             case ECONOMIC -> QuestRuntime.ObjectiveType.DELIVERY;
             case DISASTER -> QuestRuntime.ObjectiveType.ESCORT;
         };
-        String target = event.structureId() != null ? event.structureId() : event.seed();
+
+        Map<String, String> objectiveFacts = new HashMap<>();
+        objectiveFacts.put("event", event.id().toString());
+        objectiveFacts.putAll(destinationFacts(event, issuer));
+        String target = switch (type) {
+            case INVESTIGATION -> event.id().toString();
+            case SOCIAL -> {
+                if (issuer.kind() == ActorId.Kind.NPC) {
+                    objectiveFacts.put("actor", issuer.uuid().toString());
+                    objectiveFacts.put("npc", issuer.uuid().toString());
+                    yield issuer.uuid().toString();
+                }
+                yield event.id().toString();
+            }
+            case DELIVERY -> {
+                objectiveFacts.put("semantic_delivery", "true");
+                yield objectiveFacts.getOrDefault("structure", event.id().toString());
+            }
+            case EXPLORATION, ESCORT -> objectiveFacts.getOrDefault("structure", event.id().toString());
+            default -> event.id().toString();
+        };
+
         List<QuestRuntime.Objective> objectives = new ArrayList<>();
-        objectives.add(new QuestRuntime.Objective("main", type, target, 1, false, false,
-                event.structureId() == null ? Map.of("event", event.id().toString())
-                        : Map.of("event", event.id().toString(), "structure", event.structureId())));
-        if (event.intensity() > .72D) objectives.add(new QuestRuntime.Objective("optional_context", QuestRuntime.ObjectiveType.INVESTIGATION,
-                event.seed(), 1, true, true, Map.of("discover", "cause")));
-        ActorId issuer = event.participants().stream().filter(actor -> actor.kind() == ActorId.Kind.NPC).findFirst().orElse(SYSTEM);
+        objectives.add(new QuestRuntime.Objective("main", type, target, 1, false, false, objectiveFacts));
+        if (event.intensity() > .72D) {
+            objectives.add(new QuestRuntime.Objective("optional_context", QuestRuntime.ObjectiveType.INVESTIGATION,
+                    event.id().toString(), 1, true, true,
+                    Map.of("event", event.id().toString(), "discover", "cause")));
+        }
+
         Duration ttl = Duration.between(Instant.now(), event.expiresAt());
         if (ttl.isNegative() || ttl.isZero()) ttl = Duration.ofMinutes(10);
         long reward = Math.max(100L, Math.min(100000L, Math.round(500D + event.intensity() * 4500D)));
         LivelyApi.quests().create(issuer, null, questTitle(event), objectives, ttl,
                 Map.of("event", event.id().toString(), "seed", event.seed(), "reward_budget", Long.toString(reward), "public", "true"));
+    }
+
+    /** Provides an actual semantic destination instead of leaving generated quests with a seed-shaped non-location. */
+    private Map<String, String> destinationFacts(WorldEventEngine.WorldEvent event, ActorId issuer) {
+        Map<String, String> facts = new HashMap<>();
+        if (event.structureId() != null && LivelyApi.structures().get(event.structureId()).isPresent()) {
+            facts.put("structure", event.structureId());
+            return facts;
+        }
+        copyCoordinateFacts(event.facts(), facts);
+        if (facts.containsKey("world") && facts.containsKey("x") && facts.containsKey("y") && facts.containsKey("z")) return facts;
+
+        if (issuer.kind() == ActorId.Kind.NPC && LivelyApi.npcs() != null) {
+            NpcDefinition definition = LivelyApi.npcs().get(issuer.uuid()).orElse(null);
+            if (definition != null) {
+                String authored = firstExistingStructure(definition.metadata().get("work.structure"), definition.metadata().get("home.structure"));
+                if (authored != null) {
+                    facts.put("structure", authored);
+                    return facts;
+                }
+                var position = LivelyApi.npcs().position(issuer.uuid()).orElse(null);
+                String world = LivelyApi.npcs().worldKey(issuer.uuid()).orElse(definition.world());
+                if (position != null && world != null) {
+                    facts.put("world", world);
+                    facts.put("x", Double.toString(position.x));
+                    facts.put("y", Double.toString(position.y));
+                    facts.put("z", Double.toString(position.z));
+                    facts.put("radius", "6");
+                }
+            }
+        }
+        return facts;
+    }
+
+    private String firstExistingStructure(String... ids) {
+        for (String id : ids) if (id != null && !id.isBlank() && LivelyApi.structures().get(id).isPresent()) return id;
+        return null;
+    }
+
+    private static void copyCoordinateFacts(Map<String, String> source, Map<String, String> target) {
+        for (String key : List.of("world", "x", "y", "z", "radius")) {
+            String value = source.get(key);
+            if (value != null && !value.isBlank()) target.put(key, value);
+        }
     }
 
     private void emergeAntagonist(Map<String, Double> signals, Set<ActorId> actors) {
@@ -110,10 +177,6 @@ public final class LivingWorldDirectorService implements AutoCloseable {
                 Map.of("kind", "villain_emergence", "candidate", top.actor().uuid().toString(), "reason", top.reason())));
     }
 
-    /**
-     * Signals are derived from independent state sources so the world can create new tensions rather than
-     * requiring a pre-existing event of the same category. This avoids the old crime-needs-crime feedback loop.
-     */
     private Map<String, Double> signals() {
         var crimeSnapshot = LivelyApi.crime().snapshot();
         double openCrime = crimeSnapshot.crimes().values().stream()
@@ -147,9 +210,9 @@ public final class LivingWorldDirectorService implements AutoCloseable {
 
         var structures = LivelyApi.structures().snapshot().structures().values();
         double ancientSites = Math.min(1D, structures.stream().filter(structure -> {
-            String type = structure.type().toLowerCase(Locale.ROOT);
-            return type.contains("ancient") || type.contains("ruin") || type.contains("temple")
-                    || type.contains("shrine") || type.contains("archaeolog") || type.contains("fossil");
+            String structureType = structure.type().toLowerCase(Locale.ROOT);
+            return structureType.contains("ancient") || structureType.contains("ruin") || structureType.contains("temple")
+                    || structureType.contains("shrine") || structureType.contains("archaeolog") || structureType.contains("fossil");
         }).count() / 3D);
 
         double crimeSignal = Math.min(1D, openCrime / 8D);
