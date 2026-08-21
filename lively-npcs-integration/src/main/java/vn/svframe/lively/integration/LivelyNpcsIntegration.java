@@ -24,8 +24,8 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         if (cobblemon) {
             CobblemonIntegrationBootstrap.installIfPresent();
             ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-                boolean installed = CobblemonIntegrationBootstrap.installNpcBodyProvider();
-                LOGGER.info("Lively Cobblemon body provider bound for server session={}", installed);
+                boolean installed = CobblemonIntegrationBootstrap.installNpcBodyProvider(server);
+                LOGGER.info("Lively Cobblemon body provider bound and spawned bodies restored for server session={}", installed);
             });
             installCobblemonNpcInteraction();
         }
