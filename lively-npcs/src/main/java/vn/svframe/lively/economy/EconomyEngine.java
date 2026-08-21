@@ -52,14 +52,40 @@ public final class EconomyEngine {
     }
 
     public Optional<Transaction> transfer(TransactionType type, ActorId from, ActorId to, long amount, String reference) {
+        return transferInternal(type, from, to, amount, reference, false);
+    }
+
+    /**
+     * Commits a transfer at most once for a stable non-blank reference. The ledger is persisted in the simulation
+     * snapshot, so retrying a quest/business transaction after restart will return the original committed record.
+     */
+    public Optional<Transaction> transferOnce(TransactionType type, ActorId from, ActorId to, long amount, String reference) {
+        if (reference == null || reference.isBlank() || reference.length() > 256) return Optional.empty();
+        return transferInternal(type, from, to, amount, reference, true);
+    }
+
+    private Optional<Transaction> transferInternal(TransactionType type, ActorId from, ActorId to, long amount,
+                                                   String reference, boolean idempotent) {
+        Objects.requireNonNull(type); Objects.requireNonNull(from); Objects.requireNonNull(to);
         if (amount <= 0L || amount > 10_000_000_000_000L || from.equals(to)) return Optional.empty();
         synchronized (wallets) {
+            if (idempotent) {
+                synchronized (ledger) {
+                    Optional<Transaction> existing = ledger.stream()
+                            .filter(tx -> tx.committed() && reference.equals(tx.reference()))
+                            .findFirst();
+                    if (existing.isPresent()) return existing;
+                }
+            }
             Wallet source = ensureWallet(from, 0L);
             Wallet target = ensureWallet(to, 0L);
             if (source.balance() < amount) return Optional.empty();
+            long nextBalance;
+            try { nextBalance = Math.addExact(target.balance(), amount); }
+            catch (ArithmeticException overflow) { return Optional.empty(); }
             long rev = revision.incrementAndGet();
             wallets.put(from, new Wallet(from, source.balance() - amount, rev));
-            wallets.put(to, new Wallet(to, Math.addExact(target.balance(), amount), rev));
+            wallets.put(to, new Wallet(to, nextBalance, rev));
             Transaction tx = new Transaction(UUID.randomUUID(), type, from, to, amount, reference, Instant.now(), true);
             synchronized (ledger) {
                 ledger.add(tx);
