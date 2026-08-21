@@ -76,8 +76,8 @@ public final class LivelyNpcs implements ModInitializer {
 
         skinResolver = new SkinResolver(SkinConfig.load(config));
         npcRuntime = new NpcRuntime(new NpcDefinitionStore(config.resolve("npcs").resolve("npcs.tsv")), stateRegistry);
-        npcRuntime.registerProvider(NpcDefinition.BodyType.PLAYER, d -> new PlayerModelBody(d.id(), skinResolver));
-        npcRuntime.registerProvider(NpcDefinition.BodyType.VANILLA, d -> new VanillaEntityBody(d.id()));
+        npcRuntime.registerProvider(NpcDefinition.BodyType.PLAYER, definition -> new PlayerModelBody(definition.id(), skinResolver));
+        npcRuntime.registerProvider(NpcDefinition.BodyType.VANILLA, definition -> new VanillaEntityBody(definition.id()));
         npcRuntime.load();
         LivelyApi.installNpcRuntime(npcRuntime);
 
@@ -106,9 +106,7 @@ public final class LivelyNpcs implements ModInitializer {
         LivelyCommands.install();
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            if (world.isClient || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity serverPlayer) || LivelyApi.dialogues() == null) {
-                return ActionResult.PASS;
-            }
+            if (world.isClient || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity serverPlayer) || LivelyApi.dialogues() == null) return ActionResult.PASS;
             return npcRuntime.interact(serverPlayer, entity.getUuid(), LivelyApi.dialogues()) ? ActionResult.SUCCESS : ActionResult.PASS;
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> npcRuntime.onPlayerJoin(handler.player));
@@ -121,24 +119,19 @@ public final class LivelyNpcs implements ModInitializer {
             autonomy.tick(server, tick);
             director.tick(tick);
             causalSimulation.tick(tick);
-
             if (tick % 20L == 0L) {
                 Instant now = Instant.now();
                 LivelyApi.profiler().measure("world-events", () -> LivelyApi.events().advance(now));
                 LivelyApi.profiler().measure("quest-expiry", () -> LivelyApi.quests().expire(now));
                 LivelyApi.profiler().measure("rumor-expiry", () -> LivelyApi.social().expireRumors(now));
             }
-            if (tick % 1200L == 0L) {
-                LivelyApi.profiler().measure("market-tick", () -> { LivelyApi.economy().marketTick(); return 0; });
-            }
+            if (tick % 1200L == 0L) LivelyApi.profiler().measure("market-tick", () -> { LivelyApi.economy().marketTick(); return 0; });
             if (tick % 600L == 0L) npcRuntime.checkpoint();
             if (tick % 6000L != 0L || !pendingAutosave.isDone()) return;
-
             SimulationStateStore.Bundle bundle = captureSimulation();
-            pendingAutosave = CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle))
-                    .whenComplete((ignored, error) -> {
-                        if (error != null) LOGGER.error("Lively autosave failed", error);
-                    });
+            pendingAutosave = CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle)).whenComplete((ignored, error) -> {
+                if (error != null) LOGGER.error("Lively autosave failed", error);
+            });
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
@@ -149,8 +142,7 @@ public final class LivelyNpcs implements ModInitializer {
             npcRuntime.shutdown(server);
             skinResolver.close();
             try {
-                CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle))
-                        .orTimeout(10L, TimeUnit.SECONDS).join();
+                CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle)).orTimeout(10L, TimeUnit.SECONDS).join();
             } catch (RuntimeException ex) {
                 LOGGER.error("Lively final state flush failed", ex);
             } finally {
@@ -164,9 +156,9 @@ public final class LivelyNpcs implements ModInitializer {
     private SimulationStateStore.Bundle captureSimulation() {
         return new SimulationStateStore.Bundle(
                 LivelyApi.structures().snapshot(), LivelyApi.social().snapshot(), LivelyApi.romance().snapshot(),
-                LivelyApi.crime().snapshot(), LivelyApi.economy().snapshot(), LivelyApi.factions().snapshot(),
-                LivelyApi.quests().snapshot(), LivelyApi.schedules().snapshot(), LivelyApi.storyArcs().snapshot(),
-                LivelyApi.storySeeds().snapshot(), LivelyApi.events().snapshot());
+                LivelyApi.family().snapshot(), LivelyApi.crime().snapshot(), LivelyApi.economy().snapshot(),
+                LivelyApi.factions().snapshot(), LivelyApi.quests().snapshot(), LivelyApi.schedules().snapshot(),
+                LivelyApi.storyArcs().snapshot(), LivelyApi.storySeeds().snapshot(), LivelyApi.events().snapshot());
     }
 
     private void restoreSimulation(SimulationStateStore.Bundle bundle) {
@@ -174,6 +166,7 @@ public final class LivelyNpcs implements ModInitializer {
             if (bundle.structures() != null) LivelyApi.structures().restore(bundle.structures());
             if (bundle.social() != null) LivelyApi.social().restore(bundle.social());
             if (bundle.romance() != null) LivelyApi.romance().restore(bundle.romance());
+            if (bundle.family() != null) LivelyApi.family().restore(bundle.family());
             if (bundle.crime() != null) LivelyApi.crime().restore(bundle.crime());
             if (bundle.economy() != null) LivelyApi.economy().restore(bundle.economy());
             if (bundle.factions() != null) LivelyApi.factions().restore(bundle.factions());
@@ -190,9 +183,9 @@ public final class LivelyNpcs implements ModInitializer {
 
     private void journal(String type, WorldEventEngine.WorldEvent event) {
         try {
-            historyJournal.append(new WorldHistoryJournal.Entry(historySequence.incrementAndGet(), Instant.now(), type,
-                    event.id().toString(), Map.of("category", event.category().name(), "seed", event.seed(),
-                    "phase", event.phase().name(), "structure", event.structureId() == null ? "" : event.structureId())));
+            historyJournal.append(new WorldHistoryJournal.Entry(historySequence.incrementAndGet(), Instant.now(), type, event.id().toString(),
+                    Map.of("category", event.category().name(), "seed", event.seed(), "phase", event.phase().name(),
+                            "structure", event.structureId() == null ? "" : event.structureId())));
         } catch (IOException error) {
             LOGGER.error("Failed to append Lively world history record {}", type, error);
         }
