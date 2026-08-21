@@ -18,10 +18,12 @@ public final class LivelyNpcsIntegration implements ModInitializer {
     public static final String MOD_ID = "livelynpcs_integration";
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     private final CobblemonWorldAwarenessService worldAwareness = new CobblemonWorldAwarenessService();
+    private final HologramProjectionService hologramProjection = new HologramProjectionService();
 
     @Override
     public void onInitialize() {
         ServerEcosystemBootstrap.install();
+        hologramProjection.install();
         boolean cobblemon = FabricLoader.getInstance().isModLoaded("cobblemon");
         if (cobblemon) {
             CobblemonIntegrationBootstrap.installIfPresent();
