@@ -1,0 +1,4 @@
+name: Mining
+exp-curve: levels
+exp-sources:
+  mine: {}
