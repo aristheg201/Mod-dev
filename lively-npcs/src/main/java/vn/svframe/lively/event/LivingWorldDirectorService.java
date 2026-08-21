@@ -8,9 +8,11 @@ import vn.svframe.lively.quest.QuestRuntime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -20,6 +22,8 @@ public final class LivingWorldDirectorService implements AutoCloseable {
     private static final ActorId SYSTEM = new ActorId(new UUID(0L, 1L), ActorId.Kind.SYSTEM);
     private final WorldEventEngine.Listener listener = new WorldEventEngine.Listener() {
         @Override public void onStarted(WorldEventEngine.WorldEvent event) { onEventStarted(event); }
+        @Override public void onFinished(WorldEventEngine.WorldEvent event) { onEventFinished(event); }
+        @Override public void onCancelled(WorldEventEngine.WorldEvent event) { onEventCancelled(event); }
     };
     private long lastPulse;
 
@@ -44,10 +48,32 @@ public final class LivingWorldDirectorService implements AutoCloseable {
 
     private void onEventStarted(WorldEventEngine.WorldEvent event) {
         StoryArcEngine.Arc arc = LivelyApi.storyArcs().active().stream().filter(value -> value.seed().equals(event.seed())).findFirst()
-                .orElseGet(() -> LivelyApi.storyArcs().start(event.seed(), title(event), 5, Map.of("category", event.category().name())));
+                .orElseGet(() -> LivelyApi.storyArcs().start(event.seed(), title(event), 5,
+                        Map.of("category", event.category().name(), "started_by", event.id().toString())));
         LivelyApi.storyArcs().attachEvent(arc.id(), event.id(), event.intensity() * .25D);
         if (event.intensity() >= .42D && LivelyApi.quests().snapshot().quests().values().stream()
                 .noneMatch(quest -> event.id().toString().equals(quest.facts().get("event")))) createQuest(event);
+    }
+
+    private void onEventFinished(WorldEventEngine.WorldEvent event) {
+        arcForEvent(event).ifPresent(arc -> {
+            double tensionDelta = event.intensity() >= .72D ? .08D : event.intensity() >= .45D ? .02D : -.04D;
+            StoryArcEngine.Arc next = LivelyApi.storyArcs().advance(arc.id(), tensionDelta).orElse(null);
+            if (next == null) return;
+            if (next.state() == StoryArcEngine.State.RESOLVED) {
+                LivelyApi.chronicle().latest(1).stream().findFirst();
+            }
+        });
+    }
+
+    private void onEventCancelled(WorldEventEngine.WorldEvent event) {
+        arcForEvent(event).ifPresent(arc -> LivelyApi.storyArcs().state(arc.id(), StoryArcEngine.State.ABANDONED));
+    }
+
+    private Optional<StoryArcEngine.Arc> arcForEvent(WorldEventEngine.WorldEvent event) {
+        return LivelyApi.storyArcs().snapshot().values().stream()
+                .filter(arc -> arc.events().contains(event.id()))
+                .max(Comparator.comparing(StoryArcEngine.Arc::updatedAt));
     }
 
     private void createQuest(WorldEventEngine.WorldEvent event) {
@@ -60,7 +86,9 @@ public final class LivingWorldDirectorService implements AutoCloseable {
         };
         String target = event.structureId() != null ? event.structureId() : event.seed();
         List<QuestRuntime.Objective> objectives = new ArrayList<>();
-        objectives.add(new QuestRuntime.Objective("main", type, target, 1, false, false, Map.of("event", event.id().toString())));
+        objectives.add(new QuestRuntime.Objective("main", type, target, 1, false, false,
+                event.structureId() == null ? Map.of("event", event.id().toString())
+                        : Map.of("event", event.id().toString(), "structure", event.structureId())));
         if (event.intensity() > .72D) objectives.add(new QuestRuntime.Objective("optional_context", QuestRuntime.ObjectiveType.INVESTIGATION,
                 event.seed(), 1, true, true, Map.of("discover", "cause")));
         ActorId issuer = event.participants().stream().filter(actor -> actor.kind() == ActorId.Kind.NPC).findFirst().orElse(SYSTEM);
@@ -89,7 +117,8 @@ public final class LivingWorldDirectorService implements AutoCloseable {
     private Map<String, Double> signals() {
         var crimeSnapshot = LivelyApi.crime().snapshot();
         double openCrime = crimeSnapshot.crimes().values().stream()
-                .filter(value -> value.status() == CrimeEngine.Status.OPEN || value.status() == CrimeEngine.Status.INVESTIGATING).count();
+                .filter(value -> value.status() == CrimeEngine.Status.OPEN || value.status() == CrimeEngine.Status.INVESTIGATING
+                        || value.status() == CrimeEngine.Status.CHARGED).count();
 
         var economy = LivelyApi.economy().snapshot();
         var stocks = economy.stocks().values();
