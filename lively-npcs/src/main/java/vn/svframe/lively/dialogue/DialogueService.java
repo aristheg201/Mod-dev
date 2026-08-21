@@ -1,199 +1,28 @@
 package vn.svframe.lively.dialogue;
 
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.LongArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import vn.svframe.lively.api.LivelyApi;
-import vn.svframe.lively.model.NpcState;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
-
-/** Chat is the rendering surface. Active dialogue input is captured and never broadcast globally. */
-public final class DialogueService {
-    private static final Duration SESSION_TTL = Duration.ofMinutes(3);
-    private static final long INPUT_COOLDOWN_MS = 180L;
-
-    private final ConcurrentHashMap<UUID, DialogueSession> sessions = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, Long> lastInputMillis = new ConcurrentHashMap<>();
-    private final NluEngine nlu = new NluEngine();
-
-    public void install() {
-        LivelyApi.installDialogueService(this);
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, params) -> {
-            DialogueSession session = sessions.get(sender.getUuid());
-            if (session == null) return true;
-            if (session.expired()) { close(sender, "Hội thoại đã kết thúc."); return true; }
-            if (!allowInput(sender.getUuid())) return false;
-            handleFreeText(sender, session, message.getSignedContent());
-            return false;
-        });
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                literal("livelydialogue")
-                        .then(literal("choose")
-                                .then(argument("session", StringArgumentType.word())
-                                        .then(argument("nonce", LongArgumentType.longArg(1L))
-                                                .then(argument("choice", IntegerArgumentType.integer(0, 64))
-                                                        .executes(ctx -> {
-                                                            ServerPlayerEntity player = ctx.getSource().getPlayer();
-                                                            if (player == null) return 0;
-                                                            return choose(player, UUID.fromString(StringArgumentType.getString(ctx, "session")),
-                                                                    LongArgumentType.getLong(ctx, "nonce"),
-                                                                    IntegerArgumentType.getInteger(ctx, "choice")) ? 1 : 0;
-                                                        })))))
-                        .then(literal("leave").executes(ctx -> {
-                            ServerPlayerEntity player = ctx.getSource().getPlayer();
-                            if (player == null) return 0;
-                            close(player, "Bạn rời cuộc trò chuyện."); return 1;
-                        }))));
-    }
-
-    public DialogueSession start(ServerPlayerEntity player, UUID npcId, String npcName) {
-        return start(player, npcId, npcName, "npc");
-    }
-
-    public DialogueSession start(ServerPlayerEntity player, UUID npcId, String npcName, String role) {
-        if (LivelyApi.states() != null) {
-            NpcState state = LivelyApi.states().getOrCreate(npcId, npcName, role);
-            state.remember("conversation_started", Map.of("player", player.getUuid().toString()), 0.20D, 1D);
-        }
-        DialogueSession session = new DialogueSession(player.getUuid(), npcId, npcName, DialogueSession.Mode.HYBRID, 12,
-                Instant.now().plus(SESSION_TTL));
-        session.setChoices(defaultChoices()); sessions.put(player.getUuid(), session);
-        session.record(false, "Có chuyện gì?"); render(player, session, "Có chuyện gì?"); return session;
-    }
-
-    public Optional<DialogueSession> session(UUID playerId) {
-        DialogueSession session = sessions.get(playerId);
-        if (session != null && session.expired()) { sessions.remove(playerId, session); return Optional.empty(); }
-        return Optional.ofNullable(session);
-    }
-
-    private boolean choose(ServerPlayerEntity player, UUID sessionId, long nonce, int choiceId) {
-        DialogueSession session = sessions.get(player.getUuid());
-        if (session == null || !session.sessionId().equals(sessionId) || session.expired()) return false;
-        DialogueSession.Choice choice = session.choices().stream().filter(c -> c.id() == choiceId).findFirst().orElse(null);
-        if (choice == null || !session.consumeChoice(nonce, choiceId)) return false;
-        if (choice.semanticAction().equals("leave")) { close(player, "Bạn rời cuộc trò chuyện."); return true; }
-
-        session.record(true, choice.label());
-        rememberChoice(player, session, choice);
-        String reply = switch (choice.semanticAction()) {
-            case "ask_work" -> "Việc thì lúc nào cũng có. Vấn đề là việc nào đáng làm.";
-            case "ask_problem" -> "Có vài chuyện chưa ổn. Tôi đang tự cân nhắc xem có nên nhờ cậu không.";
-            case "challenge" -> "Muốn đấu thì nói thẳng thế nghe còn tử tế hơn vòng vo.";
-            case "free_text" -> "Cứ nói đi. Tôi đang nghe.";
-            default -> "Tôi hiểu.";
-        };
-        session.record(false, reply); session.setChoices(defaultChoices()); render(player, session, reply); return true;
-    }
-
-    private void handleFreeText(ServerPlayerEntity player, DialogueSession session, String raw) {
-        if (raw.length() > 320) { player.sendMessage(Text.literal("[Lively] Câu đó dài quá để coi là một lượt hội thoại."), false); return; }
-        session.record(true, raw);
-        NluEngine.Meaning meaning = nlu.parse(raw);
-        updateNpcMemory(player, session, raw, meaning);
-        String reply = replyFor(meaning);
-        session.record(false, reply); session.setChoices(defaultChoices()); render(player, session, reply);
-    }
-
-    private void updateNpcMemory(ServerPlayerEntity player, DialogueSession session, String raw, NluEngine.Meaning meaning) {
-        if (LivelyApi.states() == null) return;
-        NpcState state = LivelyApi.states().get(session.npcId()).orElseGet(() ->
-                LivelyApi.states().getOrCreate(session.npcId(), session.npcName(), "npc"));
-        Map<String, String> facts = new LinkedHashMap<>();
-        facts.put("player", player.getUuid().toString()); facts.put("intent", meaning.intent().name());
-        facts.put("utterance", raw); facts.putAll(meaning.slots());
-        double importance = switch (meaning.intent()) {
-            case ASSERT_INFORMATION, OFFER_HELP, CHALLENGE -> 0.65D;
-            case TRADE, ASK_INFORMATION -> 0.45D;
-            default -> 0.25D;
-        };
-        state.remember("player_dialogue", facts, importance, meaning.confidence());
-
-        if (meaning.intent() == NluEngine.Intent.ASSERT_INFORMATION) {
-            String subject = meaning.slots().getOrDefault("subject", "claim");
-            String location = meaning.slots().get("location");
-            String key = location == null ? "reported_claim." + normalizeKey(subject) : "reported_location." + normalizeKey(subject);
-            String value = location == null ? raw : location;
-            double trust = state.snapshot(1).relationship(player.getUuid()).trust();
-            state.updateBelief(key, value, Math.max(0.25D, Math.min(0.95D, 0.55D + trust * 0.25D)), player.getUuid());
-        } else if (meaning.intent() == NluEngine.Intent.OFFER_HELP) {
-            state.updateRelationship(player.getUuid(), 0.02D, 0.03D, -0.01D, 0D);
-        }
-    }
-
-    private void rememberChoice(ServerPlayerEntity player, DialogueSession session, DialogueSession.Choice choice) {
-        if (LivelyApi.states() == null) return;
-        LivelyApi.states().get(session.npcId()).ifPresent(state -> state.remember("dialogue_choice",
-                Map.of("player", player.getUuid().toString(), "choice", choice.semanticAction()), 0.25D, 1D));
-    }
-
-    private String replyFor(NluEngine.Meaning meaning) {
-        return switch (meaning.intent()) {
-            case ASSERT_INFORMATION -> {
-                String subject = meaning.slots().getOrDefault("subject", "chuyện đó"); String location = meaning.slots().get("location");
-                yield location == null ? "Tôi sẽ nhớ chuyện cậu vừa nói về " + subject + "."
-                        : "Được. Tôi sẽ ghi nhớ rằng " + subject + " có thể liên quan tới " + location + ".";
-            }
-            case ASK_INFORMATION -> "Tôi chỉ nói những gì mình thực sự biết. Tin đồn thì để dân chợ lo.";
-            case OFFER_HELP -> "Nếu cậu nghiêm túc thì tốt. Tôi sẽ nói khi có việc phù hợp.";
-            case CHALLENGE -> "Được. Nhưng chuyện đánh nhau sẽ do luật trận đấu quyết định, không phải cái miệng của tôi.";
-            case TRADE -> "Nếu có giao dịch, giá và hàng sẽ được hệ thống kiểm tra. Tôi không tự bịa kho hàng.";
-            case GREETING -> "Chào. Có chuyện gì?";
-            case GOODBYE -> "Đi cẩn thận.";
-            case UNKNOWN -> "Tôi chưa hiểu ý đó đủ rõ. Nói cụ thể hơn một chút.";
-        };
-    }
-
-    private void render(ServerPlayerEntity player, DialogueSession session, String line) {
-        player.sendMessage(Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━").formatted(Formatting.DARK_GRAY), false);
-        player.sendMessage(Text.literal(" " + session.npcName()).formatted(Formatting.GOLD, Formatting.BOLD), false);
-        player.sendMessage(Text.literal(" " + line).formatted(Formatting.WHITE), false); player.sendMessage(Text.literal(" "), false);
-        for (DialogueSession.Choice choice : session.choices()) {
-            String command = "/livelydialogue choose " + session.sessionId() + " " + session.nonce() + " " + choice.id();
-            MutableText option = Text.literal(" ◆ " + choice.label()).setStyle(Style.EMPTY.withColor(Formatting.AQUA)
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
-            player.sendMessage(option, false);
-        }
-        player.sendMessage(Text.literal(" ✕ Rời đi").setStyle(Style.EMPTY.withColor(Formatting.GRAY)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/livelydialogue leave"))), false);
-        player.sendMessage(Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━").formatted(Formatting.DARK_GRAY), false);
-    }
-
-    private void close(ServerPlayerEntity player, String message) {
-        sessions.remove(player.getUuid()); lastInputMillis.remove(player.getUuid());
-        player.sendMessage(Text.literal("[Lively] " + message).formatted(Formatting.GRAY), false);
-    }
-
-    private boolean allowInput(UUID playerId) {
-        long now = System.currentTimeMillis(); Long previous = lastInputMillis.put(playerId, now);
-        return previous == null || now - previous >= INPUT_COOLDOWN_MS;
-    }
-
-    private static String normalizeKey(String value) { return value.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9_:-]+", "_"); }
-    private static List<DialogueSession.Choice> defaultChoices() {
-        return List.of(new DialogueSession.Choice(1, "Có việc gì không?", "ask_problem"),
-                new DialogueSession.Choice(2, "Ông đang làm gì?", "ask_work"),
-                new DialogueSession.Choice(3, "Thách đấu", "challenge"),
-                new DialogueSession.Choice(4, "Nói điều khác...", "free_text"));
-    }
+import com.mojang.brigadier.arguments.IntegerArgumentType;import com.mojang.brigadier.arguments.LongArgumentType;import com.mojang.brigadier.arguments.StringArgumentType;import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;import net.minecraft.server.network.ServerPlayerEntity;import net.minecraft.text.ClickEvent;import net.minecraft.text.MutableText;import net.minecraft.text.Style;import net.minecraft.text.Text;import net.minecraft.util.Formatting;import vn.svframe.lively.actor.ActorId;import vn.svframe.lively.api.LivelyApi;import vn.svframe.lively.model.NpcSnapshot;import vn.svframe.lively.model.NpcState;import vn.svframe.lively.social.SocialEngine;import java.time.Duration;import java.time.Instant;import java.util.*;import java.util.concurrent.ConcurrentHashMap;import static net.minecraft.server.command.CommandManager.argument;import static net.minecraft.server.command.CommandManager.literal;
+/** Local chat conversation runtime backed by Lively memory/social/world state. */
+public final class DialogueService {private static final Duration SESSION_TTL=Duration.ofMinutes(3);private static final long INPUT_COOLDOWN_MS=180L;private final ConcurrentHashMap<UUID,DialogueSession> sessions=new ConcurrentHashMap<>();private final ConcurrentHashMap<UUID,Long> lastInputMillis=new ConcurrentHashMap<>();private final NluEngine nlu=new NluEngine();
+ public void install(){LivelyApi.installDialogueService(this);ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message,sender,params)->{DialogueSession session=sessions.get(sender.getUuid());if(session==null)return true;if(session.expired()){close(sender,"Hội thoại đã kết thúc.");return true;}if(!allowInput(sender.getUuid()))return false;handleFreeText(sender,session,message.getSignedContent());return false;});CommandRegistrationCallback.EVENT.register((dispatcher,registryAccess,environment)->dispatcher.register(literal("livelydialogue").then(literal("choose").then(argument("session",StringArgumentType.word()).then(argument("nonce",LongArgumentType.longArg(1L)).then(argument("choice",IntegerArgumentType.integer(0,64)).executes(ctx->{ServerPlayerEntity player=ctx.getSource().getPlayer();if(player==null)return 0;try{return choose(player,UUID.fromString(StringArgumentType.getString(ctx,"session")),LongArgumentType.getLong(ctx,"nonce"),IntegerArgumentType.getInteger(ctx,"choice"))?1:0;}catch(IllegalArgumentException ignored){return 0;}}))))).then(literal("leave").executes(ctx->{ServerPlayerEntity player=ctx.getSource().getPlayer();if(player==null)return 0;close(player,"Bạn rời cuộc trò chuyện.");return 1;}))));}
+ public DialogueSession start(ServerPlayerEntity player,UUID npcId,String npcName){return start(player,npcId,npcName,"npc");}public DialogueSession start(ServerPlayerEntity player,UUID npcId,String npcName,String role){NpcState state=null;if(LivelyApi.states()!=null){state=LivelyApi.states().getOrCreate(npcId,npcName,role);state.remember("conversation_started",Map.of("player",player.getUuid().toString()),.20D,1D);}DialogueSession session=new DialogueSession(player.getUuid(),npcId,npcName,DialogueSession.Mode.HYBRID,12,Instant.now().plus(SESSION_TTL));session.setChoices(defaultChoices(role));sessions.put(player.getUuid(),session);String line=opening(state,player);session.record(false,line);render(player,session,line);return session;}
+ public Optional<DialogueSession> session(UUID playerId){DialogueSession s=sessions.get(playerId);if(s!=null&&s.expired()){sessions.remove(playerId,s);return Optional.empty();}return Optional.ofNullable(s);}
+ private boolean choose(ServerPlayerEntity player,UUID sessionId,long nonce,int choiceId){DialogueSession s=sessions.get(player.getUuid());if(s==null||!s.sessionId().equals(sessionId)||s.expired())return false;DialogueSession.Choice choice=s.choices().stream().filter(c->c.id()==choiceId).findFirst().orElse(null);if(choice==null||!s.consumeChoice(nonce,choiceId))return false;if(choice.semanticAction().equals("leave")){close(player,"Bạn rời cuộc trò chuyện.");return true;}s.record(true,choice.label());rememberChoice(player,s,choice);String reply=replyForChoice(player,s,choice);s.record(false,reply);s.setChoices(defaultChoices(LivelyApi.states()==null?"npc":LivelyApi.states().get(s.npcId()).map(NpcState::role).orElse("npc")));render(player,s,reply);return true;}
+ private void handleFreeText(ServerPlayerEntity player,DialogueSession session,String raw){if(raw.length()>320){player.sendMessage(Text.literal("[Lively] Nói ngắn lại một chút, tôi không định ghi biên bản họp."),false);return;}session.record(true,raw);NluEngine.Meaning meaning=nlu.parse(raw);NpcState state=updateNpcMemory(player,session,raw,meaning);String reply=replyFor(player,session,state,meaning);session.record(false,reply);session.setChoices(defaultChoices(state==null?"npc":state.role()));render(player,session,reply);}
+ private NpcState updateNpcMemory(ServerPlayerEntity player,DialogueSession session,String raw,NluEngine.Meaning meaning){if(LivelyApi.states()==null)return null;NpcState state=LivelyApi.states().get(session.npcId()).orElseGet(()->LivelyApi.states().getOrCreate(session.npcId(),session.npcName(),"npc"));Map<String,String> facts=new LinkedHashMap<>();facts.put("player",player.getUuid().toString());facts.put("intent",meaning.intent().name());facts.put("utterance",raw);facts.putAll(meaning.slots());double importance=switch(meaning.intent()){case ASSERT_INFORMATION,ACCUSE,THREAT->.72D;case OFFER_HELP,APOLOGIZE,AFFECTION,CHALLENGE->.60D;case TRADE,ASK_INFORMATION,GOSSIP->.45D;default->.25D;};state.remember("player_dialogue",facts,importance,meaning.confidence());switch(meaning.intent()){case ASSERT_INFORMATION->{String subject=meaning.slots().getOrDefault("subject","claim"),location=meaning.slots().get("location"),key=location==null?"reported_claim."+normalizeKey(subject):"reported_location."+normalizeKey(subject),value=location==null?raw:location;double trust=state.snapshot(1).relationship(player.getUuid()).trust();state.updateBelief(key,value,Math.max(.25D,Math.min(.95D,.55D+trust*.25D)),player.getUuid());}case OFFER_HELP->state.updateRelationship(player.getUuid(),.03D,.04D,-.01D,0D);case APOLOGIZE->state.updateRelationship(player.getUuid(),.015D,.01D,-.025D,0D);case AFFECTION->state.updateRelationship(player.getUuid(),.015D,.035D,-.01D,0D);case ACCUSE->state.updateRelationship(player.getUuid(),-.02D,-.025D,.06D,.01D);case THREAT->state.updateRelationship(player.getUuid(),-.08D,-.08D,.15D,.18D);default->{}}return state;}
+ private String replyForChoice(ServerPlayerEntity player,DialogueSession s,DialogueSession.Choice choice){NpcState state=LivelyApi.states()==null?null:LivelyApi.states().get(s.npcId()).orElse(null);return switch(choice.semanticAction()){case "ask_work"->workReply(player,state);case "ask_problem"->problemReply(state);case "gossip"->gossipReply(state);case "trade"->tradeReply(state);case "challenge"->"Muốn đấu thì được. Nhưng trận đấu phải đi qua luật battle hiện tại, tôi không tự phong mình thắng bằng hội thoại.";case "free_text"->"Cứ nói đi. Tôi đang nghe.";default->"Tôi hiểu.";};}
+ private String replyFor(ServerPlayerEntity player,DialogueSession session,NpcState state,NluEngine.Meaning meaning){return switch(meaning.intent()){case ASSERT_INFORMATION->"Tôi đã ghi nhớ điều đó. Tin hay không còn tùy vào nguồn và những gì tôi biết sau này.";case ASK_INFORMATION->informationReply(state,meaning,player.getUuid());case GOSSIP->gossipReply(state);case OFFER_HELP->problemReply(state);case TRADE->tradeReply(state);case CHALLENGE->"Được. Nếu tôi là trainer và battle integration hợp lệ, luật trận sẽ quyết định phần còn lại.";case GREETING->opening(state,player);case GOODBYE->"Đi cẩn thận.";case APOLOGIZE->"Tôi nghe rồi. Có bỏ qua hay không thì còn xem chuyện gì đã xảy ra.";case AFFECTION->affectionReply(state,player);case ACCUSE->"Buộc tội thì cần chứng cứ. Tin đồn không tự biến thành bằng chứng chỉ vì nói to hơn.";case THREAT->"Tôi sẽ nhớ câu đó.";case UNKNOWN->unknownReply(state);};}
+ private String opening(NpcState state,ServerPlayerEntity player){if(state==null)return"Có chuyện gì?";NpcSnapshot.RelationshipView r=state.snapshot(8).relationship(player.getUuid());if(r.fear()>.65D)return"Cậu lại tới. Tôi muốn cuộc nói chuyện này ngắn thôi.";if(r.suspicion()>.60D)return"Tôi nhớ cậu. Chuyện hôm nay nên rõ ràng một chút.";if(r.affinity()>.55D&&r.trust()>.45D)return"Lại gặp cậu. Có chuyện gì mới?";return variant(state,"Có chuyện gì?","Ừ, tôi đang nghe.","Cậu cần gì?");}
+ private String informationReply(NpcState state,NluEngine.Meaning meaning,UUID playerId){if(state==null)return"Tôi không có gì chắc chắn để nói.";NpcSnapshot snap=state.snapshot(32);if(snap.trait("deceptive")>.70D||snap.relationship(playerId).suspicion()>.75D)return"Có vài thứ tôi biết, nhưng hiện tại tôi không định nói.";String subject=normalizeKey(meaning.slots().getOrDefault("subject",meaning.slots().getOrDefault("location","")));var belief=snap.beliefs().values().stream().filter(b->subject.isBlank()||b.key().contains(subject)||normalizeKey(b.value()).contains(subject)).max(Comparator.comparingDouble(NpcSnapshot.BeliefView::confidence));return belief.map(b->"Điều tôi biết đáng tin nhất lúc này: "+b.value()+" (độ tin cậy "+Math.round(b.confidence()*100)+"%).").orElse("Tôi chưa có thông tin đủ đáng tin về chuyện đó.");}
+ private String workReply(ServerPlayerEntity player,NpcState state){if(state==null)return"Tôi đang làm việc của mình.";String role=state.role();return"Tôi làm "+role+". Lịch của tôi thay đổi theo giờ và tình hình, không phải đứng đây 24/7 để làm biển quảng cáo.";}
+ private String problemReply(NpcState state){if(state==null)return"Chưa có chuyện gì tôi muốn nhờ.";UUID id=state.id();var event=LivelyApi.events().activeEvents().stream().filter(e->e.participants().stream().anyMatch(a->a.uuid().equals(id))).findFirst();if(event.isPresent())return"Có chuyện đang diễn ra: "+event.get().seed()+". Nó chưa chắc đã thành quest, nhưng bỏ mặc thì thế giới vẫn chạy tiếp.";var issued=LivelyApi.quests().snapshot().quests().values().stream().filter(q->q.issuer()!=null&&q.issuer().uuid().equals(id)&&q.status()!=vn.svframe.lively.quest.QuestRuntime.Status.COMPLETED).findFirst();return issued.map(q->"Tôi đang để ý việc này: "+q.title()+".").orElse("Có vài chuyện chưa ổn, nhưng chưa đến mức tôi ném một dấu chấm than lên đầu.");}
+ private String gossipReply(NpcState state){if(state==null)return"Tôi không có tin gì đáng kể.";ActorId self=new ActorId(state.id(),ActorId.Kind.NPC);var rumor=LivelyApi.social().snapshot().rumors().values().stream().filter(r->r.carriers().contains(self)&&!r.expired(Instant.now())).max(Comparator.comparingDouble(r->r.confidence()*r.importance()));return rumor.map(r->"Nghe người ta nói: "+r.claim()+". Tôi chỉ tin khoảng "+Math.round(r.confidence()*100)+"%, nên đừng biến nó thành chân lý sau một vòng chợ.").orElse("Dạo này tôi chưa nghe được tin nào đủ đáng để truyền tiếp.");}
+ private String tradeReply(NpcState state){if(state==null)return"Tôi không có cửa hàng.";ActorId owner=new ActorId(state.id(),ActorId.Kind.NPC);var business=LivelyApi.economy().snapshot().businesses().values().stream().filter(b->b.owner().equals(owner)).findFirst();return business.map(b->b.open()?"Cửa hàng "+b.name()+" đang mở. Giá phụ thuộc tồn kho và nhu cầu, không phải một con số đóng đinh từ thế kỷ trước.":"Cửa hàng "+b.name()+" hiện đang đóng.").orElse("Tôi không có business nào để giao dịch lúc này.");}
+ private String affectionReply(NpcState state,ServerPlayerEntity player){if(state==null)return"Tôi nghe rồi.";LivelyApi.actors().upsert(new ActorId(player.getUuid(),ActorId.Kind.PLAYER),player.getName().getString(),Map.of(),Map.of("world",player.getServerWorld().getRegistryKey().getValue().toString()),Set.of("player"));ActorId npc=new ActorId(state.id(),ActorId.Kind.NPC),actor=new ActorId(player.getUuid(),ActorId.Kind.PLAYER);LivelyApi.social().apply(npc,actor,new SocialEngine.SocialDelta(.01D,.03D,.005D,0D,0D,.015D,.01D,"player_affection",Map.of()));double compatibility=LivelyApi.social().compatibility(LivelyApi.actors(),npc,actor);return compatibility>.65D?"Tôi không ghét việc nghe câu đó. Nhưng quan hệ không được xây bằng một câu thoại duy nhất.":"Tôi hiểu ý cậu. Cứ để thời gian trả lời phần còn lại.";}
+ private String unknownReply(NpcState state){return state==null?"Tôi chưa hiểu ý đó đủ rõ.":variant(state,"Tôi chưa hiểu ý đó đủ rõ. Nói cụ thể hơn một chút.","Câu đó hơi mơ hồ. Tôi không muốn đoán bừa.","Nói rõ người, nơi hoặc chuyện cậu đang nhắc tới đi.");}
+ private void rememberChoice(ServerPlayerEntity player,DialogueSession s,DialogueSession.Choice c){if(LivelyApi.states()!=null)LivelyApi.states().get(s.npcId()).ifPresent(state->state.remember("dialogue_choice",Map.of("player",player.getUuid().toString(),"choice",c.semanticAction()),.25D,1D));}
+ private void render(ServerPlayerEntity player,DialogueSession s,String line){player.sendMessage(Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━").formatted(Formatting.DARK_GRAY),false);player.sendMessage(Text.literal(" "+s.npcName()).formatted(Formatting.GOLD,Formatting.BOLD),false);player.sendMessage(Text.literal(" "+line).formatted(Formatting.WHITE),false);player.sendMessage(Text.literal(" "),false);for(DialogueSession.Choice c:s.choices()){String cmd="/livelydialogue choose "+s.sessionId()+" "+s.nonce()+" "+c.id();MutableText option=Text.literal(" ◆ "+c.label()).setStyle(Style.EMPTY.withColor(Formatting.AQUA).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,cmd)));player.sendMessage(option,false);}player.sendMessage(Text.literal(" ✕ Rời đi").setStyle(Style.EMPTY.withColor(Formatting.GRAY).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,"/livelydialogue leave"))),false);player.sendMessage(Text.literal("━━━━━━━━━━━━━━━━━━━━━━━━━━━━").formatted(Formatting.DARK_GRAY),false);}
+ private void close(ServerPlayerEntity player,String message){sessions.remove(player.getUuid());lastInputMillis.remove(player.getUuid());player.sendMessage(Text.literal("[Lively] "+message).formatted(Formatting.GRAY),false);}
+ private boolean allowInput(UUID playerId){long now=System.currentTimeMillis();while(true){Long previous=lastInputMillis.get(playerId);if(previous!=null&&now-previous<INPUT_COOLDOWN_MS)return false;if(previous==null){if(lastInputMillis.putIfAbsent(playerId,now)==null)return true;}else if(lastInputMillis.replace(playerId,previous,now))return true;}}
+ private static String normalizeKey(String value){return value==null?"":value.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}0-9_:-]+","_");}private static String variant(NpcState state,String...options){int index=Math.floorMod(state.id().hashCode()+(int)state.revision(),options.length);return options[index];}
+ private static List<DialogueSession.Choice> defaultChoices(String role){ArrayList<DialogueSession.Choice> choices=new ArrayList<>();choices.add(new DialogueSession.Choice(1,"Có việc gì không?","ask_problem"));choices.add(new DialogueSession.Choice(2,"Ông đang làm gì?","ask_work"));choices.add(new DialogueSession.Choice(3,"Có tin gì không?","gossip"));if(role.toLowerCase(Locale.ROOT).contains("merchant")||role.toLowerCase(Locale.ROOT).contains("shop"))choices.add(new DialogueSession.Choice(4,"Giao dịch","trade"));choices.add(new DialogueSession.Choice(5,"Thách đấu","challenge"));choices.add(new DialogueSession.Choice(6,"Nói điều khác...","free_text"));return List.copyOf(choices);}
 }

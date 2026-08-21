@@ -1,141 +1,19 @@
 package vn.svframe.lively.model;
 
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
-
-/** Live mutable NPC state. All snapshots are captured atomically under one state lock. */
-public final class NpcState {
-    private final UUID id;
-    private final AtomicLong revision = new AtomicLong();
-    private final Object stateLock = new Object();
-    private final Map<String, Double> traits = new HashMap<>();
-    private final Map<String, Double> needs = new HashMap<>();
-    private final Map<String, NpcSnapshot.BeliefView> beliefs = new HashMap<>();
-    private final Map<UUID, NpcSnapshot.RelationshipView> relationships = new HashMap<>();
-    private final Deque<NpcSnapshot.MemoryView> memories = new ArrayDeque<>();
-    private final int memoryLimit;
-    private String name;
-    private String role;
-
-    public NpcState(UUID id, String name, String role, int memoryLimit) {
-        this.id = Objects.requireNonNull(id);
-        this.name = Objects.requireNonNull(name);
-        this.role = Objects.requireNonNull(role);
-        this.memoryLimit = Math.max(32, Math.min(4096, memoryLimit));
-    }
-
-    public UUID id() { return id; }
-    public long revision() { return revision.get(); }
-    public String name() { synchronized (stateLock) { return name; } }
-    public String role() { synchronized (stateLock) { return role; } }
-
-    public void rename(String value) {
-        synchronized (stateLock) { name = Objects.requireNonNull(value); revision.incrementAndGet(); }
-    }
-    public void setRole(String value) {
-        synchronized (stateLock) { role = Objects.requireNonNull(value); revision.incrementAndGet(); }
-    }
-    public void setTrait(String key, double value) {
-        synchronized (stateLock) { traits.put(normalize(key), clamp01(value)); revision.incrementAndGet(); }
-    }
-    public void setNeed(String key, double value) {
-        synchronized (stateLock) { needs.put(normalize(key), clamp01(value)); revision.incrementAndGet(); }
-    }
-
-    public void updateBelief(String key, String value, double confidence, UUID source) {
-        synchronized (stateLock) {
-            String normalized = normalize(key);
-            beliefs.put(normalized, new NpcSnapshot.BeliefView(normalized, value, confidence, source, Instant.now()));
-            revision.incrementAndGet();
-        }
-    }
-
-    public void updateRelationship(UUID subject, double trustDelta, double affinityDelta, double suspicionDelta, double fearDelta) {
-        synchronized (stateLock) {
-            NpcSnapshot.RelationshipView base = relationships.getOrDefault(subject,
-                    new NpcSnapshot.RelationshipView(subject, 0D, 0D, 0D, 0D, 0L));
-            relationships.put(subject, new NpcSnapshot.RelationshipView(
-                    subject,
-                    base.trust() + trustDelta,
-                    base.affinity() + affinityDelta,
-                    base.suspicion() + suspicionDelta,
-                    base.fear() + fearDelta,
-                    base.interactions() + 1L));
-            revision.incrementAndGet();
-        }
-    }
-
-    public void remember(String type, Map<String, String> facts, double importance, double confidence) {
-        synchronized (stateLock) {
-            memories.addLast(new NpcSnapshot.MemoryView(UUID.randomUUID(), Instant.now(), type, facts, importance, confidence));
-            while (memories.size() > memoryLimit) {
-                NpcSnapshot.MemoryView least = memories.stream()
-                        .min((a, b) -> Double.compare(a.importance(), b.importance()))
-                        .orElse(memories.peekFirst());
-                memories.remove(least);
-            }
-            revision.incrementAndGet();
-        }
-    }
-
-    public NpcSnapshot snapshot(int memoryWindow) {
-        synchronized (stateLock) {
-            int safeWindow = Math.max(1, Math.min(memoryLimit, memoryWindow));
-            return new NpcSnapshot(id, revision.get(), Instant.now(), name, role,
-                    Map.copyOf(traits), Map.copyOf(needs), Map.copyOf(beliefs), Map.copyOf(relationships),
-                    recentMemoriesLocked(safeWindow));
-        }
-    }
-
-    public NpcSnapshot snapshot() { return snapshot(64); }
-
-    public StateData exportData() {
-        synchronized (stateLock) {
-            return new StateData(id, revision.get(), name, role, new HashMap<>(traits), new HashMap<>(needs),
-                    new HashMap<>(beliefs), new HashMap<>(relationships), recentMemoriesLocked(memoryLimit));
-        }
-    }
-
-    public void importData(StateData data) {
-        if (!id.equals(data.id())) throw new IllegalArgumentException("npc id mismatch");
-        synchronized (stateLock) {
-            name = data.name(); role = data.role();
-            traits.clear(); traits.putAll(data.traits());
-            needs.clear(); needs.putAll(data.needs());
-            beliefs.clear(); beliefs.putAll(data.beliefs());
-            relationships.clear(); relationships.putAll(data.relationships());
-            memories.clear(); data.memories().stream().limit(memoryLimit).forEach(memories::addLast);
-            revision.set(Math.max(0L, data.revision()));
-        }
-    }
-
-    private List<NpcSnapshot.MemoryView> recentMemoriesLocked(int limit) {
-        List<NpcSnapshot.MemoryView> result = new ArrayList<>();
-        var it = memories.descendingIterator();
-        while (it.hasNext() && result.size() < limit) result.add(it.next());
-        return List.copyOf(result);
-    }
-
-    public record StateData(UUID id, long revision, String name, String role,
-                            Map<String, Double> traits, Map<String, Double> needs,
-                            Map<String, NpcSnapshot.BeliefView> beliefs,
-                            Map<UUID, NpcSnapshot.RelationshipView> relationships,
-                            List<NpcSnapshot.MemoryView> memories) {
-        public StateData {
-            Objects.requireNonNull(id); Objects.requireNonNull(name); Objects.requireNonNull(role);
-            traits = Map.copyOf(traits); needs = Map.copyOf(needs); beliefs = Map.copyOf(beliefs);
-            relationships = Map.copyOf(relationships); memories = List.copyOf(memories);
-        }
-    }
-
-    private static String normalize(String value) { return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT); }
-    private static double clamp01(double value) { return Math.max(0D, Math.min(1D, value)); }
-}
+import java.time.Instant;import java.util.ArrayDeque;import java.util.ArrayList;import java.util.Deque;import java.util.HashMap;import java.util.List;import java.util.Map;import java.util.Objects;import java.util.UUID;import java.util.concurrent.atomic.AtomicLong;
+/** Live mutable NPC state. All snapshots/import checks are atomic under one state lock. */
+public final class NpcState {private final UUID id;private final AtomicLong revision=new AtomicLong();private final Object stateLock=new Object();private final Map<String,Double> traits=new HashMap<>();private final Map<String,Double> needs=new HashMap<>();private final Map<String,NpcSnapshot.BeliefView> beliefs=new HashMap<>();private final Map<UUID,NpcSnapshot.RelationshipView> relationships=new HashMap<>();private final Deque<NpcSnapshot.MemoryView> memories=new ArrayDeque<>();private final int memoryLimit;private String name;private String role;
+ public NpcState(UUID id,String name,String role,int memoryLimit){this.id=Objects.requireNonNull(id);this.name=Objects.requireNonNull(name);this.role=Objects.requireNonNull(role);this.memoryLimit=Math.max(32,Math.min(4096,memoryLimit));}
+ public UUID id(){return id;}public long revision(){return revision.get();}public String name(){synchronized(stateLock){return name;}}public String role(){synchronized(stateLock){return role;}}
+ public void rename(String value){synchronized(stateLock){name=Objects.requireNonNull(value);revision.incrementAndGet();}}public void setRole(String value){synchronized(stateLock){role=Objects.requireNonNull(value);revision.incrementAndGet();}}public void setTrait(String key,double value){synchronized(stateLock){traits.put(normalize(key),clamp01(value));revision.incrementAndGet();}}public void setNeed(String key,double value){synchronized(stateLock){needs.put(normalize(key),clamp01(value));revision.incrementAndGet();}}
+ public void updateBelief(String key,String value,double confidence,UUID source){synchronized(stateLock){String normalized=normalize(key);beliefs.put(normalized,new NpcSnapshot.BeliefView(normalized,value,confidence,source,Instant.now()));revision.incrementAndGet();}}
+ public void updateRelationship(UUID subject,double trustDelta,double affinityDelta,double suspicionDelta,double fearDelta){synchronized(stateLock){NpcSnapshot.RelationshipView base=relationships.getOrDefault(subject,new NpcSnapshot.RelationshipView(subject,0D,0D,0D,0D,0L));relationships.put(subject,new NpcSnapshot.RelationshipView(subject,base.trust()+trustDelta,base.affinity()+affinityDelta,base.suspicion()+suspicionDelta,base.fear()+fearDelta,base.interactions()+1L));revision.incrementAndGet();}}
+ public void remember(String type,Map<String,String> facts,double importance,double confidence){synchronized(stateLock){memories.addLast(new NpcSnapshot.MemoryView(UUID.randomUUID(),Instant.now(),type,facts,importance,confidence));while(memories.size()>memoryLimit){NpcSnapshot.MemoryView least=memories.stream().min((a,b)->Double.compare(a.importance(),b.importance())).orElse(memories.peekFirst());memories.remove(least);}revision.incrementAndGet();}}
+ public NpcSnapshot snapshot(int memoryWindow){synchronized(stateLock){int safeWindow=Math.max(1,Math.min(memoryLimit,memoryWindow));return new NpcSnapshot(id,revision.get(),Instant.now(),name,role,Map.copyOf(traits),Map.copyOf(needs),Map.copyOf(beliefs),Map.copyOf(relationships),recentMemoriesLocked(safeWindow));}}public NpcSnapshot snapshot(){return snapshot(64);}
+ public StateData exportData(){synchronized(stateLock){return new StateData(id,revision.get(),name,role,new HashMap<>(traits),new HashMap<>(needs),new HashMap<>(beliefs),new HashMap<>(relationships),recentMemoriesLocked(memoryLimit));}}
+ public void importData(StateData data){if(!id.equals(data.id()))throw new IllegalArgumentException("npc id mismatch");synchronized(stateLock){applyDataLocked(data);}}
+ public boolean importDataIfUnmodified(StateData data){if(!id.equals(data.id()))throw new IllegalArgumentException("npc id mismatch");synchronized(stateLock){if(revision.get()!=0L)return false;applyDataLocked(data);return true;}}
+ private void applyDataLocked(StateData data){name=data.name();role=data.role();traits.clear();traits.putAll(data.traits());needs.clear();needs.putAll(data.needs());beliefs.clear();beliefs.putAll(data.beliefs());relationships.clear();relationships.putAll(data.relationships());memories.clear();data.memories().stream().limit(memoryLimit).forEach(memories::addLast);revision.set(Math.max(0L,data.revision()));}
+ private List<NpcSnapshot.MemoryView> recentMemoriesLocked(int limit){List<NpcSnapshot.MemoryView> result=new ArrayList<>();var it=memories.descendingIterator();while(it.hasNext()&&result.size()<limit)result.add(it.next());return List.copyOf(result);}
+ public record StateData(UUID id,long revision,String name,String role,Map<String,Double> traits,Map<String,Double> needs,Map<String,NpcSnapshot.BeliefView> beliefs,Map<UUID,NpcSnapshot.RelationshipView> relationships,List<NpcSnapshot.MemoryView> memories){public StateData{Objects.requireNonNull(id);Objects.requireNonNull(name);Objects.requireNonNull(role);traits=Map.copyOf(traits);needs=Map.copyOf(needs);beliefs=Map.copyOf(beliefs);relationships=Map.copyOf(relationships);memories=List.copyOf(memories);}}
+ private static String normalize(String value){return value==null?"":value.trim().toLowerCase(java.util.Locale.ROOT);}private static double clamp01(double value){return Math.max(0D,Math.min(1D,value));}}

@@ -3,9 +3,9 @@
   "id": "livelynpcs_integration",
   "version": "${version}",
   "name": "Lively NPCs Integration by SVFrame Studio",
-  "description": "Integration layer connecting Lively NPCs to Cobblemon and the server ecosystem.",
+  "description": "Optional integration layer connecting Lively NPCs to Cobblemon and the server ecosystem.",
   "authors": ["SVFrame Studio"],
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": ["vn.svframe.lively.integration.LivelyNpcsIntegration"]
   },
@@ -17,9 +17,12 @@
     "minecraft": "1.21.1",
     "java": ">=21",
     "fabric-api": "*",
-    "livelynpcs": ">=0.1.0"
+    "livelynpcs": ">=0.4.0-alpha"
   },
   "suggests": {
-    "cobblemon": "1.7.x"
+    "cobblemon": "1.7.x",
+    "luckperms": "*",
+    "beconomy": "*",
+    "holodisplays": "*"
   }
 }

@@ -13,9 +13,14 @@ public interface NpcBody {
     NpcDefinition.BodyType type();
     boolean spawned();
     Optional<UUID> entityUuid();
+    default Optional<Vec3d> position() { return Optional.empty(); }
+    default Optional<String> worldKey() { return Optional.empty(); }
     void spawn(MinecraftServer server, NpcDefinition definition);
     void despawn(MinecraftServer server);
     void teleport(MinecraftServer server, String worldKey, Vec3d position, float yaw, float pitch);
+    default void moveStep(MinecraftServer server, String worldKey, Vec3d position, float yaw, float pitch) {
+        teleport(server, worldKey, position, yaw, pitch);
+    }
     void lookAt(MinecraftServer server, Vec3d target);
     void tick(MinecraftServer server, NpcDefinition definition);
     default void onViewerJoin(ServerPlayerEntity player, NpcDefinition definition) {}

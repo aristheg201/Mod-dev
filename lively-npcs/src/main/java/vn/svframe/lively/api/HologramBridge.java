@@ -1,0 +1,2 @@
+package vn.svframe.lively.api;
+import java.util.List;public interface HologramBridge{boolean available();boolean upsertText(String id,String world,double x,double y,double z,List<String> lines);boolean remove(String id);static HologramBridge unavailable(){return new HologramBridge(){public boolean available(){return false;}public boolean upsertText(String id,String world,double x,double y,double z,List<String> lines){return false;}public boolean remove(String id){return false;}};}}

@@ -1,0 +1,2 @@
+package vn.svframe.lively.api;
+import net.minecraft.server.network.ServerPlayerEntity;import net.minecraft.util.math.BlockPos;public interface ClaimBridge{boolean available();boolean canNpcInteract(ServerPlayerEntity responsiblePlayer,String world,BlockPos pos,String action);static ClaimBridge permissive(){return new ClaimBridge(){public boolean available(){return false;}public boolean canNpcInteract(ServerPlayerEntity player,String world,BlockPos pos,String action){return true;}};}}

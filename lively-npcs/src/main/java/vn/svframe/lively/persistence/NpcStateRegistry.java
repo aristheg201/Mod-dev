@@ -1,86 +1,12 @@
 package vn.svframe.lively.persistence;
 
-import vn.svframe.lively.model.NpcSnapshot;
-import vn.svframe.lively.model.NpcState;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-/** Runtime registry with persistence I/O away from the server thread. */
-public final class NpcStateRegistry implements AutoCloseable {
-    private final ConcurrentHashMap<UUID, NpcState> states = new ConcurrentHashMap<>();
-    private final NpcStateStore store;
-    private final ExecutorService io;
-
-    public NpcStateRegistry(NpcStateStore store) {
-        this.store = store;
-        this.io = Executors.newSingleThreadExecutor(r -> {
-            Thread thread = new Thread(r, "Lively-State-IO"); thread.setDaemon(true); return thread;
-        });
-    }
-
-    public NpcState getOrCreate(UUID id, String name, String role) {
-        return states.computeIfAbsent(id, key -> new NpcState(key, name, role, 1024));
-    }
-
-    public Optional<NpcState> get(UUID id) { return Optional.ofNullable(states.get(id)); }
-    public Optional<NpcSnapshot> snapshot(UUID id) { return get(id).map(NpcState::snapshot); }
-    public Collection<NpcState> all() { return java.util.List.copyOf(states.values()); }
-
-    public CompletableFuture<Integer> preloadAll() {
-        return CompletableFuture.supplyAsync(() -> {
-            int loaded = 0;
-            try {
-                for (UUID id : store.storedIds()) {
-                    if (states.containsKey(id)) continue;
-                    Optional<NpcState.StateData> data = store.load(id);
-                    if (data.isEmpty()) continue;
-                    NpcState.StateData saved = data.get();
-                    NpcState state = new NpcState(id, saved.name(), saved.role(), 1024);
-                    state.importData(saved);
-                    if (states.putIfAbsent(id, state) == null) loaded++;
-                }
-                return loaded;
-            } catch (IOException ex) {
-                throw new java.util.concurrent.CompletionException(ex);
-            }
-        }, io);
-    }
-
-    public CompletableFuture<NpcState> loadOrCreate(UUID id, String name, String role) {
-        NpcState existing = states.get(id); if (existing != null) return CompletableFuture.completedFuture(existing);
-        return CompletableFuture.supplyAsync(() -> {
-            NpcState state = new NpcState(id, name, role, 1024);
-            try { store.load(id).ifPresent(state::importData); }
-            catch (IOException ex) { throw new java.util.concurrent.CompletionException(ex); }
-            return states.computeIfAbsent(id, key -> state);
-        }, io);
-    }
-
-    public CompletableFuture<Void> save(UUID id) {
-        NpcState state = states.get(id); if (state == null) return CompletableFuture.completedFuture(null);
-        NpcState.StateData captured = state.exportData();
-        return CompletableFuture.runAsync(() -> {
-            try { store.save(captured); }
-            catch (IOException ex) { throw new java.util.concurrent.CompletionException(ex); }
-        }, io);
-    }
-
-    public CompletableFuture<Void> saveAll() {
-        var captured = states.values().stream().map(NpcState::exportData).toList();
-        return CompletableFuture.runAsync(() -> {
-            for (NpcState.StateData state : captured) {
-                try { store.save(state); }
-                catch (IOException ex) { throw new java.util.concurrent.CompletionException(ex); }
-            }
-        }, io);
-    }
-
-    @Override public void close() { io.shutdown(); }
-}
+import vn.svframe.lively.model.NpcSnapshot;import vn.svframe.lively.model.NpcState;import java.io.IOException;import java.util.Collection;import java.util.Optional;import java.util.UUID;import java.util.concurrent.CompletableFuture;import java.util.concurrent.ConcurrentHashMap;import java.util.concurrent.ExecutorService;import java.util.concurrent.Executors;
+/** Runtime registry with persistence I/O away from the server thread and race-safe startup imports. */
+public final class NpcStateRegistry implements AutoCloseable {private final ConcurrentHashMap<UUID,NpcState> states=new ConcurrentHashMap<>();private final NpcStateStore store;private final ExecutorService io;
+ public NpcStateRegistry(NpcStateStore store){this.store=store;this.io=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"Lively-State-IO");t.setDaemon(true);return t;});}
+ public NpcState getOrCreate(UUID id,String name,String role){return states.computeIfAbsent(id,key->new NpcState(key,name,role,1024));}public Optional<NpcState> get(UUID id){return Optional.ofNullable(states.get(id));}public Optional<NpcSnapshot> snapshot(UUID id){return get(id).map(NpcState::snapshot);}public Collection<NpcState> all(){return java.util.List.copyOf(states.values());}
+ public CompletableFuture<Integer> preloadAll(){return CompletableFuture.supplyAsync(()->{int loaded=0;try{for(UUID id:store.storedIds()){Optional<NpcState.StateData> data=store.load(id);if(data.isEmpty())continue;NpcState.StateData saved=data.get();NpcState loadedState=new NpcState(id,saved.name(),saved.role(),1024);loadedState.importData(saved);NpcState existing=states.putIfAbsent(id,loadedState);if(existing==null)loaded++;else if(existing.importDataIfUnmodified(saved))loaded++;}return loaded;}catch(IOException ex){throw new java.util.concurrent.CompletionException(ex);}},io);}
+ public CompletableFuture<NpcState> loadOrCreate(UUID id,String name,String role){return CompletableFuture.supplyAsync(()->{Optional<NpcState.StateData> saved;try{saved=store.load(id);}catch(IOException ex){throw new java.util.concurrent.CompletionException(ex);}NpcState state=states.computeIfAbsent(id,key->new NpcState(key,name,role,1024));saved.ifPresent(state::importDataIfUnmodified);return state;},io);}
+ public CompletableFuture<Void> save(UUID id){NpcState state=states.get(id);if(state==null)return CompletableFuture.completedFuture(null);NpcState.StateData captured=state.exportData();return CompletableFuture.runAsync(()->{try{store.save(captured);}catch(IOException ex){throw new java.util.concurrent.CompletionException(ex);}},io);}
+ public CompletableFuture<Void> saveAll(){var captured=states.values().stream().map(NpcState::exportData).toList();return CompletableFuture.runAsync(()->{for(NpcState.StateData state:captured){try{store.save(state);}catch(IOException ex){throw new java.util.concurrent.CompletionException(ex);}}},io);}
+ @Override public void close(){io.shutdown();}}

@@ -3,9 +3,9 @@
   "id": "livelynpcs",
   "version": "${version}",
   "name": "Lively NPCs by SVFrame Studio",
-  "description": "Offline autonomous NPC intelligence and world simulation framework.",
+  "description": "Offline autonomous NPC intelligence and living-world simulation framework.",
   "authors": ["SVFrame Studio"],
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": ["vn.svframe.lively.LivelyNpcs"]
   },

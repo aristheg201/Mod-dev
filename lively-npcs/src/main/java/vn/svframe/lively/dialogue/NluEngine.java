@@ -1,41 +1,15 @@
 package vn.svframe.lively.dialogue;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-/** Lightweight offline intent/entity parser. No external language model required. */
-public final class NluEngine {
-    public enum Intent { ASSERT_INFORMATION, ASK_INFORMATION, OFFER_HELP, CHALLENGE, TRADE, GREETING, GOODBYE, UNKNOWN }
-    public record Meaning(Intent intent, Map<String, String> slots, double confidence) {
-        public Meaning { slots = Map.copyOf(slots); }
-    }
-
-    private static final Pattern POKEMON = Pattern.compile("(?i)\\b(mareep|pikachu|lucario|magikarp|eevee)\\b");
-    private static final Pattern LOCATION = Pattern.compile("(?i)\\b(silverwoods|forest|rừng|cave|hang|market|chợ)\\b");
-
-    public Meaning parse(String raw) {
-        String text = raw == null ? "" : raw.trim();
-        String s = text.toLowerCase(Locale.ROOT);
-        Map<String, String> slots = new HashMap<>();
-        capture(POKEMON, text).ifPresent(v -> slots.put("subject", v));
-        capture(LOCATION, text).ifPresent(v -> slots.put("location", v));
-
-        if (s.matches(".*(tôi thấy|mình thấy|i saw|i found).*")) return new Meaning(Intent.ASSERT_INFORMATION, slots, 0.84D);
-        if (s.contains("ở đâu") || s.contains("where") || s.contains("biết gì")) return new Meaning(Intent.ASK_INFORMATION, slots, 0.79D);
-        if (s.contains("giúp") || s.contains("help")) return new Meaning(Intent.OFFER_HELP, slots, 0.75D);
-        if (s.contains("đấu") || s.contains("battle") || s.contains("challenge")) return new Meaning(Intent.CHALLENGE, slots, 0.78D);
-        if (s.contains("mua") || s.contains("bán") || s.contains("trade") || s.contains("shop")) return new Meaning(Intent.TRADE, slots, 0.77D);
-        if (s.matches(".*(xin chào|chào|hello|hi).*")) return new Meaning(Intent.GREETING, slots, 0.82D);
-        if (s.matches(".*(tạm biệt|bye|goodbye).*")) return new Meaning(Intent.GOODBYE, slots, 0.90D);
-        slots.put("text", text);
-        return new Meaning(Intent.UNKNOWN, slots, 0.20D);
-    }
-
-    private static java.util.Optional<String> capture(Pattern pattern, String input) {
-        Matcher matcher = pattern.matcher(input);
-        return matcher.find() ? java.util.Optional.of(matcher.group(1)) : java.util.Optional.empty();
-    }
-}
+import java.text.Normalizer;import java.util.HashMap;import java.util.Locale;import java.util.Map;import java.util.regex.Matcher;import java.util.regex.Pattern;
+/** Generic offline intent/entity parser. Domain integrations can enrich facts without replacing the core NLU. */
+public final class NluEngine {public enum Intent{ASSERT_INFORMATION,ASK_INFORMATION,OFFER_HELP,CHALLENGE,TRADE,GREETING,GOODBYE,GOSSIP,ACCUSE,APOLOGIZE,AFFECTION,THREAT,UNKNOWN}public record Meaning(Intent intent,Map<String,String> slots,double confidence){public Meaning{slots=Map.copyOf(slots);}}
+ private static final Pattern QUOTED=Pattern.compile("[\\\"“”']([^\\\"“”']{2,80})[\\\"“”']");private static final Pattern ABOUT=Pattern.compile("(?i)(?:về|about)\\s+([\\p{L}0-9 _:-]{2,80})");private static final Pattern LOCATION=Pattern.compile("(?i)(?:ở|tại|gần|near|at|in)\\s+([\\p{L}0-9 _:-]{2,80})");
+ public Meaning parse(String raw){String text=raw==null?"":raw.trim();String s=fold(text);Map<String,String> slots=new HashMap<>();capture(QUOTED,text).ifPresent(v->slots.put("subject",clean(v)));capture(ABOUT,text).ifPresent(v->slots.putIfAbsent("subject",clean(v)));capture(LOCATION,text).ifPresent(v->slots.put("location",clean(v)));
+  if(any(s,"xin chao","chao","hello","hey"," hi "))return new Meaning(Intent.GREETING,slots,.88D);if(any(s,"tam biet","goodbye","bye","hen gap"))return new Meaning(Intent.GOODBYE,slots,.92D);
+  if(any(s,"xin loi","sorry","toi sai","tha loi"))return new Meaning(Intent.APOLOGIZE,slots,.88D);if(any(s,"toi thich","toi yeu","i like you","i love you","hen ho"))return new Meaning(Intent.AFFECTION,slots,.82D);
+  if(any(s,"tao se giet","toi se giet","de doa","threat","se danh may","se xu may"))return new Meaning(Intent.THREAT,slots,.86D);if(any(s,"chinh ong","chinh ba","chinh may","thu pham","toi cao","accuse","nghi pham"))return new Meaning(Intent.ACCUSE,slots,.76D);
+  if(any(s,"tin don","nghe noi","gossip","rumor","chuyen gi dang lan"))return new Meaning(Intent.GOSSIP,slots,.84D);if(any(s,"toi thay","minh thay","toi biet rang","i saw","i found","i know that"))return new Meaning(Intent.ASSERT_INFORMATION,slots,.84D);
+  if(any(s,"o dau","where","biet gi","what do you know","ai la","who is","tai sao","why"))return new Meaning(Intent.ASK_INFORMATION,slots,.80D);if(any(s,"giup","help","toi co the lam gi"))return new Meaning(Intent.OFFER_HELP,slots,.78D);
+  if(any(s,"thach dau","dau voi","battle","challenge"))return new Meaning(Intent.CHALLENGE,slots,.82D);if(any(s,"mua","ban","giao dich","trade","shop","gia bao nhieu"))return new Meaning(Intent.TRADE,slots,.80D);
+  slots.put("text",text);return new Meaning(Intent.UNKNOWN,slots,.20D);}
+ private static boolean any(String text,String...needles){String padded=" "+text+" ";for(String n:needles)if(padded.contains(n))return true;return false;}private static java.util.Optional<String> capture(Pattern p,String input){Matcher m=p.matcher(input);return m.find()?java.util.Optional.of(m.group(1)):java.util.Optional.empty();}private static String clean(String s){return s.trim().replaceAll("[?.!,;]+$","");}private static String fold(String value){String n=Normalizer.normalize(value.toLowerCase(Locale.ROOT),Normalizer.Form.NFD).replaceAll("\\p{M}+","");return n.replace('đ','d').replaceAll("\\s+"," ").trim();}}
