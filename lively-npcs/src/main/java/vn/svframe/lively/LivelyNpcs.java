@@ -32,6 +32,7 @@ import vn.svframe.lively.persistence.NpcStateRegistry;
 import vn.svframe.lively.persistence.NpcStateStore;
 import vn.svframe.lively.persistence.SimulationStateStore;
 import vn.svframe.lively.persistence.WorldHistoryJournal;
+import vn.svframe.lively.quest.QuestLifecycleService;
 import vn.svframe.lively.simulation.BusinessSimulationService;
 import vn.svframe.lively.simulation.CausalSimulationService;
 import vn.svframe.lively.simulation.FamilyProgressionService;
@@ -70,6 +71,7 @@ public final class LivelyNpcs implements ModInitializer {
     private CausalSimulationService causalSimulation;
     private FamilyProgressionService familyProgression;
     private BusinessSimulationService businessSimulation;
+    private QuestLifecycleService questLifecycle;
     private StructureCapabilityScanner structureScanner;
     private WorldEventEngine.Listener historyListener;
 
@@ -86,8 +88,11 @@ public final class LivelyNpcs implements ModInitializer {
             return runtime.interact(serverPlayer, entity.getUuid(), LivelyApi.dialogues()) ? ActionResult.SUCCESS : ActionResult.PASS;
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            if (activeServer != server) return;
             NpcRuntime runtime = npcRuntime;
-            if (runtime != null && activeServer == server) runtime.onPlayerJoin(handler.player);
+            if (runtime != null) runtime.onPlayerJoin(handler.player);
+            QuestLifecycleService quests = questLifecycle;
+            if (quests != null) quests.onPlayerJoin(handler.player);
         });
         ServerLifecycleEvents.SERVER_STARTED.register(this::startSession);
         ServerLifecycleEvents.SERVER_STOPPING.register(this::stopSession);
@@ -139,6 +144,7 @@ public final class LivelyNpcs implements ModInitializer {
             LivelyApi.installAutonomy(autonomy);
             LivelyApi.installInvestigationService(new InvestigationService(LivelyApi.crime(), LivelyApi.social(), LivelyApi.actors(), stateRegistry));
 
+            questLifecycle = new QuestLifecycleService(server);
             director = new LivingWorldDirectorService();
             causalSimulation = new CausalSimulationService();
             familyProgression = new FamilyProgressionService();
@@ -205,6 +211,7 @@ public final class LivelyNpcs implements ModInitializer {
         SimulationStateStore.Bundle bundle = simulationStore == null ? null : captureSimulation();
         try {
             if (historyListener != null) LivelyApi.events().removeListener(historyListener);
+            if (questLifecycle != null) questLifecycle.close();
             if (director != null) director.close();
             if (causalSimulation != null) causalSimulation.close();
             if (autonomy != null) autonomy.close();
@@ -226,7 +233,7 @@ public final class LivelyNpcs implements ModInitializer {
             if (simulationStore != null) simulationStore.close();
             stateRegistry = null; npcRuntime = null; historyJournal = null; simulationStore = null; skinResolver = null;
             navigation = null; autonomy = null; director = null; causalSimulation = null; familyProgression = null;
-            businessSimulation = null; structureScanner = null; historyListener = null;
+            businessSimulation = null; questLifecycle = null; structureScanner = null; historyListener = null;
             pendingAutosave = CompletableFuture.completedFuture(null);
             activeServer = null;
             LivelyApi.resetServerSessionState();
