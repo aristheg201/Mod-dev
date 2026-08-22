@@ -9,6 +9,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import vn.svframe.lively.animation.AnimationResult;
 import vn.svframe.lively.api.LivelyApi;
@@ -16,6 +17,7 @@ import vn.svframe.lively.chat.NpcPlayerChatBootstrap;
 import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.npc.NpcReference;
 import vn.svframe.lively.npc.NpcRuntime;
+import vn.svframe.lively.world.BuiltStructureDiscovery;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 
 import java.util.Comparator;
@@ -36,6 +38,7 @@ public final class NpcHumanCommandsBootstrap implements ModInitializer {
                         .executes(ctx -> help(ctx.getSource()))
                         .then(literal("help").executes(ctx -> help(ctx.getSource())))
                         .then(literal("list").executes(ctx -> list(ctx.getSource())))
+                        .then(literal("scan").then(literal("here").executes(ctx -> scanHere(ctx.getSource()))))
                         .then(literal("info").then(npcArg("npc").executes(ctx -> info(ctx.getSource(), ref(ctx.getSource(), str(ctx, "npc"))))))
                         .then(literal("spawn").then(npcArg("npc").executes(ctx -> spawn(ctx.getSource(), ref(ctx.getSource(), str(ctx, "npc")), true))))
                         .then(literal("despawn").then(npcArg("npc").executes(ctx -> spawn(ctx.getSource(), ref(ctx.getSource(), str(ctx, "npc")), false))))
@@ -93,7 +96,7 @@ public final class NpcHumanCommandsBootstrap implements ModInitializer {
     }
 
     private static int help(ServerCommandSource source) {
-        source.sendFeedback(() -> Text.literal("/lnpc list | info <name> | bring <name> | come <name> | goto <name> <structure> | home/work <name> <structure|here> | say <name> <text> | animate <name> <animation> | ai/stationary <name> <true|false> | rename/remove <name>"), false);
+        source.sendFeedback(() -> Text.literal("/lnpc list | scan here | info <name> | bring <name> | come <name> | goto <name> <structure> | home/work <name> <structure|here> | say <name> <text> | animate <name> <animation> | ai/stationary <name> <true|false> | rename/remove <name>"), false);
         return 1;
     }
 
@@ -148,13 +151,35 @@ public final class NpcHumanCommandsBootstrap implements ModInitializer {
         return result(source, LivelyApi.worldNavigation().goToStructure(id, structure), "going to " + structure);
     }
 
+    private static int scanHere(ServerCommandSource source) {
+        BuiltStructureDiscovery.Result discovered = BuiltStructureDiscovery.discoverAndRegister(
+                source.getWorld(), BlockPos.ofFloored(source.getPosition()));
+        if (!discovered.success() || discovered.structure() == null) {
+            return fail(source, "Could not discover a building here: " + discovered.detail());
+        }
+        SemanticStructureRegistry.Structure structure = discovered.structure();
+        source.sendFeedback(() -> Text.literal("Lively: " + (discovered.status() == BuiltStructureDiscovery.Status.ALREADY_REGISTERED
+                ? "already inside " : "discovered ") + structure.id() + " [" + structure.type() + "] cells="
+                + discovered.interiorCells()), false);
+        return 1;
+    }
+
     private static int assignHere(ServerCommandSource source, UUID id, String kind) {
         if (id == null) return 0;
         List<SemanticStructureRegistry.Structure> here = LivelyApi.structures().at(
                 source.getWorld().getRegistryKey().getValue().toString(),
                 source.getPosition().x, source.getPosition().y, source.getPosition().z);
-        if (here.isEmpty()) return fail(source, "You are not standing inside a registered structure");
-        return assign(source, id, kind, here.getFirst().id());
+        SemanticStructureRegistry.Structure structure;
+        if (here.isEmpty()) {
+            BuiltStructureDiscovery.Result discovered = BuiltStructureDiscovery.discoverAndRegister(
+                    source.getWorld(), BlockPos.ofFloored(source.getPosition()));
+            if (!discovered.success() || discovered.structure() == null) {
+                return fail(source, "No registered structure here and automatic building discovery failed: " + discovered.detail());
+            }
+            structure = discovered.structure();
+            source.sendFeedback(() -> Text.literal("Lively: discovered player-built " + structure.type() + " as " + structure.id()), false);
+        } else structure = here.getFirst();
+        return assign(source, id, kind, structure.id());
     }
 
     private static int assign(ServerCommandSource source, UUID id, String kind, String structure) {
