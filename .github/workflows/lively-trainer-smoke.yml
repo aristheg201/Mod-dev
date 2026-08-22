@@ -172,14 +172,15 @@ jobs:
               rid, _, probe = packet(sock, 102, 2,
                   'execute if entity @e[tag=lively_combat,limit=1] run tag @e[tag=lively_combat,limit=1] list')
               print('PROBE:', probe)
-              if 'lively_combat' not in probe:
-                  raise SystemExit('No spawned native Lively trainer with lively_combat tag was observed')
+              if 'lively_combat' not in probe or 'lively_native_interaction' not in probe:
+                  raise SystemExit('Spawned trainer is missing required Lively combat/interaction tags')
 
               rid, _, saved = packet(sock, 103, 2, 'save-all flush')
               print('SAVE:', saved)
+              if 'Saved the game' not in saved:
+                  raise SystemExit('Server save-all flush did not report success')
           PY
 
-          grep -q 'Created Lively Cobblemon trainer CI_Trainer' "$log"
           if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Mixin apply failed|NoClassDefFoundError|AbstractMethodError' "$log"; then
             cat "$log"
             exit 1
