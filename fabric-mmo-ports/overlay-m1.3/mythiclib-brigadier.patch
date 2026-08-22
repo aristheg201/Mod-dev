@@ -1,0 +1,10 @@
+--- a/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/MythicLibFabricMod.java
++++ b/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/MythicLibFabricMod.java
+@@ -89,7 +89,7 @@
+                                         boolean ok = castSkill(StringArgumentType.getString(ctx, "skill"), caster.getUuid(), target.getUuid(), Map.of());
+                                         if (!ok) ctx.getSource().sendError(Text.literal("Skill did not cast."));
+                                         return ok ? 1 : 0;
+-                                    }))));
++                                    })))));
+         });
+     }
