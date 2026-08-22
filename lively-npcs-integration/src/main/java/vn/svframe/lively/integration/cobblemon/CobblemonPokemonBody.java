@@ -1,6 +1,7 @@
 package vn.svframe.lively.integration.cobblemon;
 
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
+import com.cobblemon.mod.common.entity.PoseType;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.properties.UncatchableProperty;
 import net.minecraft.registry.RegistryKey;
@@ -10,9 +11,13 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import vn.svframe.lively.animation.AnimationRequest;
+import vn.svframe.lively.animation.AnimationResult;
 import vn.svframe.lively.npc.NpcBody;
 import vn.svframe.lively.npc.NpcDefinition;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -90,6 +95,85 @@ public final class CobblemonPokemonBody implements NpcBody {
         entity.setYaw(yaw);
         entity.setPitch(pitch);
         entity.setHeadYaw(yaw);
+    }
+
+    @Override
+    public AnimationResult animate(MinecraftServer server, AnimationRequest request) {
+        if (!spawned()) return AnimationResult.unsupported(request.name(), "Cobblemon Pokemon body is not spawned");
+        String name = request.name();
+        switch (name) {
+            case "idle", "stand", "standing", "reset" -> {
+                setPose(PoseType.STAND, false);
+                return AnimationResult.played(name, "Cobblemon STAND pose");
+            }
+            case "walk", "walking" -> {
+                entity.setSprinting(false);
+                setPose(PoseType.WALK, false);
+                return AnimationResult.played(name, "Cobblemon WALK pose");
+            }
+            case "run", "running", "sprint" -> {
+                entity.setSprinting(true);
+                setPose(PoseType.WALK, false);
+                return AnimationResult.played(name, "Cobblemon WALK pose with sprint state");
+            }
+            case "sleep" -> {
+                setPose(PoseType.SLEEP, false);
+                return AnimationResult.played(name, "Cobblemon SLEEP pose");
+            }
+            case "hover" -> {
+                setPose(PoseType.HOVER, false);
+                return AnimationResult.played(name, "Cobblemon HOVER pose");
+            }
+            case "fly", "flying" -> {
+                setPose(PoseType.FLY, false);
+                return AnimationResult.played(name, "Cobblemon FLY pose");
+            }
+            case "float" -> {
+                setPose(PoseType.FLOAT, false);
+                return AnimationResult.played(name, "Cobblemon FLOAT pose");
+            }
+            case "swim", "swimming" -> {
+                setPose(PoseType.SWIM, false);
+                return AnimationResult.played(name, "Cobblemon SWIM pose");
+            }
+            case "glide", "gliding" -> {
+                setPose(PoseType.GLIDE, false);
+                return AnimationResult.played(name, "Cobblemon GLIDE pose");
+            }
+            case "cry" -> {
+                entity.cry();
+                return AnimationResult.played(name, "Cobblemon native cry animation");
+            }
+            case "attack", "physical", "physical_attack" -> {
+                return nativeAnimation("physical", name);
+            }
+            case "special", "special_attack" -> {
+                return nativeAnimation("special", name);
+            }
+            case "status", "status_attack" -> {
+                return nativeAnimation("status", name);
+            }
+            case "hurt", "recoil", "damage" -> {
+                return nativeAnimation("recoil", name);
+            }
+            default -> {
+                String nativeName = name.startsWith("native:") ? name.substring("native:".length()) : name;
+                if (nativeName.isBlank() || !nativeName.matches("[a-z0-9_./:-]{1,96}")) {
+                    return AnimationResult.unsupported(name, "invalid Cobblemon animation name");
+                }
+                return nativeAnimation(nativeName.toLowerCase(Locale.ROOT), name);
+            }
+        }
+    }
+
+    private AnimationResult nativeAnimation(String nativeName, String requestedName) {
+        entity.playAnimation(nativeName, List.of());
+        return AnimationResult.played(requestedName, "Cobblemon native animation: " + nativeName);
+    }
+
+    private void setPose(PoseType pose, boolean allowRecalculation) {
+        entity.setEnablePoseTypeRecalculation(allowRecalculation);
+        entity.getDataTracker().set(PokemonEntity.getPOSE_TYPE(), pose);
     }
 
     @Override
