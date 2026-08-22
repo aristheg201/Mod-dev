@@ -42,8 +42,11 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         });
         installCobblemonNpcInteraction();
 
-        LOGGER.info("Lively NPCs: Cobblemon Integration initialized; Cobblemon=true, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
-                LivelyApi.externalEconomy().available(), LivelyApi.holograms().available(),
+        String version = FabricLoader.getInstance().getModContainer(MOD_ID)
+                .map(container -> container.getMetadata().getVersion().getFriendlyString())
+                .orElse("unknown");
+        LOGGER.info("Lively NPCs: Cobblemon Integration initialized; version={}, Cobblemon=true, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
+                version, LivelyApi.externalEconomy().available(), LivelyApi.holograms().available(),
                 FabricLoader.getInstance().isModLoaded("luckperms"), FabricLoader.getInstance().isModLoaded("flan"),
                 LivelyApi.waypoints().available());
     }
