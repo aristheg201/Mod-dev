@@ -4,13 +4,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
-import vn.svframe.lively.LivelyNpcs;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.crime.CrimeEngine;
 import vn.svframe.lively.economy.DebtEngine;
 import vn.svframe.lively.economy.EconomyEngine;
-import vn.svframe.lively.model.NpcState;
 import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.npc.NpcRuntime;
 import vn.svframe.lively.society.SocietyApi;
@@ -91,9 +89,8 @@ public final class LawEnforcementService {
             if (top.score() >= config.warrantScore() && top.alibiStrength() < config.acquitAlibiStrength()) {
                 int severity = severity(crime.type());
                 law.raiseWanted(top.suspect(), jurisdiction, crime.id(), severity, top.score(), config.bountyUnit());
-                LawEnforcementEngine.Warrant warrant = law.activeWarrant(top.suspect(), jurisdiction).orElseGet(() ->
-                        law.issueWarrant(top.suspect(), jurisdiction, Set.of(crime.id()), top.score(),
-                                Duration.ofSeconds(config.warrantLifetimeSeconds())));
+                LawEnforcementEngine.Warrant warrant = law.issueWarrant(top.suspect(), jurisdiction, Set.of(crime.id()), top.score(),
+                        Duration.ofSeconds(config.warrantLifetimeSeconds()));
                 LivelyApi.crime().updateFacts(crime.id(), Map.of(
                         "warrant_id", warrant.id().toString(),
                         "warrant_subject", top.suspect().uuid().toString(),
@@ -116,11 +113,21 @@ public final class LawEnforcementService {
                 if (top == null || !top.suspect().equals(value.subject()) || top.score() < config.warrantScore() * .75D
                         || top.alibiStrength() >= config.acquitAlibiStrength()) {
                     law.revokeWarrant(id);
-                    law.reduceWanted(value.subject(), jurisdiction, 1_000_000, Long.MAX_VALUE);
+                    clearWantedAfterWeakWarrant(value.subject(), jurisdiction);
                     LivelyApi.crime().updateFacts(crime.id(), Map.of("warrant_revoked", Instant.now().toString(), "warrant_id", ""));
                 }
             });
         } catch (IllegalArgumentException ignored) { }
+    }
+
+    private void clearWantedAfterWeakWarrant(ActorId subject, String jurisdiction) {
+        if (!law.hasActiveWarrant(subject, jurisdiction) && law.activeCustody(subject).isEmpty()) {
+            law.clearWanted(subject, jurisdiction);
+        }
+    }
+
+    private void settleWantedAfterVerdict(ActorId subject, String jurisdiction) {
+        if (!law.hasActiveWarrant(subject, jurisdiction)) law.clearWanted(subject, jurisdiction);
     }
 
     private void dispatchOfficers(long tick) {
@@ -129,17 +136,20 @@ public final class LawEnforcementService {
         NpcRuntime npcs = LivelyApi.npcs();
         List<NpcDefinition> officers = npcs.snapshot().values().stream().filter(this::isOfficer)
                 .sorted(Comparator.comparing(value -> value.id().toString())).limit(MAX_OFFICERS).toList();
+        Set<ActorId> assignedSubjects = new HashSet<>();
         for (NpcDefinition officer : officers) {
             if (!officer.spawned() || law.activeCustody(new ActorId(officer.id(), ActorId.Kind.NPC)).isPresent()) continue;
             String officerJurisdiction = officerJurisdiction(officer);
             LawEnforcementEngine.Warrant warrant = warrants.stream()
                     .filter(value -> law.activeCustody(value.subject()).isEmpty())
+                    .filter(value -> !assignedSubjects.contains(value.subject()))
                     .filter(value -> value.jurisdiction().equals("global") || officerJurisdiction.equals("global")
                             || value.jurisdiction().equals(officerJurisdiction))
                     .max(Comparator.comparingInt((LawEnforcementEngine.Warrant value) ->
                                     law.wanted(value.subject(), value.jurisdiction()).map(LawEnforcementEngine.WantedRecord::points).orElse(0))
                             .thenComparingDouble(LawEnforcementEngine.Warrant::probableCause)).orElse(null);
             if (warrant == null) continue;
+            assignedSubjects.add(warrant.subject());
             if (warrant.subject().kind() == ActorId.Kind.NPC) dispatchNpcOfficer(officer, warrant);
             else if (warrant.subject().kind() == ActorId.Kind.PLAYER) dispatchPlayerNotice(tick, officer, warrant);
         }
@@ -254,7 +264,7 @@ public final class LawEnforcementService {
             LivelyApi.crime().status(crimeId, CrimeEngine.Status.RESOLVED);
             releaseInvestigationLocation(crimeId);
         }
-        law.clearWanted(courtCase.defendant(), courtCase.jurisdiction());
+        settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction());
         collectFine(courtCase);
         if (courtCase.defendant().kind() == ActorId.Kind.NPC) {
             remember(courtCase.defendant().uuid(), "court_conviction", Map.of(
@@ -274,9 +284,8 @@ public final class LawEnforcementService {
                     "charged_suspect", ""));
             LivelyApi.crime().status(crimeId, CrimeEngine.Status.INVESTIGATING);
         }
-        law.clearWanted(courtCase.defendant(), courtCase.jurisdiction());
-        law.activeWarrant(courtCase.defendant(), courtCase.jurisdiction()).ifPresent(value -> law.revokeWarrant(value.id()));
         if (courtCase.custodyId() != null) releaseCustody(courtCase.custodyId(), "acquitted");
+        settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction());
         if (courtCase.defendant().kind() == ActorId.Kind.NPC) {
             remember(courtCase.defendant().uuid(), "court_acquittal", Map.of("case", courtCase.id().toString()), .82D);
         }
@@ -301,7 +310,7 @@ public final class LawEnforcementService {
                 LivelyApi.crime().status(crimeId, CrimeEngine.Status.INVESTIGATING);
             }
             if (courtCase.custodyId() != null) releaseCustody(courtCase.custodyId(), "conviction_overturned");
-            law.clearWanted(courtCase.defendant(), courtCase.jurisdiction());
+            settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction());
             if (courtCase.defendant().kind() == ActorId.Kind.NPC) {
                 remember(courtCase.defendant().uuid(), "conviction_overturned", Map.of("case", courtCase.id().toString()), .96D);
             }
