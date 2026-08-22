@@ -1,0 +1,11 @@
+--- a/fabric-platform/mmocore-fabric/src/main/java/vn/svframe/mmocorefabric/MMOCoreFabricMod.java
++++ b/fabric-platform/mmocore-fabric/src/main/java/vn/svframe/mmocorefabric/MMOCoreFabricMod.java
+@@ -164,7 +164,7 @@
+                                             savePlayer(player.getUuid());
+                                             ctx.getSource().sendFeedback(() -> Text.literal("Attribute updated."), false);
+                                             return 1;
+-                                        }))))));
++                                        })))));
+         dispatcher.register(literal("skills").executes(ctx -> {
+             ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+             PlayerProgress p = progress(player);
