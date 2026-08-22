@@ -2,6 +2,7 @@ package vn.svframe.lively.npc;
 
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
@@ -147,6 +148,15 @@ public final class PlayerModelBody implements NpcBody {
         for (ServerPlayerEntity viewer : server.getPlayerManager().getPlayerList()) {
             viewer.networkHandler.sendPacket(new EntitySetHeadYawS2CPacket(current, head));
         }
+    }
+
+    @Override
+    public boolean attack(MinecraftServer server, Entity target) {
+        FakePlayer current = fake;
+        if (!spawned() || current == null || target == null || target.isRemoved() || target == current) return false;
+        current.attack(target);
+        current.swingHand(Hand.MAIN_HAND);
+        return true;
     }
 
     @Override
