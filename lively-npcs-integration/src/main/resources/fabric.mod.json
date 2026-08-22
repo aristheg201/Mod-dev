@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "livelynpcs_integration",
+  "version": "${version}",
+  "name": "Lively NPCs: Cobblemon Integration by SVFrame Studio",
+  "description": "Cobblemon integration for the Lively living-world runtime, including Pokemon bodies, native trainer NPCs, trainer battle AI, world awareness and optional server-ecosystem bridges.",
+  "authors": ["SVFrame Studio"],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "vn.svframe.lively.integration.LivelyNpcsIntegration",
+      "vn.svframe.lively.integration.cobblemon.CobblemonTrainerCommandsBootstrap"
+    ]
+  },
+  "mixins": [
+    "livelynpcs-integration.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "livelynpcs": ">=1.1.0",
+    "cobblemon": ">=1.7.3 <1.8.0"
+  },
+  "suggests": {
+    "mega_showdown": "*",
+    "luckperms": "*",
+    "beconomy": "*",
+    "cobbledollars": "*",
+    "impactor": "*",
+    "holodisplays": "*",
+    "flan": "*",
+    "svfwaypoints": "*",
+    "svf_all_in_one": "*",
+    "cobblemon_tournament": "*",
+    "cobblemon_showcase": "*"
+  }
+}

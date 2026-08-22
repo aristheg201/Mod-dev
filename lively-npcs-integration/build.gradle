@@ -1,0 +1,25 @@
+base {
+    archivesName = 'Lively-NPCs-Cobblemon-Integration'
+}
+
+dependencies {
+    // Compile against the core project without asking Loom to remap/read a dev JAR during configuration.
+    // This is the Cobblemon extension for Lively NPCs and requires both livelynpcs and Cobblemon at runtime.
+    implementation project(':lively-npcs')
+
+    // Exact Cobblemon 1.7.3 Fabric artifact used by the server. Keep it compile-only and non-transitive here;
+    // fabric.mod.json declares Cobblemon as a mandatory runtime dependency and CI boots the remapped artifacts
+    // against the real Cobblemon server JAR.
+    modCompileOnly("maven.modrinth:MdwFAVRL:kF7CvxTo") { transitive = false }
+
+    // Cobblemon exposes Kotlin collection types in its Java-visible API. Compile only; runtime Kotlin
+    // comes from Cobblemon's bundled fabric-language-kotlin jar-in-jar.
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.3.10"
+
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

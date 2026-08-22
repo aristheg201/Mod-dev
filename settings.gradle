@@ -6,4 +6,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'CobbleBR'
+rootProject.name = 'Lively'
+include 'lively-npcs'
+include 'lively-npcs-integration'

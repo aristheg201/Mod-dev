@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "livelynpcs",
+  "version": "${version}",
+  "name": "Lively NPCs by SVFrame Studio",
+  "description": "Offline autonomous NPC intelligence and persistent living-world runtime with society, economy, crime, justice, quests and emergent world consequences.",
+  "authors": ["SVFrame Studio"],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "vn.svframe.lively.quest.QuestWorldProgressionBootstrap",
+      "vn.svframe.lively.economy.MerchantInteractionBootstrap",
+      "vn.svframe.lively.LivelyNpcs",
+      "vn.svframe.lively.admin.AnimationCommandsBootstrap",
+      "vn.svframe.lively.admin.NpcHumanCommandsBootstrap",
+      "vn.svframe.lively.ai.PlayerLikeBehaviorBootstrap",
+      "vn.svframe.lively.chat.NpcPlayerChatBootstrap",
+      "vn.svframe.lively.world.BuiltStructureTypesBootstrap",
+      "vn.svframe.lively.society.SocietyBootstrap",
+      "vn.svframe.lively.admin.CommerceCommandsBootstrap",
+      "vn.svframe.lively.admin.LawStatusCommandsBootstrap",
+      "vn.svframe.lively.admin.NpcWizardBootstrap",
+      "vn.svframe.lively.admin.ChronicleCommandsBootstrap",
+      "vn.svframe.lively.admin.QuestCommandsBootstrap",
+      "vn.svframe.lively.admin.ProductionAdminCommandsBootstrap",
+      "vn.svframe.lively.config.RuntimeConfigCommandsBootstrap",
+      "vn.svframe.lively.world.SemanticActivityBootstrap",
+      "vn.svframe.lively.social.RumorPropagationBootstrap",
+      "vn.svframe.lively.faction.FactionActionBootstrap",
+      "vn.svframe.lively.schedule.ScheduleSynthesisBootstrap",
+      "vn.svframe.lively.memory.MemoryMaintenanceBootstrap"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

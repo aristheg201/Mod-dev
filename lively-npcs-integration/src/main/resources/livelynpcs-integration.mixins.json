@@ -1,0 +1,18 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "vn.svframe.lively.integration.mixin",
+  "plugin": "vn.svframe.lively.integration.mixin.LivelyIntegrationMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AIBattleActorAccessor",
+    "NPCBattleActorMixin",
+    "BattleRevealInstructionMixin$MoveReveal",
+    "BattleRevealInstructionMixin$AbilityReveal",
+    "BattleRevealInstructionMixin$ItemReveal",
+    "BattleRevealInstructionMixin$EndItemReveal"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

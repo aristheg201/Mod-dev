@@ -1,0 +1,197 @@
+name: Lively native trainer smoke
+
+on:
+  push:
+    branches:
+      - feature/lively-npcs
+    paths:
+      - 'lively-npcs/**'
+      - 'lively-npcs-integration/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/lively-loom.yml'
+      - '.github/workflows/lively-trainer-smoke.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lively-npcs/**'
+      - 'lively-npcs-integration/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/lively-loom.yml'
+      - '.github/workflows/lively-trainer-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-trainer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build remapped Lively artifacts
+        run: gradle --no-daemon :lively-npcs:remapJar :lively-npcs-integration:remapJar
+
+      - name: Boot Cobblemon and provision native Lively trainer
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke=lively-npcs-integration/build/native-trainer-smoke
+          log=lively-npcs-integration/build/native-trainer-smoke.log
+          rm -rf "$smoke"
+          mkdir -p "$smoke/mods" lively-npcs-integration/build
+
+          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          COBBLEMON="$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL/kF7CvxTo" -type f -name '*.jar' | head -n1)"
+          FABRIC_API_VERSION="$(awk -F= '$1 == "fabric_api_version" { print $2 }' gradle.properties)"
+          FABRIC_API="$(find "$HOME/.gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/$FABRIC_API_VERSION" -type f -name 'fabric-api-*.jar' | head -n1)"
+          test -f "$CORE"
+          test -f "$INTEGRATION"
+          test -f "$COBBLEMON"
+          test -f "$FABRIC_API"
+          cp "$CORE" "$INTEGRATION" "$COBBLEMON" "$FABRIC_API" "$smoke/mods/"
+
+          curl --fail --silent --show-error --location \
+            https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.2/fabric-installer-1.1.2.jar \
+            --output "$smoke/fabric-installer.jar"
+          java -jar "$smoke/fabric-installer.jar" server -mcversion 1.21.1 -loader 0.18.4 -downloadMinecraft -dir "$smoke"
+          LAUNCHER="$(find "$smoke" -maxdepth 1 -type f -name 'fabric-server*.jar' ! -name 'fabric-installer.jar' | head -n1)"
+          test -f "$LAUNCHER"
+          printf 'eula=true\n' > "$smoke/eula.txt"
+          cat > "$smoke/server.properties" <<'PROPS'
+          online-mode=false
+          view-distance=4
+          simulation-distance=4
+          enable-rcon=true
+          rcon.password=lively-ci-smoke
+          rcon.port=25590
+          broadcast-rcon-to-ops=false
+          PROPS
+
+          pushd "$smoke" >/dev/null
+          launcher_name="$(basename "$LAUNCHER")"
+          setsid java -Xms512M -Xmx2G -jar "$launcher_name" nogui > "../native-trainer-smoke.log" 2>&1 &
+          pid=$!
+          popd >/dev/null
+
+          cleanup() {
+            kill -TERM -"$pid" 2>/dev/null || true
+            for _ in $(seq 1 10); do
+              kill -0 "$pid" 2>/dev/null || break
+              sleep 1
+            done
+            kill -KILL -"$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for _ in $(seq 1 240); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed|Uncaught exception in thread "main"|Failed to start the minecraft server' "$log"; then
+              cat "$log"
+              exit 1
+            fi
+            if grep -Eq 'Lively NPCs: Cobblemon Integration initialized; .*Cobblemon=true' "$log" && grep -q 'Done (' "$log"; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat "$log"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import socket, struct, time
+
+          HOST = '127.0.0.1'
+          PORT = 25590
+          PASSWORD = 'lively-ci-smoke'
+
+          def recv_exact(sock, size):
+              chunks = []
+              left = size
+              while left:
+                  chunk = sock.recv(left)
+                  if not chunk:
+                      raise RuntimeError('RCON connection closed')
+                  chunks.append(chunk)
+                  left -= len(chunk)
+              return b''.join(chunks)
+
+          def packet(sock, request_id, kind, text):
+              body = struct.pack('<ii', request_id, kind) + text.encode('utf-8') + b'\x00\x00'
+              sock.sendall(struct.pack('<i', len(body)) + body)
+              length = struct.unpack('<i', recv_exact(sock, 4))[0]
+              response = recv_exact(sock, length)
+              rid, rkind = struct.unpack('<ii', response[:8])
+              payload = response[8:-2].decode('utf-8', errors='replace')
+              return rid, rkind, payload
+
+          last = None
+          for _ in range(30):
+              try:
+                  sock = socket.create_connection((HOST, PORT), timeout=3)
+                  break
+              except OSError as exc:
+                  last = exc
+                  time.sleep(1)
+          else:
+              raise SystemExit(f'RCON unavailable: {last}')
+
+          with sock:
+              rid, _, auth = packet(sock, 100, 3, PASSWORD)
+              if rid == -1:
+                  raise SystemExit('RCON authentication failed')
+
+              rid, _, created = packet(sock, 101, 2,
+                  'lively npc create trainer cobblemon:standard 25 5 CI_Trainer trainer cobblemon:battler_test')
+              print('CREATE:', created)
+              if 'Created Lively Cobblemon trainer CI_Trainer' not in created:
+                  raise SystemExit('Native trainer create command did not report success')
+
+              time.sleep(2)
+              rid, _, probe = packet(sock, 102, 2,
+                  'execute if entity @e[tag=lively_combat,limit=1] run tag @e[tag=lively_combat,limit=1] list')
+              print('PROBE:', probe)
+              if 'lively_combat' not in probe or 'lively_native_interaction' not in probe:
+                  raise SystemExit('Spawned trainer is missing required Lively combat/interaction tags')
+
+              rid, _, saved = packet(sock, 103, 2, 'save-all flush')
+              print('SAVE:', saved)
+              if 'Saved the game' not in saved:
+                  raise SystemExit('Server save-all flush did not report success')
+          PY
+
+          if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Mixin apply failed|NoClassDefFoundError|AbstractMethodError' "$log"; then
+            cat "$log"
+            exit 1
+          fi
+
+      - name: Upload native trainer smoke log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lively-native-trainer-smoke
+          path: lively-npcs-integration/build/native-trainer-smoke.log
+          if-no-files-found: warn

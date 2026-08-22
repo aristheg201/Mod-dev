@@ -1,0 +1,293 @@
+name: Lively Loom build
+
+on:
+  push:
+    branches:
+      - feature/lively-npcs
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lively-npcs/**'
+      - 'lively-npcs-integration/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/lively-loom.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Enforce core dependency boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE '^import (com\.cobblemon\.|net\.luckperms\.|vn\.beconomy\.|com\.beconomy\.|.*holodisplay)' lively-npcs/src/main/java; then
+            echo 'Lively Core imported an ecosystem implementation. Move it to lively-npcs-integration.' >&2
+            exit 1
+          fi
+          if grep -RInE '^import (com\.openai\.|com\.anthropic\.|com\.google\.genai\.)' lively-npcs/src/main/java lively-npcs-integration/src/main/java; then
+            echo 'External/cloud AI dependency is forbidden in Lively.' >&2
+            exit 1
+          fi
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Tests and Loom remap build
+        run: gradle --no-daemon clean test remapJar
+      - name: Verify Cobblemon integration dependency contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          test -f "$INTEGRATION"
+          unzip -p "$INTEGRATION" fabric.mod.json > lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"name": "Lively NPCs: Cobblemon Integration by SVFrame Studio"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"cobblemon": ">=1.7.3 <1.8.0"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          if grep -A20 '"suggests"' lively-npcs-integration/build/libs/fabric.mod.built.json | grep -q '"cobblemon"'; then
+            echo 'Cobblemon must be a mandatory dependency of the Cobblemon Integration artifact.' >&2
+            exit 1
+          fi
+      - name: Dedicated core server boot smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lively-npcs/run lively-npcs/build
+          printf 'eula=true\n' > lively-npcs/run/eula.txt
+          log=lively-npcs/build/server-smoke.log
+          setsid gradle --no-daemon :lively-npcs:runServer > "$log" 2>&1 &
+          pid=$!
+          ready=0
+          for _ in $(seq 1 120); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage' "$log"; then
+              kill -TERM -"$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+              cat "$log"
+              exit 1
+            fi
+            if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" && grep -q 'Done (' "$log"; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            kill -TERM -"$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            cat "$log"
+            exit 1
+          fi
+          kill -TERM -"$pid" 2>/dev/null || true
+          for _ in $(seq 1 10); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 1
+          done
+          kill -KILL -"$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+      - name: Cobblemon integration production server boot smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke=lively-npcs-integration/build/production-smoke
+          log=lively-npcs-integration/build/production-server-smoke.log
+          rm -rf "$smoke"
+          mkdir -p "$smoke/mods" lively-npcs-integration/build
+
+          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          COBBLEMON="$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL/kF7CvxTo" -type f -name '*.jar' | head -n1)"
+          FABRIC_API_VERSION="$(awk -F= '$1 == "fabric_api_version" { print $2 }' gradle.properties)"
+          FABRIC_API="$(find "$HOME/.gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/$FABRIC_API_VERSION" -type f -name 'fabric-api-*.jar' | head -n1)"
+          test -f "$CORE"
+          test -f "$INTEGRATION"
+          test -f "$COBBLEMON"
+          test -f "$FABRIC_API"
+
+          cp "$CORE" "$INTEGRATION" "$COBBLEMON" "$FABRIC_API" "$smoke/mods/"
+          curl --fail --silent --show-error --location \
+            https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.2/fabric-installer-1.1.2.jar \
+            --output "$smoke/fabric-installer.jar"
+          java -jar "$smoke/fabric-installer.jar" server -mcversion 1.21.1 -loader 0.18.4 -downloadMinecraft -dir "$smoke"
+          LAUNCHER="$(find "$smoke" -maxdepth 1 -type f -name 'fabric-server*.jar' ! -name 'fabric-installer.jar' | head -n1)"
+          test -f "$LAUNCHER"
+          printf 'eula=true\n' > "$smoke/eula.txt"
+          printf 'online-mode=false\nview-distance=4\nsimulation-distance=4\n' > "$smoke/server.properties"
+
+          pushd "$smoke" >/dev/null
+          launcher_name="$(basename "$LAUNCHER")"
+          setsid java -Xms512M -Xmx2G -jar "$launcher_name" nogui > "../production-server-smoke.log" 2>&1 &
+          pid=$!
+          popd >/dev/null
+
+          ready=0
+          for _ in $(seq 1 240); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed|Uncaught exception in thread "main"|Failed to start the minecraft server' "$log"; then
+              kill -TERM -"$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+              cat "$log"
+              exit 1
+            fi
+            if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" \
+              && grep -Eq 'Lively NPCs: Cobblemon Integration initialized; .*Cobblemon=true' "$log" \
+              && grep -q 'Done (' "$log"; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            kill -TERM -"$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            cat "$log"
+            exit 1
+          fi
+          kill -TERM -"$pid" 2>/dev/null || true
+          for _ in $(seq 1 15); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 1
+          done
+          kill -KILL -"$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+      - name: Mega Showdown production server boot smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke=lively-npcs-integration/build/mega-production-smoke
+          log=lively-npcs-integration/build/mega-production-server-smoke.log
+          rm -rf "$smoke"
+          mkdir -p "$smoke/mods" lively-npcs-integration/build
+
+          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          COBBLEMON="$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL/kF7CvxTo" -type f -name '*.jar' | head -n1)"
+          FABRIC_API_VERSION="$(awk -F= '$1 == "fabric_api_version" { print $2 }' gradle.properties)"
+          FABRIC_API="$(find "$HOME/.gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/$FABRIC_API_VERSION" -type f -name 'fabric-api-*.jar' | head -n1)"
+          test -f "$CORE"
+          test -f "$INTEGRATION"
+          test -f "$COBBLEMON"
+          test -f "$FABRIC_API"
+          cp "$CORE" "$INTEGRATION" "$COBBLEMON" "$FABRIC_API" "$smoke/mods/"
+
+          python3 - "$smoke/mods" <<'PY'
+          import hashlib, json, pathlib, sys, urllib.request
+          out = pathlib.Path(sys.argv[1])
+          versions = {
+              "mega_showdown": "Y6di9Ram",
+              "architectury": "Wto0RchG",
+              "accessories": "Xlt4eWBe",
+              "owo": "JB1fLQnc",
+          }
+          headers = {"User-Agent": "SVFrame-Lively-CI/1.0"}
+          for label, version_id in versions.items():
+              req = urllib.request.Request(f"https://api.modrinth.com/v2/version/{version_id}", headers=headers)
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  data = json.load(response)
+              file = next((f for f in data["files"] if f.get("primary")), data["files"][0])
+              target = out / file["filename"]
+              req = urllib.request.Request(file["url"], headers=headers)
+              with urllib.request.urlopen(req, timeout=60) as response, target.open("wb") as handle:
+                  while chunk := response.read(1024 * 1024):
+                      handle.write(chunk)
+              expected = file.get("hashes", {}).get("sha512")
+              if expected:
+                  actual = hashlib.sha512(target.read_bytes()).hexdigest()
+                  if actual.lower() != expected.lower():
+                      raise SystemExit(f"SHA512 mismatch for {label}: {target.name}")
+              print(f"verified {label}: {target.name}")
+          PY
+
+          curl --fail --silent --show-error --location \
+            https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.2/fabric-installer-1.1.2.jar \
+            --output "$smoke/fabric-installer.jar"
+          java -jar "$smoke/fabric-installer.jar" server -mcversion 1.21.1 -loader 0.18.4 -downloadMinecraft -dir "$smoke"
+          LAUNCHER="$(find "$smoke" -maxdepth 1 -type f -name 'fabric-server*.jar' ! -name 'fabric-installer.jar' | head -n1)"
+          test -f "$LAUNCHER"
+          printf 'eula=true\n' > "$smoke/eula.txt"
+          printf 'online-mode=false\nview-distance=4\nsimulation-distance=4\n' > "$smoke/server.properties"
+
+          pushd "$smoke" >/dev/null
+          launcher_name="$(basename "$LAUNCHER")"
+          setsid java -Xms512M -Xmx2500M -jar "$launcher_name" nogui > "../mega-production-server-smoke.log" 2>&1 &
+          pid=$!
+          popd >/dev/null
+
+          ready=0
+          for _ in $(seq 1 300); do
+            if grep -Eq 'Exception in server tick loop|Minecraft Crash Report|Could not execute entrypoint stage|Mixin apply failed|Uncaught exception in thread "main"|Failed to start the minecraft server' "$log"; then
+              kill -TERM -"$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+              cat "$log"
+              exit 1
+            fi
+            if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" \
+              && grep -Eq 'Lively NPCs: Cobblemon Integration initialized; .*Cobblemon=true' "$log" \
+              && grep -q 'mega_showdown 1.8.4+1.7.3+1.21.1' "$log" \
+              && grep -q 'Done (' "$log"; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            kill -TERM -"$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            cat "$log"
+            exit 1
+          fi
+          kill -TERM -"$pid" 2>/dev/null || true
+          for _ in $(seq 1 15); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 1
+          done
+          kill -KILL -"$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+      - name: Verify both mod artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          test -n "$CORE"
+          test -n "$INTEGRATION"
+          unzip -t "$CORE"
+          unzip -t "$INTEGRATION"
+          unzip -p "$CORE" fabric.mod.json > lively-npcs/build/libs/fabric.mod.built.json
+          unzip -p "$INTEGRATION" fabric.mod.json > lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"id": "livelynpcs"' lively-npcs/build/libs/fabric.mod.built.json
+          grep -q '"id": "livelynpcs_integration"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"cobblemon": ">=1.7.3 <1.8.0"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          if jar tf "$CORE" | grep -q '^vn/svframe/lively/integration/'; then
+            echo 'Cobblemon integration implementation leaked into core JAR.' >&2
+            exit 1
+          fi
+          sha256sum "$CORE" "$INTEGRATION" | tee SHA256.txt
+      - name: Upload Lively artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lively-production-runtime
+          path: |
+            lively-npcs/build/libs/*.jar
+            lively-npcs/build/libs/fabric.mod.built.json
+            lively-npcs/build/server-smoke.log
+            lively-npcs-integration/build/libs/*.jar
+            lively-npcs-integration/build/libs/fabric.mod.built.json
+            lively-npcs-integration/build/production-server-smoke.log
+            lively-npcs-integration/build/mega-production-server-smoke.log
+            SHA256.txt
+          if-no-files-found: error
