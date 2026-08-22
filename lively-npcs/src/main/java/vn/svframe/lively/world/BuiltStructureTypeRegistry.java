@@ -81,6 +81,12 @@ public final class BuiltStructureTypeRegistry {
         return Set.copyOf(result);
     }
 
+    public static Set<String> managedCapabilities() {
+        HashSet<String> result = new HashSet<>();
+        for (Rule rule : rules) result.addAll(rule.addCapabilities());
+        return Set.copyOf(result);
+    }
+
     public static List<Rule> snapshot() { return rules; }
     public static Path sourceFile() { return sourceFile; }
 
