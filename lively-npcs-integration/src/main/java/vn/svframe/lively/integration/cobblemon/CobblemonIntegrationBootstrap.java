@@ -1,22 +1,15 @@
 package vn.svframe.lively.integration.cobblemon;
 
 import net.minecraft.server.MinecraftServer;
-import vn.svframe.lively.api.CombatAdapter;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.npc.NpcDefinition;
 
-/** Cobblemon registration split into process-scoped combat and server-session body bindings. */
+/** Cobblemon registration for native trainer/Pokemon bodies. Trainer combat is bound through NPCBattleActorMixin. */
 public final class CobblemonIntegrationBootstrap {
-    private static final CombatAdapter COMBAT = new CobblemonCombatBridge();
-
     private CobblemonIntegrationBootstrap() {}
 
-    /**
-     * Installs the mandatory Cobblemon side of the extension.
-     * Fabric metadata already requires Cobblemon 1.7.x, so silently degrading here would hide a broken deployment.
-     */
+    /** Fabric metadata already requires Cobblemon 1.7.x, so initialization is mandatory rather than fail-open. */
     public static void install() {
-        LivelyApi.registerCombatAdapter(COMBAT);
         if (LivelyApi.npcs() != null) registerNpcBodyProvider();
     }
 
