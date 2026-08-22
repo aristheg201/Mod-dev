@@ -57,6 +57,7 @@ public final class NpcAutonomyService implements AutoCloseable {
     private AiScheduler scheduler;
     private int schedulerMaxPending;
     private List<NpcDefinition> definitions = List.of();
+    private List<NpcDefinition> activeDefinitions = List.of();
     private long definitionsAt = Long.MIN_VALUE;
     private int decisionCursor;
     private int actorCursor;
@@ -88,12 +89,16 @@ public final class NpcAutonomyService implements AutoCloseable {
         definitions = npcs.snapshot().values().stream()
                 .sorted(Comparator.comparing(d -> d.id().toString()))
                 .toList();
+        activeDefinitions = definitions.stream()
+                .filter(NpcDefinition::spawned)
+                .filter(NpcDefinition::aiEnabled)
+                .toList();
         definitionsAt = tick;
         actorCursor = normalize(actorCursor, definitions.size());
         needCursor = normalize(needCursor, definitions.size());
         scheduleCursor = normalize(scheduleCursor, definitions.size());
-        socialCursor = normalize(socialCursor, definitions.size());
-        decisionCursor = normalize(decisionCursor, Math.max(1, activeDefinitions().size()));
+        socialCursor = normalize(socialCursor, activeDefinitions.size());
+        decisionCursor = normalize(decisionCursor, activeDefinitions.size());
         if (nextDecisionTick.size() > definitions.size() * 2 + 128) {
             Set<UUID> live = definitions.stream().map(NpcDefinition::id).collect(java.util.stream.Collectors.toSet());
             nextDecisionTick.keySet().removeIf(id -> !live.contains(id));
@@ -272,9 +277,9 @@ public final class NpcAutonomyService implements AutoCloseable {
             ActorId observed = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
             entities.add(new WorldSnapshot.ObservedEntity(player.getUuid(), "player", perceivedThreat(npc, self, observed)));
         }
-        for (NpcDefinition other : definitions) {
+        for (NpcDefinition other : activeDefinitions) {
             if (entities.size() >= maxObserved) break;
-            if (other.id().equals(d.id()) || !other.spawned()) continue;
+            if (other.id().equals(d.id())) continue;
             String otherWorld = npcs.worldKey(other.id()).orElse(other.world());
             if (!worldKey.equals(otherWorld)) continue;
             if (npcs.position(other.id()).map(q -> q.squaredDistanceTo(position) <= 24D * 24D).orElse(false)) {
@@ -501,8 +506,8 @@ public final class NpcAutonomyService implements AutoCloseable {
             double threat = perceivedThreat(npc, self, actor);
             if (best == null || threat > best.threat()) best = new ThreatObservation(actor, player.getPos(), threat);
         }
-        for (NpcDefinition other : definitions) {
-            if (other.id().equals(d.id()) || !other.spawned()) continue;
+        for (NpcDefinition other : activeDefinitions) {
+            if (other.id().equals(d.id())) continue;
             String otherWorld = npcs.worldKey(other.id()).orElse(other.world());
             Vec3d otherPos = npcs.position(other.id()).orElse(null);
             if (!worldKey.equals(otherWorld) || otherPos == null || otherPos.squaredDistanceTo(position) > 24D * 24D) continue;
@@ -538,7 +543,7 @@ public final class NpcAutonomyService implements AutoCloseable {
     }
 
     private List<NpcDefinition> activeDefinitions() {
-        return definitions.stream().filter(NpcDefinition::spawned).filter(NpcDefinition::aiEnabled).toList();
+        return activeDefinitions;
     }
 
     private static Vec3d center(SemanticStructureRegistry.Bounds bounds) {
@@ -605,5 +610,6 @@ public final class NpcAutonomyService implements AutoCloseable {
         lastNeedTick.clear();
         nextDecisionTick.clear();
         definitions = List.of();
+        activeDefinitions = List.of();
     }
 }
