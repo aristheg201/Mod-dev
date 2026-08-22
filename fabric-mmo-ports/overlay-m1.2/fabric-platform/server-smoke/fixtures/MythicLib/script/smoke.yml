@@ -1,0 +1,4 @@
+smoke_script:
+  public: true
+  mechanics:
+    - "spawn_particle{particle=CRIT;amount=1}"
