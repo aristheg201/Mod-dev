@@ -138,6 +138,28 @@ public final class LawEnforcementEngine {
         return Optional.ofNullable(result.get());
     }
 
+    /** Remove one crime's proportional pressure while preserving unrelated active cases in the same jurisdiction. */
+    public Optional<WantedRecord> removeWantedCrime(ActorId subject, String jurisdiction, UUID crimeId) {
+        if (crimeId == null) return wanted(subject, jurisdiction);
+        WantedKey key = new WantedKey(subject, jurisdiction);
+        AtomicReference<WantedRecord> result = new AtomicReference<>();
+        wanted.computeIfPresent(key, (ignored, old) -> {
+            if (!old.crimeIds().contains(crimeId)) { result.set(old); return old; }
+            int oldCount = Math.max(1, old.crimeIds().size());
+            HashSet<UUID> crimes = new HashSet<>(old.crimeIds());
+            crimes.remove(crimeId);
+            int pointShare = old.points() / oldCount + (old.points() % oldCount == 0 ? 0 : 1);
+            long bountyShare = old.bounty() / oldCount + (old.bounty() % oldCount == 0L ? 0L : 1L);
+            int nextPoints = crimes.isEmpty() ? 0 : Math.max(0, old.points() - pointShare);
+            long nextBounty = crimes.isEmpty() ? 0L : Math.max(0L, old.bounty() - bountyShare);
+            WantedRecord next = new WantedRecord(old.subject(), old.jurisdiction(), nextPoints, nextBounty, crimes,
+                    level(nextPoints), Instant.now(), revision.incrementAndGet());
+            result.set(next);
+            return crimes.isEmpty() || (nextPoints == 0 && nextBounty == 0L) ? null : next;
+        });
+        return Optional.ofNullable(result.get());
+    }
+
     public void clearWanted(ActorId subject, String jurisdiction) {
         if (wanted.remove(new WantedKey(subject, jurisdiction)) != null) revision.incrementAndGet();
     }
@@ -187,9 +209,9 @@ public final class LawEnforcementEngine {
             if (warrant.status() != WarrantStatus.ACTIVE || warrant.expiresAt().isAfter(now)) continue;
             if (setWarrantStatus(warrant.id(), WarrantStatus.EXPIRED).isPresent()) {
                 changed++;
-                if (!hasActiveWarrant(warrant.subject(), warrant.jurisdiction()) && activeCustody(warrant.subject()).isEmpty()) {
-                    clearWanted(warrant.subject(), warrant.jurisdiction());
-                }
+                for (UUID crimeId : warrant.crimeIds()) removeWantedCrime(warrant.subject(), warrant.jurisdiction(), crimeId);
+                if (warrant.crimeIds().isEmpty() && !hasActiveWarrant(warrant.subject(), warrant.jurisdiction())
+                        && activeCustody(warrant.subject()).isEmpty()) clearWanted(warrant.subject(), warrant.jurisdiction());
             }
         }
         return changed;
