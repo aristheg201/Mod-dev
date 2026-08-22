@@ -55,7 +55,7 @@ public final class PlayerLikeBehaviorService {
 
     public void tick(MinecraftServer server, long tick) {
         combatPulse(server, tick);
-        if (tick % 40L == 0L) ambientPulse(server, tick);
+        if (tick % 40L == 0L) ambientPulse(server);
         if (tick % 200L == 0L) {
             aggro.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= tick);
             nextAttack.keySet().removeIf(id -> npcs.get(id).isEmpty());
@@ -93,7 +93,8 @@ public final class PlayerLikeBehaviorService {
                 navigation.stop(npcId);
                 if (nextAttack.getOrDefault(npcId, 0L) <= tick) {
                     if (LivelyApi.animations() != null) LivelyApi.animations().play(server, npcId, "attack");
-                    if (npcs.attack(server, npcId, target.getUuid())) {
+                    boolean attacked = npcs.body(npcId).map(body -> body.attack(server, target)).orElse(false);
+                    if (attacked) {
                         nextAttack.put(npcId, tick + ATTACK_COOLDOWN_TICKS);
                         states.get(npcId).ifPresent(state -> state.remember("retaliated_against_player",
                                 Map.of("player", target.getUuid().toString()), .55D, 1D));
@@ -106,7 +107,7 @@ public final class PlayerLikeBehaviorService {
         }
     }
 
-    private void ambientPulse(MinecraftServer server, long tick) {
+    private void ambientPulse(MinecraftServer server) {
         List<NpcDefinition> active = npcs.snapshot().values().stream()
                 .filter(NpcDefinition::spawned)
                 .filter(NpcDefinition::aiEnabled)
