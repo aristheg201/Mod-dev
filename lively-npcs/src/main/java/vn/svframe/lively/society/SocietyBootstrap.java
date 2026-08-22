@@ -28,6 +28,7 @@ public final class SocietyBootstrap implements ModInitializer {
     private volatile LawEnforcementService lawService;
     private volatile SocialEncounterService socialEncounters;
     private volatile HouseholdSimulationService households;
+    private volatile SocietyStorySignalService storySignals;
     private volatile CompletableFuture<Void> pendingSave = CompletableFuture.completedFuture(null);
 
     @Override public void onInitialize() {
@@ -61,6 +62,8 @@ public final class SocietyBootstrap implements ModInitializer {
         SocietyApi.installSocialEncounters(socialEncounters);
         households = new HouseholdSimulationService(server);
         SocietyApi.installHouseholds(households);
+        storySignals = new SocietyStorySignalService(server);
+        SocietyApi.installStorySignals(storySignals);
         pendingSave = CompletableFuture.completedFuture(null);
         LivelyNpcs.LOGGER.info("Lively society session ready: economy routes={}, debtContracts={}, gamblingBets={}, warrants={}, custody={}, courtCases={}",
                 SocietyApi.economies().routes(), SocietyApi.debts().snapshot().contracts().size(), SocietyApi.gambling().snapshot().bets().size(),
@@ -77,6 +80,8 @@ public final class SocietyBootstrap implements ModInitializer {
         if (encounters != null) encounters.tick(tick);
         HouseholdSimulationService household = households;
         if (household != null) household.tick(tick);
+        SocietyStorySignalService signals = storySignals;
+        if (signals != null) signals.tick(tick);
         if (tick % 6000L != 0L || !pendingSave.isDone() || store == null) return;
         pendingSave = store.saveAsync(capture()).whenComplete((ignored, error) -> {
             if (error != null) LivelyNpcs.LOGGER.error("Lively society autosave failed", error);
@@ -96,6 +101,7 @@ public final class SocietyBootstrap implements ModInitializer {
             lawService = null;
             socialEncounters = null;
             households = null;
+            storySignals = null;
             pendingSave = CompletableFuture.completedFuture(null);
             activeServer = null;
             SocietyApi.resetWorldState();
