@@ -260,6 +260,10 @@ public final class SocietySimulationService {
                     Map.of("kind", "extortion", "debt", debt.id().toString(), "semantic_only", "true"));
             LivelyApi.crime().addEvidence(crime.id(), CrimeEngine.EvidenceType.RECORD, creditor, creditor, .82D, .76D, false,
                     Map.of("debt", debt.id().toString()));
+            LivelyApi.crime().addEvidence(crime.id(), CrimeEngine.EvidenceType.MOTIVE, null, creditor, .86D, .82D, false,
+                    Map.of("motive", "debt_extortion", "debt", debt.id().toString()));
+            LivelyApi.crime().addEvidence(crime.id(), CrimeEngine.EvidenceType.OPPORTUNITY, null, creditor, .72D, .74D, false,
+                    Map.of("collector", definition.id().toString()));
             LivelyApi.social().apply(creditor, debt.debtor(), new SocialEngine.SocialDelta(-.02D, -.04D, .08D, .16D, 0D, 0D, .05D,
                     "debt_extortion", Map.of("debt", debt.id().toString())));
         }
@@ -269,7 +273,6 @@ public final class SocietySimulationService {
 
     private void patrol(NpcDefinition definition) {
         if (!definition.spawned() || LivelyApi.worldNavigation() == null) return;
-        // The justice service owns warrant dispatch and FOLLOW navigation. Do not overwrite an active pursuit.
         if (SocietyApi.lawService() != null && LivelyApi.worldNavigation().status(definition.id()).isPresent()) return;
         go(definition, definition.metadata().getOrDefault("routine.patrol", definition.metadata().get("work.structure")));
     }
@@ -304,6 +307,10 @@ public final class SocietySimulationService {
                         "amount", Long.toString(amount), "semantic_only", "true"));
         LivelyApi.crime().addEvidence(crime.id(), CrimeEngine.EvidenceType.RECORD, target.owner(), actor, .60D, .64D, false,
                 Map.of("transaction", "virtual_business_loss"));
+        LivelyApi.crime().addEvidence(crime.id(), CrimeEngine.EvidenceType.MOTIVE, null, actor, .68D, .70D, false,
+                Map.of("motive", "financial_pressure"));
+        LivelyApi.crime().addEvidence(crime.id(), CrimeEngine.EvidenceType.OPPORTUNITY, null, actor, .74D, .72D, false,
+                Map.of("business", target.id().toString(), "transaction", "virtual_business_loss"));
         state.remember("committed_crime", Map.of("crime", crime.id().toString(), "amount", Long.toString(amount)), .78D, 1D);
         state.setNeed("financial_stress", Math.max(0D, state.snapshot(1).need("financial_stress") - .18D));
         lastCrime.put(definition.id(), tick);
