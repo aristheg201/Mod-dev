@@ -158,7 +158,7 @@ public final class LivelyNpcs implements ModInitializer {
             director = new LivingWorldDirectorService();
             causalSimulation = new CausalSimulationService();
             familyProgression = new FamilyProgressionService();
-            businessSimulation = new BusinessSimulationService();
+            businessSimulation = new BusinessSimulationService(server);
 
             historyJournal = new WorldHistoryJournal(worldData.resolve("history").resolve("world-history.lwh"), 128L * 1024L * 1024L);
             try {
@@ -240,8 +240,7 @@ public final class LivelyNpcs implements ModInitializer {
                     ? npcRuntime.flushDefinitions() : CompletableFuture.completedFuture(null);
             CompletableFuture<Void> history = historyJournal != null
                     ? historyJournal.flush() : CompletableFuture.completedFuture(null);
-            CompletableFuture.allOf(worldState, npcDefinitions, history)
-                    .orTimeout(15L, TimeUnit.SECONDS).join();
+            CompletableFuture.allOf(worldState, npcDefinitions, history).orTimeout(15L, TimeUnit.SECONDS).join();
         } catch (RuntimeException error) {
             LOGGER.error("Lively final state flush failed", error);
         } finally {
