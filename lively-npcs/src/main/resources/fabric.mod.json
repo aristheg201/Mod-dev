@@ -9,7 +9,10 @@
   "entrypoints": {
     "main": [
       "vn.svframe.lively.quest.QuestWorldProgressionBootstrap",
+      "vn.svframe.lively.economy.MerchantInteractionBootstrap",
       "vn.svframe.lively.LivelyNpcs",
+      "vn.svframe.lively.society.SocietyBootstrap",
+      "vn.svframe.lively.admin.CommerceCommandsBootstrap",
       "vn.svframe.lively.admin.NpcWizardBootstrap",
       "vn.svframe.lively.admin.ChronicleCommandsBootstrap",
       "vn.svframe.lively.admin.QuestCommandsBootstrap",
