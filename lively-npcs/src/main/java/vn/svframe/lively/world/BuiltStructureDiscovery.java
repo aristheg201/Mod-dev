@@ -68,7 +68,9 @@ public final class BuiltStructureDiscovery {
                 worldKey, requested.getX() + .5D, requested.getY() + .5D, requested.getZ() + .5D);
         if (!existing.isEmpty()) {
             SemanticStructureRegistry.Structure structure = existing.getFirst();
-            return new Result(Status.ALREADY_REGISTERED, structure, 0, 0, "already inside " + structure.id());
+            if (structure.capabilities().contains("player_built")) return discover(world, requested, structure);
+            return new Result(Status.ALREADY_REGISTERED, structure, 0, 0,
+                    "registered structure is manual/world-defined; automatic rescan left it unchanged");
         }
         return discover(world, requested, null);
     }
