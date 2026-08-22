@@ -4,7 +4,6 @@ import vn.svframe.lively.actor.ActorId;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -97,6 +96,7 @@ public final class LawEnforcementEngine {
     private final ConcurrentHashMap<UUID, CourtCase> courtCases = new ConcurrentHashMap<>();
     private final AtomicLong revision = new AtomicLong();
 
+    /** One crime contributes to wanted points/bounty once; repeated evidence review is idempotent. */
     public WantedRecord raiseWanted(ActorId subject, String jurisdiction, UUID crimeId, int severity,
                                     double evidenceScore, long bountyUnit) {
         Objects.requireNonNull(subject);
@@ -104,10 +104,12 @@ public final class LawEnforcementEngine {
         int scorePoints = Math.max(1, Math.min(250, severity + (int) Math.round(unit(evidenceScore) * 60D)));
         long bountyDelta = boundedMoney(Math.max(0L, bountyUnit) * Math.max(1L, severity));
         return wanted.compute(key, (ignored, old) -> {
+            HashSet<UUID> crimes = new HashSet<>(old == null ? Set.of() : old.crimeIds());
+            boolean repeatedCrime = crimeId != null && crimes.contains(crimeId);
+            if (repeatedCrime && old != null) return old;
+            if (crimeId != null && crimes.size() < 1024) crimes.add(crimeId);
             int points = old == null ? scorePoints : Math.min(1_000_000, old.points() + scorePoints);
             long bounty = saturatingMoney(old == null ? 0L : old.bounty(), bountyDelta);
-            HashSet<UUID> crimes = new HashSet<>(old == null ? Set.of() : old.crimeIds());
-            if (crimeId != null && crimes.size() < 1024) crimes.add(crimeId);
             long rev = revision.incrementAndGet();
             return new WantedRecord(subject, key.jurisdiction(), points, bounty, crimes, level(points), Instant.now(), rev);
         });
@@ -168,6 +170,8 @@ public final class LawEnforcementEngine {
                 .max(Comparator.comparingDouble(Warrant::probableCause).thenComparing(Warrant::issuedAt));
     }
 
+    public boolean hasActiveWarrant(ActorId subject, String jurisdiction) { return activeWarrant(subject, jurisdiction).isPresent(); }
+
     public List<Warrant> activeWarrants() {
         Instant now = Instant.now();
         return warrants.values().stream().filter(warrant -> warrant.status() == WarrantStatus.ACTIVE && warrant.expiresAt().isAfter(now))
@@ -181,7 +185,12 @@ public final class LawEnforcementEngine {
         int changed = 0;
         for (Warrant warrant : List.copyOf(warrants.values())) {
             if (warrant.status() != WarrantStatus.ACTIVE || warrant.expiresAt().isAfter(now)) continue;
-            if (setWarrantStatus(warrant.id(), WarrantStatus.EXPIRED).isPresent()) changed++;
+            if (setWarrantStatus(warrant.id(), WarrantStatus.EXPIRED).isPresent()) {
+                changed++;
+                if (!hasActiveWarrant(warrant.subject(), warrant.jurisdiction()) && activeCustody(warrant.subject()).isEmpty()) {
+                    clearWanted(warrant.subject(), warrant.jurisdiction());
+                }
+            }
         }
         return changed;
     }
