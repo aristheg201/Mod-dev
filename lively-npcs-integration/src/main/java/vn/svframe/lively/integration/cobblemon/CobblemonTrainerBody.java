@@ -15,7 +15,9 @@ import net.minecraft.util.math.Vec3d;
 import vn.svframe.lively.npc.NpcBody;
 import vn.svframe.lively.npc.NpcDefinition;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -76,11 +78,36 @@ public final class CobblemonTrainerBody implements NpcBody {
         entity = created;
     }
 
+    /**
+     * NPCPreset.applyTo mutates the target collections (aspects/config/variations/names/behaviours) in place.
+     * A registry NPCClass must therefore never be passed directly. Cobblemon's registry Gson is not a general
+     * round-trip copier, so clone the public model explicitly and detach every mutable container the preset touches.
+     */
     private static NPCClass copyClass(NPCClass source) {
-        var gson = NPCClasses.INSTANCE.getGson();
-        NPCClass copy = gson.fromJson(gson.toJsonTree(source), NPCClass.class);
-        if (copy == null) throw new IllegalStateException("failed to copy Cobblemon NPC class " + source.getId());
+        NPCClass copy = new NPCClass();
         copy.setId(source.getId());
+        copy.setResourceIdentifier(source.getResourceIdentifier());
+        copy.setNames(new ArrayList<>(source.getNames()));
+        copy.setAspects(new HashSet<>(source.getAspects()));
+        copy.setHitbox(source.getHitbox());
+        copy.setModelScale(source.getModelScale());
+        copy.setBattleConfiguration(source.getBattleConfiguration());
+        copy.setInteraction(source.getInteraction());
+        copy.setCanDespawn(source.getCanDespawn());
+        copy.setVariations(new HashMap<>(source.getVariations()));
+        copy.setConfig(new ArrayList<>(source.getConfig()));
+        copy.setVariables(new HashMap<>(source.getVariables()));
+        copy.setParty(source.getParty());
+        copy.setSkill(source.getSkill());
+        copy.setAutoHealParty(source.getAutoHealParty());
+        copy.setRandomizePartyOrder(source.getRandomizePartyOrder());
+        copy.setBattleTheme(source.getBattleTheme());
+        copy.setBehaviours(new ArrayList<>(source.getBehaviours()));
+        copy.setMovable(source.isMovable());
+        copy.setInvulnerable(source.isInvulnerable());
+        copy.setLeashable(source.isLeashable());
+        copy.setAllowProjectileHits(source.getAllowProjectileHits());
+        copy.setHideNameTag(source.getHideNameTag());
         return copy;
     }
 
