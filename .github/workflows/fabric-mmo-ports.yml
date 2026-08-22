@@ -8,6 +8,7 @@ on:
       - 'fabric-mmo-ports/bootstrap-m0.8/**'
       - 'fabric-mmo-ports/overlay-m0.9/**'
       - 'fabric-mmo-ports/overlay-m1.0/**'
+      - 'fabric-mmo-ports/overlay-m1.1/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
   pull_request:
@@ -17,6 +18,7 @@ on:
       - 'fabric-mmo-ports/bootstrap-m0.8/**'
       - 'fabric-mmo-ports/overlay-m0.9/**'
       - 'fabric-mmo-ports/overlay-m1.0/**'
+      - 'fabric-mmo-ports/overlay-m1.1/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
   workflow_dispatch:
@@ -54,6 +56,7 @@ jobs:
           tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
           cp -a fabric-mmo-ports/overlay-m0.9/. build/mmo-workspace/
           cp -a fabric-mmo-ports/overlay-m1.0/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.1/mmocore-brigadier.patch
           find build/mmo-workspace -type f | wc -l
 
       - name: Normalize Fabric metadata version
