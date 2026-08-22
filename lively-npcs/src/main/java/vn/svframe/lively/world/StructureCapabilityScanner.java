@@ -38,6 +38,15 @@ public final class StructureCapabilityScanner {
         return true;
     }
 
+    /** Clears scan bookkeeping only. Semantic structure state is retained and will be rediscovered incrementally. */
+    public synchronized int rescanAll() {
+        int total = LivelyApi.structures().snapshot().structures().size();
+        queue.clear();
+        scans.clear();
+        completed.clear();
+        return total;
+    }
+
     public Optional<Status> status(String structureId) {
         Scan scan = scans.get(structureId);
         if (scan == null) return completed.contains(structureId)
@@ -73,12 +82,12 @@ public final class StructureCapabilityScanner {
         if (scan.done()) complete(scan, "complete", true);
     }
 
+    /** Queues one structure at a time, so a full rescan of thousands of locations cannot create an unbounded spike. */
     private void ensureQueued() {
         synchronized (this) {
             if (!queue.isEmpty() || queue.size() >= MAX_QUEUE) return;
             for (SemanticStructureRegistry.Structure structure : LivelyApi.structures().snapshot().structures().values()) {
                 if (completed.contains(structure.id()) || scans.containsKey(structure.id())) continue;
-                if (!structure.capabilities().isEmpty()) { completed.add(structure.id()); continue; }
                 if (structure.bounds().volume() > MAX_VOLUME) { completed.add(structure.id()); continue; }
                 Scan scan = new Scan(structure);
                 scans.put(structure.id(), scan);
@@ -94,8 +103,8 @@ public final class StructureCapabilityScanner {
             LivelyApi.structures().addCapabilities(scan.structure.id(), scan.capabilities);
             scan.points.forEach((name, pos) -> LivelyApi.structures().setPointIfAbsent(scan.structure.id(), name,
                     pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D));
-            completed.add(scan.structure.id());
         }
+        completed.add(scan.structure.id());
         scans.remove(scan.structure.id());
         synchronized (this) {
             if (scan.structure.id().equals(queue.peekFirst())) queue.pollFirst();
