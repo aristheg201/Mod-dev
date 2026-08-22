@@ -120,7 +120,7 @@ jobs:
           fi
 
           python3 - <<'PY'
-          import socket, struct, sys, time
+          import socket, struct, time
 
           HOST = '127.0.0.1'
           PORT = 25590
@@ -163,7 +163,7 @@ jobs:
                   raise SystemExit('RCON authentication failed')
 
               rid, _, created = packet(sock, 101, 2,
-                  'lively npc create trainer cobblemon:battler_test 25 5 CI_Trainer trainer')
+                  'lively npc create trainer cobblemon:standard 25 5 CI_Trainer trainer cobblemon:battler_test')
               print('CREATE:', created)
               if 'Created Lively Cobblemon trainer CI_Trainer' not in created:
                   raise SystemExit('Native trainer create command did not report success')
