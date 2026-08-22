@@ -1,4 +1,4 @@
-# Lively implementation status - 0.4.0-rc1
+# Lively implementation status - 1.0.0
 
 ## Target stack
 
@@ -16,7 +16,7 @@
 Lively is split into two artifacts.
 
 - `livelynpcs` / **Lively NPCs by SVFrame Studio** owns the living-world AI, persistence, generic NPC runtime, semantic world model and public bridge interfaces.
-- `livelynpcs_integration` / **Lively NPCs Integration by SVFrame Studio** owns ecosystem-specific adapters. Core does not import Cobblemon, Mega Showdown, LuckPerms, BEconomy, HoloDisplays, Flan or SVF Waypoints implementation packages.
+- `livelynpcs_integration` / **Lively NPCs: Cobblemon Integration by SVFrame Studio** requires Core + Cobblemon 1.7.x and owns Cobblemon-specific behavior plus optional ecosystem adapters.
 
 The authority rule is unchanged: AI proposes; validated server authority executes. AI-generated persistent physical world mutation is rejected by default.
 
@@ -37,11 +37,13 @@ The authority rule is unchanged: AI proposes; validated server authority execute
 - persistent command-created NPC definitions separate from cognitive state
 - PLAYER body using the vanilla player model/Fabric FakePlayer
 - VANILLA body for supported vanilla entity types
-- EXTERNAL body provider used by Cobblemon Pokémon bodies
+- EXTERNAL providers for Cobblemon Pokemon and native Cobblemon trainer bodies
 - spawn/despawn/teleport/look/body replacement/edit flows
 - persisted spawned state restoration after server start
 - entity UUID to Lively NPC mapping for interaction
-- command-only creation; no natural spawn pool or spawn egg registration
+- command-only creation; no natural Lively spawn pool or spawn egg registration
+- runtime admin inspection, locations, structure assignment, quest debugging and subsystem debug commands
+- safe reload surfaces for config, NPCs, quests, dialogue, locations and all runtime subsystems
 
 ### Player-model skins
 
@@ -99,7 +101,7 @@ The authority rule is unchanged: AI proposes; validated server authority execute
 - schedules, occupations, home/work semantic destinations and constraint-aware activity selection
 - structure registry with world bounds, parent/town membership, named points, capabilities and operational state
 - admin selection/structure editing/import-export support
-- bounded live capability scanning
+- bounded live capability scanning and bounded full rescan on location reload
 - semantic use of chest storage, bed sleep, lectern read/teach, furnace smelt, crafting table craft, bell gather and doors/openables
 
 ### Quests and story
@@ -109,9 +111,9 @@ The authority rule is unchanged: AI proposes; validated server authority execute
 - runtime signal routing from NPC interaction, investigation interviews, Cobblemon captures/battle wins and spatial arrival
 - spatial objectives require entry transitions instead of AFK per-second farming
 - player commands for offers/list/info/claim/abandon as a server-side fallback
-- emergent Story Director seeds from crime, economy, faction, rumor, ancient-site and Pokémon-migration signals
+- emergent Story Director seeds from crime, economy, faction, rumor, ancient-site and Pokemon-migration signals
 - explicit story arc phase advancement on event completion; cancelled events abandon their owning arc
-- emergent antagonist scoring from simulated actor state rather than `evil=true`
+- emergent antagonist scoring from simulated actor state rather than a hardcoded evil flag
 - append-only/history/chronicle persistence and semantic consequences
 
 ### Quest waypoint projection
@@ -122,21 +124,26 @@ The authority rule is unchanged: AI proposes; validated server authority execute
 - claim/progress/status/join refreshes the projected destination
 - completion/cancellation clears or advances to the next locatable objective
 - bridge is fail-closed and never dispatches arbitrary `/wp` commands
-- reflection discovery is restricted to typed `NavigationManager` method shapes and has an integration test double
+- exact SVF Waypoints 1.2.17 binary API was inspected against `SvfWaypoints.instance().navigation()`, `NavigationManager.activate/stop` and the real `WaypointTarget` constructor contract
+- Waypoints remains player-facing quest GPS; NPC movement continues to use Lively's internal navigation stack
 
 ## Cobblemon integration
 
-### Pokémon NPC bodies
+### Pokemon NPC bodies
 
 - uses the real Cobblemon 1.7.3 `PokemonProperties.Companion.parse(...)` API
 - creates actual `PokemonEntity` bodies from properties
-- Lively Pokémon bodies are persistent, AI-disabled, command-created and tagged `lively` / `lively_body`
+- Lively Pokemon bodies are persistent, AI-disabled, command-created and tagged `lively` / `lively_body`
 - explicit uncatchable property and UNBATTLEABLE tracked flag
-- Lively Pokémon bodies are excluded from wild Pokémon migration/world-awareness accounting
+- Lively Pokemon bodies are excluded from wild Pokemon migration/world-awareness accounting
 
-### Trainer battle AI
+### Native trainer bodies and battle AI
 
-- integrates through Cobblemon `BattleAI.choose()` for opt-in Lively trainers
+- creates real Cobblemon `NPCEntity` trainer bodies from registered `NPCClass` definitions
+- supports applying a real Cobblemon `NPCPreset` to a detached class copy without mutating Cobblemon's global registry state
+- trainer command accepts namespaced class/preset identifiers and persists level/skill/native-interaction configuration
+- native trainer interaction is passed through to Cobblemon while Lively observes semantic interaction signals
+- `lively_combat` trainers are wired to Lively through Cobblemon `BattleAI.choose()`
 - validates legal moves, switches and targets through Cobblemon
 - Mega Evolution, Ultra Burst, Z-Move, Dynamax and Terastallization candidates when the moveset exposes them
 - power, accuracy, priority, STAB, type-effectiveness, HP state, switching and status utility
@@ -146,8 +153,8 @@ The authority rule is unchanged: AI proposes; validated server authority execute
 
 ### Living-world awareness
 
-- capture, evolution, healing, battle victory and wild spawn signals
-- Pokémon migration events are derived from bounded spawn windows
+- capture, evolution, healing, battle victory, trade, friendship/bond, fossil/Pokedex/research, send-out/recall/team-context and wild spawn signals
+- Pokemon migration events are derived from bounded spawn windows
 - spatial NPC index avoids scanning every NPC for each Cobblemon event
 - migration quests receive real semantic coordinates
 
@@ -161,7 +168,7 @@ Integration contains concrete adapters for:
 - Flan claim-aware interaction checks
 - SVF Waypoints quest navigation
 
-Missing optional mods do not prevent Lively Core from loading.
+The production binaries used by the server were inspected for the bridge methods Lively calls. Missing optional mods do not prevent Lively Core from loading.
 
 ## Anti-grief / security invariant
 
@@ -175,11 +182,14 @@ AI cannot request arbitrary:
 - command execution
 - unregistered persistent transforms
 
-Persistent physical transformation remains an admin-only future/controlled path requiring an allowlisted transform, semantic target and transaction/rollback model. Story disasters, fires, floods and destruction remain semantic plus bounded presentation unless an administrator explicitly invokes a registered transform.
+Persistent physical transformation remains an admin-controlled path requiring an allowlisted transform, semantic target and transaction/rollback model. Story disasters, fires, floods and destruction remain semantic plus bounded presentation unless an administrator explicitly invokes a registered controlled transform.
 
 ## Persistence and performance
 
 - per-NPC CRC/versioned persistence with atomic replacement, async preload/save and shutdown flush
+- NPC definition persistence is coalesced and written on a dedicated ordered I/O worker
+- world-history journal and structure transfer writes are off the runtime command/tick path
+- runtime config reload is asynchronous; authoritative startup loading remains a deliberate pre-ready barrier
 - durable world-state snapshots/migrations for living-world engines
 - append-only world history/chronicle support
 - no per-tick all-NPC social or Cobblemon scans
@@ -189,23 +199,22 @@ Persistent physical transformation remains an admin-only future/controlled path 
 - memory consolidation runs off the Minecraft server thread using only NPC-state locks
 - stress/scale regression coverage includes thousands of actors and large social/economy/crime state
 
-## Verification gates
+## Release verification gates
 
-The GitHub `Lively Loom build` workflow validates the release branch with:
+The GitHub workflows validate the release head with:
 
 1. Core dependency-boundary checks and external/cloud-AI prohibition.
 2. Java 21 `clean test remapJar` for both modules.
-3. Dedicated Fabric server boot smoke until the server reaches `Done(...)`.
-4. Production-layout Cobblemon 1.7.3 server boot smoke using the remapped Lively JARs.
-5. Mega Showdown 1.8.4 + Cobblemon 1.7.3 production-layout boot smoke.
-6. JAR ZIP/fabric.mod validation and SHA256 output.
-7. Artifact upload of both remapped JARs.
+3. Cobblemon Integration mandatory dependency-contract validation.
+4. Dedicated Fabric Core server boot until `Done(...)`.
+5. Production-layout Cobblemon 1.7.3 server boot using the remapped Lively JARs.
+6. Mega Showdown 1.8.4 + Cobblemon 1.7.3 production-layout boot.
+7. Native Cobblemon trainer smoke: real server boot, real `NPCClass`, real `NPCPreset`, command provisioning, `lively_combat`/native-interaction entity tags and `save-all flush`.
+8. JAR ZIP/fabric.mod validation and SHA256 output.
+9. Artifact upload of both remapped JARs.
 
-Production regression tests cover world-integrity policy, session isolation, persistence/migrations, navigation retry behavior, cognition/memory learning, social gossip, crime progression, generated quest progression, family/business systems and high actor-count scale paths.
+Production regression tests cover world-integrity policy, session isolation, persistence/migrations, asynchronous persistence, navigation retry behavior, cognition/memory learning, social gossip, crime progression, generated quest progression, family/business systems and high actor-count scale paths.
 
-## Validation boundary for 0.4.0-rc1
+## Deployment boundary
 
-The code scope discussed for Lively is implemented. The remaining release-candidate boundary is deployment validation, not a deliberately missing Lively subsystem:
-
-- The exact SVF Waypoints 1.2.17 binary is not present in this repository/CI runner, so the optional bridge is currently verified by typed discovery tests and fail-closed behavior rather than a real 1.2.17 boot in the Lively workflow.
-- A final live-server soak against the complete production modpack/world is still required before calling the artifact `1.0.0` instead of a release candidate. CI already boots the dedicated, Cobblemon and Mega Showdown stacks independently and exercises large simulated state in tests.
+`1.0.0` means the implementation and automated release gates above are complete on the final release head. One thing CI cannot manufacture out of thin air is the actual production world and every live server state: a long-duration soak of the complete production modpack/world is operational deployment validation, not a hidden missing subsystem. Any issue found there should be treated as a production defect and patched without weakening the server-authority, safety or performance invariants above.
