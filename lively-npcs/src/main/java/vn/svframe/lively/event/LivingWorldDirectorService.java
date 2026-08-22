@@ -50,27 +50,66 @@ public final class LivingWorldDirectorService implements AutoCloseable {
         if (slots <= 0) return;
 
         int started = 0;
-        for (WorldEventEngine.EventProposal proposal : LivelyApi.storySeeds().propose(signals, null, npcs, slots)) {
-            if (!config.storyCategoryEnabled(proposal.category())) continue;
+        List<WorldEventEngine.EventProposal> proposals = LivelyApi.storySeeds().propose(signals, null, npcs, 16).stream()
+                .filter(proposal -> config.storyCategoryEnabled(proposal.category()))
+                .map(proposal -> applyTone(config.storyTone(), proposal))
+                .filter(proposal -> proposal.intensity() >= .28D)
+                .sorted(Comparator.comparingDouble(WorldEventEngine.EventProposal::intensity).reversed())
+                .toList();
+        for (WorldEventEngine.EventProposal proposal : proposals) {
             if (LivelyApi.events().activeEvents().stream().anyMatch(event -> event.seed().equals(proposal.seed()))) continue;
             if (LivelyApi.events().start(proposal).isPresent() && ++started >= slots) break;
         }
         if (started < slots && config.storyCategoryEnabled(WorldEventEngine.Category.FACTION_CONFLICT)
                 && LivelyApi.events().activeEvents().size() < config.storyMaxActiveEvents()) {
-            emergeAntagonist(signals, actors);
+            emergeAntagonist(signals, actors, config.storyTone());
         }
+    }
+
+    static WorldEventEngine.EventProposal applyTone(String tone, WorldEventEngine.EventProposal proposal) {
+        double intensity = clamp01(proposal.intensity() * toneMultiplier(tone, proposal.category()));
+        Map<String, String> facts = new HashMap<>(proposal.facts());
+        facts.put("story_tone", tone);
+        return new WorldEventEngine.EventProposal(proposal.category(), proposal.seed(), proposal.structureId(),
+                proposal.participants(), intensity, proposal.duration(), facts);
+    }
+
+    static double toneMultiplier(String tone, WorldEventEngine.Category category) {
+        return switch (tone) {
+            case "peaceful" -> switch (category) {
+                case FESTIVAL, SOCIAL, DISCOVERY, MIGRATION -> 1.28D;
+                case CRIME, FACTION_CONFLICT, DISASTER, POLITICAL -> .58D;
+                default -> .86D;
+            };
+            case "adventure" -> switch (category) {
+                case DISCOVERY, MYSTERY, MIGRATION, FACTION_CONFLICT -> 1.24D;
+                case FESTIVAL, SOCIAL -> .92D;
+                default -> 1.02D;
+            };
+            case "dramatic" -> switch (category) {
+                case CRIME, FACTION_CONFLICT, POLITICAL, MYSTERY, DISASTER -> 1.28D;
+                default -> .92D;
+            };
+            case "dark" -> switch (category) {
+                case CRIME, FACTION_CONFLICT, MYSTERY, DISASTER -> 1.38D;
+                case FESTIVAL, SOCIAL -> .60D;
+                case DISCOVERY -> .82D;
+                default -> 1.08D;
+            };
+            default -> 1D;
+        };
     }
 
     private static RuntimeConfigService.Config config() {
         RuntimeConfigService service = LivelyApi.runtimeConfig();
-        return service == null ? new RuntimeConfigService.Config(600L, 6000L, 1200L, 8, 2,
-                Set.of(WorldEventEngine.Category.values()), 10, 1024, 32, 64) : service.current();
+        return service == null ? RuntimeConfigService.defaults() : service.current();
     }
 
     private void onEventStarted(WorldEventEngine.WorldEvent event) {
         StoryArcEngine.Arc arc = LivelyApi.storyArcs().active().stream().filter(value -> value.seed().equals(event.seed())).findFirst()
                 .orElseGet(() -> LivelyApi.storyArcs().start(event.seed(), title(event), 5,
-                        Map.of("category", event.category().name(), "started_by", event.id().toString())));
+                        Map.of("category", event.category().name(), "started_by", event.id().toString(),
+                                "tone", event.facts().getOrDefault("story_tone", "balanced"))));
         LivelyApi.storyArcs().attachEvent(arc.id(), event.id(), event.intensity() * .25D);
         if (event.intensity() >= .42D && LivelyApi.quests().snapshot().quests().values().stream()
                 .noneMatch(quest -> event.id().toString().equals(quest.facts().get("event")))) createQuest(event);
@@ -137,7 +176,8 @@ public final class LivingWorldDirectorService implements AutoCloseable {
         if (ttl.isNegative() || ttl.isZero()) ttl = Duration.ofMinutes(10);
         long reward = Math.max(100L, Math.min(100000L, Math.round(500D + event.intensity() * 4500D)));
         LivelyApi.quests().create(issuer, null, questTitle(event), objectives, ttl,
-                Map.of("event", event.id().toString(), "seed", event.seed(), "reward_budget", Long.toString(reward), "public", "true"));
+                Map.of("event", event.id().toString(), "seed", event.seed(), "reward_budget", Long.toString(reward),
+                        "story_tone", event.facts().getOrDefault("story_tone", "balanced"), "public", "true"));
     }
 
     private Map<String, String> destinationFacts(WorldEventEngine.WorldEvent event, ActorId issuer) {
@@ -183,15 +223,17 @@ public final class LivingWorldDirectorService implements AutoCloseable {
         }
     }
 
-    private void emergeAntagonist(Map<String, Double> signals, Set<ActorId> actors) {
+    private void emergeAntagonist(Map<String, Double> signals, Set<ActorId> actors, String tone) {
+        if ("peaceful".equals(tone)) return;
         if (LivelyApi.events().activeEvents().stream().anyMatch(event -> "villain_emergence".equals(event.facts().get("kind")))) return;
         var candidates = LivelyApi.storySeeds().antagonistCandidates(LivelyApi.actors(),
                 actors.stream().filter(actor -> actor.kind() == ActorId.Kind.NPC).collect(Collectors.toSet()), signals);
-        if (candidates.isEmpty() || candidates.getFirst().score() < .68D) return;
+        double threshold = "dark".equals(tone) ? .58D : "dramatic".equals(tone) ? .63D : .68D;
+        if (candidates.isEmpty() || candidates.getFirst().score() < threshold) return;
         var top = candidates.getFirst();
         LivelyApi.events().start(new WorldEventEngine.EventProposal(WorldEventEngine.Category.FACTION_CONFLICT, "villain_emergence", null,
-                Set.of(top.actor()), top.score(), Duration.ofHours(6),
-                Map.of("kind", "villain_emergence", "candidate", top.actor().uuid().toString(), "reason", top.reason())));
+                Set.of(top.actor()), clamp01(top.score() * toneMultiplier(tone, WorldEventEngine.Category.FACTION_CONFLICT)), Duration.ofHours(6),
+                Map.of("kind", "villain_emergence", "candidate", top.actor().uuid().toString(), "reason", top.reason(), "story_tone", tone)));
     }
 
     private Map<String, Double> signals() {
