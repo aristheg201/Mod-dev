@@ -31,7 +31,9 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
             var name = argument("name", StringArgumentType.string()).then(role);
             var skill = argument("skill", IntegerArgumentType.integer(1, 5)).then(name);
             var level = argument("level", IntegerArgumentType.integer(1, 1000)).then(skill);
-            var npcClass = argument("npcClass", StringArgumentType.word()).then(level);
+            // Brigadier word() rejects ':' and therefore rejects normal namespaced identifiers such as
+            // cobblemon:battler_test. string() still consumes exactly one token but permits the namespace separator.
+            var npcClass = argument("npcClass", StringArgumentType.string()).then(level);
 
             LiteralArgumentBuilder<ServerCommandSource> trainer = literal("trainer")
                     .requires(source -> LivelyApi.permissions().has(source, "lively.admin.npc", 2))
