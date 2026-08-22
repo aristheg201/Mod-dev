@@ -24,11 +24,20 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
             var role = argument("role", StringArgumentType.word())
                     .executes(ctx -> create(
                             ctx.getSource(),
-                            IdentifierArgumentType.getIdentifier(ctx, "npcClass"),
+                            IdentifierArgumentType.getIdentifier(ctx, "npcClass"), null,
                             IntegerArgumentType.getInteger(ctx, "level"),
                             IntegerArgumentType.getInteger(ctx, "skill"),
                             StringArgumentType.getString(ctx, "name"),
                             StringArgumentType.getString(ctx, "role")));
+            role.then(argument("preset", IdentifierArgumentType.identifier())
+                    .executes(ctx -> create(
+                            ctx.getSource(),
+                            IdentifierArgumentType.getIdentifier(ctx, "npcClass"),
+                            IdentifierArgumentType.getIdentifier(ctx, "preset"),
+                            IntegerArgumentType.getInteger(ctx, "level"),
+                            IntegerArgumentType.getInteger(ctx, "skill"),
+                            StringArgumentType.getString(ctx, "name"),
+                            StringArgumentType.getString(ctx, "role"))));
             var name = argument("name", StringArgumentType.string()).then(role);
             var skill = argument("skill", IntegerArgumentType.integer(1, 5)).then(name);
             var level = argument("level", IntegerArgumentType.integer(1, 1000)).then(skill);
@@ -43,7 +52,8 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
         });
     }
 
-    private static int create(ServerCommandSource source, Identifier id, int level, int skill, String name, String role) {
+    private static int create(ServerCommandSource source, Identifier id, Identifier preset,
+                              int level, int skill, String name, String role) {
         if (LivelyApi.npcs() == null) {
             source.sendError(Text.literal("Lively NPC runtime is not active."));
             return 0;
@@ -52,7 +62,9 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
             ServerPlayerEntity player = source.getPlayer();
             float yaw = player == null ? 0F : player.getYaw();
             float pitch = player == null ? 0F : player.getPitch();
-            String body = "npc:" + id + ";level=" + level + ";skill=" + skill + ";native_interaction=true";
+            String body = "npc:" + id
+                    + (preset == null ? "" : ";preset=" + preset)
+                    + ";level=" + level + ";skill=" + skill + ";native_interaction=true";
             NpcDefinition definition = LivelyApi.npcs().create(
                     name, role, NpcDefinition.BodyType.EXTERNAL, body, "",
                     source.getWorld().getRegistryKey().getValue().toString(), source.getPosition(), yaw, pitch);
@@ -61,7 +73,9 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
                 return 0;
             }
             source.sendFeedback(() -> Text.literal("Created Lively Cobblemon trainer " + name
-                    + " id=" + definition.id() + " class=" + id + " level=" + level + " skill=" + skill), false);
+                    + " id=" + definition.id() + " class=" + id
+                    + (preset == null ? "" : " preset=" + preset)
+                    + " level=" + level + " skill=" + skill), false);
             return 1;
         } catch (RuntimeException error) {
             String message = error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage();
