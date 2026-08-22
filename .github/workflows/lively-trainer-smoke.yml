@@ -107,7 +107,7 @@ jobs:
               cat "$log"
               exit 1
             fi
-            if grep -q 'Lively NPCs: Cobblemon Integration initialized; Cobblemon=true' "$log" && grep -q 'Done (' "$log"; then
+            if grep -Eq 'Lively NPCs: Cobblemon Integration initialized; .*Cobblemon=true' "$log" && grep -q 'Done (' "$log"; then
               ready=1
               break
             fi
