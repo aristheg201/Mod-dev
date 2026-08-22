@@ -87,6 +87,7 @@ public final class LivelyNpcs implements ModInitializer {
             NpcRuntime runtime = npcRuntime;
             if (world.isClient || hand != Hand.MAIN_HAND || runtime == null || !(player instanceof ServerPlayerEntity serverPlayer)
                     || LivelyApi.dialogues() == null) return ActionResult.PASS;
+            if (entity.getCommandTags().contains("lively_native_interaction")) return ActionResult.PASS;
             return runtime.interact(serverPlayer, entity.getUuid(), LivelyApi.dialogues()) ? ActionResult.SUCCESS : ActionResult.PASS;
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
