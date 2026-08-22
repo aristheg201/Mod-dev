@@ -17,6 +17,7 @@ import vn.svframe.lively.admin.LivelyCommands;
 import vn.svframe.lively.admin.SelectionWand;
 import vn.svframe.lively.ai.NpcAutonomyService;
 import vn.svframe.lively.api.LivelyApi;
+import vn.svframe.lively.config.RuntimeConfigService;
 import vn.svframe.lively.crime.InvestigationService;
 import vn.svframe.lively.dialogue.DialogueService;
 import vn.svframe.lively.event.LivingWorldDirectorService;
@@ -60,6 +61,7 @@ public final class LivelyNpcs implements ModInitializer {
     private volatile CompletableFuture<Void> pendingAutosave = CompletableFuture.completedFuture(null);
     private volatile MinecraftServer activeServer;
 
+    private RuntimeConfigService runtimeConfig;
     private NpcStateRegistry stateRegistry;
     private NpcRuntime npcRuntime;
     private WorldHistoryJournal historyJournal;
@@ -116,6 +118,13 @@ public final class LivelyNpcs implements ModInitializer {
         Path worldData = server.getSavePath(WorldSavePath.ROOT).resolve("livelynpcs");
 
         try {
+            runtimeConfig = new RuntimeConfigService(globalConfig.resolve("runtime.properties"));
+            RuntimeConfigService.Config loadedConfig = runtimeConfig.load();
+            LivelyApi.installRuntimeConfig(runtimeConfig);
+            LOGGER.info("Lively runtime config loaded from {}: storyPulse={} maxActiveEvents={} aiDecisions={} autosave={}",
+                    runtimeConfig.file(), loadedConfig.storyPulseTicks(), loadedConfig.storyMaxActiveEvents(),
+                    loadedConfig.aiDecisionsPerPulse(), loadedConfig.simulationAutosaveTicks());
+
             if (LegacyWorldStateMigration.importIfNeeded(globalConfig, worldData)) {
                 LOGGER.info("Imported legacy config-scoped Lively state into {}. Original files were retained.", worldData);
             }
@@ -198,8 +207,12 @@ public final class LivelyNpcs implements ModInitializer {
             LivelyApi.profiler().measure("rumor-expiry", () -> LivelyApi.social().expireRumors(now));
         }
         if (tick % 1200L == 0L) LivelyApi.profiler().measure("market-tick", () -> { LivelyApi.economy().marketTick(); return 0; });
-        if (tick % 600L == 0L) npcRuntime.checkpoint();
-        if (tick % 6000L != 0L || !pendingAutosave.isDone()) return;
+
+        RuntimeConfigService.Config config = runtimeConfig == null ? null : runtimeConfig.current();
+        long checkpointTicks = config == null ? 600L : config.npcCheckpointTicks();
+        long autosaveTicks = config == null ? 6000L : config.simulationAutosaveTicks();
+        if (tick % checkpointTicks == 0L) npcRuntime.checkpoint();
+        if (tick % autosaveTicks != 0L || !pendingAutosave.isDone()) return;
         SimulationStateStore.Bundle bundle = captureSimulation();
         pendingAutosave = CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle)).whenComplete((ignored, error) -> {
             if (error != null) LOGGER.error("Lively autosave failed", error);
@@ -236,6 +249,7 @@ public final class LivelyNpcs implements ModInitializer {
             if (historyJournal != null) historyJournal.close();
             if (stateRegistry != null) stateRegistry.close();
             if (simulationStore != null) simulationStore.close();
+            runtimeConfig = null;
             stateRegistry = null;
             npcRuntime = null;
             historyJournal = null;
