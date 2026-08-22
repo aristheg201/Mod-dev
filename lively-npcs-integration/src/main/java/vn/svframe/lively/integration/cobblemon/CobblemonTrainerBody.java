@@ -2,6 +2,8 @@ package vn.svframe.lively.integration.cobblemon;
 
 import com.cobblemon.mod.common.api.npc.NPCClass;
 import com.cobblemon.mod.common.api.npc.NPCClasses;
+import com.cobblemon.mod.common.api.npc.NPCPreset;
+import com.cobblemon.mod.common.api.npc.NPCPresets;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -20,9 +22,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Native Cobblemon trainer body. It follows the same construction path as Cobblemon's /spawnnpc command, preserving
- * the selected NPCClass party/battle/interaction configuration while marking the battle actor for Lively BattleAI.
- * Body key format: {@code npc:<namespace:id>;level=<n>;skill=<1..5>;native_interaction=<true|false>}.
+ * Native Cobblemon trainer body. It follows Cobblemon's NPCClass construction path and can layer one NPCPreset over
+ * a private copy of the class before entity initialization. Registry classes are never mutated globally.
+ * Body key format: {@code npc:<namespace:id>;preset=<namespace:id>;level=<n>;skill=<1..5>;native_interaction=<bool>}.
  */
 public final class CobblemonTrainerBody implements NpcBody {
     private final UUID npcId;
@@ -43,8 +45,15 @@ public final class CobblemonTrainerBody implements NpcBody {
         ServerWorld world = world(server, definition.world());
         if (world == null) throw new IllegalArgumentException("unknown world " + definition.world());
         Spec spec = Spec.parse(definition.bodyKey());
-        NPCClass npcClass = NPCClasses.getByIdentifier(spec.npcClass());
-        if (npcClass == null) throw new IllegalArgumentException("unknown Cobblemon NPC class " + spec.npcClass());
+
+        NPCClass registered = NPCClasses.getByIdentifier(spec.npcClass());
+        if (registered == null) throw new IllegalArgumentException("unknown Cobblemon NPC class " + spec.npcClass());
+        NPCClass npcClass = copyClass(registered);
+        if (spec.preset() != null) {
+            NPCPreset preset = NPCPresets.getPreset(spec.preset());
+            if (preset == null) throw new IllegalArgumentException("unknown Cobblemon NPC preset " + spec.preset());
+            preset.applyTo(npcClass);
+        }
 
         NPCEntity created = new NPCEntity(world);
         created.setUuid(npcId);
@@ -67,11 +76,15 @@ public final class CobblemonTrainerBody implements NpcBody {
         entity = created;
     }
 
-    @Override
-    public void despawn(MinecraftServer server) {
-        if (entity != null && !entity.isRemoved()) entity.discard();
-        entity = null;
+    private static NPCClass copyClass(NPCClass source) {
+        var gson = NPCClasses.INSTANCE.getGson();
+        NPCClass copy = gson.fromJson(gson.toJsonTree(source), NPCClass.class);
+        if (copy == null) throw new IllegalStateException("failed to copy Cobblemon NPC class " + source.getId());
+        copy.setId(source.getId());
+        return copy;
     }
+
+    @Override public void despawn(MinecraftServer server) { if (entity != null && !entity.isRemoved()) entity.discard(); entity = null; }
 
     @Override
     public void teleport(MinecraftServer server, String worldKey, Vec3d position, float yaw, float pitch) {
@@ -83,9 +96,7 @@ public final class CobblemonTrainerBody implements NpcBody {
             if (!ok) { despawn(server); return; }
             NPCEntity replacement = (NPCEntity) target.getEntity(npcId);
             if (replacement != null) entity = replacement;
-        } else {
-            entity.refreshPositionAndAngles(position.x, position.y, position.z, yaw, pitch);
-        }
+        } else entity.refreshPositionAndAngles(position.x, position.y, position.z, yaw, pitch);
     }
 
     @Override
@@ -102,9 +113,7 @@ public final class CobblemonTrainerBody implements NpcBody {
         double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, horizontal));
-        entity.setYaw(yaw);
-        entity.setPitch(pitch);
-        entity.setHeadYaw(yaw);
+        entity.setYaw(yaw); entity.setPitch(pitch); entity.setHeadYaw(yaw);
     }
 
     @Override
@@ -118,7 +127,7 @@ public final class CobblemonTrainerBody implements NpcBody {
         entity.setMovable(false);
     }
 
-    private record Spec(Identifier npcClass, int level, int skill, boolean nativeInteraction) {
+    private record Spec(Identifier npcClass, Identifier preset, int level, int skill, boolean nativeInteraction) {
         static Spec parse(String raw) {
             String value = raw == null ? "" : raw.trim();
             if (!value.startsWith("npc:")) throw new IllegalArgumentException("trainer body must start with npc:");
@@ -130,10 +139,16 @@ public final class CobblemonTrainerBody implements NpcBody {
                 int split = parts[i].indexOf('=');
                 if (split > 0) options.put(parts[i].substring(0, split).trim(), parts[i].substring(split + 1).trim());
             }
+            Identifier preset = null;
+            String rawPreset = options.get("preset");
+            if (rawPreset != null && !rawPreset.isBlank()) {
+                preset = Identifier.tryParse(rawPreset);
+                if (preset == null) throw new IllegalArgumentException("invalid Cobblemon NPC preset identifier");
+            }
             int level = boundedInt(options.get("level"), 1, 1, 1000, "level");
             int skill = boundedInt(options.get("skill"), 3, 1, 5, "skill");
             boolean nativeInteraction = Boolean.parseBoolean(options.getOrDefault("native_interaction", "true"));
-            return new Spec(id, level, skill, nativeInteraction);
+            return new Spec(id, preset, level, skill, nativeInteraction);
         }
 
         private static int boundedInt(String raw, int fallback, int min, int max, String name) {
@@ -142,9 +157,7 @@ public final class CobblemonTrainerBody implements NpcBody {
                 int value = Integer.parseInt(raw);
                 if (value < min || value > max) throw new IllegalArgumentException(name + " out of range");
                 return value;
-            } catch (NumberFormatException error) {
-                throw new IllegalArgumentException("invalid " + name, error);
-            }
+            } catch (NumberFormatException error) { throw new IllegalArgumentException("invalid " + name, error); }
         }
     }
 
