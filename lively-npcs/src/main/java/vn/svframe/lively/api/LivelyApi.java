@@ -113,7 +113,10 @@ public final class LivelyApi {
     public static NpcStateRegistry states() { return states; }
     public static void installStateRegistry(NpcStateRegistry registry) { states = registry; }
     public static NpcRuntime npcs() { return npcs; }
-    public static void installNpcRuntime(NpcRuntime runtime) { npcs = runtime; }
+    public static void installNpcRuntime(NpcRuntime runtime) {
+        npcs = runtime;
+        animations = runtime == null ? null : new LivelyAnimationEngine(runtime);
+    }
     public static LivelyAnimationEngine animations() { return animations; }
     public static void installAnimationEngine(LivelyAnimationEngine engine) { animations = engine; }
     public static WorldNavigationService worldNavigation() { return worldNavigation; }
