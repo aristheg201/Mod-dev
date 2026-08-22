@@ -15,6 +15,7 @@
       "vn.svframe.lively.admin.NpcHumanCommandsBootstrap",
       "vn.svframe.lively.ai.PlayerLikeBehaviorBootstrap",
       "vn.svframe.lively.chat.NpcPlayerChatBootstrap",
+      "vn.svframe.lively.world.BuiltStructureTypesBootstrap",
       "vn.svframe.lively.society.SocietyBootstrap",
       "vn.svframe.lively.admin.CommerceCommandsBootstrap",
       "vn.svframe.lively.admin.LawStatusCommandsBootstrap",
