@@ -3,7 +3,7 @@
   "id": "livelynpcs_integration",
   "version": "${version}",
   "name": "Lively NPCs: Cobblemon Integration by SVFrame Studio",
-  "description": "Cobblemon integration extension for Lively NPCs, including Pokemon bodies, native trainer NPCs, trainer battle AI, world awareness and optional server-ecosystem bridges.",
+  "description": "Cobblemon integration for the Lively living-world runtime, including Pokemon bodies, native trainer NPCs, trainer battle AI, world awareness and optional server-ecosystem bridges.",
   "authors": ["SVFrame Studio"],
   "environment": "*",
   "entrypoints": {
@@ -20,7 +20,7 @@
     "minecraft": "1.21.1",
     "java": ">=21",
     "fabric-api": "*",
-    "livelynpcs": ">=1.0.2",
+    "livelynpcs": ">=1.1.0",
     "cobblemon": ">=1.7.3 <1.8.0"
   },
   "suggests": {
