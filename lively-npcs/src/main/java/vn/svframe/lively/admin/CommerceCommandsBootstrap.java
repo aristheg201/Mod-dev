@@ -68,7 +68,7 @@ public final class CommerceCommandsBootstrap implements ModInitializer {
                                         context.getSource().sendFeedback(() -> Text.literal("Runtime route set: " + currency + " -> " + provider
                                                 + ". Persist it in config/livelynpcs/economy.properties if wanted after restart."), false);
                                         return 1;
-                                    }))));
+                                    })))));
         });
     }
 
