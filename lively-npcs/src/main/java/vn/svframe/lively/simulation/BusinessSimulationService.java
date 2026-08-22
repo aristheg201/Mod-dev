@@ -49,19 +49,45 @@ public final class BusinessSimulationService {
                     || Boolean.parseBoolean(npc.metadata().getOrDefault("business.illegal", "false"));
             String location = npc.metadata().getOrDefault("business.location", npc.metadata().get("work.structure"));
             EconomyEngine.Business business = LivelyApi.economy().createBusiness(owner, name, location,
-                    Map.of("kind", kind,
-                            "wage", npc.metadata().getOrDefault("business.wage", "0"),
-                            "auto_hire", npc.metadata().getOrDefault("business.auto_hire", blackMarket ? "false" : "true"),
-                            "hidden", npc.metadata().getOrDefault("business.hidden", Boolean.toString(blackMarket)),
-                            "access_trust", npc.metadata().getOrDefault("business.access_trust", blackMarket ? "0.35" : "0"),
-                            "risk", npc.metadata().getOrDefault("business.risk", blackMarket ? "0.65" : "0"),
-                            "illegal", Boolean.toString(blackMarket)));
+                    businessFacts(npc.metadata(), kind, blackMarket));
             long initial = longValue(npc.metadata().get("business.initial_balance"), 0L, 0L, 10_000_000_000_000L);
             LivelyApi.economy().ensureWallet(owner, initial);
             bootstrapStock(business, npc.metadata());
             owners.add(owner);
             created++;
         }
+    }
+
+    private static Map<String, String> businessFacts(Map<String, String> metadata, String kind, boolean blackMarket) {
+        HashMap<String, String> facts = new HashMap<>();
+        facts.put("kind", kind);
+        facts.put("wage", metadata.getOrDefault("business.wage", "0"));
+        facts.put("auto_hire", metadata.getOrDefault("business.auto_hire", blackMarket ? "false" : "true"));
+        facts.put("hidden", metadata.getOrDefault("business.hidden", Boolean.toString(blackMarket)));
+        facts.put("access_trust", metadata.getOrDefault("business.access_trust", blackMarket ? "0.35" : "0"));
+        facts.put("risk", metadata.getOrDefault("business.risk", blackMarket ? "0.65" : "0"));
+        facts.put("illegal", Boolean.toString(blackMarket));
+        copyFact(metadata, facts, "currency");
+        copyFact(metadata, facts, "meal_price");
+        copyFact(metadata, facts, "drink_price");
+        copyFact(metadata, facts, "max_bet");
+        copyFact(metadata, facts, "house_edge");
+        copyFact(metadata, facts, "game");
+        copyFact(metadata, facts, "loan_amount");
+        copyFact(metadata, facts, "interest_bps");
+        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+            if (!entry.getKey().startsWith("business.fact.")) continue;
+            String key = entry.getKey().substring("business.fact.".length()).trim().toLowerCase(java.util.Locale.ROOT)
+                    .replaceAll("[^a-z0-9_.:-]", "_");
+            String value = entry.getValue();
+            if (!key.isBlank() && key.length() <= 64 && value != null && value.length() <= 256 && facts.size() < 64) facts.put(key, value);
+        }
+        return Map.copyOf(facts);
+    }
+
+    private static void copyFact(Map<String, String> metadata, Map<String, String> facts, String key) {
+        String value = metadata.get("business." + key);
+        if (value != null && !value.isBlank() && value.length() <= 256) facts.put(key, value);
     }
 
     private void bootstrapStock(EconomyEngine.Business business, Map<String, String> metadata) {

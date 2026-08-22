@@ -15,6 +15,7 @@ import vn.svframe.lively.integration.cobblemon.CobblemonIntegrationBootstrap;
 import vn.svframe.lively.integration.cobblemon.CobblemonSocialResearchAwarenessService;
 import vn.svframe.lively.integration.cobblemon.CobblemonWorldAwarenessService;
 import vn.svframe.lively.quest.QuestRuntime;
+import vn.svframe.lively.society.SocietyApi;
 
 import java.util.Map;
 
@@ -39,15 +40,17 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             boolean installed = CobblemonIntegrationBootstrap.installNpcBodyProvider(server);
             LOGGER.info("Lively Cobblemon body provider bound and spawned bodies restored for server session={}", installed);
+            LOGGER.info("Lively optional economy providers for this session={}", SocietyApi.economies().providers());
         });
         installCobblemonNpcInteraction();
 
-        String version = FabricLoader.getInstance().getModContainer(MOD_ID)
+        FabricLoader loader = FabricLoader.getInstance();
+        String version = loader.getModContainer(MOD_ID)
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
-        LOGGER.info("Lively NPCs: Cobblemon Integration initialized; version={}, Cobblemon=true, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
-                version, LivelyApi.externalEconomy().available(), LivelyApi.holograms().available(),
-                FabricLoader.getInstance().isModLoaded("luckperms"), FabricLoader.getInstance().isModLoaded("flan"),
+        LOGGER.info("Lively NPCs: Cobblemon Integration initialized; version={}, Cobblemon=true, BEconomy={}, CobbleDollars={}, Impactor={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
+                version, loader.isModLoaded("beconomy"), loader.isModLoaded("cobbledollars"), loader.isModLoaded("impactor"),
+                LivelyApi.holograms().available(), loader.isModLoaded("luckperms"), loader.isModLoaded("flan"),
                 LivelyApi.waypoints().available());
     }
 
