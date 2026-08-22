@@ -319,18 +319,29 @@ public final class NpcRuntime implements AutoCloseable {
         entityToNpc.clear();
     }
 
-    /** Durability barrier used during server shutdown and production tests. */
+    /**
+     * Durability barrier used during server shutdown and production tests.
+     * It does not return until the observed tail is still the current tail and no newer snapshot remains pending.
+     */
     public CompletableFuture<Void> flushDefinitions() {
         persist();
+        return awaitStableDefinitionTail();
+    }
+
+    private CompletableFuture<Void> awaitStableDefinitionTail() {
+        final CompletableFuture<Void> observed;
         synchronized (persistLock) {
-            return persistenceTail.thenCompose(ignored -> {
-                synchronized (persistLock) {
-                    if (pendingDefinitionSnapshot == null) return CompletableFuture.completedFuture(null);
-                    schedulePersistLocked();
-                    return persistenceTail;
-                }
-            });
+            if (pendingDefinitionSnapshot != null && persistenceTail.isDone()) schedulePersistLocked();
+            observed = persistenceTail;
         }
+        return observed.thenCompose(ignored -> {
+            synchronized (persistLock) {
+                if (pendingDefinitionSnapshot == null && persistenceTail == observed) {
+                    return CompletableFuture.completedFuture(null);
+                }
+            }
+            return awaitStableDefinitionTail();
+        });
     }
 
     private void persist() {
