@@ -3,8 +3,10 @@ package vn.svframe.lively.world;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class BuiltStructureDiscoveryTest {
     @Test
@@ -32,5 +34,20 @@ final class BuiltStructureDiscoveryTest {
     @Test
     void fallsBackToGenericBuildingWithoutFunctionalPoi() {
         assertEquals("building", BuiltStructureDiscovery.classify(Map.of("minecraft:stone_bricks", 64), Map.of()));
+    }
+
+    @Test
+    void customRuleCanMatchModdedBlockTagsAndCapabilities() {
+        BuiltStructureTypeRegistry.Rule rule = new BuiltStructureTypeRegistry.Rule(
+                "poke_center", 500,
+                Map.of("cobblemon:healing_machine", 1),
+                Map.of("c:storage_blocks", 2),
+                Map.of("storage", 1),
+                Map.of("_bed", 1),
+                Set.of("heal", "pokemon_service"));
+        assertTrue(rule.matches(
+                Map.of("cobblemon:healing_machine", 1, "minecraft:white_bed", 1),
+                Map.of("c:storage_blocks", 2),
+                Map.of("storage", 3)));
     }
 }
