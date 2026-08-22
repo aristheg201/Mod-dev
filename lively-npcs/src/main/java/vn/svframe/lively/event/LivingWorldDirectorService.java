@@ -2,6 +2,7 @@ package vn.svframe.lively.event;
 
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
+import vn.svframe.lively.config.RuntimeConfigService;
 import vn.svframe.lively.crime.CrimeEngine;
 import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.quest.QuestRuntime;
@@ -36,17 +37,34 @@ public final class LivingWorldDirectorService implements AutoCloseable {
     }
 
     public void tick(long tick) {
-        if (tick - lastPulse < 1200L) return;
+        RuntimeConfigService.Config config = config();
+        if (tick - lastPulse < config.storyPulseTicks()) return;
         lastPulse = tick;
+        List<WorldEventEngine.WorldEvent> active = LivelyApi.events().activeEvents();
+        if (active.size() >= config.storyMaxActiveEvents()) return;
+
         Map<String, Double> signals = signals();
         Set<ActorId> actors = LivelyApi.actors().snapshot().actors().keySet();
         Set<ActorId> npcs = actors.stream().filter(actor -> actor.kind() == ActorId.Kind.NPC).limit(32).collect(Collectors.toSet());
-        for (WorldEventEngine.EventProposal proposal : LivelyApi.storySeeds().propose(signals, null, npcs, 2)) {
-            if (LivelyApi.events().activeEvents().stream().noneMatch(event -> event.seed().equals(proposal.seed()))) {
-                LivelyApi.events().start(proposal);
-            }
+        int slots = Math.max(0, Math.min(config.storyMaxNewEventsPerPulse(), config.storyMaxActiveEvents() - active.size()));
+        if (slots <= 0) return;
+
+        int started = 0;
+        for (WorldEventEngine.EventProposal proposal : LivelyApi.storySeeds().propose(signals, null, npcs, slots)) {
+            if (!config.storyCategoryEnabled(proposal.category())) continue;
+            if (LivelyApi.events().activeEvents().stream().anyMatch(event -> event.seed().equals(proposal.seed()))) continue;
+            if (LivelyApi.events().start(proposal).isPresent() && ++started >= slots) break;
         }
-        emergeAntagonist(signals, actors);
+        if (started < slots && config.storyCategoryEnabled(WorldEventEngine.Category.FACTION_CONFLICT)
+                && LivelyApi.events().activeEvents().size() < config.storyMaxActiveEvents()) {
+            emergeAntagonist(signals, actors);
+        }
+    }
+
+    private static RuntimeConfigService.Config config() {
+        RuntimeConfigService service = LivelyApi.runtimeConfig();
+        return service == null ? new RuntimeConfigService.Config(600L, 6000L, 1200L, 8, 2,
+                Set.of(WorldEventEngine.Category.values()), 10, 1024, 32, 64) : service.current();
     }
 
     private void onEventStarted(WorldEventEngine.WorldEvent event) {
@@ -122,7 +140,6 @@ public final class LivingWorldDirectorService implements AutoCloseable {
                 Map.of("event", event.id().toString(), "seed", event.seed(), "reward_budget", Long.toString(reward), "public", "true"));
     }
 
-    /** Provides an actual semantic destination instead of leaving generated quests with a seed-shaped non-location. */
     private Map<String, String> destinationFacts(WorldEventEngine.WorldEvent event, ActorId issuer) {
         Map<String, String> facts = new HashMap<>();
         if (event.structureId() != null && LivelyApi.structures().get(event.structureId()).isPresent()) {
