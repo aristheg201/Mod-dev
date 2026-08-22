@@ -63,8 +63,8 @@ jobs:
           patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.1/mmocore-brigadier.patch
           cp -a fabric-mmo-ports/overlay-m1.2/. build/mmo-workspace/
           patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.3/mythiclib-brigadier.patch
-          base64 -d fabric-mmo-ports/overlay-m1.3/source.tar.gz.b64 > build/mmo-overlay-m1.3.tar.gz
-          gzip -t build/mmo-overlay-m1.3.tar.gz
+          cp fabric-mmo-ports/overlay-m1.3/source.tar.gz build/mmo-overlay-m1.3.tar.gz
+          echo '1ba9e3f2c2164d1260207abe9360a75a0ec6e385239e0c4a35afc83db09c4c21  build/mmo-overlay-m1.3.tar.gz' | sha256sum -c -
           tar -tzf build/mmo-overlay-m1.3.tar.gz >/dev/null
           tar -xzf build/mmo-overlay-m1.3.tar.gz -C build/mmo-workspace
           find build/mmo-workspace -type f | wc -l
