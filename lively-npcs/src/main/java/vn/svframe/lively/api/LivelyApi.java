@@ -4,6 +4,7 @@ import vn.svframe.lively.actor.ActorRegistry;
 import vn.svframe.lively.admin.AdminService;
 import vn.svframe.lively.ai.NpcAutonomyService;
 import vn.svframe.lively.combat.CombatCortex;
+import vn.svframe.lively.config.RuntimeConfigService;
 import vn.svframe.lively.crime.CrimeEngine;
 import vn.svframe.lively.crime.InvestigationService;
 import vn.svframe.lively.dialogue.DialogueService;
@@ -61,6 +62,7 @@ public final class LivelyApi {
     private static final MemoryPolicy MEMORY_POLICY = new MemoryPolicy();
     private static final AdminService ADMIN = new AdminService();
 
+    private static volatile RuntimeConfigService runtimeConfig;
     private static volatile DialogueService dialogues;
     private static volatile NpcStateRegistry states;
     private static volatile NpcRuntime npcs;
@@ -100,6 +102,8 @@ public final class LivelyApi {
     public static PerformanceProfiler profiler() { return PROFILER; }
     public static MemoryPolicy memoryPolicy() { return MEMORY_POLICY; }
     public static AdminService admin() { return ADMIN; }
+    public static RuntimeConfigService runtimeConfig() { return runtimeConfig; }
+    public static void installRuntimeConfig(RuntimeConfigService service) { runtimeConfig = service; }
     public static List<CombatAdapter> combatAdapters() { return List.copyOf(COMBAT); }
     public static void registerCombatAdapter(CombatAdapter adapter) { COMBAT.addIfAbsent(adapter); }
     public static DialogueService dialogues() { return dialogues; }
@@ -142,6 +146,7 @@ public final class LivelyApi {
         EVENTS.restore(new WorldEventEngine.Snapshot(Map.of(), List.of()));
         CHRONICLE.clear();
         PROFILER.clear();
+        runtimeConfig = null;
         dialogues = null;
         states = null;
         npcs = null;
