@@ -3,6 +3,7 @@ package vn.svframe.lively.api;
 import vn.svframe.lively.actor.ActorRegistry;
 import vn.svframe.lively.admin.AdminService;
 import vn.svframe.lively.ai.NpcAutonomyService;
+import vn.svframe.lively.animation.LivelyAnimationEngine;
 import vn.svframe.lively.combat.CombatCortex;
 import vn.svframe.lively.config.RuntimeConfigService;
 import vn.svframe.lively.crime.CrimeEngine;
@@ -66,6 +67,7 @@ public final class LivelyApi {
     private static volatile DialogueService dialogues;
     private static volatile NpcStateRegistry states;
     private static volatile NpcRuntime npcs;
+    private static volatile LivelyAnimationEngine animations;
     private static volatile WorldNavigationService worldNavigation;
     private static volatile NpcAutonomyService autonomy;
     private static volatile StructureCapabilityScanner structureScanner;
@@ -112,6 +114,8 @@ public final class LivelyApi {
     public static void installStateRegistry(NpcStateRegistry registry) { states = registry; }
     public static NpcRuntime npcs() { return npcs; }
     public static void installNpcRuntime(NpcRuntime runtime) { npcs = runtime; }
+    public static LivelyAnimationEngine animations() { return animations; }
+    public static void installAnimationEngine(LivelyAnimationEngine engine) { animations = engine; }
     public static WorldNavigationService worldNavigation() { return worldNavigation; }
     public static void installWorldNavigation(WorldNavigationService service) { worldNavigation = service; }
     public static NpcAutonomyService autonomy() { return autonomy; }
@@ -150,6 +154,7 @@ public final class LivelyApi {
         dialogues = null;
         states = null;
         npcs = null;
+        animations = null;
         worldNavigation = null;
         autonomy = null;
         structureScanner = null;
