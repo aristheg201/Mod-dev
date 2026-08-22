@@ -7,13 +7,13 @@ import vn.svframe.lively.crime.CrimeEngine;
 import vn.svframe.lively.economy.EconomyEngine;
 import vn.svframe.lively.event.WorldEventEngine;
 import vn.svframe.lively.faction.FactionEngine;
+import vn.svframe.lively.society.SocietyApi;
 import vn.svframe.lively.social.RomanceEngine;
 import vn.svframe.lively.social.SocialEngine;
 import vn.svframe.lively.world.SemanticStructureRegistry;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,8 +27,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Turns world events and accumulated state into actual domain consequences.
+ * Turns world events and accumulated state into domain consequences.
  * This layer changes Lively semantic state only. It never edits blocks, player inventories, NBT or commands.
+ * Investigation progression is evidence-driven and never reads the hidden perpetrator as a truth oracle.
  */
 public final class CausalSimulationService implements AutoCloseable {
     private static final long DOMAIN_PULSE_TICKS = 1200L;
@@ -43,16 +44,13 @@ public final class CausalSimulationService implements AutoCloseable {
     };
     private long lastPulse;
 
-    public CausalSimulationService() {
-        LivelyApi.events().addListener(listener);
-    }
+    public CausalSimulationService() { LivelyApi.events().addListener(listener); }
 
     public void tick(long tick) {
         if (tick - lastPulse < DOMAIN_PULSE_TICKS) return;
         lastPulse = tick;
         advanceRomance();
         advanceInvestigations();
-        advanceBusinesses();
         advanceFactionStrategies();
     }
 
@@ -71,9 +69,7 @@ public final class CausalSimulationService implements AutoCloseable {
         if (event.facts().containsKey("crime_id")) return;
         List<ActorId> candidates = event.participants().stream()
                 .filter(actor -> actor.kind() == ActorId.Kind.NPC || actor.kind() == ActorId.Kind.PLAYER)
-                .sorted(Comparator.comparing(actor -> actor.uuid().toString()))
-                .limit(32)
-                .toList();
+                .sorted(Comparator.comparing(actor -> actor.uuid().toString())).limit(32).toList();
         if (candidates.size() < 2) return;
 
         ActorId perpetrator = candidates.stream().max(Comparator.comparingDouble(this::perpetratorScore)).orElse(candidates.get(0));
@@ -105,9 +101,7 @@ public final class CausalSimulationService implements AutoCloseable {
             } catch (IllegalArgumentException ignored) { }
         }
         LivelyApi.crime().status(crime.id(), CrimeEngine.Status.INVESTIGATING);
-        if (event.structureId() != null) {
-            LivelyApi.structures().setState(event.structureId(), SemanticStructureRegistry.OperationalState.UNDER_INVESTIGATION);
-        }
+        if (event.structureId() != null) LivelyApi.structures().setState(event.structureId(), SemanticStructureRegistry.OperationalState.UNDER_INVESTIGATION);
         LivelyApi.social().changeReputation(perpetrator, SocialEngine.ReputationScope.GLOBAL, "", -0.08D * event.intensity());
     }
 
@@ -131,8 +125,8 @@ public final class CausalSimulationService implements AutoCloseable {
         Set<UUID> factions = new HashSet<>();
         for (ActorId participant : event.participants()) {
             if (participant.kind() == ActorId.Kind.FACTION) factions.add(participant.uuid());
-            LivelyApi.actors().get(participant).map(snapshot -> snapshot.facts().get("faction")).flatMap(CausalSimulationService::uuid)
-                    .ifPresent(factions::add);
+            LivelyApi.actors().get(participant).map(snapshot -> snapshot.facts().get("faction"))
+                    .flatMap(CausalSimulationService::uuid).ifPresent(factions::add);
         }
         List<UUID> values = factions.stream().sorted().limit(16).toList();
         for (int i = 0; i < values.size(); i++) {
@@ -159,8 +153,7 @@ public final class CausalSimulationService implements AutoCloseable {
     }
 
     private void materializeDisaster(WorldEventEngine.WorldEvent event) {
-        if (event.structureId() == null) return;
-        LivelyApi.structures().setState(event.structureId(), SemanticStructureRegistry.OperationalState.DAMAGED);
+        if (event.structureId() != null) LivelyApi.structures().setState(event.structureId(), SemanticStructureRegistry.OperationalState.DAMAGED);
     }
 
     private void materializeKnowledgeEvent(WorldEventEngine.WorldEvent event) {
@@ -216,6 +209,7 @@ public final class CausalSimulationService implements AutoCloseable {
                 .sorted(Comparator.comparing((ActorId actor) -> actor.kind().name()).thenComparing(actor -> actor.uuid().toString()))
                 .limit(256).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         Instant now = Instant.now();
+        boolean justiceOwnsCharges = SocietyApi.lawService() != null;
         int processed = 0;
         for (CrimeEngine.Crime crime : LivelyApi.crime().snapshot().crimes().values().stream()
                 .sorted(Comparator.comparing(CrimeEngine.Crime::occurredAt)).toList()) {
@@ -224,13 +218,11 @@ public final class CausalSimulationService implements AutoCloseable {
 
             List<CrimeEngine.Evidence> evidence = LivelyApi.crime().evidence(crime.id());
             Duration age = Duration.between(crime.occurredAt(), now);
-
             if (crime.status() == CrimeEngine.Status.COLD) {
                 int oldCount = integer(crime.facts().get("cold_evidence_count"), evidence.size());
                 if (evidence.size() > oldCount) {
                     LivelyApi.crime().updateFacts(crime.id(), Map.of(
-                            "reopened_at", now.toString(),
-                            "reopened_reason", "new_evidence",
+                            "reopened_at", now.toString(), "reopened_reason", "new_evidence",
                             "cold_evidence_count", Integer.toString(evidence.size())));
                     LivelyApi.crime().status(crime.id(), CrimeEngine.Status.INVESTIGATING);
                     markInvestigationLocation(crime);
@@ -240,53 +232,57 @@ public final class CausalSimulationService implements AutoCloseable {
 
             if (evidence.size() >= 2 && crime.status() == CrimeEngine.Status.OPEN) {
                 LivelyApi.crime().status(crime.id(), CrimeEngine.Status.INVESTIGATING);
+                markInvestigationLocation(crime);
             }
 
             List<CrimeEngine.SuspectScore> ranking = LivelyApi.crime().rankSuspects(crime.id(), Set.copyOf(candidates));
             CrimeEngine.SuspectScore top = ranking.isEmpty() ? null : ranking.get(0);
+            if (top != null) {
+                LivelyApi.crime().updateFacts(crime.id(), Map.of(
+                        "lead_suspect", top.suspect().uuid().toString(),
+                        "lead_score", Double.toString(top.score()),
+                        "lead_alibi", Double.toString(top.alibiStrength()),
+                        "last_reviewed_at", now.toString()));
+            }
+
+            if (justiceOwnsCharges) {
+                boolean noUsefulLead = top == null || top.score() < .55D;
+                if ((crime.status() == CrimeEngine.Status.OPEN || crime.status() == CrimeEngine.Status.INVESTIGATING)
+                        && age.compareTo(COLD_CASE_AGE) >= 0 && (evidence.size() < 4 || noUsefulLead)) {
+                    markCold(crime, evidence.size(), "insufficient_evidence");
+                }
+                continue;
+            }
 
             if (crime.status() == CrimeEngine.Status.CHARGED) {
                 ActorId charged = chargedSuspect(crime).orElse(null);
                 CrimeEngine.SuspectScore chargedScore = charged == null ? null : ranking.stream()
                         .filter(score -> score.suspect().equals(charged)).findFirst().orElse(null);
-
                 if (chargedScore == null || chargedScore.alibiStrength() >= .65D || chargedScore.score() < .45D) {
                     int wrong = integer(crime.facts().get("wrong_charge_count"), 0) + 1;
                     LivelyApi.crime().updateFacts(crime.id(), Map.of(
                             "wrong_charge_count", Integer.toString(wrong),
                             "last_wrong_charge", charged == null ? "unknown" : charged.uuid().toString(),
-                            "last_reviewed_at", now.toString(),
-                            "charged_suspect", ""));
+                            "last_reviewed_at", now.toString(), "charged_suspect", ""));
                     LivelyApi.crime().status(crime.id(), CrimeEngine.Status.INVESTIGATING);
                     continue;
                 }
-
-                if (evidence.size() >= 6 && chargedScore.score() >= .90D && Objects.equals(charged, crime.perpetrator())) {
+                if (evidence.size() >= 6 && chargedScore.score() >= .90D && chargedScore.alibiStrength() < .45D) {
                     LivelyApi.crime().updateFacts(crime.id(), Map.of(
-                            "resolution", "correct_charge",
-                            "resolved_at", now.toString()));
+                            "resolution", "evidence_based_charge", "resolved_at", now.toString()));
                     LivelyApi.crime().status(crime.id(), CrimeEngine.Status.RESOLVED);
                     releaseInvestigationLocation(crime);
-                    continue;
-                }
-
-                if (age.compareTo(STALE_CHARGE_AGE) >= 0 && !Objects.equals(charged, crime.perpetrator())) {
-                    markCold(crime, evidence.size(), "unresolved_wrong_charge");
+                } else if (age.compareTo(STALE_CHARGE_AGE) >= 0 && chargedScore.score() < .70D) {
+                    markCold(crime, evidence.size(), "stale_uncertain_charge");
                 }
                 continue;
             }
 
-            if (top != null && evidence.size() >= 4 && top.score() >= .78D) {
+            if (top != null && evidence.size() >= 4 && top.score() >= .78D && top.alibiStrength() < .65D) {
                 LivelyApi.crime().updateFacts(crime.id(), Map.of(
                         "charged_suspect", top.suspect().uuid().toString(),
-                        "charged_at", now.toString(),
-                        "charged_score", Double.toString(top.score())));
+                        "charged_at", now.toString(), "charged_score", Double.toString(top.score())));
                 LivelyApi.crime().status(crime.id(), CrimeEngine.Status.CHARGED);
-                if (evidence.size() >= 6 && top.score() >= .90D && Objects.equals(top.suspect(), crime.perpetrator())) {
-                    LivelyApi.crime().updateFacts(crime.id(), Map.of("resolution", "correct_charge", "resolved_at", now.toString()));
-                    LivelyApi.crime().status(crime.id(), CrimeEngine.Status.RESOLVED);
-                    releaseInvestigationLocation(crime);
-                }
                 continue;
             }
 
@@ -299,17 +295,14 @@ public final class CausalSimulationService implements AutoCloseable {
 
     private void markCold(CrimeEngine.Crime crime, int evidenceCount, String reason) {
         LivelyApi.crime().updateFacts(crime.id(), Map.of(
-                "cold_at", Instant.now().toString(),
-                "cold_reason", reason,
+                "cold_at", Instant.now().toString(), "cold_reason", reason,
                 "cold_evidence_count", Integer.toString(evidenceCount)));
         LivelyApi.crime().status(crime.id(), CrimeEngine.Status.COLD);
         releaseInvestigationLocation(crime);
     }
 
     private void markInvestigationLocation(CrimeEngine.Crime crime) {
-        if (crime.locationId() != null) {
-            LivelyApi.structures().setState(crime.locationId(), SemanticStructureRegistry.OperationalState.UNDER_INVESTIGATION);
-        }
+        if (crime.locationId() != null) LivelyApi.structures().setState(crime.locationId(), SemanticStructureRegistry.OperationalState.UNDER_INVESTIGATION);
     }
 
     private void releaseInvestigationLocation(CrimeEngine.Crime crime) {
@@ -327,30 +320,7 @@ public final class CausalSimulationService implements AutoCloseable {
         try {
             UUID id = UUID.fromString(raw);
             return LivelyApi.actors().snapshot().actors().keySet().stream().filter(actor -> actor.uuid().equals(id)).findFirst();
-        } catch (IllegalArgumentException ignored) {
-            return Optional.empty();
-        }
-    }
-
-    private void advanceBusinesses() {
-        EconomyEngine.Snapshot snapshot = LivelyApi.economy().snapshot();
-        for (EconomyEngine.Business business : snapshot.businesses().values().stream().limit(256).toList()) {
-            if (business.locationId() != null) {
-                SemanticStructureRegistry.OperationalState state = LivelyApi.structures().get(business.locationId())
-                        .map(SemanticStructureRegistry.Structure::state).orElse(SemanticStructureRegistry.OperationalState.OPEN);
-                boolean shouldOpen = state == SemanticStructureRegistry.OperationalState.OPEN || state == SemanticStructureRegistry.OperationalState.FESTIVAL;
-                if (business.open() != shouldOpen) LivelyApi.economy().setOpen(business.id(), shouldOpen);
-            }
-        }
-        int touched = 0;
-        for (EconomyEngine.Stock stock : snapshot.stocks().values()) {
-            if (touched++ >= MAX_BUSINESS_STOCKS_PER_PULSE) break;
-            if (stock.quantity() >= stock.targetQuantity() || stock.supply() < 0.20D) continue;
-            long missing = stock.targetQuantity() - stock.quantity();
-            long restock = Math.max(1L, Math.min(missing, Math.round(stock.targetQuantity() * (0.03D + stock.supply() * 0.10D))));
-            LivelyApi.economy().setStock(stock.key().businessId(), stock.key().itemId(), stock.quantity() + restock,
-                    stock.targetQuantity(), stock.basePrice(), clamp01(stock.demand() - 0.01D), clamp01(stock.supply() - 0.015D));
-        }
+        } catch (IllegalArgumentException ignored) { return Optional.empty(); }
     }
 
     private void advanceFactionStrategies() {
@@ -415,28 +385,19 @@ public final class CausalSimulationService implements AutoCloseable {
         return CrimeEngine.Type.THEFT;
     }
 
-    private String display(ActorId actor) {
-        return LivelyApi.actors().get(actor).map(ActorSnapshot::displayName).orElse(actor.uuid().toString());
-    }
-
+    private String display(ActorId actor) { return LivelyApi.actors().get(actor).map(ActorSnapshot::displayName).orElse(actor.uuid().toString()); }
     private static Optional<UUID> uuid(String raw) {
         if (raw == null || raw.isBlank()) return Optional.empty();
         try { return Optional.of(UUID.fromString(raw)); }
         catch (IllegalArgumentException ignored) { return Optional.empty(); }
     }
-
     private static int integer(String raw, int fallback) {
         try { return raw == null ? fallback : Integer.parseInt(raw); }
         catch (NumberFormatException ignored) { return fallback; }
     }
-
-    private static String normalize(String value) {
-        return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.:-]+", "_");
-    }
+    private static String normalize(String value) { return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.:-]+", "_"); }
     private static String safe(String value) { return value == null ? "" : value; }
     private static double clamp01(double value) { return Math.max(0D, Math.min(1D, value)); }
 
-    @Override public void close() {
-        LivelyApi.events().removeListener(listener);
-    }
+    @Override public void close() { LivelyApi.events().removeListener(listener); }
 }
