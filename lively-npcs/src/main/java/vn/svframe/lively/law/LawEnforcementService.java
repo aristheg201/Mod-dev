@@ -86,6 +86,7 @@ public final class LawEnforcementService {
             String jurisdiction = jurisdiction(crime);
 
             if (top.score() >= config.warrantScore() && top.alibiStrength() < config.acquitAlibiStrength()) {
+                revokeSupersededWarrant(crime, top, jurisdiction);
                 int severity = severity(crime.type());
                 law.raiseWanted(top.suspect(), jurisdiction, crime.id(), severity, top.score(), config.bountyUnit());
                 LawEnforcementEngine.Warrant warrant = law.issueWarrant(top.suspect(), jurisdiction, Set.of(crime.id()), top.score(),
@@ -103,6 +104,23 @@ public final class LawEnforcementService {
         }
     }
 
+    private void revokeSupersededWarrant(CrimeEngine.Crime crime, CrimeEngine.SuspectScore top, String jurisdiction) {
+        String warrantId = crime.facts().get("warrant_id");
+        if (warrantId == null || warrantId.isBlank()) return;
+        try {
+            UUID id = UUID.fromString(warrantId);
+            law.warrant(id).filter(value -> value.status() == LawEnforcementEngine.WarrantStatus.ACTIVE)
+                    .filter(value -> !value.subject().equals(top.suspect())).ifPresent(value -> {
+                        law.revokeWarrant(value.id());
+                        value.crimeIds().forEach(crimeId -> law.removeWantedCrime(value.subject(), jurisdiction, crimeId));
+                        LivelyApi.crime().updateFacts(crime.id(), Map.of(
+                                "superseded_warrant", value.id().toString(),
+                                "superseded_subject", value.subject().uuid().toString(),
+                                "superseded_at", Instant.now().toString()));
+                    });
+        } catch (IllegalArgumentException ignored) { }
+    }
+
     private void revokeWeakWarrant(CrimeEngine.Crime crime, CrimeEngine.SuspectScore top, String jurisdiction) {
         String warrantId = crime.facts().get("warrant_id");
         if (warrantId == null || warrantId.isBlank()) return;
@@ -112,21 +130,15 @@ public final class LawEnforcementService {
                 if (top == null || !top.suspect().equals(value.subject()) || top.score() < config.warrantScore() * .75D
                         || top.alibiStrength() >= config.acquitAlibiStrength()) {
                     law.revokeWarrant(id);
-                    clearWantedAfterWeakWarrant(value.subject(), jurisdiction);
+                    value.crimeIds().forEach(crimeId -> law.removeWantedCrime(value.subject(), jurisdiction, crimeId));
                     LivelyApi.crime().updateFacts(crime.id(), Map.of("warrant_revoked", Instant.now().toString(), "warrant_id", ""));
                 }
             });
         } catch (IllegalArgumentException ignored) { }
     }
 
-    private void clearWantedAfterWeakWarrant(ActorId subject, String jurisdiction) {
-        if (!law.hasActiveWarrant(subject, jurisdiction) && law.activeCustody(subject).isEmpty()) {
-            law.clearWanted(subject, jurisdiction);
-        }
-    }
-
-    private void settleWantedAfterVerdict(ActorId subject, String jurisdiction) {
-        if (!law.hasActiveWarrant(subject, jurisdiction)) law.clearWanted(subject, jurisdiction);
+    private void settleWantedAfterVerdict(ActorId subject, String jurisdiction, Set<UUID> crimeIds) {
+        for (UUID crimeId : crimeIds) law.removeWantedCrime(subject, jurisdiction, crimeId);
     }
 
     private void dispatchOfficers(long tick) {
@@ -265,7 +277,7 @@ public final class LawEnforcementService {
             LivelyApi.crime().status(crimeId, CrimeEngine.Status.RESOLVED);
             releaseInvestigationLocation(crimeId);
         }
-        settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction());
+        settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction(), courtCase.crimeIds());
         collectFine(courtCase);
         if (courtCase.defendant().kind() == ActorId.Kind.NPC) {
             remember(courtCase.defendant().uuid(), "court_conviction", Map.of(
@@ -286,7 +298,7 @@ public final class LawEnforcementService {
             LivelyApi.crime().status(crimeId, CrimeEngine.Status.INVESTIGATING);
         }
         if (courtCase.custodyId() != null) releaseCustody(courtCase.custodyId(), "acquitted");
-        settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction());
+        settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction(), courtCase.crimeIds());
         if (courtCase.defendant().kind() == ActorId.Kind.NPC) {
             remember(courtCase.defendant().uuid(), "court_acquittal", Map.of("case", courtCase.id().toString()), .82D);
         }
@@ -311,7 +323,7 @@ public final class LawEnforcementService {
                 LivelyApi.crime().status(crimeId, CrimeEngine.Status.INVESTIGATING);
             }
             if (courtCase.custodyId() != null) releaseCustody(courtCase.custodyId(), "conviction_overturned");
-            settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction());
+            settleWantedAfterVerdict(courtCase.defendant(), courtCase.jurisdiction(), courtCase.crimeIds());
             if (courtCase.defendant().kind() == ActorId.Kind.NPC) {
                 remember(courtCase.defendant().uuid(), "conviction_overturned", Map.of("case", courtCase.id().toString()), .96D);
             }
