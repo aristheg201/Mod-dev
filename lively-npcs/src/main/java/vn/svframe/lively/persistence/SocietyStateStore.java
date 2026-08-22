@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializer;
 import vn.svframe.lively.economy.DebtEngine;
 import vn.svframe.lively.economy.GamblingEngine;
+import vn.svframe.lively.law.LawEnforcementEngine;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,16 +21,18 @@ import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Versioned crash-safe persistence for 1.0.1 debt and gambling state. */
+/** Versioned crash-safe persistence for debt, gambling and justice state. */
 public final class SocietyStateStore implements AutoCloseable {
-    private static final int SCHEMA = 1;
-    private static final long MAX_BYTES = 64L * 1024L * 1024L;
+    private static final int SCHEMA = 2;
+    private static final int MIN_SCHEMA = 1;
+    private static final long MAX_BYTES = 96L * 1024L * 1024L;
     private final Path file;
     private final Path backup;
     private final Gson gson;
@@ -53,7 +56,7 @@ public final class SocietyStateStore implements AutoCloseable {
     }
 
     public CompletableFuture<Void> saveAsync(Bundle bundle) {
-        String payload = gson.toJson(bundle);
+        String payload = gson.toJson(bundle.normalized());
         String envelope = gson.toJson(new Envelope(SCHEMA, sha256(payload), payload));
         return CompletableFuture.runAsync(() -> write(envelope), io);
     }
@@ -64,13 +67,15 @@ public final class SocietyStateStore implements AutoCloseable {
             long size = Files.size(path);
             if (size <= 0L || size > MAX_BYTES) throw new IOException("invalid society state size");
             JsonObject root = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).getAsJsonObject();
-            if (root.get("schema").getAsInt() != SCHEMA) throw new IOException("unsupported society schema");
+            int schema = root.get("schema").getAsInt();
+            if (schema < MIN_SCHEMA || schema > SCHEMA) throw new IOException("unsupported society schema");
             String payload = root.get("payload").getAsString();
             String expected = root.get("checksum").getAsString();
             if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII), sha256(payload).getBytes(StandardCharsets.US_ASCII))) {
                 throw new IOException("society checksum mismatch");
             }
-            return Optional.ofNullable(gson.fromJson(payload, Bundle.class));
+            Bundle bundle = gson.fromJson(payload, Bundle.class);
+            return Optional.ofNullable(bundle).map(Bundle::normalized);
         } catch (Exception ignored) { return Optional.empty(); }
     }
 
@@ -98,5 +103,14 @@ public final class SocietyStateStore implements AutoCloseable {
 
     @Override public void close() { io.shutdown(); }
     private record Envelope(int schema, String checksum, String payload) {}
-    public record Bundle(DebtEngine.Snapshot debts, GamblingEngine.Snapshot gambling) {}
+
+    public record Bundle(DebtEngine.Snapshot debts, GamblingEngine.Snapshot gambling, LawEnforcementEngine.Snapshot law) {
+        public Bundle normalized() {
+            DebtEngine.Snapshot safeDebts = debts == null ? new DebtEngine.Snapshot(0L, Map.of()) : debts;
+            GamblingEngine.Snapshot safeGambling = gambling == null ? new GamblingEngine.Snapshot(0L, Map.of(), Map.of()) : gambling;
+            LawEnforcementEngine.Snapshot safeLaw = law == null
+                    ? new LawEnforcementEngine.Snapshot(0L, Map.of(), Map.of(), Map.of(), Map.of()) : law;
+            return new Bundle(safeDebts, safeGambling, safeLaw);
+        }
+    }
 }
