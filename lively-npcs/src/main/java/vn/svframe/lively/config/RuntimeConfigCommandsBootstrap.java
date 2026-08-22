@@ -31,18 +31,20 @@ public final class RuntimeConfigCommandsBootstrap implements ModInitializer {
     private static int reloadConfig(ServerCommandSource source) {
         RuntimeConfigService service = LivelyApi.runtimeConfig();
         if (service == null) return error(source, "Lively runtime config is not bound to an active server session.");
-        try {
-            RuntimeConfigService.Config config = service.reload();
+        service.reloadAsync().whenComplete((config, failure) -> source.getServer().execute(() -> {
+            if (failure != null) {
+                error(source, "Lively config reload rejected: " + safe(rootMessage(failure)));
+                return;
+            }
             source.sendFeedback(() -> Text.literal("Lively config reloaded: storyTone=" + config.storyTone()
                     + ", storyPulse=" + config.storyPulseTicks()
                     + ", maxActiveEvents=" + config.storyMaxActiveEvents()
                     + ", aiDecisions=" + config.aiDecisionsPerPulse()
                     + ", aiMaxPending=" + config.aiMaxPending()
                     + ", autosave=" + config.simulationAutosaveTicks()), false);
-            return 1;
-        } catch (RuntimeException error) {
-            return error(source, "Lively config reload rejected: " + safe(error.getMessage()));
-        }
+        }));
+        source.sendFeedback(() -> Text.literal("Lively config reload scheduled on the I/O worker."), false);
+        return 1;
     }
 
     /** Reconciles missing physical bodies from the authoritative in-memory definitions; it never replaces live state from disk. */
@@ -98,13 +100,19 @@ public final class RuntimeConfigCommandsBootstrap implements ModInitializer {
         if (reloadDialogue(source) == 0) failures++;
         if (reloadLocations(source) == 0) failures++;
         if (failures > 0) return error(source, "Lively reload all completed with " + failures + " failed subsystem(s).");
-        source.sendFeedback(() -> Text.literal("Lively reload all completed without replacing live world state."), false);
+        source.sendFeedback(() -> Text.literal("Lively reload all queued/completed without replacing live world state."), false);
         return 1;
     }
 
     private static int error(ServerCommandSource source, String message) {
         source.sendError(Text.literal(message));
         return 0;
+    }
+
+    private static String rootMessage(Throwable error) {
+        Throwable value = error;
+        while (value.getCause() != null && value instanceof java.util.concurrent.CompletionException) value = value.getCause();
+        return value.getMessage();
     }
 
     private static String safe(String message) {
