@@ -13,6 +13,7 @@
       "vn.svframe.lively.LivelyNpcs",
       "vn.svframe.lively.society.SocietyBootstrap",
       "vn.svframe.lively.admin.CommerceCommandsBootstrap",
+      "vn.svframe.lively.admin.LawStatusCommandsBootstrap",
       "vn.svframe.lively.admin.NpcWizardBootstrap",
       "vn.svframe.lively.admin.ChronicleCommandsBootstrap",
       "vn.svframe.lively.admin.QuestCommandsBootstrap",
