@@ -12,13 +12,16 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Small, dependency-free production runtime configuration.
  *
- * <p>The service owns only scheduling/budget/tone controls. World/NPC state stays world-scoped and is never stored in
- * config. Reload atomically replaces an immutable snapshot so running services observe new limits without retaining a
- * mutable Properties instance.</p>
+ * <p>Initial load is an explicit startup barrier before the runtime advertises itself ready. Live reloads use the
+ * shared daemon I/O executor and atomically publish an immutable Config snapshot, so command handling never performs
+ * filesystem I/O on the Minecraft server thread.</p>
  */
 public final class RuntimeConfigService {
     public record Config(
@@ -46,17 +49,13 @@ public final class RuntimeConfigService {
 
     private static final Set<String> STORY_TONES = Set.of("balanced", "peaceful", "adventure", "dramatic", "dark");
     private static final Config DEFAULTS = new Config(
-            600L,
-            6000L,
-            1200L,
-            8,
-            2,
-            "balanced",
-            EnumSet.allOf(WorldEventEngine.Category.class),
-            10,
-            1024,
-            32,
-            64);
+            600L, 6000L, 1200L, 8, 2, "balanced",
+            EnumSet.allOf(WorldEventEngine.Category.class), 10, 1024, 32, 64);
+    private static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "Lively-RuntimeConfig-IO");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final Path file;
     private volatile Config current = DEFAULTS;
@@ -67,6 +66,7 @@ public final class RuntimeConfigService {
 
     public static Config defaults() { return DEFAULTS; }
 
+    /** Startup-only blocking load. Call before the server session is announced ready. */
     public synchronized Config load() {
         try {
             Files.createDirectories(file.getParent());
@@ -81,6 +81,12 @@ public final class RuntimeConfigService {
         }
     }
 
+    /** Live reload. Parsing and all file access happen off the server thread; publication is one volatile assignment. */
+    public CompletableFuture<Config> reloadAsync() {
+        return CompletableFuture.supplyAsync(this::load, IO);
+    }
+
+    /** Kept for tests/startup tooling; runtime commands must use {@link #reloadAsync()}. */
     public Config reload() { return load(); }
     public Config current() { return current; }
     public Path file() { return file; }
@@ -138,9 +144,7 @@ public final class RuntimeConfigService {
 
     private static String normalizeTone(String raw) {
         String tone = raw == null ? "balanced" : raw.trim().toLowerCase(Locale.ROOT);
-        if (!STORY_TONES.contains(tone)) {
-            throw new IllegalArgumentException("story.tone must be one of " + STORY_TONES + ", got: " + raw);
-        }
+        if (!STORY_TONES.contains(tone)) throw new IllegalArgumentException("story.tone must be one of " + STORY_TONES + ", got: " + raw);
         return tone;
     }
 
