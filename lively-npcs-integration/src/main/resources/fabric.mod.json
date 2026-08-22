@@ -17,12 +17,15 @@
     "minecraft": "1.21.1",
     "java": ">=21",
     "fabric-api": "*",
-    "livelynpcs": ">=0.4.0-alpha"
+    "livelynpcs": ">=0.4.0-rc1"
   },
   "suggests": {
     "cobblemon": "1.7.x",
+    "mega_showdown": "*",
     "luckperms": "*",
     "beconomy": "*",
-    "holodisplays": "*"
+    "holodisplays": "*",
+    "flan": "*",
+    "svfwaypoints": "*"
   }
 }
