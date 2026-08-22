@@ -13,5 +13,6 @@ public final class ServerEcosystemBootstrap {
         if (loader.isModLoaded("beconomy")) LivelyApi.installEconomyBridge(BEconomyBridge.create());
         if (loader.isModLoaded("holodisplays")) LivelyApi.installHologramBridge(HoloDisplaysBridge.create());
         if (loader.isModLoaded("flan")) LivelyApi.installClaimBridge(FlanClaimBridge.create());
+        if (loader.isModLoaded("svfwaypoints")) LivelyApi.installWaypointBridge(SvfWaypointsBridge.create());
     }
 }
