@@ -48,7 +48,20 @@ jobs:
           gradle-version: '8.10.2'
       - name: Tests and Loom remap build
         run: gradle --no-daemon clean test remapJar
-      - name: Dedicated server boot smoke
+      - name: Verify Cobblemon integration dependency contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          test -f "$INTEGRATION"
+          unzip -p "$INTEGRATION" fabric.mod.json > lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"name": "Lively NPCs: Cobblemon Integration by SVFrame Studio"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"cobblemon": ">=1.7.3 <1.8.0"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          if grep -A20 '"suggests"' lively-npcs-integration/build/libs/fabric.mod.built.json | grep -q '"cobblemon"'; then
+            echo 'Cobblemon must be a mandatory dependency of the Cobblemon Integration artifact.' >&2
+            exit 1
+          fi
+      - name: Dedicated core server boot smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -85,7 +98,7 @@ jobs:
           done
           kill -KILL -"$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
-      - name: Cobblemon production server boot smoke
+      - name: Cobblemon integration production server boot smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -95,7 +108,7 @@ jobs:
           mkdir -p "$smoke/mods" lively-npcs-integration/build
 
           CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
-          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
           COBBLEMON="$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL/kF7CvxTo" -type f -name '*.jar' | head -n1)"
           FABRIC_API_VERSION="$(awk -F= '$1 == "fabric_api_version" { print $2 }' gradle.properties)"
           FABRIC_API="$(find "$HOME/.gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/$FABRIC_API_VERSION" -type f -name 'fabric-api-*.jar' | head -n1)"
@@ -129,7 +142,7 @@ jobs:
               exit 1
             fi
             if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" \
-              && grep -q 'Lively NPCs Integration initialized; Cobblemon=true' "$log" \
+              && grep -q 'Lively NPCs: Cobblemon Integration initialized; Cobblemon=true' "$log" \
               && grep -q 'Done (' "$log"; then
               ready=1
               break
@@ -160,7 +173,7 @@ jobs:
           mkdir -p "$smoke/mods" lively-npcs-integration/build
 
           CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
-          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
           COBBLEMON="$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL/kF7CvxTo" -type f -name '*.jar' | head -n1)"
           FABRIC_API_VERSION="$(awk -F= '$1 == "fabric_api_version" { print $2 }' gradle.properties)"
           FABRIC_API="$(find "$HOME/.gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api/$FABRIC_API_VERSION" -type f -name 'fabric-api-*.jar' | head -n1)"
@@ -222,7 +235,7 @@ jobs:
               exit 1
             fi
             if grep -q 'Lively NPCs initialized: living-world runtime ready for dedicated and integrated singleplayer servers' "$log" \
-              && grep -q 'Lively NPCs Integration initialized; Cobblemon=true' "$log" \
+              && grep -q 'Lively NPCs: Cobblemon Integration initialized; Cobblemon=true' "$log" \
               && grep -q 'mega_showdown 1.8.4+1.7.3+1.21.1' "$log" \
               && grep -q 'Done (' "$log"; then
               ready=1
@@ -249,7 +262,7 @@ jobs:
         run: |
           set -euo pipefail
           CORE="$(find lively-npcs/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-*.jar' ! -name '*sources*' | head -n1)"
-          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Integration-*.jar' ! -name '*sources*' | head -n1)"
+          INTEGRATION="$(find lively-npcs-integration/build/libs -maxdepth 1 -type f -name 'Lively-NPCs-Cobblemon-Integration-*.jar' ! -name '*sources*' | head -n1)"
           test -n "$CORE"
           test -n "$INTEGRATION"
           unzip -t "$CORE"
@@ -258,15 +271,16 @@ jobs:
           unzip -p "$INTEGRATION" fabric.mod.json > lively-npcs-integration/build/libs/fabric.mod.built.json
           grep -q '"id": "livelynpcs"' lively-npcs/build/libs/fabric.mod.built.json
           grep -q '"id": "livelynpcs_integration"' lively-npcs-integration/build/libs/fabric.mod.built.json
+          grep -q '"cobblemon": ">=1.7.3 <1.8.0"' lively-npcs-integration/build/libs/fabric.mod.built.json
           if jar tf "$CORE" | grep -q '^vn/svframe/lively/integration/'; then
-            echo 'Integration implementation leaked into core JAR.' >&2
+            echo 'Cobblemon integration implementation leaked into core JAR.' >&2
             exit 1
           fi
           sha256sum "$CORE" "$INTEGRATION" | tee SHA256.txt
       - name: Upload Lively artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Lively-native-npc-runtime
+          name: Lively-production-runtime
           path: |
             lively-npcs/build/libs/*.jar
             lively-npcs/build/libs/fabric.mod.built.json
