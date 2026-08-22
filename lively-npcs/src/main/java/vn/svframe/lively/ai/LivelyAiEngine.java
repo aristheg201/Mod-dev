@@ -72,13 +72,17 @@ public final class LivelyAiEngine {
                     new AiAction("seek_food", Map.of(), .60D, AiAction.Risk.LOW));
             case "earn_money" -> List.of(
                     new AiAction("perform_occupation", Map.of("role", npc.role()), .70D, AiAction.Risk.LOW),
-                    new AiAction("offer_trade", Map.of(), .50D, AiAction.Risk.MEDIUM));
-            case "socialize" -> List.of(new AiAction("start_dialogue", Map.of(), .70D, AiAction.Risk.LOW));
+                    new AiAction("observe_surroundings", Map.of(), .36D, AiAction.Risk.LOW));
+            case "socialize" -> List.of(
+                    new AiAction("observe_surroundings", Map.of(), .62D, AiAction.Risk.LOW),
+                    new AiAction("wander", Map.of(), .48D, AiAction.Risk.LOW));
             case "rest" -> List.of(new AiAction("travel_home", Map.of(), .75D, AiAction.Risk.LOW));
             case "respond_to_threat" -> List.of(
                     new AiAction("flee", goal.context(), .90D, AiAction.Risk.LOW),
                     new AiAction("defend", goal.context(), .60D, AiAction.Risk.MEDIUM));
-            default -> List.of(new AiAction("perform_occupation", Map.of("role", npc.role()), .35D, AiAction.Risk.LOW));
+            default -> List.of(
+                    new AiAction("wander", Map.of(), .55D, AiAction.Risk.LOW),
+                    new AiAction("observe_surroundings", Map.of(), .42D, AiAction.Risk.LOW));
         };
     }
 
@@ -86,8 +90,7 @@ public final class LivelyAiEngine {
         double score = .55D * goal.priority() + .45D * action.utility();
         if (action.type().equals("defend")) score += .24D * npc.trait("brave") + .08D * npc.trait("loyal");
         if (action.type().equals("flee")) score += .24D * (1D - npc.trait("brave"));
-        if (action.type().equals("start_dialogue")) score += .15D * npc.trait("friendly");
-        if (action.type().equals("offer_trade")) score += .16D * npc.trait("greedy") + .08D * npc.trait("ambitious");
+        if (action.type().equals("observe_surroundings")) score += .10D * npc.trait("friendly");
         if (action.type().equals("perform_occupation")) score += .08D * npc.trait("diligent");
         score += learnedActionBias(npc, action.type(), now);
         return score;
@@ -109,9 +112,6 @@ public final class LivelyAiEngine {
             used++;
         }
         if (total <= 0D) return 0D;
-        // Preserve evidence magnitude. Normalizing only by total made one nearly-forgotten outcome as influential
-        // as a fresh one because both became +/-1. Saturating evidence strength keeps repeated recent experience
-        // meaningful while letting old/weak memories genuinely fade toward zero.
         double direction = clampSigned(signed / total);
         double evidenceStrength = 1D - Math.exp(-total);
         return direction * evidenceStrength * .18D;
