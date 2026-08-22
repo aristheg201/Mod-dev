@@ -8,7 +8,6 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Properties;
@@ -61,6 +60,8 @@ public final class RuntimeConfigService {
     public RuntimeConfigService(Path file) {
         this.file = file.toAbsolutePath().normalize();
     }
+
+    public static Config defaults() { return DEFAULTS; }
 
     public synchronized Config load() {
         try {
