@@ -6,7 +6,6 @@ import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.economy.DebtEngine;
 import vn.svframe.lively.economy.EconomyEngine;
 import vn.svframe.lively.economy.GamblingEngine;
-import vn.svframe.lively.model.NpcSnapshot;
 import vn.svframe.lively.model.NpcState;
 import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.society.SocietyApi;
@@ -45,7 +44,7 @@ public final class HouseholdSimulationService {
         NpcState bState = LivelyApi.states().get(bond.b().uuid()).orElse(null);
         if (aDef == null || bDef == null || aState == null || bState == null) return;
 
-        synchronizeHouseholdHome(aDef, bDef, bond);
+        synchronizeHouseholdHome(aDef, bDef, aState, bState);
         boolean aCustody = SocietyApi.law().activeCustody(bond.a()).isPresent();
         boolean bCustody = SocietyApi.law().activeCustody(bond.b()).isPresent();
         if (aCustody || bCustody) applyCustodyStrain(bond, aState, bState, aCustody, bCustody, day);
@@ -55,17 +54,20 @@ public final class HouseholdSimulationService {
         supportDebt(reverse(bond), bState, aState, day);
     }
 
-    private void synchronizeHouseholdHome(NpcDefinition a, NpcDefinition b, RomanceEngine.Bond bond) {
+    private void synchronizeHouseholdHome(NpcDefinition a, NpcDefinition b, NpcState aState, NpcState bState) {
         String aHome = a.metadata().get("home.structure");
         String bHome = b.metadata().get("home.structure");
         if ((aHome == null || aHome.isBlank()) && bHome != null && !bHome.isBlank()) {
             LivelyApi.npcs().setMetadata(a.id(), "home.structure", bHome);
             LivelyApi.npcs().setMetadata(a.id(), "household.partner", b.id().toString());
+            aState.remember("joined_partner_household", Map.of("partner", b.id().toString(), "home", bHome), .44D, 1D);
+            bState.remember("partner_joined_household", Map.of("partner", a.id().toString(), "home", bHome), .34D, 1D);
         } else if ((bHome == null || bHome.isBlank()) && aHome != null && !aHome.isBlank()) {
             LivelyApi.npcs().setMetadata(b.id(), "home.structure", aHome);
             LivelyApi.npcs().setMetadata(b.id(), "household.partner", a.id().toString());
+            bState.remember("joined_partner_household", Map.of("partner", a.id().toString(), "home", aHome), .44D, 1D);
+            aState.remember("partner_joined_household", Map.of("partner", b.id().toString(), "home", aHome), .34D, 1D);
         }
-        LivelyApi.romance().recordSharedMemory(bond.a(), bond.b(), "household_maintained", .01D);
     }
 
     private void applyCustodyStrain(RomanceEngine.Bond bond, NpcState a, NpcState b,
