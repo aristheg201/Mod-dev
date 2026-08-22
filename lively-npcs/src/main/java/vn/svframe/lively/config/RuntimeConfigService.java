@@ -27,6 +27,7 @@ public final class RuntimeConfigService {
             long storyPulseTicks,
             int storyMaxActiveEvents,
             int storyMaxNewEventsPerPulse,
+            String storyTone,
             Set<WorldEventEngine.Category> storyEnabledCategories,
             int aiDecisionsPerPulse,
             int aiMaxPending,
@@ -34,6 +35,7 @@ public final class RuntimeConfigService {
             int maxObservedEntities
     ) {
         public Config {
+            storyTone = normalizeTone(storyTone);
             storyEnabledCategories = Set.copyOf(storyEnabledCategories);
         }
 
@@ -42,12 +44,14 @@ public final class RuntimeConfigService {
         }
     }
 
+    private static final Set<String> STORY_TONES = Set.of("balanced", "peaceful", "adventure", "dramatic", "dark");
     private static final Config DEFAULTS = new Config(
             600L,
             6000L,
             1200L,
             8,
             2,
+            "balanced",
             EnumSet.allOf(WorldEventEngine.Category.class),
             10,
             1024,
@@ -87,6 +91,7 @@ public final class RuntimeConfigService {
         long storyPulse = longValue(p, "story.pulse_ticks", DEFAULTS.storyPulseTicks(), 100L, 72_000L);
         int maxActive = intValue(p, "story.max_active_events", DEFAULTS.storyMaxActiveEvents(), 1, 128);
         int maxNew = intValue(p, "story.max_new_events_per_pulse", DEFAULTS.storyMaxNewEventsPerPulse(), 0, 16);
+        String tone = normalizeTone(p.getProperty("story.tone", DEFAULTS.storyTone()));
         int decisions = intValue(p, "ai.decisions_per_pulse", DEFAULTS.aiDecisionsPerPulse(), 1, 128);
         int pending = intValue(p, "ai.max_pending", DEFAULTS.aiMaxPending(), 32, 8192);
         int social = intValue(p, "social.max_interactions_per_pulse", DEFAULTS.socialInteractionsPerPulse(), 1, 256);
@@ -105,7 +110,7 @@ public final class RuntimeConfigService {
             }
         }
 
-        return new Config(checkpoint, autosave, storyPulse, maxActive, maxNew, enabled,
+        return new Config(checkpoint, autosave, storyPulse, maxActive, maxNew, tone, enabled,
                 decisions, pending, social, observed);
     }
 
@@ -116,6 +121,7 @@ public final class RuntimeConfigService {
         p.setProperty("story.pulse_ticks", Long.toString(DEFAULTS.storyPulseTicks()));
         p.setProperty("story.max_active_events", Integer.toString(DEFAULTS.storyMaxActiveEvents()));
         p.setProperty("story.max_new_events_per_pulse", Integer.toString(DEFAULTS.storyMaxNewEventsPerPulse()));
+        p.setProperty("story.tone", DEFAULTS.storyTone());
         p.setProperty("story.disabled_categories", "");
         p.setProperty("ai.decisions_per_pulse", Integer.toString(DEFAULTS.aiDecisionsPerPulse()));
         p.setProperty("ai.max_pending", Integer.toString(DEFAULTS.aiMaxPending()));
@@ -128,6 +134,14 @@ public final class RuntimeConfigService {
         }
         try { Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE); }
         catch (IOException ignored) { Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING); }
+    }
+
+    private static String normalizeTone(String raw) {
+        String tone = raw == null ? "balanced" : raw.trim().toLowerCase(Locale.ROOT);
+        if (!STORY_TONES.contains(tone)) {
+            throw new IllegalArgumentException("story.tone must be one of " + STORY_TONES + ", got: " + raw);
+        }
+        return tone;
     }
 
     private static int intValue(Properties p, String key, int fallback, int min, int max) {
