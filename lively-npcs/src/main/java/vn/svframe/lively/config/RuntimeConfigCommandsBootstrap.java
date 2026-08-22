@@ -28,7 +28,8 @@ public final class RuntimeConfigCommandsBootstrap implements ModInitializer {
         }
         try {
             RuntimeConfigService.Config config = service.reload();
-            source.sendFeedback(() -> Text.literal("Lively config reloaded: storyPulse=" + config.storyPulseTicks()
+            source.sendFeedback(() -> Text.literal("Lively config reloaded: storyTone=" + config.storyTone()
+                    + ", storyPulse=" + config.storyPulseTicks()
                     + ", maxActiveEvents=" + config.storyMaxActiveEvents()
                     + ", aiDecisions=" + config.aiDecisionsPerPulse()
                     + ", aiMaxPending=" + config.aiMaxPending()
