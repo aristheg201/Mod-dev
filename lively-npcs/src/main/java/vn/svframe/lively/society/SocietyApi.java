@@ -27,6 +27,7 @@ public final class SocietyApi {
     private static volatile LawEnforcementService lawService;
     private static volatile SocialEncounterService socialEncounters;
     private static volatile HouseholdSimulationService households;
+    private static volatile SocietyStorySignalService storySignals;
 
     private SocietyApi() {}
 
@@ -39,11 +40,13 @@ public final class SocietyApi {
     public static LawEnforcementService lawService() { return lawService; }
     public static SocialEncounterService socialEncounters() { return socialEncounters; }
     public static HouseholdSimulationService households() { return households; }
+    public static SocietyStorySignalService storySignals() { return storySignals; }
     public static void installCommerce(PlayerCommerceService service) { commerce = service; }
     public static void installSimulation(SocietySimulationService service) { simulation = service; }
     public static void installLawService(LawEnforcementService service) { lawService = service; }
     public static void installSocialEncounters(SocialEncounterService service) { socialEncounters = service; }
     public static void installHouseholds(HouseholdSimulationService service) { households = service; }
+    public static void installStorySignals(SocietyStorySignalService service) { storySignals = service; }
 
     public static void registerGamblingBridge(GamblingBridge bridge) {
         if (bridge != null && GAMBLING_BRIDGES.stream().noneMatch(existing -> existing.id().equalsIgnoreCase(bridge.id()))) {
@@ -62,5 +65,6 @@ public final class SocietyApi {
         lawService = null;
         socialEncounters = null;
         households = null;
+        storySignals = null;
     }
 }
