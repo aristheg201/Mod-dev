@@ -12,12 +12,16 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import vn.svframe.lively.animation.AnimationRequest;
+import vn.svframe.lively.animation.AnimationResult;
 import vn.svframe.lively.npc.NpcBody;
 import vn.svframe.lively.npc.NpcDefinition;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -78,11 +82,6 @@ public final class CobblemonTrainerBody implements NpcBody {
         entity = created;
     }
 
-    /**
-     * NPCPreset.applyTo mutates the target collections (aspects/config/variations/names/behaviours) in place.
-     * A registry NPCClass must therefore never be passed directly. Cobblemon's registry Gson is not a general
-     * round-trip copier, so clone the public model explicitly and detach every mutable container the preset touches.
-     */
     private static NPCClass copyClass(NPCClass source) {
         NPCClass copy = new NPCClass();
         copy.setId(source.getId());
@@ -141,6 +140,27 @@ public final class CobblemonTrainerBody implements NpcBody {
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, horizontal));
         entity.setYaw(yaw); entity.setPitch(pitch); entity.setHeadYaw(yaw);
+    }
+
+    @Override
+    public AnimationResult animate(MinecraftServer server, AnimationRequest request) {
+        if (!spawned()) return AnimationResult.unsupported(request.name(), "Cobblemon trainer body is not spawned");
+        String requested = request.name();
+        String nativeName = switch (requested) {
+            case "attack", "punch", "punch_right" -> "punch_right";
+            case "punch_left" -> "punch_left";
+            case "win", "victory" -> "win";
+            case "lose", "defeat" -> "lose";
+            case "sendout", "send_out" -> "send_out";
+            case "return", "recall" -> "recall";
+            default -> requested.startsWith("native:") ? requested.substring("native:".length()) : requested;
+        };
+        nativeName = nativeName.toLowerCase(Locale.ROOT);
+        if (nativeName.isBlank() || !nativeName.matches("[a-z0-9_./:-]{1,96}")) {
+            return AnimationResult.unsupported(requested, "invalid Cobblemon trainer animation name");
+        }
+        entity.playAnimation(nativeName, List.of());
+        return AnimationResult.played(requested, "Cobblemon trainer native animation: " + nativeName);
     }
 
     @Override
