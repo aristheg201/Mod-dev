@@ -26,6 +26,6 @@ public final class MythicLibCombatMod implements ModInitializer {
                                     }
                                     ctx.getSource().sendFeedback(() -> Text.literal("MythicLib combat reloaded | " + FabricDamageBridge.summary()), true);
                                     return 1;
-                                }))));
+                                })))));
     }
 }
