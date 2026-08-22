@@ -2,6 +2,7 @@ package vn.svframe.lively.integration.cobblemon;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -18,24 +19,27 @@ import static net.minecraft.server.command.CommandManager.literal;
 public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
     @Override
     public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                literal("lively")
-                        .then(literal("npc")
-                                .then(literal("create")
-                                        .then(literal("trainer")
-                                                .requires(source -> LivelyApi.permissions().has(source, "lively.admin.npc", 2))
-                                                .then(argument("npcClass", StringArgumentType.word())
-                                                        .then(argument("level", IntegerArgumentType.integer(1, 1000))
-                                                                .then(argument("skill", IntegerArgumentType.integer(1, 5))
-                                                                        .then(argument("name", StringArgumentType.string())
-                                                                                .then(argument("role", StringArgumentType.word())
-                                                                                        .executes(ctx -> create(
-                                                                                                ctx.getSource(),
-                                                                                                StringArgumentType.getString(ctx, "npcClass"),
-                                                                                                IntegerArgumentType.getInteger(ctx, "level"),
-                                                                                                IntegerArgumentType.getInteger(ctx, "skill"),
-                                                                                                StringArgumentType.getString(ctx, "name"),
-                                                                                                StringArgumentType.getString(ctx, "role"))))))))))))));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            var role = argument("role", StringArgumentType.word())
+                    .executes(ctx -> create(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "npcClass"),
+                            IntegerArgumentType.getInteger(ctx, "level"),
+                            IntegerArgumentType.getInteger(ctx, "skill"),
+                            StringArgumentType.getString(ctx, "name"),
+                            StringArgumentType.getString(ctx, "role")));
+            var name = argument("name", StringArgumentType.string()).then(role);
+            var skill = argument("skill", IntegerArgumentType.integer(1, 5)).then(name);
+            var level = argument("level", IntegerArgumentType.integer(1, 1000)).then(skill);
+            var npcClass = argument("npcClass", StringArgumentType.word()).then(level);
+
+            LiteralArgumentBuilder<ServerCommandSource> trainer = literal("trainer")
+                    .requires(source -> LivelyApi.permissions().has(source, "lively.admin.npc", 2))
+                    .then(npcClass);
+            dispatcher.register(literal("lively")
+                    .then(literal("npc")
+                            .then(literal("create").then(trainer))));
+        });
     }
 
     private static int create(ServerCommandSource source, String npcClass, int level, int skill, String name, String role) {
