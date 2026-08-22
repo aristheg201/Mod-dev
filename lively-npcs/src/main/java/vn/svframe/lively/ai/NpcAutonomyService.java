@@ -6,6 +6,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
+import vn.svframe.lively.config.RuntimeConfigService;
 import vn.svframe.lively.dialogue.DialogueService;
 import vn.svframe.lively.economy.BusinessAccessPolicy;
 import vn.svframe.lively.economy.EconomyEngine;
@@ -38,13 +39,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Large populations are processed in bounded staggered batches instead of full-registry scans every tick.
  */
 public final class NpcAutonomyService implements AutoCloseable {
-    private static final int DECISIONS_PER_PULSE = 10;
     private static final int ACTOR_SYNC_PER_PULSE = 256;
     private static final int NEEDS_PER_PULSE = 256;
     private static final int SCHEDULES_PER_PULSE = 128;
     private static final int SOCIAL_CANDIDATES_PER_PULSE = 128;
-    private static final int SOCIAL_INTERACTIONS_PER_PULSE = 32;
-    private static final int MAX_OBSERVED_ENTITIES = 64;
     private static final long DEFINITION_REFRESH_TICKS = 100L;
     private static final int SOCIAL_CELL = 8;
 
@@ -57,6 +55,7 @@ public final class NpcAutonomyService implements AutoCloseable {
     private final ConcurrentHashMap<UUID, Long> nextDecisionTick = new ConcurrentHashMap<>();
 
     private AiScheduler scheduler;
+    private int schedulerMaxPending;
     private List<NpcDefinition> definitions = List.of();
     private long definitionsAt = Long.MIN_VALUE;
     private int decisionCursor;
@@ -164,9 +163,10 @@ public final class NpcAutonomyService implements AutoCloseable {
         ensureScheduler(server);
         List<NpcDefinition> active = activeDefinitions();
         if (active.isEmpty()) return;
-        int attempts = Math.min(active.size(), DECISIONS_PER_PULSE * 4);
+        int decisionBudget = config().aiDecisionsPerPulse();
+        int attempts = Math.min(active.size(), decisionBudget * 4);
         int submitted = 0;
-        for (int i = 0; i < attempts && submitted < DECISIONS_PER_PULSE; i++) {
+        for (int i = 0; i < attempts && submitted < decisionBudget; i++) {
             NpcDefinition d = active.get((decisionCursor + i) % active.size());
             if (nextDecisionTick.getOrDefault(d.id(), 0L) > tick) continue;
             NpcState state = states.get(d.id()).orElse(null);
@@ -206,7 +206,8 @@ public final class NpcAutonomyService implements AutoCloseable {
 
         int examined = 0;
         int interactions = 0;
-        while (examined < Math.min(SOCIAL_CANDIDATES_PER_PULSE, active.size()) && interactions < SOCIAL_INTERACTIONS_PER_PULSE) {
+        int interactionBudget = config().socialInteractionsPerPulse();
+        while (examined < Math.min(SOCIAL_CANDIDATES_PER_PULSE, active.size()) && interactions < interactionBudget) {
             NpcDefinition a = active.get((socialCursor + examined) % active.size());
             examined++;
             if (socialCooldown.getOrDefault(a.id(), 0L) > tick) continue;
@@ -262,16 +263,17 @@ public final class NpcAutonomyService implements AutoCloseable {
         String worldKey = npcs.worldKey(d.id()).orElse(d.world());
         ActorId self = new ActorId(d.id(), ActorId.Kind.NPC);
         List<WorldSnapshot.ObservedEntity> entities = new ArrayList<>();
+        int maxObserved = config().maxObservedEntities();
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            if (entities.size() >= MAX_OBSERVED_ENTITIES) break;
+            if (entities.size() >= maxObserved) break;
             if (!player.getServerWorld().getRegistryKey().getValue().toString().equals(worldKey)
                     || player.getPos().squaredDistanceTo(position) > 32D * 32D) continue;
             ActorId observed = new ActorId(player.getUuid(), ActorId.Kind.PLAYER);
             entities.add(new WorldSnapshot.ObservedEntity(player.getUuid(), "player", perceivedThreat(npc, self, observed)));
         }
         for (NpcDefinition other : definitions) {
-            if (entities.size() >= MAX_OBSERVED_ENTITIES) break;
+            if (entities.size() >= maxObserved) break;
             if (other.id().equals(d.id()) || !other.spawned()) continue;
             String otherWorld = npcs.worldKey(other.id()).orElse(other.world());
             if (!worldKey.equals(otherWorld)) continue;
@@ -540,8 +542,8 @@ public final class NpcAutonomyService implements AutoCloseable {
     }
 
     private static Vec3d center(SemanticStructureRegistry.Bounds bounds) {
-        return new Vec3d((bounds.minX() + bounds.maxX() + 1) / 2D, bounds.minY() + 1D,
-                (bounds.minZ() + bounds.maxZ() + 1) / 2D);
+        return new Vec3d((bounds.minX() + bounds.maxX() + 1D) / 2D, bounds.minY() + 1D,
+                (bounds.minZ() + bounds.maxZ() + 1D) / 2D);
     }
 
     private static boolean inside(SemanticStructureRegistry.Bounds bounds, Vec3d position) {
@@ -561,8 +563,21 @@ public final class NpcAutonomyService implements AutoCloseable {
     }
 
     private void ensureScheduler(MinecraftServer server) {
-        if (scheduler == null) scheduler = new AiScheduler(
-                Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2)), 1024, server::execute);
+        int desiredMaxPending = config().aiMaxPending();
+        if (scheduler != null && schedulerMaxPending != desiredMaxPending && scheduler.pendingCount() == 0) {
+            scheduler.close();
+            scheduler = null;
+        }
+        if (scheduler == null) {
+            scheduler = new AiScheduler(Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2)),
+                    desiredMaxPending, server::execute);
+            schedulerMaxPending = desiredMaxPending;
+        }
+    }
+
+    private static RuntimeConfigService.Config config() {
+        RuntimeConfigService service = LivelyApi.runtimeConfig();
+        return service == null ? RuntimeConfigService.defaults() : service.current();
     }
 
     private static int advance(int cursor, int amount, int size) {
@@ -584,6 +599,8 @@ public final class NpcAutonomyService implements AutoCloseable {
     @Override
     public void close() {
         if (scheduler != null) scheduler.close();
+        scheduler = null;
+        schedulerMaxPending = 0;
         socialCooldown.clear();
         lastNeedTick.clear();
         nextDecisionTick.clear();
