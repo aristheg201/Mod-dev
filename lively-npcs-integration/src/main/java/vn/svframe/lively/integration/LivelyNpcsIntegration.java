@@ -29,7 +29,6 @@ public final class LivelyNpcsIntegration implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // Cobblemon is mandatory for this artifact. Optional ecosystem bridges remain independently fail-closed.
         CobblemonIntegrationBootstrap.install();
         worldAwareness.install();
         socialResearchAwareness.install();
@@ -52,11 +51,18 @@ public final class LivelyNpcsIntegration implements ModInitializer {
     private void installCobblemonNpcInteraction() {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             if (world.isClient || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity serverPlayer)) return ActionResult.PASS;
-            if (!entity.getCommandTags().contains("lively") || !looksLikeCobblemonNpc(entity.getClass()) || LivelyApi.dialogues() == null) return ActionResult.PASS;
+            if (!entity.getCommandTags().contains("lively") || !looksLikeCobblemonNpc(entity.getClass())) return ActionResult.PASS;
+
             ActorId owner = new ActorId(serverPlayer.getUuid(), ActorId.Kind.PLAYER);
             String npc = entity.getUuid().toString();
             LivelyApi.quests().signal(owner, QuestRuntime.ObjectiveType.SOCIAL, npc, 1L,
                     Map.of("actor", npc, "npc", npc));
+
+            // Native trainer bodies retain Cobblemon's NPCClass interaction/battle configuration. Returning PASS here
+            // lets Cobblemon continue its own interaction pipeline after Lively has recorded the semantic contact.
+            if (entity.getCommandTags().contains("lively_native_interaction")) return ActionResult.PASS;
+
+            if (LivelyApi.dialogues() == null) return ActionResult.PASS;
             LivelyApi.dialogues().start(serverPlayer, entity.getUuid(), entity.getName().getString(), "cobblemon_npc");
             return ActionResult.SUCCESS;
         });
