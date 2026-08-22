@@ -3,7 +3,7 @@
   "id": "livelynpcs",
   "version": "${version}",
   "name": "Lively NPCs by SVFrame Studio",
-  "description": "Offline autonomous NPC intelligence and living-world simulation framework.",
+  "description": "Offline autonomous NPC intelligence and persistent living-world runtime with society, economy, crime, justice, quests and emergent world consequences.",
   "authors": ["SVFrame Studio"],
   "environment": "*",
   "entrypoints": {
