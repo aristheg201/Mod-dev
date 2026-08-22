@@ -1,5 +1,6 @@
 package vn.svframe.lively.npc;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Vec3d;
@@ -24,6 +25,7 @@ public interface NpcBody {
         teleport(server, worldKey, position, yaw, pitch);
     }
     void lookAt(MinecraftServer server, Vec3d target);
+    default boolean attack(MinecraftServer server, Entity target) { return false; }
     default AnimationResult animate(MinecraftServer server, AnimationRequest request) {
         return AnimationResult.unsupported(request.name(), "body type " + type() + " does not expose this animation");
     }
