@@ -7,7 +7,6 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.npc.NpcDefinition;
 import vn.svframe.lively.quest.QuestRuntime;
@@ -31,7 +30,7 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
                                 .then(literal("inspect")
                                         .requires(source -> permitted(source, "lively.admin.npc", 2))
                                         .then(argument("id", StringArgumentType.word())
-                                                .executes(ctx -> inspectNpc(ctx.getSource(), uuid(ctx, "id"))))))
+                                                .executes(ctx -> inspectNpc(ctx.getSource(), parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))))
                         .then(locationCommands())
                         .then(literal("structure")
                                 .then(literal("assign")
@@ -41,7 +40,7 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
                                                         .then(argument("purpose", StringArgumentType.word())
                                                                 .executes(ctx -> assignStructure(ctx.getSource(),
                                                                         StringArgumentType.getString(ctx, "structure"),
-                                                                        uuid(ctx, "npc"),
+                                                                        parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "npc")),
                                                                         StringArgumentType.getString(ctx, "purpose"))))))))
                         .then(literal("quest")
                                 .then(literal("debug")
@@ -80,13 +79,14 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
         debug.then(literal("path")
                 .executes(ctx -> debugPath(ctx.getSource()))
                 .then(argument("npc", StringArgumentType.word())
-                        .executes(ctx -> debugPathNpc(ctx.getSource(), uuid(ctx, "npc")))));
+                        .executes(ctx -> debugPathNpc(ctx.getSource(), parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "npc"))))));
         debug.then(literal("quest").executes(ctx -> debugQuests(ctx.getSource())));
         debug.then(literal("social").executes(ctx -> debugSocial(ctx.getSource())));
         return debug;
     }
 
     private static int inspectNpc(ServerCommandSource source, UUID id) {
+        if (id == null) return 0;
         if (LivelyApi.npcs() == null) return error(source, "NPC runtime is not active");
         NpcDefinition definition = LivelyApi.npcs().get(id).orElse(null);
         if (definition == null) return error(source, "Unknown NPC");
@@ -112,9 +112,10 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
     }
 
     private static int listLocations(ServerCommandSource source) {
-        var structures = LivelyApi.structures().snapshot().structures().values().stream()
+        var snapshot = LivelyApi.structures().snapshot();
+        var structures = snapshot.structures().values().stream()
                 .sorted(java.util.Comparator.comparing(SemanticStructureRegistry.Structure::id)).limit(128).toList();
-        source.sendFeedback(() -> Text.literal("Locations (" + LivelyApi.structures().snapshot().structures().size() + "): "
+        source.sendFeedback(() -> Text.literal("Locations (" + snapshot.structures().size() + "): "
                 + structures.stream().map(value -> value.id() + ":" + value.type()).toList()), false);
         return 1;
     }
@@ -163,6 +164,7 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
     }
 
     private static int assignStructure(ServerCommandSource source, String structure, UUID npc, String rawPurpose) {
+        if (npc == null) return 0;
         if (LivelyApi.npcs() == null || LivelyApi.npcs().get(npc).isEmpty()) return error(source, "Unknown NPC");
         if (LivelyApi.structures().get(structure).isEmpty()) return error(source, "Unknown structure");
         String purpose = rawPurpose.toLowerCase(Locale.ROOT);
@@ -190,6 +192,7 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
     }
 
     private static int debugPathNpc(ServerCommandSource source, UUID npc) {
+        if (npc == null) return 0;
         if (LivelyApi.worldNavigation() == null) return error(source, "Navigation runtime is not active");
         var status = LivelyApi.worldNavigation().status(npc).orElse(null);
         if (status == null) return error(source, "NPC has no active navigation task");
@@ -230,10 +233,12 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
         return 1;
     }
 
-    private static UUID uuid(com.mojang.brigadier.context.CommandContext<ServerCommandSource> ctx, String name) {
-        try { return UUID.fromString(StringArgumentType.getString(ctx, name)); }
-        catch (IllegalArgumentException error) { throw new com.mojang.brigadier.exceptions.CommandSyntaxException(
-                com.mojang.brigadier.exceptions.BuiltInExceptions.INVALID_UUID, Text.literal("Invalid UUID")); }
+    private static UUID parseUuid(ServerCommandSource source, String raw) {
+        try { return UUID.fromString(raw); }
+        catch (IllegalArgumentException error) {
+            source.sendError(Text.literal("Invalid UUID: " + raw));
+            return null;
+        }
     }
 
     private static boolean permitted(ServerCommandSource source, String permission, int vanillaLevel) {
