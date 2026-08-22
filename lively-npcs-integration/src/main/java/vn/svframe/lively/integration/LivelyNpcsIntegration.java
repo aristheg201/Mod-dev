@@ -23,11 +23,13 @@ public final class LivelyNpcsIntegration implements ModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     private final CobblemonWorldAwarenessService worldAwareness = new CobblemonWorldAwarenessService();
     private final HologramProjectionService hologramProjection = new HologramProjectionService();
+    private final QuestWaypointProjectionService questWaypoints = new QuestWaypointProjectionService();
 
     @Override
     public void onInitialize() {
         ServerEcosystemBootstrap.install();
         hologramProjection.install();
+        questWaypoints.install();
         boolean cobblemon = FabricLoader.getInstance().isModLoaded("cobblemon");
         if (cobblemon) {
             CobblemonIntegrationBootstrap.installIfPresent();
@@ -38,9 +40,10 @@ public final class LivelyNpcsIntegration implements ModInitializer {
             });
             installCobblemonNpcInteraction();
         }
-        LOGGER.info("Lively NPCs Integration initialized; Cobblemon={}, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}",
+        LOGGER.info("Lively NPCs Integration initialized; Cobblemon={}, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
                 cobblemon, LivelyApi.externalEconomy().available(), LivelyApi.holograms().available(),
-                FabricLoader.getInstance().isModLoaded("luckperms"), FabricLoader.getInstance().isModLoaded("flan"));
+                FabricLoader.getInstance().isModLoaded("luckperms"), FabricLoader.getInstance().isModLoaded("flan"),
+                LivelyApi.waypoints().available());
     }
 
     private void installCobblemonNpcInteraction() {
