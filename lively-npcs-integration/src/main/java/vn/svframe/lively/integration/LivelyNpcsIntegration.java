@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import vn.svframe.lively.actor.ActorId;
 import vn.svframe.lively.api.LivelyApi;
 import vn.svframe.lively.integration.cobblemon.CobblemonIntegrationBootstrap;
+import vn.svframe.lively.integration.cobblemon.CobblemonSocialResearchAwarenessService;
 import vn.svframe.lively.integration.cobblemon.CobblemonWorldAwarenessService;
 import vn.svframe.lively.quest.QuestRuntime;
 
@@ -22,6 +23,7 @@ public final class LivelyNpcsIntegration implements ModInitializer {
     public static final String MOD_ID = "livelynpcs_integration";
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     private final CobblemonWorldAwarenessService worldAwareness = new CobblemonWorldAwarenessService();
+    private final CobblemonSocialResearchAwarenessService socialResearchAwareness = new CobblemonSocialResearchAwarenessService();
     private final HologramProjectionService hologramProjection = new HologramProjectionService();
     private final QuestWaypointProjectionService questWaypoints = new QuestWaypointProjectionService();
 
@@ -30,6 +32,7 @@ public final class LivelyNpcsIntegration implements ModInitializer {
         // Cobblemon is mandatory for this artifact. Optional ecosystem bridges remain independently fail-closed.
         CobblemonIntegrationBootstrap.install();
         worldAwareness.install();
+        socialResearchAwareness.install();
         ServerEcosystemBootstrap.install();
         hologramProjection.install();
         questWaypoints.install();
