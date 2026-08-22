@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class LawEnforcementEngineTest {
-    @Test void repeatedReviewOfSameCrimeDoesNotInflateWantedState() {
+    @Test void repeatedReviewOfSameCrimeDoesNotInflateWantedStateAndResolvedCrimeCanBeRemoved() {
         LawEnforcementEngine law = new LawEnforcementEngine();
         ActorId suspect = npc();
         UUID crime = UUID.randomUUID();
@@ -32,6 +32,14 @@ final class LawEnforcementEngineTest {
         assertTrue(third.points() > second.points());
         assertTrue(third.bounty() > second.bounty());
         assertEquals(Set.of(crime, anotherCrime), third.crimeIds());
+
+        LawEnforcementEngine.WantedRecord remaining = law.removeWantedCrime(suspect, "valentine", crime).orElseThrow();
+        assertEquals(Set.of(anotherCrime), remaining.crimeIds());
+        assertTrue(remaining.points() < third.points());
+        assertTrue(remaining.bounty() < third.bounty());
+
+        law.removeWantedCrime(suspect, "valentine", anotherCrime);
+        assertTrue(law.wanted(suspect, "valentine").isEmpty());
     }
 
     @Test void warrantCustodyCourtAndReleaseArePersistentStateTransitions() {
