@@ -16,6 +16,7 @@ public final class ServerEcosystemBootstrap {
         if (loader.isModLoaded("holodisplays")) LivelyApi.installHologramBridge(HoloDisplaysBridge.create());
         if (loader.isModLoaded("flan")) LivelyApi.installClaimBridge(FlanClaimBridge.create());
         if (loader.isModLoaded("svfwaypoints")) LivelyApi.installWaypointBridge(SvfWaypointsBridge.create());
+        if (loader.isModLoaded("svf_all_in_one")) SocietyApi.registerGamblingBridge(SvfAllInOneGamblingBridge.create());
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             if (loader.isModLoaded("beconomy")) SocietyApi.economies().register(BEconomyProvider.create());

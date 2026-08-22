@@ -20,7 +20,7 @@
     "minecraft": "1.21.1",
     "java": ">=21",
     "fabric-api": "*",
-    "livelynpcs": ">=1.0.1",
+    "livelynpcs": ">=1.0.2",
     "cobblemon": ">=1.7.3 <1.8.0"
   },
   "suggests": {
@@ -31,6 +31,9 @@
     "impactor": "*",
     "holodisplays": "*",
     "flan": "*",
-    "svfwaypoints": "*"
+    "svfwaypoints": "*",
+    "svf_all_in_one": "*",
+    "cobblemon_tournament": "*",
+    "cobblemon_showcase": "*"
   }
 }

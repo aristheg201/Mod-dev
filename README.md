@@ -5,15 +5,15 @@ Two server-side Fabric mods for Minecraft 1.21.1 / Java 21.
 - **Lively NPCs by SVFrame Studio** (`livelynpcs`): offline domain-specific living-world and NPC intelligence engine. No external LLM or cloud AI dependency.
 - **Lively NPCs: Cobblemon Integration by SVFrame Studio** (`livelynpcs_integration`): requires Lively Core + Cobblemon 1.7.x and provides native Cobblemon Pokemon/NPC bodies, trainer battle AI, Cobblemon world awareness, and optional server-ecosystem adapters.
 
-Current release version: **1.0.1**.
+Current release version: **1.0.2**.
 
-## 1.0.1: society simulation
+## 1.0.2 custom-server bridge update
 
-1.0.1 connects previously separate living-world systems into a causal society loop: NPC routines, restaurants/bars, romance time, gambling, loans, delinquency, debt collection, economic crime, police response and player-facing NPC shops now feed the same memory/social/economy/crime state.
-
-Player money is no longer designed around one hardcoded economy implementation. Integration can register optional providers for **BEconomy**, **CobbleDollars** and **Impactor**; currency-to-provider routing lives in `config/livelynpcs/economy.properties`. Missing optional economy mods do not prevent Core from loading.
-
-See `docs/RELEASE-1.0.1.md` for configuration and behavior details.
+- Verified and integrated the public Tai Xiu API from `SVF-All-in-One 0.1.5` through an optional reflective `GamblingBridge`.
+- External Tai Xiu wagers remain owned and settled by SVF All in One; Lively never mirrors or mints player currency into NPC accounts.
+- The bridge exposes explicit `tai_xiu:tai` / `tai_xiu:xiu` game ids and fails closed when the external runtime, round, currency backend or account is unavailable.
+- `CobblemonTournament 1.1.3` and `CobblemonShowcase 1.1.0-hotfix.4` are recognized as optional custom-server subsystems without becoming hard dependencies.
+- Lively continues to hook BEconomy, CobbleDollars and Impactor directly instead of routing economy through Tournament or SVF All in One wrappers.
 
 ## Architecture rules
 
@@ -23,6 +23,5 @@ See `docs/RELEASE-1.0.1.md` for configuration and behavior details.
 4. Combat reasoning is part of the Lively AI core; game-specific battle state/action mapping belongs in Integration.
 5. External integrations must not leak implementation types into the core API.
 6. SVF Waypoints is player-facing quest navigation; NPC pathfinding remains Lively's own bounded navigation runtime.
-7. External economy and gambling integrations are optional adapters; Core owns provider-neutral contracts and simulation state.
 
 Development branch: `feature/lively-npcs`.
