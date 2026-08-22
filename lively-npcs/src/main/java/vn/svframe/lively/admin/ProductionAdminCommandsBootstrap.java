@@ -1,6 +1,7 @@
 package vn.svframe.lively.admin;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -24,62 +25,80 @@ import static net.minecraft.server.command.CommandManager.literal;
 public final class ProductionAdminCommandsBootstrap implements ModInitializer {
     @Override
     public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                literal("lively")
-                        .then(literal("npc")
-                                .then(literal("inspect")
-                                        .requires(source -> permitted(source, "lively.admin.npc", 2))
-                                        .then(argument("id", StringArgumentType.word())
-                                                .executes(ctx -> inspectNpc(ctx.getSource(), parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))))
-                        .then(locationCommands())
-                        .then(literal("structure")
-                                .then(literal("assign")
-                                        .requires(source -> permitted(source, "lively.admin.structure", 2))
-                                        .then(argument("structure", StringArgumentType.word())
-                                                .then(argument("npc", StringArgumentType.word())
-                                                        .then(argument("purpose", StringArgumentType.word())
-                                                                .executes(ctx -> assignStructure(ctx.getSource(),
-                                                                        StringArgumentType.getString(ctx, "structure"),
-                                                                        parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "npc")),
-                                                                        StringArgumentType.getString(ctx, "purpose"))))))))
-                        .then(literal("quest")
-                                .then(literal("debug")
-                                        .requires(source -> permitted(source, "lively.admin.quest", 2))
-                                        .then(argument("id", StringArgumentType.word())
-                                                .executes(ctx -> debugQuestId(ctx.getSource(), StringArgumentType.getString(ctx, "id"))))))
-                        .then(debugCommands()))));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            LiteralArgumentBuilder<ServerCommandSource> root = literal("lively");
+
+            LiteralArgumentBuilder<ServerCommandSource> npc = literal("npc");
+            LiteralArgumentBuilder<ServerCommandSource> inspect = literal("inspect")
+                    .requires(source -> permitted(source, "lively.admin.npc", 2));
+            inspect.then(argument("id", StringArgumentType.word())
+                    .executes(ctx -> inspectNpc(ctx.getSource(), parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "id")))));
+            npc.then(inspect);
+            root.then(npc);
+
+            root.then(locationCommands());
+
+            LiteralArgumentBuilder<ServerCommandSource> structure = literal("structure");
+            LiteralArgumentBuilder<ServerCommandSource> assign = literal("assign")
+                    .requires(source -> permitted(source, "lively.admin.structure", 2));
+            var purpose = argument("purpose", StringArgumentType.word())
+                    .executes(ctx -> assignStructure(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "structure"),
+                            parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "npc")),
+                            StringArgumentType.getString(ctx, "purpose")));
+            var assignedNpc = argument("npc", StringArgumentType.word()).then(purpose);
+            var assignedStructure = argument("structure", StringArgumentType.word()).then(assignedNpc);
+            assign.then(assignedStructure);
+            structure.then(assign);
+            root.then(structure);
+
+            LiteralArgumentBuilder<ServerCommandSource> quest = literal("quest");
+            LiteralArgumentBuilder<ServerCommandSource> questDebug = literal("debug")
+                    .requires(source -> permitted(source, "lively.admin.quest", 2));
+            questDebug.then(argument("id", StringArgumentType.word())
+                    .executes(ctx -> debugQuestId(ctx.getSource(), StringArgumentType.getString(ctx, "id"))));
+            quest.then(questDebug);
+            root.then(quest);
+
+            root.then(debugCommands());
+            dispatcher.register(root);
+        });
     }
 
-    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> locationCommands() {
-        var location = literal("location").requires(source -> permitted(source, "lively.admin.structure", 2));
+    private static LiteralArgumentBuilder<ServerCommandSource> locationCommands() {
+        LiteralArgumentBuilder<ServerCommandSource> location = literal("location")
+                .requires(source -> permitted(source, "lively.admin.structure", 2));
         location.then(literal("list").executes(ctx -> listLocations(ctx.getSource())));
         location.then(literal("info").then(argument("id", StringArgumentType.word())
                 .executes(ctx -> locationInfo(ctx.getSource(), StringArgumentType.getString(ctx, "id")))));
-        location.then(literal("set")
-                .then(argument("id", StringArgumentType.word())
-                        .then(argument("type", StringArgumentType.word())
-                                .executes(ctx -> setLocation(ctx.getSource(),
-                                        StringArgumentType.getString(ctx, "id"), StringArgumentType.getString(ctx, "type"))))));
+        location.then(literal("set").then(argument("id", StringArgumentType.word())
+                .then(argument("type", StringArgumentType.word())
+                        .executes(ctx -> setLocation(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"), StringArgumentType.getString(ctx, "type"))))));
         location.then(literal("remove").then(argument("id", StringArgumentType.word())
                 .executes(ctx -> flag(ctx.getSource(), LivelyApi.structures().remove(StringArgumentType.getString(ctx, "id")), "location removed"))));
-        location.then(literal("link")
-                .then(argument("id", StringArgumentType.word())
-                        .then(argument("parent", StringArgumentType.word())
-                                .then(argument("town", StringArgumentType.word())
-                                        .executes(ctx -> linkLocation(ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "id"),
-                                                StringArgumentType.getString(ctx, "parent"),
-                                                StringArgumentType.getString(ctx, "town")))))));
+
+        var town = argument("town", StringArgumentType.word())
+                .executes(ctx -> linkLocation(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "id"),
+                        StringArgumentType.getString(ctx, "parent"),
+                        StringArgumentType.getString(ctx, "town")));
+        var parent = argument("parent", StringArgumentType.word()).then(town);
+        var id = argument("id", StringArgumentType.word()).then(parent);
+        location.then(literal("link").then(id));
         return location;
     }
 
-    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<ServerCommandSource> debugCommands() {
-        var debug = literal("debug").requires(source -> permitted(source, "lively.admin.debug", 2));
+    private static LiteralArgumentBuilder<ServerCommandSource> debugCommands() {
+        LiteralArgumentBuilder<ServerCommandSource> debug = literal("debug")
+                .requires(source -> permitted(source, "lively.admin.debug", 2));
         debug.then(literal("ai").executes(ctx -> debugAi(ctx.getSource())));
-        debug.then(literal("path")
-                .executes(ctx -> debugPath(ctx.getSource()))
-                .then(argument("npc", StringArgumentType.word())
-                        .executes(ctx -> debugPathNpc(ctx.getSource(), parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "npc"))))));
+
+        LiteralArgumentBuilder<ServerCommandSource> path = literal("path")
+                .executes(ctx -> debugPath(ctx.getSource()));
+        path.then(argument("npc", StringArgumentType.word())
+                .executes(ctx -> debugPathNpc(ctx.getSource(), parseUuid(ctx.getSource(), StringArgumentType.getString(ctx, "npc")))));
+        debug.then(path);
         debug.then(literal("quest").executes(ctx -> debugQuests(ctx.getSource())));
         debug.then(literal("social").executes(ctx -> debugSocial(ctx.getSource())));
         return debug;
@@ -159,8 +178,7 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
         String town = "-".equals(rawTown) ? null : rawTown;
         if (LivelyApi.structures().get(id).isEmpty()) return error(source, "Unknown location");
         if (parent != null && LivelyApi.structures().get(parent).isEmpty()) return error(source, "Unknown parent location");
-        boolean changed = LivelyApi.structures().setMembership(id, parent, town).isPresent();
-        return flag(source, changed, "location link updated");
+        return flag(source, LivelyApi.structures().setMembership(id, parent, town).isPresent(), "location link updated");
     }
 
     private static int assignStructure(ServerCommandSource source, String structure, UUID npc, String rawPurpose) {
@@ -169,8 +187,7 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
         if (LivelyApi.structures().get(structure).isEmpty()) return error(source, "Unknown structure");
         String purpose = rawPurpose.toLowerCase(Locale.ROOT);
         if (!purpose.equals("home") && !purpose.equals("work")) return error(source, "Purpose must be home or work");
-        return flag(source, LivelyApi.npcs().setMetadata(npc, purpose + ".structure", structure),
-                "structure assigned as " + purpose);
+        return flag(source, LivelyApi.npcs().setMetadata(npc, purpose + ".structure", structure), "structure assigned as " + purpose);
     }
 
     private static int debugAi(ServerCommandSource source) {
