@@ -60,7 +60,7 @@ public final class RuntimeConfigCommandsBootstrap implements ModInitializer {
         }
     }
 
-    /** Keeps authoritative quest state, expires stale offers/tasks and refreshes player-facing navigation on next lifecycle/join signal. */
+    /** Keeps authoritative quest state and expires stale offers/tasks without replacing active progress from disk. */
     private static int reloadQuests(ServerCommandSource source) {
         try {
             int expired = LivelyApi.quests().expire(Instant.now());
@@ -73,7 +73,7 @@ public final class RuntimeConfigCommandsBootstrap implements ModInitializer {
         }
     }
 
-    /** Rebinds the local dialogue runtime and deliberately closes existing sessions so stale nonces/context cannot survive reload. */
+    /** Rebinds local dialogue state and deliberately closes sessions so stale nonces/context cannot survive reload. */
     private static int reloadDialogue(ServerCommandSource source) {
         if (LivelyApi.dialogues() == null) return error(source, "Lively dialogue runtime is not active.");
         LivelyApi.dialogues().bindSession();
@@ -81,19 +81,12 @@ public final class RuntimeConfigCommandsBootstrap implements ModInitializer {
         return 1;
     }
 
-    /** Requeues semantic capability scans. Registry state is kept; scans update discovered capabilities/points in place. */
+    /** Clears scan bookkeeping and lets the bounded scanner rediscover every semantic location incrementally. */
     private static int reloadLocations(ServerCommandSource source) {
         if (LivelyApi.structureScanner() == null) return error(source, "Lively structure scanner is not active.");
-        int requested = 0;
-        int total = 0;
-        for (var structure : LivelyApi.structures().snapshot().structures().values()) {
-            total++;
-            if (LivelyApi.structureScanner().request(structure.id())) requested++;
-        }
-        int queued = requested;
-        int count = total;
-        source.sendFeedback(() -> Text.literal("Lively locations refreshed: scanRequested=" + queued + "/" + count
-                + ". Existing semantic state was retained."), false);
+        int total = LivelyApi.structureScanner().rescanAll();
+        source.sendFeedback(() -> Text.literal("Lively locations refresh queued for " + total
+                + " structure(s); scanning remains bounded per tick and semantic state was retained."), false);
         return 1;
     }
 
