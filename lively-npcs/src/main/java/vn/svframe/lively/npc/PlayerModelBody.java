@@ -2,6 +2,7 @@ package vn.svframe.lively.npc;
 
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySetHeadYawS2CPacket;
@@ -14,8 +15,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import vn.svframe.lively.animation.AnimationRequest;
+import vn.svframe.lively.animation.AnimationResult;
 import vn.svframe.lively.skin.SkinResolver;
 
 import java.util.List;
@@ -146,6 +150,62 @@ public final class PlayerModelBody implements NpcBody {
     }
 
     @Override
+    public AnimationResult animate(MinecraftServer server, AnimationRequest request) {
+        FakePlayer current = fake;
+        if (!spawned() || current == null) return AnimationResult.unsupported(request.name(), "player body is not spawned");
+        return switch (request.name()) {
+            case "idle", "stand", "standing", "reset" -> {
+                current.setSprinting(false);
+                current.setSneaking(false);
+                current.setPose(EntityPose.STANDING);
+                yield AnimationResult.played(request.name(), "vanilla player standing state");
+            }
+            case "walk", "walking" -> {
+                current.setSprinting(false);
+                current.setSneaking(false);
+                yield AnimationResult.played(request.name(), "walk animation follows server movement");
+            }
+            case "run", "running", "sprint" -> {
+                current.setSneaking(false);
+                current.setSprinting(true);
+                yield AnimationResult.played(request.name(), "vanilla sprint state");
+            }
+            case "crouch", "sneak" -> {
+                current.setSprinting(false);
+                current.setSneaking(true);
+                yield AnimationResult.played(request.name(), "vanilla crouch state");
+            }
+            case "swing", "attack", "swing_main", "swing_main_hand" -> {
+                current.swingHand(Hand.MAIN_HAND);
+                yield AnimationResult.played(request.name(), "vanilla main-hand swing");
+            }
+            case "swing_off", "swing_off_hand" -> {
+                current.swingHand(Hand.OFF_HAND);
+                yield AnimationResult.played(request.name(), "vanilla off-hand swing");
+            }
+            case "use", "use_item", "use_main", "bow" -> {
+                current.setCurrentHand(Hand.MAIN_HAND);
+                yield AnimationResult.played(request.name(), "vanilla item-use pose; visible pose depends on held item");
+            }
+            case "use_off" -> {
+                current.setCurrentHand(Hand.OFF_HAND);
+                yield AnimationResult.played(request.name(), "vanilla off-hand item-use pose");
+            }
+            case "sleep" -> {
+                current.setSprinting(false);
+                current.setSneaking(false);
+                current.setPose(EntityPose.SLEEPING);
+                yield AnimationResult.played(request.name(), "vanilla sleeping pose");
+            }
+            case "hurt", "damage" -> {
+                current.getServerWorld().sendEntityStatus(current, (byte) 2);
+                yield AnimationResult.played(request.name(), "vanilla hurt animation without applying damage");
+            }
+            default -> AnimationResult.unsupported(request.name(), "unsupported vanilla player animation");
+        };
+    }
+
+    @Override
     public void tick(MinecraftServer server, NpcDefinition definition) {
         FakePlayer current = fake;
         if (!spawned() || current == null) return;
@@ -169,8 +229,6 @@ public final class PlayerModelBody implements NpcBody {
         if (current == null || current.isRemoved()) return;
         viewer.networkHandler.sendPacket(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, current));
         viewer.networkHandler.sendPacket(new EntitySpawnS2CPacket(current, 0, current.getBlockPos()));
-        // Vanilla clients need the GameProfile to remain in the player list briefly so signed texture data can be
-        // consumed reliably. One second is long enough without leaving NPCs permanently visible in the tab list.
         tabRemovalAt.put(viewer.getUuid(), viewer.getServer().getTicks() + PROFILE_PROPAGATION_TICKS);
     }
 
