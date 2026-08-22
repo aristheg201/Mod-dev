@@ -1,6 +1,5 @@
 package vn.svframe.lively.integration.cobblemon;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import vn.svframe.lively.api.CombatAdapter;
 import vn.svframe.lively.api.LivelyApi;
@@ -12,19 +11,21 @@ public final class CobblemonIntegrationBootstrap {
 
     private CobblemonIntegrationBootstrap() {}
 
-    public static boolean installIfPresent() {
-        if (!FabricLoader.getInstance().isModLoaded("cobblemon")) return false;
+    /**
+     * Installs the mandatory Cobblemon side of the extension.
+     * Fabric metadata already requires Cobblemon 1.7.x, so silently degrading here would hide a broken deployment.
+     */
+    public static void install() {
         LivelyApi.registerCombatAdapter(COMBAT);
         if (LivelyApi.npcs() != null) registerNpcBodyProvider();
-        return true;
     }
 
     public static boolean installNpcBodyProvider(MinecraftServer server) {
-        if (!FabricLoader.getInstance().isModLoaded("cobblemon") || LivelyApi.npcs() == null || server == null) return false;
+        if (LivelyApi.npcs() == null || server == null) return false;
         registerNpcBodyProvider();
         // Core may have already run its SERVER_STARTED restore before Integration receives the event.
         // NpcRuntime.restoreSpawned() is idempotent for bodies that are already alive, so re-running it
-        // here restores only bodies whose provider was unavailable during the first pass.
+        // here restores only Cobblemon bodies whose provider was not bound during the first pass.
         LivelyApi.npcs().restoreSpawned(server);
         return true;
     }
