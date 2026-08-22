@@ -109,7 +109,12 @@ public final class LivelyAiEngine {
             used++;
         }
         if (total <= 0D) return 0D;
-        return clampSigned(signed / total) * .14D;
+        // Preserve evidence magnitude. Normalizing only by total made one nearly-forgotten outcome as influential
+        // as a fresh one because both became +/-1. Saturating evidence strength keeps repeated recent experience
+        // meaningful while letting old/weak memories genuinely fade toward zero.
+        double direction = clampSigned(signed / total);
+        double evidenceStrength = 1D - Math.exp(-total);
+        return direction * evidenceStrength * .18D;
     }
 
     private static double clampSigned(double value) { return Math.max(-1D, Math.min(1D, value)); }
