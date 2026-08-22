@@ -10,6 +10,7 @@ on:
       - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
+      - '.github/workflows/lively-loom.yml'
       - '.github/workflows/lively-trainer-smoke.yml'
   pull_request:
     branches:
@@ -20,6 +21,7 @@ on:
       - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
+      - '.github/workflows/lively-loom.yml'
       - '.github/workflows/lively-trainer-smoke.yml'
   workflow_dispatch:
 
