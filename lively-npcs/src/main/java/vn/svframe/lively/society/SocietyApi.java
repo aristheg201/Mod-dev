@@ -8,6 +8,7 @@ import vn.svframe.lively.economy.PlayerCommerceService;
 import vn.svframe.lively.law.LawEnforcementEngine;
 import vn.svframe.lively.law.LawEnforcementService;
 import vn.svframe.lively.simulation.SocietySimulationService;
+import vn.svframe.lively.social.SocialEncounterService;
 
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ public final class SocietyApi {
     private static volatile PlayerCommerceService commerce;
     private static volatile SocietySimulationService simulation;
     private static volatile LawEnforcementService lawService;
+    private static volatile SocialEncounterService socialEncounters;
 
     private SocietyApi() {}
 
@@ -33,9 +35,11 @@ public final class SocietyApi {
     public static PlayerCommerceService commerce() { return commerce; }
     public static SocietySimulationService simulation() { return simulation; }
     public static LawEnforcementService lawService() { return lawService; }
+    public static SocialEncounterService socialEncounters() { return socialEncounters; }
     public static void installCommerce(PlayerCommerceService service) { commerce = service; }
     public static void installSimulation(SocietySimulationService service) { simulation = service; }
     public static void installLawService(LawEnforcementService service) { lawService = service; }
+    public static void installSocialEncounters(SocialEncounterService service) { socialEncounters = service; }
 
     public static void registerGamblingBridge(GamblingBridge bridge) {
         if (bridge != null && GAMBLING_BRIDGES.stream().noneMatch(existing -> existing.id().equalsIgnoreCase(bridge.id()))) {
@@ -52,5 +56,6 @@ public final class SocietyApi {
         commerce = null;
         simulation = null;
         lawService = null;
+        socialEncounters = null;
     }
 }
