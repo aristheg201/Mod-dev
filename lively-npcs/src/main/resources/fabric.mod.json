@@ -13,6 +13,7 @@
       "vn.svframe.lively.admin.NpcWizardBootstrap",
       "vn.svframe.lively.admin.ChronicleCommandsBootstrap",
       "vn.svframe.lively.admin.QuestCommandsBootstrap",
+      "vn.svframe.lively.admin.ProductionAdminCommandsBootstrap",
       "vn.svframe.lively.config.RuntimeConfigCommandsBootstrap",
       "vn.svframe.lively.world.SemanticActivityBootstrap",
       "vn.svframe.lively.social.RumorPropagationBootstrap",
