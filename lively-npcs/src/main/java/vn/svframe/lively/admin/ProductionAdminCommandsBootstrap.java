@@ -116,9 +116,11 @@ public final class ProductionAdminCommandsBootstrap implements ModInitializer {
                 .map(value -> {
                     var snapshot = value.snapshot(16);
                     return "revision=" + snapshot.revision()
-                            + ", memories=" + snapshot.memories().size()
+                            + ", recentMemories=" + snapshot.recentMemories().size()
                             + ", beliefs=" + snapshot.beliefs().size()
-                            + ", relationships=" + snapshot.relationships().size();
+                            + ", relationships=" + snapshot.relationships().size()
+                            + ", traits=" + snapshot.traits().size()
+                            + ", needs=" + snapshot.needs().size();
                 }).orElse("state=missing");
         String nav = LivelyApi.worldNavigation() == null ? "none" : LivelyApi.worldNavigation().status(id)
                 .map(status -> status.mode() + "/" + status.phase() + "/nodes=" + status.remainingNodes()
