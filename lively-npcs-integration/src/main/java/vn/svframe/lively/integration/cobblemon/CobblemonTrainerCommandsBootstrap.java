@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -23,7 +24,7 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
             var role = argument("role", StringArgumentType.word())
                     .executes(ctx -> create(
                             ctx.getSource(),
-                            StringArgumentType.getString(ctx, "npcClass"),
+                            IdentifierArgumentType.getIdentifier(ctx, "npcClass"),
                             IntegerArgumentType.getInteger(ctx, "level"),
                             IntegerArgumentType.getInteger(ctx, "skill"),
                             StringArgumentType.getString(ctx, "name"),
@@ -31,9 +32,7 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
             var name = argument("name", StringArgumentType.string()).then(role);
             var skill = argument("skill", IntegerArgumentType.integer(1, 5)).then(name);
             var level = argument("level", IntegerArgumentType.integer(1, 1000)).then(skill);
-            // Brigadier word() rejects ':' and therefore rejects normal namespaced identifiers such as
-            // cobblemon:battler_test. string() still consumes exactly one token but permits the namespace separator.
-            var npcClass = argument("npcClass", StringArgumentType.string()).then(level);
+            var npcClass = argument("npcClass", IdentifierArgumentType.identifier()).then(level);
 
             LiteralArgumentBuilder<ServerCommandSource> trainer = literal("trainer")
                     .requires(source -> LivelyApi.permissions().has(source, "lively.admin.npc", 2))
@@ -44,12 +43,7 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
         });
     }
 
-    private static int create(ServerCommandSource source, String npcClass, int level, int skill, String name, String role) {
-        Identifier id = Identifier.tryParse(npcClass);
-        if (id == null) {
-            source.sendError(Text.literal("Invalid Cobblemon NPC class identifier: " + npcClass));
-            return 0;
-        }
+    private static int create(ServerCommandSource source, Identifier id, int level, int skill, String name, String role) {
         if (LivelyApi.npcs() == null) {
             source.sendError(Text.literal("Lively NPC runtime is not active."));
             return 0;
