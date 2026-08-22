@@ -75,8 +75,7 @@ public final class LawEnforcementService {
     private void reviewInvestigations(Instant now) {
         int processed = 0;
         for (CrimeEngine.Crime crime : LivelyApi.crime().snapshot().crimes().values().stream()
-                .filter(value -> value.status() == CrimeEngine.Status.OPEN || value.status() == CrimeEngine.Status.INVESTIGATING
-                        || value.status() == CrimeEngine.Status.CHARGED)
+                .filter(value -> value.status() == CrimeEngine.Status.OPEN || value.status() == CrimeEngine.Status.INVESTIGATING)
                 .sorted(Comparator.comparing(CrimeEngine.Crime::occurredAt)).toList()) {
             if (processed++ >= MAX_CASE_REVIEWS) break;
             List<CrimeEngine.Evidence> evidence = LivelyApi.crime().evidence(crime.id());
@@ -204,9 +203,11 @@ public final class LawEnforcementService {
             LivelyApi.worldNavigation().stop(suspect.id());
             LivelyApi.worldNavigation().stop(officer.id());
         }
-        if (config.physicallyJailNpcs() && facility != null) {
-            Vec3d cell = point(facility, "cell").or(() -> point(facility, "holding")).orElseGet(() -> center(facility.bounds()));
-            LivelyApi.npcs().teleport(server, suspect.id(), facility.bounds().world(), cell, suspect.yaw(), suspect.pitch());
+        if (config.physicallyJailNpcs()) {
+            if (facility != null) {
+                Vec3d cell = point(facility, "cell").or(() -> point(facility, "holding")).orElseGet(() -> center(facility.bounds()));
+                LivelyApi.npcs().teleport(server, suspect.id(), facility.bounds().world(), cell, suspect.yaw(), suspect.pitch());
+            }
             LivelyApi.npcs().setFlag(suspect.id(), NpcRuntime.Flag.AI, false);
         }
 
