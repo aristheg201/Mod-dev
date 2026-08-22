@@ -23,15 +23,16 @@ public final class CobblemonIntegrationBootstrap {
     public static boolean installNpcBodyProvider(MinecraftServer server) {
         if (LivelyApi.npcs() == null || server == null) return false;
         registerNpcBodyProvider();
-        // Core may have already run its SERVER_STARTED restore before Integration receives the event.
-        // NpcRuntime.restoreSpawned() is idempotent for bodies that are already alive, so re-running it
-        // here restores only Cobblemon bodies whose provider was not bound during the first pass.
         LivelyApi.npcs().restoreSpawned(server);
         return true;
     }
 
     private static void registerNpcBodyProvider() {
-        LivelyApi.npcs().registerProvider(NpcDefinition.BodyType.EXTERNAL,
-                definition -> new CobblemonPokemonBody(definition.id()));
+        LivelyApi.npcs().registerProvider(NpcDefinition.BodyType.EXTERNAL, definition -> {
+            String key = definition.bodyKey() == null ? "" : definition.bodyKey().trim();
+            return key.startsWith("npc:")
+                    ? new CobblemonTrainerBody(definition.id())
+                    : new CobblemonPokemonBody(definition.id());
+        });
     }
 }
