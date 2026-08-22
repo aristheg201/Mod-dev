@@ -1,6 +1,7 @@
 package vn.svframe.lively.admin;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -17,17 +18,18 @@ import static net.minecraft.server.command.CommandManager.literal;
 public final class AnimationCommandsBootstrap implements ModInitializer {
     @Override
     public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                literal("lively")
-                        .then(literal("npc")
-                                .then(literal("animate")
-                                        .requires(source -> LivelyApi.permissions().has(source, "lively.admin.npc.animate", 2))
-                                        .then(argument("id", StringArgumentType.word())
-                                                .then(argument("animation", StringArgumentType.greedyString())
-                                                        .executes(ctx -> animate(
-                                                                ctx.getSource(),
-                                                                StringArgumentType.getString(ctx, "id"),
-                                                                StringArgumentType.getString(ctx, "animation"))))))))));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            var animation = argument("animation", StringArgumentType.greedyString())
+                    .executes(ctx -> animate(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "animation")));
+            var id = argument("id", StringArgumentType.word()).then(animation);
+            LiteralArgumentBuilder<ServerCommandSource> animate = literal("animate")
+                    .requires(source -> LivelyApi.permissions().has(source, "lively.admin.npc.animate", 2))
+                    .then(id);
+            dispatcher.register(literal("lively").then(literal("npc").then(animate)));
+        });
     }
 
     private static int animate(ServerCommandSource source, String rawId, String animation) {
