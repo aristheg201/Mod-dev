@@ -1,8 +1,12 @@
 package vn.svframe.lively.world;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import vn.svframe.lively.api.LivelyApi;
@@ -23,8 +27,8 @@ import java.util.Set;
  *
  * <p>The scanner starts from a walkable indoor cell, flood-fills connected floor space, follows doors/gates,
  * ordinary one-block elevation changes and bounded vertical connectors, requires headroom/support/roof, then
- * classifies the shell from functional blocks. It is command-driven and bounded so discovery never becomes a
- * whole-world tick scan.</p>
+ * classifies the shell from reloadable block/tag/capability rules. It is command-driven and bounded so discovery
+ * never becomes a whole-world tick scan.</p>
  */
 public final class BuiltStructureDiscovery {
     private static final Direction[] HORIZONTAL = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
@@ -103,36 +107,7 @@ public final class BuiltStructureDiscovery {
     }
 
     static String classify(Map<String, Integer> blockCounts, Map<String, Integer> capabilityCounts) {
-        int beds = countSuffix(blockCounts, "_bed");
-        int storage = capabilityCounts.getOrDefault("storage", 0);
-        int smith = capabilityCounts.getOrDefault("smith", 0);
-        int repair = capabilityCounts.getOrDefault("repair", 0);
-        int cook = capabilityCounts.getOrDefault("cook", 0);
-        int brew = capabilityCounts.getOrDefault("brew", 0);
-        int read = capabilityCounts.getOrDefault("read", 0);
-        int utility = capabilityCounts.getOrDefault("utility", 0);
-        int ironBars = blockCounts.getOrDefault("minecraft:iron_bars", 0);
-        int ironDoors = blockCounts.getOrDefault("minecraft:iron_door", 0);
-        int bookshelves = blockCounts.getOrDefault("minecraft:bookshelf", 0);
-        int jukeboxes = blockCounts.getOrDefault("minecraft:jukebox", 0);
-        int bells = blockCounts.getOrDefault("minecraft:bell", 0);
-        int blastFurnaces = blockCounts.getOrDefault("minecraft:blast_furnace", 0);
-        int grindstones = blockCounts.getOrDefault("minecraft:grindstone", 0);
-        int lecterns = blockCounts.getOrDefault("minecraft:lectern", 0);
-
-        if (bells >= 1) return "town_center";
-        if (ironBars >= 8 && ironDoors >= 1 && beds >= 1) return "prison";
-        if (bookshelves >= 16 && lecterns >= 1) return "library";
-        if (beds >= 4 && cook >= 1 && jukeboxes >= 1) return "inn";
-        if (brew >= 1 && utility >= 1 && beds >= 1) return "infirmary";
-        if (blastFurnaces >= 1 && (grindstones >= 1 || smith >= 2 || repair >= 1)) return "blacksmith";
-        if (storage >= 4 && read >= 1) return "storage";
-        if (beds >= 4) return "big_house";
-        if (beds >= 1) return "house";
-        if (smith >= 1 || repair >= 1) return "workshop";
-        if (cook >= 1) return "kitchen";
-        if (storage >= 3) return "storage";
-        return "building";
+        return BuiltStructureTypeRegistry.classify(blockCounts, capabilityCounts).type();
     }
 
     private static ScanGeometry scan(ServerWorld world, BlockPos requested) {
@@ -251,13 +226,18 @@ public final class BuiltStructureDiscovery {
         int maxX = geometry.maxX + 1, maxY = Math.max(geometry.maxY + 2, geometry.maxRoofY), maxZ = geometry.maxZ + 1;
 
         HashMap<String, Integer> blockCounts = new HashMap<>();
+        HashMap<String, Integer> tagCounts = new HashMap<>();
         HashMap<String, Integer> capabilityCounts = new HashMap<>();
         HashSet<String> capabilities = new HashSet<>();
         HashMap<String, String> points = new HashMap<>();
         ArrayList<BlockPos> connectors = new ArrayList<>();
+        Map<String, TagKey<Block>> requiredTags = requiredTagKeys();
 
         if (existing != null) {
-            existing.capabilities().stream().filter(value -> !AUTO_CAPABILITIES.contains(value)).forEach(capabilities::add);
+            Set<String> managed = BuiltStructureTypeRegistry.managedCapabilities();
+            existing.capabilities().stream()
+                    .filter(value -> !AUTO_CAPABILITIES.contains(value) && !managed.contains(value))
+                    .forEach(capabilities::add);
             existing.points().forEach((key, value) -> {
                 if (!AUTO_POINTS.contains(key) && !key.startsWith("work_")) points.put(key, value);
             });
@@ -269,8 +249,11 @@ public final class BuiltStructureDiscovery {
                 for (int z = minZ; z <= maxZ; z++) {
                     cursor.set(x, y, z);
                     BlockState state = world.getBlockState(cursor);
-                    String blockId = Registries.BLOCK.getId(state.getBlock()).toString();
+                    String blockId = Registries.BLOCK.getId(state.getBlock()).toString().toLowerCase(Locale.ROOT);
                     blockCounts.merge(blockId, 1, Integer::sum);
+                    for (var entry : requiredTags.entrySet()) {
+                        if (state.isIn(entry.getValue())) tagCounts.merge(entry.getKey(), 1, Integer::sum);
+                    }
                     Set<String> blockCapabilities = LivelyApi.blockCapabilities().capabilities(blockId);
                     for (String capability : blockCapabilities) {
                         capabilities.add(capability);
@@ -292,8 +275,9 @@ public final class BuiltStructureDiscovery {
                     .ifPresent(pos -> points.put("entrance", point(pos)));
         }
 
-        String type = classify(blockCounts, capabilityCounts);
-        if (type.equals("house") || type.equals("big_house") || type.equals("inn")) capabilities.add("residential");
+        BuiltStructureTypeRegistry.Match match = BuiltStructureTypeRegistry.classify(blockCounts, tagCounts, capabilityCounts);
+        String type = match.type();
+        capabilities.addAll(match.addCapabilities());
         String id = existing == null
                 ? uniqueId(type, (minX + maxX) / 2, minY, (minZ + maxZ) / 2)
                 : existing.id();
@@ -302,6 +286,16 @@ public final class BuiltStructureDiscovery {
         return new SemanticStructureRegistry.Structure(id, type, bounds, capabilities, points,
                 existing == null ? null : existing.parentId(), existing == null ? null : existing.townId(),
                 existing == null ? SemanticStructureRegistry.OperationalState.OPEN : existing.state(), 0L);
+    }
+
+    private static Map<String, TagKey<Block>> requiredTagKeys() {
+        HashMap<String, TagKey<Block>> result = new HashMap<>();
+        for (String configured : BuiltStructureTypeRegistry.requiredTags()) {
+            String raw = configured.startsWith("#") ? configured.substring(1) : configured;
+            Identifier id = Identifier.tryParse(raw);
+            if (id != null) result.put(configured, TagKey.of(RegistryKeys.BLOCK, id));
+        }
+        return Map.copyOf(result);
     }
 
     private static BlockPos resolveSeed(ServerWorld world, BlockPos requested, Map<BlockPos, Integer> roofCache) {
@@ -367,11 +361,6 @@ public final class BuiltStructureDiscovery {
     private static void enqueue(Set<BlockPos> visited, ArrayDeque<BlockPos> queue, BlockPos pos) {
         BlockPos immutable = pos.toImmutable();
         if (visited.add(immutable)) queue.addLast(immutable);
-    }
-
-    private static int countSuffix(Map<String, Integer> counts, String suffix) {
-        return counts.entrySet().stream().filter(entry -> entry.getKey().endsWith(suffix))
-                .mapToInt(Map.Entry::getValue).sum();
     }
 
     private static int horizontalDistance(BlockPos a, BlockPos b) {
