@@ -3,11 +3,14 @@
   "id": "livelynpcs_integration",
   "version": "${version}",
   "name": "Lively NPCs: Cobblemon Integration by SVFrame Studio",
-  "description": "Cobblemon integration extension for Lively NPCs, including Pokemon bodies, trainer battle AI, world awareness and optional server-ecosystem bridges.",
+  "description": "Cobblemon integration extension for Lively NPCs, including Pokemon bodies, native trainer NPCs, trainer battle AI, world awareness and optional server-ecosystem bridges.",
   "authors": ["SVFrame Studio"],
   "environment": "*",
   "entrypoints": {
-    "main": ["vn.svframe.lively.integration.LivelyNpcsIntegration"]
+    "main": [
+      "vn.svframe.lively.integration.LivelyNpcsIntegration",
+      "vn.svframe.lively.integration.cobblemon.CobblemonTrainerCommandsBootstrap"
+    ]
   },
   "mixins": [
     "livelynpcs-integration.mixins.json"
