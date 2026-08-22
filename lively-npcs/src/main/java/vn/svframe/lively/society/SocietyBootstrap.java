@@ -13,6 +13,7 @@ import vn.svframe.lively.law.LawConfig;
 import vn.svframe.lively.law.LawEnforcementService;
 import vn.svframe.lively.persistence.SocietyStateStore;
 import vn.svframe.lively.simulation.SocietySimulationService;
+import vn.svframe.lively.social.HouseholdSimulationService;
 import vn.svframe.lively.social.SocialEncounterService;
 
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ public final class SocietyBootstrap implements ModInitializer {
     private volatile SocietySimulationService simulation;
     private volatile LawEnforcementService lawService;
     private volatile SocialEncounterService socialEncounters;
+    private volatile HouseholdSimulationService households;
     private volatile CompletableFuture<Void> pendingSave = CompletableFuture.completedFuture(null);
 
     @Override public void onInitialize() {
@@ -57,6 +59,8 @@ public final class SocietyBootstrap implements ModInitializer {
         SocietyApi.installLawService(lawService);
         socialEncounters = new SocialEncounterService(server);
         SocietyApi.installSocialEncounters(socialEncounters);
+        households = new HouseholdSimulationService(server);
+        SocietyApi.installHouseholds(households);
         pendingSave = CompletableFuture.completedFuture(null);
         LivelyNpcs.LOGGER.info("Lively society session ready: economy routes={}, debtContracts={}, gamblingBets={}, warrants={}, custody={}, courtCases={}",
                 SocietyApi.economies().routes(), SocietyApi.debts().snapshot().contracts().size(), SocietyApi.gambling().snapshot().bets().size(),
@@ -71,6 +75,8 @@ public final class SocietyBootstrap implements ModInitializer {
         if (law != null) law.tick(tick);
         SocialEncounterService encounters = socialEncounters;
         if (encounters != null) encounters.tick(tick);
+        HouseholdSimulationService household = households;
+        if (household != null) household.tick(tick);
         if (tick % 6000L != 0L || !pendingSave.isDone() || store == null) return;
         pendingSave = store.saveAsync(capture()).whenComplete((ignored, error) -> {
             if (error != null) LivelyNpcs.LOGGER.error("Lively society autosave failed", error);
@@ -89,6 +95,7 @@ public final class SocietyBootstrap implements ModInitializer {
             simulation = null;
             lawService = null;
             socialEncounters = null;
+            households = null;
             pendingSave = CompletableFuture.completedFuture(null);
             activeServer = null;
             SocietyApi.resetWorldState();
