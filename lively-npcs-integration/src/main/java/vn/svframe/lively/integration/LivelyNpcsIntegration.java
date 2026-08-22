@@ -17,7 +17,7 @@ import vn.svframe.lively.quest.QuestRuntime;
 
 import java.util.Map;
 
-/** External-mod bridge. Core AI remains independent from Cobblemon and the rest of the server ecosystem. */
+/** Cobblemon extension for Lively NPCs. Cobblemon itself is a mandatory runtime dependency. */
 public final class LivelyNpcsIntegration implements ModInitializer {
     public static final String MOD_ID = "livelynpcs_integration";
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
@@ -27,21 +27,21 @@ public final class LivelyNpcsIntegration implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        // Cobblemon is mandatory for this artifact. Optional ecosystem bridges remain independently fail-closed.
+        CobblemonIntegrationBootstrap.install();
+        worldAwareness.install();
         ServerEcosystemBootstrap.install();
         hologramProjection.install();
         questWaypoints.install();
-        boolean cobblemon = FabricLoader.getInstance().isModLoaded("cobblemon");
-        if (cobblemon) {
-            CobblemonIntegrationBootstrap.installIfPresent();
-            worldAwareness.install();
-            ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-                boolean installed = CobblemonIntegrationBootstrap.installNpcBodyProvider(server);
-                LOGGER.info("Lively Cobblemon body provider bound and spawned bodies restored for server session={}", installed);
-            });
-            installCobblemonNpcInteraction();
-        }
-        LOGGER.info("Lively NPCs Integration initialized; Cobblemon={}, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
-                cobblemon, LivelyApi.externalEconomy().available(), LivelyApi.holograms().available(),
+
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            boolean installed = CobblemonIntegrationBootstrap.installNpcBodyProvider(server);
+            LOGGER.info("Lively Cobblemon body provider bound and spawned bodies restored for server session={}", installed);
+        });
+        installCobblemonNpcInteraction();
+
+        LOGGER.info("Lively NPCs: Cobblemon Integration initialized; Cobblemon=true, BEconomy={}, HoloDisplays={}, LuckPerms={}, Flan={}, SVFWaypoints={}",
+                LivelyApi.externalEconomy().available(), LivelyApi.holograms().available(),
                 FabricLoader.getInstance().isModLoaded("luckperms"), FabricLoader.getInstance().isModLoaded("flan"),
                 LivelyApi.waypoints().available());
     }
