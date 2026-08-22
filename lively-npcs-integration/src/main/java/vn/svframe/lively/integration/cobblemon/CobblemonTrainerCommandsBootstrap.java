@@ -39,21 +39,23 @@ public final class CobblemonTrainerCommandsBootstrap implements ModInitializer {
     }
 
     private static int create(ServerCommandSource source, String npcClass, int level, int skill, String name, String role) {
-        ServerPlayerEntity player = source.getPlayer();
-        if (player == null) {
-            source.sendError(Text.literal("Player only"));
-            return 0;
-        }
         Identifier id = Identifier.tryParse(npcClass);
         if (id == null) {
             source.sendError(Text.literal("Invalid Cobblemon NPC class identifier: " + npcClass));
             return 0;
         }
+        if (LivelyApi.npcs() == null) {
+            source.sendError(Text.literal("Lively NPC runtime is not active."));
+            return 0;
+        }
         try {
+            ServerPlayerEntity player = source.getPlayer();
+            float yaw = player == null ? 0F : player.getYaw();
+            float pitch = player == null ? 0F : player.getPitch();
             String body = "npc:" + id + ";level=" + level + ";skill=" + skill + ";native_interaction=true";
             NpcDefinition definition = LivelyApi.npcs().create(
                     name, role, NpcDefinition.BodyType.EXTERNAL, body, "",
-                    source.getWorld().getRegistryKey().getValue().toString(), source.getPosition(), player.getYaw(), player.getPitch());
+                    source.getWorld().getRegistryKey().getValue().toString(), source.getPosition(), yaw, pitch);
             if (!LivelyApi.npcs().spawn(source.getServer(), definition.id())) {
                 source.sendError(Text.literal("Trainer definition created but Cobblemon rejected the body spawn."));
                 return 0;
