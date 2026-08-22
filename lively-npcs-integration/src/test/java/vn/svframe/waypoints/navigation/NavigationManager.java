@@ -1,10 +1,10 @@
 package vn.svframe.waypoints.navigation;
 
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import vn.svframe.waypoints.data.WaypointTarget;
 
-/** Test double for the typed dynamic-target shape accepted by Lively's optional bridge. */
+/** Test double mirroring SVF Waypoints 1.2.17 transient navigation surface. */
 public final class NavigationManager {
-    public boolean navigateDynamic(ServerPlayerEntity player, String world, Vec3d target, String label) { return true; }
-    public boolean deactivate(ServerPlayerEntity player) { return true; }
+    public void activate(ServerPlayerEntity player, WaypointTarget target) {}
+    public void stop(ServerPlayerEntity player, boolean notify) {}
 }
