@@ -219,21 +219,37 @@ public final class LivelyNpcs implements ModInitializer {
             if (npcRuntime != null) npcRuntime.shutdown(server);
             if (skinResolver != null) skinResolver.close();
 
-            if (stateRegistry != null && simulationStore != null && bundle != null) {
-                CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle))
-                        .orTimeout(10L, TimeUnit.SECONDS).join();
-            } else if (stateRegistry != null) {
-                stateRegistry.saveAll().orTimeout(10L, TimeUnit.SECONDS).join();
-            }
+            CompletableFuture<Void> worldState = stateRegistry != null && simulationStore != null && bundle != null
+                    ? CompletableFuture.allOf(stateRegistry.saveAll(), simulationStore.saveAsync(bundle))
+                    : stateRegistry != null ? stateRegistry.saveAll() : CompletableFuture.completedFuture(null);
+            CompletableFuture<Void> npcDefinitions = npcRuntime != null
+                    ? npcRuntime.flushDefinitions() : CompletableFuture.completedFuture(null);
+            CompletableFuture<Void> history = historyJournal != null
+                    ? historyJournal.flush() : CompletableFuture.completedFuture(null);
+            CompletableFuture.allOf(worldState, npcDefinitions, history)
+                    .orTimeout(15L, TimeUnit.SECONDS).join();
         } catch (RuntimeException error) {
             LOGGER.error("Lively final state flush failed", error);
         } finally {
             dialogueService.reset();
+            if (npcRuntime != null) npcRuntime.close();
+            if (historyJournal != null) historyJournal.close();
             if (stateRegistry != null) stateRegistry.close();
             if (simulationStore != null) simulationStore.close();
-            stateRegistry = null; npcRuntime = null; historyJournal = null; simulationStore = null; skinResolver = null;
-            navigation = null; autonomy = null; director = null; causalSimulation = null; familyProgression = null;
-            businessSimulation = null; questLifecycle = null; structureScanner = null; historyListener = null;
+            stateRegistry = null;
+            npcRuntime = null;
+            historyJournal = null;
+            simulationStore = null;
+            skinResolver = null;
+            navigation = null;
+            autonomy = null;
+            director = null;
+            causalSimulation = null;
+            familyProgression = null;
+            businessSimulation = null;
+            questLifecycle = null;
+            structureScanner = null;
+            historyListener = null;
             pendingAutosave = CompletableFuture.completedFuture(null);
             activeServer = null;
             LivelyApi.resetServerSessionState();
@@ -272,20 +288,20 @@ public final class LivelyNpcs implements ModInitializer {
     private void journal(String type, WorldEventEngine.WorldEvent event) {
         WorldHistoryJournal journal = historyJournal;
         if (journal == null) return;
-        try {
-            Map<String, String> facts = new HashMap<>();
-            facts.put("category", event.category().name());
-            facts.put("seed", event.seed());
-            facts.put("phase", event.phase().name());
-            facts.put("structure", event.structureId() == null ? "" : event.structureId());
-            facts.put("intensity", Double.toString(event.intensity()));
-            String kind = event.facts().get("kind");
-            if (kind != null && !kind.isBlank()) facts.put("kind", kind);
-            String eraBreak = event.facts().get("era_break");
-            if (eraBreak != null) facts.put("era_break", eraBreak);
-            journal.append(new WorldHistoryJournal.Entry(historySequence.incrementAndGet(), Instant.now(), type, event.id().toString(), facts));
-        } catch (IOException error) {
-            LOGGER.error("Failed to append Lively world history record {}", type, error);
-        }
+        Map<String, String> facts = new HashMap<>();
+        facts.put("category", event.category().name());
+        facts.put("seed", event.seed());
+        facts.put("phase", event.phase().name());
+        facts.put("structure", event.structureId() == null ? "" : event.structureId());
+        facts.put("intensity", Double.toString(event.intensity()));
+        String kind = event.facts().get("kind");
+        if (kind != null && !kind.isBlank()) facts.put("kind", kind);
+        String eraBreak = event.facts().get("era_break");
+        if (eraBreak != null) facts.put("era_break", eraBreak);
+        WorldHistoryJournal.Entry entry = new WorldHistoryJournal.Entry(
+                historySequence.incrementAndGet(), Instant.now(), type, event.id().toString(), facts);
+        journal.appendAsync(entry).whenComplete((ignored, error) -> {
+            if (error != null) LOGGER.error("Failed to append Lively world history record {}", type, error);
+        });
     }
 }
