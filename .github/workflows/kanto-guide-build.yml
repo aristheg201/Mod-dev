@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/kanto-guide-build
-          base64 -d bootstrap/kanto-guide-source.b64 > /tmp/kanto-guide-source.tar.gz
+          cat bootstrap/kanto-guide-correct.part00 bootstrap/kanto-guide-correct.part01 | base64 -d > /tmp/kanto-guide-source.tar.gz
           tar -xzf /tmp/kanto-guide-source.tar.gz -C /tmp/kanto-guide-build
           test -f /tmp/kanto-guide-build/src/main/java/vn/svframe/kantoguide/SVFrameKantoGuide.java
 
