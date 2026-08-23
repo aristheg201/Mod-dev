@@ -1,2 +1,1 @@
-6260c995bdb0c05469c848807e7f046092214b7d0898d87e6ebea2219711c941  world-director-source.tar.gz
-# CI trigger after workflow registration
+f20ec710ad169dee57d927ac52af6d6c73702fb0029e2a03d974ce3295c675ed  world-director-v4-source.tar.gz
