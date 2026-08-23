@@ -8,6 +8,12 @@ on:
     paths:
       - 'world-director-bootstrap/**'
       - '.github/workflows/world-director.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'world-director-bootstrap/**'
+      - '.github/workflows/world-director.yml'
 
 permissions:
   contents: read
