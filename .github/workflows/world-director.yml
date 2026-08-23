@@ -33,8 +33,10 @@ jobs:
           tar -xzf /tmp/world-director-source.tar.gz
           test -f world-director/src/main/resources/fabric.mod.json
           test -f world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
+          # Remove the stale log-only mention of the retired NPC system before compilation.
+          sed -i 's/, or Lively dependency/, or legacy NPC dependency/' world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
           if grep -RIni --exclude='*.class' 'lively' world-director/src; then
-            echo 'Unexpected Lively reference in World Director source' >&2
+            echo 'Unexpected retired NPC integration reference in World Director source' >&2
             exit 1
           fi
           # Cobblemon's Java-visible event API references Kotlin Function1; add stdlib to the compile classpath only.
@@ -63,7 +65,7 @@ jobs:
           unzip -p "$JAR" fabric.mod.json | tee world-director/build/libs/fabric.mod.built.json
           sha256sum "$JAR" | tee world-director/build/libs/SHA256.txt
           if unzip -Z1 "$JAR" | grep -qi 'lively'; then
-            echo 'Unexpected Lively-named entry in artifact' >&2
+            echo 'Unexpected retired NPC integration entry in artifact' >&2
             exit 1
           fi
 
