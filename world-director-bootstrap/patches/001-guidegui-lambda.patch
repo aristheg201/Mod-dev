@@ -1,0 +1,14 @@
+--- world-director/src/main/java/vn/svframe/worlddirector/guide/GuideGui.java
++++ world-director/src/main/java/vn/svframe/worlddirector/guide/GuideGui.java
+@@ -136,10 +136,11 @@
+             GuideCategory[] categories = {GuideCategory.POKEMON, GuideCategory.TRAVEL, GuideCategory.HOME, GuideCategory.ECONOMY, GuideCategory.ACTIVITIES, GuideCategory.NPCS, GuideCategory.SERVER};
+             for (int i = 0; i < categorySlots.length; i++) {
+                 int slot = categorySlots[i];
+-                int pending = (int) allSteps.stream().filter(s -> s.category() == categories[i]).count();
+-                int progress = categoryProgress(profile, categories[i]);
++                GuideCategory category = categories[i];
++                int pending = (int) allSteps.stream().filter(s -> s.category() == category).count();
++                int progress = categoryProgress(profile, category);
+                 getSlot(slot).setStack(category(icons[i], titles[i], progress, pending));
+                 actions.put(slot, new UiAction.PageNav(pages[i]));
+             }

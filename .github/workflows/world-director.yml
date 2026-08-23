@@ -1,0 +1,81 @@
+name: World Director Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/world-director
+    paths:
+      - 'world-director-bootstrap/**'
+      - '.github/workflows/world-director.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'world-director-bootstrap/**'
+      - '.github/workflows/world-director.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore World Director v4 source
+        shell: bash
+        run: |
+          cat world-director-bootstrap/source-v4.b64.part* | base64 -d > /tmp/world-director-v4-source.tar.gz
+          echo "f20ec710ad169dee57d927ac52af6d6c73702fb0029e2a03d974ce3295c675ed  /tmp/world-director-v4-source.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/world-director-v4-source.tar.gz
+          patch -p0 < world-director-bootstrap/patches/001-guidegui-lambda.patch
+          test -f world-director/src/main/resources/fabric.mod.json
+          test -f world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
+          if grep -RIni --exclude='*.class' 'lively' world-director/src; then
+            echo 'Unexpected retired NPC integration reference in World Director source' >&2
+            exit 1
+          fi
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Test and remap
+        working-directory: world-director
+        run: gradle --no-daemon --stacktrace clean test remapJar
+
+      - name: Verify artifact
+        shell: bash
+        run: |
+          JAR="$(find world-director/build/libs -maxdepth 1 -type f -name 'WorldDirector-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          if [ -z "$JAR" ]; then
+            JAR="$(find world-director/build/libs -maxdepth 1 -type f -name 'WorldDirector-*.jar' ! -name '*sources*' | head -n1)"
+          fi
+          test -n "$JAR"
+          unzip -p "$JAR" fabric.mod.json | tee world-director/build/libs/fabric.mod.built.json
+          sha256sum "$JAR" | tee world-director/build/libs/SHA256.txt
+          if unzip -Z1 "$JAR" | grep -qi 'lively'; then
+            echo 'Unexpected retired NPC integration entry in artifact' >&2
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorldDirector-v4
+          path: |
+            world-director/build/libs/*.jar
+            world-director/build/libs/SHA256.txt
+            world-director/build/libs/fabric.mod.built.json
+          if-no-files-found: error
