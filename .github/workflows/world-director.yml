@@ -33,6 +33,10 @@ jobs:
           tar -xzf /tmp/world-director-source.tar.gz
           test -f world-director/src/main/resources/fabric.mod.json
           test -f world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
+          if grep -RIni --exclude='*.class' 'lively' world-director/src; then
+            echo 'Unexpected Lively reference in World Director source' >&2
+            exit 1
+          fi
           # Cobblemon's Java-visible event API references Kotlin Function1; add stdlib to the compile classpath only.
           sed -i '/modCompileOnly "com.cobblemon:fabric:/a\    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"' world-director/build.gradle
 
@@ -58,8 +62,8 @@ jobs:
           test -n "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee world-director/build/libs/fabric.mod.built.json
           sha256sum "$JAR" | tee world-director/build/libs/SHA256.txt
-          if unzip -p "$JAR" | strings | grep -qi 'lively'; then
-            echo 'Unexpected Lively reference in artifact' >&2
+          if unzip -Z1 "$JAR" | grep -qi 'lively'; then
+            echo 'Unexpected Lively-named entry in artifact' >&2
             exit 1
           fi
 
