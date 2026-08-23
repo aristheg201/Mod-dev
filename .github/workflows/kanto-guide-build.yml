@@ -25,7 +25,7 @@ jobs:
           mkdir -p /tmp/kanto-guide-build
           cat bootstrap/kanto-guide-correct.part00 bootstrap/kanto-guide-correct.part01 | base64 -d > /tmp/kanto-guide-source.tar.gz
           tar -xzf /tmp/kanto-guide-source.tar.gz -C /tmp/kanto-guide-build
-          test -f /tmp/kanto-guide-build/src/main/java/vn/svframe/kantoguide/SVFrameKantoGuide.java
+          test -f /tmp/kanto-guide-build/svframe-kanto-guide/src/main/java/vn/svframe/kantoguide/SVFrameKantoGuide.java
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -39,14 +39,14 @@ jobs:
           gradle-version: '8.10.2'
 
       - name: Loom remap build
-        working-directory: /tmp/kanto-guide-build
+        working-directory: /tmp/kanto-guide-build/svframe-kanto-guide
         run: gradle --no-daemon clean remapJar
 
       - name: Verify artifact
         shell: bash
         run: |
           mkdir -p build-output
-          JAR="$(find /tmp/kanto-guide-build/build/libs -maxdepth 1 -type f -name 'SVFrameKantoGuide-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          JAR="$(find /tmp/kanto-guide-build/svframe-kanto-guide/build/libs -maxdepth 1 -type f -name 'SVFrameKantoGuide-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
           test -n "$JAR"
           cp "$JAR" build-output/SVFrameKantoGuide-remapped.jar
           unzip -p "$JAR" fabric.mod.json | tee build-output/fabric.mod.json
