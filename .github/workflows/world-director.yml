@@ -25,25 +25,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restore World Director source
+      - name: Restore World Director v4 source
         shell: bash
         run: |
-          cat world-director-bootstrap/source.b64.part* | base64 -d > /tmp/world-director-source.tar.gz
-          echo "6260c995bdb0c05469c848807e7f046092214b7d0898d87e6ebea2219711c941  /tmp/world-director-source.tar.gz" | sha256sum -c -
-          tar -xzf /tmp/world-director-source.tar.gz
+          cat world-director-bootstrap/source-v4.b64.part* | base64 -d > /tmp/world-director-v4-source.tar.gz
+          echo "f20ec710ad169dee57d927ac52af6d6c73702fb0029e2a03d974ce3295c675ed  /tmp/world-director-v4-source.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/world-director-v4-source.tar.gz
           test -f world-director/src/main/resources/fabric.mod.json
           test -f world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
-          # Remove the stale log-only mention of the retired NPC system before compilation.
-          sed -i 's/, or Lively dependency/, or legacy NPC dependency/' world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
           if grep -RIni --exclude='*.class' 'lively' world-director/src; then
             echo 'Unexpected retired NPC integration reference in World Director source' >&2
             exit 1
           fi
-          # Cobblemon's Java-visible event API references Kotlin Function1; add stdlib to the compile classpath only.
-          sed -i '/modCompileOnly "com.cobblemon:fabric:/a\    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"' world-director/build.gradle
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -61,6 +57,9 @@ jobs:
         shell: bash
         run: |
           JAR="$(find world-director/build/libs -maxdepth 1 -type f -name 'WorldDirector-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          if [ -z "$JAR" ]; then
+            JAR="$(find world-director/build/libs -maxdepth 1 -type f -name 'WorldDirector-*.jar' ! -name '*sources*' | head -n1)"
+          fi
           test -n "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee world-director/build/libs/fabric.mod.built.json
           sha256sum "$JAR" | tee world-director/build/libs/SHA256.txt
@@ -72,7 +71,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WorldDirector
+          name: WorldDirector-v4
           path: |
             world-director/build/libs/*.jar
             world-director/build/libs/SHA256.txt
