@@ -21,6 +21,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,6 +32,7 @@ jobs:
           cat world-director-bootstrap/source-v4.b64.part* | base64 -d > /tmp/world-director-v4-source.tar.gz
           echo "f20ec710ad169dee57d927ac52af6d6c73702fb0029e2a03d974ce3295c675ed  /tmp/world-director-v4-source.tar.gz" | sha256sum -c -
           tar -xzf /tmp/world-director-v4-source.tar.gz
+          patch -p0 < world-director-bootstrap/patches/001-guidegui-lambda.patch
           test -f world-director/src/main/resources/fabric.mod.json
           test -f world-director/src/main/java/vn/svframe/worlddirector/WorldDirectorMod.java
           if grep -RIni --exclude='*.class' 'lively' world-director/src; then
@@ -51,7 +53,7 @@ jobs:
 
       - name: Test and remap
         working-directory: world-director
-        run: gradle --no-daemon clean test remapJar
+        run: gradle --no-daemon --stacktrace clean test remapJar
 
       - name: Verify artifact
         shell: bash
