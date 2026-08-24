@@ -4,7 +4,15 @@
   "version": "${version}",
   "name": "MMOCore Fabric",
   "environment": "server",
-  "entrypoints": { "main": ["vn.svframe.mmocorefabric.MMOCoreFabricMod"] },
+  "entrypoints": {
+    "main": [
+      "vn.svframe.mmocorefabric.MMOCoreFabricMod",
+      "vn.svframe.mmocorefabric.MMOCoreProfessionExperienceMod"
+    ]
+  },
+  "mixins": [
+    "mmocorefabric.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.18.4",
     "minecraft": "~1.21.1",
