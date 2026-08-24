@@ -23,6 +23,7 @@
     "EnchantmentRestrictionMixin",
     "AbstractFurnaceRestrictionMixin",
     "ItemStackCustomDurabilityMixin",
+    "ExperienceOrbMendingMixin",
     "PlayerItemDropRestrictionMixin",
     "ItemEntityRevisionMixin"
   ],
