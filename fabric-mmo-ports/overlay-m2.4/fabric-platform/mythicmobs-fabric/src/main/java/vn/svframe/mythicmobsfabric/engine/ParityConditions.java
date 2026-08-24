@@ -13,6 +13,10 @@ final class ParityConditions {
         r.registerCondition("isonground",(c,l,e,v)->p.onGround(ParityUtil.entity(c,e)));
         r.registerCondition("issprinting",(c,l,e,v)->p.sprinting(ParityUtil.entity(c,e)));
         r.registerCondition("isswimming",(c,l,e,v)->p.swimming(ParityUtil.entity(c,e)));
+        r.registerCondition("sunny",(c,l,e,v)->!p.raining(ParityUtil.entity(c,e)));
+        r.registerCondition("iscaster",(c,l,e,v)->ParityUtil.entity(c,e).equals(c.caster()));
+        r.registerCondition("height",(c,l,e,v)->{Vec3 at=v!=null?v:p.position(ParityUtil.entity(c,e));return at!=null&&ParityUtil.compare(at.y(),range(l,"height","h"));});
+        r.registerCondition("pitch",(c,l,e,v)->p instanceof RotationAwareSkillPlatform rotation&&ParityUtil.compare(rotation.pitch(ParityUtil.entity(c,e)),range(l,"pitch","p")));
         r.registerCondition("stanceequals",(c,l,e,v)->ParityUtil.eq(p.getCustomData(ParityUtil.entity(c,e),"stance"),ParityUtil.text(c,l,"stance","s","value","v")));
         r.registerCondition("worldtime",(c,l,e,v)->ParityUtil.compare(p.dayTime(ParityUtil.entity(c,e)),ParityUtil.text(c,l,"time","t","value","v")),"time");
         r.registerCondition("dawn",(c,l,e,v)->ParityUtil.timeBetween(p.dayTime(ParityUtil.entity(c,e)),22000,24000));
@@ -43,6 +47,7 @@ final class ParityConditions {
         r.registerCondition("varisnotset",(c,l,e,v)->!c.variables().containsKey(ParityUtil.text(c,l,"variable","var","v")),"variableisnotset");
         r.registerCondition("variableequals",(c,l,e,v)->ParityUtil.eq(String.valueOf(c.variables().get(ParityUtil.text(c,l,"variable","var"))),ParityUtil.text(c,l,"value","v")));
     }
+    private static String range(SkillLine l,String key,String alias){String value=l.string(key,"",alias);if(value.isBlank())value=l.string("value","","v");return value;}
     private static boolean countNearby(SkillPlatform p,UUID c,SkillLine l,boolean players){int n=p.nearby(c,l.decimal("radius",l.decimal("r",5)),l.decimal("yradius",l.decimal("yr",-1)),players).size();String expr=ParityUtil.text(l,"amount","a","value","v");return ParityUtil.compare(n,expr.isBlank()?"1":expr);}
     private static boolean countWorld(SkillPlatform p,UUID c,SkillLine l,boolean players){String w=p.world(c);int n=0;Collection<UUID> all=players?p.allPlayers():p.allLiving(c);for(UUID u:all)if(w.equals(p.world(u)))n++;String expr=ParityUtil.text(l,"amount","a","value","v");return ParityUtil.compare(n,expr.isBlank()?"1":expr);}
     private static String stringValue(SkillContext c,SkillLine l){String var=ParityUtil.text(l,"variable","var");if(!var.isBlank()&&c.variables().containsKey(var))return String.valueOf(c.variables().get(var));return ParityUtil.text(c,l,"value","v","string");}
