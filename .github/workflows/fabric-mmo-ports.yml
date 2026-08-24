@@ -1,46 +1,6 @@
 name: Fabric MMO Ports
 
 on:
-  push:
-    branches:
-      - feature/fabric-mmo-ports
-    paths:
-      - 'fabric-mmo-ports/bootstrap-m0.8/**'
-      - 'fabric-mmo-ports/overlay-m0.9/**'
-      - 'fabric-mmo-ports/overlay-m1.0/**'
-      - 'fabric-mmo-ports/overlay-m1.1/**'
-      - 'fabric-mmo-ports/overlay-m1.2/**'
-      - 'fabric-mmo-ports/overlay-m1.3/**'
-      - 'fabric-mmo-ports/overlay-m1.4/**'
-      - 'fabric-mmo-ports/overlay-m1.5/**'
-      - 'fabric-mmo-ports/overlay-m1.6/**'
-      - 'fabric-mmo-ports/overlay-m1.7/**'
-      - 'fabric-mmo-ports/overlay-m1.8/**'
-      - 'fabric-mmo-ports/overlay-m1.9/**'
-      - 'fabric-mmo-ports/overlay-m2.0/**'
-      - 'fabric-mmo-ports/fabric-platform/**'
-      - '.github/workflows/fabric-mmo-ports.yml'
-      - '.fabric-mmo-build-trigger'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'fabric-mmo-ports/bootstrap-m0.8/**'
-      - 'fabric-mmo-ports/overlay-m0.9/**'
-      - 'fabric-mmo-ports/overlay-m1.0/**'
-      - 'fabric-mmo-ports/overlay-m1.1/**'
-      - 'fabric-mmo-ports/overlay-m1.2/**'
-      - 'fabric-mmo-ports/overlay-m1.3/**'
-      - 'fabric-mmo-ports/overlay-m1.4/**'
-      - 'fabric-mmo-ports/overlay-m1.5/**'
-      - 'fabric-mmo-ports/overlay-m1.6/**'
-      - 'fabric-mmo-ports/overlay-m1.7/**'
-      - 'fabric-mmo-ports/overlay-m1.8/**'
-      - 'fabric-mmo-ports/overlay-m1.9/**'
-      - 'fabric-mmo-ports/overlay-m2.0/**'
-      - 'fabric-mmo-ports/fabric-platform/**'
-      - '.github/workflows/fabric-mmo-ports.yml'
-      - '.fabric-mmo-build-trigger'
   workflow_dispatch:
 
 permissions:
@@ -96,10 +56,7 @@ jobs:
           echo '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9  build/mmo-overlay-m1.8.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
 
-          # M1.9 is intentionally excluded here. Its committed source archive is
-          # truncated/corrupt (gzip CRC + length errors), so including it makes
-          # every build impossible. Its passive-trigger slice will be restored as
-          # normal source instead of relying on the broken archive.
+          # M1.9 is excluded until its corrupt archive is replaced by normal source.
 
           cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
           echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
@@ -114,7 +71,6 @@ jobs:
           test -d build/mmo-workspace/mmoitems-runtime/src/main/java
           test -d build/mmo-workspace/mythiclib-runtime/src/main/java
           test -d build/mmo-workspace/mythicmobs-runtime/src/main/java
-          find build/mmo-workspace -type f | wc -l
 
       - name: Normalize Fabric metadata version
         shell: bash
@@ -165,8 +121,7 @@ jobs:
           cp build/mmo-workspace/fabric-platform/mythicmobs-fabric/build/libs/MythicMobs-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
           test "$(find build/fabric-mmo-jars -maxdepth 1 -name '*.jar' -type f | wc -l)" -eq 4
           for jar in build/fabric-mmo-jars/*.jar; do
-            echo "==> $jar"
-            unzip -p "$jar" fabric.mod.json | tee /dev/stderr | grep -q '"environment": "server"'
+            unzip -p "$jar" fabric.mod.json | grep -q '"environment": "server"'
             unzip -l "$jar" | grep -q '/runtime/'
           done
           sha256sum build/fabric-mmo-jars/*.jar | tee build/fabric-mmo-jars/SHA256SUMS
