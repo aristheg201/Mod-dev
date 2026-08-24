@@ -26,18 +26,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Fabric lifecycle/event adapter for MythicLib's legacy passive-skill runtime.
- *
- * <p>The trigger IDs deliberately match the Bukkit implementation. MMOItems,
- * MMOCore and third-party bridges therefore feed one trigger surface instead
- * of maintaining a second Fabric-only naming scheme.</p>
- */
+/** Fabric lifecycle/event adapter for MythicLib's legacy passive-skill runtime. */
 public final class MythicLibPassiveMod implements ModInitializer {
-    private record PlayerState(boolean sneaking, String world, double x, double y, double z) {}
     private record ActionKey(UUID player, LegacyTriggerType trigger) {}
 
-    private static final Map<UUID, PlayerState> LAST_STATE = new ConcurrentHashMap<>();
+    private static final Map<UUID, Boolean> LAST_SNEAKING = new ConcurrentHashMap<>();
     private static final Map<ActionKey, Long> LAST_ACTION_TICK = new ConcurrentHashMap<>();
 
     @Override
@@ -55,53 +48,33 @@ public final class MythicLibPassiveMod implements ModInitializer {
 
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 UUID id = player.getUuid();
-                String world = player.getServerWorld().getRegistryKey().getValue().toString();
-                PlayerState now = new PlayerState(player.isSneaking(), world, player.getX(), player.getY(), player.getZ());
-                PlayerState previous = LAST_STATE.put(id, now);
-                if (previous == null) continue;
-
-                if (!previous.sneaking() && now.sneaking()) {
+                boolean sneaking = player.isSneaking();
+                boolean previous = LAST_SNEAKING.getOrDefault(id, sneaking);
+                if (!previous && sneaking) {
                     fireOnce(id, LegacyTriggerType.SNEAK, id, Map.of("sneaking", true));
                 }
-
-                double dx = now.x() - previous.x();
-                double dy = now.y() - previous.y();
-                double dz = now.z() - previous.z();
-                boolean changedWorld = !previous.world().equals(now.world());
-                boolean largeMove = dx * dx + dy * dy + dz * dz >= 64.0d;
-                if (changedWorld || largeMove) {
-                    Map<String, Object> context = new LinkedHashMap<>();
-                    context.put("from-world", previous.world());
-                    context.put("to-world", now.world());
-                    context.put("from-x", previous.x());
-                    context.put("from-y", previous.y());
-                    context.put("from-z", previous.z());
-                    context.put("to-x", now.x());
-                    context.put("to-y", now.y());
-                    context.put("to-z", now.z());
-                    fireOnce(id, LegacyTriggerType.TELEPORT, id, context);
-                }
+                LAST_SNEAKING.put(id, sneaking);
             }
 
             LAST_ACTION_TICK.entrySet().removeIf(entry -> tick - entry.getValue() > 2L);
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity player = handler.getPlayer();
-            LAST_STATE.put(player.getUuid(), snapshot(player));
+            ServerPlayerEntity player = handler.player;
+            LAST_SNEAKING.put(player.getUuid(), player.isSneaking());
             PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.LOGIN, player.getUuid(), Map.of());
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            UUID id = handler.getPlayer().getUuid();
+            UUID id = handler.player.getUuid();
             PassiveSkillRuntime.clear(id);
-            LAST_STATE.remove(id);
+            LAST_SNEAKING.remove(id);
             LAST_ACTION_TICK.keySet().removeIf(key -> key.player().equals(id));
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             PassiveSkillRuntime.clearAll();
-            LAST_STATE.clear();
+            LAST_SNEAKING.clear();
             LAST_ACTION_TICK.clear();
         });
     }
@@ -115,18 +88,6 @@ public final class MythicLibPassiveMod implements ModInitializer {
                     PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.DAMAGED_BY_ENTITY, source.getAttacker().getUuid(), context);
                 }
             }
-        });
-
-        ServerLivingEntityEvents.ALLOW_DEATH.register((victim, source, amount) -> {
-            if (victim instanceof ServerPlayerEntity player) {
-                Map<String, Object> context = damageContext(source.getAttacker(), source.getSource(), amount, amount, false);
-                context.put("fatal", true);
-                PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.DAMAGED, attackerId(source.getAttacker()), context);
-                if (source.getAttacker() != null) {
-                    PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.DAMAGED_BY_ENTITY, source.getAttacker().getUuid(), context);
-                }
-            }
-            return true;
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((victim, source) -> {
@@ -209,11 +170,6 @@ public final class MythicLibPassiveMod implements ModInitializer {
         Long previous = LAST_ACTION_TICK.put(key, tick);
         if (previous != null && previous == tick) return 0;
         return PassiveSkillRuntime.fire(owner, trigger, target, context);
-    }
-
-    private static PlayerState snapshot(ServerPlayerEntity player) {
-        return new PlayerState(player.isSneaking(), player.getServerWorld().getRegistryKey().getValue().toString(),
-                player.getX(), player.getY(), player.getZ());
     }
 
     private static UUID attackerId(Entity attacker) {
