@@ -9,7 +9,8 @@
       "vn.svframe.mmocorefabric.MMOCoreFabricMod",
       "vn.svframe.mmocorefabric.MMOCoreProfessionExperienceMod",
       "vn.svframe.mmocorefabric.MMOCoreSpecialProfessionExperienceMod",
-      "vn.svframe.mmocorefabric.MMOCoreRpgProfileMod"
+      "vn.svframe.mmocorefabric.MMOCoreRpgProfileMod",
+      "vn.svframe.mmocorefabric.MMOCoreSocialMod"
     ]
   },
   "mixins": [
