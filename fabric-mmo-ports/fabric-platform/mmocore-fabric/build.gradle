@@ -1,6 +1,6 @@
 base { archivesName = 'MMOCore-Fabric' }
 
-// Build one deterministic runtime source tree.  This mirrors the historical
+// Build one deterministic runtime source tree. This mirrors the historical
 // overlay order without asking javac/Loom to compile duplicate classes from
 // several source roots.
 def generatedRoot = file("$buildDir/generated/mmocore-runtime")
@@ -8,11 +8,13 @@ def generatedRuntime = file("$generatedRoot/mmocore-runtime")
 def generatedJava = file("$generatedRuntime/src/main/java")
 def m17Archive = file("$buildDir/generated/mmocore-m1.7.tar.gz")
 def m17ExpectedSha256 = '3604b61ab7c73bcf76d4dc3e67eee70f71758efe0a9d9c87799c24123fbf7fea'
+def m23Runtime = rootProject.file('../overlay-m2.3/mmocore-runtime')
 
 def prepareParityRuntime = tasks.register('prepareParityRuntime') {
     inputs.dir(rootProject.file('../mmocore-runtime'))
     inputs.dir(rootProject.file('../overlay-m1.6/mmocore-runtime'))
     inputs.file(rootProject.file('../overlay-m1.7/source.tar.gz.b64'))
+    inputs.dir(m23Runtime)
     outputs.dir(generatedRuntime)
 
     doLast {
@@ -57,6 +59,17 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
             from overlayRuntime
             into generatedRuntime
         }
+
+        // M2.3 is intentionally normal source. It is applied last so parity fixes
+        // are reviewable instead of being buried in another historical archive.
+        if (!m23Runtime.isDirectory()) {
+            throw new GradleException("MMOCore M2.3 runtime root missing: ${m23Runtime}")
+        }
+        copy {
+            from m23Runtime
+            into generatedRuntime
+        }
+
         if (!generatedJava.isDirectory()) {
             throw new GradleException("Generated MMOCore runtime source root missing: ${generatedJava}")
         }
