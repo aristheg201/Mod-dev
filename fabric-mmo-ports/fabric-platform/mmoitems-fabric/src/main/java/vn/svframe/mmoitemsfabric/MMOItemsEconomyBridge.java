@@ -1,105 +1,60 @@
 package vn.svframe.mmoitemsfabric;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Locale;
+import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-/** Optional real-economy bridge used by crafting money conditions without creating a fake fallback currency. */
+/** Optional BEconomy bridge using its public API without making BEconomy a hard dependency. */
 public final class MMOItemsEconomyBridge {
-    private static final String[] API_CLASSES = {
-            "org.beconomy.api.BEconomy",
-            "org.beconomy.api.BEconomyAPI"
-    };
+    private static final Logger LOG = Logger.getLogger("MMOItems-Fabric/Economy");
 
     private MMOItemsEconomyBridge() {}
 
     public static boolean canAfford(ServerPlayerEntity player, double amount) {
         if (amount <= 0.0) return true;
-        Double balance = balance(player);
-        return balance != null && balance + 1.0e-9 >= amount;
+        if (player == null || !FabricLoader.getInstance().isModLoaded("beconomy")) return false;
+        try {
+            Access access = access();
+            Object result = access.hasEnoughFunds.invoke(access.api, player.getUuid(), BigDecimal.valueOf(amount), access.currency);
+            return Boolean.TRUE.equals(result);
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            LOG.log(Level.FINE, "BEconomy balance check failed", exception);
+            return false;
+        }
     }
 
     public static boolean withdraw(ServerPlayerEntity player, double amount) {
         if (amount <= 0.0) return true;
-        for (String className : API_CLASSES) {
-            try {
-                Class<?> type = Class.forName(className);
-                for (Method method : type.getMethods()) {
-                    String name = method.getName().toLowerCase(Locale.ROOT);
-                    if (!(name.equals("withdraw") || name.equals("remove") || name.equals("take")
-                            || name.equals("removebalance") || name.equals("subtract"))) continue;
-                    if (method.getParameterCount() != 2) continue;
-                    Object[] args = arguments(method.getParameterTypes(), player, amount);
-                    if (args == null) continue;
-                    Object result = method.invoke(target(type, method), args);
-                    if (result instanceof Boolean bool) return bool;
-                    return balance(player) != null;
-                }
-            } catch (ReflectiveOperationException ignored) { }
-        }
-        return false;
-    }
-
-    public static Double balance(ServerPlayerEntity player) {
-        for (String className : API_CLASSES) {
-            try {
-                Class<?> type = Class.forName(className);
-                for (Method method : type.getMethods()) {
-                    String name = method.getName().toLowerCase(Locale.ROOT);
-                    if (!(name.equals("balance") || name.equals("getbalance"))) continue;
-                    if (method.getParameterCount() != 1) continue;
-                    Object[] args = arguments(method.getParameterTypes(), player, 0.0);
-                    if (args == null) continue;
-                    Object result = method.invoke(target(type, method), args);
-                    if (result instanceof Number number) return number.doubleValue();
-                }
-            } catch (ReflectiveOperationException ignored) { }
-        }
-        return null;
-    }
-
-    private static Object target(Class<?> type, Method method) throws ReflectiveOperationException {
-        if (Modifier.isStatic(method.getModifiers())) return null;
+        if (player == null || !FabricLoader.getInstance().isModLoaded("beconomy")) return false;
         try {
-            Field instance = type.getField("INSTANCE");
-            return instance.get(null);
-        } catch (NoSuchFieldException ignored) {
-            var constructor = type.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            return constructor.newInstance();
+            Access access = access();
+            Object enough = access.hasEnoughFunds.invoke(access.api, player.getUuid(), BigDecimal.valueOf(amount), access.currency);
+            if (!Boolean.TRUE.equals(enough)) return false;
+            access.subtractBalance.invoke(access.api, player.getUuid(), BigDecimal.valueOf(amount), access.currency);
+            return true;
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            LOG.log(Level.FINE, "BEconomy withdrawal failed", exception);
+            return false;
         }
     }
 
-    private static Object[] arguments(Class<?>[] parameters, ServerPlayerEntity player, double amount) {
-        Object[] args = new Object[parameters.length];
-        boolean amountUsed = false;
-        for (int i = 0; i < parameters.length; i++) {
-            Class<?> parameter = wrap(parameters[i]);
-            if (parameter == UUID.class) args[i] = player.getUuid();
-            else if (parameter.isAssignableFrom(player.getClass())) args[i] = player;
-            else if (parameter == String.class) args[i] = player.getUuidAsString();
-            else if (Number.class.isAssignableFrom(parameter) && !amountUsed) {
-                amountUsed = true;
-                if (parameter == Integer.class) args[i] = (int) Math.round(amount);
-                else if (parameter == Long.class) args[i] = Math.round(amount);
-                else if (parameter == Float.class) args[i] = (float) amount;
-                else args[i] = amount;
-            } else return null;
-        }
-        return args;
+    private static Access access() throws ReflectiveOperationException {
+        Class<?> beconomy = Class.forName("org.beconomy.api.BEconomy");
+        Field instanceField = beconomy.getField("INSTANCE");
+        Object instance = instanceField.get(null);
+        Object api = beconomy.getMethod("getAPI").invoke(instance);
+        Object primaryCurrency = api.getClass().getMethod("getPrimaryCurrency").invoke(api);
+        String currency = String.valueOf(primaryCurrency.getClass().getMethod("getCurrencyType").invoke(primaryCurrency));
+        Method hasEnoughFunds = api.getClass().getMethod("hasEnoughFunds", UUID.class, BigDecimal.class, String.class);
+        Method subtractBalance = api.getClass().getMethod("subtractBalance", UUID.class, BigDecimal.class, String.class);
+        return new Access(api, currency, hasEnoughFunds, subtractBalance);
     }
 
-    private static Class<?> wrap(Class<?> type) {
-        if (!type.isPrimitive()) return type;
-        if (type == int.class) return Integer.class;
-        if (type == long.class) return Long.class;
-        if (type == float.class) return Float.class;
-        if (type == double.class) return Double.class;
-        if (type == boolean.class) return Boolean.class;
-        return type;
-    }
+    private record Access(Object api, String currency, Method hasEnoughFunds, Method subtractBalance) {}
 }
