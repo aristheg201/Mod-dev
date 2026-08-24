@@ -8,7 +8,8 @@
     "main": [
       "vn.svframe.mythiclibfabric.MythicLibFabricMod",
       "vn.svframe.mythiclibfabric.MythicLibCombatMod",
-      "vn.svframe.mythiclibfabric.MythicLibPassiveMod"
+      "vn.svframe.mythiclibfabric.MythicLibPassiveMod",
+      "vn.svframe.mythiclibfabric.MythicLibArmorPassiveMod"
     ]
   },
   "mixins": [
