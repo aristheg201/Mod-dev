@@ -100,6 +100,17 @@ jobs:
           echo '--- MythicMobs materialization smoke predicate ---'
           grep -n -E 'materialization|materialized|mechanicCount|conditionCount|targeterCount|active=' "$SMOKE_SOURCE" || true
 
+          tar -czf build/mmo-workspace-restored.tar.gz -C build/mmo-workspace .
+
+      - name: Upload restored source workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Restored-Source
+          path: build/mmo-workspace-restored.tar.gz
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
+
       - name: Normalize Fabric metadata version
         shell: bash
         run: |
