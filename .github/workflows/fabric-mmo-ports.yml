@@ -65,7 +65,7 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Restore complete source workspace M0.8-M2.0
+      - name: Restore buildable source workspace
         shell: bash
         run: |
           set -euo pipefail
@@ -96,19 +96,15 @@ jobs:
           echo '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9  build/mmo-overlay-m1.8.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
 
-          base64 -d fabric-mmo-ports/overlay-m1.9/source.tar.gz.b64 > build/mmo-overlay-m1.9.tar.gz
-          # The M1.9 README contains a truncated 63-character SHA. Validate the
-          # gzip/tar payload itself here instead of rejecting a valid archive on
-          # broken documentation metadata.
-          tar -tzf build/mmo-overlay-m1.9.tar.gz >/dev/null
-          tar -xzf build/mmo-overlay-m1.9.tar.gz -C build/mmo-workspace
+          # M1.9 is intentionally excluded here. Its committed source archive is
+          # truncated/corrupt (gzip CRC + length errors), so including it makes
+          # every build impossible. Its passive-trigger slice will be restored as
+          # normal source instead of relying on the broken archive.
 
           cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
           echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
 
-          # Keep the known-good M1.4 build/server-smoke project but use the
-          # latest branch-level Fabric adapters, bridges, entrypoints and mixins.
           for module in mythiclib-fabric mmocore-fabric mmoitems-fabric mythicmobs-fabric; do
             rm -rf "build/mmo-workspace/fabric-platform/$module/src"
             cp -a "fabric-mmo-ports/fabric-platform/$module/src" "build/mmo-workspace/fabric-platform/$module/src"
@@ -178,7 +174,7 @@ jobs:
       - name: Upload four Fabric JARs
         uses: actions/upload-artifact@v4
         with:
-          name: FabricMMO-Ports-M2.0-integrated-dev
+          name: FabricMMO-Ports-integrated-dev
           path: build/fabric-mmo-jars/
           if-no-files-found: error
           retention-days: 14
