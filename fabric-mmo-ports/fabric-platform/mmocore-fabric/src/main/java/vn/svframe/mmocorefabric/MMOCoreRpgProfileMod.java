@@ -7,10 +7,11 @@ import vn.svframe.mmocorefabric.runtime.progression.PlayerProgress;
 import vn.svframe.mythiclibfabric.runtime.RpgProfileRegistry;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-/** Publishes MMOCore's authoritative player level, class and allocated attributes to other Fabric ports. */
+/** Publishes MMOCore's authoritative player level, class and effective attributes to other Fabric ports. */
 public final class MMOCoreRpgProfileMod implements ModInitializer {
     private static AutoCloseable registration;
 
@@ -28,8 +29,17 @@ public final class MMOCoreRpgProfileMod implements ModInitializer {
         ClassRuntime classes = MMOCoreFabricAccessor.mmocore$getClasses();
         String selectedClass = classes.selected(playerId).orElse("");
         Map<String, Double> attributes = new LinkedHashMap<>();
+
+        if (!selectedClass.isEmpty()) {
+            var definition = classes.definitions().get(selectedClass.toLowerCase(Locale.ROOT));
+            if (definition != null) {
+                for (String key : definition.attributes().keySet()) {
+                    attributes.put(key.toLowerCase(Locale.ROOT), classes.attribute(playerId, key, progress.level()));
+                }
+            }
+        }
         progress.attributes().forEach((key, value) -> {
-            if (key != null && value != null) attributes.put(key.toLowerCase(java.util.Locale.ROOT), value.doubleValue());
+            if (key != null && value != null) attributes.merge(key.toLowerCase(Locale.ROOT), value.doubleValue(), Double::sum);
         });
         return new RpgProfileRegistry.Snapshot(progress.level(), selectedClass, attributes);
     }
