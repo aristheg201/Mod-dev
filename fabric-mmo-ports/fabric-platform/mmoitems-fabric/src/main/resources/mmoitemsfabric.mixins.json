@@ -6,6 +6,7 @@
     "ServerPlayNetworkHandlerAbilityMixin",
     "CrossbowAbilityMixin",
     "MMOItemsCreateStackMixin",
+    "MMOItemsRequirementTriggerMixin",
     "ScreenHandlerGemInteractionMixin",
     "ItemStackCustomDurabilityMixin"
   ],
