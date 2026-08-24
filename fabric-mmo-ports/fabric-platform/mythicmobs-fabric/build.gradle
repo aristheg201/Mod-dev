@@ -108,15 +108,14 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
 
         def modSource = new File(m21GeneratedJava, 'vn/svframe/mythicmobsfabric/MythicMobsFabricMod.java')
         def modText = modSource.getText('UTF-8')
-        def oldActiveCount = '''    public static int activeCount() {
-        ACTIVE_MOBS.keySet().removeIf(id -> entity(id) == null);
+        def activeCountPattern = java.util.regex.Pattern.compile('(?s)\\s*public static int activeCount\\(\\) \\{.*?return ACTIVE_MOBS\\.size\\(\\);\\s*\\}')
+        def activeMatcher = activeCountPattern.matcher(modText)
+        if (!activeMatcher.find()) throw new GradleException('MythicMobs activeCount method missing; refusing spawn lifecycle patch')
+        def newActiveCount = '''
+    public static int activeCount() {
         return ACTIVE_MOBS.size();
     }'''
-        def newActiveCount = '''    public static int activeCount() {
-        return ACTIVE_MOBS.size();
-    }'''
-        if (!modText.contains(oldActiveCount)) throw new GradleException('MythicMobs activeCount implementation changed; refusing spawn lifecycle patch')
-        modSource.setText(modText.replace(oldActiveCount, newActiveCount), 'UTF-8')
+        modSource.setText(activeMatcher.replaceFirst(java.util.regex.Matcher.quoteReplacement(newActiveCount)), 'UTF-8')
 
         if (!m22OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
         copy { from m22OverlayJava; into m21GeneratedJava }
