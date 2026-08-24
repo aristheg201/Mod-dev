@@ -1,5 +1,8 @@
 package vn.svframe.mythiclibfabric;
 
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,8 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * MMOCore and compatibility modules all feed the same trigger surface.
  */
 public final class PassiveSkillRuntime {
+    private record TimerKey(UUID owner, String skillId) {}
+
     private static final Map<UUID, CopyOnWriteArrayList<Binding>> BY_PLAYER = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_CAST = new ConcurrentHashMap<>();
+    private static final Map<TimerKey, Long> TIMER_LAST_CAST = new ConcurrentHashMap<>();
     private static final AtomicLong REGISTRATION_SEQUENCE = new AtomicLong();
 
     private PassiveSkillRuntime() {}
@@ -54,8 +60,16 @@ public final class PassiveSkillRuntime {
     public static boolean unregister(UUID owner, UUID bindingId) {
         CopyOnWriteArrayList<Binding> list = BY_PLAYER.get(owner);
         if (list == null) return false;
-        boolean removed = list.removeIf(binding -> binding.id().equals(bindingId));
-        if (removed) LAST_CAST.remove(bindingId);
+        List<Binding> removedBindings = new ArrayList<>();
+        boolean removed = list.removeIf(binding -> {
+            boolean match = binding.id().equals(bindingId);
+            if (match) removedBindings.add(binding);
+            return match;
+        });
+        for (Binding binding : removedBindings) {
+            LAST_CAST.remove(binding.id());
+            removeTimerKeyIfUnused(owner, binding.skillId(), list);
+        }
         if (list.isEmpty()) BY_PLAYER.remove(owner, list);
         return removed;
     }
@@ -64,13 +78,16 @@ public final class PassiveSkillRuntime {
         CopyOnWriteArrayList<Binding> list = BY_PLAYER.get(owner);
         if (list == null || key == null) return 0;
         int before = list.size();
-        List<UUID> removedIds = new ArrayList<>();
+        List<Binding> removedBindings = new ArrayList<>();
         list.removeIf(binding -> {
             boolean remove = binding.key().equals(key);
-            if (remove) removedIds.add(binding.id());
+            if (remove) removedBindings.add(binding);
             return remove;
         });
-        removedIds.forEach(LAST_CAST::remove);
+        for (Binding binding : removedBindings) {
+            LAST_CAST.remove(binding.id());
+            removeTimerKeyIfUnused(owner, binding.skillId(), list);
+        }
         if (list.isEmpty()) BY_PLAYER.remove(owner, list);
         return before - list.size();
     }
@@ -78,11 +95,13 @@ public final class PassiveSkillRuntime {
     public static void clear(UUID owner) {
         Collection<Binding> removed = BY_PLAYER.remove(owner);
         if (removed != null) removed.forEach(binding -> LAST_CAST.remove(binding.id()));
+        TIMER_LAST_CAST.keySet().removeIf(key -> key.owner().equals(owner));
     }
 
     public static void clearAll() {
         BY_PLAYER.clear();
         LAST_CAST.clear();
+        TIMER_LAST_CAST.clear();
     }
 
     public static List<Binding> bindings(UUID owner) {
@@ -123,16 +142,28 @@ public final class PassiveSkillRuntime {
 
     /** Called once per dedicated/integrated server tick. */
     public static void tick(long now) {
+        MinecraftServer server = MythicLibFabricMod.server();
         for (Map.Entry<UUID, CopyOnWriteArrayList<Binding>> entry : BY_PLAYER.entrySet()) {
             UUID owner = entry.getKey();
+            if (server != null) {
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(owner);
+                if (player == null || player.isSpectator()) continue;
+            }
+
             for (Binding binding : entry.getValue()) {
                 if (binding.trigger() != LegacyTriggerType.TIMER) continue;
-                long last = LAST_CAST.getOrDefault(binding.id(), binding.registeredTick());
+
+                TimerKey key = new TimerKey(owner, binding.skillId());
+                long last = TIMER_LAST_CAST.getOrDefault(key, binding.registeredTick());
                 if (now - last < binding.timerPeriodTicks()) continue;
-                if (ready(binding, now) && MythicLibFabricMod.castSkill(binding.skillId(), owner, owner,
-                        Map.of("trigger", LegacyTriggerType.TIMER.name(), "passive-key", binding.key()))) {
-                    LAST_CAST.put(binding.id(), now);
-                }
+                if (!ready(binding, now)) continue;
+
+                // Upstream MythicLib records the timer cast before executing it.
+                // This prevents a failed or re-entrant skill from hammering every tick.
+                TIMER_LAST_CAST.put(key, now);
+                LAST_CAST.put(binding.id(), now);
+                MythicLibFabricMod.castSkill(binding.skillId(), owner, owner,
+                        Map.of("trigger", LegacyTriggerType.TIMER.name(), "passive-key", binding.key()));
             }
         }
     }
@@ -145,18 +176,33 @@ public final class PassiveSkillRuntime {
     }
 
     public static void resetCooldown(UUID bindingId) {
+        Binding binding = find(bindingId);
         LAST_CAST.remove(bindingId);
+        if (binding != null && binding.trigger() == LegacyTriggerType.TIMER) {
+            TIMER_LAST_CAST.remove(new TimerKey(binding.owner(), binding.skillId()));
+        }
     }
 
     public static void reduceCooldown(UUID bindingId, long ticks) {
         if (ticks <= 0) return;
         LAST_CAST.computeIfPresent(bindingId, (ignored, last) -> last - ticks);
+        Binding binding = find(bindingId);
+        if (binding != null && binding.trigger() == LegacyTriggerType.TIMER) {
+            TIMER_LAST_CAST.computeIfPresent(new TimerKey(binding.owner(), binding.skillId()), (ignored, last) -> last - ticks);
+        }
     }
 
     private static boolean ready(Binding binding, long now) {
         if (binding.cooldownTicks() <= 0) return true;
         Long last = LAST_CAST.get(binding.id());
         return last == null || now - last >= binding.cooldownTicks();
+    }
+
+    private static void removeTimerKeyIfUnused(UUID owner, String skillId, List<Binding> remaining) {
+        for (Binding binding : remaining) {
+            if (binding.trigger() == LegacyTriggerType.TIMER && binding.skillId().equals(skillId)) return;
+        }
+        TIMER_LAST_CAST.remove(new TimerKey(owner, skillId));
     }
 
     private static Binding find(UUID id) {
