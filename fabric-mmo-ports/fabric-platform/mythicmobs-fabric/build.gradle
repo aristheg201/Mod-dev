@@ -106,6 +106,18 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
         platformText = platformText.replace(oldSetGliding, newSetGliding)
         fabricPlatform.setText(platformText, 'UTF-8')
 
+        def modSource = new File(m21GeneratedJava, 'vn/svframe/mythicmobsfabric/MythicMobsFabricMod.java')
+        def modText = modSource.getText('UTF-8')
+        def oldActiveCount = '''    public static int activeCount() {
+        ACTIVE_MOBS.keySet().removeIf(id -> entity(id) == null);
+        return ACTIVE_MOBS.size();
+    }'''
+        def newActiveCount = '''    public static int activeCount() {
+        return ACTIVE_MOBS.size();
+    }'''
+        if (!modText.contains(oldActiveCount)) throw new GradleException('MythicMobs activeCount implementation changed; refusing spawn lifecycle patch')
+        modSource.setText(modText.replace(oldActiveCount, newActiveCount), 'UTF-8')
+
         if (!m22OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
         copy { from m22OverlayJava; into m21GeneratedJava }
         if (!m24OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.4 Java overlay: ${m24OverlayJava}")
