@@ -4,7 +4,15 @@
   "version": "${version}",
   "name": "MythicLib Fabric",
   "environment": "server",
-  "entrypoints": { "main": ["vn.svframe.mythiclibfabric.MythicLibFabricMod"] },
+  "entrypoints": {
+    "main": [
+      "vn.svframe.mythiclibfabric.MythicLibFabricMod",
+      "vn.svframe.mythiclibfabric.MythicLibCombatMod"
+    ]
+  },
+  "mixins": [
+    "mythiclibfabric.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.18.4",
     "minecraft": "~1.21.1",
