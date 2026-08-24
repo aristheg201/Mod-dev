@@ -21,14 +21,8 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
         project.delete(generatedRoot)
         generatedRoot.mkdirs()
 
-        copy {
-            from rootProject.file('../mmocore-runtime')
-            into generatedRuntime
-        }
-        copy {
-            from rootProject.file('../overlay-m1.6/mmocore-runtime')
-            into generatedRuntime
-        }
+        copy { from rootProject.file('../mmocore-runtime'); into generatedRuntime }
+        copy { from rootProject.file('../overlay-m1.6/mmocore-runtime'); into generatedRuntime }
 
         def encodedFile = rootProject.file('../overlay-m1.7/source.tar.gz.b64')
         byte[] archiveBytes
@@ -39,48 +33,30 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
         }
         def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
         def actualSha256 = new java.math.BigInteger(1, digest).toString(16).padLeft(64, '0')
-        if (actualSha256 != m17ExpectedSha256) {
-            throw new GradleException("MMOCore M1.7 source checksum mismatch: ${actualSha256}")
-        }
+        if (actualSha256 != m17ExpectedSha256) throw new GradleException("MMOCore M1.7 source checksum mismatch: ${actualSha256}")
         m17Archive.parentFile.mkdirs()
         m17Archive.bytes = archiveBytes
 
         def extracted = file("$buildDir/generated/mmocore-m1.7-extracted")
         project.delete(extracted)
-        copy {
-            from tarTree(resources.gzip(m17Archive))
-            into extracted
-        }
-        File overlayRuntime = null
+        copy { from tarTree(resources.gzip(m17Archive)); into extracted }
+
+        File javaRoot = null
+        if (new File(extracted, 'src/main/java').isDirectory()) javaRoot = new File(extracted, 'src/main/java')
         extracted.eachDirRecurse { candidate ->
-            if (overlayRuntime == null && new File(candidate, 'src/main/java/vn/svframe/mmocorefabric/runtime').isDirectory()) {
-                overlayRuntime = candidate
+            if (javaRoot == null && candidate.name == 'java' && candidate.parentFile?.name == 'main' && candidate.parentFile?.parentFile?.name == 'src') {
+                def javaFiles = fileTree(candidate) { include '**/*.java' }
+                if (!javaFiles.isEmpty()) javaRoot = candidate
             }
         }
-        if (overlayRuntime == null && new File(extracted, 'src/main/java/vn/svframe/mmocorefabric/runtime').isDirectory()) {
-            overlayRuntime = extracted
-        }
-        if (overlayRuntime == null) {
-            throw new GradleException("MMOCore M1.7 verified runtime source root missing under ${extracted}")
-        }
-        copy {
-            from overlayRuntime
-            into generatedRuntime
-        }
+        if (javaRoot == null) throw new GradleException("MMOCore M1.7 Java source root missing under ${extracted}")
+        File overlayRuntime = javaRoot.parentFile.parentFile.parentFile
+        copy { from overlayRuntime; into generatedRuntime }
 
-        // M2.3 is intentionally normal source. It is applied last so parity fixes
-        // are reviewable instead of being buried in another historical archive.
-        if (!m23Runtime.isDirectory()) {
-            throw new GradleException("MMOCore M2.3 runtime root missing: ${m23Runtime}")
-        }
-        copy {
-            from m23Runtime
-            into generatedRuntime
-        }
+        if (!m23Runtime.isDirectory()) throw new GradleException("MMOCore M2.3 runtime root missing: ${m23Runtime}")
+        copy { from m23Runtime; into generatedRuntime }
 
-        if (!generatedJava.isDirectory()) {
-            throw new GradleException("Generated MMOCore runtime source root missing: ${generatedJava}")
-        }
+        if (!generatedJava.isDirectory()) throw new GradleException("Generated MMOCore runtime source root missing: ${generatedJava}")
     }
 }
 
