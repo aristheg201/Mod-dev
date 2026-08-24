@@ -56,22 +56,28 @@ jobs:
           cat > build/dependency-project/pom.xml <<'POM'
           <project xmlns="http://maven.apache.org/POM/4.0.0">
             <modelVersion>4.0.0</modelVersion>
-            <groupId>vn.svframe</groupId><artifactId>spigot-runtime-oracle</artifactId><version>1</version>
+            <groupId>vn.svframe</groupId><artifactId>fabric-mmo-runtime-oracle</artifactId><version>1</version>
             <repositories>
               <repository><id>spigot</id><url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url></repository>
+              <repository><id>modrinth</id><url>https://api.modrinth.com/maven</url></repository>
             </repositories>
             <dependencies>
               <dependency><groupId>org.spigotmc</groupId><artifactId>spigot-api</artifactId><version>1.21.1-R0.1-SNAPSHOT</version></dependency>
+              <dependency><groupId>maven.modrinth</groupId><artifactId>cardboard</artifactId><version>1.21.1-9</version></dependency>
             </dependencies>
           </project>
           POM
           mvn -q -f build/dependency-project/pom.xml dependency:copy-dependencies \
             -DincludeScope=runtime -DoutputDirectory="$GITHUB_WORKSPACE/build/dependencies/runtime"
           SPIGOT_JAR="$(find build/dependencies/runtime -maxdepth 1 -name 'spigot-api-*.jar' -type f | head -1)"
+          CARDBOARD_JAR="$(find build/dependencies/runtime -maxdepth 1 -iname '*cardboard*.jar' -type f | head -1)"
           test -n "$SPIGOT_JAR"
+          test -n "$CARDBOARD_JAR"
           cp "$SPIGOT_JAR" build/dependencies/spigot-api-1.21.1.jar
+          cp "$CARDBOARD_JAR" build/dependencies/Cardboard-1.21.1.jar
           find build/dependencies/runtime -type f -name '*.jar' -printf '%f\n' | sort > build/dependencies/RUNTIME_JARS.txt
           sha256sum build/dependencies/spigot-api-1.21.1.jar > build/dependencies/spigot-api-1.21.1.sha256
+          sha256sum build/dependencies/Cardboard-1.21.1.jar > build/dependencies/Cardboard-1.21.1.sha256
 
           GRADLE_BIN="$(command -v gradle)"
           GRADLE_HOME="$(dirname "$(dirname "$GRADLE_BIN")")"
