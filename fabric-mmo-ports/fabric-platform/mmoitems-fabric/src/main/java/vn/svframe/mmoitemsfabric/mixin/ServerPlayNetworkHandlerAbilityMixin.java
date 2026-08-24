@@ -2,6 +2,7 @@ package vn.svframe.mmoitemsfabric.mixin;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -27,6 +28,13 @@ public abstract class ServerPlayNetworkHandlerAbilityMixin {
             case RELEASE_USE_ITEM -> fireReleaseAbility();
             default -> {
             }
+        }
+    }
+
+    @Inject(method = "onClientCommand", at = @At("HEAD"))
+    private void mmoitems$onClientCommand(ClientCommandC2SPacket packet, CallbackInfo ci) {
+        if (packet.getMode() == ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY) {
+            MMOItemsFabricMod.fireEquippedItemPacketTrigger(player, "SNEAK");
         }
     }
 
