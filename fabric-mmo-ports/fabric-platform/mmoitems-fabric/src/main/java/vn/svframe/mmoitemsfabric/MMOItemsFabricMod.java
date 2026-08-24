@@ -80,7 +80,6 @@ public final class MMOItemsFabricMod implements ModInitializer {
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
                 trigger(serverPlayer, hand, serverPlayer.isSneaking() ? AbilityDefinition.Trigger.SHIFT_RIGHT_CLICK : AbilityDefinition.Trigger.RIGHT_CLICK, null);
-                if (player.getStackInHand(hand).isOf(Items.BOW) || player.getStackInHand(hand).isOf(Items.CROSSBOW)) trigger(serverPlayer, hand, AbilityDefinition.Trigger.SHOOT_BOW, null);
             }
             return TypedActionResult.pass(player.getStackInHand(hand));
         });
@@ -164,7 +163,6 @@ public final class MMOItemsFabricMod implements ModInitializer {
         return out;
     }
 
-    /** Packet-level item ability ingress used by the native Fabric network mixin. */
     public static boolean fireItemPacketTrigger(ServerPlayerEntity player, String triggerName) {
         if (player == null || triggerName == null || triggerName.isBlank()) return false;
         final AbilityDefinition.Trigger trigger;
@@ -241,7 +239,6 @@ public final class MMOItemsFabricMod implements ModInitializer {
         try {
             MythicLibPassiveMod.fire(player.getUuid(), trigger.name(), target == null ? player.getUuid() : target, data);
         } catch (IllegalArgumentException ignored) {
-            // An MMOItems-only trigger may not exist in a particular MythicLib legacy version.
         }
     }
 
