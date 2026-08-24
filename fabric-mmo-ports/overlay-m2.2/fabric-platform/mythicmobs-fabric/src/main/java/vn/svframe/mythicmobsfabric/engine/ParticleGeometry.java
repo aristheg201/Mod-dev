@@ -1,7 +1,6 @@
 package vn.svframe.mythicmobsfabric.engine;
 
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 
 /** Geometry-aware implementation for legacy MythicMobs particle mechanics. */
@@ -177,47 +176,107 @@ public final class ParticleGeometry {
         return any;
     }
 
+    /**
+     * MythicMobs 5.6.2 ParticleEquationEffect semantics.
+     *
+     * The mechanic is an implicit surface sampler, not a parametric curve. It evaluates
+     * equation(x,y,z) over the configured 3D bounds at resolution-sized steps and emits
+     * when abs(value) < resolution. The local sample coordinates are rotated using the
+     * configured yaw/pitch before being translated back to the target location.
+     */
     private static boolean equation(SkillPlatform platform, SkillLine skill, Vec3 center) {
-        EquationSpec spec = EquationSpec.from(skill);
-        int points = clamp(skill.integer("points", skill.integer("amount", 64, "a")), 2, 512);
-        double start = skill.decimal("start", skill.decimal("s", 0.0));
-        double end = skill.decimal("end", skill.decimal("e", Math.PI * 2.0));
+        String source = skill.string("equation", skill.string("eq", "0"));
+        Expression expression = Expression.compile(source);
+        double boundX = skill.decimal("boundx", skill.decimal("bx", 1.0));
+        double boundY = skill.decimal("boundy", skill.decimal("by", 1.0));
+        double boundZ = skill.decimal("boundz", skill.decimal("bz", 1.0));
+        double resolution = skill.decimal("resolution", skill.decimal("res", 0.1));
+        if (!(resolution > 0.0) || !Double.isFinite(resolution)) return false;
+
+        double yOffset = skill.decimal("yoffset", skill.decimal("yo", 0.0));
+        Vec3 origin = center.add(new Vec3(0.0, yOffset, 0.0));
+        double yaw = Math.toRadians(skill.decimal("yaw", 0.0));
+        double pitch = Math.toRadians(skill.decimal("pitch", 0.0));
+        double sinYaw = Math.sin(yaw);
+        double cosYaw = Math.cos(yaw);
+        double sinPitch = Math.sin(pitch);
+        double cosPitch = Math.cos(pitch);
+
         boolean any = false;
-        for (int i = 0; i < points; i++) {
-            double progress = points == 1 ? 0.0 : (double) i / (points - 1);
-            double t = start + (end - start) * progress;
-            Variables vars = new Variables(t, progress, i, points, skill);
-            Vec3 offset = new Vec3(spec.x.eval(vars), spec.y.eval(vars), spec.z.eval(vars));
-            if (finite(offset)) any |= emit(platform, skill, center.add(offset), 1, false);
+        for (double worldX = origin.x() - boundX; worldX <= origin.x() + boundX; worldX += resolution) {
+            for (double worldY = origin.y() - boundY; worldY <= origin.y() + boundY; worldY += resolution) {
+                for (double worldZ = origin.z() - boundZ; worldZ <= origin.z() + boundZ; worldZ += resolution) {
+                    double dx = worldX - origin.x();
+                    double dy = worldY - origin.y();
+                    double dz = worldZ - origin.z();
+
+                    double localX = cosYaw * dx - sinYaw * dy;
+                    double localY = sinYaw * sinPitch * dx + cosYaw * sinPitch * dy + cosPitch * dz;
+                    double localZ = -sinYaw * cosPitch * dx - cosYaw * cosPitch * dy + sinPitch * dz;
+                    double value = expression.eval(new Variables(localX, localY, localZ, 0.0, 0.0));
+                    if (!Double.isFinite(value) || Math.abs(value) >= resolution) continue;
+
+                    double outX = origin.x() + cosYaw * localX + sinYaw * localY;
+                    double outY = origin.y() - sinYaw * sinPitch * localX + cosYaw * sinPitch * localY + cosPitch * localZ;
+                    double outZ = origin.z() + sinYaw * cosPitch * localX + cosYaw * cosPitch * localY - sinPitch * localZ;
+                    Vec3 point = new Vec3(outX, outY, outZ);
+                    if (finite(point)) any |= emit(platform, skill, point, 1, false);
+                }
+            }
         }
         return any;
     }
 
-    private static boolean lineEquation(SkillPlatform platform, SkillContext ctx, SkillLine skill, Vec3 end) {
-        Vec3 start = ctx.origin() == null ? platform.position(ctx.caster()) : ctx.origin();
+    /** MythicMobs 5.6.2 ParticleLineEquationEffect sampling semantics. */
+    private static boolean lineEquation(SkillPlatform platform, SkillContext ctx, SkillLine skill, Vec3 target) {
+        boolean fromOrigin = bool(skill.string("fromorigin", skill.string("fo", "false")), false);
+        Vec3 casterPosition = platform.position(ctx.caster());
+        Vec3 start = fromOrigin && ctx.origin() != null ? ctx.origin() : casterPosition;
+        if (start == null) start = ctx.origin();
         if (start == null) return false;
-        EquationSpec spec = EquationSpec.from(skill);
-        int points = clamp(skill.integer("points", skill.integer("amount", 64, "a")), 2, 512);
-        Vec3 direction = end.subtract(start);
-        Vec3 axis = direction.normalize();
-        Vec3 side = perpendicular(axis);
-        Vec3 up = cross(axis, side).normalize();
-        double parameterStart = skill.decimal("start", skill.decimal("s", 0.0));
-        double parameterEnd = skill.decimal("end", skill.decimal("e", Math.PI * 2.0));
+
+        double startYOffset = skill.decimal("startyoffset", skill.decimal("syo", skill.decimal("ystartoffset", skill.decimal("ys", 0.0))));
+        double targetYOffset = skill.decimal("targetyoffset", skill.decimal("tyo", skill.decimal("ytargetoffset", skill.decimal("yt", 0.0))));
+        start = start.add(new Vec3(0.0, startYOffset, 0.0));
+        Vec3 end = target.add(new Vec3(0.0, targetYOffset, 0.0));
+
+        double distance = Math.sqrt(end.subtract(start).lengthSquared());
+        double maxDistance = skill.decimal("maxdistance", skill.decimal("md", 256.0));
+        if (distance > maxDistance) distance = maxDistance;
+        double distanceBetween = skill.decimal("distancebetween", skill.decimal("db", 1.0));
+        if (!(distanceBetween > 0.0) || !Double.isFinite(distanceBetween) || !Double.isFinite(distance)) return false;
+
+        Vec3 direction = end.subtract(start).normalize();
+        int points = (int) Math.round(distance / distanceBetween);
+        if (points <= 0) return false;
+        double step = distance / points;
+
+        Expression equationX = Expression.compile(skill.string("equationx", skill.string("eqx", "0")));
+        Expression equationY = Expression.compile(skill.string("equationy", skill.string("eqy", "0")));
+        Expression equationZ = Expression.compile(skill.string("equationz", skill.string("eqz", "0")));
+
         boolean any = false;
         for (int i = 0; i < points; i++) {
-            double progress = (double) i / (points - 1);
-            double t = parameterStart + (parameterEnd - parameterStart) * progress;
-            Variables vars = new Variables(t, progress, i, points, skill);
-            double x = spec.x.eval(vars);
-            double y = spec.y.eval(vars);
-            double z = spec.z.eval(vars);
+            double travelled = step * i;
+            double t = distance == 0.0 ? 0.0 : travelled / distance;
+            Variables vars = new Variables(0.0, 0.0, 0.0, t, distance);
+            double x = equationX.eval(vars);
+            double y = equationY.eval(vars);
+            double z = equationZ.eval(vars);
             if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) continue;
-            Vec3 base = start.add(direction.multiply(progress));
-            Vec3 point = base.add(side.multiply(x)).add(up.multiply(y)).add(axis.multiply(z));
-            any |= emit(platform, skill, point, 1, false);
+            Vec3 point = start.add(direction.multiply(travelled)).add(new Vec3(x, y, z));
+            if (finite(point)) any |= emit(platform, skill, point, 1, false);
         }
         return any;
+    }
+
+    private static boolean bool(String raw, boolean fallback) {
+        if (raw == null || raw.isBlank()) return fallback;
+        return switch (raw.trim().toLowerCase(Locale.ROOT)) {
+            case "true", "yes", "on", "1" -> true;
+            case "false", "no", "off", "0" -> false;
+            default -> fallback;
+        };
     }
 
     private static boolean finite(Vec3 value) {
@@ -246,40 +305,16 @@ public final class ParticleGeometry {
         return new Vec3(a.y() * b.z() - a.z() * b.y(), a.z() * b.x() - a.x() * b.z(), a.x() * b.y() - a.y() * b.x());
     }
 
-    private record EquationSpec(Expression x, Expression y, Expression z) {
-        static EquationSpec from(SkillLine skill) {
-            String combined = skill.string("equation", skill.string("eq", ""));
-            String x = skill.string("x", "");
-            String y = skill.string("y", "");
-            String z = skill.string("z", "");
-            if (!combined.isBlank()) {
-                for (String part : combined.split("[;,]")) {
-                    int equals = part.indexOf('=');
-                    if (equals <= 0) continue;
-                    String key = part.substring(0, equals).trim().toLowerCase(Locale.ROOT);
-                    String value = part.substring(equals + 1).trim();
-                    if (key.equals("x")) x = value;
-                    else if (key.equals("y")) y = value;
-                    else if (key.equals("z")) z = value;
-                }
-            }
-            return new EquationSpec(
-                    Expression.compile(x.isBlank() ? "0" : x),
-                    Expression.compile(y.isBlank() ? "0" : y),
-                    Expression.compile(z.isBlank() ? "0" : z));
-        }
-    }
-
-    private record Variables(double t, double progress, int index, int points, SkillLine skill) {
+    private record Variables(double x, double y, double z, double t, double distance) {
         double value(String name) {
             return switch (name.toLowerCase(Locale.ROOT)) {
+                case "x" -> x;
+                case "y" -> y;
+                case "z" -> z;
                 case "t" -> t;
-                case "p", "progress" -> progress;
-                case "i", "index" -> index;
-                case "n", "points" -> points;
+                case "distance" -> distance;
                 case "pi" -> Math.PI;
                 case "e" -> Math.E;
-                case "r", "radius" -> skill.decimal("radius", skill.decimal("r", 1.0));
                 default -> 0.0;
             };
         }
