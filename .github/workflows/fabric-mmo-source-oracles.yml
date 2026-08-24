@@ -1,0 +1,49 @@
+name: Fabric MMO Source Oracles
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - '.github/workflows/fabric-mmo-source-oracles.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-oracles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout port repository
+        uses: actions/checkout@v4
+
+      - name: Fetch exact-version source oracles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/source-oracles
+          git clone --depth=1 --branch main https://github.com/DragonBaiMo/MMOCore-Change.git build/source-oracles/MMOCore-1.13.1
+          git clone --depth=1 --branch master https://github.com/Hephaisto-dev/mmoitems.git build/source-oracles/MMOItems-6.10.1
+          git clone --depth=1 --branch master https://github.com/Hephaisto-dev/Mythiclib.git build/source-oracles/MythicLib-1.7.1
+
+          grep -q '<version>1.13.1-SNAPSHOT</version>' build/source-oracles/MMOCore-1.13.1/pom.xml
+          grep -q '<version>6.10.1-SNAPSHOT</version>' build/source-oracles/MMOItems-6.10.1/pom.xml
+          grep -q '<version>1.7.1-SNAPSHOT</version>' build/source-oracles/MythicLib-1.7.1/pom.xml
+
+          rm -rf build/source-oracles/*/.git
+          find build/source-oracles -type f -name '*.java' | wc -l | tee build/source-oracles/JAVA_SOURCE_COUNT.txt
+          tar -czf build/fabric-mmo-source-oracles.tar.gz -C build/source-oracles .
+          sha256sum build/fabric-mmo-source-oracles.tar.gz > build/fabric-mmo-source-oracles.sha256
+
+      - name: Upload source oracle bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Source-Oracles
+          path: |
+            build/fabric-mmo-source-oracles.tar.gz
+            build/fabric-mmo-source-oracles.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
