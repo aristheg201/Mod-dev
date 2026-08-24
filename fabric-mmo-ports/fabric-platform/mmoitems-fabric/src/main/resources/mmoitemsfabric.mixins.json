@@ -9,6 +9,7 @@
     "MMOItemsRequirementTriggerMixin",
     "MMOItemsGemScalingMixin",
     "ScreenHandlerGemInteractionMixin",
+    "ScreenHandlerRepairInteractionMixin",
     "ScreenHandlerUpgradeInteractionMixin",
     "ScreenHandlerRevisionMixin",
     "ScreenHandlerRestrictionMixin",
