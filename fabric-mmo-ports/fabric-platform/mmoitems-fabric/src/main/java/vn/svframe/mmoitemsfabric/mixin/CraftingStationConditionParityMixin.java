@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import vn.svframe.mmoitemsfabric.MMOItemsCraftingStationMod;
 import vn.svframe.mmoitemsfabric.MMOItemsEconomyBridge;
 import vn.svframe.mmoitemsfabric.MMOItemsPermissionBridge;
+import vn.svframe.mmoitemsfabric.MMOItemsPlaceholderConditionBridge;
 import vn.svframe.mythiclibfabric.runtime.RpgProfileRegistry;
 import vn.svframe.mythiclibfabric.runtime.RpgResourceRegistry;
 
