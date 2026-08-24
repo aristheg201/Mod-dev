@@ -20,7 +20,7 @@ public final class MMOItemsStatBridgeMod implements ModInitializer {
             ServerPlayerEntity player = server.getPlayerManager().getPlayer(entityId);
             if (player == null) return 0.0d;
             String itemStat = stat.toLowerCase(Locale.ROOT).replace('_', '-');
-            return MMOItemsFabricMod.equipmentStats(player).sum(itemStat);
+            return MMOItemsGameplayMod.equipmentStats(player).sum(itemStat);
         });
     }
 }
