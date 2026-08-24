@@ -9,6 +9,7 @@ def generatedJava = file("$generatedRuntime/src/main/java")
 def m17Archive = file("$buildDir/generated/mmocore-m1.7.tar.gz")
 def m17ExpectedSha256 = '3604b61ab7c73bcf76d4dc3e67eee70f71758efe0a9d9c87799c24123fbf7fea'
 def m23Runtime = rootProject.file('../overlay-m2.3/mmocore-runtime')
+def professionIngress = file('src/main/java/vn/svframe/mmocorefabric/MMOCoreProfessionExperienceMod.java')
 
 def prepareParityRuntime = tasks.register('prepareParityRuntime') {
     inputs.dir(rootProject.file('../mmocore-runtime'))
@@ -61,9 +62,24 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
     }
 }
 
+def prepareFabric121Compatibility = tasks.register('prepareFabric121Compatibility') {
+    inputs.file(professionIngress)
+    doLast {
+        def text = professionIngress.getText('UTF-8')
+        def oldFly = 'player.getAbilities().flying || player.isInPose(EntityPose.GLIDING)'
+        def newFly = 'player.getAbilities().flying || player.isFallFlying()'
+        def oldGround = '!player.getAbilities().flying && !player.isInPose(EntityPose.GLIDING)'
+        def newGround = '!player.getAbilities().flying && !player.isFallFlying()'
+        if (!text.contains(oldFly) || !text.contains(oldGround)) {
+            throw new GradleException('MMOCore profession movement gliding expressions changed; refusing fuzzy 1.21.1 patch')
+        }
+        professionIngress.setText(text.replace(oldFly, newFly).replace(oldGround, newGround), 'UTF-8')
+    }
+}
+
 sourceSets.main.java.srcDirs += generatedJava
 sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
 sourceSets.main.resources.srcDirs += '../../mmocore-runtime/src/main/resources'
 
-tasks.named('compileJava').configure { dependsOn prepareParityRuntime }
-tasks.named('sourcesJar').configure { dependsOn prepareParityRuntime }
+tasks.named('compileJava').configure { dependsOn prepareParityRuntime; dependsOn prepareFabric121Compatibility }
+tasks.named('sourcesJar').configure { dependsOn prepareParityRuntime; dependsOn prepareFabric121Compatibility }
