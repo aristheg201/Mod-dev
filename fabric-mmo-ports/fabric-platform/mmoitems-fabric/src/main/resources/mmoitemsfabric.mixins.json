@@ -5,7 +5,8 @@
   "mixins": [
     "ServerPlayNetworkHandlerAbilityMixin",
     "CrossbowAbilityMixin",
-    "MMOItemsCreateStackMixin"
+    "MMOItemsCreateStackMixin",
+    "ScreenHandlerGemInteractionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
