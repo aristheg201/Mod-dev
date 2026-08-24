@@ -3,7 +3,10 @@
   "package": "vn.svframe.mmocorefabric.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "BlockItemProfessionMixin"
+    "BlockItemProfessionMixin",
+    "ItemStackConsumeProfessionMixin",
+    "TameableProfessionMixin",
+    "ProjectileProfessionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
