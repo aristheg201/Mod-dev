@@ -54,33 +54,37 @@ public final class ParticleGeometrySmoke {
                 });
 
         SkillRuntime runtime = new SkillRuntime(platform);
-        runtime.register(SkillDefinition.from("geometry", Map.of("Skills", List.of(
-                "particlering{particle=crit;points=12;radius=1}",
-                "particlesphere{particle=crit;points=18;radius=1}",
-                "particlebox{particle=crit;amount=24;radius=1}",
-                "particletornado{particle=crit;points=20;height=3;radius=1.5;turns=3}",
-                "particleatom{particle=crit;points=18;radius=1}",
-                "particleequation{particle=crit;equation=0;boundx=1;boundy=1;boundz=1;resolution=1}",
-                "particlelineequation{particle=crit;distancebetween=1;equationx=0;equationy=0;equationz=0;maxdistance=256;forwardoffset=1;sideoffset=0.5}"
-        ))));
-
         SkillContext context = new SkillContext(
-                "API",
-                caster,
-                target,
+                "API", caster, target,
                 new Vec3(0, 64, 0, "minecraft:overworld"),
-                1.0f,
-                Map.of(),
-                Map.of());
+                1.0f, Map.of(), Map.of());
 
-        if (!runtime.cast("geometry", context)) throw new AssertionError("geometry skill did not cast");
-        if (particles.get() != 124) throw new AssertionError("expected 124 emitted particle points, got " + particles.get());
+        assertMechanic(runtime, context, particles, "ring", "particlering{particle=crit;points=12;radius=1}", 12);
+        assertMechanic(runtime, context, particles, "sphere", "particlesphere{particle=crit;points=18;radius=1}", 18);
+        assertMechanic(runtime, context, particles, "box", "particlebox{particle=crit;amount=24;radius=1}", 24);
+        assertMechanic(runtime, context, particles, "tornado", "particletornado{particle=crit;points=20;height=3;radius=1.5;turns=3}", 20);
+        assertMechanic(runtime, context, particles, "atom", "particleatom{particle=crit;points=18;radius=1}", 18);
+        assertMechanic(runtime, context, particles, "equation", "particleequation{particle=crit;equation=0;boundx=1;boundy=1;boundz=1;resolution=1}", 27);
 
-        Vec3 firstLinePoint = emitted.get(emitted.size() - 5);
+        int beforeLine = emitted.size();
+        assertMechanic(runtime, context, particles, "line-equation",
+                "particlelineequation{particle=crit;distancebetween=1;equationx=0;equationy=0;equationz=0;maxdistance=256;forwardoffset=1;sideoffset=0.5}", 5);
+        Vec3 firstLinePoint = emitted.get(beforeLine);
         assertClose(firstLinePoint.x(), -5.0, "line start x");
         assertClose(firstLinePoint.y(), 64.0, "line start y");
         assertClose(firstLinePoint.z(), -0.5, "line start z");
+
+        if (particles.get() != 124) throw new AssertionError("expected 124 emitted particle points, got " + particles.get());
         System.out.println("MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=" + particles.get());
+    }
+
+    private static void assertMechanic(SkillRuntime runtime, SkillContext context, AtomicInteger particles,
+                                       String id, String line, int expected) {
+        runtime.register(SkillDefinition.from(id, Map.of("Skills", List.of(line))));
+        int before = particles.get();
+        if (!runtime.cast(id, context)) throw new AssertionError(id + " did not cast");
+        int emitted = particles.get() - before;
+        if (emitted != expected) throw new AssertionError(id + " expected " + expected + " points, got " + emitted);
     }
 
     private static void assertClose(double actual, double expected, String label) {
