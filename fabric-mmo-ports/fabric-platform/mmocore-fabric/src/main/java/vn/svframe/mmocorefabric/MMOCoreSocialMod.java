@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import vn.svframe.mmocorefabric.mixin.MMOCoreFabricAccessor;
@@ -24,7 +25,6 @@ import vn.svframe.mythiclibfabric.runtime.RpgProfileRegistry;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +49,7 @@ public final class MMOCoreSocialMod implements ModInitializer {
         thread.setDaemon(true);
         return thread;
     });
+    private static volatile MinecraftServer server;
 
     @Override
     public void onInitialize() {
@@ -58,7 +59,9 @@ public final class MMOCoreSocialMod implements ModInitializer {
             dispatcher.register(literal("p").then(argument("message", StringArgumentType.greedyString()).executes(ctx -> partyChat(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "message")))));
             dispatcher.register(literal("g").then(argument("message", StringArgumentType.greedyString()).executes(ctx -> guildChat(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "message")))));
         });
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+        ServerLifecycleEvents.SERVER_STARTED.register(value -> server = value);
+        ServerLifecycleEvents.SERVER_STOPPED.register(value -> {
+            server = null;
             IO.shutdown();
             try { IO.awaitTermination(5, TimeUnit.SECONDS); }
             catch (InterruptedException exception) { Thread.currentThread().interrupt(); }
@@ -227,37 +230,21 @@ public final class MMOCoreSocialMod implements ModInitializer {
     }
 
     private static void broadcastParty(Party party, String message) {
-        var minecraftServer = serverFromAnyPartyMember(party);
-        if (minecraftServer == null) return;
+        MinecraftServer value = server;
+        if (value == null) return;
         for (var member : party.members()) {
-            ServerPlayerEntity online = minecraftServer.getPlayerManager().getPlayer(member.id());
+            ServerPlayerEntity online = value.getPlayerManager().getPlayer(member.id());
             if (online != null) online.sendMessage(Text.literal("[Party] " + message), false);
         }
     }
 
     private static void broadcastGuild(Guild guild, String message) {
-        var minecraftServer = currentServer();
-        if (minecraftServer == null) return;
+        MinecraftServer value = server;
+        if (value == null) return;
         for (UUID member : guild.members()) {
-            ServerPlayerEntity online = minecraftServer.getPlayerManager().getPlayer(member);
+            ServerPlayerEntity online = value.getPlayerManager().getPlayer(member);
             if (online != null) online.sendMessage(Text.literal("[Guild] " + message), false);
         }
-    }
-
-    private static net.minecraft.server.MinecraftServer serverFromAnyPartyMember(Party party) { return currentServer(); }
-    private static net.minecraft.server.MinecraftServer currentServer() {
-        for (var profile : MMOCoreFabricAccessor.mmocore$getProfiles().keySet()) {
-            // Profiles only exist for online players in the core runtime.
-            // The first matching player's server is therefore authoritative.
-            for (var candidate : net.fabricmc.fabric.api.networking.v1.PlayerLookup.all(net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.getGlobalReceivers == null ? null : null)) { break; }
-            break;
-        }
-        return ServerHolder.server;
-    }
-
-    private static final class ServerHolder {
-        private static volatile net.minecraft.server.MinecraftServer server;
-        static { ServerLifecycleEvents.SERVER_STARTED.register(value -> server = value); ServerLifecycleEvents.SERVER_STOPPED.register(value -> server = null); }
     }
 
     private static PlayerSnapshot snapshot(ServerPlayerEntity player) {
