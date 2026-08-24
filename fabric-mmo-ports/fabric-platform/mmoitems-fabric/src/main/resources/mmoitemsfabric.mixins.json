@@ -12,6 +12,7 @@
     "ScreenHandlerUpgradeInteractionMixin",
     "ScreenHandlerRestrictionMixin",
     "EnchantmentRestrictionMixin",
+    "AbstractFurnaceRestrictionMixin",
     "ItemStackCustomDurabilityMixin",
     "PlayerItemDropRestrictionMixin"
   ],
