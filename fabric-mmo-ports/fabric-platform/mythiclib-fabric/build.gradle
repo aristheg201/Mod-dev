@@ -43,20 +43,19 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
             into extracted
         }
 
-        File javaRoot = null
-        if (new File(extracted, 'src/main/java').isDirectory()) javaRoot = new File(extracted, 'src/main/java')
-        extracted.eachDirRecurse { candidate ->
-            if (javaRoot == null && candidate.name == 'java' && candidate.parentFile?.name == 'main' && candidate.parentFile?.parentFile?.name == 'src') {
-                def javaFiles = fileTree(candidate) { include '**/*.java' }
-                if (!javaFiles.isEmpty()) javaRoot = candidate
-            }
+        def javaFiles = fileTree(extracted) { include '**/*.java' }.files
+        if (javaFiles.isEmpty()) throw new GradleException("MythicLib M1.8 archive contains no Java sources under ${extracted}")
+        generatedJava.mkdirs()
+        javaFiles.each { source ->
+            def text = source.getText('UTF-8')
+            def matcher = text =~ /(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*;/
+            if (!matcher.find()) throw new GradleException("MythicLib M1.8 source has no package declaration: ${source}")
+            def packagePath = matcher.group(1).replace('.', '/')
+            def targetDir = new File(generatedJava, packagePath)
+            targetDir.mkdirs()
+            new File(targetDir, source.name).setText(text, 'UTF-8')
         }
-        if (javaRoot == null) throw new GradleException("MythicLib M1.8 Java source root missing under ${extracted}")
-        File overlayRuntime = javaRoot.parentFile.parentFile.parentFile
-        copy {
-            from overlayRuntime
-            into generatedRuntime
-        }
+
         if (!generatedJava.isDirectory()) {
             throw new GradleException("Generated MythicLib runtime source root missing: ${generatedJava}")
         }
