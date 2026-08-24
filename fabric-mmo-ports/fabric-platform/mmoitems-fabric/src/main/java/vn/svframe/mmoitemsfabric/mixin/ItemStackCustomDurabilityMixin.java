@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.mmoitemsfabric.MMOItemsGameplayMod;
+import vn.svframe.mmoitemsfabric.MMOItemsLegacyItemOptions;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -39,8 +40,26 @@ public abstract class ItemStackCustomDurabilityMixin {
         int next = Math.max(0, current - amount);
         MMOItemsGameplayMod.setDurability(stack, next);
         updateBar(stack, next, template.maxDurability());
+        if (next > 0) return;
 
-        if (next > 0 || !MMOItemsGameplayMod.lostWhenBroken(stack)) return;
+        if (MMOItemsGameplayMod.lostWhenBroken(stack)) {
+            breakStack(stack, breakCallback);
+            return;
+        }
+
+        if (!MMOItemsLegacyItemOptions.bool(stack, "break-downgrade", false)) return;
+        int level = MMOItemsGameplayMod.upgradeLevel(stack);
+        if (level <= template.upgradeMin()) {
+            breakStack(stack, breakCallback);
+            return;
+        }
+
+        MMOItemsGameplayMod.setUpgradeLevel(stack, level - 1);
+        MMOItemsGameplayMod.setDurability(stack, template.maxDurability());
+        updateBar(stack, template.maxDurability(), template.maxDurability());
+    }
+
+    private static void breakStack(ItemStack stack, Consumer<Item> breakCallback) {
         Item broken = stack.getItem();
         stack.decrement(1);
         if (breakCallback != null) breakCallback.accept(broken);
@@ -57,6 +76,10 @@ public abstract class ItemStackCustomDurabilityMixin {
     }
 
     private static void updateBar(ItemStack stack, int current, int customMax) {
+        if (MMOItemsLegacyItemOptions.bool(stack, "hide-durability-bar", false)) {
+            if (stack.isDamageable()) stack.setDamage(0);
+            return;
+        }
         int vanillaMax = stack.getMaxDamage();
         if (vanillaMax <= 0 || customMax <= 0) return;
         int damage = current >= customMax ? 0 : Math.max(1, (int) ((1.0 - (double) current / customMax) * vanillaMax));
