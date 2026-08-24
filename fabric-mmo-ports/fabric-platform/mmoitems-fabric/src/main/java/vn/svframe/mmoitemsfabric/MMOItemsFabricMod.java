@@ -37,7 +37,6 @@ import vn.svframe.mmoitemsfabric.runtime.gameplay.EquipmentStats;
 import vn.svframe.mmoitemsfabric.runtime.gameplay.ItemStatProfile;
 import vn.svframe.mmoitemsfabric.runtime.stat.LegacyItemDefinition;
 import vn.svframe.mythiclibfabric.MythicLibFabricMod;
-import vn.svframe.mythiclibfabric.MythicLibPassiveMod;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -171,11 +170,7 @@ public final class MMOItemsFabricMod implements ModInitializer {
         return fireItemStackTrigger(player, stack, triggerName, Map.of("packet-trigger", true));
     }
 
-    /**
-     * Fires item abilities on all equipped MMOItems without forwarding the trigger to
-     * MythicLib passive bindings. Packet-level passive triggers are already emitted by
-     * MythicLib's own network mixin, so this path prevents duplicate passive casts.
-     */
+    /** Packet-only item trigger path. MythicLib owns passive trigger dispatch. */
     public static int fireEquippedItemPacketTrigger(ServerPlayerEntity player, String triggerName) {
         if (player == null || triggerName == null || triggerName.isBlank()) return 0;
         final AbilityDefinition.Trigger trigger;
@@ -256,7 +251,6 @@ public final class MMOItemsFabricMod implements ModInitializer {
 
     private static void trigger(ServerPlayerEntity player, Hand hand, AbilityDefinition.Trigger trigger, UUID target) {
         triggerStack(player, player.getStackInHand(hand), trigger, target, Map.of());
-        firePassive(player, trigger, target, Map.of());
     }
 
     private static void triggerEquipped(ServerPlayerEntity player, AbilityDefinition.Trigger trigger, UUID target, Map<String, Object> data) {
@@ -265,14 +259,6 @@ public final class MMOItemsFabricMod implements ModInitializer {
         for (ItemStack stack : stacks) {
             RegisteredItem item = item(stack); if (item == null || !seen.add(item.type + ':' + item.definition.id())) continue;
             triggerStack(player, stack, trigger, target, data);
-        }
-        if (trigger != AbilityDefinition.Trigger.TIMER) firePassive(player, trigger, target, data);
-    }
-
-    private static void firePassive(ServerPlayerEntity player, AbilityDefinition.Trigger trigger, UUID target, Map<String, ?> data) {
-        try {
-            MythicLibPassiveMod.fire(player.getUuid(), trigger.name(), target == null ? player.getUuid() : target, data);
-        } catch (IllegalArgumentException ignored) {
         }
     }
 
