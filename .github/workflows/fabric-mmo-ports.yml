@@ -67,6 +67,14 @@ jobs:
             cp -a "fabric-mmo-ports/fabric-platform/$module/src" "build/mmo-workspace/fabric-platform/$module/src"
           done
 
+          # M2.1 intentionally applies after the module source copy. It replaces
+          # the thin MythicMobs facade with the execution runtime in this overlay.
+          cat fabric-mmo-ports/overlay-m2.1/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.1.tar.gz
+          echo '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328  build/mmo-overlay-m2.1.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
+          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillRuntime.java
+          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/FabricSkillPlatform.java
+
           test -d build/mmo-workspace/mmocore-runtime/src/main/java
           test -d build/mmo-workspace/mmoitems-runtime/src/main/java
           test -d build/mmo-workspace/mythiclib-runtime/src/main/java
