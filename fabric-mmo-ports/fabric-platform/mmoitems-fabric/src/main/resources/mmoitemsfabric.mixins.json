@@ -10,12 +10,14 @@
     "MMOItemsGemScalingMixin",
     "ScreenHandlerGemInteractionMixin",
     "ScreenHandlerUpgradeInteractionMixin",
+    "ScreenHandlerRevisionMixin",
     "ScreenHandlerRestrictionMixin",
     "CraftingStationScreenMixin",
     "EnchantmentRestrictionMixin",
     "AbstractFurnaceRestrictionMixin",
     "ItemStackCustomDurabilityMixin",
-    "PlayerItemDropRestrictionMixin"
+    "PlayerItemDropRestrictionMixin",
+    "ItemEntityRevisionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
