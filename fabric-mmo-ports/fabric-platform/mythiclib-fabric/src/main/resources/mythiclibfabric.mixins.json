@@ -6,7 +6,8 @@
     "LivingEntityDamageMixin",
     "ServerPlayNetworkHandlerActionMixin",
     "PersistentProjectileTriggerMixin",
-    "CrossbowTriggerMixin"
+    "CrossbowTriggerMixin",
+    "BlockItemPlaceTriggerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
