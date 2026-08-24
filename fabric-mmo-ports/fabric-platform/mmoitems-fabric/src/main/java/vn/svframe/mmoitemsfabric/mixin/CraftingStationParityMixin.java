@@ -11,10 +11,11 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import vn.svframe.mmoitemsfabric.MMOItemsCraftingStationMod;
 import vn.svframe.mmoitemsfabric.MMOItemsEconomyBridge;
+import vn.svframe.mmoitemsfabric.MMOItemsPermissionBridge;
 
 import java.util.Map;
 
-/** Repairs legacy 6.10.1 crafting-station grammar and money transaction semantics. */
+/** Repairs legacy 6.10.1 crafting-station grammar and transaction semantics. */
 @Mixin(value = MMOItemsCraftingStationMod.class, remap = false)
 public abstract class CraftingStationParityMixin {
     private static final ThreadLocal<Boolean> MMOITEMS_CRAFTING = ThreadLocal.withInitial(() -> false);
@@ -25,10 +26,10 @@ public abstract class CraftingStationParityMixin {
             at = @At(value = "INVOKE", target = "Lvn/svframe/mmoitemsfabric/MMOItemsCraftingStationMod$Ingredient;<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;II)V"),
             remap = false)
     private static void mmoitems$legacyVanillaIngredient(Args args) {
-        String kind = String.valueOf(args.get(0));
-        String itemType = String.valueOf(args.get(1));
-        String id = String.valueOf(args.get(2));
-        if (kind.equalsIgnoreCase("vanilla") && (id == null || id.isBlank()) && itemType != null && !itemType.isBlank()) {
+        String kind = (String) args.get(0);
+        String itemType = (String) args.get(1);
+        String id = (String) args.get(2);
+        if (kind != null && kind.equalsIgnoreCase("vanilla") && (id == null || id.isBlank()) && itemType != null && !itemType.isBlank()) {
             args.set(1, "");
             args.set(2, itemType);
         }
@@ -50,6 +51,19 @@ public abstract class CraftingStationParityMixin {
             if (value != null && !value.isBlank()) return value.trim();
         }
         return "";
+    }
+
+    @Redirect(
+            method = "conditionsMet",
+            at = @At(value = "INVOKE", target = "Lvn/svframe/mmoitemsfabric/MMOItemsCraftingStationMod;hasPermission(Lnet/minecraft/server/network/ServerPlayerEntity;Ljava/lang/String;)Z"),
+            remap = false)
+    private static boolean mmoitems$allPermissions(ServerPlayerEntity player, String permissionList) {
+        if (permissionList == null || permissionList.isBlank()) return true;
+        for (String permission : permissionList.split(",")) {
+            String node = permission.trim();
+            if (!node.isEmpty() && !MMOItemsPermissionBridge.has(player, node)) return false;
+        }
+        return true;
     }
 
     @Redirect(
