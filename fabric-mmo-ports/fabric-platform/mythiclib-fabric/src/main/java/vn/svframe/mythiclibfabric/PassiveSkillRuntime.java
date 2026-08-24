@@ -154,7 +154,7 @@ public final class PassiveSkillRuntime {
                 if (binding.trigger() != LegacyTriggerType.TIMER) continue;
 
                 TimerKey key = new TimerKey(owner, binding.skillId());
-                long last = TIMER_LAST_CAST.getOrDefault(key, binding.registeredTick());
+                long last = TIMER_LAST_CAST.getOrDefault(key, now - binding.timerPeriodTicks());
                 if (now - last < binding.timerPeriodTicks()) continue;
                 if (!ready(binding, now)) continue;
 
