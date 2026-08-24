@@ -7,7 +7,8 @@
   "entrypoints": {
     "main": [
       "vn.svframe.mmocorefabric.MMOCoreFabricMod",
-      "vn.svframe.mmocorefabric.MMOCoreProfessionExperienceMod"
+      "vn.svframe.mmocorefabric.MMOCoreProfessionExperienceMod",
+      "vn.svframe.mmocorefabric.MMOCoreSpecialProfessionExperienceMod"
     ]
   },
   "mixins": [
