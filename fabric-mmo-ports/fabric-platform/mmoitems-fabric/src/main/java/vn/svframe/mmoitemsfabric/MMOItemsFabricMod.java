@@ -164,6 +164,25 @@ public final class MMOItemsFabricMod implements ModInitializer {
         return out;
     }
 
+    /** Packet-level item ability ingress used by the native Fabric network mixin. */
+    public static boolean fireItemPacketTrigger(ServerPlayerEntity player, String triggerName) {
+        if (player == null || triggerName == null || triggerName.isBlank()) return false;
+        final AbilityDefinition.Trigger trigger;
+        try {
+            trigger = AbilityDefinition.Trigger.valueOf(triggerName.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+
+        ItemStack stack = switch (triggerName.trim().toUpperCase(Locale.ROOT)) {
+            case "SHOOT_BOW", "SHOOT_TRIDENT" -> player.getActiveItem().isEmpty() ? player.getMainHandStack() : player.getActiveItem();
+            default -> player.getMainHandStack();
+        };
+        if (stack.isEmpty()) return false;
+        triggerStack(player, stack, trigger, null, Map.of("packet-trigger", true));
+        return true;
+    }
+
     private static int give(ServerPlayerEntity source, ServerPlayerEntity target, String type, String id, int amount) {
         ItemStack stack = createStack(type, id, amount);
         if (stack.isEmpty()) { source.getCommandSource().sendError(Text.literal("Unknown MMOItem " + type + ":" + id)); return 0; }
