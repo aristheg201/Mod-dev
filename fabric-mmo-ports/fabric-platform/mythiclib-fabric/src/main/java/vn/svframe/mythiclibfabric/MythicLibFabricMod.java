@@ -47,7 +47,6 @@ public final class MythicLibFabricMod implements ModInitializer {
     @Override
     public void onInitialize() {
         reload();
-        PassiveTriggerRuntime.registerFabricEvents();
         ServerLifecycleEvents.SERVER_STARTED.register(value -> {
             server = value;
             LOG.info("MythicLib Fabric online; " + definitionSummary());
@@ -59,7 +58,6 @@ public final class MythicLibFabricMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(value -> {
             tick++;
             runScheduled();
-            PassiveTriggerRuntime.tick(value);
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(literal("mythiclibfabric")
@@ -97,7 +95,7 @@ public final class MythicLibFabricMod implements ModInitializer {
 
     public static MinecraftServer server() { return server; }
     public static long currentTick() { return tick; }
-    public static String definitionSummary() { return "skills=" + SKILLS.size() + ",scripts=" + SCRIPT_IDS.size() + "," + PassiveTriggerRuntime.summary(); }
+    public static String definitionSummary() { return "skills=" + SKILLS.size() + ",scripts=" + SCRIPT_IDS.size(); }
     public static boolean hasSkill(String id) { return SKILLS.containsKey(norm(id)) || SCRIPT_IDS.containsKey(norm(id)); }
     public static Map<String, LegacySkillDefinition> skillDefinitions() { return Map.copyOf(SKILLS); }
 
@@ -172,15 +170,13 @@ public final class MythicLibFabricMod implements ModInitializer {
     private static boolean reload() {
         try {
             Map<String, LegacySkillDefinition> nextSkills = new LinkedHashMap<>();
-            Map<String, Map<String, Object>> nextPassiveDefinitions = new LinkedHashMap<>();
             Map<String, String> nextScriptIds = new LinkedHashMap<>();
             ScriptEngine nextScripts = new ScriptEngine(new FabricScriptPlatform());
-            loadSkills(ROOT.resolve("skill"), nextSkills, nextPassiveDefinitions);
+            loadSkills(ROOT.resolve("skill"), nextSkills);
             loadScripts(ROOT.resolve("script"), nextScripts, nextScriptIds);
             SKILLS.clear(); SKILLS.putAll(nextSkills);
             SCRIPT_IDS.clear(); SCRIPT_IDS.putAll(nextScriptIds);
             scripts = nextScripts;
-            PassiveTriggerRuntime.replaceDefinitions(nextPassiveDefinitions);
             return true;
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load MythicLib legacy configuration", e);
@@ -188,14 +184,13 @@ public final class MythicLibFabricMod implements ModInitializer {
         }
     }
 
-    private static void loadSkills(Path directory, Map<String, LegacySkillDefinition> target, Map<String, Map<String, Object>> passiveDefinitions) throws IOException {
+    private static void loadSkills(Path directory, Map<String, LegacySkillDefinition> target) throws IOException {
         for (Path file : yamlFiles(directory)) {
             Map<String, Object> root = YamlLite.map(YamlLite.parse(file));
             for (Map.Entry<String, Object> entry : root.entrySet()) {
                 if (!(entry.getValue() instanceof Map<?, ?> raw)) continue;
                 @SuppressWarnings("unchecked") Map<String, Object> section = (Map<String, Object>) raw;
                 target.put(norm(entry.getKey()), LegacySkillDefinition.from(entry.getKey(), section));
-                passiveDefinitions.put(entry.getKey(), Map.copyOf(section));
             }
         }
     }
