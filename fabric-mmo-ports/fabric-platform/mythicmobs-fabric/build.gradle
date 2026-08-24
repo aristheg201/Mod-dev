@@ -1,9 +1,5 @@
 base { archivesName = 'MythicMobs-Fabric' }
 
-// Build the MythicMobs runtime as one deterministic source tree. M2.0 carries
-// the component registry/parser parity, M2.1 carries the Minecraft/Fabric
-// execution bridge and M2.2 adds geometry-aware particle mechanics. All of it
-// must be visible to Loom/Yarn instead of being merged as class files later.
 def generatedRuntimeRoot = file("$buildDir/generated/mythicmobs-runtime")
 def generatedRuntime = file("$generatedRuntimeRoot/mythicmobs-runtime")
 def generatedRuntimeJava = file("$generatedRuntime/src/main/java")
@@ -22,54 +18,27 @@ def prepareM20Runtime = tasks.register('prepareM20Runtime') {
     inputs.dir(rootProject.file('../mythicmobs-runtime'))
     inputs.files(fileTree(m20OverlayDir) { include 'source.tar.gz.b64.part*' })
     outputs.dir(generatedRuntime)
-
     doLast {
         project.delete(generatedRuntimeRoot)
         generatedRuntimeRoot.mkdirs()
-        copy {
-            from rootProject.file('../mythicmobs-runtime')
-            into generatedRuntime
-        }
-
-        def parts = fileTree(m20OverlayDir) { include 'source.tar.gz.b64.part*' }
-                .files
-                .toList()
-                .sort { a, b -> a.name <=> b.name }
-        if (parts.isEmpty()) {
-            throw new GradleException("Missing MythicMobs M2.0 source overlay in ${m20OverlayDir}")
-        }
+        copy { from rootProject.file('../mythicmobs-runtime'); into generatedRuntime }
+        def parts = fileTree(m20OverlayDir) { include 'source.tar.gz.b64.part*' }.files.toList().sort { a, b -> a.name <=> b.name }
+        if (parts.isEmpty()) throw new GradleException("Missing MythicMobs M2.0 source overlay in ${m20OverlayDir}")
         def encoded = parts.collect { it.getText('UTF-8').trim() }.join('')
         byte[] archiveBytes
-        try {
-            archiveBytes = java.util.Base64.decoder.decode(encoded)
-        } catch (IllegalArgumentException e) {
-            throw new GradleException('Invalid base64 in MythicMobs M2.0 source overlay', e)
-        }
+        try { archiveBytes = java.util.Base64.decoder.decode(encoded) }
+        catch (IllegalArgumentException e) { throw new GradleException('Invalid base64 in MythicMobs M2.0 source overlay', e) }
         def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
         def actualSha256 = new java.math.BigInteger(1, digest).toString(16).padLeft(64, '0')
-        if (actualSha256 != m20ExpectedSha256) {
-            throw new GradleException("MythicMobs M2.0 source checksum mismatch: ${actualSha256}")
-        }
-        m20Archive.parentFile.mkdirs()
-        m20Archive.bytes = archiveBytes
-
+        if (actualSha256 != m20ExpectedSha256) throw new GradleException("MythicMobs M2.0 source checksum mismatch: ${actualSha256}")
+        m20Archive.parentFile.mkdirs(); m20Archive.bytes = archiveBytes
         def extracted = file("$buildDir/generated/mythicmobs-m2.0-extracted")
         project.delete(extracted)
-        copy {
-            from tarTree(resources.gzip(m20Archive))
-            into extracted
-        }
+        copy { from tarTree(resources.gzip(m20Archive)); into extracted }
         def overlayRuntime = new File(extracted, 'mythicmobs-runtime')
-        if (!overlayRuntime.isDirectory()) {
-            throw new GradleException("MythicMobs M2.0 runtime root missing: ${overlayRuntime}")
-        }
-        copy {
-            from overlayRuntime
-            into generatedRuntime
-        }
-        if (!generatedRuntimeJava.isDirectory()) {
-            throw new GradleException("Generated MythicMobs runtime source root missing: ${generatedRuntimeJava}")
-        }
+        if (!overlayRuntime.isDirectory()) throw new GradleException("MythicMobs M2.0 runtime root missing: ${overlayRuntime}")
+        copy { from overlayRuntime; into generatedRuntime }
+        if (!generatedRuntimeJava.isDirectory()) throw new GradleException("Generated MythicMobs runtime source root missing: ${generatedRuntimeJava}")
     }
 }
 
@@ -77,65 +46,52 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
     inputs.files(fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' })
     inputs.dir(m22OverlayJava)
     outputs.dir(m21GeneratedRoot)
-
     doLast {
-        def parts = fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' }
-                .files
-                .toList()
-                .sort { a, b -> a.name <=> b.name }
-        if (parts.isEmpty()) {
-            throw new GradleException("Missing MythicMobs M2.1 source overlay in ${m21OverlayDir}")
-        }
+        def parts = fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' }.files.toList().sort { a, b -> a.name <=> b.name }
+        if (parts.isEmpty()) throw new GradleException("Missing MythicMobs M2.1 source overlay in ${m21OverlayDir}")
         def encoded = parts.collect { it.getText('UTF-8').trim() }.join('')
         byte[] archiveBytes
-        try {
-            archiveBytes = java.util.Base64.decoder.decode(encoded)
-        } catch (IllegalArgumentException e) {
-            throw new GradleException('Invalid base64 in MythicMobs M2.1 source overlay', e)
-        }
+        try { archiveBytes = java.util.Base64.decoder.decode(encoded) }
+        catch (IllegalArgumentException e) { throw new GradleException('Invalid base64 in MythicMobs M2.1 source overlay', e) }
         def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
         def actualSha256 = new java.math.BigInteger(1, digest).toString(16).padLeft(64, '0')
-        if (actualSha256 != m21ExpectedSha256) {
-            throw new GradleException("MythicMobs M2.1 source checksum mismatch: ${actualSha256}")
-        }
+        if (actualSha256 != m21ExpectedSha256) throw new GradleException("MythicMobs M2.1 source checksum mismatch: ${actualSha256}")
         project.delete(m21GeneratedRoot)
-        m21Archive.parentFile.mkdirs()
-        m21Archive.bytes = archiveBytes
-        copy {
-            from tarTree(resources.gzip(m21Archive))
-            into m21GeneratedRoot
-        }
-        if (!m21GeneratedJava.isDirectory()) {
-            throw new GradleException("MythicMobs M2.1 source root missing after extraction: ${m21GeneratedJava}")
-        }
+        m21Archive.parentFile.mkdirs(); m21Archive.bytes = archiveBytes
+        copy { from tarTree(resources.gzip(m21Archive)); into m21GeneratedRoot }
+        if (!m21GeneratedJava.isDirectory()) throw new GradleException("MythicMobs M2.1 source root missing after extraction: ${m21GeneratedJava}")
 
-        // M2.1 still lives in a historical archive. Patch only the one mechanic
-        // registration that M2.2 replaces, then overlay normal Java source.
         def skillRuntime = new File(m21GeneratedJava, 'vn/svframe/mythicmobsfabric/engine/SkillRuntime.java')
         def oldParticleRegistration = '''        registerMechanic("particle", (ctx, line, entity, loc) -> platform.particle(loc != null ? loc : ctx.origin(), line.string("particle", line.string("p", "crit")), line.integer("amount", 10, "a"), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("vspread", line.decimal("spread", 0.2)), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("speed", 0.01)),
                 "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
         def newParticleRegistration = '''        registerMechanic("particle",
-                (ctx, line, entity, loc) -> ParticleGeometry.cast(platform, ctx, line, entity, loc),
+                (ctx, line, entity, loc) -> ParticleGeometryCompat.cast(platform, ctx, line, entity, loc),
                 "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
         def runtimeText = skillRuntime.getText('UTF-8')
-        if (!runtimeText.contains(oldParticleRegistration)) {
-            throw new GradleException('MythicMobs M2.1 particle registration changed; refusing a fuzzy M2.2 patch')
-        }
+        if (!runtimeText.contains(oldParticleRegistration)) throw new GradleException('MythicMobs M2.1 particle registration changed; refusing a fuzzy M2.2 patch')
         skillRuntime.setText(runtimeText.replace(oldParticleRegistration, newParticleRegistration), 'UTF-8')
 
-        if (!m22OverlayJava.isDirectory()) {
-            throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
-        }
-        copy {
-            from m22OverlayJava
-            into m21GeneratedJava
-        }
+        def fabricPlatform = new File(m21GeneratedJava, 'vn/svframe/mythicmobsfabric/FabricSkillPlatform.java')
+        def platformText = fabricPlatform.getText('UTF-8')
+        def oldDeclaration = 'final class FabricSkillPlatform implements SkillPlatform {'
+        def newDeclaration = 'final class FabricSkillPlatform implements SkillPlatform, vn.svframe.mythicmobsfabric.engine.RotationAwareSkillPlatform {'
+        if (!platformText.contains(oldDeclaration)) throw new GradleException('FabricSkillPlatform declaration changed; refusing rotation patch')
+        platformText = platformText.replace(oldDeclaration, newDeclaration)
+        def eyeMethod = '''    @Override public Vec3 eyePosition(UUID value) {
+        Entity e=entity(value); if(e==null) return new Vec3(0,0,0);
+        Vec3d p=e.getEyePos(); return new Vec3(p.x,p.y,p.z,world(value));
+    }'''
+        def eyeWithRotation = eyeMethod + '''
+    @Override public float yaw(UUID value) { Entity e=entity(value); return e == null ? 0.0f : e.getYaw(); }
+    @Override public float pitch(UUID value) { Entity e=entity(value); return e == null ? 0.0f : e.getPitch(); }'''
+        if (!platformText.contains(eyeMethod)) throw new GradleException('FabricSkillPlatform eyePosition changed; refusing rotation patch')
+        fabricPlatform.setText(platformText.replace(eyeMethod, eyeWithRotation), 'UTF-8')
+
+        if (!m22OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
+        copy { from m22OverlayJava; into m21GeneratedJava }
     }
 }
 
-// M2.1 replaces the stale Fabric entrypoint beside this build file, so compile
-// only the generated module source plus the generated M2.0 runtime and common
-// compatibility code.
 sourceSets.main.java.setSrcDirs([
         m21GeneratedJava,
         generatedRuntimeJava,
@@ -143,11 +99,5 @@ sourceSets.main.java.setSrcDirs([
 ])
 sourceSets.main.resources.srcDirs += '../../mythicmobs-runtime/src/main/resources'
 
-tasks.named('compileJava').configure {
-    dependsOn prepareM20Runtime
-    dependsOn prepareM21Sources
-}
-tasks.named('sourcesJar').configure {
-    dependsOn prepareM20Runtime
-    dependsOn prepareM21Sources
-}
+tasks.named('compileJava').configure { dependsOn prepareM20Runtime; dependsOn prepareM21Sources }
+tasks.named('sourcesJar').configure { dependsOn prepareM20Runtime; dependsOn prepareM21Sources }
