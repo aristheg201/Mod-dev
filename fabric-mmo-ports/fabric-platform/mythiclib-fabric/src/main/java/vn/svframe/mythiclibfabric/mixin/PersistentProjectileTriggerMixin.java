@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.mythiclibfabric.LegacyTriggerType;
 import vn.svframe.mythiclibfabric.PassiveSkillRuntime;
+import vn.svframe.mythiclibfabric.runtime.ProjectilePassiveSnapshotHolder;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
