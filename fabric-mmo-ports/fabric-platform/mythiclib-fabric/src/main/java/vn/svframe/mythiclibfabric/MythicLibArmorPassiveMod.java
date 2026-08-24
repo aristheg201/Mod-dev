@@ -1,86 +1,57 @@
 package vn.svframe.mythiclibfabric;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Native Fabric armor-change bridge for MythicLib passive triggers. */
 public final class MythicLibArmorPassiveMod implements ModInitializer {
-    private static final Map<UUID, List<ArmorState>> LAST_ARMOR = new ConcurrentHashMap<>();
-
     @Override
     public void onInitialize() {
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                LAST_ARMOR.put(handler.player.getUuid(), snapshot(handler.player)));
+        ServerEntityEvents.EQUIPMENT_CHANGE.register((entity, slot, previousStack, currentStack) -> {
+            if (!(entity instanceof ServerPlayerEntity player) || !isArmor(slot)) return;
+            if (ItemStack.areEqual(previousStack, currentStack)) return;
 
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                LAST_ARMOR.remove(handler.player.getUuid()));
-
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> LAST_ARMOR.clear());
-
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                UUID owner = player.getUuid();
-                List<ArmorState> current = snapshot(player);
-                List<ArmorState> previous = LAST_ARMOR.put(owner, current);
-                if (previous == null) continue;
-
-                int count = Math.min(previous.size(), current.size());
-                for (int slot = 0; slot < count; slot++) {
-                    ArmorState before = previous.get(slot);
-                    ArmorState after = current.get(slot);
-                    if (before.equals(after)) continue;
-
-                    if (!before.empty()) {
-                        PassiveSkillRuntime.fire(owner, LegacyTriggerType.UNEQUIP_ARMOR, owner,
-                                context("UNEQUIP_ARMOR", slot, before));
-                    }
-                    if (!after.empty()) {
-                        PassiveSkillRuntime.fire(owner, LegacyTriggerType.EQUIP_ARMOR, owner,
-                                context("EQUIP_ARMOR", slot, after));
-                    }
-                }
+            int armorSlot = armorIndex(slot);
+            if (!previousStack.isEmpty()) {
+                PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.UNEQUIP_ARMOR, player.getUuid(),
+                        context("UNEQUIP_ARMOR", armorSlot, slot, previousStack));
+            }
+            if (!currentStack.isEmpty()) {
+                PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.EQUIP_ARMOR, player.getUuid(),
+                        context("EQUIP_ARMOR", armorSlot, slot, currentStack));
             }
         });
     }
 
-    private static List<ArmorState> snapshot(ServerPlayerEntity player) {
-        List<ArmorState> out = new ArrayList<>(4);
-        int slot = 0;
-        for (ItemStack stack : player.getInventory().armor) {
-            out.add(ArmorState.of(slot++, stack));
-        }
-        return List.copyOf(out);
+    private static boolean isArmor(EquipmentSlot slot) {
+        return slot == EquipmentSlot.FEET || slot == EquipmentSlot.LEGS
+                || slot == EquipmentSlot.CHEST || slot == EquipmentSlot.HEAD;
     }
 
-    private static Map<String, Object> context(String trigger, int slot, ArmorState state) {
+    private static int armorIndex(EquipmentSlot slot) {
+        return switch (slot) {
+            case FEET -> 0;
+            case LEGS -> 1;
+            case CHEST -> 2;
+            case HEAD -> 3;
+            default -> -1;
+        };
+    }
+
+    private static Map<String, Object> context(String trigger, int index, EquipmentSlot slot, ItemStack stack) {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("trigger", trigger);
-        out.put("armor-slot", slot);
-        out.put("item", state.itemId());
-        out.put("item-count", state.count());
+        out.put("armor-slot", index);
+        out.put("equipment-slot", slot.getName());
+        out.put("item", Registries.ITEM.getId(stack.getItem()).toString());
+        out.put("item-count", stack.getCount());
         return out;
-    }
-
-    private record ArmorState(int slot, String itemId, int count) {
-        static ArmorState of(int slot, ItemStack stack) {
-            if (stack == null || stack.isEmpty()) return new ArmorState(slot, "", 0);
-            return new ArmorState(slot, Registries.ITEM.getId(stack.getItem()).toString(), stack.getCount());
-        }
-
-        boolean empty() {
-            return itemId.isEmpty();
-        }
     }
 }
