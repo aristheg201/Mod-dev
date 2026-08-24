@@ -3,6 +3,7 @@ package vn.svframe.mythiclibfabric.mixin;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
@@ -17,10 +18,7 @@ import vn.svframe.mythiclibfabric.MythicLibPassiveMod;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Packet-level passive triggers which Fabric's high-level player callbacks do not expose.
- * The injection observes the same accepted client action packet vanilla processes.
- */
+/** Packet-level passive triggers which Fabric's high-level callbacks do not expose. */
 @Mixin(ServerPlayNetworkHandler.class)
 public abstract class ServerPlayNetworkHandlerActionMixin {
     @Shadow public ServerPlayerEntity player;
@@ -33,6 +31,13 @@ public abstract class ServerPlayNetworkHandlerActionMixin {
             case RELEASE_USE_ITEM -> fireRelease();
             default -> {
             }
+        }
+    }
+
+    @Inject(method = "onClientCommand", at = @At("HEAD"))
+    private void mythiclib$onClientCommand(ClientCommandC2SPacket packet, CallbackInfo ci) {
+        if (packet.getMode() == ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY) {
+            MythicLibPassiveMod.fire(player.getUuid(), "SNEAK", player.getUuid(), Map.of("sneaking", true));
         }
     }
 
