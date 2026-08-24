@@ -92,6 +92,16 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
         if (!m25FabricJava.isDirectory()) throw new GradleException("MMOCore M2.5 Fabric source root missing: ${m25FabricJava}")
         copy { from m25FabricJava; into file('src/main/java') }
 
+        // The provider callback also declares current(...), therefore the
+        // unqualified call resolves to OptionalDouble. Qualify the static
+        // MMOCore resource lookup before javac/Loom compiles this overlay.
+        def resourceSource = file('src/main/java/vn/svframe/mmocorefabric/MMOCoreResourceMod.java')
+        def resourceText = resourceSource.getText('UTF-8')
+        def oldAdd = 'set(player, key, current(player, key) + amount);'
+        def newAdd = 'set(player, key, MMOCoreResourceMod.current(player, key) + amount);'
+        if (resourceText.contains(oldAdd)) resourceSource.setText(resourceText.replace(oldAdd, newAdd), 'UTF-8')
+        else if (!resourceText.contains(newAdd)) throw new GradleException('MMOCore M2.5 resource add callback changed; refusing fuzzy patch')
+
         if (!generatedJava.isDirectory()) throw new GradleException("Generated MMOCore runtime source root missing: ${generatedJava}")
     }
 }
