@@ -3,7 +3,8 @@
   "package": "vn.svframe.mythiclibfabric.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "LivingEntityDamageMixin"
+    "LivingEntityDamageMixin",
+    "ServerPlayNetworkHandlerActionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
