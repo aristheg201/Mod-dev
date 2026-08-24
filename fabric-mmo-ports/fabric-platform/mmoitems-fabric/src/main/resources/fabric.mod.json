@@ -7,6 +7,7 @@
   "entrypoints": {
     "main": [
       "vn.svframe.mmoitemsfabric.MMOItemsFabricMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsGameplayMod",
       "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod",
       "vn.svframe.mmoitemsfabric.MMOItemsEquipmentPassiveMod"
     ]
