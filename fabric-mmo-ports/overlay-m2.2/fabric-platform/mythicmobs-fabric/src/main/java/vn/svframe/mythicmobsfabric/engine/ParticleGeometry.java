@@ -1,5 +1,7 @@
 package vn.svframe.mythicmobsfabric.engine;
 
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /** Geometry-aware implementation for legacy MythicMobs particle mechanics. */
@@ -20,6 +22,8 @@ public final class ParticleGeometry {
             case "particletornado" -> tornado(platform, line, center);
             case "particleatom" -> atom(platform, line, center);
             case "particlelinering" -> lineRing(platform, ctx, line, center);
+            case "particleequation" -> equation(platform, line, center);
+            case "particlelineequation" -> lineEquation(platform, ctx, line, center);
             default -> emit(platform, line, center, Math.max(1, line.integer("amount", 10, "a")), true);
         };
     }
@@ -173,6 +177,53 @@ public final class ParticleGeometry {
         return any;
     }
 
+    private static boolean equation(SkillPlatform platform, SkillLine skill, Vec3 center) {
+        EquationSpec spec = EquationSpec.from(skill);
+        int points = clamp(skill.integer("points", skill.integer("amount", 64, "a")), 2, 512);
+        double start = skill.decimal("start", skill.decimal("s", 0.0));
+        double end = skill.decimal("end", skill.decimal("e", Math.PI * 2.0));
+        boolean any = false;
+        for (int i = 0; i < points; i++) {
+            double progress = points == 1 ? 0.0 : (double) i / (points - 1);
+            double t = start + (end - start) * progress;
+            Variables vars = new Variables(t, progress, i, points, skill);
+            Vec3 offset = new Vec3(spec.x.eval(vars), spec.y.eval(vars), spec.z.eval(vars));
+            if (finite(offset)) any |= emit(platform, skill, center.add(offset), 1, false);
+        }
+        return any;
+    }
+
+    private static boolean lineEquation(SkillPlatform platform, SkillContext ctx, SkillLine skill, Vec3 end) {
+        Vec3 start = ctx.origin() == null ? platform.position(ctx.caster()) : ctx.origin();
+        if (start == null) return false;
+        EquationSpec spec = EquationSpec.from(skill);
+        int points = clamp(skill.integer("points", skill.integer("amount", 64, "a")), 2, 512);
+        Vec3 direction = end.subtract(start);
+        Vec3 axis = direction.normalize();
+        Vec3 side = perpendicular(axis);
+        Vec3 up = cross(axis, side).normalize();
+        double parameterStart = skill.decimal("start", skill.decimal("s", 0.0));
+        double parameterEnd = skill.decimal("end", skill.decimal("e", Math.PI * 2.0));
+        boolean any = false;
+        for (int i = 0; i < points; i++) {
+            double progress = (double) i / (points - 1);
+            double t = parameterStart + (parameterEnd - parameterStart) * progress;
+            Variables vars = new Variables(t, progress, i, points, skill);
+            double x = spec.x.eval(vars);
+            double y = spec.y.eval(vars);
+            double z = spec.z.eval(vars);
+            if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) continue;
+            Vec3 base = start.add(direction.multiply(progress));
+            Vec3 point = base.add(side.multiply(x)).add(up.multiply(y)).add(axis.multiply(z));
+            any |= emit(platform, skill, point, 1, false);
+        }
+        return any;
+    }
+
+    private static boolean finite(Vec3 value) {
+        return value != null && Double.isFinite(value.x()) && Double.isFinite(value.y()) && Double.isFinite(value.z());
+    }
+
     private static boolean emit(SkillPlatform platform, SkillLine skill, Vec3 point, int amount, boolean spread) {
         String particle = skill.string("particle", skill.string("p", "crit"));
         double hSpread = spread ? skill.decimal("hspread", skill.decimal("spread", 0.2)) : 0.0;
@@ -193,5 +244,220 @@ public final class ParticleGeometry {
 
     private static Vec3 cross(Vec3 a, Vec3 b) {
         return new Vec3(a.y() * b.z() - a.z() * b.y(), a.z() * b.x() - a.x() * b.z(), a.x() * b.y() - a.y() * b.x());
+    }
+
+    private record EquationSpec(Expression x, Expression y, Expression z) {
+        static EquationSpec from(SkillLine skill) {
+            String combined = skill.string("equation", skill.string("eq", ""));
+            String x = skill.string("x", "");
+            String y = skill.string("y", "");
+            String z = skill.string("z", "");
+            if (!combined.isBlank()) {
+                for (String part : combined.split("[;,]")) {
+                    int equals = part.indexOf('=');
+                    if (equals <= 0) continue;
+                    String key = part.substring(0, equals).trim().toLowerCase(Locale.ROOT);
+                    String value = part.substring(equals + 1).trim();
+                    if (key.equals("x")) x = value;
+                    else if (key.equals("y")) y = value;
+                    else if (key.equals("z")) z = value;
+                }
+            }
+            return new EquationSpec(
+                    Expression.compile(x.isBlank() ? "0" : x),
+                    Expression.compile(y.isBlank() ? "0" : y),
+                    Expression.compile(z.isBlank() ? "0" : z));
+        }
+    }
+
+    private record Variables(double t, double progress, int index, int points, SkillLine skill) {
+        double value(String name) {
+            return switch (name.toLowerCase(Locale.ROOT)) {
+                case "t" -> t;
+                case "p", "progress" -> progress;
+                case "i", "index" -> index;
+                case "n", "points" -> points;
+                case "pi" -> Math.PI;
+                case "e" -> Math.E;
+                case "r", "radius" -> skill.decimal("radius", skill.decimal("r", 1.0));
+                default -> 0.0;
+            };
+        }
+    }
+
+    /** Small deterministic expression engine for legacy particle equations. */
+    private interface Expression {
+        double eval(Variables vars);
+
+        static Expression compile(String source) {
+            return new Parser(source == null ? "0" : source).parse();
+        }
+    }
+
+    private static final class Parser {
+        private final String source;
+        private int index;
+
+        Parser(String source) {
+            this.source = source;
+        }
+
+        Expression parse() {
+            Expression expression = parseExpression();
+            skipWhitespace();
+            if (index != source.length()) throw error("Unexpected token");
+            return expression;
+        }
+
+        private Expression parseExpression() {
+            Expression left = parseTerm();
+            while (true) {
+                skipWhitespace();
+                if (take('+')) {
+                    Expression a = left, b = parseTerm();
+                    left = vars -> a.eval(vars) + b.eval(vars);
+                } else if (take('-')) {
+                    Expression a = left, b = parseTerm();
+                    left = vars -> a.eval(vars) - b.eval(vars);
+                } else return left;
+            }
+        }
+
+        private Expression parseTerm() {
+            Expression left = parsePower();
+            while (true) {
+                skipWhitespace();
+                if (take('*')) {
+                    Expression a = left, b = parsePower();
+                    left = vars -> a.eval(vars) * b.eval(vars);
+                } else if (take('/')) {
+                    Expression a = left, b = parsePower();
+                    left = vars -> a.eval(vars) / b.eval(vars);
+                } else if (take('%')) {
+                    Expression a = left, b = parsePower();
+                    left = vars -> a.eval(vars) % b.eval(vars);
+                } else return left;
+            }
+        }
+
+        private Expression parsePower() {
+            Expression left = parseUnary();
+            skipWhitespace();
+            if (!take('^')) return left;
+            Expression a = left, b = parsePower();
+            return vars -> Math.pow(a.eval(vars), b.eval(vars));
+        }
+
+        private Expression parseUnary() {
+            skipWhitespace();
+            if (take('+')) return parseUnary();
+            if (take('-')) {
+                Expression value = parseUnary();
+                return vars -> -value.eval(vars);
+            }
+            return parsePrimary();
+        }
+
+        private Expression parsePrimary() {
+            skipWhitespace();
+            if (take('(')) {
+                Expression value = parseExpression();
+                expect(')');
+                return value;
+            }
+            if (index < source.length() && (Character.isDigit(source.charAt(index)) || source.charAt(index) == '.')) {
+                int start = index++;
+                while (index < source.length()) {
+                    char c = source.charAt(index);
+                    if (!Character.isDigit(c) && c != '.' && c != 'e' && c != 'E' && c != '+' && c != '-') break;
+                    if ((c == '+' || c == '-') && source.charAt(index - 1) != 'e' && source.charAt(index - 1) != 'E') break;
+                    index++;
+                }
+                double number;
+                try {
+                    number = Double.parseDouble(source.substring(start, index));
+                } catch (NumberFormatException exception) {
+                    throw error("Invalid number");
+                }
+                return vars -> number;
+            }
+            String name = identifier();
+            if (name.isEmpty()) throw error("Expected value");
+            skipWhitespace();
+            if (!take('(')) return vars -> vars.value(name);
+            Expression first = parseExpression();
+            skipWhitespace();
+            Expression second = null;
+            if (take(',')) second = parseExpression();
+            expect(')');
+            Expression b = second;
+            return function(name, first, b);
+        }
+
+        private Expression function(String rawName, Expression a, Expression b) {
+            String name = rawName.toLowerCase(Locale.ROOT);
+            return switch (name) {
+                case "sin" -> vars -> Math.sin(a.eval(vars));
+                case "cos" -> vars -> Math.cos(a.eval(vars));
+                case "tan" -> vars -> Math.tan(a.eval(vars));
+                case "asin" -> vars -> Math.asin(a.eval(vars));
+                case "acos" -> vars -> Math.acos(a.eval(vars));
+                case "atan" -> vars -> Math.atan(a.eval(vars));
+                case "abs" -> vars -> Math.abs(a.eval(vars));
+                case "sqrt" -> vars -> Math.sqrt(a.eval(vars));
+                case "floor" -> vars -> Math.floor(a.eval(vars));
+                case "ceil" -> vars -> Math.ceil(a.eval(vars));
+                case "round" -> vars -> Math.rint(a.eval(vars));
+                case "exp" -> vars -> Math.exp(a.eval(vars));
+                case "log", "ln" -> vars -> Math.log(a.eval(vars));
+                case "min" -> requireBinary(name, a, b, Math::min);
+                case "max" -> requireBinary(name, a, b, Math::max);
+                case "pow" -> requireBinary(name, a, b, Math::pow);
+                case "atan2" -> requireBinary(name, a, b, Math::atan2);
+                default -> throw error("Unknown function " + rawName);
+            };
+        }
+
+        private Expression requireBinary(String name, Expression a, Expression b, BinaryMath function) {
+            if (b == null) throw error(name + " requires two arguments");
+            return vars -> function.apply(a.eval(vars), b.eval(vars));
+        }
+
+        private String identifier() {
+            skipWhitespace();
+            int start = index;
+            while (index < source.length()) {
+                char c = source.charAt(index);
+                if (!Character.isLetterOrDigit(c) && c != '_') break;
+                index++;
+            }
+            return source.substring(start, index);
+        }
+
+        private void expect(char expected) {
+            skipWhitespace();
+            if (!take(expected)) throw error("Expected '" + expected + "'");
+        }
+
+        private boolean take(char c) {
+            if (index < source.length() && source.charAt(index) == c) {
+                index++;
+                return true;
+            }
+            return false;
+        }
+
+        private void skipWhitespace() {
+            while (index < source.length() && Character.isWhitespace(source.charAt(index))) index++;
+        }
+
+        private IllegalArgumentException error(String message) {
+            return new IllegalArgumentException(message + " at position " + index + " in equation '" + source + "'");
+        }
+    }
+
+    @FunctionalInterface
+    private interface BinaryMath {
+        double apply(double a, double b);
     }
 }
