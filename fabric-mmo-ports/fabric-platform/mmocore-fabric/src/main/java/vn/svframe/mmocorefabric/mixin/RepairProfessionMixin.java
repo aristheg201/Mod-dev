@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.mmocorefabric.MMOCoreSpecialProfessionExperienceMod;
 
-@Mixin(ForgingScreenHandler.class)
+/** Awards the legacy repair profession source when an anvil output is actually taken. */
+@Mixin(AnvilScreenHandler.class)
 public abstract class RepairProfessionMixin {
     @Inject(method = "onTakeOutput", at = @At("HEAD"))
     private void mmocore$repairProfessionSource(PlayerEntity player, ItemStack output, CallbackInfo ci) {
-        if (!((Object) this instanceof AnvilScreenHandler)) return;
         if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
         ForgingScreenHandler handler = (ForgingScreenHandler) (Object) this;
         ItemStack input = handler.getSlot(0).getStack();
