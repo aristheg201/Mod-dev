@@ -56,9 +56,8 @@ jobs:
           echo '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9  build/mmo-overlay-m1.8.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
 
-          # M1.9 remains excluded until its historical archive is repaired as
-          # normal source. Do not silently treat its README smoke result as a
-          # Loom-compiled feature.
+          # The corrupt historical M1.9 archive remains excluded. Its repaired
+          # native Fabric passive runtime now lives in the module source tree.
 
           cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
           echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
@@ -129,7 +128,7 @@ jobs:
             $(find fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine -name '*.java' -print) \
             overlay-m2.2/tests/ParticleGeometrySmoke.java
           java -cp "$M22_OUT" ParticleGeometrySmoke | tee m2.2-particle-smoke.log
-          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=92' m2.2-particle-smoke.log
+          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=108' m2.2-particle-smoke.log
 
       - name: Fabric Loom remapJar
         shell: bash
