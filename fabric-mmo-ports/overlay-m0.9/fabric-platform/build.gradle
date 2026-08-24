@@ -10,6 +10,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.nucleoid.xyz/' }
     }
 
     dependencies {
@@ -40,6 +41,7 @@ project(':mmocore-fabric') {
 project(':mmoitems-fabric') {
     dependencies {
         implementation project(path: ':mythiclib-fabric', configuration: 'namedElements')
+        modImplementation include('eu.pb4:placeholder-api:2.4.2+1.21')
     }
 }
 
