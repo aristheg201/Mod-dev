@@ -6,7 +6,10 @@
     "BlockItemProfessionMixin",
     "ItemStackConsumeProfessionMixin",
     "TameableProfessionMixin",
-    "ProjectileProfessionMixin"
+    "ProjectileProfessionMixin",
+    "CraftingResultProfessionMixin",
+    "FurnaceProfessionMixin",
+    "FishingProfessionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
