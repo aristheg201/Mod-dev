@@ -7,13 +7,16 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import vn.svframe.compat.YamlLite;
@@ -27,8 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -39,7 +40,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.IntToDoubleFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,10 +54,14 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
     private static final Logger LOG = Logger.getLogger("MMOCore-Fabric/Professions");
     private static final Path ROOT = FabricLoader.getInstance().getConfigDir().resolve("MMOCore");
     private static final long LAST_ATTACKER_TTL = 1200L;
+    private static final long COMBAT_TTL = 200L;
 
     private static final Map<String, List<SourceSpec>> SOURCES = new ConcurrentHashMap<>();
     private static final Map<String, Curve> CURVES = new ConcurrentHashMap<>();
     private static final Map<UUID, Attacker> LAST_ATTACKER = new ConcurrentHashMap<>();
+    private static final Map<UUID, MovementSample> MOVEMENT = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> COMBAT_UNTIL = new ConcurrentHashMap<>();
+    private static final Map<UUID, ProjectileOrigin> PROJECTILE_ORIGINS = new ConcurrentHashMap<>();
     private static final Set<PlacedBlock> PLAYER_PLACED = ConcurrentHashMap.newKeySet();
     private static final Deque<PendingDamage> PENDING_DAMAGE = new ArrayDeque<>();
     private static volatile long tick;
@@ -79,12 +83,17 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
             Entity attacker = source.getAttacker();
             if (attacker instanceof ServerPlayerEntity player && victim != player) {
                 LAST_ATTACKER.put(victim.getUuid(), new Attacker(player.getUuid(), tick));
+                COMBAT_UNTIL.put(player.getUuid(), tick + COMBAT_TTL);
                 dispatchDamageDealt(player, victim, source, damageTaken);
             }
             if (victim instanceof ServerPlayerEntity player && !player.isDead()) {
+                COMBAT_UNTIL.put(player.getUuid(), tick + COMBAT_TTL);
                 synchronized (PENDING_DAMAGE) {
                     PENDING_DAMAGE.addLast(new PendingDamage(player.getUuid(), damageCause(source), Math.min(damageTaken, player.getMaxHealth()), tick + 2L));
                 }
+            }
+            if (source.getSource() instanceof ProjectileEntity projectile && victim instanceof LivingEntity living) {
+                awardProjectileHit(projectile, living, damageTaken);
             }
         });
 
@@ -94,14 +103,22 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
             UUID playerId = record == null ? null : record.player();
             if (playerId == null && source.getAttacker() instanceof ServerPlayerEntity direct) playerId = direct.getUuid();
             if (playerId == null) return;
-            ServerPlayerEntity player = victim.getServer() == null ? null : victim.getServer().getPlayerManager().getPlayer(playerId);
+            MinecraftServer server = victim.getServer();
+            ServerPlayerEntity player = server == null ? null : server.getPlayerManager().getPlayer(playerId);
             if (player != null) dispatchKillMob(player, victim);
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             tick++;
             LAST_ATTACKER.entrySet().removeIf(entry -> tick - entry.getValue().tick() > LAST_ATTACKER_TTL);
+            COMBAT_UNTIL.entrySet().removeIf(entry -> entry.getValue() < tick);
+            PROJECTILE_ORIGINS.entrySet().removeIf(entry -> {
+                Entity entity = findEntity(server, entry.getKey());
+                return entity == null || entity.isRemoved();
+            });
             drainPendingDamage(server);
+            processMovement(server);
+            if (tick % 20L == 0L) processPlay(server);
             if (tick % 100L == 0L) reloadIfChanged(ROOT);
         });
     }
@@ -111,6 +128,67 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
         PlacedBlock key = new PlacedBlock(world, pos.asLong());
         PLAYER_PLACED.add(key);
         dispatchPlaceBlock(player, state);
+    }
+
+    /** Records the original launch location used by the legacy projectile EXP source. */
+    public static void recordProjectileLaunch(ProjectileEntity projectile, ServerPlayerEntity owner) {
+        if (projectile == null || owner == null || projectile.getWorld().isClient) return;
+        PROJECTILE_ORIGINS.put(projectile.getUuid(), new ProjectileOrigin(owner.getUuid(), projectile.getX(), projectile.getY(), projectile.getZ()));
+    }
+
+    /** Legacy projectile source multiplier is final damage multiplied by travel distance. */
+    public static void awardProjectileHit(ProjectileEntity projectile, LivingEntity target, double finalDamage) {
+        if (projectile == null || target == null || !(finalDamage > 0.0)) return;
+        ProjectileOrigin origin = PROJECTILE_ORIGINS.get(projectile.getUuid());
+        UUID ownerId = origin == null ? null : origin.owner();
+        if (ownerId == null && projectile.getOwner() instanceof ServerPlayerEntity owner) ownerId = owner.getUuid();
+        if (ownerId == null) return;
+        MinecraftServer server = target.getServer();
+        ServerPlayerEntity player = server == null ? null : server.getPlayerManager().getPlayer(ownerId);
+        if (player == null) return;
+        double ox = origin == null ? projectile.getX() : origin.x();
+        double oy = origin == null ? projectile.getY() : origin.y();
+        double oz = origin == null ? projectile.getZ() : origin.z();
+        double dx = target.getX() - ox, dy = target.getY() - oy, dz = target.getZ() - oz;
+        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        String projectileType = projectile.getType().toString().toLowerCase(Locale.ROOT).contains("trident") ? "trident" : "arrow";
+        dispatch(player, "projectile", spec -> {
+            String configured = spec.param("type");
+            if (configured != null && !norm(configured).equals(projectileType)) return 0.0;
+            return finalDamage * distance;
+        });
+    }
+
+    public static void awardConsumed(ServerPlayerEntity player, ItemStack stack) {
+        awardItem(player, "eat", stack, 1.0);
+    }
+
+    public static void awardFish(ServerPlayerEntity player, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        awardItem(player, "fishitem", stack, Math.max(1, stack.getCount()));
+    }
+
+    public static void awardSmelt(ServerPlayerEntity player, ItemStack stack) {
+        awardItem(player, "smeltitem", stack, 1.0);
+    }
+
+    public static void awardCraft(ServerPlayerEntity player, ItemStack stack, int craftedAmount) {
+        awardItem(player, "craftitem", stack, Math.max(1, craftedAmount));
+    }
+
+    public static void awardTame(ServerPlayerEntity player, LivingEntity entity) {
+        if (player == null || entity == null) return;
+        String type = Registries.ENTITY_TYPE.getId(entity.getType()).toString();
+        if (!normId(type).equals("minecraft:wolf")) return;
+        dispatch(player, "tame", spec -> 1.0);
+    }
+
+    public static void awardResource(ServerPlayerEntity player, String resource, double difference) {
+        if (player == null || !(difference > 0.0)) return;
+        dispatch(player, "resource", spec -> {
+            String configured = spec.param("type");
+            return configured == null || norm(configured).equals(norm(resource)) ? difference : 0.0;
+        });
     }
 
     public static void reloadSources(Path root) {
@@ -127,9 +205,7 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
                         Map<String, Object> yaml = YamlLite.map(YamlLite.parse(file));
                         String profession = id(file);
                         List<SourceSpec> specs = new ArrayList<>();
-                        for (String line : sourceLines(yaml.get("exp-sources"))) {
-                            expand(line, reusable, new LinkedHashSet<>(), specs);
-                        }
+                        for (String line : sourceLines(yaml.get("exp-sources"))) expand(line, reusable, new LinkedHashSet<>(), specs);
                         nextSources.put(profession, List.copyOf(specs));
                         nextCurves.put(profession, Curve.parse(root, string(yaml.get("exp-curve"), "levels")));
                     }
@@ -157,15 +233,69 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
 
     private static long configStamp(Path root) throws IOException {
         long stamp = 0L;
-        if (!Files.exists(root)) return stamp;
-        try (var files = Files.walk(root.resolve("professions"))) {
-            for (Path file : files.filter(Files::isRegularFile).toList()) {
-                stamp = Math.max(stamp, Files.getLastModifiedTime(file).toMillis());
+        Path professions = root.resolve("professions");
+        if (Files.isDirectory(professions)) {
+            try (var files = Files.walk(professions)) {
+                for (Path file : files.filter(Files::isRegularFile).toList()) stamp = Math.max(stamp, Files.getLastModifiedTime(file).toMillis());
             }
         }
         Path reusable = root.resolve("exp-sources.yml");
         if (Files.isRegularFile(reusable)) stamp = Math.max(stamp, Files.getLastModifiedTime(reusable).toMillis());
         return stamp;
+    }
+
+    private static void processMovement(MinecraftServer server) {
+        Set<UUID> online = new LinkedHashSet<>();
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            UUID id = player.getUuid();
+            online.add(id);
+            MovementSample now = MovementSample.of(player);
+            MovementSample before = MOVEMENT.put(id, now);
+            if (before == null || !before.world().equals(now.world())) continue;
+            int dx = now.blockX() - before.blockX();
+            int dy = now.blockY() - before.blockY();
+            int dz = now.blockZ() - before.blockZ();
+            if (dx == 0 && dy == 0 && dz == 0) continue;
+
+            double blockDistance = Math.sqrt((double) dx * dx + (double) dy * dy + (double) dz * dz);
+            dispatch(player, "move", spec -> movingTypeMatches(player, spec.param("type")) ? blockDistance : 0.0);
+
+            if (dy > 0 && player.getWorld() instanceof ServerWorld world) {
+                BlockState from = world.getBlockState(new BlockPos(before.blockX(), before.blockY(), before.blockZ()));
+                String material = Registries.BLOCK.getId(from.getBlock()).toString();
+                dispatch(player, "climb", spec -> climbTypeMatches(spec, material) ? dy : 0.0);
+            }
+
+            Entity vehicle = player.getVehicle();
+            if (vehicle != null) {
+                String type = Registries.ENTITY_TYPE.getId(vehicle.getType()).toString();
+                double x = now.x() - before.x(), y = now.y() - before.y(), z = now.z() - before.z();
+                double preciseDistance = Math.sqrt(x * x + y * y + z * z);
+                dispatch(player, "ride", spec -> matchesType(spec, type) ? preciseDistance : 0.0);
+            }
+        }
+        MOVEMENT.keySet().removeIf(id -> !online.contains(id));
+    }
+
+    private static void processPlay(MinecraftServer server) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            String world = player.getServerWorld().getRegistryKey().getValue().toString();
+            dispatch(player, "play", spec -> {
+                if (spec.bool("in-combat", false) && COMBAT_UNTIL.getOrDefault(player.getUuid(), 0L) < tick) return 0.0;
+                String configuredWorld = spec.param("world");
+                if (configuredWorld != null && !worldMatches(configuredWorld, world)) return 0.0;
+                double x1 = spec.number("x1", Double.NEGATIVE_INFINITY), x2 = spec.number("x2", Double.POSITIVE_INFINITY);
+                double z1 = spec.number("z1", Double.NEGATIVE_INFINITY), z2 = spec.number("z2", Double.POSITIVE_INFINITY);
+                double minX = Math.min(x1, x2), maxX = Math.max(x1, x2), minZ = Math.min(z1, z2), maxZ = Math.max(z1, z2);
+                return player.getX() > minX && player.getX() < maxX && player.getZ() > minZ && player.getZ() < maxZ ? 1.0 : 0.0;
+            });
+        }
+    }
+
+    private static void awardItem(ServerPlayerEntity player, String mechanic, ItemStack stack, double multiplier) {
+        if (player == null || stack == null || stack.isEmpty() || !(multiplier > 0.0)) return;
+        String material = Registries.ITEM.getId(stack.getItem()).toString();
+        dispatch(player, mechanic, spec -> matchesType(spec, material) ? multiplier : 0.0);
     }
 
     private static void dispatchMineBlock(ServerPlayerEntity player, BlockState state, boolean playerPlaced) {
@@ -218,7 +348,7 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
         });
     }
 
-    private static void drainPendingDamage(net.minecraft.server.MinecraftServer server) {
+    private static void drainPendingDamage(MinecraftServer server) {
         while (true) {
             PendingDamage pending;
             synchronized (PENDING_DAMAGE) {
@@ -280,22 +410,52 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
 
     private static void collectStrings(Object value, List<String> out) {
         if (value == null) return;
-        if (value instanceof Collection<?> collection) {
-            for (Object item : collection) collectStrings(item, out);
-        } else if (value instanceof Map<?, ?> map) {
-            for (Object item : map.values()) collectStrings(item, out);
-        } else {
+        if (value instanceof Collection<?> collection) for (Object item : collection) collectStrings(item, out);
+        else if (value instanceof Map<?, ?> map) for (Object item : map.values()) collectStrings(item, out);
+        else {
             String line = String.valueOf(value).trim();
             if (!line.isEmpty()) out.add(line);
         }
     }
 
+    private static boolean movingTypeMatches(ServerPlayerEntity player, String configured) {
+        if (player.getVehicle() != null) return false;
+        if (configured == null || configured.isBlank()) return true;
+        return switch (norm(configured)) {
+            case "sneak" -> player.isSneaking();
+            case "fly" -> player.getAbilities().flying || player.isInPose(EntityPose.GLIDING);
+            case "swim" -> !player.getBlockStateAtPos().getFluidState().isEmpty();
+            case "sprint" -> player.isSprinting();
+            case "walk" -> !player.isSneaking() && !player.isSprinting() && player.isOnGround()
+                    && !player.getAbilities().flying && !player.isInPose(EntityPose.GLIDING)
+                    && player.getBlockStateAtPos().getFluidState().isEmpty();
+            default -> false;
+        };
+    }
+
+    private static boolean climbTypeMatches(SourceSpec spec, String material) {
+        String actual = normId(material);
+        String configured = spec.param("type");
+        if (configured == null || configured.isBlank()) {
+            return actual.endsWith(":ladder") || actual.endsWith(":vine") || actual.endsWith(":weeping_vines")
+                    || actual.endsWith(":weeping_vines_plant") || actual.endsWith(":twisting_vines") || actual.endsWith(":twisting_vines_plant");
+        }
+        String expected = normId(configured);
+        if (expected.endsWith(":weeping_vines")) return actual.endsWith(":weeping_vines") || actual.endsWith(":weeping_vines_plant");
+        if (expected.endsWith(":twisting_vines")) return actual.endsWith(":twisting_vines") || actual.endsWith(":twisting_vines_plant");
+        return actual.equals(expected);
+    }
+
     private static boolean matchesType(SourceSpec spec, String registryId) {
         String configured = spec.param("type");
         if (configured == null || configured.isBlank()) return true;
-        String expected = normId(configured);
-        String actual = normId(registryId);
+        String expected = normId(configured), actual = normId(registryId);
         return actual.equals(expected) || actual.endsWith(":" + expected) || expected.endsWith(":" + actual);
+    }
+
+    private static boolean worldMatches(String configured, String actual) {
+        String expected = configured.trim().toLowerCase(Locale.ROOT), value = actual.trim().toLowerCase(Locale.ROOT);
+        return value.equals(expected) || value.endsWith(":" + expected);
     }
 
     private static String outgoingDamageType(ServerPlayerEntity player, DamageSource source) {
@@ -326,21 +486,27 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
         for (var property : state.getProperties()) {
             if (!property.getName().equalsIgnoreCase("age")) continue;
             Comparable current = state.get((net.minecraft.state.property.Property) property);
-            int currentAge = integer(current, Integer.MIN_VALUE);
-            int maxAge = Integer.MIN_VALUE;
+            int currentAge = integer(current, Integer.MIN_VALUE), maxAge = Integer.MIN_VALUE;
             for (Object allowed : property.getValues()) maxAge = Math.max(maxAge, integer(allowed, Integer.MIN_VALUE));
             return currentAge != Integer.MIN_VALUE && currentAge >= maxAge;
         }
         return true;
     }
 
+    private static Entity findEntity(MinecraftServer server, UUID id) {
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(id);
+        if (player != null) return player;
+        for (ServerWorld world : server.getWorlds()) {
+            Entity entity = world.getEntity(id);
+            if (entity != null) return entity;
+        }
+        return null;
+    }
+
     private static int integer(Object value, int fallback) {
         if (value instanceof Number number) return number.intValue();
-        try {
-            return Integer.parseInt(String.valueOf(value));
-        } catch (Exception ignored) {
-            return fallback;
-        }
+        try { return Integer.parseInt(String.valueOf(value)); }
+        catch (Exception ignored) { return fallback; }
     }
 
     private static String id(Path file) {
@@ -349,14 +515,8 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
         return norm(dot > 0 ? name.substring(0, dot) : name);
     }
 
-    private static String string(Object value, String fallback) {
-        return value == null ? fallback : String.valueOf(value).trim();
-    }
-
-    private static String norm(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
-    }
-
+    private static String string(Object value, String fallback) { return value == null ? fallback : String.valueOf(value).trim(); }
+    private static String norm(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT).replace('-', '_').replace(' ', '_'); }
     private static String normId(String value) {
         String out = norm(value);
         if (out.startsWith("minecraft:")) return out;
@@ -366,11 +526,15 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
     private record PlacedBlock(String world, long pos) {}
     private record Attacker(UUID player, long tick) {}
     private record PendingDamage(UUID player, String cause, double damage, long dueTick) {}
-
-    @FunctionalInterface
-    private interface Multiplier {
-        double value(SourceSpec spec);
+    private record ProjectileOrigin(UUID owner, double x, double y, double z) {}
+    private record MovementSample(String world, double x, double y, double z, int blockX, int blockY, int blockZ) {
+        static MovementSample of(ServerPlayerEntity player) {
+            BlockPos pos = player.getBlockPos();
+            return new MovementSample(player.getServerWorld().getRegistryKey().getValue().toString(), player.getX(), player.getY(), player.getZ(), pos.getX(), pos.getY(), pos.getZ());
+        }
     }
+
+    @FunctionalInterface private interface Multiplier { double value(SourceSpec spec); }
 
     @FunctionalInterface
     private interface Curve {
@@ -386,9 +550,7 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
                     if (clean.isEmpty() || clean.startsWith("#")) continue;
                     levels.add(Double.parseDouble(clean));
                 }
-                if (!levels.isEmpty()) {
-                    return level -> levels.get(Math.min(Math.max(level, 1), levels.size()) - 1);
-                }
+                if (!levels.isEmpty()) return level -> levels.get(Math.min(Math.max(level, 1), levels.size()) - 1);
             }
             NumericExpression expression = NumericExpression.compile(value.replace("{level}", "level"));
             return level -> expression.eval(level);
@@ -422,18 +584,13 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
                 for (String token : splitParams(body)) {
                     int equals = token.indexOf('=');
                     if (equals <= 0) continue;
-                    String key = norm(token.substring(0, equals));
-                    String value = unquote(token.substring(equals + 1).trim());
-                    params.put(key, value);
+                    params.put(norm(token.substring(0, equals)), unquote(token.substring(equals + 1).trim()));
                 }
             }
             return new SourceSpec(mechanic, Map.copyOf(params), Amount.parse(params.get("amount")));
         }
 
-        String param(String key) {
-            return params.get(norm(key));
-        }
-
+        String param(String key) { return params.get(norm(key)); }
         boolean bool(String key, boolean fallback) {
             String value = param(key);
             if (value == null) return fallback;
@@ -443,6 +600,12 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
                 default -> fallback;
             };
         }
+        double number(String key, double fallback) {
+            String value = param(key);
+            if (value == null) return fallback;
+            try { return Double.parseDouble(value); }
+            catch (NumberFormatException ignored) { return fallback; }
+        }
 
         private static List<String> splitParams(String body) {
             List<String> out = new ArrayList<>();
@@ -450,13 +613,11 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
             char quote = 0;
             for (int i = 0; i < body.length(); i++) {
                 char c = body.charAt(i);
-                if ((c == '\'' || c == '"')) {
-                    if (quote == 0) quote = c;
-                    else if (quote == c) quote = 0;
+                if (c == '\'' || c == '"') {
+                    if (quote == 0) quote = c; else if (quote == c) quote = 0;
                     current.append(c);
                 } else if (c == ';' && quote == 0) {
-                    out.add(current.toString().trim());
-                    current.setLength(0);
+                    out.add(current.toString().trim()); current.setLength(0);
                 } else current.append(c);
             }
             if (!current.isEmpty()) out.add(current.toString().trim());
@@ -479,122 +640,43 @@ public final class MMOCoreProfessionExperienceMod implements ModInitializer {
             int split = rangeSeparator(value);
             try {
                 if (split > 0) {
-                    double a = Double.parseDouble(value.substring(0, split).trim());
-                    double b = Double.parseDouble(value.substring(split + 1).trim());
+                    double a = Double.parseDouble(value.substring(0, split).trim()), b = Double.parseDouble(value.substring(split + 1).trim());
                     return new Amount(Math.min(a, b), Math.max(a, b));
                 }
-                double exact = Double.parseDouble(value);
-                return new Amount(exact, exact);
-            } catch (NumberFormatException ignored) {
-                return new Amount(1.0, 1.0);
-            }
+                double exact = Double.parseDouble(value); return new Amount(exact, exact);
+            } catch (NumberFormatException ignored) { return new Amount(1.0, 1.0); }
         }
-
-        double roll() {
-            if (min == max) return min;
-            return ThreadLocalRandom.current().nextDouble(min, Math.nextUp(max));
-        }
-
-        private static int rangeSeparator(String value) {
-            for (int i = 1; i < value.length() - 1; i++) if (value.charAt(i) == '-') return i;
-            return -1;
-        }
+        double roll() { return min == max ? min : ThreadLocalRandom.current().nextDouble(min, Math.nextUp(max)); }
+        private static int rangeSeparator(String value) { for (int i = 1; i < value.length() - 1; i++) if (value.charAt(i) == '-') return i; return -1; }
     }
 
-    /** Tiny arithmetic evaluator for legacy {level} profession curves. */
     private interface NumericExpression {
         double eval(double level);
-
-        static NumericExpression compile(String source) {
-            return new ExpressionParser(source == null || source.isBlank() ? "level * 100" : source).parse();
-        }
+        static NumericExpression compile(String source) { return new ExpressionParser(source == null || source.isBlank() ? "level * 100" : source).parse(); }
     }
 
     private static final class ExpressionParser {
-        private final String source;
-        private int index;
-
-        private ExpressionParser(String source) {
-            this.source = source;
-        }
-
-        NumericExpression parse() {
-            NumericExpression value = expression();
-            whitespace();
-            if (index != source.length()) throw new IllegalArgumentException("Unexpected token in curve: " + source.substring(index));
-            return value;
-        }
-
+        private final String source; private int index;
+        private ExpressionParser(String source) { this.source = source; }
+        NumericExpression parse() { NumericExpression value = expression(); whitespace(); if (index != source.length()) throw new IllegalArgumentException("Unexpected token in curve: " + source.substring(index)); return value; }
         private NumericExpression expression() {
             NumericExpression left = term();
-            while (true) {
-                whitespace();
-                if (take('+')) {
-                    NumericExpression a = left, b = term(); left = level -> a.eval(level) + b.eval(level);
-                } else if (take('-')) {
-                    NumericExpression a = left, b = term(); left = level -> a.eval(level) - b.eval(level);
-                } else return left;
-            }
+            while (true) { whitespace(); if (take('+')) { NumericExpression a=left,b=term(); left=l->a.eval(l)+b.eval(l); } else if (take('-')) { NumericExpression a=left,b=term(); left=l->a.eval(l)-b.eval(l); } else return left; }
         }
-
         private NumericExpression term() {
             NumericExpression left = power();
-            while (true) {
-                whitespace();
-                if (take('*')) {
-                    NumericExpression a = left, b = power(); left = level -> a.eval(level) * b.eval(level);
-                } else if (take('/')) {
-                    NumericExpression a = left, b = power(); left = level -> a.eval(level) / b.eval(level);
-                } else if (take('%')) {
-                    NumericExpression a = left, b = power(); left = level -> a.eval(level) % b.eval(level);
-                } else return left;
-            }
+            while (true) { whitespace(); if (take('*')) { NumericExpression a=left,b=power(); left=l->a.eval(l)*b.eval(l); } else if (take('/')) { NumericExpression a=left,b=power(); left=l->a.eval(l)/b.eval(l); } else if (take('%')) { NumericExpression a=left,b=power(); left=l->a.eval(l)%b.eval(l); } else return left; }
         }
-
-        private NumericExpression power() {
-            NumericExpression left = unary();
-            whitespace();
-            if (!take('^')) return left;
-            NumericExpression right = power();
-            return level -> Math.pow(left.eval(level), right.eval(level));
-        }
-
-        private NumericExpression unary() {
-            whitespace();
-            if (take('+')) return unary();
-            if (take('-')) {
-                NumericExpression value = unary();
-                return level -> -value.eval(level);
-            }
-            return primary();
-        }
-
+        private NumericExpression power() { NumericExpression left=unary(); whitespace(); if(!take('^'))return left; NumericExpression right=power(); return l->Math.pow(left.eval(l),right.eval(l)); }
+        private NumericExpression unary() { whitespace(); if(take('+'))return unary(); if(take('-')){NumericExpression v=unary(); return l->-v.eval(l);} return primary(); }
         private NumericExpression primary() {
-            whitespace();
-            if (take('(')) {
-                NumericExpression value = expression();
-                whitespace();
-                if (!take(')')) throw new IllegalArgumentException("Missing ')' in curve " + source);
-                return value;
-            }
-            if (source.regionMatches(true, index, "level", 0, 5)) {
-                index += 5;
-                return level -> level;
-            }
-            int start = index;
-            while (index < source.length() && (Character.isDigit(source.charAt(index)) || source.charAt(index) == '.')) index++;
-            if (start == index) throw new IllegalArgumentException("Expected number or level in curve " + source);
-            double number = Double.parseDouble(source.substring(start, index));
-            return level -> number;
+            whitespace(); if(take('(')){NumericExpression v=expression(); whitespace(); if(!take(')'))throw new IllegalArgumentException("Missing ')' in curve "+source); return v;}
+            if(source.regionMatches(true,index,"level",0,5)){index+=5; return l->l;}
+            int start=index; while(index<source.length()&&(Character.isDigit(source.charAt(index))||source.charAt(index)=='.'))index++;
+            if(start==index)throw new IllegalArgumentException("Expected number or level in curve "+source);
+            double number=Double.parseDouble(source.substring(start,index)); return l->number;
         }
-
-        private void whitespace() {
-            while (index < source.length() && Character.isWhitespace(source.charAt(index))) index++;
-        }
-
-        private boolean take(char c) {
-            if (index < source.length() && source.charAt(index) == c) { index++; return true; }
-            return false;
-        }
+        private void whitespace(){while(index<source.length()&&Character.isWhitespace(source.charAt(index)))index++;}
+        private boolean take(char c){if(index<source.length()&&source.charAt(index)==c){index++;return true;}return false;}
     }
 }
