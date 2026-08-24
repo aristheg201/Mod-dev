@@ -109,6 +109,15 @@ public final class PassiveSkillRuntime {
         return list == null ? List.of() : List.copyOf(list);
     }
 
+    /**
+     * Captures the effective passive bindings at projectile launch time.
+     * The immutable binding records deliberately survive later equipment changes,
+     * matching upstream ProjectileMetadata behavior.
+     */
+    public static Snapshot snapshot(UUID owner) {
+        return new Snapshot(owner, bindings(owner));
+    }
+
     public static int bindingCount() {
         int count = 0;
         for (List<Binding> bindings : BY_PLAYER.values()) count += bindings.size();
@@ -121,6 +130,23 @@ public final class PassiveSkillRuntime {
                            Map<String, ?> context) {
         List<Binding> bindings = BY_PLAYER.get(owner);
         if (bindings == null || bindings.isEmpty()) return 0;
+        return fireBindings(owner, bindings, trigger, target, context);
+    }
+
+    /** Fires against launch-time bindings rather than the player's current equipment. */
+    public static int fireSnapshot(Snapshot snapshot,
+                                   LegacyTriggerType trigger,
+                                   UUID target,
+                                   Map<String, ?> context) {
+        if (snapshot == null || snapshot.bindings().isEmpty()) return 0;
+        return fireBindings(snapshot.owner(), snapshot.bindings(), trigger, target, context);
+    }
+
+    private static int fireBindings(UUID owner,
+                                    List<Binding> bindings,
+                                    LegacyTriggerType trigger,
+                                    UUID target,
+                                    Map<String, ?> context) {
         long now = MythicLibFabricMod.currentTick();
         int cast = 0;
         for (Binding binding : bindings) {
@@ -218,6 +244,13 @@ public final class PassiveSkillRuntime {
         Map<String, Object> copy = new LinkedHashMap<>();
         for (Map.Entry<String, ?> entry : parameters.entrySet()) copy.put(entry.getKey(), entry.getValue());
         return Collections.unmodifiableMap(copy);
+    }
+
+    public record Snapshot(UUID owner, List<Binding> bindings) {
+        public Snapshot {
+            Objects.requireNonNull(owner, "owner");
+            bindings = bindings == null ? List.of() : List.copyOf(bindings);
+        }
     }
 
     public record Binding(UUID id,
