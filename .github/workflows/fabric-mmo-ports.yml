@@ -72,12 +72,6 @@ jobs:
           echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
 
-          for module in mythiclib-fabric mmocore-fabric mmoitems-fabric mythicmobs-fabric; do
-            rm -rf "build/mmo-workspace/fabric-platform/$module/src"
-            cp -a "fabric-mmo-ports/fabric-platform/$module/src" "build/mmo-workspace/fabric-platform/$module/src"
-            cp "fabric-mmo-ports/fabric-platform/$module/build.gradle" "build/mmo-workspace/fabric-platform/$module/build.gradle"
-          done
-
           cat fabric-mmo-ports/overlay-m2.1/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.1.tar.gz
           echo '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328  build/mmo-overlay-m2.1.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
@@ -88,6 +82,15 @@ jobs:
             cp -a "fabric-mmo-ports/$overlay" "build/mmo-workspace/$overlay"
           done
 
+          # Canonical Fabric modules are authoritative. Legacy overlays provide generated/runtime
+          # inputs only and must never overwrite the current production source tree.
+          for module in mythiclib-fabric mmocore-fabric mmoitems-fabric mythicmobs-fabric; do
+            rm -rf "build/mmo-workspace/fabric-platform/$module/src"
+            cp -a "fabric-mmo-ports/fabric-platform/$module/src" "build/mmo-workspace/fabric-platform/$module/src"
+            cp "fabric-mmo-ports/fabric-platform/$module/build.gradle" "build/mmo-workspace/fabric-platform/$module/build.gradle"
+          done
+
+          test -f build/mmo-workspace/fabric-platform/mmoitems-fabric/src/main/java/vn/svframe/mmoitemsfabric/MMOItemsPlaceholderConditionBridge.java
           test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillRuntime.java
           test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/FabricSkillPlatform.java
           test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometry.java
