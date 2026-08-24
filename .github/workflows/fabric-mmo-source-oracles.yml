@@ -64,6 +64,7 @@ jobs:
             <dependencies>
               <dependency><groupId>org.spigotmc</groupId><artifactId>spigot-api</artifactId><version>1.21.1-R0.1-SNAPSHOT</version></dependency>
               <dependency><groupId>maven.modrinth</groupId><artifactId>cardboard</artifactId><version>1.21.1-9</version></dependency>
+              <dependency><groupId>maven.modrinth</groupId><artifactId>SVKv1SZo</artifactId><version>s1QTgemS</version></dependency>
             </dependencies>
           </project>
           POM
@@ -71,13 +72,17 @@ jobs:
             -DincludeScope=runtime -DoutputDirectory="$GITHUB_WORKSPACE/build/dependencies/runtime"
           SPIGOT_JAR="$(find build/dependencies/runtime -maxdepth 1 -name 'spigot-api-*.jar' -type f | head -1)"
           CARDBOARD_JAR="$(find build/dependencies/runtime -maxdepth 1 -iname '*cardboard*.jar' -type f | head -1)"
+          ICOMMON_JAR="$(find build/dependencies/runtime -maxdepth 1 -type f -name '*.jar' | grep -Ei '/(SVKv1SZo|iCommon)[^/]*\.jar$' | head -1)"
           test -n "$SPIGOT_JAR"
           test -n "$CARDBOARD_JAR"
+          test -n "$ICOMMON_JAR"
           cp "$SPIGOT_JAR" build/dependencies/spigot-api-1.21.1.jar
           cp "$CARDBOARD_JAR" build/dependencies/Cardboard-1.21.1.jar
+          cp "$ICOMMON_JAR" build/dependencies/iCommon-1.21.1.jar
           find build/dependencies/runtime -type f -name '*.jar' -printf '%f\n' | sort > build/dependencies/RUNTIME_JARS.txt
           sha256sum build/dependencies/spigot-api-1.21.1.jar > build/dependencies/spigot-api-1.21.1.sha256
           sha256sum build/dependencies/Cardboard-1.21.1.jar > build/dependencies/Cardboard-1.21.1.sha256
+          sha256sum build/dependencies/iCommon-1.21.1.jar > build/dependencies/iCommon-1.21.1.sha256
 
           GRADLE_BIN="$(command -v gradle)"
           GRADLE_HOME="$(dirname "$(dirname "$GRADLE_BIN")")"
