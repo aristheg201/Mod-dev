@@ -1,0 +1,13 @@
+id: smoke
+name: Smoke Tree
+type: linked
+max-point-spent: 5
+nodes:
+  root:
+    name: Root
+    is-root: true
+    max-level: 1
+    point-consumed: 1
+    coordinates:
+      x: 0
+      y: 0
