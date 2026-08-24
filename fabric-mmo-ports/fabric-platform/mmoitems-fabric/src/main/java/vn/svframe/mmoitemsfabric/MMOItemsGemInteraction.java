@@ -48,22 +48,16 @@ public final class MMOItemsGemInteraction {
         if (ThreadLocalRandom.current().nextDouble() > success / 100.0) return Result.FAILURE;
 
         String consumedSocket = sockets.remove(socket);
+        Map<String, Double> appliedStats = mergeableStats(gem.numericStats());
         MMOItemsGameplayMod.setEmptySockets(targetStack, sockets);
-        MMOItemsGameplayMod.addGemStats(targetStack, mergeableStats(gem.numericStats()), gemScale(gemStack, targetStack));
+        MMOItemsGameplayMod.addGemStats(targetStack, appliedStats, 1.0);
+        MMOItemsGemScalingRuntime.recordAppliedGem(targetStack, appliedStats, MMOItemsRequirementGate.gemUpgradeScaling(gemStack));
 
         var data = MMOItemsGameplayMod.customData(targetStack);
         String history = data.getString("mmoitems_gem_socket_history");
         data.putString("mmoitems_gem_socket_history", history.isEmpty() ? consumedSocket : history + "\u001f" + consumedSocket);
         MMOItemsGameplayMod.writeCustomData(targetStack, data);
         return Result.SUCCESS;
-    }
-
-    private static double gemScale(ItemStack gemStack, ItemStack targetStack) {
-        String mode = MMOItemsRequirementGate.gemUpgradeScaling(gemStack);
-        if (!mode.equals("SUBSEQUENT")) return 1.0;
-        int level = MMOItemsGameplayMod.upgradeLevel(targetStack);
-        if (level <= 0) return 1.0;
-        return level + 1.0;
     }
 
     private static boolean isGem(MMOItemsGameplayMod.Template template) {
