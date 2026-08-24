@@ -12,6 +12,13 @@ on:
       - 'fabric-mmo-ports/overlay-m1.2/**'
       - 'fabric-mmo-ports/overlay-m1.3/**'
       - 'fabric-mmo-ports/overlay-m1.4/**'
+      - 'fabric-mmo-ports/overlay-m1.5/**'
+      - 'fabric-mmo-ports/overlay-m1.6/**'
+      - 'fabric-mmo-ports/overlay-m1.7/**'
+      - 'fabric-mmo-ports/overlay-m1.8/**'
+      - 'fabric-mmo-ports/overlay-m1.9/**'
+      - 'fabric-mmo-ports/overlay-m2.0/**'
+      - 'fabric-mmo-ports/fabric-platform/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
   pull_request:
@@ -25,6 +32,13 @@ on:
       - 'fabric-mmo-ports/overlay-m1.2/**'
       - 'fabric-mmo-ports/overlay-m1.3/**'
       - 'fabric-mmo-ports/overlay-m1.4/**'
+      - 'fabric-mmo-ports/overlay-m1.5/**'
+      - 'fabric-mmo-ports/overlay-m1.6/**'
+      - 'fabric-mmo-ports/overlay-m1.7/**'
+      - 'fabric-mmo-ports/overlay-m1.8/**'
+      - 'fabric-mmo-ports/overlay-m1.9/**'
+      - 'fabric-mmo-ports/overlay-m2.0/**'
+      - 'fabric-mmo-ports/fabric-platform/**'
       - '.github/workflows/fabric-mmo-ports.yml'
       - '.fabric-mmo-build-trigger'
   workflow_dispatch:
@@ -51,7 +65,7 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Restore source workspace and overlays
+      - name: Restore complete source workspace M0.8-M2.0
         shell: bash
         run: |
           set -euo pipefail
@@ -60,16 +74,48 @@ jobs:
           cat fabric-mmo-ports/bootstrap-m0.8/chunks/part* | base64 -d > build/mmo-workspace.tar.gz
           echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
+
           cp -a fabric-mmo-ports/overlay-m0.9/. build/mmo-workspace/
           cp -a fabric-mmo-ports/overlay-m1.0/. build/mmo-workspace/
           patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.1/mmocore-brigadier.patch
           cp -a fabric-mmo-ports/overlay-m1.2/. build/mmo-workspace/
           patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.3/mythiclib-brigadier.patch
+
           cp fabric-mmo-ports/overlay-m1.3/source.tar.gz build/mmo-overlay-m1.3.tar.gz
           echo '1ba9e3f2c2164d1260207abe9360a75a0ec6e385239e0c4a35afc83db09c4c21  build/mmo-overlay-m1.3.tar.gz' | sha256sum -c -
-          tar -tzf build/mmo-overlay-m1.3.tar.gz >/dev/null
           tar -xzf build/mmo-overlay-m1.3.tar.gz -C build/mmo-workspace
           cp -a fabric-mmo-ports/overlay-m1.4/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.5/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.6/. build/mmo-workspace/
+
+          base64 -d fabric-mmo-ports/overlay-m1.7/source.tar.gz.b64 > build/mmo-overlay-m1.7.tar.gz
+          echo '3604b61ab7c73bcf76d4dc3e67eee70f71758efe0a9d9c87799c24123fbf7fea  build/mmo-overlay-m1.7.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m1.7.tar.gz -C build/mmo-workspace
+
+          base64 -d fabric-mmo-ports/overlay-m1.8/source.tar.gz.b64 > build/mmo-overlay-m1.8.tar.gz
+          echo '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9  build/mmo-overlay-m1.8.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
+
+          base64 -d fabric-mmo-ports/overlay-m1.9/source.tar.gz.b64 > build/mmo-overlay-m1.9.tar.gz
+          echo '523338a2a81bc97c19bddcba8a18ac3a59fe3eaa535336e2641cbe1e063eca9  build/mmo-overlay-m1.9.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m1.9.tar.gz -C build/mmo-workspace
+
+          cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
+          echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
+
+          # The branch-level Fabric sources are authoritative. Keep the known-good
+          # M1.4 build/server-smoke project, but replace module source/resources with
+          # the latest entrypoints, bridges and mixins from the branch.
+          for module in mythiclib-fabric mmocore-fabric mmoitems-fabric mythicmobs-fabric; do
+            rm -rf "build/mmo-workspace/fabric-platform/$module/src"
+            cp -a "fabric-mmo-ports/fabric-platform/$module/src" "build/mmo-workspace/fabric-platform/$module/src"
+          done
+
+          test -d build/mmo-workspace/mmocore-runtime/src/main/java
+          test -d build/mmo-workspace/mmoitems-runtime/src/main/java
+          test -d build/mmo-workspace/mythiclib-runtime/src/main/java
+          test -d build/mmo-workspace/mythicmobs-runtime/src/main/java
           find build/mmo-workspace -type f | wc -l
 
       - name: Normalize Fabric metadata version
@@ -78,7 +124,7 @@ jobs:
           set -euo pipefail
           find build/mmo-workspace/fabric-platform -path '*/src/main/resources/fabric.mod.json' -print0 | xargs -0 sed -i 's/${version}/0.8.0-dev/g'
 
-      - name: Java 21 runtime smoke gates
+      - name: Java 21 runtime compile and smoke gates
         shell: bash
         run: |
           set -euo pipefail
@@ -130,7 +176,7 @@ jobs:
       - name: Upload four Fabric JARs
         uses: actions/upload-artifact@v4
         with:
-          name: FabricMMO-Ports-M1.4-dev
+          name: FabricMMO-Ports-M2.0-integrated-dev
           path: build/fabric-mmo-jars/
           if-no-files-found: error
           retention-days: 14
