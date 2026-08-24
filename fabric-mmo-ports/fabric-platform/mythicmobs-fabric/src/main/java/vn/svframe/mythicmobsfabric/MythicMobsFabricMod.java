@@ -122,6 +122,13 @@ public final class MythicMobsFabricMod implements ModInitializer {
         return entity;
     }
 
+    public static boolean remove(Entity entity) {
+        if (entity == null) return false;
+        ACTIVE_MOBS.remove(entity.getUuid());
+        if (!entity.isRemoved()) entity.discard();
+        return true;
+    }
+
     public static AutoCloseable registerExternalSkill(String id, ExternalSkill skill) {
         String key = normalize(id);
         if (key.isEmpty() || skill == null) throw new IllegalArgumentException("Skill id and handler are required");
