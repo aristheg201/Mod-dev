@@ -88,7 +88,7 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
         platformText = platformText.replace(eyeMethod, eyeWithRotation)
 
         def oldGliding = '''    @Override public boolean gliding(UUID value) { Entity e=entity(value); return e != null && e.isInPose(EntityPose.GLIDING); }'''
-        def newGliding = '''    @Override public boolean gliding(UUID value) { Entity e=entity(value); return e instanceof net.minecraft.entity.LivingEntity living && living.isGliding(); }'''
+        def newGliding = '''    @Override public boolean gliding(UUID value) { Entity e=entity(value); return e instanceof net.minecraft.server.network.ServerPlayerEntity player && player.isFallFlying(); }'''
         if (!platformText.contains(oldGliding)) throw new GradleException('FabricSkillPlatform gliding query changed; refusing compatibility patch')
         platformText = platformText.replace(oldGliding, newGliding)
 
