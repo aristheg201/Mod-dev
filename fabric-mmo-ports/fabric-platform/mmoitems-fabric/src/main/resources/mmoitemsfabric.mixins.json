@@ -10,6 +10,7 @@
     "MMOItemsGemScalingMixin",
     "ScreenHandlerGemInteractionMixin",
     "ScreenHandlerUpgradeInteractionMixin",
+    "ScreenHandlerRestrictionMixin",
     "ItemStackCustomDurabilityMixin",
     "PlayerItemDropRestrictionMixin"
   ],
