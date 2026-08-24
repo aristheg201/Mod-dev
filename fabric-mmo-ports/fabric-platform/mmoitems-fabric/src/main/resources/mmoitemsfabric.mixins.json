@@ -6,7 +6,8 @@
     "ServerPlayNetworkHandlerAbilityMixin",
     "CrossbowAbilityMixin",
     "MMOItemsCreateStackMixin",
-    "ScreenHandlerGemInteractionMixin"
+    "ScreenHandlerGemInteractionMixin",
+    "ItemStackCustomDurabilityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
