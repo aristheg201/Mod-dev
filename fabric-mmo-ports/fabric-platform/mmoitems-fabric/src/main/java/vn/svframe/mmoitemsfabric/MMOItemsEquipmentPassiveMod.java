@@ -1,17 +1,17 @@
 package vn.svframe.mmoitemsfabric;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import vn.svframe.mmoitemsfabric.runtime.inventory.EquipmentDiffRuntime;
-import vn.svframe.mythiclibfabric.MythicLibPassiveMod;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,8 +19,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Connects MMOItems' equipment-diff runtime to the real Fabric player inventory.
- * Replacement ordering is UNEQUIP(old) before EQUIP(new), matching the source runtime.
+ * Connects MMOItems' source-backed equipment diff runtime to Fabric's native
+ * equipment-change event. MMOItems abilities are dispatched here; generic
+ * MythicLib EQUIP/UNEQUIP passives are dispatched by MythicLib exactly once.
  */
 public final class MMOItemsEquipmentPassiveMod implements ModInitializer {
     private static final String NBT_TYPE = "mmoitems_type";
@@ -37,26 +38,47 @@ public final class MMOItemsEquipmentPassiveMod implements ModInitializer {
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 EQUIPMENT.remove(handler.player.getUuid()));
-
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> EQUIPMENT.clear());
 
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                EquipmentDiffRuntime<Integer> runtime = EQUIPMENT.computeIfAbsent(
-                        player.getUuid(), ignored -> new EquipmentDiffRuntime<>());
+        ServerEntityEvents.EQUIPMENT_CHANGE.register((entity, slot, previousStack, currentStack) -> {
+            if (!(entity instanceof ServerPlayerEntity player) || !isArmor(slot)) return;
 
-                for (EquipmentDiffRuntime.Transition<Integer> transition : runtime.refresh(observe(player))) {
-                    String trigger = transition.kind() == EquipmentDiffRuntime.Kind.UNEQUIP
-                            ? "UNEQUIP_ARMOR"
-                            : "EQUIP_ARMOR";
-                    Map<String, Object> context = new LinkedHashMap<>();
-                    context.put("trigger", trigger);
-                    context.put("armor-slot", transition.slot());
-                    context.put("item", transition.item().identity());
-                    MythicLibPassiveMod.fire(player.getUuid(), trigger, player.getUuid(), context);
-                }
+            EquipmentDiffRuntime<Integer> runtime = EQUIPMENT.computeIfAbsent(player.getUuid(), ignored -> {
+                EquipmentDiffRuntime<Integer> created = new EquipmentDiffRuntime<>();
+                created.refresh(observe(player));
+                return created;
+            });
+
+            int changedSlot = armorIndex(slot);
+            for (EquipmentDiffRuntime.Transition<Integer> transition : runtime.refresh(observe(player))) {
+                if (transition.slot() != changedSlot) continue;
+                String trigger = transition.kind() == EquipmentDiffRuntime.Kind.UNEQUIP
+                        ? "UNEQUIP_ARMOR"
+                        : "EQUIP_ARMOR";
+                ItemStack eventStack = transition.kind() == EquipmentDiffRuntime.Kind.UNEQUIP
+                        ? previousStack
+                        : currentStack;
+                Map<String, Object> context = new LinkedHashMap<>();
+                context.put("armor-slot", changedSlot);
+                context.put("equipment-slot", slot.getName());
+                MMOItemsFabricMod.fireItemStackTrigger(player, eventStack, trigger, context);
             }
         });
+    }
+
+    private static boolean isArmor(EquipmentSlot slot) {
+        return slot == EquipmentSlot.FEET || slot == EquipmentSlot.LEGS
+                || slot == EquipmentSlot.CHEST || slot == EquipmentSlot.HEAD;
+    }
+
+    private static int armorIndex(EquipmentSlot slot) {
+        return switch (slot) {
+            case FEET -> 0;
+            case LEGS -> 1;
+            case CHEST -> 2;
+            case HEAD -> 3;
+            default -> -1;
+        };
     }
 
     private static Map<Integer, EquipmentDiffRuntime.EquippedSnapshot> observe(ServerPlayerEntity player) {
