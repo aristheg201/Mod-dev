@@ -1,6 +1,6 @@
 base { archivesName = 'MythicLib-Fabric' }
 
-// M1.8 carries profile/session/cooldown parity.  Materialize it over the
+// M1.8 carries profile/session/cooldown parity. Materialize it over the
 // baseline runtime first so Loom compiles exactly one copy of every class.
 def generatedRoot = file("$buildDir/generated/mythiclib-runtime")
 def generatedRuntime = file("$generatedRoot/mythiclib-runtime")
@@ -42,9 +42,17 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
             from tarTree(resources.gzip(m18Archive))
             into extracted
         }
-        def overlayRuntime = new File(extracted, 'mythiclib-runtime')
-        if (!overlayRuntime.isDirectory()) {
-            throw new GradleException("MythicLib M1.8 runtime root missing: ${overlayRuntime}")
+        File overlayRuntime = null
+        extracted.eachDirRecurse { candidate ->
+            if (overlayRuntime == null && new File(candidate, 'src/main/java/vn/svframe/mythiclibfabric/runtime').isDirectory()) {
+                overlayRuntime = candidate
+            }
+        }
+        if (overlayRuntime == null && new File(extracted, 'src/main/java/vn/svframe/mythiclibfabric/runtime').isDirectory()) {
+            overlayRuntime = extracted
+        }
+        if (overlayRuntime == null) {
+            throw new GradleException("MythicLib M1.8 verified runtime source root missing under ${extracted}")
         }
         copy {
             from overlayRuntime
