@@ -108,13 +108,15 @@ jobs:
           chmod +x build-offline.sh
           ./build-offline.sh
 
+          cd fabric-platform
+          gradle --no-daemon :mythicmobs-fabric:prepareM21Sources
           M22_OUT="$(mktemp -d)"
-          cp -a overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/. fabric-platform/mythicmobs-fabric/src/main/java/
+          M22_SRC="mythicmobs-fabric/build/generated/m2.1-source/fabric-platform/mythicmobs-fabric/src/main/java"
           javac --release 21 -d "$M22_OUT" \
-            $(find fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine -name '*.java' -print) \
-            overlay-m2.2/tests/ParticleGeometrySmoke.java
-          java -cp "$M22_OUT" ParticleGeometrySmoke | tee m2.2-particle-smoke.log
-          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=124' m2.2-particle-smoke.log
+            $(find "$M22_SRC/vn/svframe/mythicmobsfabric/engine" -name '*.java' -print) \
+            ../../overlay-m2.2/tests/ParticleGeometrySmoke.java
+          java -cp "$M22_OUT" ParticleGeometrySmoke | tee ../../m2.2-particle-smoke.log
+          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=124' ../../m2.2-particle-smoke.log
 
       - name: Fabric Loom remapJar
         shell: bash
