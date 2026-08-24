@@ -12,14 +12,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.mmoitemsfabric.MMOItemsGemInteraction;
-import vn.svframe.mmoitemsfabric.MMOItemsUpgradeInteraction;
 
-/** Handles cursor-based gemstone and consumable upgrade interactions before vanilla stack swapping. */
+/** Applies gemstones from the cursor onto MMOItem sockets. */
 @Mixin(ScreenHandler.class)
 public abstract class ScreenHandlerGemInteractionMixin {
     @Inject(method = "onSlotClick", at = @At("HEAD"), cancellable = true)
-    private void mmoitems$cursorItemEffects(int slotIndex, int button, SlotActionType actionType,
-                                           PlayerEntity player, CallbackInfo ci) {
+    private void mmoitems$cursorGemstone(int slotIndex, int button, SlotActionType actionType,
+                                         PlayerEntity player, CallbackInfo ci) {
         if (actionType != SlotActionType.PICKUP || !(player instanceof ServerPlayerEntity serverPlayer)) return;
         ScreenHandler handler = (ScreenHandler) (Object) this;
         if (slotIndex < 0 || slotIndex >= handler.slots.size()) return;
@@ -29,41 +28,19 @@ public abstract class ScreenHandlerGemInteractionMixin {
         ItemStack target = slot.getStack();
         if (cursor.isEmpty() || target.isEmpty()) return;
 
-        MMOItemsGemInteraction.Result gem = MMOItemsGemInteraction.apply(serverPlayer, cursor, target);
-        if (gem != MMOItemsGemInteraction.Result.NONE) {
-            ci.cancel();
-            consumeCursor(handler, cursor);
-            if (gem == MMOItemsGemInteraction.Result.SUCCESS) {
-                slot.setStack(target);
-                slot.markDirty();
-                serverPlayer.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
-            } else {
-                serverPlayer.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
-            }
-            handler.sendContentUpdates();
-            return;
-        }
-
-        MMOItemsUpgradeInteraction.Result upgrade = MMOItemsUpgradeInteraction.apply(serverPlayer, cursor, target);
-        if (upgrade == MMOItemsUpgradeInteraction.Result.NONE) return;
+        MMOItemsGemInteraction.Result result = MMOItemsGemInteraction.apply(serverPlayer, cursor, target);
+        if (result == MMOItemsGemInteraction.Result.NONE) return;
 
         ci.cancel();
-        consumeCursor(handler, cursor);
-        if (upgrade == MMOItemsUpgradeInteraction.Result.SUCCESS) {
+        cursor.decrement(1);
+        handler.setCursorStack(cursor.isEmpty() ? ItemStack.EMPTY : cursor);
+        if (result == MMOItemsGemInteraction.Result.SUCCESS) {
             slot.setStack(target);
             slot.markDirty();
             serverPlayer.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
         } else {
-            if (upgrade == MMOItemsUpgradeInteraction.Result.FAILURE_DESTROYED) slot.setStack(ItemStack.EMPTY);
-            else slot.setStack(target);
-            slot.markDirty();
             serverPlayer.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
         }
         handler.sendContentUpdates();
-    }
-
-    private static void consumeCursor(ScreenHandler handler, ItemStack cursor) {
-        cursor.decrement(1);
-        handler.setCursorStack(cursor.isEmpty() ? ItemStack.EMPTY : cursor);
     }
 }
