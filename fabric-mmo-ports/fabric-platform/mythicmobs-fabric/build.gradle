@@ -85,7 +85,18 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
     @Override public float yaw(UUID value) { Entity e=entity(value); return e == null ? 0.0f : e.getYaw(); }
     @Override public float pitch(UUID value) { Entity e=entity(value); return e == null ? 0.0f : e.getPitch(); }'''
         if (!platformText.contains(eyeMethod)) throw new GradleException('FabricSkillPlatform eyePosition changed; refusing rotation patch')
-        fabricPlatform.setText(platformText.replace(eyeMethod, eyeWithRotation), 'UTF-8')
+        platformText = platformText.replace(eyeMethod, eyeWithRotation)
+
+        def oldGliding = '''    @Override public boolean gliding(UUID value) { Entity e=entity(value); return e != null && e.isInPose(EntityPose.GLIDING); }'''
+        def newGliding = '''    @Override public boolean gliding(UUID value) { Entity e=entity(value); return e instanceof net.minecraft.entity.LivingEntity living && living.isGliding(); }'''
+        if (!platformText.contains(oldGliding)) throw new GradleException('FabricSkillPlatform gliding query changed; refusing compatibility patch')
+        platformText = platformText.replace(oldGliding, newGliding)
+
+        def oldSetGliding = '''    @Override public boolean setGliding(UUID target,boolean gliding) { Entity e=entity(target); if(e==null)return false; e.setPose(gliding?EntityPose.GLIDING:EntityPose.STANDING); return true; }'''
+        def newSetGliding = '''    @Override public boolean setGliding(UUID target,boolean gliding) { Entity e=entity(target); if (!(e instanceof net.minecraft.server.network.ServerPlayerEntity player)) return false; if (gliding) player.startFallFlying(); else player.stopFallFlying(); return true; }'''
+        if (!platformText.contains(oldSetGliding)) throw new GradleException('FabricSkillPlatform gliding setter changed; refusing compatibility patch')
+        platformText = platformText.replace(oldSetGliding, newSetGliding)
+        fabricPlatform.setText(platformText, 'UTF-8')
 
         if (!m22OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
         copy { from m22OverlayJava; into m21GeneratedJava }
