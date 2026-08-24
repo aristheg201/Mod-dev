@@ -1,3 +1,63 @@
 base { archivesName = 'MythicMobs-Fabric' }
-sourceSets.main.java.srcDirs += '../../mythicmobs-runtime/src/main/java'
-sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
+
+// M2.1 is currently stored as a source overlay in the repository.  Compile that
+// source with Loom/Yarn directly instead of merging javac-produced classes into
+// an already-remapped jar after the fact.  This makes mapping/API mistakes fail
+// at compileJava where they belong.
+def m21OverlayDir = rootProject.file('../overlay-m2.1')
+def m21GeneratedRoot = file("$buildDir/generated/m2.1-source")
+def m21GeneratedJava = file("$m21GeneratedRoot/fabric-platform/mythicmobs-fabric/src/main/java")
+def m21Archive = file("$buildDir/generated/m2.1-source.tar.gz")
+def m21ExpectedSha256 = '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328'
+
+def prepareM21Sources = tasks.register('prepareM21Sources') {
+    inputs.files(fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' })
+    outputs.dir(m21GeneratedRoot)
+
+    doLast {
+        def parts = fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' }
+                .files
+                .toList()
+                .sort { a, b -> a.name <=> b.name }
+        if (parts.isEmpty()) {
+            throw new GradleException("Missing MythicMobs M2.1 source overlay in ${m21OverlayDir}")
+        }
+
+        def encoded = parts.collect { it.getText('UTF-8').trim() }.join('')
+        byte[] archiveBytes
+        try {
+            archiveBytes = java.util.Base64.decoder.decode(encoded)
+        } catch (IllegalArgumentException e) {
+            throw new GradleException('Invalid base64 in MythicMobs M2.1 source overlay', e)
+        }
+
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha256 = new java.math.BigInteger(1, digest).toString(16).padLeft(64, '0')
+        if (actualSha256 != m21ExpectedSha256) {
+            throw new GradleException("MythicMobs M2.1 source checksum mismatch: ${actualSha256}")
+        }
+
+        project.delete(m21GeneratedRoot)
+        m21Archive.parentFile.mkdirs()
+        m21Archive.bytes = archiveBytes
+        copy {
+            from tarTree(resources.gzip(m21Archive))
+            into m21GeneratedRoot
+        }
+        if (!m21GeneratedJava.isDirectory()) {
+            throw new GradleException("MythicMobs M2.1 source root missing after extraction: ${m21GeneratedJava}")
+        }
+    }
+}
+
+// Do not compile the stale facade source beside the overlay.  M2.1 contains the
+// replacement Fabric entrypoint plus its engine/adapter classes.
+sourceSets.main.java.setSrcDirs([
+        m21GeneratedJava,
+        '../../mythicmobs-runtime/src/main/java',
+        '../../common-runtime/src/main/java'
+])
+sourceSets.main.resources.srcDirs += '../../mythicmobs-runtime/src/main/resources'
+
+tasks.named('compileJava').configure { dependsOn prepareM21Sources }
+tasks.named('sourcesJar').configure { dependsOn prepareM21Sources }
