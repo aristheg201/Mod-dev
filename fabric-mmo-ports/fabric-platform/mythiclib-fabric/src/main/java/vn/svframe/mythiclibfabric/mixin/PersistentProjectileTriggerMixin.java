@@ -63,10 +63,14 @@ public abstract class PersistentProjectileTriggerMixin {
                                      LegacyTriggerType trigger,
                                      java.util.UUID target,
                                      Map<String, ?> context) {
-        PassiveSkillRuntime.Snapshot snapshot = ((ProjectilePassiveSnapshotHolder) projectile).mythiclib$getPassiveSnapshot();
-        // Old projectiles loaded from disk may predate snapshot capture. Establish a
-        // snapshot once and keep using it for the rest of that projectile's lifetime.
-        if (snapshot == null) snapshot = PassiveSkillRuntime.snapshot(owner.getUuid());
+        ProjectilePassiveSnapshotHolder holder = (ProjectilePassiveSnapshotHolder) projectile;
+        PassiveSkillRuntime.Snapshot snapshot = holder.mythiclib$getPassiveSnapshot();
+        // Projectiles restored from a save created before this metadata existed get
+        // one snapshot on their first server-side lifecycle event, then retain it.
+        if (snapshot == null) {
+            snapshot = PassiveSkillRuntime.snapshot(owner.getUuid());
+            holder.mythiclib$setPassiveSnapshot(snapshot);
+        }
         PassiveSkillRuntime.fireSnapshot(snapshot, trigger, target, context);
     }
 
