@@ -107,6 +107,30 @@ jobs:
           chmod +x build-offline.sh
           ./build-offline.sh
 
+          # M2.2 is normal source layered over the historical M2.1 engine.
+          # Compile the exact engine wiring and verify geometry point counts
+          # before Loom touches Minecraft mappings.
+          M22_OUT="$(mktemp -d)"
+          cp -a overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/. fabric-platform/mythicmobs-fabric/src/main/java/
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillRuntime.java')
+          s = p.read_text()
+          old = '''        registerMechanic("particle", (ctx, line, entity, loc) -> platform.particle(loc != null ? loc : ctx.origin(), line.string("particle", line.string("p", "crit")), line.integer("amount", 10, "a"), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("vspread", line.decimal("spread", 0.2)), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("speed", 0.01)),
+                  "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
+          new = '''        registerMechanic("particle",
+                  (ctx, line, entity, loc) -> ParticleGeometry.cast(platform, ctx, line, entity, loc),
+                  "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
+          if old not in s:
+              raise SystemExit('M2.2 smoke patch target not found')
+          p.write_text(s.replace(old, new))
+          PY
+          javac --release 21 -d "$M22_OUT" \
+            $(find fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine -name '*.java' -print) \
+            overlay-m2.2/tests/ParticleGeometrySmoke.java
+          java -cp "$M22_OUT" ParticleGeometrySmoke | tee m2.2-particle-smoke.log
+          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=92' m2.2-particle-smoke.log
+
       - name: Fabric Loom remapJar
         shell: bash
         run: |
