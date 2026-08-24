@@ -12,8 +12,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.mmoitemsfabric.MMOItemsGemInteraction;
+import vn.svframe.mmoitemsfabric.MMOItemsItemSkinInteraction;
 
-/** Applies gemstones from the cursor onto MMOItem sockets. */
+/** Applies item skins and gemstones from the cursor onto MMOItems. */
 @Mixin(ScreenHandler.class)
 public abstract class ScreenHandlerGemInteractionMixin {
     @Inject(method = "onSlotClick", at = @At("HEAD"), cancellable = true)
@@ -28,13 +29,27 @@ public abstract class ScreenHandlerGemInteractionMixin {
         ItemStack target = slot.getStack();
         if (cursor.isEmpty() || target.isEmpty()) return;
 
-        MMOItemsGemInteraction.Result result = MMOItemsGemInteraction.apply(serverPlayer, cursor, target);
-        if (result == MMOItemsGemInteraction.Result.NONE) return;
+        MMOItemsItemSkinInteraction.ApplyResult skin = MMOItemsItemSkinInteraction.apply(serverPlayer, cursor, target);
+        if (skin.result() != MMOItemsItemSkinInteraction.Result.NONE) {
+            ci.cancel();
+            consumeCursor(handler, cursor);
+            if (skin.result() == MMOItemsItemSkinInteraction.Result.SUCCESS) {
+                slot.setStack(skin.stack());
+                slot.markDirty();
+                serverPlayer.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
+            } else {
+                serverPlayer.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
+            }
+            handler.sendContentUpdates();
+            return;
+        }
+
+        MMOItemsGemInteraction.Result gem = MMOItemsGemInteraction.apply(serverPlayer, cursor, target);
+        if (gem == MMOItemsGemInteraction.Result.NONE) return;
 
         ci.cancel();
-        cursor.decrement(1);
-        handler.setCursorStack(cursor.isEmpty() ? ItemStack.EMPTY : cursor);
-        if (result == MMOItemsGemInteraction.Result.SUCCESS) {
+        consumeCursor(handler, cursor);
+        if (gem == MMOItemsGemInteraction.Result.SUCCESS) {
             slot.setStack(target);
             slot.markDirty();
             serverPlayer.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
@@ -42,5 +57,10 @@ public abstract class ScreenHandlerGemInteractionMixin {
             serverPlayer.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
         }
         handler.sendContentUpdates();
+    }
+
+    private static void consumeCursor(ScreenHandler handler, ItemStack cursor) {
+        cursor.decrement(1);
+        handler.setCursorStack(cursor.isEmpty() ? ItemStack.EMPTY : cursor);
     }
 }
