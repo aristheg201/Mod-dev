@@ -69,15 +69,11 @@ jobs:
             cp "fabric-mmo-ports/fabric-platform/$module/build.gradle" "build/mmo-workspace/fabric-platform/$module/build.gradle"
           done
 
-          # M2.1 historically replaced the thin MythicMobs facade after the
-          # module source copy. Keep that compatibility while also retaining
-          # all parity overlays beside the reconstructed workspace so each
-          # module's Gradle task can materialize one deterministic source tree.
           cat fabric-mmo-ports/overlay-m2.1/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.1.tar.gz
           echo '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328  build/mmo-overlay-m2.1.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
 
-          for overlay in overlay-m1.5 overlay-m1.6 overlay-m1.7 overlay-m1.8 overlay-m2.0 overlay-m2.1 overlay-m2.2; do
+          for overlay in overlay-m1.5 overlay-m1.6 overlay-m1.7 overlay-m1.8 overlay-m2.0 overlay-m2.1 overlay-m2.2 overlay-m2.3; do
             test -e "fabric-mmo-ports/$overlay"
             rm -rf "build/mmo-workspace/$overlay"
             cp -a "fabric-mmo-ports/$overlay" "build/mmo-workspace/$overlay"
@@ -86,6 +82,8 @@ jobs:
           test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillRuntime.java
           test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/FabricSkillPlatform.java
           test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometry.java
+          test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometryCompat.java
+          test -f build/mmo-workspace/overlay-m2.3/mmocore-runtime/src/main/java/vn/svframe/mmocorefabric/runtime/gameplay/ProfessionRuntime.java
 
           test -d build/mmo-workspace/mmocore-runtime/src/main/java
           test -d build/mmo-workspace/mmoitems-runtime/src/main/java
@@ -106,9 +104,6 @@ jobs:
           chmod +x build-offline.sh
           ./build-offline.sh
 
-          # M2.2 is normal source layered over the historical M2.1 engine.
-          # Compile the exact engine wiring and verify geometry point counts
-          # before Loom touches Minecraft mappings.
           M22_OUT="$(mktemp -d)"
           cp -a overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/. fabric-platform/mythicmobs-fabric/src/main/java/
           python3 - <<'PY'
@@ -118,7 +113,7 @@ jobs:
           old = '''        registerMechanic("particle", (ctx, line, entity, loc) -> platform.particle(loc != null ? loc : ctx.origin(), line.string("particle", line.string("p", "crit")), line.integer("amount", 10, "a"), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("vspread", line.decimal("spread", 0.2)), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("speed", 0.01)),
                   "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
           new = '''        registerMechanic("particle",
-                  (ctx, line, entity, loc) -> ParticleGeometry.cast(platform, ctx, line, entity, loc),
+                  (ctx, line, entity, loc) -> ParticleGeometryCompat.cast(platform, ctx, line, entity, loc),
                   "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
           if old not in s:
               raise SystemExit('M2.2 smoke patch target not found')
