@@ -1,3 +1,64 @@
 base { archivesName = 'MythicLib-Fabric' }
-sourceSets.main.java.srcDirs += '../../mythiclib-runtime/src/main/java'
+
+// M1.8 carries profile/session/cooldown parity.  Materialize it over the
+// baseline runtime first so Loom compiles exactly one copy of every class.
+def generatedRoot = file("$buildDir/generated/mythiclib-runtime")
+def generatedRuntime = file("$generatedRoot/mythiclib-runtime")
+def generatedJava = file("$generatedRuntime/src/main/java")
+def m18Archive = file("$buildDir/generated/mythiclib-m1.8.tar.gz")
+def m18ExpectedSha256 = '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9'
+
+def prepareParityRuntime = tasks.register('prepareParityRuntime') {
+    inputs.dir(rootProject.file('../mythiclib-runtime'))
+    inputs.file(rootProject.file('../overlay-m1.8/source.tar.gz.b64'))
+    outputs.dir(generatedRuntime)
+
+    doLast {
+        project.delete(generatedRoot)
+        generatedRoot.mkdirs()
+        copy {
+            from rootProject.file('../mythiclib-runtime')
+            into generatedRuntime
+        }
+
+        def encodedFile = rootProject.file('../overlay-m1.8/source.tar.gz.b64')
+        byte[] archiveBytes
+        try {
+            archiveBytes = java.util.Base64.decoder.decode(encodedFile.getText('UTF-8').replaceAll('\\s+', ''))
+        } catch (IllegalArgumentException e) {
+            throw new GradleException('Invalid base64 in MythicLib M1.8 source overlay', e)
+        }
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha256 = new java.math.BigInteger(1, digest).toString(16).padLeft(64, '0')
+        if (actualSha256 != m18ExpectedSha256) {
+            throw new GradleException("MythicLib M1.8 source checksum mismatch: ${actualSha256}")
+        }
+        m18Archive.parentFile.mkdirs()
+        m18Archive.bytes = archiveBytes
+
+        def extracted = file("$buildDir/generated/mythiclib-m1.8-extracted")
+        project.delete(extracted)
+        copy {
+            from tarTree(resources.gzip(m18Archive))
+            into extracted
+        }
+        def overlayRuntime = new File(extracted, 'mythiclib-runtime')
+        if (!overlayRuntime.isDirectory()) {
+            throw new GradleException("MythicLib M1.8 runtime root missing: ${overlayRuntime}")
+        }
+        copy {
+            from overlayRuntime
+            into generatedRuntime
+        }
+        if (!generatedJava.isDirectory()) {
+            throw new GradleException("Generated MythicLib runtime source root missing: ${generatedJava}")
+        }
+    }
+}
+
+sourceSets.main.java.srcDirs += generatedJava
 sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
+sourceSets.main.resources.srcDirs += '../../mythiclib-runtime/src/main/resources'
+
+tasks.named('compileJava').configure { dependsOn prepareParityRuntime }
+tasks.named('sourcesJar').configure { dependsOn prepareParityRuntime }
