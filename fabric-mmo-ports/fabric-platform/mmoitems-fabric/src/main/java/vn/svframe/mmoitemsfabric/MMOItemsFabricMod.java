@@ -37,6 +37,7 @@ import vn.svframe.mmoitemsfabric.runtime.gameplay.EquipmentStats;
 import vn.svframe.mmoitemsfabric.runtime.gameplay.ItemStatProfile;
 import vn.svframe.mmoitemsfabric.runtime.stat.LegacyItemDefinition;
 import vn.svframe.mythiclibfabric.MythicLibFabricMod;
+import vn.svframe.mythiclibfabric.MythicLibPassiveMod;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -201,7 +202,12 @@ public final class MMOItemsFabricMod implements ModInitializer {
         parameters.putAll(context.data());
         return MythicLibFabricMod.castSkill(definition.type(), context.player(), target == null ? context.player() : target, parameters);
     }
-    private static void trigger(ServerPlayerEntity player, Hand hand, AbilityDefinition.Trigger trigger, UUID target) { triggerStack(player, player.getStackInHand(hand), trigger, target, Map.of()); }
+
+    private static void trigger(ServerPlayerEntity player, Hand hand, AbilityDefinition.Trigger trigger, UUID target) {
+        triggerStack(player, player.getStackInHand(hand), trigger, target, Map.of());
+        firePassive(player, trigger, target, Map.of());
+    }
+
     private static void triggerEquipped(ServerPlayerEntity player, AbilityDefinition.Trigger trigger, UUID target, Map<String, Object> data) {
         Set<String> seen = ConcurrentHashMap.newKeySet();
         List<ItemStack> stacks = new ArrayList<>(); stacks.add(player.getMainHandStack()); stacks.add(player.getOffHandStack()); player.getArmorItems().forEach(stacks::add);
@@ -209,7 +215,17 @@ public final class MMOItemsFabricMod implements ModInitializer {
             RegisteredItem item = item(stack); if (item == null || !seen.add(item.type + ':' + item.definition.id())) continue;
             triggerStack(player, stack, trigger, target, data);
         }
+        if (trigger != AbilityDefinition.Trigger.TIMER) firePassive(player, trigger, target, data);
     }
+
+    private static void firePassive(ServerPlayerEntity player, AbilityDefinition.Trigger trigger, UUID target, Map<String, ?> data) {
+        try {
+            MythicLibPassiveMod.fire(player.getUuid(), trigger.name(), target == null ? player.getUuid() : target, data);
+        } catch (IllegalArgumentException ignored) {
+            // An MMOItems-only trigger may not exist in a particular MythicLib legacy version.
+        }
+    }
+
     private static void triggerStack(ServerPlayerEntity player, ItemStack stack, AbilityDefinition.Trigger trigger, UUID target, Map<String, Object> extra) {
         RegisteredItem item = item(stack); if (item == null || item.abilities.isEmpty()) return;
         Map<String, Object> data = new LinkedHashMap<>(extra); if (target != null) data.put("target", target); data.put("item_type", item.type); data.put("item_id", item.definition.id());
