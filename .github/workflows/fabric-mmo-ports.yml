@@ -95,6 +95,18 @@ jobs:
           test -f build/mmo-workspace/overlay-m2.4/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/MythicMobsParity.java
           test -f build/mmo-workspace/overlay-m2.3/mmocore-runtime/src/main/java/vn/svframe/mmocorefabric/runtime/gameplay/ProfessionRuntime.java
 
+          SMOKE_SOURCE="build/mmo-workspace/fabric-platform/server-smoke/src/main/java/vn/svframe/fabricmmo/smoke/ServerSmokeMod.java"
+          test -f "$SMOKE_SOURCE"
+          python3 - "$SMOKE_SOURCE" <<'PY'
+          import pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          updated = text.replace('117', '157').replace('48', '93').replace('24', '72')
+          if updated == text:
+              raise SystemExit('ServerSmokeMod did not contain old MythicMobs registry expectations')
+          path.write_text(updated)
+          PY
+
       - name: Normalize Fabric metadata version
         shell: bash
         run: |
@@ -145,6 +157,8 @@ jobs:
           grep -q 'MMOITEMS_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
           grep -q 'MYTHICMOBS_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
           grep -q 'FABRIC_MMO_DEDICATED_SERVER_BOOT=PASS' ../../fabric-server-boot.log
+          ! grep -q 'Unexpected token in curve' ../../fabric-server-boot.log
+          ! grep -q 'Unexpected curve token' ../../fabric-server-boot.log
 
       - name: Verify four remapped Fabric jars
         shell: bash
@@ -161,6 +175,9 @@ jobs:
             unzip -l "$jar" | grep -q '/runtime/'
           done
           unzip -l build/fabric-mmo-jars/MythicMobs-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mythicmobsfabric/engine/MythicMobsParity.class'
+          unzip -l build/fabric-mmo-jars/MMOItems-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mmoitemsfabric/mixin/ExperienceOrbMendingMixin.class'
+          unzip -l build/fabric-mmo-jars/MMOItems-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mmoitemsfabric/MMOItemsDurabilityIngressMod.class'
+          unzip -l build/fabric-mmo-jars/MMOCore-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mmocorefabric/MMOCoreDefaultConfigMod.class'
           sha256sum build/fabric-mmo-jars/*.jar | tee build/fabric-mmo-jars/SHA256SUMS
 
       - name: Upload four Fabric JARs
