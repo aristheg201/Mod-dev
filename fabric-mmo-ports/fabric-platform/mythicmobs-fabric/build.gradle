@@ -13,6 +13,7 @@ def m21GeneratedJava = file("$m21GeneratedRoot/fabric-platform/mythicmobs-fabric
 def m21Archive = file("$buildDir/generated/m2.1-source.tar.gz")
 def m21ExpectedSha256 = '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328'
 def m22OverlayJava = rootProject.file('../overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java')
+def m24OverlayJava = rootProject.file('../overlay-m2.4/fabric-platform/mythicmobs-fabric/src/main/java')
 
 def prepareM20Runtime = tasks.register('prepareM20Runtime') {
     inputs.dir(rootProject.file('../mythicmobs-runtime'))
@@ -45,6 +46,7 @@ def prepareM20Runtime = tasks.register('prepareM20Runtime') {
 def prepareM21Sources = tasks.register('prepareM21Sources') {
     inputs.files(fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' })
     inputs.dir(m22OverlayJava)
+    inputs.dir(m24OverlayJava)
     outputs.dir(m21GeneratedRoot)
     doLast {
         def parts = fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' }.files.toList().sort { a, b -> a.name <=> b.name }
@@ -69,7 +71,13 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
                 "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
         def runtimeText = skillRuntime.getText('UTF-8')
         if (!runtimeText.contains(oldParticleRegistration)) throw new GradleException('MythicMobs M2.1 particle registration changed; refusing a fuzzy M2.2 patch')
-        skillRuntime.setText(runtimeText.replace(oldParticleRegistration, newParticleRegistration), 'UTF-8')
+        runtimeText = runtimeText.replace(oldParticleRegistration, newParticleRegistration)
+        def constructorHook = '        registerBuiltins();'
+        def parityHook = '''        registerBuiltins();
+        MythicMobsParity.register(this, this.platform);'''
+        if (!runtimeText.contains(constructorHook)) throw new GradleException('MythicMobs SkillRuntime constructor changed; refusing a fuzzy M2.4 parity hook')
+        runtimeText = runtimeText.replaceFirst(java.util.regex.Pattern.quote(constructorHook), java.util.regex.Matcher.quoteReplacement(parityHook))
+        skillRuntime.setText(runtimeText, 'UTF-8')
 
         def fabricPlatform = new File(m21GeneratedJava, 'vn/svframe/mythicmobsfabric/FabricSkillPlatform.java')
         def platformText = fabricPlatform.getText('UTF-8')
@@ -100,6 +108,8 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
 
         if (!m22OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
         copy { from m22OverlayJava; into m21GeneratedJava }
+        if (!m24OverlayJava.isDirectory()) throw new GradleException("Missing MythicMobs M2.4 Java overlay: ${m24OverlayJava}")
+        copy { from m24OverlayJava; into m21GeneratedJava }
     }
 }
 
