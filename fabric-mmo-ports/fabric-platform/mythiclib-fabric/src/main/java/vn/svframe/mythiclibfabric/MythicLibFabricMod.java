@@ -89,7 +89,7 @@ public final class MythicLibFabricMod implements ModInitializer {
                                         boolean ok = castSkill(StringArgumentType.getString(ctx, "skill"), caster.getUuid(), target.getUuid(), Map.of());
                                         if (!ok) ctx.getSource().sendError(Text.literal("Skill did not cast."));
                                         return ok ? 1 : 0;
-                                    }))));
+                                    })))));
         });
     }
 
