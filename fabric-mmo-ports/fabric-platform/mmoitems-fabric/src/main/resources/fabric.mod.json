@@ -4,7 +4,12 @@
   "version": "${version}",
   "name": "MMOItems Fabric",
   "environment": "server",
-  "entrypoints": { "main": ["vn.svframe.mmoitemsfabric.MMOItemsFabricMod"] },
+  "entrypoints": {
+    "main": [
+      "vn.svframe.mmoitemsfabric.MMOItemsFabricMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod"
+    ]
+  },
   "depends": {
     "fabricloader": ">=0.18.4",
     "minecraft": "~1.21.1",
