@@ -7,7 +7,8 @@
   "entrypoints": {
     "main": [
       "vn.svframe.mmoitemsfabric.MMOItemsFabricMod",
-      "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod"
+      "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsEquipmentPassiveMod"
     ]
   },
   "depends": {
