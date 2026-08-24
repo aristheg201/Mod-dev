@@ -7,6 +7,11 @@ on:
       - feature/fabric-mmo-ports
     paths:
       - '.github/workflows/fabric-mmo-source-oracles.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fabric-mmo-source-oracles.yml'
 
 permissions:
   contents: read
