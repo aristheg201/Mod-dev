@@ -4,4 +4,5 @@ import vn.svframe.mythiclibfabric.PassiveSkillRuntime;
 
 public interface ProjectilePassiveSnapshotHolder {
     PassiveSkillRuntime.Snapshot mythiclib$getPassiveSnapshot();
+    void mythiclib$setPassiveSnapshot(PassiveSkillRuntime.Snapshot snapshot);
 }
