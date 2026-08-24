@@ -51,9 +51,17 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
             from tarTree(resources.gzip(m17Archive))
             into extracted
         }
-        def overlayRuntime = new File(extracted, 'mmocore-runtime')
-        if (!overlayRuntime.isDirectory()) {
-            throw new GradleException("MMOCore M1.7 runtime root missing: ${overlayRuntime}")
+        File overlayRuntime = null
+        extracted.eachDirRecurse { candidate ->
+            if (overlayRuntime == null && new File(candidate, 'src/main/java/vn/svframe/mmocorefabric/runtime').isDirectory()) {
+                overlayRuntime = candidate
+            }
+        }
+        if (overlayRuntime == null && new File(extracted, 'src/main/java/vn/svframe/mmocorefabric/runtime').isDirectory()) {
+            overlayRuntime = extracted
+        }
+        if (overlayRuntime == null) {
+            throw new GradleException("MMOCore M1.7 verified runtime source root missing under ${extracted}")
         }
         copy {
             from overlayRuntime
