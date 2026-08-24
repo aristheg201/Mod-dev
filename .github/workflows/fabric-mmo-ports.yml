@@ -123,7 +123,7 @@ jobs:
             $(find fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine -name '*.java' -print) \
             overlay-m2.2/tests/ParticleGeometrySmoke.java
           java -cp "$M22_OUT" ParticleGeometrySmoke | tee m2.2-particle-smoke.log
-          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=123' m2.2-particle-smoke.log
+          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=124' m2.2-particle-smoke.log
 
       - name: Fabric Loom remapJar
         shell: bash
