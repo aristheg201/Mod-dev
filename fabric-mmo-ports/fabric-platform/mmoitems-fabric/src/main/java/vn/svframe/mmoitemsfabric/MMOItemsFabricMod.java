@@ -165,19 +165,26 @@ public final class MMOItemsFabricMod implements ModInitializer {
 
     public static boolean fireItemPacketTrigger(ServerPlayerEntity player, String triggerName) {
         if (player == null || triggerName == null || triggerName.isBlank()) return false;
+        ItemStack stack = switch (triggerName.trim().toUpperCase(Locale.ROOT)) {
+            case "SHOOT_BOW", "SHOOT_TRIDENT" -> player.getActiveItem().isEmpty() ? player.getMainHandStack() : player.getActiveItem();
+            default -> player.getMainHandStack();
+        };
+        return fireItemStackTrigger(player, stack, triggerName, Map.of("packet-trigger", true));
+    }
+
+    public static boolean fireItemStackTrigger(ServerPlayerEntity player, ItemStack stack, String triggerName, Map<String, ?> extra) {
+        if (player == null || stack == null || stack.isEmpty() || triggerName == null || triggerName.isBlank()) return false;
         final AbilityDefinition.Trigger trigger;
         try {
             trigger = AbilityDefinition.Trigger.valueOf(triggerName.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             return false;
         }
-
-        ItemStack stack = switch (triggerName.trim().toUpperCase(Locale.ROOT)) {
-            case "SHOOT_BOW", "SHOOT_TRIDENT" -> player.getActiveItem().isEmpty() ? player.getMainHandStack() : player.getActiveItem();
-            default -> player.getMainHandStack();
-        };
-        if (stack.isEmpty()) return false;
-        triggerStack(player, stack, trigger, null, Map.of("packet-trigger", true));
+        RegisteredItem registered = item(stack);
+        if (registered == null || registered.abilities.isEmpty()) return false;
+        Map<String, Object> context = new LinkedHashMap<>();
+        if (extra != null) context.putAll(extra);
+        triggerStack(player, stack, trigger, null, context);
         return true;
     }
 
