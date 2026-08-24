@@ -1,27 +1,25 @@
 package vn.svframe.mythicmobsfabric.engine;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Restores the exact alias surface declared by MythicMobs 5.6.2 core component
- * annotations.  The TSV is generated from the original plugin and already ships
- * in the Fabric mod.  Whenever one alias/class has a Fabric implementation, all
- * aliases belonging to that same original class are bound to that implementation.
- *
- * This is deliberately applied after built-in/parity registrations so explicit
- * Fabric registrations keep precedence while missing legacy aliases are filled.
+ * annotations. The TSV is generated from the original plugin and ships in the
+ * Fabric mod. Whenever one alias/class has a Fabric implementation, every alias
+ * belonging to that same original class is bound to that implementation.
  */
 public final class CoreComponentAliasParity {
     private static final String RESOURCE = "mythicmobs-core-components.tsv";
@@ -72,29 +70,42 @@ public final class CoreComponentAliasParity {
     }
 
     private static void load() {
-        try (InputStream stream = CoreComponentAliasParity.class.getClassLoader().getResourceAsStream(RESOURCE)) {
-            if (stream == null) throw new IllegalStateException("Missing " + RESOURCE);
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.isBlank() || line.charAt(0) == '#') continue;
-                    String[] parts = line.split("\\t", 3);
-                    if (parts.length != 3) continue;
-                    String type = normalizeType(parts[0]);
-                    String alias = parts[1].trim();
-                    String owner = parts[2].trim();
-                    if (alias.isEmpty() || owner.isEmpty()) continue;
-                    CLASS_BY_ALIAS.computeIfAbsent(type, ignored -> new HashMap<>())
-                            .put(SkillLine.normalize(alias), owner);
-                    ALIASES_BY_CLASS.computeIfAbsent(type, ignored -> new HashMap<>())
-                            .computeIfAbsent(owner, ignored -> new LinkedHashSet<>())
-                            .add(alias);
-                }
+        try (InputStream stream = openRegistry();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank() || line.charAt(0) == '#') continue;
+                String[] parts = line.split("\\t", 3);
+                if (parts.length != 3) continue;
+                String type = normalizeType(parts[0]);
+                String alias = parts[1].trim();
+                String owner = parts[2].trim();
+                if (alias.isEmpty() || owner.isEmpty()) continue;
+                CLASS_BY_ALIAS.computeIfAbsent(type, ignored -> new HashMap<>())
+                        .put(SkillLine.normalize(alias), owner);
+                ALIASES_BY_CLASS.computeIfAbsent(type, ignored -> new HashMap<>())
+                        .computeIfAbsent(owner, ignored -> new LinkedHashSet<>())
+                        .add(alias);
             }
         } catch (Exception ex) {
             throw ex instanceof IllegalStateException state ? state
                     : new IllegalStateException("Unable to load MythicMobs 5.6.2 component alias registry", ex);
         }
+    }
+
+    private static InputStream openRegistry() throws IOException {
+        InputStream packaged = CoreComponentAliasParity.class.getClassLoader().getResourceAsStream(RESOURCE);
+        if (packaged != null) return packaged;
+
+        // The pure-Java CI smoke compiles classes directly without processResources.
+        Path[] sourceCandidates = {
+                Path.of("../mythicmobs-runtime/src/main/resources", RESOURCE),
+                Path.of("mythicmobs-fabric/build/generated/mythicmobs-runtime/mythicmobs-runtime/src/main/resources", RESOURCE)
+        };
+        for (Path candidate : sourceCandidates) {
+            if (Files.isRegularFile(candidate)) return Files.newInputStream(candidate);
+        }
+        throw new IllegalStateException("Missing " + RESOURCE);
     }
 
     private static String normalizeType(String value) {
