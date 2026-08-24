@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,11 +43,13 @@ public final class MythicMobsFabricMod implements ModInitializer {
     }
 
     private record MobDefinition(String id, String entityType, String display, double health, double damage) {}
+    private record Scheduled(long tick, Runnable task) {}
 
     private static final Map<String, ExternalSkill> EXTERNAL_SKILLS = new ConcurrentHashMap<>();
     private static final Map<String, MobDefinition> MOBS = new ConcurrentHashMap<>();
     private static final Map<String, Map<String, Object>> SKILLS = new ConcurrentHashMap<>();
     private static final Map<UUID, String> ACTIVE_MOBS = new ConcurrentHashMap<>();
+    private static final ConcurrentLinkedQueue<Scheduled> SCHEDULED = new ConcurrentLinkedQueue<>();
     private static volatile MinecraftServer server;
     private static long ticks;
 
@@ -62,9 +65,11 @@ public final class MythicMobsFabricMod implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(value -> {
             server = null;
             ACTIVE_MOBS.clear();
+            SCHEDULED.clear();
         });
         ServerTickEvents.END_SERVER_TICK.register(value -> {
             ticks++;
+            runScheduled();
             if ((ticks & 31L) == 0L) ACTIVE_MOBS.keySet().removeIf(id -> entity(id) == null);
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
@@ -96,6 +101,20 @@ public final class MythicMobsFabricMod implements ModInitializer {
     }
     public static String definitionSummary() {
         return "mobs=" + MOBS.size() + ",skills=" + SKILLS.size() + ",active=" + activeCount() + ",externalSkills=" + EXTERNAL_SKILLS.size();
+    }
+
+    static Map<String, Object> skillDefinition(String id) {
+        return SKILLS.get(normalize(id));
+    }
+
+    static void schedule(int delayTicks, Runnable task) {
+        if (task == null) return;
+        if (delayTicks <= 0) {
+            MinecraftServer current = server;
+            if (current != null) current.execute(task); else task.run();
+            return;
+        }
+        SCHEDULED.add(new Scheduled(ticks + delayTicks, task));
     }
 
     public static Entity spawn(String id, ServerWorld world, double x, double y, double z, int level) {
@@ -140,7 +159,8 @@ public final class MythicMobsFabricMod implements ModInitializer {
         String key = normalize(id);
         ExternalSkill skill = EXTERNAL_SKILLS.get(key);
         if (skill != null) return skill.cast(caster, target == null ? caster : target, parameters == null ? Map.of() : parameters);
-        return SKILLS.containsKey(key);
+        if (!SKILLS.containsKey(key)) return false;
+        return MythicSkillRuntime.cast(key, caster, target == null ? caster : target, parameters == null ? Map.of() : parameters);
     }
 
     private static boolean reloadDefinitions() {
@@ -245,6 +265,18 @@ public final class MythicMobsFabricMod implements ModInitializer {
             entity.velocityModified = true;
             return true;
         });
+    }
+
+    private static void runScheduled() {
+        int size = SCHEDULED.size();
+        for (int i = 0; i < size; i++) {
+            Scheduled scheduled = SCHEDULED.poll();
+            if (scheduled == null) break;
+            if (scheduled.tick <= ticks) {
+                try { scheduled.task.run(); }
+                catch (Throwable throwable) { LOG.log(Level.SEVERE, "Scheduled MythicMobs task failed", throwable); }
+            } else SCHEDULED.add(scheduled);
+        }
     }
 
     private static Entity entity(UUID uuid) {
