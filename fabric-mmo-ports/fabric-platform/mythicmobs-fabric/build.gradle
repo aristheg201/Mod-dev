@@ -1,9 +1,9 @@
 base { archivesName = 'MythicMobs-Fabric' }
 
 // Build the MythicMobs runtime as one deterministic source tree. M2.0 carries
-// the component registry/parser parity and M2.1 carries the Minecraft/Fabric
-// execution bridge. Both must be visible to Loom/Yarn, not merged as class files
-// after remapJar.
+// the component registry/parser parity, M2.1 carries the Minecraft/Fabric
+// execution bridge and M2.2 adds geometry-aware particle mechanics. All of it
+// must be visible to Loom/Yarn instead of being merged as class files later.
 def generatedRuntimeRoot = file("$buildDir/generated/mythicmobs-runtime")
 def generatedRuntime = file("$generatedRuntimeRoot/mythicmobs-runtime")
 def generatedRuntimeJava = file("$generatedRuntime/src/main/java")
@@ -16,6 +16,7 @@ def m21GeneratedRoot = file("$buildDir/generated/m2.1-source")
 def m21GeneratedJava = file("$m21GeneratedRoot/fabric-platform/mythicmobs-fabric/src/main/java")
 def m21Archive = file("$buildDir/generated/m2.1-source.tar.gz")
 def m21ExpectedSha256 = '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328'
+def m22OverlayJava = rootProject.file('../overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java')
 
 def prepareM20Runtime = tasks.register('prepareM20Runtime') {
     inputs.dir(rootProject.file('../mythicmobs-runtime'))
@@ -74,6 +75,7 @@ def prepareM20Runtime = tasks.register('prepareM20Runtime') {
 
 def prepareM21Sources = tasks.register('prepareM21Sources') {
     inputs.files(fileTree(m21OverlayDir) { include 'source.tar.gz.b64.part*' })
+    inputs.dir(m22OverlayJava)
     outputs.dir(m21GeneratedRoot)
 
     doLast {
@@ -105,6 +107,28 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
         }
         if (!m21GeneratedJava.isDirectory()) {
             throw new GradleException("MythicMobs M2.1 source root missing after extraction: ${m21GeneratedJava}")
+        }
+
+        // M2.1 still lives in a historical archive. Patch only the one mechanic
+        // registration that M2.2 replaces, then overlay normal Java source.
+        def skillRuntime = new File(m21GeneratedJava, 'vn/svframe/mythicmobsfabric/engine/SkillRuntime.java')
+        def oldParticleRegistration = '''        registerMechanic("particle", (ctx, line, entity, loc) -> platform.particle(loc != null ? loc : ctx.origin(), line.string("particle", line.string("p", "crit")), line.integer("amount", 10, "a"), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("vspread", line.decimal("spread", 0.2)), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("speed", 0.01)),
+                "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
+        def newParticleRegistration = '''        registerMechanic("particle",
+                (ctx, line, entity, loc) -> ParticleGeometry.cast(platform, ctx, line, entity, loc),
+                "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
+        def runtimeText = skillRuntime.getText('UTF-8')
+        if (!runtimeText.contains(oldParticleRegistration)) {
+            throw new GradleException('MythicMobs M2.1 particle registration changed; refusing a fuzzy M2.2 patch')
+        }
+        skillRuntime.setText(runtimeText.replace(oldParticleRegistration, newParticleRegistration), 'UTF-8')
+
+        if (!m22OverlayJava.isDirectory()) {
+            throw new GradleException("Missing MythicMobs M2.2 Java overlay: ${m22OverlayJava}")
+        }
+        copy {
+            from m22OverlayJava
+            into m21GeneratedJava
         }
     }
 }
