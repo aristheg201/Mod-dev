@@ -27,6 +27,7 @@ public final class MMOItemsUpgradeInteraction {
         MMOItemsGameplayMod.Template sourceTemplate = MMOItemsGameplayMod.template(consumable);
         MMOItemsGameplayMod.Template targetTemplate = MMOItemsGameplayMod.template(target);
         if (sourceTemplate == null || targetTemplate == null) return Result.NONE;
+        if (!MMOItemsTypeRegistry.isA(sourceTemplate.type(), "CONSUMABLE")) return Result.NONE;
 
         UpgradeMeta source = meta(sourceTemplate);
         UpgradeMeta destination = meta(targetTemplate);
@@ -35,6 +36,7 @@ public final class MMOItemsUpgradeInteraction {
         int level = MMOItemsGameplayMod.upgradeLevel(target);
         if (destination.max() > 0 && level >= destination.max()) return Result.NONE;
         if (!referencesMatch(source.reference(), destination.reference())) return Result.NONE;
+        if (!MMOItemsRequirementGate.canUse(player, consumable)) return Result.NONE;
 
         MMOItemsGameplayMod.setUpgradeLevel(target, level + 1);
         if (!MMOItemsRequirementGate.canUse(player, target)) {
@@ -42,8 +44,8 @@ public final class MMOItemsUpgradeInteraction {
             return Result.NONE;
         }
 
-        double sourceSuccess = source.success() == 0.0 ? 1.0 : source.success() / 100.0;
-        double targetSuccess = destination.success() == 0.0 ? 1.0 : destination.success() / 100.0;
+        double sourceSuccess = source.success() == 0.0 ? 1.0 : clampRate(source.success() / 100.0);
+        double targetSuccess = destination.success() == 0.0 ? 1.0 : clampRate(destination.success() / 100.0);
         if (ThreadLocalRandom.current().nextDouble() > sourceSuccess * targetSuccess) {
             MMOItemsGameplayMod.setUpgradeLevel(target, level);
             if (destination.destroy()) {
@@ -55,13 +57,13 @@ public final class MMOItemsUpgradeInteraction {
         return Result.SUCCESS;
     }
 
+    private static double clampRate(double value) { return Math.max(0.0, Math.min(1.0, value)); }
+
     private static boolean referencesMatch(String consumable, String target) {
         String left = normalizeReference(consumable);
         String right = normalizeReference(target);
-        if (left.isEmpty() || right.isEmpty()) return left.equals(right);
-        for (String token : left.split("[,;]")) if (token.trim().equalsIgnoreCase(right)) return true;
-        for (String token : right.split("[,;]")) if (token.trim().equalsIgnoreCase(left)) return true;
-        return left.equalsIgnoreCase(right);
+        if (left.equals("all") || right.equals("all")) return true;
+        return left.equals(right);
     }
 
     private static UpgradeMeta meta(MMOItemsGameplayMod.Template template) {
@@ -89,7 +91,7 @@ public final class MMOItemsUpgradeInteraction {
                     string(find(upgrade, "reference")), string(find(upgrade, "template")),
                     bool(find(upgrade, "workbench"), false), bool(find(upgrade, "destroy"), false),
                     integer(find(upgrade, "max"), 0), integer(find(upgrade, "min"), 0),
-                    number(find(upgrade, "success"), 100.0));
+                    number(find(upgrade, "success"), 0.0));
         } catch (Exception ignored) { return UpgradeMeta.EMPTY; }
     }
 
@@ -100,7 +102,7 @@ public final class MMOItemsUpgradeInteraction {
         return null;
     }
 
-    private static String normalizeReference(String value) { return value == null ? "" : value.trim(); }
+    private static String normalizeReference(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT); }
     private static String string(Object value) { return value == null ? "" : String.valueOf(value).trim(); }
     private static double number(Object value, double fallback) { if (value instanceof Number number) return number.doubleValue(); try { return Double.parseDouble(String.valueOf(value).trim()); } catch (Exception ignored) { return fallback; } }
     private static int integer(Object value, int fallback) { if (value instanceof Number number) return number.intValue(); try { return Integer.parseInt(String.valueOf(value).trim()); } catch (Exception ignored) { return fallback; } }
@@ -109,6 +111,6 @@ public final class MMOItemsUpgradeInteraction {
 
     private record Cached(long stamp, UpgradeMeta meta) {}
     private record UpgradeMeta(boolean present, String reference, String template, boolean workbench, boolean destroy, int max, int min, double success) {
-        private static final UpgradeMeta EMPTY = new UpgradeMeta(false, "", "", false, false, 0, 0, 100.0);
+        private static final UpgradeMeta EMPTY = new UpgradeMeta(false, "", "", false, false, 0, 0, 0.0);
     }
 }
