@@ -8,6 +8,12 @@ on:
     paths:
       - 'fabric-mmo-ports/**'
       - '.github/workflows/fabric-mmo-ports.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'fabric-mmo-ports/**'
+      - '.github/workflows/fabric-mmo-ports.yml'
 
 permissions:
   contents: read
