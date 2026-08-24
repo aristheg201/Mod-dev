@@ -10,7 +10,8 @@
       "vn.svframe.mmoitemsfabric.MMOItemsGameplayMod",
       "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod",
       "vn.svframe.mmoitemsfabric.MMOItemsEquipmentPassiveMod",
-      "vn.svframe.mmoitemsfabric.MMOItemsInteractionRestrictionMod"
+      "vn.svframe.mmoitemsfabric.MMOItemsInteractionRestrictionMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsCraftingStationMod"
     ]
   },
   "mixins": [
