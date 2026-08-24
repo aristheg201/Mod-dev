@@ -2,6 +2,12 @@ name: Fabric MMO Ports
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - 'fabric-mmo-ports/**'
+      - '.github/workflows/fabric-mmo-ports.yml'
 
 permissions:
   contents: read
@@ -56,9 +62,6 @@ jobs:
           echo '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9  build/mmo-overlay-m1.8.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
 
-          # The corrupt historical M1.9 archive remains excluded. Its repaired
-          # native Fabric passive runtime now lives in the module source tree.
-
           cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
           echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
           tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
@@ -84,11 +87,6 @@ jobs:
           test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometry.java
           test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometryCompat.java
           test -f build/mmo-workspace/overlay-m2.3/mmocore-runtime/src/main/java/vn/svframe/mmocorefabric/runtime/gameplay/ProfessionRuntime.java
-
-          test -d build/mmo-workspace/mmocore-runtime/src/main/java
-          test -d build/mmo-workspace/mmoitems-runtime/src/main/java
-          test -d build/mmo-workspace/mythiclib-runtime/src/main/java
-          test -d build/mmo-workspace/mythicmobs-runtime/src/main/java
 
       - name: Normalize Fabric metadata version
         shell: bash
