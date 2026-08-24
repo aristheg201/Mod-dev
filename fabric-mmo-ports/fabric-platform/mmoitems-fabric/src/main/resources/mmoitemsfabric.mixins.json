@@ -3,7 +3,8 @@
   "package": "vn.svframe.mmoitemsfabric.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ServerPlayNetworkHandlerAbilityMixin"
+    "ServerPlayNetworkHandlerAbilityMixin",
+    "CrossbowAbilityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
