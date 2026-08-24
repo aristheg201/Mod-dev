@@ -15,6 +15,10 @@ final class ParityTargeters {
         r.registerTargeter("parentlocation",(c,l)->locationOf(p,p.parent(c.caster())));
         r.registerTargeter("wolfowner",(c,l)->entityOf(p,p.owner(c.caster())));
         r.registerTargeter("siblings",(c,l)->siblings(p,c.caster()));
+        r.registerTargeter("trigger",(c,l)->entityOf(p,c.triggerEntity()));
+        r.registerTargeter("playersonserver",(c,l)->SkillRuntime.Targets.entities(p.allPlayers()),"server","everyone");
+        r.registerTargeter("playersinradius",(c,l)->SkillRuntime.Targets.entities(playersInRadius(p,c.caster(),l)),"pir");
+        r.registerTargeter("selfeyelocation",(c,l)->SkillRuntime.Targets.locations(List.of(p.eyePosition(c.caster()))),"eyedirection","castereyelocation","bosseyelocation","mobeyelocation");
         r.registerTargeter("playersinworld",(c,l)->SkillRuntime.Targets.entities(ParityUtil.filterWorld(p,p.allPlayers(),p.world(c.caster()))),"worldplayers");
         r.registerTargeter("livinginworld",(c,l)->SkillRuntime.Targets.entities(ParityUtil.filterWorld(p,p.allLiving(c.caster()),p.world(c.caster()))),"worldlivingentities","worldentities");
         r.registerTargeter("playersinring",(c,l)->SkillRuntime.Targets.entities(ParityUtil.ring(p,c.caster(),p.allPlayers(),l)));
@@ -45,6 +49,7 @@ final class ParityTargeters {
     private static SkillRuntime.Targets locationOf(SkillPlatform p,UUID u){return u==null?SkillRuntime.Targets.empty():SkillRuntime.Targets.locations(List.of(p.position(u)));}
     private static SkillRuntime.Targets entityOf(SkillPlatform p,UUID u){return u==null?SkillRuntime.Targets.empty():SkillRuntime.Targets.entities(List.of(u));}
     private static SkillRuntime.Targets siblings(SkillPlatform p,UUID u){UUID par=p.parent(u);if(par==null)return SkillRuntime.Targets.empty();List<UUID> xs=new ArrayList<>(p.children(par));xs.remove(u);return SkillRuntime.Targets.entities(xs);}
+    private static List<UUID> playersInRadius(SkillPlatform p,UUID caster,SkillLine l){double r=Math.max(0,l.decimal("radius",l.decimal("r",5)));return new ArrayList<>(p.nearby(caster,r,r,true));}
     private static List<Vec3> randomRectangle(Vec3 c,SkillLine l){int n=Math.max(1,l.integer("amount",l.integer("a",1)));double x=l.decimal("x",l.decimal("width",5)),z=l.decimal("z",l.decimal("length",5));List<Vec3>out=new ArrayList<>();for(int i=0;i<n;i++)out.add(new Vec3(c.x()+(ParityUtil.RANDOM.nextDouble()*2-1)*x,c.y(),c.z()+(ParityUtil.RANDOM.nextDouble()*2-1)*z,c.world()));return out;}
     private static SkillRuntime.Targets floorTargets(SkillPlatform p,SkillContext c){List<Vec3>out=new ArrayList<>();for(UUID u:c.entityTargets()){Vec3 v=p.position(u);out.add(new Vec3(v.x(),Math.floor(v.y()),v.z(),v.world()));}return SkillRuntime.Targets.locations(out);}
     private static SkillRuntime.Targets blocksInRadius(Vec3 c,SkillLine l){int r=Math.max(0,l.integer("radius",l.integer("r",1)));List<Vec3>out=new ArrayList<>();for(int x=-r;x<=r;x++)for(int y=-r;y<=r;y++)for(int z=-r;z<=r;z++)if(x*x+y*y+z*z<=r*r)out.add(new Vec3(Math.floor(c.x())+x,Math.floor(c.y())+y,Math.floor(c.z())+z,c.world()));return SkillRuntime.Targets.locations(out);}
