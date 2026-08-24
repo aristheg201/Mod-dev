@@ -5,6 +5,7 @@
   "mixins": [
     "LivingEntityDamageMixin",
     "ServerPlayNetworkHandlerActionMixin",
+    "ProjectileEntitySnapshotMixin",
     "PersistentProjectileTriggerMixin",
     "CrossbowTriggerMixin",
     "BlockItemPlaceTriggerMixin",
