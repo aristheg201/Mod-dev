@@ -15,6 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MMOItemsTypeRegistry {
     private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("MMOItems").resolve("item-types.yml");
     private static final Map<String, String> PARENTS = new ConcurrentHashMap<>();
+    private static final Set<String> WEAPONS = Set.of(
+            "SWORD", "DAGGER", "SPEAR", "HAMMER", "GAUNTLET", "WHIP", "STAFF", "GREATSTAFF",
+            "BOW", "CROSSBOW", "MUSKET", "LUTE", "GREATSWORD", "LONG_SWORD", "KATANA", "HALBERD",
+            "AXE", "GREATAXE", "GREATHAMMER");
     private static volatile long stamp = Long.MIN_VALUE;
 
     private MMOItemsTypeRegistry() {}
@@ -27,6 +31,7 @@ public final class MMOItemsTypeRegistry {
         Set<String> seen = ConcurrentHashMap.newKeySet();
         while (!current.isEmpty() && seen.add(current)) {
             if (current.equals(expected)) return true;
+            if (expected.equals("WEAPON") && WEAPONS.contains(current)) return true;
             current = PARENTS.getOrDefault(current, "");
         }
         return false;
