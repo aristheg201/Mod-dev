@@ -9,7 +9,8 @@
     "MMOItemsRequirementTriggerMixin",
     "MMOItemsGemScalingMixin",
     "ScreenHandlerGemInteractionMixin",
-    "ItemStackCustomDurabilityMixin"
+    "ItemStackCustomDurabilityMixin",
+    "PlayerItemDropRestrictionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
