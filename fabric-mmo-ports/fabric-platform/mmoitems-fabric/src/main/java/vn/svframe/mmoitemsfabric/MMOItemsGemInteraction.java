@@ -15,11 +15,6 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class MMOItemsGemInteraction {
     public enum Result { NONE, FAILURE, SUCCESS }
 
-    private static final Set<String> WEAPON_TYPES = Set.of(
-            "SWORD", "DAGGER", "SPEAR", "HAMMER", "GAUNTLET", "WHIP", "STAFF", "GREATSTAFF",
-            "BOW", "CROSSBOW", "MUSKET", "LUTE", "GREATSWORD", "LONG_SWORD", "KATANA", "HALBERD",
-            "AXE", "GREATAXE", "GREATHAMMER");
-
     private static final Set<String> NON_MERGEABLE = Set.of(
             "custom-model-data", "required-level", "required-class", "required-classes", "required-strength",
             "required-dexterity", "required-intelligence", "required-power", "required-permission", "required-biome",
@@ -41,8 +36,7 @@ public final class MMOItemsGemInteraction {
         MMOItemsGameplayMod.hydrate(targetStack);
         List<String> sockets = new ArrayList<>(MMOItemsGameplayMod.emptySockets(targetStack));
         int socket = findSocket(sockets, gem.gemColor());
-        if (socket < 0) return Result.NONE;
-        if (!supportsTarget(gem, target)) return Result.NONE;
+        if (socket < 0 || !supportsTarget(gem, target)) return Result.NONE;
 
         double success = gem.successRate() == 0.0 ? 100.0 : gem.successRate();
         if (ThreadLocalRandom.current().nextDouble() > success / 100.0) return Result.FAILURE;
@@ -61,7 +55,7 @@ public final class MMOItemsGemInteraction {
     }
 
     private static boolean isGem(MMOItemsGameplayMod.Template template) {
-        return template.type().equalsIgnoreCase("GEM_STONE");
+        return MMOItemsTypeRegistry.isA(template.type(), "GEM_STONE");
     }
 
     private static int findSocket(List<String> sockets, String gemColor) {
@@ -75,10 +69,19 @@ public final class MMOItemsGemInteraction {
         if (gem.itemTypeRestriction().isEmpty()) return true;
         for (String raw : gem.itemTypeRestriction()) {
             String allowed = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
-            if (allowed.equals(target.type())) return true;
-            if (allowed.equals("WEAPON") && WEAPON_TYPES.contains(target.type())) return true;
+            if (MMOItemsTypeRegistry.isA(target.type(), allowed)) return true;
+            if (allowed.equals("WEAPON") && isWeapon(target.type())) return true;
         }
         return false;
+    }
+
+    private static boolean isWeapon(String type) {
+        return MMOItemsTypeRegistry.isA(type, "SWORD") || MMOItemsTypeRegistry.isA(type, "DAGGER")
+                || MMOItemsTypeRegistry.isA(type, "SPEAR") || MMOItemsTypeRegistry.isA(type, "HAMMER")
+                || MMOItemsTypeRegistry.isA(type, "GAUNTLET") || MMOItemsTypeRegistry.isA(type, "WHIP")
+                || MMOItemsTypeRegistry.isA(type, "STAFF") || MMOItemsTypeRegistry.isA(type, "BOW")
+                || MMOItemsTypeRegistry.isA(type, "CROSSBOW") || MMOItemsTypeRegistry.isA(type, "MUSKET")
+                || MMOItemsTypeRegistry.isA(type, "LUTE");
     }
 
     private static Map<String, Double> mergeableStats(Map<String, Double> source) {
