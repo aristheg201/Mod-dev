@@ -97,15 +97,8 @@ jobs:
 
           SMOKE_SOURCE="build/mmo-workspace/fabric-platform/server-smoke/src/main/java/vn/svframe/fabricmmo/smoke/ServerSmokeMod.java"
           test -f "$SMOKE_SOURCE"
-          python3 - "$SMOKE_SOURCE" <<'PY'
-          import pathlib, sys
-          path = pathlib.Path(sys.argv[1])
-          text = path.read_text()
-          updated = text.replace('117', '157').replace('48', '93').replace('24', '72')
-          if updated == text:
-              raise SystemExit('ServerSmokeMod did not contain old MythicMobs registry expectations')
-          path.write_text(updated)
-          PY
+          echo '--- MythicMobs materialization smoke predicate ---'
+          grep -n -E 'materialization|materialized|mechanicCount|conditionCount|targeterCount|active=' "$SMOKE_SOURCE" || true
 
       - name: Normalize Fabric metadata version
         shell: bash
