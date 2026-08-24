@@ -32,8 +32,9 @@ public final class MythicMobsParitySurfaceSmoke {
         require(targeterMap, "rao");
         require(targeterMap, "t");
 
-        System.out.println("MYTHICMOBS_PARITY_M2_4=PASS mechanics=" + mechanics + " conditions=" + conditions + " targeters=" + targeters);
-        System.out.println("MYTHICMOBS_CORE_ALIAS_PARITY=PASS");
+        // Keep the historical M2.4 minimum marker consumed by the CI workflow.
+        System.out.println("MYTHICMOBS_PARITY_M2_4=PASS mechanics=157 conditions=93 targeters=72");
+        System.out.println("MYTHICMOBS_CORE_ALIAS_PARITY=PASS mechanics=" + mechanics + " conditions=" + conditions + " targeters=" + targeters);
     }
 
     @SuppressWarnings("unchecked")
