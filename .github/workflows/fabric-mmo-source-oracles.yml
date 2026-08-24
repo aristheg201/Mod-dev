@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build/source-oracles build/dependencies
+          mkdir -p build/source-oracles build/dependencies/runtime build/dependency-project
           git clone --depth=1 --branch main https://github.com/DragonBaiMo/MMOCore-Change.git build/source-oracles/MMOCore-1.13.1
           git clone --depth=1 --branch master https://github.com/Hephaisto-dev/mmoitems.git build/source-oracles/MMOItems-6.10.1
           git clone --depth=1 --branch master https://github.com/Hephaisto-dev/Mythiclib.git build/source-oracles/MythicLib-1.7.1
@@ -53,12 +53,24 @@ jobs:
           tar -czf build/fabric-mmo-source-oracles.tar.gz -C build/source-oracles .
           sha256sum build/fabric-mmo-source-oracles.tar.gz > build/fabric-mmo-source-oracles.sha256
 
-          mvn -q dependency:get \
-            -Dartifact=org.spigotmc:spigot-api:1.21.1-R0.1-SNAPSHOT \
-            -DremoteRepositories=spigot::default::https://hub.spigotmc.org/nexus/content/repositories/snapshots/
-          SPIGOT_JAR="$(find "$HOME/.m2/repository/org/spigotmc/spigot-api/1.21.1-R0.1-SNAPSHOT" -maxdepth 1 -name 'spigot-api-*.jar' -type f | head -1)"
+          cat > build/dependency-project/pom.xml <<'POM'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>vn.svframe</groupId><artifactId>spigot-runtime-oracle</artifactId><version>1</version>
+            <repositories>
+              <repository><id>spigot</id><url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url></repository>
+            </repositories>
+            <dependencies>
+              <dependency><groupId>org.spigotmc</groupId><artifactId>spigot-api</artifactId><version>1.21.1-R0.1-SNAPSHOT</version></dependency>
+            </dependencies>
+          </project>
+          POM
+          mvn -q -f build/dependency-project/pom.xml dependency:copy-dependencies \
+            -DincludeScope=runtime -DoutputDirectory="$GITHUB_WORKSPACE/build/dependencies/runtime"
+          SPIGOT_JAR="$(find build/dependencies/runtime -maxdepth 1 -name 'spigot-api-*.jar' -type f | head -1)"
           test -n "$SPIGOT_JAR"
           cp "$SPIGOT_JAR" build/dependencies/spigot-api-1.21.1.jar
+          find build/dependencies/runtime -type f -name '*.jar' -printf '%f\n' | sort > build/dependencies/RUNTIME_JARS.txt
           sha256sum build/dependencies/spigot-api-1.21.1.jar > build/dependencies/spigot-api-1.21.1.sha256
 
           GRADLE_BIN="$(command -v gradle)"
@@ -74,10 +86,7 @@ jobs:
           path: |
             build/fabric-mmo-source-oracles.tar.gz
             build/fabric-mmo-source-oracles.sha256
-            build/dependencies/spigot-api-1.21.1.jar
-            build/dependencies/spigot-api-1.21.1.sha256
-            build/dependencies/gradle-8.8-linux.tar.gz
-            build/dependencies/gradle-8.8-linux.sha256
+            build/dependencies/
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
