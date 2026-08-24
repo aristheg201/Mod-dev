@@ -30,4 +30,9 @@ public abstract class ProjectileEntitySnapshotMixin implements ProjectilePassive
     public PassiveSkillRuntime.Snapshot mythiclib$getPassiveSnapshot() {
         return mythiclib$passiveSnapshot;
     }
+
+    @Override
+    public void mythiclib$setPassiveSnapshot(PassiveSkillRuntime.Snapshot snapshot) {
+        mythiclib$passiveSnapshot = snapshot;
+    }
 }
