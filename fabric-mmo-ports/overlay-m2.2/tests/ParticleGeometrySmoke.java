@@ -46,7 +46,9 @@ public final class ParticleGeometrySmoke {
                 "particlesphere{particle=crit;points=18;radius=1}",
                 "particlebox{particle=crit;amount=24;radius=1}",
                 "particletornado{particle=crit;points=20;height=3;radius=1.5;turns=3}",
-                "particleatom{particle=crit;points=18;radius=1}"
+                "particleatom{particle=crit;points=18;radius=1}",
+                "particleequation{particle=crit;x=cos(t);y=t/6;z=sin(t);points=8;start=0;end=6.283185307179586}",
+                "particlelineequation{particle=crit;x=sin(t)*0.2;y=cos(t)*0.2;z=0;points=8;start=0;end=6.283185307179586}"
         ))));
 
         SkillContext context = new SkillContext(
@@ -61,8 +63,8 @@ public final class ParticleGeometrySmoke {
         if (!runtime.cast("geometry", context)) {
             throw new AssertionError("geometry skill did not cast");
         }
-        if (particles.get() != 92) {
-            throw new AssertionError("expected 92 emitted particle points, got " + particles.get());
+        if (particles.get() != 108) {
+            throw new AssertionError("expected 108 emitted particle points, got " + particles.get());
         }
         System.out.println("MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=" + particles.get());
     }
