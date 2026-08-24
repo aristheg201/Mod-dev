@@ -7,5 +7,6 @@ public final class MythicMobsParity {
         ParityMechanics.register(runtime, platform);
         ParityConditions.register(runtime, platform);
         ParityTargeters.register(runtime, platform);
+        CoreComponentAliasParity.expand(runtime);
     }
 }
