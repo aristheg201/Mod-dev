@@ -8,7 +8,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -85,24 +84,16 @@ public final class MythicMobsFabricMod implements ModInitializer {
                         }))));
     }
 
-    public static MinecraftServer server() {
-        return server;
-    }
-
-    public static boolean hasMob(String id) {
-        return MOBS.containsKey(normalize(id));
-    }
-
+    public static MinecraftServer server() { return server; }
+    public static boolean hasMob(String id) { return MOBS.containsKey(normalize(id)); }
     public static boolean hasSkill(String id) {
         String key = normalize(id);
         return SKILLS.containsKey(key) || EXTERNAL_SKILLS.containsKey(key);
     }
-
     public static int activeCount() {
         ACTIVE_MOBS.keySet().removeIf(id -> entity(id) == null);
         return ACTIVE_MOBS.size();
     }
-
     public static String definitionSummary() {
         return "mobs=" + MOBS.size() + ",skills=" + SKILLS.size() + ",active=" + activeCount() + ",externalSkills=" + EXTERNAL_SKILLS.size();
     }
@@ -111,20 +102,16 @@ public final class MythicMobsFabricMod implements ModInitializer {
         if (world == null) return null;
         MobDefinition definition = MOBS.get(normalize(id));
         if (definition == null) return null;
-
         Identifier typeId = identifier(definition.entityType());
         EntityType<?> type = Registries.ENTITY_TYPE.get(typeId);
-        Entity entity = type.create(world, SpawnReason.COMMAND);
+        Entity entity = type.create(world);
         if (entity == null) {
             LOG.warning("Could not create MythicMob " + definition.id() + " using entity type " + typeId);
             return null;
         }
-
         entity.refreshPositionAndAngles(x, y, z, world.random.nextFloat() * 360.0F, 0.0F);
         if (entity instanceof LivingEntity living) {
-            if (definition.health() > 0.0d) {
-                living.setHealth((float) Math.min(definition.health(), living.getMaxHealth()));
-            }
+            if (definition.health() > 0.0d) living.setHealth((float) Math.min(definition.health(), living.getMaxHealth()));
             if (definition.display() != null && !definition.display().isBlank()) {
                 living.setCustomName(Text.literal(stripFormatting(definition.display())));
                 living.setCustomNameVisible(true);
@@ -146,9 +133,6 @@ public final class MythicMobsFabricMod implements ModInitializer {
         String key = normalize(id);
         ExternalSkill skill = EXTERNAL_SKILLS.get(key);
         if (skill != null) return skill.cast(caster, target == null ? caster : target, parameters == null ? Map.of() : parameters);
-        // A loaded MythicMobs skill ID is considered dispatchable even when its
-        // full mechanic graph has no Fabric executor yet. This keeps inter-mod
-        // lookup/API compatibility while individual mechanics are wired.
         return SKILLS.containsKey(key);
     }
 
@@ -160,10 +144,8 @@ public final class MythicMobsFabricMod implements ModInitializer {
             loadMobs(ROOT.resolve("mobs"), nextMobs);
             loadSkills(ROOT.resolve("Skills"), nextSkills);
             loadSkills(ROOT.resolve("skills"), nextSkills);
-            MOBS.clear();
-            MOBS.putAll(nextMobs);
-            SKILLS.clear();
-            SKILLS.putAll(nextSkills);
+            MOBS.clear(); MOBS.putAll(nextMobs);
+            SKILLS.clear(); SKILLS.putAll(nextSkills);
             return true;
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load MythicMobs legacy configuration", e);
@@ -190,8 +172,7 @@ public final class MythicMobsFabricMod implements ModInitializer {
         for (Path file : yamlFiles(directory)) {
             Map<String, Object> root = YamlLite.map(YamlLite.parse(file));
             for (Map.Entry<String, Object> entry : root.entrySet()) {
-                if (!(entry.getValue() instanceof Map<?, ?> raw)) continue;
-                target.put(normalize(entry.getKey()), Map.copyOf(stringMap(raw)));
+                if (entry.getValue() instanceof Map<?, ?> raw) target.put(normalize(entry.getKey()), Map.copyOf(stringMap(raw)));
             }
         }
     }
@@ -211,7 +192,6 @@ public final class MythicMobsFabricMod implements ModInitializer {
         for (Map.Entry<?, ?> entry : raw.entrySet()) out.put(String.valueOf(entry.getKey()), entry.getValue());
         return out;
     }
-
     private static String text(Map<String, Object> map, String key, String fallback) {
         Object value = map.get(key);
         return value == null ? fallback : String.valueOf(value);
@@ -276,29 +256,17 @@ public final class MythicMobsFabricMod implements ModInitializer {
         Object value = parameters.get(key);
         if (value instanceof Number number) return number.doubleValue();
         if (value != null) {
-            try {
-                return Double.parseDouble(String.valueOf(value));
-            } catch (NumberFormatException ignored) {
-            }
+            try { return Double.parseDouble(String.valueOf(value)); } catch (NumberFormatException ignored) {}
         }
         return fallback;
     }
-
     private static Identifier identifier(String raw) {
         String value = raw == null ? "zombie" : raw.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
         if (!value.contains(":")) value = "minecraft:" + value;
-        try {
-            return Identifier.of(value);
-        } catch (RuntimeException ignored) {
-            return Identifier.of("minecraft:zombie");
-        }
+        try { return Identifier.of(value); } catch (RuntimeException ignored) { return Identifier.of("minecraft:zombie"); }
     }
-
     private static String stripFormatting(String value) {
         return value.replaceAll("<[^>]+>", "").replaceAll("&[0-9A-FK-ORa-fk-or]", "");
     }
-
-    private static String normalize(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
-    }
+    private static String normalize(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT); }
 }
