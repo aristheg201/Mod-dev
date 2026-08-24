@@ -70,10 +70,13 @@ def prepareFabric121Compatibility = tasks.register('prepareFabric121Compatibilit
         def newFly = 'player.getAbilities().flying || player.isFallFlying()'
         def oldGround = '!player.getAbilities().flying && !player.isInPose(EntityPose.GLIDING)'
         def newGround = '!player.getAbilities().flying && !player.isFallFlying()'
-        if (!text.contains(oldFly) || !text.contains(oldGround)) {
+        def oldState = text.contains(oldFly) && text.contains(oldGround)
+        def newState = text.contains(newFly) && text.contains(newGround)
+        if (oldState) {
+            professionIngress.setText(text.replace(oldFly, newFly).replace(oldGround, newGround), 'UTF-8')
+        } else if (!newState) {
             throw new GradleException('MMOCore profession movement gliding expressions changed; refusing fuzzy 1.21.1 patch')
         }
-        professionIngress.setText(text.replace(oldFly, newFly).replace(oldGround, newGround), 'UTF-8')
     }
 }
 
