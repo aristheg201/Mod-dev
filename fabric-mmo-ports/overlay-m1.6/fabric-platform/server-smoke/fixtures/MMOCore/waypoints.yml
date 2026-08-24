@@ -1,0 +1,8 @@
+spawn:
+  name: Spawn
+  location: world 0 64 0 0 0
+  radius: 2
+  option:
+    unlockable: true
+    enable-menu: true
+    default: true
