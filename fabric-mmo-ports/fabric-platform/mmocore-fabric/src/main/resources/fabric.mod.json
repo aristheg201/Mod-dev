@@ -6,6 +6,7 @@
   "environment": "server",
   "entrypoints": {
     "main": [
+      "vn.svframe.mmocorefabric.MMOCoreDefaultConfigMod",
       "vn.svframe.mmocorefabric.MMOCoreFabricMod",
       "vn.svframe.mmocorefabric.MMOCoreProfessionExperienceMod",
       "vn.svframe.mmocorefabric.MMOCoreSpecialProfessionExperienceMod",
