@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MythicLibPassiveMod implements ModInitializer {
     private record ActionKey(UUID player, LegacyTriggerType trigger) {}
 
-    private static final Map<UUID, Boolean> LAST_SNEAKING = new ConcurrentHashMap<>();
     private static final Map<ActionKey, Long> LAST_ACTION_TICK = new ConcurrentHashMap<>();
 
     @Override
@@ -45,36 +44,22 @@ public final class MythicLibPassiveMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             long tick = MythicLibFabricMod.currentTick();
             PassiveSkillRuntime.tick(tick);
-
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                UUID id = player.getUuid();
-                boolean sneaking = player.isSneaking();
-                boolean previous = LAST_SNEAKING.getOrDefault(id, sneaking);
-                if (!previous && sneaking) {
-                    fireOnce(id, LegacyTriggerType.SNEAK, id, Map.of("sneaking", true));
-                }
-                LAST_SNEAKING.put(id, sneaking);
-            }
-
             LAST_ACTION_TICK.entrySet().removeIf(entry -> tick - entry.getValue() > 2L);
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.player;
-            LAST_SNEAKING.put(player.getUuid(), player.isSneaking());
             PassiveSkillRuntime.fire(player.getUuid(), LegacyTriggerType.LOGIN, player.getUuid(), Map.of());
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             UUID id = handler.player.getUuid();
             PassiveSkillRuntime.clear(id);
-            LAST_SNEAKING.remove(id);
             LAST_ACTION_TICK.keySet().removeIf(key -> key.player().equals(id));
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             PassiveSkillRuntime.clearAll();
-            LAST_SNEAKING.clear();
             LAST_ACTION_TICK.clear();
         });
     }
