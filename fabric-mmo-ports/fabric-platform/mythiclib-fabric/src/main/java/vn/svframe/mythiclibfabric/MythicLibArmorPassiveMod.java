@@ -22,10 +22,10 @@ public final class MythicLibArmorPassiveMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                LAST_ARMOR.put(handler.getPlayer().getUuid(), snapshot(handler.getPlayer())));
+                LAST_ARMOR.put(handler.player.getUuid(), snapshot(handler.player)));
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                LAST_ARMOR.remove(handler.getPlayer().getUuid()));
+                LAST_ARMOR.remove(handler.player.getUuid()));
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> LAST_ARMOR.clear());
 
