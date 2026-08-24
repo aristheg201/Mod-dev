@@ -14,6 +14,7 @@ public final class ParticleGeometrySmoke {
     public static void main(String[] args) {
         AtomicInteger particles = new AtomicInteger();
         UUID caster = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
 
         SkillPlatform platform = (SkillPlatform) Proxy.newProxyInstance(
                 ParticleGeometrySmoke.class.getClassLoader(),
@@ -21,7 +22,13 @@ public final class ParticleGeometrySmoke {
                 (proxy, method, methodArgs) -> switch (method.getName()) {
                     case "exists", "alive", "living" -> true;
                     case "player" -> false;
-                    case "position", "eyePosition", "velocity" -> new Vec3(0, 64, 0, "minecraft:overworld");
+                    case "position", "eyePosition" -> {
+                        UUID entity = (UUID) methodArgs[0];
+                        yield entity.equals(caster)
+                                ? new Vec3(-4, 64, 0, "minecraft:overworld")
+                                : new Vec3(0, 64, 0, "minecraft:overworld");
+                    }
+                    case "velocity" -> new Vec3(0, 0, 0, "minecraft:overworld");
                     case "world" -> "minecraft:overworld";
                     case "entityType" -> "minecraft:player";
                     case "biome" -> "minecraft:plains";
@@ -47,14 +54,14 @@ public final class ParticleGeometrySmoke {
                 "particlebox{particle=crit;amount=24;radius=1}",
                 "particletornado{particle=crit;points=20;height=3;radius=1.5;turns=3}",
                 "particleatom{particle=crit;points=18;radius=1}",
-                "particleequation{particle=crit;x=cos(t);y=t/6;z=sin(t);points=8;start=0;end=6.283185307179586}",
-                "particlelineequation{particle=crit;x=sin(t)*0.2;y=cos(t)*0.2;z=0;points=8;start=0;end=6.283185307179586}"
+                "particleequation{particle=crit;equation=0;boundx=1;boundy=1;boundz=1;resolution=1}",
+                "particlelineequation{particle=crit;distancebetween=1;equationx=0;equationy=0;equationz=0;maxdistance=256}"
         ))));
 
         SkillContext context = new SkillContext(
                 "API",
                 caster,
-                null,
+                target,
                 new Vec3(0, 64, 0, "minecraft:overworld"),
                 1.0f,
                 Map.of(),
@@ -63,8 +70,8 @@ public final class ParticleGeometrySmoke {
         if (!runtime.cast("geometry", context)) {
             throw new AssertionError("geometry skill did not cast");
         }
-        if (particles.get() != 108) {
-            throw new AssertionError("expected 108 emitted particle points, got " + particles.get());
+        if (particles.get() != 123) {
+            throw new AssertionError("expected 123 emitted particle points, got " + particles.get());
         }
         System.out.println("MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=" + particles.get());
     }
