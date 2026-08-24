@@ -21,12 +21,13 @@ public final class MMOItemsGemInteraction {
             "AXE", "GREATAXE", "GREATHAMMER");
 
     private static final Set<String> NON_MERGEABLE = Set.of(
-            "custom-model-data", "required-level", "success-rate", "max-durability", "max-item-damage",
-            "gem-sockets", "gem-color", "item-type-restriction", "upgrade", "revision-id", "item-damage",
-            "will-break", "unbreakable", "hide-durability-bar", "disable-crafting", "disable-smelting",
-            "disable-smithing", "disable-enchanting", "disable-repairing", "disable-interaction",
-            "disable-drop", "disable-death-drop", "item-cooldown", "soulbound-level", "soulbinding-chance",
-            "soulbound-break-chance", "unstackable", "gem-upgrade-scaling");
+            "custom-model-data", "required-level", "required-class", "required-classes", "required-strength",
+            "required-dexterity", "required-intelligence", "required-power", "required-permission", "required-biome",
+            "required-biomes", "success-rate", "max-durability", "max-item-damage", "gem-sockets", "gem-color",
+            "item-type-restriction", "upgrade", "revision-id", "item-damage", "will-break", "unbreakable",
+            "hide-durability-bar", "disable-crafting", "disable-smelting", "disable-smithing", "disable-enchanting",
+            "disable-repairing", "disable-interaction", "disable-drop", "disable-death-drop", "item-cooldown",
+            "soulbound-level", "soulbinding-chance", "soulbound-break-chance", "unstackable", "gem-upgrade-scaling");
 
     private MMOItemsGemInteraction() {}
 
@@ -35,6 +36,7 @@ public final class MMOItemsGemInteraction {
         MMOItemsGameplayMod.Template gem = MMOItemsGameplayMod.template(gemStack);
         MMOItemsGameplayMod.Template target = MMOItemsGameplayMod.template(targetStack);
         if (gem == null || target == null || !isGem(gem)) return Result.NONE;
+        if (!MMOItemsRequirementGate.canUse(player, gemStack)) return Result.NONE;
 
         MMOItemsGameplayMod.hydrate(targetStack);
         List<String> sockets = new ArrayList<>(MMOItemsGameplayMod.emptySockets(targetStack));
@@ -47,14 +49,21 @@ public final class MMOItemsGemInteraction {
 
         String consumedSocket = sockets.remove(socket);
         MMOItemsGameplayMod.setEmptySockets(targetStack, sockets);
-        MMOItemsGameplayMod.addGemStats(targetStack, mergeableStats(gem.numericStats()), 1.0);
+        MMOItemsGameplayMod.addGemStats(targetStack, mergeableStats(gem.numericStats()), gemScale(gemStack, targetStack));
 
-        // Preserve the socket color consumed in state so a later unsocket implementation can restore it.
         var data = MMOItemsGameplayMod.customData(targetStack);
         String history = data.getString("mmoitems_gem_socket_history");
         data.putString("mmoitems_gem_socket_history", history.isEmpty() ? consumedSocket : history + "\u001f" + consumedSocket);
         MMOItemsGameplayMod.writeCustomData(targetStack, data);
         return Result.SUCCESS;
+    }
+
+    private static double gemScale(ItemStack gemStack, ItemStack targetStack) {
+        String mode = MMOItemsRequirementGate.gemUpgradeScaling(gemStack);
+        if (!mode.equals("SUBSEQUENT")) return 1.0;
+        int level = MMOItemsGameplayMod.upgradeLevel(targetStack);
+        if (level <= 0) return 1.0;
+        return level + 1.0;
     }
 
     private static boolean isGem(MMOItemsGameplayMod.Template template) {
