@@ -11,6 +11,9 @@
       "vn.svframe.mmoitemsfabric.MMOItemsEquipmentPassiveMod"
     ]
   },
+  "mixins": [
+    "mmoitemsfabric.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.18.4",
     "minecraft": "~1.21.1",
