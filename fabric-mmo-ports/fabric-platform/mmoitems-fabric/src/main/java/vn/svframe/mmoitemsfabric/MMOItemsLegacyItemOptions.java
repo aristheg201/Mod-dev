@@ -18,37 +18,40 @@ public final class MMOItemsLegacyItemOptions {
     private MMOItemsLegacyItemOptions() {}
 
     public static boolean bool(ItemStack stack, String option, boolean fallback) {
-        MMOItemsGameplayMod.Template template = MMOItemsGameplayMod.template(stack);
-        if (template == null) return fallback;
-        Object value = value(template, option);
-        if (value instanceof Boolean bool) return bool;
-        if (value == null) return fallback;
-        String raw = String.valueOf(value).trim().toLowerCase(Locale.ROOT);
-        if (raw.equals("true") || raw.equals("yes") || raw.equals("on") || raw.equals("1")) return true;
-        if (raw.equals("false") || raw.equals("no") || raw.equals("off") || raw.equals("0")) return false;
-        return fallback;
+        return booleanValue(value(stack, option), fallback);
+    }
+
+    public static boolean bool(ItemStack stack, String section, String option, boolean fallback) {
+        return booleanValue(value(stack, section, option), fallback);
     }
 
     public static String string(ItemStack stack, String option, String fallback) {
-        MMOItemsGameplayMod.Template template = MMOItemsGameplayMod.template(stack);
-        if (template == null) return fallback;
-        Object value = value(template, option);
+        Object value = value(stack, option);
+        return value == null ? fallback : String.valueOf(value).trim();
+    }
+
+    public static String string(ItemStack stack, String section, String option, String fallback) {
+        Object value = value(stack, section, option);
         return value == null ? fallback : String.valueOf(value).trim();
     }
 
     public static double number(ItemStack stack, String option, double fallback) {
-        MMOItemsGameplayMod.Template template = MMOItemsGameplayMod.template(stack);
-        if (template == null) return fallback;
-        Object value = value(template, option);
-        if (value instanceof Number number) return number.doubleValue();
-        Map<String, Object> section = map(value);
-        if (!section.isEmpty()) return numberValue(findIgnoreCase(section, "base"), fallback);
-        return numberValue(value, fallback);
+        return numeric(value(stack, option), fallback);
     }
 
-    private static Object value(MMOItemsGameplayMod.Template template, String option) {
-        Map<String, Object> base = base(template);
-        return findIgnoreCase(base, option);
+    public static double number(ItemStack stack, String section, String option, double fallback) {
+        return numeric(value(stack, section, option), fallback);
+    }
+
+    private static Object value(ItemStack stack, String option) {
+        MMOItemsGameplayMod.Template template = MMOItemsGameplayMod.template(stack);
+        return template == null ? null : findIgnoreCase(base(template), option);
+    }
+
+    private static Object value(ItemStack stack, String section, String option) {
+        MMOItemsGameplayMod.Template template = MMOItemsGameplayMod.template(stack);
+        if (template == null) return null;
+        return findIgnoreCase(map(findIgnoreCase(base(template), section)), option);
     }
 
     private static Map<String, Object> base(MMOItemsGameplayMod.Template template) {
@@ -76,6 +79,22 @@ public final class MMOItemsLegacyItemOptions {
         if (direct != null) return direct;
         for (Map.Entry<String, Object> entry : map.entrySet()) if (entry.getKey().equalsIgnoreCase(key)) return entry.getValue();
         return null;
+    }
+
+    private static boolean booleanValue(Object value, boolean fallback) {
+        if (value instanceof Boolean bool) return bool;
+        if (value == null) return fallback;
+        String raw = String.valueOf(value).trim().toLowerCase(Locale.ROOT);
+        if (raw.equals("true") || raw.equals("yes") || raw.equals("on") || raw.equals("1")) return true;
+        if (raw.equals("false") || raw.equals("no") || raw.equals("off") || raw.equals("0")) return false;
+        return fallback;
+    }
+
+    private static double numeric(Object value, double fallback) {
+        if (value instanceof Number number) return number.doubleValue();
+        Map<String, Object> section = map(value);
+        if (!section.isEmpty()) return numberValue(findIgnoreCase(section, "base"), fallback);
+        return numberValue(value, fallback);
     }
 
     private static double numberValue(Object value, double fallback) {
