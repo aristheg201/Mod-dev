@@ -1,3 +1,4 @@
+import vn.svframe.mythicmobsfabric.engine.RotationAwareSkillPlatform;
 import vn.svframe.mythicmobsfabric.engine.SkillContext;
 import vn.svframe.mythicmobsfabric.engine.SkillDefinition;
 import vn.svframe.mythicmobsfabric.engine.SkillPlatform;
@@ -5,6 +6,7 @@ import vn.svframe.mythicmobsfabric.engine.SkillRuntime;
 import vn.svframe.mythicmobsfabric.engine.Vec3;
 
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,12 +15,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class ParticleGeometrySmoke {
     public static void main(String[] args) {
         AtomicInteger particles = new AtomicInteger();
+        List<Vec3> emitted = new ArrayList<>();
         UUID caster = UUID.randomUUID();
         UUID target = UUID.randomUUID();
 
         SkillPlatform platform = (SkillPlatform) Proxy.newProxyInstance(
                 ParticleGeometrySmoke.class.getClassLoader(),
-                new Class<?>[]{SkillPlatform.class},
+                new Class<?>[]{SkillPlatform.class, RotationAwareSkillPlatform.class},
                 (proxy, method, methodArgs) -> switch (method.getName()) {
                     case "exists", "alive", "living" -> true;
                     case "player" -> false;
@@ -28,6 +31,8 @@ public final class ParticleGeometrySmoke {
                                 ? new Vec3(-4, 64, 0, "minecraft:overworld")
                                 : new Vec3(0, 64, 0, "minecraft:overworld");
                     }
+                    case "yaw" -> 90.0f;
+                    case "pitch" -> 0.0f;
                     case "velocity" -> new Vec3(0, 0, 0, "minecraft:overworld");
                     case "world" -> "minecraft:overworld";
                     case "entityType" -> "minecraft:player";
@@ -37,6 +42,7 @@ public final class ParticleGeometrySmoke {
                     case "dayTime" -> 6000L;
                     case "level", "health", "maxHealth", "absorption" -> 20.0d;
                     case "particle" -> {
+                        emitted.add((Vec3) methodArgs[0]);
                         particles.addAndGet((Integer) methodArgs[2]);
                         yield true;
                     }
@@ -55,7 +61,7 @@ public final class ParticleGeometrySmoke {
                 "particletornado{particle=crit;points=20;height=3;radius=1.5;turns=3}",
                 "particleatom{particle=crit;points=18;radius=1}",
                 "particleequation{particle=crit;equation=0;boundx=1;boundy=1;boundz=1;resolution=1}",
-                "particlelineequation{particle=crit;distancebetween=1;equationx=0;equationy=0;equationz=0;maxdistance=256}"
+                "particlelineequation{particle=crit;distancebetween=1;equationx=0;equationy=0;equationz=0;maxdistance=256;forwardoffset=1;sideoffset=0.5}"
         ))));
 
         SkillContext context = new SkillContext(
@@ -67,13 +73,18 @@ public final class ParticleGeometrySmoke {
                 Map.of(),
                 Map.of());
 
-        if (!runtime.cast("geometry", context)) {
-            throw new AssertionError("geometry skill did not cast");
-        }
-        if (particles.get() != 123) {
-            throw new AssertionError("expected 123 emitted particle points, got " + particles.get());
-        }
+        if (!runtime.cast("geometry", context)) throw new AssertionError("geometry skill did not cast");
+        if (particles.get() != 124) throw new AssertionError("expected 124 emitted particle points, got " + particles.get());
+
+        Vec3 firstLinePoint = emitted.get(emitted.size() - 5);
+        assertClose(firstLinePoint.x(), -5.0, "line start x");
+        assertClose(firstLinePoint.y(), 64.0, "line start y");
+        assertClose(firstLinePoint.z(), -0.5, "line start z");
         System.out.println("MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=" + particles.get());
+    }
+
+    private static void assertClose(double actual, double expected, String label) {
+        if (Math.abs(actual - expected) > 1.0e-9) throw new AssertionError(label + " expected " + expected + ", got " + actual);
     }
 
     private static Object defaultValue(Class<?> type) {
