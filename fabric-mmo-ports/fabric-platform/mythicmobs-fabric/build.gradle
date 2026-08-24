@@ -65,7 +65,7 @@ def prepareM21Sources = tasks.register('prepareM21Sources') {
         def oldParticleRegistration = '''        registerMechanic("particle", (ctx, line, entity, loc) -> platform.particle(loc != null ? loc : ctx.origin(), line.string("particle", line.string("p", "crit")), line.integer("amount", 10, "a"), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("vspread", line.decimal("spread", 0.2)), line.decimal("hspread", line.decimal("spread", 0.2)), line.decimal("speed", 0.01)),
                 "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
         def newParticleRegistration = '''        registerMechanic("particle",
-                (ctx, line, entity, loc) -> ParticleGeometryCompat.cast(platform, ctx, line, entity, loc),
+                (ctx, line, entity, loc) -> ParticleGeometryDispatch.cast(platform, ctx, line, entity, loc),
                 "particles", "particlebox", "particlering", "particlesphere", "particleline", "particlelinehelix", "particlelinering", "particlewave", "particletornado", "particleorbital", "particleatom", "particleequation", "particlelineequation", "mythicparticle");'''
         def runtimeText = skillRuntime.getText('UTF-8')
         if (!runtimeText.contains(oldParticleRegistration)) throw new GradleException('MythicMobs M2.1 particle registration changed; refusing a fuzzy M2.2 patch')
