@@ -11,6 +11,7 @@
       "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod",
       "vn.svframe.mmoitemsfabric.MMOItemsEquipmentPassiveMod",
       "vn.svframe.mmoitemsfabric.MMOItemsInteractionRestrictionMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsRevisionMod",
       "vn.svframe.mmoitemsfabric.MMOItemsCraftingStationMod"
     ]
   },
