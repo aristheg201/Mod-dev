@@ -10,7 +10,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import vn.svframe.mythiclibfabric.MythicLibPassiveMod;
+import vn.svframe.mythiclibfabric.LegacyTriggerType;
+import vn.svframe.mythiclibfabric.PassiveSkillRuntime;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +26,7 @@ public abstract class PersistentProjectileTriggerMixin {
         ServerPlayerEntity owner = playerOwner(projectile);
         if (owner == null) return;
 
-        MythicLibPassiveMod.fire(owner.getUuid(), trigger("TICK"), owner.getUuid(), projectileContext(projectile));
+        fireSnapshot(projectile, owner, trigger("TICK"), owner.getUuid(), projectileContext(projectile));
     }
 
     @Inject(method = "onEntityHit", at = @At("TAIL"))
@@ -39,7 +40,7 @@ public abstract class PersistentProjectileTriggerMixin {
         Entity target = hit.getEntity();
         context.put("target-uuid", target.getUuidAsString());
         context.put("target-type", target.getType().toString());
-        MythicLibPassiveMod.fire(owner.getUuid(), trigger("HIT"), target.getUuid(), context);
+        fireSnapshot(projectile, owner, trigger("HIT"), target.getUuid(), context);
     }
 
     @Inject(method = "onBlockHit", at = @At("TAIL"))
@@ -54,11 +55,23 @@ public abstract class PersistentProjectileTriggerMixin {
         context.put("block-y", hit.getBlockPos().getY());
         context.put("block-z", hit.getBlockPos().getZ());
         context.put("face", hit.getSide().name());
-        MythicLibPassiveMod.fire(owner.getUuid(), trigger("LAND"), owner.getUuid(), context);
+        fireSnapshot(projectile, owner, trigger("LAND"), owner.getUuid(), context);
     }
 
-    private String trigger(String suffix) {
-        return (self() instanceof TridentEntity ? "TRIDENT_" : "ARROW_") + suffix;
+    private static void fireSnapshot(PersistentProjectileEntity projectile,
+                                     ServerPlayerEntity owner,
+                                     LegacyTriggerType trigger,
+                                     java.util.UUID target,
+                                     Map<String, ?> context) {
+        PassiveSkillRuntime.Snapshot snapshot = ((ProjectilePassiveSnapshotHolder) projectile).mythiclib$getPassiveSnapshot();
+        // Old projectiles loaded from disk may predate snapshot capture. Establish a
+        // snapshot once and keep using it for the rest of that projectile's lifetime.
+        if (snapshot == null) snapshot = PassiveSkillRuntime.snapshot(owner.getUuid());
+        PassiveSkillRuntime.fireSnapshot(snapshot, trigger, target, context);
+    }
+
+    private LegacyTriggerType trigger(String suffix) {
+        return LegacyTriggerType.parse((self() instanceof TridentEntity ? "TRIDENT_" : "ARROW_") + suffix);
     }
 
     private PersistentProjectileEntity self() {
