@@ -32,7 +32,8 @@ public abstract class BrewingProfessionMixin {
         if (!(world instanceof ServerWorld serverWorld) || before == null) return;
         for (int i = 0; i < 3; i++) {
             ItemStack after = blockEntity.getStack(i);
-            if (after.isEmpty() || ItemStack.areEqual(before[i], after)) continue;
+            if (after.isEmpty()) continue;
+            if (before[i].getCount() == after.getCount() && ItemStack.areItemsAndComponentsEqual(before[i], after)) continue;
             MMOCoreSpecialProfessionExperienceMod.awardBrew(serverWorld, pos, before[i], after.copy());
         }
     }
