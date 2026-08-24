@@ -1,0 +1,135 @@
+name: Fabric MMO Original Compatibility
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - '.github/workflows/fabric-mmo-original-compat.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  original-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build exact-version plugin source oracles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/oracles
+          git clone --depth=1 --branch master https://github.com/Hephaisto-dev/Mythiclib.git build/oracles/MythicLib
+          git clone --depth=1 --branch main https://github.com/DragonBaiMo/MMOCore-Change.git build/oracles/MMOCore
+          git clone --depth=1 --branch master https://github.com/Hephaisto-dev/mmoitems.git build/oracles/MMOItems
+          grep -q '<version>1.7.1-SNAPSHOT</version>' build/oracles/MythicLib/pom.xml
+          grep -q '<version>1.13.1-SNAPSHOT</version>' build/oracles/MMOCore/pom.xml
+          grep -q '<version>6.10.1-SNAPSHOT</version>' build/oracles/MMOItems/pom.xml
+
+          mvn -B -ntp -DskipTests -f build/oracles/MythicLib/pom.xml install
+          mvn -B -ntp -DskipTests -f build/oracles/MMOCore/pom.xml install
+          mvn -B -ntp -DskipTests -f build/oracles/MMOItems/pom.xml install
+
+          mkdir -p build/original-plugins
+          ML="$(find build/oracles/MythicLib/target -maxdepth 1 -name 'MythicLib-1.7.1-SNAPSHOT.jar' -type f | head -1)"
+          MC="$(find build/oracles/MMOCore/target -maxdepth 1 -name 'MMOCore-1.13.1-SNAPSHOT.jar' -type f | head -1)"
+          MI="$(find build/oracles/MMOItems/target -maxdepth 1 -name 'MMOItems-6.10.1-SNAPSHOT.jar' -type f | head -1)"
+          test -s "$ML"; test -s "$MC"; test -s "$MI"
+          cp "$ML" build/original-plugins/MythicLib.jar
+          cp "$MC" build/original-plugins/MMOCore.jar
+          cp "$MI" build/original-plugins/MMOItems.jar
+          unzip -p build/original-plugins/MythicLib.jar plugin.yml | grep -q 'version: 1.7.1-SNAPSHOT'
+          unzip -p build/original-plugins/MMOCore.jar plugin.yml | grep -q 'version: 1.13.1-SNAPSHOT'
+          unzip -p build/original-plugins/MMOItems.jar plugin.yml | grep -q 'version: 6.10.1-SNAPSHOT'
+          ls -lh build/original-plugins
+
+      - name: Install Fabric 1.21.1 compatibility server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/cardboard-server/mods build/cardboard-server/plugins build/runtime-deps
+
+          cat > build/runtime-deps/pom.xml <<'POM'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>vn.svframe</groupId><artifactId>compat-runtime</artifactId><version>1</version>
+            <repositories>
+              <repository><id>fabric</id><url>https://maven.fabricmc.net/</url></repository>
+              <repository><id>modrinth</id><url>https://api.modrinth.com/maven</url></repository>
+            </repositories>
+            <dependencies>
+              <dependency><groupId>net.fabricmc.fabric-api</groupId><artifactId>fabric-api</artifactId><version>0.116.9+1.21.1</version></dependency>
+              <dependency><groupId>maven.modrinth</groupId><artifactId>cardboard</artifactId><version>1.21.1-9</version></dependency>
+              <dependency><groupId>maven.modrinth</groupId><artifactId>SVKv1SZo</artifactId><version>s1QTgemS</version></dependency>
+            </dependencies>
+          </project>
+          POM
+          mvn -B -ntp -q -f build/runtime-deps/pom.xml dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory="$GITHUB_WORKSPACE/build/cardboard-server/mods"
+
+          cd build/cardboard-server
+          curl -fsSL -o fabric-installer.jar https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.3/fabric-installer-1.0.3.jar
+          java -jar fabric-installer.jar server -mcversion 1.21.1 -loader 0.18.4 -downloadMinecraft
+          cp ../original-plugins/*.jar plugins/
+          printf 'eula=true\n' > eula.txt
+          printf 'online-mode=false\nserver-port=25578\nview-distance=2\nsimulation-distance=2\n' > server.properties
+
+      - name: Boot original MythicLib MMOCore MMOItems on Fabric
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/cardboard-server
+          python3 - <<'PY'
+          import subprocess, sys, time
+          p = subprocess.Popen(
+              ['java','-Xms512M','-Xmx2G','-jar','fabric-server-launch.jar','nogui'],
+              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+              text=True, bufsize=1)
+          lines=[]
+          deadline=time.time()+150
+          done=False
+          while time.time() < deadline:
+              line=p.stdout.readline()
+              if line:
+                  print(line, end='')
+                  lines.append(line)
+                  if 'Done (' in line and 'For help' in line:
+                      done=True
+                      time.sleep(3)
+                      p.stdin.write('stop\n'); p.stdin.flush()
+                      break
+              elif p.poll() is not None:
+                  break
+          try:
+              p.wait(timeout=35)
+          except subprocess.TimeoutExpired:
+              p.terminate(); p.wait(timeout=10)
+          open('../../original-compat-boot.log','w',encoding='utf-8').writelines(lines)
+          if not done:
+              raise SystemExit('Server never reached Done')
+          if p.returncode not in (0,143,-15):
+              raise SystemExit(f'Server exited unexpectedly: {p.returncode}')
+          PY
+
+          LOG=../../original-compat-boot.log
+          grep -Ei 'MythicLib' "$LOG"
+          grep -Ei 'MMOCore' "$LOG"
+          grep -Ei 'MMOItems' "$LOG"
+          ! grep -Ei 'Could not load .*MythicLib|Could not load .*MMOCore|Could not load .*MMOItems|Error occurred while enabling MythicLib|Error occurred while enabling MMOCore|Error occurred while enabling MMOItems' "$LOG"
+
+      - name: Upload compatibility log only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Original-Compatibility-Log
+          path: build/original-compat-boot.log
+          if-no-files-found: ignore
+          retention-days: 7
