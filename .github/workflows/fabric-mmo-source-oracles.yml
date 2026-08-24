@@ -24,11 +24,17 @@ jobs:
       - name: Checkout port repository
         uses: actions/checkout@v4
 
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Fetch exact-version source oracles
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build/source-oracles
+          mkdir -p build/source-oracles build/dependencies
           git clone --depth=1 --branch main https://github.com/DragonBaiMo/MMOCore-Change.git build/source-oracles/MMOCore-1.13.1
           git clone --depth=1 --branch master https://github.com/Hephaisto-dev/mmoitems.git build/source-oracles/MMOItems-6.10.1
           git clone --depth=1 --branch master https://github.com/Hephaisto-dev/Mythiclib.git build/source-oracles/MythicLib-1.7.1
@@ -42,6 +48,14 @@ jobs:
           tar -czf build/fabric-mmo-source-oracles.tar.gz -C build/source-oracles .
           sha256sum build/fabric-mmo-source-oracles.tar.gz > build/fabric-mmo-source-oracles.sha256
 
+          mvn -q dependency:get \
+            -Dartifact=org.spigotmc:spigot-api:1.21.1-R0.1-SNAPSHOT \
+            -DremoteRepositories=spigot::default::https://hub.spigotmc.org/nexus/content/repositories/snapshots/
+          SPIGOT_JAR="$(find "$HOME/.m2/repository/org/spigotmc/spigot-api/1.21.1-R0.1-SNAPSHOT" -maxdepth 1 -name 'spigot-api-*.jar' -type f | head -1)"
+          test -n "$SPIGOT_JAR"
+          cp "$SPIGOT_JAR" build/dependencies/spigot-api-1.21.1.jar
+          sha256sum build/dependencies/spigot-api-1.21.1.jar > build/dependencies/spigot-api-1.21.1.sha256
+
       - name: Upload source oracle bundle
         uses: actions/upload-artifact@v4
         with:
@@ -49,6 +63,8 @@ jobs:
           path: |
             build/fabric-mmo-source-oracles.tar.gz
             build/fabric-mmo-source-oracles.sha256
+            build/dependencies/spigot-api-1.21.1.jar
+            build/dependencies/spigot-api-1.21.1.sha256
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
