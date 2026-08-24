@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import vn.svframe.mythiclibfabric.PassiveSkillRuntime;
+import vn.svframe.mythiclibfabric.runtime.ProjectilePassiveSnapshotHolder;
 
 @Mixin(ProjectileEntity.class)
 public abstract class ProjectileEntitySnapshotMixin implements ProjectilePassiveSnapshotHolder {
