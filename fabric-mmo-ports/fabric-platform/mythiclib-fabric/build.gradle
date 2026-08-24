@@ -42,18 +42,17 @@ def prepareParityRuntime = tasks.register('prepareParityRuntime') {
             from tarTree(resources.gzip(m18Archive))
             into extracted
         }
-        File overlayRuntime = null
+
+        File javaRoot = null
+        if (new File(extracted, 'src/main/java').isDirectory()) javaRoot = new File(extracted, 'src/main/java')
         extracted.eachDirRecurse { candidate ->
-            if (overlayRuntime == null && new File(candidate, 'src/main/java/vn/svframe/mythiclibfabric/runtime').isDirectory()) {
-                overlayRuntime = candidate
+            if (javaRoot == null && candidate.name == 'java' && candidate.parentFile?.name == 'main' && candidate.parentFile?.parentFile?.name == 'src') {
+                def javaFiles = fileTree(candidate) { include '**/*.java' }
+                if (!javaFiles.isEmpty()) javaRoot = candidate
             }
         }
-        if (overlayRuntime == null && new File(extracted, 'src/main/java/vn/svframe/mythiclibfabric/runtime').isDirectory()) {
-            overlayRuntime = extracted
-        }
-        if (overlayRuntime == null) {
-            throw new GradleException("MythicLib M1.8 verified runtime source root missing under ${extracted}")
-        }
+        if (javaRoot == null) throw new GradleException("MythicLib M1.8 Java source root missing under ${extracted}")
+        File overlayRuntime = javaRoot.parentFile.parentFile.parentFile
         copy {
             from overlayRuntime
             into generatedRuntime
