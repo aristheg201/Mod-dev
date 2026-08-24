@@ -25,7 +25,6 @@ public abstract class PersistentProjectileTriggerMixin {
         if (projectile.getWorld().isClient) return;
         ServerPlayerEntity owner = playerOwner(projectile);
         if (owner == null) return;
-
         fireSnapshot(projectile, owner, trigger("TICK"), owner.getUuid(), projectileContext(projectile));
     }
 
@@ -35,7 +34,6 @@ public abstract class PersistentProjectileTriggerMixin {
         if (projectile.getWorld().isClient) return;
         ServerPlayerEntity owner = playerOwner(projectile);
         if (owner == null) return;
-
         Map<String, Object> context = projectileContext(projectile);
         Entity target = hit.getEntity();
         context.put("target-uuid", target.getUuidAsString());
@@ -49,7 +47,6 @@ public abstract class PersistentProjectileTriggerMixin {
         if (projectile.getWorld().isClient) return;
         ServerPlayerEntity owner = playerOwner(projectile);
         if (owner == null) return;
-
         Map<String, Object> context = projectileContext(projectile);
         context.put("block-x", hit.getBlockPos().getX());
         context.put("block-y", hit.getBlockPos().getY());
@@ -65,8 +62,6 @@ public abstract class PersistentProjectileTriggerMixin {
                                      Map<String, ?> context) {
         ProjectilePassiveSnapshotHolder holder = (ProjectilePassiveSnapshotHolder) projectile;
         PassiveSkillRuntime.Snapshot snapshot = holder.mythiclib$getPassiveSnapshot();
-        // Projectiles restored from a save created before this metadata existed get
-        // one snapshot on their first server-side lifecycle event, then retain it.
         if (snapshot == null) {
             snapshot = PassiveSkillRuntime.snapshot(owner.getUuid());
             holder.mythiclib$setPassiveSnapshot(snapshot);
@@ -84,7 +79,9 @@ public abstract class PersistentProjectileTriggerMixin {
 
     private static ServerPlayerEntity playerOwner(PersistentProjectileEntity projectile) {
         Entity owner = projectile.getOwner();
-        return owner instanceof ServerPlayerEntity player ? player : null;
+        if (!(owner instanceof ServerPlayerEntity player)) return null;
+        if (player.getServer() == null) return null;
+        return player.getServer().getPlayerManager().getPlayer(player.getUuid()) == player ? player : null;
     }
 
     private static Map<String, Object> projectileContext(PersistentProjectileEntity projectile) {
