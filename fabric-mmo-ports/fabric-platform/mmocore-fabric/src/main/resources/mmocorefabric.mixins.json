@@ -9,7 +9,10 @@
     "ProjectileProfessionMixin",
     "CraftingResultProfessionMixin",
     "FurnaceProfessionMixin",
-    "FishingProfessionMixin"
+    "FishingProfessionMixin",
+    "EnchantProfessionMixin",
+    "BrewingProfessionMixin",
+    "RepairProfessionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
