@@ -12,7 +12,8 @@
       "vn.svframe.mmoitemsfabric.MMOItemsEquipmentPassiveMod",
       "vn.svframe.mmoitemsfabric.MMOItemsInteractionRestrictionMod",
       "vn.svframe.mmoitemsfabric.MMOItemsRevisionMod",
-      "vn.svframe.mmoitemsfabric.MMOItemsCraftingStationMod"
+      "vn.svframe.mmoitemsfabric.MMOItemsCraftingStationMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsDurabilityIngressMod"
     ]
   },
   "mixins": [
