@@ -64,7 +64,6 @@ public final class MMOItemsFabricMod implements ModInitializer {
     private static final String NBT_ID = "mmoitems_id";
     private static final String NBT_UPGRADE = "mmoitems_upgrade";
     private static final Map<String, RegisteredItem> ITEMS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Boolean> SNEAK = new ConcurrentHashMap<>();
     private static volatile AbilityRuntime abilities = new AbilityRuntime();
     private static volatile MinecraftServer server;
     private static long ticks;
@@ -76,7 +75,7 @@ public final class MMOItemsFabricMod implements ModInitializer {
             server = value;
             LOG.info("MMOItems Fabric online; " + definitionSummary());
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(value -> { server = null; SNEAK.clear(); });
+        ServerLifecycleEvents.SERVER_STOPPING.register(value -> server = null);
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
                 trigger(serverPlayer, hand, serverPlayer.isSneaking() ? AbilityDefinition.Trigger.SHIFT_RIGHT_CLICK : AbilityDefinition.Trigger.RIGHT_CLICK, null);
@@ -107,12 +106,9 @@ public final class MMOItemsFabricMod implements ModInitializer {
         });
         ServerTickEvents.END_SERVER_TICK.register(value -> {
             ticks++;
+            if (ticks % 20 != 0) return;
             for (ServerPlayerEntity player : value.getPlayerManager().getPlayerList()) {
-                boolean current = player.isSneaking();
-                boolean before = SNEAK.getOrDefault(player.getUuid(), false);
-                if (current && !before) triggerEquipped(player, AbilityDefinition.Trigger.SNEAK, null, Map.of());
-                SNEAK.put(player.getUuid(), current);
-                if (ticks % 20 == 0) triggerEquipped(player, AbilityDefinition.Trigger.TIMER, null, Map.of("tick", ticks));
+                triggerEquipped(player, AbilityDefinition.Trigger.TIMER, null, Map.of("tick", ticks));
             }
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -139,7 +135,9 @@ public final class MMOItemsFabricMod implements ModInitializer {
         int abilityCount = ITEMS.values().stream().mapToInt(item -> item.abilities.size()).sum();
         return "items=" + ITEMS.size() + ",abilities=" + abilityCount;
     }
+
     public static boolean hasItem(String type, String id) { return ITEMS.containsKey(key(type, id)); }
+
     public static ItemStack createStack(String type, String id, int amount) {
         RegisteredItem item = ITEMS.get(key(type, id));
         if (item == null) return ItemStack.EMPTY;
@@ -156,6 +154,7 @@ public final class MMOItemsFabricMod implements ModInitializer {
         });
         return stack;
     }
+
     public static EquipmentStats equipmentStats(ServerPlayerEntity player) {
         EquipmentStats out = new EquipmentStats();
         addStats(out, player.getMainHandStack()); addStats(out, player.getOffHandStack());
@@ -170,6 +169,34 @@ public final class MMOItemsFabricMod implements ModInitializer {
             default -> player.getMainHandStack();
         };
         return fireItemStackTrigger(player, stack, triggerName, Map.of("packet-trigger", true));
+    }
+
+    /**
+     * Fires item abilities on all equipped MMOItems without forwarding the trigger to
+     * MythicLib passive bindings. Packet-level passive triggers are already emitted by
+     * MythicLib's own network mixin, so this path prevents duplicate passive casts.
+     */
+    public static int fireEquippedItemPacketTrigger(ServerPlayerEntity player, String triggerName) {
+        if (player == null || triggerName == null || triggerName.isBlank()) return 0;
+        final AbilityDefinition.Trigger trigger;
+        try {
+            trigger = AbilityDefinition.Trigger.valueOf(triggerName.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return 0;
+        }
+        Set<String> seen = ConcurrentHashMap.newKeySet();
+        List<ItemStack> stacks = new ArrayList<>();
+        stacks.add(player.getMainHandStack());
+        stacks.add(player.getOffHandStack());
+        player.getArmorItems().forEach(stacks::add);
+        int fired = 0;
+        for (ItemStack stack : stacks) {
+            RegisteredItem registered = item(stack);
+            if (registered == null || !seen.add(registered.type + ':' + registered.definition.id())) continue;
+            triggerStack(player, stack, trigger, null, Map.of("packet-trigger", true));
+            fired++;
+        }
+        return fired;
     }
 
     public static boolean fireItemStackTrigger(ServerPlayerEntity player, ItemStack stack, String triggerName, Map<String, ?> extra) {
@@ -254,6 +281,7 @@ public final class MMOItemsFabricMod implements ModInitializer {
         Map<String, Object> data = new LinkedHashMap<>(extra); if (target != null) data.put("target", target); data.put("item_type", item.type); data.put("item_id", item.definition.id());
         abilities.fire(item.abilities, new AbilityRuntime.Context(player.getUuid(), trigger, Map.copyOf(data)), System.currentTimeMillis());
     }
+
     private static RegisteredItem item(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
         NbtComponent component = stack.get(DataComponentTypes.CUSTOM_DATA); if (component == null) return null;
@@ -262,18 +290,23 @@ public final class MMOItemsFabricMod implements ModInitializer {
         if (type.isEmpty() || id.isEmpty()) return null;
         return ITEMS.get(key(type, id));
     }
+
     private static void addStats(EquipmentStats target, ItemStack stack) { RegisteredItem item = item(stack); if (item != null) target.add(ItemStatProfile.from(item.definition.stats())); }
+
     private static List<Path> yamlFiles(Path directory) throws IOException {
         if (!Files.isDirectory(directory)) return List.of();
         try (var stream = Files.walk(directory)) { return stream.filter(Files::isRegularFile).filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".yml")).sorted().toList(); }
     }
+
     private static String key(String type, String id) { return (type + ':' + id).trim().toUpperCase(Locale.ROOT); }
     private static String removeExtension(String name) { int dot = name.lastIndexOf('.'); return dot < 0 ? name : name.substring(0, dot); }
+
     private static Identifier identifier(String material) {
         String value = material == null ? "stone" : material.trim().toLowerCase(Locale.ROOT);
         if (value.startsWith("minecraft:")) return Identifier.of(value);
         value = value.replace(' ', '_'); return Identifier.of("minecraft:" + value);
     }
+
     private static String stripTags(String value) { return value.replaceAll("<[^>]+>", "").replaceAll("&[0-9A-FK-ORa-fk-or]", ""); }
     private record RegisteredItem(String type, LegacyItemDefinition definition, List<AbilityDefinition> abilities) {}
 }
