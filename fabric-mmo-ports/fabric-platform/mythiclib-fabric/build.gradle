@@ -19,8 +19,7 @@ def syncCanonicalMythicLibRuntime = tasks.register('syncCanonicalMythicLibRuntim
     }
 }
 
-// Native io.lumine.mythic.lib.* compatibility/API source bundle. It is stored as
-// deterministic text chunks for Git transport and compiled as ordinary Java.
+// Native io.lumine.mythic.lib.* compatibility/API base bundle.
 def legacyApiParts = fileTree(file('legacy-api-source-v2')) {
     include 'source.tar.gz.b64.part*'
 }
@@ -33,21 +32,43 @@ def unpackLegacyApiSources = tasks.register('unpackLegacyApiSources') {
     doLast {
         def parts = legacyApiParts.files.sort { a, b -> a.name <=> b.name }
         if (parts.size() != 7) throw new GradleException("Expected 7 MythicLib legacy API source parts, got ${parts.size()}")
-
         byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
         def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
         def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
         if (actualSha != legacyApiSha256) throw new GradleException("MythicLib legacy API source checksum mismatch: ${actualSha}")
-
         def outDir = generatedLegacyApi.get().asFile
         delete(outDir)
         outDir.mkdirs()
         def archive = new File(temporaryDir, 'legacy-api-source.tar.gz')
         archive.bytes = archiveBytes
-        copy {
-            from tarTree(resources.gzip(archive))
-            into outDir
-        }
+        copy { from tarTree(resources.gzip(archive)); into outDir }
+    }
+}
+
+// V3 adds the remaining native manager/module/script/variable/skill/event surface
+// without Bukkit/Paper imports. It only contains files not present in V2.
+def legacyApiV3Parts = fileTree(file('legacy-api-v3-delta')) {
+    include 'source.tar.gz.b64.part*'
+}
+def generatedLegacyApiV3 = layout.buildDirectory.dir('generated/legacy-api-v3-src')
+def legacyApiV3Sha256 = '2f1a7ca0fc23fc9f5f6cda011e880d30e0485b6b74ae954b3e1d155f5cb60ba4'
+
+def unpackLegacyApiV3Sources = tasks.register('unpackLegacyApiV3Sources') {
+    inputs.files(legacyApiV3Parts)
+    outputs.dir(generatedLegacyApiV3)
+    doLast {
+        def parts = legacyApiV3Parts.files.sort { a, b -> a.name <=> b.name }
+        if (parts.size() != 2) throw new GradleException("Expected 2 MythicLib V3 delta parts, got ${parts.size()}")
+        byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
+        if (actualSha != legacyApiV3Sha256) throw new GradleException("MythicLib V3 delta checksum mismatch: ${actualSha}")
+        def outDir = generatedLegacyApiV3.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        def archive = new File(temporaryDir, 'legacy-api-v3-delta.tar.gz')
+        archive.bytes = archiveBytes
+        copy { from tarTree(resources.gzip(archive)); into outDir }
     }
 }
 
@@ -57,6 +78,7 @@ sourceSets {
             srcDir rootProject.file('../mythiclib-runtime/src/main/java')
             srcDir rootProject.file('../common-runtime/src/main/java')
             srcDir generatedLegacyApi
+            srcDir generatedLegacyApiV3
         }
         resources {
             srcDir rootProject.file('../mythiclib-runtime/src/main/resources')
@@ -67,5 +89,6 @@ sourceSets {
 tasks.named('compileJava').configure {
     dependsOn(syncCanonicalMythicLibRuntime)
     dependsOn(unpackLegacyApiSources)
+    dependsOn(unpackLegacyApiV3Sources)
 }
 tasks.named('processResources').configure { dependsOn(syncCanonicalMythicLibRuntime) }
