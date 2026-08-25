@@ -28,7 +28,7 @@ import static net.minecraft.server.command.CommandManager.literal;
 /** Native Brigadier implementation of MythicLib 1.7.1 command surface. */
 final class MythicLibCommands {
     private static final String ADMIN = "mythiclib.admin";
-    private static final String HEALTH_SCALE = "mythiclib.commands.healthscale";
+    private static final String HEALTH_SCALE = "mythiclib.mythiclib.command.healthscale";
     private static final String TEMP_STAT = "mythiclib.tempstat";
 
     private MythicLibCommands() {}
@@ -169,14 +169,15 @@ final class MythicLibCommands {
         debug.then(literal("attributes")
                 .then(argument("player", EntityArgumentType.player())
                         .executes(ctx -> dumpAttributes(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player")))));
-        debug.then(literal("healthscale")
-                .then(literal("set")
-                        .then(argument("player", EntityArgumentType.player())
-                                .then(argument("scale", DoubleArgumentType.doubleArg(0.0001d))
-                                        .executes(ctx -> healthScaleSet(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player"), DoubleArgumentType.getDouble(ctx, "scale")))))
-                .then(literal("reset")
-                        .then(argument("player", EntityArgumentType.player())
-                                .executes(ctx -> healthScaleReset(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player"))))));
+        LiteralArgumentBuilder<ServerCommandSource> healthScaleDebug = literal("healthscale");
+        healthScaleDebug.then(literal("set")
+                .then(argument("player", EntityArgumentType.player())
+                        .then(argument("scale", DoubleArgumentType.doubleArg(0.0001d))
+                                .executes(ctx -> healthScaleSet(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player"), DoubleArgumentType.getDouble(ctx, "scale"))))));
+        healthScaleDebug.then(literal("reset")
+                .then(argument("player", EntityArgumentType.player())
+                        .executes(ctx -> healthScaleReset(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player")))));
+        debug.then(healthScaleDebug);
         debug.then(literal("info").executes(ctx -> {
             success(ctx.getSource(), "MythicLib Fabric | " + MythicLibFabricMod.definitionSummary() + " | " + FabricDamageBridge.summary());
             return 1;
@@ -314,7 +315,6 @@ final class MythicLibCommands {
             success(source, player.getGameProfile().getName() + " is not on cooldown for '" + key + "'.");
             return 1;
         }
-        // ReduceCommand.Flat passes its numeric argument straight to reduceFlat(), whose unit is seconds.
         info.reduceFlat(duration);
         success(source, "Cooldown '" + key + "' now has " + info.remaining() / 1000.0d + "s remaining.");
         return 1;
