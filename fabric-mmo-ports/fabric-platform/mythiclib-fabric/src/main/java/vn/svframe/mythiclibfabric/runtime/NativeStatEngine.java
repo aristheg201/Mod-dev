@@ -8,12 +8,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 /**
- * Native Fabric implementation of MythicLib 1.7.1 stat-instance semantics.
+ * Native Fabric implementation of MythicLib 1.7.1 stat-instance and stat-map semantics.
  *
  * <p>The calculation order intentionally matches the original runtime:
  * flat modifiers mutate the base, additive multipliers are accumulated, and
@@ -275,8 +277,7 @@ public final class NativeStatEngine {
         }
 
         private void notifyUpdate() {
-            NativeStatHandler handler = owner.handler(stat);
-            if (handler != null) handler.runUpdates(this);
+            owner.requestUpdate(entityId, stat, this);
         }
     }
 
@@ -284,6 +285,9 @@ public final class NativeStatEngine {
         private final NativeStatEngine owner;
         private final UUID entityId;
         private final Map<String, StatInstance> stats = new ConcurrentHashMap<>();
+        private final AtomicInteger updatesBuffered = new AtomicInteger();
+        private final Set<String> dirtyStats = ConcurrentHashMap.newKeySet();
+        private volatile boolean sessionOpen;
 
         private EntityStats(NativeStatEngine owner, UUID entityId) {
             this.owner = owner;
@@ -296,6 +300,24 @@ public final class NativeStatEngine {
 
         private Collection<StatInstance> instances() {
             return List.copyOf(stats.values());
+        }
+
+        private boolean bufferingUpdates() {
+            return updatesBuffered.get() > 0 || !sessionOpen;
+        }
+
+        private void markDirty(String stat) {
+            dirtyStats.add(normalize(stat));
+        }
+
+        private void releaseDirty() {
+            if (bufferingUpdates()) return;
+            List<String> pending = List.copyOf(dirtyStats);
+            dirtyStats.removeAll(pending);
+            for (String stat : pending) {
+                StatInstance instance = stats.get(stat);
+                if (instance != null) owner.runUpdate(instance);
+            }
         }
     }
 
@@ -323,7 +345,7 @@ public final class NativeStatEngine {
         Objects.requireNonNull(entityId, "entityId");
         String normalized = normalize(stat);
         if (normalized.isEmpty()) throw new IllegalArgumentException("stat must not be blank");
-        return entities.computeIfAbsent(entityId, id -> new EntityStats(this, id)).instance(normalized);
+        return entity(entityId).instance(normalized);
     }
 
     public Collection<StatInstance> instances(UUID entityId) {
@@ -390,22 +412,51 @@ public final class NativeStatEngine {
         return instance.removeIf(modifier -> modifier.key().equals(expected));
     }
 
+    public boolean isBufferingUpdates(UUID entityId) {
+        EntityStats entity = entities.get(entityId);
+        return entity != null && entity.bufferingUpdates();
+    }
+
+    public void bufferUpdates(UUID entityId, Runnable operation) {
+        Objects.requireNonNull(entityId, "entityId");
+        Objects.requireNonNull(operation, "operation");
+        EntityStats entity = entity(entityId);
+        entity.updatesBuffered.incrementAndGet();
+        try {
+            operation.run();
+        } finally {
+            if (entity.updatesBuffered.decrementAndGet() == 0 && entity.sessionOpen) entity.releaseDirty();
+        }
+    }
+
+    public void onSessionOpen(UUID entityId) {
+        Objects.requireNonNull(entityId, "entityId");
+        EntityStats entity = entity(entityId);
+        entity.sessionOpen = true;
+        for (NativeStatHandler handler : handlers.values()) {
+            StatInstance instance = handler.updateOnLogin()
+                    ? entity.instance(handler.stat())
+                    : entity.stats.get(normalize(handler.stat()));
+            if (instance != null) {
+                entity.markDirty(instance.stat());
+            }
+        }
+        entity.releaseDirty();
+    }
+
+    public void onSessionClose(UUID entityId) {
+        EntityStats entity = entities.get(entityId);
+        if (entity == null) return;
+        entity.sessionOpen = false;
+        entity.dirtyStats.clear();
+    }
+
     public void update(UUID entityId, String stat) {
         EntityStats entity = entities.get(entityId);
         if (entity == null) return;
         StatInstance instance = entity.stats.get(normalize(stat));
         if (instance == null) return;
-        NativeStatHandler handler = handler(stat);
-        if (handler != null) handler.runUpdates(instance);
-    }
-
-    public void updateOnLogin(UUID entityId) {
-        EntityStats entity = entities.get(entityId);
-        if (entity == null) return;
-        for (StatInstance instance : entity.instances()) {
-            NativeStatHandler handler = handler(instance.stat());
-            if (handler != null && handler.updateOnLogin()) handler.runUpdates(instance);
-        }
+        requestUpdate(entityId, stat, instance);
     }
 
     public int tick(long currentTick) {
@@ -416,8 +467,9 @@ public final class NativeStatEngine {
             for (StatInstance instance : entity.instances()) removed += instance.expire(currentTick);
             entity.stats.entrySet().removeIf(entry -> entry.getValue().isEmpty()
                     && entry.getValue().base() == 0.0d
-                    && entry.getValue().defaultBase() == 0.0d);
-            if (entity.stats.isEmpty()) emptyEntities.add(entityEntry.getKey());
+                    && entry.getValue().defaultBase() == 0.0d
+                    && handler(entry.getKey()) == null);
+            if (entity.stats.isEmpty() && !entity.sessionOpen) emptyEntities.add(entityEntry.getKey());
         }
         for (UUID entityId : emptyEntities) entities.remove(entityId);
         return removed;
@@ -433,6 +485,25 @@ public final class NativeStatEngine {
 
     public int trackedEntities() {
         return entities.size();
+    }
+
+    private EntityStats entity(UUID entityId) {
+        return entities.computeIfAbsent(entityId, id -> new EntityStats(this, id));
+    }
+
+    private void requestUpdate(UUID entityId, String stat, StatInstance instance) {
+        EntityStats entity = entities.get(entityId);
+        if (entity == null) return;
+        if (entity.bufferingUpdates()) {
+            entity.markDirty(stat);
+            return;
+        }
+        runUpdate(instance);
+    }
+
+    private void runUpdate(StatInstance instance) {
+        NativeStatHandler handler = handler(instance.stat());
+        if (handler != null) handler.runUpdates(instance);
     }
 
     private static String normalize(String stat) {
