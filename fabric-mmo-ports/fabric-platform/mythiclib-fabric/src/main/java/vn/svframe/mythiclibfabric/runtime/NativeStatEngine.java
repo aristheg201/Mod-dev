@@ -27,7 +27,7 @@ public final class NativeStatEngine {
     }
 
     public enum EquipmentSlot {
-        ARMOR(false, false),
+        ARMOR(true, false),
         HEAD(true, false),
         CHEST(true, false),
         LEGS(true, false),
