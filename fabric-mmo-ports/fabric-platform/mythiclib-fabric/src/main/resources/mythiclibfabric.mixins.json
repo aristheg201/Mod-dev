@@ -9,7 +9,8 @@
     "PersistentProjectileTriggerMixin",
     "CrossbowTriggerMixin",
     "BlockItemPlaceTriggerMixin",
-    "ServerPlayerTeleportTriggerMixin"
+    "ServerPlayerTeleportTriggerMixin",
+    "WorkbenchScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
