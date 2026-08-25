@@ -134,7 +134,10 @@ jobs:
 
           STAT_OUT="$(mktemp -d)"
           javac --release 21 -d "$STAT_OUT" \
-            $(find fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime -maxdepth 1 -name 'Native*.java' -print) \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeTemporaryStatModifier.java \
             ../../fabric-mmo-ports/tests/NativeStatEngineSmoke.java
           java -cp "$STAT_OUT" NativeStatEngineSmoke | tee mythiclib-native-stat-smoke.log
           grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' mythiclib-native-stat-smoke.log
