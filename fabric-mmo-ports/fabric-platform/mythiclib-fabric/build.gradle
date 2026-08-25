@@ -19,11 +19,45 @@ def syncCanonicalMythicLibRuntime = tasks.register('syncCanonicalMythicLibRuntim
     }
 }
 
+// Full legacy io.lumine.mythic.lib.* compatibility/API batch. The source bundle
+// is split only to keep GitHub transport deterministic; javac sees normal .java
+// files generated from the verified archive before compilation.
+def legacyApiParts = fileTree(file('legacy-api-source')) {
+    include 'source.tar.gz.b64.part*'
+}
+def generatedLegacyApi = layout.buildDirectory.dir('generated/legacy-api-src')
+def legacyApiSha256 = 'c7f555783e858d1eaa7d742730019fa6677ce525f4b18fa88a52a6279dd5de04'
+
+def unpackLegacyApiSources = tasks.register('unpackLegacyApiSources') {
+    inputs.files(legacyApiParts)
+    outputs.dir(generatedLegacyApi)
+    doLast {
+        def parts = legacyApiParts.files.sort { a, b -> a.name <=> b.name }
+        if (parts.size() != 4) throw new GradleException("Expected 4 MythicLib legacy API source parts, got ${parts.size()}")
+
+        byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
+        if (actualSha != legacyApiSha256) throw new GradleException("MythicLib legacy API source checksum mismatch: ${actualSha}")
+
+        def outDir = generatedLegacyApi.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        def archive = new File(temporaryDir, 'legacy-api-source.tar.gz')
+        archive.bytes = archiveBytes
+        copy {
+            from tarTree(resources.gzip(archive))
+            into outDir
+        }
+    }
+}
+
 sourceSets {
     main {
         java {
             srcDir rootProject.file('../mythiclib-runtime/src/main/java')
             srcDir rootProject.file('../common-runtime/src/main/java')
+            srcDir generatedLegacyApi
         }
         resources {
             srcDir rootProject.file('../mythiclib-runtime/src/main/resources')
@@ -31,5 +65,8 @@ sourceSets {
     }
 }
 
-tasks.named('compileJava').configure { dependsOn(syncCanonicalMythicLibRuntime) }
+tasks.named('compileJava').configure {
+    dependsOn(syncCanonicalMythicLibRuntime)
+    dependsOn(unpackLegacyApiSources)
+}
 tasks.named('processResources').configure { dependsOn(syncCanonicalMythicLibRuntime) }
