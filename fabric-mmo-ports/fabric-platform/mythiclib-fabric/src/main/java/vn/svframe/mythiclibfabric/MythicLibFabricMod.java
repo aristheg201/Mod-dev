@@ -41,74 +41,94 @@ public final class MythicLibFabricMod implements ModInitializer {
     private static final Map<String, String> SCRIPT_IDS = new ConcurrentHashMap<>();
     private static final ConcurrentLinkedQueue<Scheduled> SCHEDULED = new ConcurrentLinkedQueue<>();
     private static volatile ScriptEngine scripts = new ScriptEngine(new FabricScriptPlatform());
+    private static volatile MythicLibGeneralSettings settings;
+    private static volatile int customTriggers;
     private static volatile MinecraftServer server;
     private static volatile long tick;
 
     @Override
     public void onInitialize() {
+        try {
+            MythicLibDefaultFiles.ensure();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not install MythicLib default configuration", exception);
+        }
         reload();
+        FabricDamageBridge.reload();
+        MythicLibIndicatorManager.reload();
         ServerLifecycleEvents.SERVER_STARTED.register(value -> {
             server = value;
             LOG.info("MythicLib Fabric online; " + definitionSummary());
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(value -> {
+            MythicLibCastingDelayManager.clear();
+            MythicLibIndicatorManager.clear();
             server = null;
             SCHEDULED.clear();
         });
         ServerTickEvents.END_SERVER_TICK.register(value -> {
             tick++;
             runScheduled();
+            MythicLibCastingDelayManager.tick(value, tick);
+            MythicLibIndicatorManager.tick(tick);
         });
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(literal("mythiclibfabric")
-                    .requires(source -> source.hasPermissionLevel(2))
-                    .then(literal("status").executes(ctx -> {
-                        ctx.getSource().sendFeedback(() -> Text.literal("MythicLib Fabric | " + definitionSummary() + " | " + FabricDamageBridge.summary()), false);
-                        return 1;
-                    }))
-                    .then(literal("reload").executes(ctx -> {
-                        boolean ok = reload() & FabricDamageBridge.reload();
-                        if (!ok) {
-                            ctx.getSource().sendError(Text.literal("MythicLib reload failed. Check server log."));
-                            return 0;
-                        }
-                        ctx.getSource().sendFeedback(() -> Text.literal("MythicLib reloaded | " + definitionSummary() + " | " + FabricDamageBridge.summary()), true);
-                        return 1;
-                    }))
-                    .then(literal("cast")
-                            .then(argument("skill", StringArgumentType.word())
-                                    .executes(ctx -> {
-                                        ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-                                        boolean ok = castSkill(StringArgumentType.getString(ctx, "skill"), player.getUuid(), player.getUuid(), Map.of());
-                                        if (!ok) ctx.getSource().sendError(Text.literal("Skill did not cast."));
-                                        return ok ? 1 : 0;
-                                    })
-                                    .then(argument("target", EntityArgumentType.player()).executes(ctx -> {
-                                        ServerPlayerEntity caster = ctx.getSource().getPlayerOrThrow();
-                                        ServerPlayerEntity target = EntityArgumentType.getPlayer(ctx, "target");
-                                        boolean ok = castSkill(StringArgumentType.getString(ctx, "skill"), caster.getUuid(), target.getUuid(), Map.of());
-                                        if (!ok) ctx.getSource().sendError(Text.literal("Skill did not cast."));
-                                        return ok ? 1 : 0;
-                                    })))));
-        });
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> MythicLibCommands.register(dispatcher));
     }
 
     public static MinecraftServer server() { return server; }
     public static long currentTick() { return tick; }
-    public static String definitionSummary() { return "skills=" + SKILLS.size() + ",scripts=" + SCRIPT_IDS.size(); }
+    public static String definitionSummary() { return "skills=" + SKILLS.size() + ",scripts=" + SCRIPT_IDS.size() + ",customTriggers=" + customTriggers; }
+    public static MythicLibGeneralSettings settings() { return settings; }
+    public static Path configRoot() { return ROOT; }
     public static boolean hasSkill(String id) { return SKILLS.containsKey(norm(id)) || SCRIPT_IDS.containsKey(norm(id)); }
     public static Map<String, LegacySkillDefinition> skillDefinitions() { return Map.copyOf(SKILLS); }
 
     public static boolean castScript(String id, UUID caster, UUID target, Map<String, ?> parameters) {
-        String actual = SCRIPT_IDS.get(norm(id));
-        if (actual == null) return false;
-        return scripts.cast(actual, context(caster, target, parameters));
+        return castScript(id, context(caster, target, parameters));
+    }
+
+    /** Casts a script while preserving an existing SkillMetadata-equivalent context. */
+    public static boolean castScript(String id, ScriptContext context) {
+        if (context == null) return false;
+        String actual = SCRIPT_IDS.get(normScriptId(id));
+        return actual != null && scripts.cast(actual, context);
+    }
+
+
+    public static boolean castInline(Object input, ScriptContext context) {
+        if (input == null || context == null) return false;
+        if (input instanceof String named) return castScript(named, context);
+        if (input instanceof List<?> list) {
+            List<String> mechanics = new ArrayList<>();
+            for (Object value : list) mechanics.add(String.valueOf(value));
+            return scripts.cast(new ScriptEngine.Definition("inline", false, List.of(), mechanics), context);
+        }
+        if (input instanceof Map<?, ?> raw) {
+            @SuppressWarnings("unchecked") Map<String, Object> section = (Map<String, Object>) raw;
+            return scripts.cast(new ScriptEngine.Definition("inline", false, strings(section.get("conditions")), strings(section.get("mechanics"))), context);
+        }
+        return false;
     }
 
     public static boolean castSkill(String id, UUID caster, UUID target, Map<String, ?> parameters) {
+        // MythicLib 1.7.1 cancels every PlayerCastSkillEvent while a delayed
+        // cast is active, including otherwise-instant skills.
+        if (caster != null && MythicLibCastingDelayManager.isCasting(caster)) return false;
         LegacySkillDefinition definition = SKILLS.get(norm(id));
         if (definition == null) return castScript(id, caster, target, parameters);
-        ScriptContext context = context(caster, target, parameters);
+        Map<String, Object> resolvedParameters = definition.resolveParameters(parameters);
+        ScriptContext context = context(caster, target, resolvedParameters);
+        double delaySeconds = number(resolvedParameters.get("delay"), 0.0d);
+        if (delaySeconds > 0.0d) {
+            int delayTicks = Math.max(1, (int) (delaySeconds * 20.0d));
+            return MythicLibCastingDelayManager.begin(caster, delayTicks, context,
+                    () -> castResolved(definition, caster, target, resolvedParameters, context));
+        }
+        return castResolved(definition, caster, target, resolvedParameters, context);
+    }
+
+    private static boolean castResolved(LegacySkillDefinition definition, UUID caster, UUID target,
+                                        Map<String, ?> parameters, ScriptContext context) {
         String source = definition.source() == null ? "" : definition.source().trim();
         if (source.isEmpty()) {
             String script = SCRIPT_IDS.get(norm(definition.id()));
@@ -119,7 +139,7 @@ public final class MythicLibFabricMod implements ModInitializer {
         String sourceId = colon < 0 ? source : source.substring(colon + 1).trim();
         return switch (provider) {
             case "mythicmobs", "mythic" -> castMythicMobs(sourceId, caster, target, parameters);
-            case "script", "mythiclib" -> castScript(sourceId, caster, target, parameters);
+            case "script", "mythiclib" -> castScript(sourceId, context);
             case "default" -> castDefault(sourceId, definition.id(), context);
             default -> false;
         };
@@ -160,11 +180,29 @@ public final class MythicLibFabricMod implements ModInitializer {
         if (parameters != null) {
             for (Map.Entry<String, ?> entry : parameters.entrySet()) {
                 Object value = entry.getValue();
-                context.objects().put(entry.getKey(), value);
-                if (value instanceof Number number) context.numbers().put(entry.getKey(), number.doubleValue());
+                String key = entry.getKey();
+                context.objects().put(key, value);
+                context.objects().put("parameter." + key, value);
+                context.objects().put("modifier." + key, value);
+                if (value instanceof Number number) {
+                    double numeric = number.doubleValue();
+                    context.numbers().put(key, numeric);
+                    context.numbers().put("parameter." + key, numeric);
+                    context.numbers().put("modifier." + key, numeric);
+                }
             }
         }
         return context;
+    }
+
+    public static boolean reloadAll() {
+        boolean ok = reload();
+        ok &= MythicLibStatMod.reload();
+        ok &= FabricDamageBridge.reload();
+        ok &= MythicLibIndicatorManager.reload();
+        MinecraftServer current = server;
+        if (current != null) MythicLibHealthScale.onReload(current.getPlayerManager().getPlayerList());
+        return ok;
     }
 
     private static boolean reload() {
@@ -172,11 +210,18 @@ public final class MythicLibFabricMod implements ModInitializer {
             Map<String, LegacySkillDefinition> nextSkills = new LinkedHashMap<>();
             Map<String, String> nextScriptIds = new LinkedHashMap<>();
             ScriptEngine nextScripts = new ScriptEngine(new FabricScriptPlatform());
+            MythicLibGeneralSettings nextSettings = MythicLibGeneralSettings.load(ROOT.resolve("config.yml"));
+            int nextCustomTriggers = MythicLibTriggerRegistry.reload(ROOT.resolve("triggers.yml"));
             loadSkills(ROOT.resolve("skill"), nextSkills);
             loadScripts(ROOT.resolve("script"), nextScripts, nextScriptIds);
             SKILLS.clear(); SKILLS.putAll(nextSkills);
             SCRIPT_IDS.clear(); SCRIPT_IDS.putAll(nextScriptIds);
             scripts = nextScripts;
+            settings = nextSettings;
+            customTriggers = nextCustomTriggers;
+            MinecraftServer currentServer = server;
+            if (currentServer != null) MythicLibHealthScale.onReload(currentServer.getPlayerManager().getPlayerList());
+            MythicLibIndicatorManager.reload();
             return true;
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load MythicLib legacy configuration", e);
@@ -230,7 +275,15 @@ public final class MythicLibFabricMod implements ModInitializer {
         if (value instanceof Boolean flag) return flag;
         return value == null ? fallback : Boolean.parseBoolean(String.valueOf(value));
     }
+    private static double number(Object value, double fallback) {
+        try { return value instanceof Number n ? n.doubleValue() : value == null ? fallback : Double.parseDouble(String.valueOf(value)); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
     private static String norm(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT); }
+    private static String normScriptId(String value) {
+        String normalized = norm(value);
+        return normalized.startsWith("mythiclib:") ? normalized.substring("mythiclib:".length()) : normalized;
+    }
 
     private static void runScheduled() {
         int size = SCHEDULED.size();
