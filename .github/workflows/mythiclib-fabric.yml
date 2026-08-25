@@ -1,4 +1,4 @@
-name: MythicLib Fabric 1.21.1
+name: SVFrameLib Fabric 1.21.1
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
       - 'fabric-mmo-ports/fabric-platform/mythiclib-fabric/**'
       - 'fabric-mmo-ports/mythiclib-runtime/**'
       - 'fabric-mmo-ports/common-runtime/**'
+      - 'fabric-mmo-ports/svframelib-final/**'
       - '.github/workflows/mythiclib-fabric.yml'
   pull_request:
     branches:
@@ -17,6 +18,7 @@ on:
       - 'fabric-mmo-ports/fabric-platform/mythiclib-fabric/**'
       - 'fabric-mmo-ports/mythiclib-runtime/**'
       - 'fabric-mmo-ports/common-runtime/**'
+      - 'fabric-mmo-ports/svframelib-final/**'
       - '.github/workflows/mythiclib-fabric.yml'
 
 permissions:
@@ -86,9 +88,12 @@ jobs:
             cp -a fabric-mmo-ports/common-runtime/. build/mmo-workspace/common-runtime/
           fi
 
+          echo '393b24013c16a96a687fe202502955559866ce86dd859e1b00f5662e60ae3f5b  fabric-mmo-ports/svframelib-final/source.tar.gz' | sha256sum -c -
+          tar -xzf fabric-mmo-ports/svframelib-final/source.tar.gz -C build/mmo-workspace
+
           sed -i 's/${version}/1.7.1-fabric/g' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
 
-      - name: MythicLib pure-Java parity gates
+      - name: SVFrameLib pure-Java parity gates
         shell: bash
         run: |
           set -euo pipefail
@@ -103,23 +108,25 @@ jobs:
             fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatModifier.java \
             fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeTemporaryStatModifier.java \
             ../../fabric-mmo-ports/tests/NativeStatEngineSmoke.java
-          java -cp "$STAT_OUT" NativeStatEngineSmoke | tee mythiclib-native-stat-smoke.log
-          grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' mythiclib-native-stat-smoke.log
+          java -cp "$STAT_OUT" NativeStatEngineSmoke | tee svframelib-native-stat-smoke.log
+          grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' svframelib-native-stat-smoke.log
 
-      - name: Loom compile and remap MythicLib
+      - name: Loom compile and remap SVFrameLib
         shell: bash
         run: |
           set -euo pipefail
           cd build/mmo-workspace/fabric-platform
           gradle --no-daemon --stacktrace :mythiclib-fabric:clean :mythiclib-fabric:remapJar
 
-      - name: Verify MythicLib Fabric JAR
+      - name: Verify SVFrameLib Fabric JAR
         shell: bash
         run: |
           set -euo pipefail
           JAR=build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
           test -s "$JAR"
           unzip -p "$JAR" fabric.mod.json | grep -q '"environment": "server"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"id": "svframelib"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"name": "SVFrameLib"'
           unzip -p "$JAR" fabric.mod.json | grep -q '"version": "1.7.1-fabric"'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibFabricMod.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCombatRuntime.class'
@@ -127,12 +134,21 @@ jobs:
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCraftingBootstrap.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibVanillaCraftingMod.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibWorkbenchCommands.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/FabricScriptPlatform.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/ScriptProjectileCallbackRegistry.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/mixin/ShulkerBulletScriptMixin.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibCraftingRuntime.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibStationMappings.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/script/ScriptEngine.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/script/ScriptTargeting.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/MMOLineConfig.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/player/MMOPlayerData.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/item/NBTItem.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/PlayerDataMap.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/modifier/ModifierMap.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/PlayerMetadata.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/damage/AttackMetadata.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/cooldown/CooldownMap.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/rpg/provided/PlayerResource.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/StatManager.class'
@@ -144,9 +160,9 @@ jobs:
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/event/AttackUnregisteredEvent.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/event/mitigation/PlayerBlockEvent.class'
           unzip -l "$JAR" | grep -q 'mythiclib-1.7.1-defaults.zip.part1'
-          sha256sum "$JAR" | tee build/MythicLib-Fabric-SHA256.txt
+          sha256sum "$JAR" | tee build/SVFrameLib-SHA256.txt
 
-      - name: Dedicated MythicLib Fabric server boot gate
+      - name: Dedicated SVFrameLib Fabric server boot gate
         shell: bash
         run: |
           set -euo pipefail
@@ -155,23 +171,23 @@ jobs:
           printf 'eula=true\n' > run/eula.txt
           printf 'eula=true\n' > mythiclib-fabric/run/eula.txt
           set +e
-          timeout 90s gradle --no-daemon --stacktrace :mythiclib-fabric:runServer > ../../mythiclib-fabric-boot.log 2>&1
+          timeout 90s gradle --no-daemon --stacktrace :mythiclib-fabric:runServer > ../../svframelib-fabric-boot.log 2>&1
           status=$?
           set -e
-          cat ../../mythiclib-fabric-boot.log
+          cat ../../svframelib-fabric-boot.log
           if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then exit "$status"; fi
-          grep -q 'MythicLib Fabric online' ../../mythiclib-fabric-boot.log
-          ! grep -q 'Mixin apply failed' ../../mythiclib-fabric-boot.log
-          ! grep -q 'Could not execute entrypoint stage' ../../mythiclib-fabric-boot.log
-          ! grep -q 'Exception in server tick loop' ../../mythiclib-fabric-boot.log
+          grep -q 'SVFrameLib online' ../../svframelib-fabric-boot.log
+          ! grep -q 'Mixin apply failed' ../../svframelib-fabric-boot.log
+          ! grep -q 'Could not execute entrypoint stage' ../../svframelib-fabric-boot.log
+          ! grep -q 'Exception in server tick loop' ../../svframelib-fabric-boot.log
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: MythicLib-Fabric-1.21.1
+          name: SVFrameLib-Fabric-1.21.1
           path: |
             build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
-            build/MythicLib-Fabric-SHA256.txt
-            build/mythiclib-fabric-boot.log
+            build/SVFrameLib-SHA256.txt
+            build/svframelib-fabric-boot.log
           if-no-files-found: error
           retention-days: 14
