@@ -1,4 +1,5 @@
-base { archivesName = 'MythicLib-Fabric' }
+base { archivesName = 'SVFrameLib' }
+version = '1.7.1-fabric'
 
 // Canonical native Fabric module. Shared platform-neutral MythicLib runtime is
 // compiled into the same artifact. Canonical runtime sources in the repository
@@ -383,19 +384,24 @@ def unpackLegacyApiV4Sources = tasks.register('unpackLegacyApiV4Sources') {
     }
 }
 
-def overlayLegacyApiV4Sources = tasks.register('overlayLegacyApiV4Sources') {
+def generatedLegacyApiMerged = layout.buildDirectory.dir('generated/legacy-api-merged-src')
+
+def mergeLegacyApiSources = tasks.register('mergeLegacyApiSources') {
     dependsOn(unpackLegacyApiSources)
     dependsOn(unpackLegacyApiV3Sources)
     dependsOn(unpackLegacyApiV4Sources)
-    outputs.upToDateWhen { false }
+    outputs.dir(generatedLegacyApiMerged)
     doLast {
-        def v2Dir = generatedLegacyApi.get().asFile
-        def v3Dir = generatedLegacyApiV3.get().asFile
-        def v4Dir = generatedLegacyApiV4.get().asFile
-        fileTree(v4Dir) { include '**/*.java' }.each { replacement ->
-            def relative = v4Dir.toPath().relativize(replacement.toPath()).toString()
-            delete(new File(v2Dir, relative))
-            delete(new File(v3Dir, relative))
+        def outDir = generatedLegacyApiMerged.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        [generatedLegacyApi.get().asFile, generatedLegacyApiV3.get().asFile, generatedLegacyApiV4.get().asFile].each { root ->
+            fileTree(root) { include '**/*.java' }.files.sort { a, b -> a.path <=> b.path }.each { source ->
+                def relative = root.toPath().relativize(source.toPath()).toString()
+                def target = new File(outDir, relative)
+                target.parentFile.mkdirs()
+                target.bytes = source.bytes
+            }
         }
     }
 }
@@ -405,9 +411,7 @@ sourceSets {
         java {
             srcDir rootProject.file('../mythiclib-runtime/src/main/java')
             srcDir rootProject.file('../common-runtime/src/main/java')
-            srcDir generatedLegacyApi
-            srcDir generatedLegacyApiV3
-            srcDir generatedLegacyApiV4
+            srcDir generatedLegacyApiMerged
         }
         resources {
             srcDir rootProject.file('../mythiclib-runtime/src/main/resources')
@@ -417,6 +421,11 @@ sourceSets {
 
 tasks.named('compileJava').configure {
     dependsOn(syncCanonicalMythicLibRuntime)
-    dependsOn(overlayLegacyApiV4Sources)
+    dependsOn(mergeLegacyApiSources)
 }
 tasks.named('processResources').configure { dependsOn(syncCanonicalMythicLibRuntime) }
+
+
+dependencies {
+    compileOnly 'net.luckperms:api:5.4'
+}
