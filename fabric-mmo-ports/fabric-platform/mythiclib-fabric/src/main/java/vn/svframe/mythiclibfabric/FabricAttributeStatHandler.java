@@ -22,7 +22,15 @@ public class FabricAttributeStatHandler extends NativeStatHandler {
     private final double playerDefaultBase;
 
     public FabricAttributeStatHandler(String stat, RegistryEntry<EntityAttribute> attribute, double playerDefaultBase) {
-        this(stat, attribute, playerDefaultBase, 0.0d, null, null, new DecimalFormat("0.##"));
+        this(stat, attribute, playerDefaultBase, 0.0d, null, null, new DecimalFormat("0.#"));
+    }
+
+    public FabricAttributeStatHandler(String stat,
+                                      RegistryEntry<EntityAttribute> attribute,
+                                      double playerDefaultBase,
+                                      MythicLibStatSettings.Entry settings) {
+        this(stat, attribute, playerDefaultBase,
+                settings.baseValue(), settings.minValue(), settings.maxValue(), settings.decimalFormat());
     }
 
     public FabricAttributeStatHandler(String stat,
