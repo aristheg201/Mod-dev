@@ -67,7 +67,9 @@ jobs:
           tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
 
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/src
+          rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src build/mmo-workspace/fabric-platform/mythiclib-fabric/src
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source
           cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
 
           cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
@@ -119,6 +121,11 @@ jobs:
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibCraftingRuntime.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibStationMappings.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/MMOLineConfig.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/player/MMOPlayerData.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/item/NBTItem.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/cooldown/CooldownMap.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/rpg/provided/PlayerResource.class'
           unzip -l "$JAR" | grep -q 'mythiclib-1.7.1-defaults.zip.part1'
           sha256sum "$JAR" | tee build/MythicLib-Fabric-SHA256.txt
 
