@@ -11,6 +11,7 @@
     "BlockItemPlaceTriggerMixin",
     "ServerPlayerTeleportTriggerMixin",
     "WorkbenchScreenMixin",
+    "VanillaCraftingScreenMixin",
     "DisplayEntityAccessor",
     "TextDisplayEntityAccessor"
   ],
