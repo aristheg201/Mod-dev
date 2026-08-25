@@ -1,5 +1,6 @@
 package vn.svframe.mythiclibfabric;
 
+import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -13,11 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /** Native Fabric lifecycle manager replacing MMOPlayerData's Bukkit player listener/static map. */
-public final class MythicLibPlayerDataMod {
+public final class MythicLibPlayerDataMod implements ModInitializer {
     private static final Map<UUID, NativePlayerData> PLAYER_DATA = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
 
-    private MythicLibPlayerDataMod() {}
+    @Override public void onInitialize() { initialize(); }
 
     public static synchronized void initialize() {
         if (initialized) return;
