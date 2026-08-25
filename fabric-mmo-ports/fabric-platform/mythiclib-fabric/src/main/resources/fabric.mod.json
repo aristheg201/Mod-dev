@@ -10,7 +10,8 @@
       "vn.svframe.mythiclibfabric.MythicLibStatMod",
       "vn.svframe.mythiclibfabric.MythicLibCombatMod",
       "vn.svframe.mythiclibfabric.MythicLibPassiveMod",
-      "vn.svframe.mythiclibfabric.MythicLibArmorPassiveMod"
+      "vn.svframe.mythiclibfabric.MythicLibArmorPassiveMod",
+      "vn.svframe.mythiclibfabric.MythicLibPlayerDataMod"
     ]
   },
   "mixins": [
