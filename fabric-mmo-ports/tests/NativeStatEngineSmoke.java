@@ -66,9 +66,13 @@ public final class NativeStatEngineSmoke {
                 NativeStatEngine.ModifierSource.ARMOR, NativeStatEngine.EquipmentSlot.ARMOR)) {
             throw new AssertionError("generic armor slot must be treated as a body slot");
         }
-        if (NativeStatEngine.EquipmentSlot.OFF_HAND.isCompatible(
+        if (!NativeStatEngine.EquipmentSlot.OFF_HAND.isCompatible(
                 NativeStatEngine.ModifierSource.MAINHAND_ITEM, NativeStatEngine.EquipmentSlot.MAIN_HAND)) {
-            throw new AssertionError("main-hand source leaked into off-hand calculation");
+            throw new AssertionError("main-hand item source must depend on modifier slot, matching 1.7.1");
+        }
+        if (NativeStatEngine.EquipmentSlot.OFF_HAND.isCompatible(
+                NativeStatEngine.ModifierSource.MELEE_WEAPON, NativeStatEngine.EquipmentSlot.MAIN_HAND)) {
+            throw new AssertionError("melee weapon source must depend on the current action hand");
         }
 
         AtomicInteger updates = new AtomicInteger();
