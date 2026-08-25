@@ -12,6 +12,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import vn.svframe.mythiclibfabric.runtime.NativeStatEngine;
 import vn.svframe.mythiclibfabric.runtime.NativeStatHandler;
+import vn.svframe.mythiclibfabric.runtime.NativeTemporaryStatModifier;
 import vn.svframe.mythiclibfabric.runtime.StatProviderRegistry;
 
 import java.nio.file.Path;
@@ -33,13 +34,20 @@ public final class MythicLibStatMod implements ModInitializer {
     public void onInitialize() {
         if (!reload()) throw new IllegalStateException("Could not load MythicLib stats.yml");
         registerProvider();
-        ServerTickEvents.END_SERVER_TICK.register(server -> ENGINE.tick(MythicLibFabricMod.currentTick()));
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            long tick = MythicLibFabricMod.currentTick();
+            NativeTemporaryStatModifier.tick(tick);
+            ENGINE.tick(tick);
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ENGINE.onSessionOpen(handler.player.getUuid()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ENGINE.onSessionClose(handler.player.getUuid());
             ENGINE.clear(handler.player.getUuid());
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> ENGINE.clear());
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            NativeTemporaryStatModifier.cancelAll();
+            ENGINE.clear();
+        });
     }
 
     public static NativeStatEngine engine() {
