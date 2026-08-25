@@ -19,7 +19,7 @@ public final class NativePlayerData {
     private final UUID entityId;
     private final boolean lookup;
     private final CooldownMapRuntime cooldowns = new CooldownMapRuntime(System::currentTimeMillis);
-    private final MythicPlayerSessionRuntime sessions = new MythicPlayerSessionRuntime(false, System::currentTimeMillis, Set.of());
+    private final MythicPlayerSessionRuntime sessions;
     private final Map<String, Object> externalData = new ConcurrentHashMap<>();
     private volatile ServerPlayerEntity player;
     private volatile String lastPlayerName;
@@ -30,6 +30,7 @@ public final class NativePlayerData {
     public NativePlayerData(boolean lookup, UUID entityId) {
         this.lookup = lookup;
         this.entityId = Objects.requireNonNull(entityId, "entityId");
+        this.sessions = new MythicPlayerSessionRuntime(lookup, System::currentTimeMillis, Set.of());
         this.officialId = entityId;
         this.lastLogActivity = System.currentTimeMillis();
     }
@@ -69,7 +70,7 @@ public final class NativePlayerData {
     }
 
     public boolean timedOut() {
-        sessions.savedSessions().values().removeIf(ProfileSessionRuntime::isTimedOut);
+        sessions.flushTimedOutSessions();
         return !online() && sessions.savedSessions().isEmpty();
     }
 
