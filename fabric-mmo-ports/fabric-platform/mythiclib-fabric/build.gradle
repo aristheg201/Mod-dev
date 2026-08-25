@@ -70,6 +70,20 @@ def unpackLegacyApiV3Sources = tasks.register('unpackLegacyApiV3Sources') {
         def archive = new File(temporaryDir, 'legacy-api-v3-delta.tar.gz')
         archive.bytes = archiveBytes
         copy { from tarTree(resources.gzip(archive)); into outDir }
+
+        // Java 9+ implicitly imports java.lang.Module. The V3 compatibility
+        // bundle intentionally keeps the original MythicLib class name Module,
+        // so wildcard module imports make those manager stubs ambiguous on Java 21.
+        // Normalize only the generated manager sources; the verified archive bytes
+        // remain immutable and checksum-protected.
+        fileTree(outDir) { include 'io/lumine/mythic/lib/manager/*.java' }.each { source ->
+            def text = source.getText('UTF-8')
+            def wildcard = 'import io.lumine.mythic.lib.module.*;'
+            if (text.contains(wildcard)) {
+                source.setText(text.replace(wildcard,
+                        'import io.lumine.mythic.lib.module.MMOPlugin;import io.lumine.mythic.lib.module.Module;'), 'UTF-8')
+            }
+        }
     }
 }
 
