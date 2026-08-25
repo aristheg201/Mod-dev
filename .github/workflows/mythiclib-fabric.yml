@@ -71,12 +71,14 @@ jobs:
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source-v2
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v3-delta
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v3-fixed2
+          rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v4-parity
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src build/mmo-workspace/fabric-platform/mythiclib-fabric/src
           if [ -d fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source ]; then
             cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source
           fi
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source-v2 build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source-v2
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v3-fixed2 build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v3-fixed2
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v4-parity build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v4-parity
           cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
 
           cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
