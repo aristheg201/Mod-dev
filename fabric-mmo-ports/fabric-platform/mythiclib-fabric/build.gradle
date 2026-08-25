@@ -1,5 +1,7 @@
 base { archivesName = 'MythicLib-Fabric' }
 
-// MythicLib is fully materialized in this module. Do not generate or overlay
-// production Java sources at build time: the canonical source tree is the
-// single source of truth compiled by Loom.
+// Canonical Fabric adapter plus the shared MythicLib runtime and shared YAML parser
+// form one native Fabric module. These are source inputs, not generated overlays.
+sourceSets.main.java.srcDirs += '../../mythiclib-runtime/src/main/java'
+sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
+sourceSets.main.resources.srcDirs += '../../mythiclib-runtime/src/main/resources'
