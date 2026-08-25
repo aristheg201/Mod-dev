@@ -62,11 +62,12 @@ jobs:
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src build/mmo-workspace/fabric-platform/mythiclib-fabric/src
           cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
 
-          rm -rf build/mmo-workspace/mythiclib-runtime
-          cp -a fabric-mmo-ports/mythiclib-runtime build/mmo-workspace/mythiclib-runtime
+          # The bootstrap contains the complete platform-neutral runtime. Canonical
+          # repository sources are authoritative overlays for classes already ported;
+          # never delete the untouched runtime classes that have not moved yet.
+          cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
           if [ -d fabric-mmo-ports/common-runtime ]; then
-            rm -rf build/mmo-workspace/common-runtime
-            cp -a fabric-mmo-ports/common-runtime build/mmo-workspace/common-runtime
+            cp -a fabric-mmo-ports/common-runtime/. build/mmo-workspace/common-runtime/
           fi
 
           sed -i 's/${version}/0.8.0-dev/g' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
@@ -107,6 +108,7 @@ jobs:
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCombatRuntime.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibIndicatorManager.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
+          unzip -l "$JAR" | grep -q 'mythiclib-1.7.1-defaults.zip.part1'
           sha256sum "$JAR" | tee build/MythicLib-Fabric-SHA256.txt
 
       - uses: actions/upload-artifact@v4
