@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -52,8 +53,13 @@ public final class MythicLibCraftingRuntime {
         return RECIPES.getOrDefault(new Key(station, normalizeKey(customStationKey)), List.of());
     }
     public static Optional<Match> match(Station station, String customStationKey, SlotAccess slots) {
+        return match(station, customStationKey, slots, ignored -> true);
+    }
+    public static Optional<Match> match(Station station, String customStationKey, SlotAccess slots, Predicate<String> permissionCheck) {
         Objects.requireNonNull(slots, "slots");
+        Objects.requireNonNull(permissionCheck, "permissionCheck");
         for (Recipe recipe : recipes(station, customStationKey)) {
+            if (!recipe.checkPermissions(permissionCheck)) continue;
             Optional<ConsumptionPlan> plan = recipe.plan(slots);
             if (plan.isPresent()) return Optional.of(new Match(recipe, slots, plan.get()));
         }
@@ -110,6 +116,7 @@ public final class MythicLibCraftingRuntime {
         private final boolean requireEmptyUnspecifiedSlots;
         private final int[] relevantSlots;
         private final Function<SlotAccess, Optional<ConsumptionPlan>> customMatcher;
+        private final CopyOnWriteArrayList<String> requiredPermissions = new CopyOnWriteArrayList<>();
 
         public Recipe(String id, Station station, String customStationKey, Map<Integer, Input> inputs,
                       Predicate<SlotAccess> extraCondition, Supplier<ItemStack> result, int priority,
@@ -210,6 +217,10 @@ public final class MythicLibCraftingRuntime {
         public Station station() { return station; }
         public String customStationKey() { return customStationKey; }
         public int priority() { return priority; }
+        public List<String> requiredPermissions() { return List.copyOf(requiredPermissions); }
+        public Recipe addRequiredPermission(String permission) { if (permission != null && !permission.isBlank()) requiredPermissions.addIfAbsent(permission.trim()); return this; }
+        public Recipe clearRequiredPermissions() { requiredPermissions.clear(); return this; }
+        public boolean checkPermissions(Predicate<String> permissionCheck) { for (String permission : requiredPermissions) if (!permissionCheck.test(permission)) return false; return true; }
         public boolean matches(SlotAccess slots) { return plan(slots).isPresent(); }
         private Optional<ConsumptionPlan> plan(SlotAccess slots) {
             if (customMatcher != null) return customMatcher.apply(slots);
