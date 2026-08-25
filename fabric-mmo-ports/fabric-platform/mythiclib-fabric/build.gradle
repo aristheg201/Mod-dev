@@ -106,7 +106,7 @@ public final class SkillMetadataContextBridge {
 
         UUID caster = metadata.getCaster().getData().getUniqueId();
         var targetEntity = metadata.getTargetEntityOrNull();
-        UUID target = targetEntity == null ? caster : targetEntity.getUniqueId();
+        UUID target = targetEntity == null ? caster : targetEntity.getUuid();
         ScriptContext context = new ScriptContext(caster, target);
 
         if (metadata.getCast() != null) {
@@ -126,6 +126,127 @@ public final class SkillMetadataContextBridge {
         context.objects().put("skill_metadata", metadata);
         return context;
     }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/script/MechanicQueue.java').setText('''package io.lumine.mythic.lib.script;
+
+import io.lumine.mythic.lib.script.mechanic.Mechanic;
+import io.lumine.mythic.lib.script.mechanic.RawMechanic;
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import vn.svframe.mythiclibfabric.MythicLibFabricMod;
+import vn.svframe.mythiclibfabric.runtime.script.ExpressionRuntime;
+import vn.svframe.mythiclibfabric.runtime.script.ScriptLineParser;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class MechanicQueue {
+    private static final Logger LOG = Logger.getLogger("MythicLib");
+    private final Iterator<Mechanic> queue;
+    private final SkillMetadata metadata;
+    private final Script script;
+    private int counter;
+
+    public MechanicQueue(SkillMetadata metadata, Script script) {
+        this.metadata = metadata;
+        this.script = script;
+        this.queue = script.getMechanics().iterator();
+    }
+
+    public boolean next() {
+        while (queue.hasNext()) {
+            counter++;
+            Mechanic mechanic = queue.next();
+            if (mechanic instanceof RawMechanic raw) {
+                ScriptLineParser.Call call = ScriptLineParser.parse(raw.raw());
+                if (call.name().equals("delay")) {
+                    long ticks = delayTicks(call);
+                    MythicLibFabricMod.schedule((int) Math.min(Integer.MAX_VALUE, Math.max(1L, ticks)), this::next);
+                    return false;
+                }
+            }
+            try {
+                mechanic.cast(metadata);
+            } catch (RuntimeException exception) {
+                LOG.log(Level.WARNING, "Could not execute mechanic n" + counter + " from script '" + script.getId() + "': " + exception.getMessage());
+                return true;
+            }
+        }
+        return true;
+    }
+
+    private long delayTicks(ScriptLineParser.Call call) {
+        String expression = call.params().getOrDefault("amount", "0");
+        try {
+            var context = io.lumine.mythic.lib.skill.SkillMetadataContextBridge.context(metadata);
+            return (long) new ExpressionRuntime().evaluate(expression, context.numbers());
+        } catch (RuntimeException ignored) {
+            try { return (long) Double.parseDouble(expression); }
+            catch (NumberFormatException invalid) { return 0L; }
+        }
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/script/Script.java').setText('''package io.lumine.mythic.lib.script;
+
+import io.lumine.mythic.lib.api.player.MMOPlayerData;
+import io.lumine.mythic.lib.script.condition.Condition;
+import io.lumine.mythic.lib.script.mechanic.Mechanic;
+import io.lumine.mythic.lib.script.condition.RawCondition;
+import io.lumine.mythic.lib.script.mechanic.RawMechanic;
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import io.lumine.mythic.lib.util.PostLoadAction;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class Script {
+    private final String id;
+    private final boolean pub;
+    private final List<String> conditions;
+    private final List<String> mechanics;
+
+    public Script(String id, List<String> mechanics) { this(id, true, List.of(), mechanics); }
+    public Script(String id, boolean pub) { this(id, pub, List.of(), List.of()); }
+    public Script(String id, boolean pub, List<String> conditions, List<String> mechanics) {
+        this.id = Objects.requireNonNull(id);
+        this.pub = pub;
+        this.conditions = List.copyOf(conditions);
+        this.mechanics = List.copyOf(mechanics);
+    }
+
+    public PostLoadAction getPostLoadAction() { return new PostLoadAction(x -> {}); }
+    public String getId() { return id; }
+    public boolean isPublic() { return pub; }
+
+    public List<Mechanic> getMechanics() {
+        List<Mechanic> out = new ArrayList<>();
+        for (String line : mechanics) out.add(new RawMechanic(line));
+        return List.copyOf(out);
+    }
+
+    public List<Condition> getConditions() {
+        List<Condition> out = new ArrayList<>();
+        for (String line : conditions) out.add(new RawCondition(line));
+        return List.copyOf(out);
+    }
+
+    public boolean cast(MMOPlayerData data) { return cast(SkillMetadata.of(data)); }
+
+    public boolean cast(SkillMetadata metadata) {
+        for (Condition condition : getConditions())
+            if (!condition.checkIfMet(metadata)) return false;
+        new MechanicQueue(metadata, this).next();
+        return true;
+    }
+
+    public List<String> rawConditions() { return conditions; }
+    public List<String> rawMechanics() { return mechanics; }
 }
 ''', 'UTF-8')
 
@@ -174,7 +295,7 @@ public class ScriptSkillHandler extends SkillHandler<SimpleSkillResult> {
         Map<String, Object> params = new LinkedHashMap<>();
         for (String key : getParameters()) params.put(key, metadata.getParameter(key));
         var entity = metadata.getTargetEntityOrNull();
-        UUID target = entity == null ? null : entity.getUniqueId();
+        UUID target = entity == null ? null : entity.getUuid();
         MythicLibFabricMod.castSkill(getId(), metadata.getCaster().getData().getUniqueId(), target, params);
     }
 }
@@ -182,9 +303,9 @@ public class ScriptSkillHandler extends SkillHandler<SimpleSkillResult> {
 
         new File(outDir, 'io/lumine/mythic/lib/skill/handler/MythicLibSkillHandler.java').setText('''package io.lumine.mythic.lib.skill.handler;
 
+import io.lumine.mythic.lib.script.MechanicQueue;
 import io.lumine.mythic.lib.script.Script;
 import io.lumine.mythic.lib.script.condition.Condition;
-import io.lumine.mythic.lib.script.mechanic.Mechanic;
 import io.lumine.mythic.lib.skill.SkillMetadata;
 import io.lumine.mythic.lib.skill.result.def.SimpleSkillResult;
 import io.lumine.mythic.lib.util.configobject.ConfigObject;
@@ -214,7 +335,7 @@ public class MythicLibSkillHandler extends ScriptSkillHandler {
     public void whenCast(SimpleSkillResult result, SkillMetadata metadata) {
         if (!result.isSuccessful()) return;
         if (script == null) { super.whenCast(result, metadata); return; }
-        for (Mechanic mechanic : script.getMechanics()) mechanic.cast(metadata);
+        new MechanicQueue(metadata, script).next();
     }
 }
 ''', 'UTF-8')
