@@ -87,7 +87,11 @@ public final class MythicLibWorkbenchMod {
             MythicLibCraftingRuntime.SlotAccess access = slotAccess(session);
             var match = MythicLibCraftingRuntime.match(MythicLibCraftingRuntime.Station.CUSTOM, stationKey(session.layout), access);
             if (match.isEmpty()) break;
-            ItemStack output = match.get().recipe().createResult();
+            ItemStack proposed = match.get().recipe().createResult();
+            if (proposed.isEmpty()) break;
+            MythicLibCraftingEvents.BeforeCraft event = MythicLibCraftingEvents.fireBefore(player, match.get().recipe(), proposed, craftToCompletion);
+            if (event.cancelled()) break;
+            ItemStack output = event.result();
             if (output.isEmpty()) break;
             if (craftToCompletion) {
                 ItemStack remaining = output.copy();
@@ -106,6 +110,7 @@ public final class MythicLibWorkbenchMod {
             }
             match.get().consume();
             crafted++;
+            MythicLibCraftingEvents.fireAfter(player, match.get().recipe(), output, crafted);
             refreshResult(session);
         } while (craftToCompletion && crafted < 64);
         if (crafted > 0 && session.handler != null) session.handler.sendContentUpdates();
@@ -158,7 +163,7 @@ public final class MythicLibWorkbenchMod {
     private static int logicalToRaw(MythicLibWorkbenchLayout layout, int logicalSlot) {
         int[] input = layout.inputSlots(); return logicalSlot < 0 || logicalSlot >= input.length ? -1 : input[logicalSlot];
     }
-    private static String stationKey(MythicLibWorkbenchLayout layout) { return layout.kind() == MythicLibWorkbenchLayout.Kind.SUPER ? "super-workbench" : "mega-workbench"; }
+    private static String stationKey(MythicLibWorkbenchLayout layout) { return layout.kind() == MythicLibWorkbenchLayout.Kind.SUPER ? "swb" : "mwb"; }
     private static void returnInputs(ServerPlayerEntity player, Session session) {
         for (int raw : session.layout.inputSlots()) {
             ItemStack stack = session.inventory.removeStack(raw);
