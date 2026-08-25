@@ -9,6 +9,7 @@ public final class NativeStatEngineSmoke {
     public static void main(String[] args) {
         NativeStatEngine engine = new NativeStatEngine();
         UUID player = UUID.randomUUID();
+        engine.onSessionOpen(player);
         String stat = "ATTACK_DAMAGE";
 
         engine.setBase(player, stat, 100.0d);
@@ -95,6 +96,29 @@ public final class NativeStatEngineSmoke {
                 NativeStatEngine.ModifierSource.OTHER));
         assertClose(100.0d, engine.stat(player, "HANDLED"), "handler clamp");
         if (updates.get() < 2) throw new AssertionError("stat update listeners were not fired");
+
+        AtomicInteger bufferedUpdates = new AtomicInteger();
+        NativeStatHandler buffered = new NativeStatHandler("BUFFERED");
+        buffered.addUpdateListener(instance -> bufferedUpdates.incrementAndGet());
+        engine.registerHandler(buffered);
+        engine.bufferUpdates(player, () -> {
+            engine.register(player, "BUFFERED", new NativeStatEngine.Modifier(
+                    UUID.randomUUID(), "one", 1.0d,
+                    NativeStatEngine.ModifierType.FLAT,
+                    NativeStatEngine.EquipmentSlot.OTHER,
+                    NativeStatEngine.ModifierSource.OTHER));
+            engine.register(player, "BUFFERED", new NativeStatEngine.Modifier(
+                    UUID.randomUUID(), "two", 2.0d,
+                    NativeStatEngine.ModifierType.FLAT,
+                    NativeStatEngine.EquipmentSlot.OTHER,
+                    NativeStatEngine.ModifierSource.OTHER));
+            if (!engine.isBufferingUpdates(player)) throw new AssertionError("buffer flag was not active inside bufferUpdates");
+            if (bufferedUpdates.get() != 0) throw new AssertionError("updates leaked while buffering");
+        });
+        if (bufferedUpdates.get() != 1) throw new AssertionError("buffered stat updates were not compacted to one release update");
+
+        engine.onSessionClose(player);
+        if (!engine.isBufferingUpdates(player)) throw new AssertionError("closed session should buffer updates");
 
         System.out.println("MYTHICLIB_NATIVE_STAT_RUNTIME=PASS");
     }
