@@ -52,19 +52,14 @@ public record LegacySkillDefinition(String id, String source, String name, Strin
                 Map.copyOf(parsed));
     }
 
-    /**
-     * Resolves player-scaled parameter values while preserving explicit runtime
-     * modifiers supplied by MMOCore/MMOItems. Runtime parameter values override
-     * the item default exactly at the parameter boundary.
-     */
     public Map<String, Object> resolveParameters(Map<String, ?> supplied) {
         LinkedHashMap<String, Object> result = new LinkedHashMap<>();
         if (supplied != null) result.putAll(supplied);
-        double level = supplied == null ? 1.0d : number(first(supplied, "skill-level", "skill_level", "level"), 1.0d);
+        int level = Math.max(1, (int) Math.floor(supplied == null ? 1.0d : number(first(supplied, "skill-level", "skill_level", "level"), 1.0d)));
         for (Map.Entry<String, Parameter> entry : parameters.entrySet()) {
             String key = entry.getKey();
             Parameter parameter = entry.getValue();
-            double playerValue = parameter.player().calculate(level);
+            double playerValue = parameter.player().evaluate(level);
             Object direct = supplied == null ? null : supplied.get(key);
             Object modifier = supplied == null ? null : first(supplied, "modifier." + key, "item." + key);
             double itemValue = direct instanceof Number n ? n.doubleValue()
