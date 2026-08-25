@@ -1,7 +1,24 @@
 base { archivesName = 'MythicLib-Fabric' }
 
-// Canonical native Fabric module. Compile the shared MythicLib runtime and YAML parser
-// directly into the same artifact; no Bukkit/Paper bridge and no generated compatibility shim.
+// Canonical native Fabric module. Shared platform-neutral MythicLib runtime is
+// compiled into the same artifact. Canonical runtime sources in the repository
+// replace their restored bootstrap counterparts before javac runs.
+def restoredRuntime = rootProject.file('../mythiclib-runtime')
+def canonicalRuntime = rootProject.file('../../../fabric-mmo-ports/mythiclib-runtime')
+
+def syncCanonicalMythicLibRuntime = tasks.register('syncCanonicalMythicLibRuntime') {
+    inputs.dir(canonicalRuntime)
+    outputs.dir(restoredRuntime)
+    doLast {
+        if (canonicalRuntime.isDirectory()) {
+            copy {
+                from canonicalRuntime
+                into restoredRuntime
+            }
+        }
+    }
+}
+
 sourceSets {
     main {
         java {
@@ -13,3 +30,6 @@ sourceSets {
         }
     }
 }
+
+tasks.named('compileJava').configure { dependsOn(syncCanonicalMythicLibRuntime) }
+tasks.named('processResources').configure { dependsOn(syncCanonicalMythicLibRuntime) }
