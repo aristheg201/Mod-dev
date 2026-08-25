@@ -84,6 +84,153 @@ def unpackLegacyApiV3Sources = tasks.register('unpackLegacyApiV3Sources') {
                         'import io.lumine.mythic.lib.module.MMOPlugin;import io.lumine.mythic.lib.module.Module;'), 'UTF-8')
             }
         }
+
+        // Adapt the V3 script/skill compatibility delta to the V2 native API base.
+        // These generated sources preserve MythicLib 1.7.1 ordering: conditions are
+        // evaluated by the result phase, then mechanics run during whenCast.
+        def bridge = new File(outDir, 'io/lumine/mythic/lib/skill/SkillMetadataContextBridge.java')
+        bridge.parentFile.mkdirs()
+        bridge.setText('''package io.lumine.mythic.lib.skill;
+
+import io.lumine.mythic.lib.skill.handler.SkillHandler;
+import vn.svframe.mythiclibfabric.runtime.script.ScriptContext;
+
+import java.util.UUID;
+
+public final class SkillMetadataContextBridge {
+    private SkillMetadataContextBridge() {}
+
+    public static ScriptContext context(SkillMetadata metadata) {
+        if (metadata == null || metadata.getCaster() == null)
+            throw new IllegalArgumentException("Skill metadata/caster cannot be null");
+
+        UUID caster = metadata.getCaster().getData().getUniqueId();
+        var targetEntity = metadata.getTargetEntityOrNull();
+        UUID target = targetEntity == null ? caster : targetEntity.getUniqueId();
+        ScriptContext context = new ScriptContext(caster, target);
+
+        if (metadata.getCast() != null) {
+            SkillHandler<?> handler = metadata.getCast().getHandler();
+            if (handler != null) for (String key : handler.getParameters()) {
+                double value = metadata.getParameter(key);
+                context.numbers().put(key, value);
+                context.numbers().put("parameter." + key, value);
+                context.numbers().put("modifier." + key, value);
+                context.objects().put(key, value);
+                context.objects().put("parameter." + key, value);
+                context.objects().put("modifier." + key, value);
+            }
+        }
+
+        if (metadata.hasAttackSource()) context.objects().put("attack", metadata.getAttackSource());
+        context.objects().put("skill_metadata", metadata);
+        return context;
+    }
+}
+''', 'UTF-8')
+
+        def scriptFiles = [
+                'io/lumine/mythic/lib/script/Script.java',
+                'io/lumine/mythic/lib/script/mechanic/RawMechanic.java',
+                'io/lumine/mythic/lib/script/condition/RawCondition.java'
+        ]
+        scriptFiles.each { relative ->
+            def source = new File(outDir, relative)
+            source.setText(source.getText('UTF-8').replace('metadata.context()',
+                    'io.lumine.mythic.lib.skill.SkillMetadataContextBridge.context(metadata)'), 'UTF-8')
+        }
+
+        new File(outDir, 'io/lumine/mythic/lib/skill/handler/ScriptSkillHandler.java').setText('''package io.lumine.mythic.lib.skill.handler;
+
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import io.lumine.mythic.lib.skill.result.def.SimpleSkillResult;
+import io.lumine.mythic.lib.util.configobject.ConfigObject;
+import vn.svframe.mythiclibfabric.MythicLibFabricMod;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class ScriptSkillHandler extends SkillHandler<SimpleSkillResult> {
+    public ScriptSkillHandler(String id) { super(id); }
+
+    public ScriptSkillHandler(String id, ConfigObject cfg) {
+        super(id);
+        if (cfg != null && cfg.contains("modifiers")) {
+            String raw = cfg.getString("modifiers", "");
+            for (String modifier : raw.split("[,;\\s]+"))
+                if (!modifier.isBlank()) registerModifiers(modifier.trim());
+        }
+    }
+
+    @Override
+    public SimpleSkillResult getResult(SkillMetadata metadata) {
+        return new SimpleSkillResult(metadata != null && metadata.getCaster() != null);
+    }
+
+    @Override
+    public void whenCast(SimpleSkillResult result, SkillMetadata metadata) {
+        if (!result.isSuccessful()) return;
+        Map<String, Object> params = new LinkedHashMap<>();
+        for (String key : getParameters()) params.put(key, metadata.getParameter(key));
+        var entity = metadata.getTargetEntityOrNull();
+        UUID target = entity == null ? null : entity.getUniqueId();
+        MythicLibFabricMod.castSkill(getId(), metadata.getCaster().getData().getUniqueId(), target, params);
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/skill/handler/MythicLibSkillHandler.java').setText('''package io.lumine.mythic.lib.skill.handler;
+
+import io.lumine.mythic.lib.script.Script;
+import io.lumine.mythic.lib.script.condition.Condition;
+import io.lumine.mythic.lib.script.mechanic.Mechanic;
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import io.lumine.mythic.lib.skill.result.def.SimpleSkillResult;
+import io.lumine.mythic.lib.util.configobject.ConfigObject;
+
+import java.util.Objects;
+
+public class MythicLibSkillHandler extends ScriptSkillHandler {
+    private final Script script;
+
+    public MythicLibSkillHandler(String id) { super(id); this.script = null; }
+    public MythicLibSkillHandler(ConfigObject cfg) { super("MythicLibSkillHandler", cfg); this.script = null; }
+    public MythicLibSkillHandler(Script script) {
+        super(Objects.requireNonNull(script, "script").getId());
+        this.script = script;
+    }
+
+    @Override
+    public SimpleSkillResult getResult(SkillMetadata metadata) {
+        if (script == null) return super.getResult(metadata);
+        if (metadata == null || metadata.getCaster() == null) return new SimpleSkillResult(false);
+        for (Condition condition : script.getConditions())
+            if (!condition.checkIfMet(metadata)) return new SimpleSkillResult(false);
+        return new SimpleSkillResult(true);
+    }
+
+    @Override
+    public void whenCast(SimpleSkillResult result, SkillMetadata metadata) {
+        if (!result.isSuccessful()) return;
+        if (script == null) { super.whenCast(result, metadata); return; }
+        for (Mechanic mechanic : script.getMechanics()) mechanic.cast(metadata);
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/skill/result/def/AttackSkillResult.java').setText('''package io.lumine.mythic.lib.skill.result.def;
+
+import io.lumine.mythic.lib.damage.AttackMetadata;
+import io.lumine.mythic.lib.skill.result.SkillResult;
+
+public class AttackSkillResult implements SkillResult {
+    private final AttackMetadata attack;
+    public AttackSkillResult(AttackMetadata attack) { this.attack = attack; }
+    public AttackMetadata getAttack() { return attack; }
+    public boolean isSuccessful() { return attack != null; }
+}
+''', 'UTF-8')
     }
 }
 
