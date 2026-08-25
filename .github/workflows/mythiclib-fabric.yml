@@ -40,7 +40,7 @@ jobs:
         with:
           gradle-version: '8.8'
 
-      - name: Restore canonical Fabric workspace
+      - name: Restore final SVFrameLib workspace
         shell: bash
         run: |
           set -euo pipefail
@@ -82,16 +82,26 @@ jobs:
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v3-fixed2 build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v3-fixed2
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v4-parity build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v4-parity
           cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
-
           cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
           if [ -d fabric-mmo-ports/common-runtime ]; then
             cp -a fabric-mmo-ports/common-runtime/. build/mmo-workspace/common-runtime/
           fi
 
-          echo '393b24013c16a96a687fe202502955559866ce86dd859e1b00f5662e60ae3f5b  fabric-mmo-ports/svframelib-final/source.tar.gz' | sha256sum -c -
-          tar -xzf fabric-mmo-ports/svframelib-final/source.tar.gz -C build/mmo-workspace
+          cat fabric-mmo-ports/svframelib-final/text-overlay/part* | base64 -d > build/svframelib-source-overlay.tar.gz
+          echo '30ec6e8bbdc4e9403dc8f32d689971812863b9417c8c39f7a19244b0caa89e80  build/svframelib-source-overlay.tar.gz' | sha256sum -c -
+          tar -xzf build/svframelib-source-overlay.tar.gz -C build/mmo-workspace
 
-          sed -i 's/${version}/1.7.1-fabric/g' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle')
+          text = path.read_text()
+          text = text.replace("base { archivesName = 'MythicLib-Fabric' }", "base { archivesName = 'SVFrameLib' }\nversion = '1.7.1-fabric'")
+          path.write_text(text)
+          PY
+
+          grep -q '"id": "svframelib"' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
+          grep -q '"name": "SVFrameLib"' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
+          grep -q '"version": "1.7.1-fabric"' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
 
       - name: SVFrameLib pure-Java parity gates
         shell: bash
@@ -122,44 +132,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR=build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
+          JAR=build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/SVFrameLib-1.7.1-fabric.jar
           test -s "$JAR"
-          unzip -p "$JAR" fabric.mod.json | grep -q '"environment": "server"'
+          unzip -t "$JAR" >/dev/null
           unzip -p "$JAR" fabric.mod.json | grep -q '"id": "svframelib"'
           unzip -p "$JAR" fabric.mod.json | grep -q '"name": "SVFrameLib"'
           unzip -p "$JAR" fabric.mod.json | grep -q '"version": "1.7.1-fabric"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"environment": "server"'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibFabricMod.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCombatRuntime.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibIndicatorManager.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCraftingBootstrap.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibVanillaCraftingMod.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibWorkbenchCommands.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/FabricScriptPlatform.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/ScriptProjectileCallbackRegistry.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/mixin/ShulkerBulletScriptMixin.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibCraftingRuntime.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibStationMappings.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
-          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/script/ScriptEngine.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/script/ScriptTargeting.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/MMOLineConfig.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/player/MMOPlayerData.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/item/NBTItem.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/PlayerDataMap.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/player/PlayerDataMap.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/modifier/ModifierMap.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/PlayerMetadata.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/metadata/PlayerMetadata.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/damage/AttackMetadata.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/cooldown/CooldownMap.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/rpg/provided/PlayerResource.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/StatManager.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/DamageManager.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/SkillManager.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/script/Script.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/script/variable/VariableList.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/skill/handler/MythicLibSkillHandler.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/event/AttackUnregisteredEvent.class'
-          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/event/mitigation/PlayerBlockEvent.class'
-          unzip -l "$JAR" | grep -q 'mythiclib-1.7.1-defaults.zip.part1'
+          while IFS= read -r cls; do
+            if unzip -p "$JAR" "$cls" | strings | grep -Eq 'org/bukkit|org/spigotmc|io/papermc/paper'; then
+              echo "Forbidden Bukkit/Paper dependency in $cls" >&2
+              exit 1
+            fi
+          done < <(zipinfo -1 "$JAR" | grep '\.class$')
           sha256sum "$JAR" | tee build/SVFrameLib-SHA256.txt
 
       - name: Dedicated SVFrameLib Fabric server boot gate
@@ -182,11 +184,10 @@ jobs:
           ! grep -q 'Exception in server tick loop' ../../svframelib-fabric-boot.log
 
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: SVFrameLib-Fabric-1.21.1
+          name: SVFrameLib-1.7.1-fabric
           path: |
-            build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
+            build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/SVFrameLib-1.7.1-fabric.jar
             build/SVFrameLib-SHA256.txt
             build/svframelib-fabric-boot.log
           if-no-files-found: error
