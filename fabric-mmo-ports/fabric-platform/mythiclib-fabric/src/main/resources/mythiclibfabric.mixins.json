@@ -10,7 +10,9 @@
     "CrossbowTriggerMixin",
     "BlockItemPlaceTriggerMixin",
     "ServerPlayerTeleportTriggerMixin",
-    "WorkbenchScreenMixin"
+    "WorkbenchScreenMixin",
+    "DisplayEntityAccessor",
+    "TextDisplayEntityAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
