@@ -30,7 +30,7 @@ public class NativeStatHandler {
     private volatile boolean updateOnLogin;
 
     public NativeStatHandler(String stat) {
-        this(stat, 0.0d, null, null, new DecimalFormat("0.##"));
+        this(stat, 0.0d, null, null, new DecimalFormat("0.#"));
     }
 
     public NativeStatHandler(String stat, double baseValue, Double minValue, Double maxValue, DecimalFormat decimalFormat) {
