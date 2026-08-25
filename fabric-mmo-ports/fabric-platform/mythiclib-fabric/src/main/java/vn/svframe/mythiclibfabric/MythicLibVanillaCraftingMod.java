@@ -15,20 +15,13 @@ import vn.svframe.mythiclibfabric.runtime.MythicLibCraftingRuntime;
 import vn.svframe.mythiclibfabric.runtime.MythicLibStationMappings;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-/**
- * Native Fabric port of MythicLib 1.7.1's vanilla crafting-station listener.
- * It mirrors the original registered mappings: player 2x2 crafting, workbench,
- * furnace and smithing. Brewing is intentionally not auto-mapped because
- * MythicLib 1.7.1 does not register a vanilla brewing mapping.
- */
+/** Native Fabric port of MythicLib 1.7.1's registered vanilla crafting mappings. */
 public final class MythicLibVanillaCraftingMod {
     private static final Set<ScreenHandler> OVERRIDDEN = Collections.newSetFromMap(new WeakHashMap<>());
     private static volatile boolean initialized;
-
     private MythicLibVanillaCraftingMod() {}
 
     public static void initialize() {
@@ -41,7 +34,7 @@ public final class MythicLibVanillaCraftingMod {
         StationView view = view(handler);
         if (view == null || slotIndex != view.mapping.resultSlot()) return false;
         MythicLibCraftingRuntime.SlotAccess access = access(handler, view.mapping);
-        var match = MythicLibCraftingRuntime.match(view.mapping.station(), "", access);
+        var match = MythicLibCraftingRuntime.match(view.mapping.station(), "", access, permission -> MythicLibPermissionBridge.has(player, permission));
         if (match.isEmpty()) return false;
         if (actionType != SlotActionType.PICKUP && actionType != SlotActionType.QUICK_MOVE) return true;
         craft(player, handler, view, actionType == SlotActionType.QUICK_MOVE);
@@ -75,9 +68,8 @@ public final class MythicLibVanillaCraftingMod {
         int crafted = 0;
         do {
             MythicLibCraftingRuntime.SlotAccess access = access(handler, view.mapping);
-            var match = MythicLibCraftingRuntime.match(view.mapping.station(), "", access);
+            var match = MythicLibCraftingRuntime.match(view.mapping.station(), "", access, permission -> MythicLibPermissionBridge.has(player, permission));
             if (match.isEmpty()) break;
-
             ItemStack proposed = match.get().recipe().createResult();
             if (proposed.isEmpty()) break;
             MythicLibCraftingEvents.BeforeCraft event = MythicLibCraftingEvents.fireBefore(player, match.get().recipe(), proposed, craftToCompletion);
@@ -106,7 +98,6 @@ public final class MythicLibVanillaCraftingMod {
             MythicLibCraftingEvents.fireAfter(player, match.get().recipe(), output, crafted);
             refresh(handler);
         } while (craftToCompletion && crafted < 64);
-
         if (crafted > 0) handler.sendContentUpdates();
     }
 
@@ -124,20 +115,13 @@ public final class MythicLibVanillaCraftingMod {
         };
     }
 
-    /**
-     * Flat logical slots retain main inventory first and then named side inventories
-     * in the exact order used by MythicLib 1.7.1 mappings.
-     */
     private static int logicalToRaw(MythicLibStationMappings.Mapping mapping, int logicalSlot) {
-        int[] main = mapping.mainSlots();
-        if (logicalSlot >= 0 && logicalSlot < main.length) return main[logicalSlot];
-        int index = logicalSlot - main.length;
-        for (Map.Entry<String, int[]> entry : mapping.sideSlots().entrySet()) {
-            int[] side = entry.getValue();
-            if (index >= 0 && index < side.length) return side[index];
-            index -= side.length;
-        }
-        return -1;
+        return switch (mapping.kind()) {
+            case PLAYER_CRAFTING, WORKBENCH -> mapping.rawMainSlot(logicalSlot);
+            case FURNACE -> logicalSlot == 0 ? 0 : logicalSlot == 1 ? 1 : -1;
+            case SMITHING_LEGACY -> logicalSlot == 0 ? 0 : logicalSlot == 1 ? 1 : -1;
+            case SMITHING_MODERN -> logicalSlot == 0 ? 1 : logicalSlot == 1 ? 0 : logicalSlot == 2 ? 2 : -1;
+        };
     }
 
     private static StationView view(ScreenHandler handler) {
@@ -152,6 +136,5 @@ public final class MythicLibVanillaCraftingMod {
         if (left.isEmpty() || right.isEmpty()) return left.isEmpty() && right.isEmpty();
         return left.getCount() == right.getCount() && ItemStack.areItemsAndComponentsEqual(left, right);
     }
-
     private record StationView(MythicLibStationMappings.Mapping mapping) {}
 }
