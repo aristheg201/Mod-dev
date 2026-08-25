@@ -1,0 +1,119 @@
+name: MythicLib Fabric 1.21.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - 'fabric-mmo-ports/fabric-platform/mythiclib-fabric/**'
+      - 'fabric-mmo-ports/mythiclib-runtime/**'
+      - 'fabric-mmo-ports/common-runtime/**'
+      - '.github/workflows/mythiclib-fabric.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+
+      - name: Restore canonical Fabric workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/mmo-workspace
+          cat fabric-mmo-ports/bootstrap-m0.8/chunks/part* | base64 -d > build/mmo-workspace.tar.gz
+          echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
+
+          cp -a fabric-mmo-ports/overlay-m0.9/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.0/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.1/mmocore-brigadier.patch
+          cp -a fabric-mmo-ports/overlay-m1.2/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.3/mythiclib-brigadier.patch
+          cp fabric-mmo-ports/overlay-m1.3/source.tar.gz build/mmo-overlay-m1.3.tar.gz
+          tar -xzf build/mmo-overlay-m1.3.tar.gz -C build/mmo-workspace
+          cp -a fabric-mmo-ports/overlay-m1.4/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.5/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.6/. build/mmo-workspace/
+          base64 -d fabric-mmo-ports/overlay-m1.7/source.tar.gz.b64 > build/mmo-overlay-m1.7.tar.gz
+          tar -xzf build/mmo-overlay-m1.7.tar.gz -C build/mmo-workspace
+          base64 -d fabric-mmo-ports/overlay-m1.8/source.tar.gz.b64 > build/mmo-overlay-m1.8.tar.gz
+          tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
+          cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
+          tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
+          cat fabric-mmo-ports/overlay-m2.1/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.1.tar.gz
+          tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
+
+          rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/src
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src build/mmo-workspace/fabric-platform/mythiclib-fabric/src
+          cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
+
+          rm -rf build/mmo-workspace/mythiclib-runtime
+          cp -a fabric-mmo-ports/mythiclib-runtime build/mmo-workspace/mythiclib-runtime
+          if [ -d fabric-mmo-ports/common-runtime ]; then
+            rm -rf build/mmo-workspace/common-runtime
+            cp -a fabric-mmo-ports/common-runtime build/mmo-workspace/common-runtime
+          fi
+
+          sed -i 's/${version}/0.8.0-dev/g' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
+
+      - name: MythicLib pure-Java parity gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace
+          chmod +x build-offline.sh
+          ./build-offline.sh
+          STAT_OUT="$(mktemp -d)"
+          javac --release 21 -d "$STAT_OUT" \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeInstanceModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeTemporaryStatModifier.java \
+            ../../fabric-mmo-ports/tests/NativeStatEngineSmoke.java
+          java -cp "$STAT_OUT" NativeStatEngineSmoke | tee mythiclib-native-stat-smoke.log
+          grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' mythiclib-native-stat-smoke.log
+
+      - name: Loom compile and remap MythicLib
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          gradle --no-daemon --stacktrace :mythiclib-fabric:clean :mythiclib-fabric:remapJar
+
+      - name: Verify MythicLib Fabric JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR=build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
+          test -s "$JAR"
+          unzip -p "$JAR" fabric.mod.json | grep -q '"environment": "server"'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibFabricMod.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCombatRuntime.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibIndicatorManager.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
+          sha256sum "$JAR" | tee build/MythicLib-Fabric-SHA256.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MythicLib-Fabric-1.21.1
+          path: |
+            build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
+            build/MythicLib-Fabric-SHA256.txt
+          if-no-files-found: error
+          retention-days: 14
