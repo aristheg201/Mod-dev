@@ -1,7 +1,10 @@
 import vn.svframe.mythiclibfabric.runtime.NativeStatEngine;
 import vn.svframe.mythiclibfabric.runtime.NativeStatHandler;
+import vn.svframe.mythiclibfabric.runtime.NativeStatModifier;
+import vn.svframe.mythiclibfabric.runtime.NativeTemporaryStatModifier;
 
 import java.text.DecimalFormat;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -117,8 +120,70 @@ public final class NativeStatEngineSmoke {
         });
         if (bufferedUpdates.get() != 1) throw new AssertionError("buffered stat updates were not compacted to one release update");
 
+        NativeStatModifier parsedRelative = new NativeStatModifier("parse", "PARSE", "12.5%");
+        if (parsedRelative.type() != NativeStatEngine.ModifierType.RELATIVE || parsedRelative.value() != 12.5d) {
+            throw new AssertionError("relative modifier string parsing mismatch");
+        }
+        NativeStatModifier parsedScalar = new NativeStatModifier("parse", "PARSE", "8s");
+        if (parsedScalar.type() != NativeStatEngine.ModifierType.ADDITIVE_MULTIPLIER || parsedScalar.value() != 8.0d) {
+            throw new AssertionError("scalar modifier string parsing mismatch");
+        }
+        NativeStatModifier configModifier = new NativeStatModifier(Map.of(
+                "key", "cfg", "stat", "PARSE", "value", 7.0d, "multiplicative", true));
+        if (configModifier.type() != NativeStatEngine.ModifierType.RELATIVE) {
+            throw new AssertionError("config multiplicative modifier parsing mismatch");
+        }
+        UUID preservedId = parsedRelative.uniqueId();
+        if (!parsedRelative.add(2.5d).uniqueId().equals(preservedId)
+                || !parsedRelative.multiply(2.0d).uniqueId().equals(preservedId)) {
+            throw new AssertionError("stat modifier transformations did not preserve UUID identity");
+        }
+
+        NativeTemporaryStatModifier scheduled = new NativeTemporaryStatModifier(
+                "scheduled", "TEMP_API", 10.0d,
+                NativeStatEngine.ModifierType.FLAT,
+                NativeStatEngine.EquipmentSlot.OTHER,
+                NativeStatEngine.ModifierSource.OTHER);
+        scheduled.register(engine, player, 20L, 200L);
+        if (!scheduled.isActive() || scheduled.duration() != 20L) {
+            throw new AssertionError("temporary stat modifier did not enter active state");
+        }
+        if (engine.instance(player, "TEMP_API").modifier(scheduled.uniqueId()) == null) {
+            throw new AssertionError("temporary stat modifier did not register in stat map");
+        }
+        if (NativeTemporaryStatModifier.tick(219L) != 0) {
+            throw new AssertionError("temporary stat modifier expired too early");
+        }
+        if (NativeTemporaryStatModifier.tick(220L) != 1) {
+            throw new AssertionError("temporary stat modifier did not execute at due tick");
+        }
+        if (engine.instance(player, "TEMP_API").modifier(scheduled.uniqueId()) != null) {
+            throw new AssertionError("temporary stat modifier was not removed by scheduled task");
+        }
+        if (!scheduled.isActive()) {
+            throw new AssertionError("1.7.1 observable active state after natural expiry was not preserved");
+        }
+        scheduled.close();
+        if (scheduled.isActive()) throw new AssertionError("close did not clear active task reference");
+
+        NativeTemporaryStatModifier cancelled = new NativeTemporaryStatModifier(
+                "cancelled", "TEMP_CANCEL", 5.0d,
+                NativeStatEngine.ModifierType.FLAT,
+                NativeStatEngine.EquipmentSlot.OTHER,
+                NativeStatEngine.ModifierSource.OTHER);
+        cancelled.register(engine, player, 10L, 300L);
+        cancelled.close();
+        if (NativeTemporaryStatModifier.tick(400L) != 0) {
+            throw new AssertionError("closed temporary modifier still executed its timer");
+        }
+        if (engine.instance(player, "TEMP_CANCEL").modifier(cancelled.uniqueId()) == null) {
+            throw new AssertionError("1.7.1 close() behavior should leave the registered modifier in place");
+        }
+        cancelled.unregister(engine, player);
+
         engine.onSessionClose(player);
         if (!engine.isBufferingUpdates(player)) throw new AssertionError("closed session should buffer updates");
+        NativeTemporaryStatModifier.cancelAll();
 
         System.out.println("MYTHICLIB_NATIVE_STAT_RUNTIME=PASS");
     }
