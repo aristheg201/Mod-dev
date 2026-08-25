@@ -10,6 +10,14 @@ on:
       - 'fabric-mmo-ports/mythiclib-runtime/**'
       - 'fabric-mmo-ports/common-runtime/**'
       - '.github/workflows/mythiclib-fabric.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'fabric-mmo-ports/fabric-platform/mythiclib-fabric/**'
+      - 'fabric-mmo-ports/mythiclib-runtime/**'
+      - 'fabric-mmo-ports/common-runtime/**'
+      - '.github/workflows/mythiclib-fabric.yml'
 
 permissions:
   contents: read
@@ -62,15 +70,12 @@ jobs:
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src build/mmo-workspace/fabric-platform/mythiclib-fabric/src
           cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
 
-          # The bootstrap contains the complete platform-neutral runtime. Canonical
-          # repository sources are authoritative overlays for classes already ported;
-          # never delete the untouched runtime classes that have not moved yet.
           cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
           if [ -d fabric-mmo-ports/common-runtime ]; then
             cp -a fabric-mmo-ports/common-runtime/. build/mmo-workspace/common-runtime/
           fi
 
-          sed -i 's/${version}/0.8.0-dev/g' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
+          sed -i 's/${version}/1.7.1-fabric/g' build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/resources/fabric.mod.json
 
       - name: MythicLib pure-Java parity gates
         shell: bash
@@ -104,12 +109,35 @@ jobs:
           JAR=build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
           test -s "$JAR"
           unzip -p "$JAR" fabric.mod.json | grep -q '"environment": "server"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"version": "1.7.1-fabric"'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibFabricMod.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCombatRuntime.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibIndicatorManager.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibCraftingBootstrap.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibVanillaCraftingMod.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibWorkbenchCommands.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibCraftingRuntime.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/MythicLibStationMappings.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/NativeStatEngine.class'
           unzip -l "$JAR" | grep -q 'mythiclib-1.7.1-defaults.zip.part1'
           sha256sum "$JAR" | tee build/MythicLib-Fabric-SHA256.txt
+
+      - name: Dedicated MythicLib Fabric server boot gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          mkdir -p mythiclib-fabric/run
+          printf 'eula=true\n' > mythiclib-fabric/run/eula.txt
+          set +e
+          timeout 90s gradle --no-daemon --stacktrace :mythiclib-fabric:runServer > ../../mythiclib-fabric-boot.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then cat ../../mythiclib-fabric-boot.log; exit "$status"; fi
+          grep -q 'MythicLib Fabric online' ../../mythiclib-fabric-boot.log
+          ! grep -q 'Mixin apply failed' ../../mythiclib-fabric-boot.log
+          ! grep -q 'Could not execute entrypoint stage' ../../mythiclib-fabric-boot.log
+          ! grep -q 'Exception in server tick loop' ../../mythiclib-fabric-boot.log
 
       - uses: actions/upload-artifact@v4
         with:
@@ -117,5 +145,6 @@ jobs:
           path: |
             build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar
             build/MythicLib-Fabric-SHA256.txt
+            build/mythiclib-fabric-boot.log
           if-no-files-found: error
           retention-days: 14
