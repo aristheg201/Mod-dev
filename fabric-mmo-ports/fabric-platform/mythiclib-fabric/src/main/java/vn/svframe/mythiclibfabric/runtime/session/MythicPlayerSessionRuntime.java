@@ -66,8 +66,9 @@ public final class MythicPlayerSessionRuntime {
     }
 
     public synchronized void clearNextSessionBuffer() { nextSessionBuffered = false; }
+    public synchronized void flushTimedOutSessions() { savedSessions.values().removeIf(ProfileSessionRuntime::isTimedOut); }
     public ProfileSessionRuntime profileSession() { return profileSession; }
-    public Map<UUID, ProfileSessionRuntime> savedSessions() { return Map.copyOf(savedSessions); }
+    public synchronized Map<UUID, ProfileSessionRuntime> savedSessions() { return Map.copyOf(savedSessions); }
     public boolean nextSessionBuffered() { return nextSessionBuffered; }
     public int closedDataSessions() { return closedDataSessions; }
 
