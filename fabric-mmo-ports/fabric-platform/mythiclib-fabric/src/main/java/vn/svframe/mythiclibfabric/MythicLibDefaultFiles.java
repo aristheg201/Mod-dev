@@ -19,7 +19,7 @@ import java.util.zip.ZipInputStream;
 
 /** Installs the exact MythicLib 1.7.1 bundled defaults into the Fabric config directory. */
 public final class MythicLibDefaultFiles {
-    private static final Path ROOT = FabricLoader.getInstance().getConfigDir().resolve("MythicLib");
+    private static final Path ROOT = FabricLoader.getInstance().getConfigDir().resolve("MythicLib").toAbsolutePath().normalize();
     private static final String ARCHIVE_SHA256 = "fc68b690ccdd874c2c8c5ce6207218d19af6904938c1cd9437cfa4e7341ba86e";
     private static final int ARCHIVE_PARTS = 4;
     private static final Map<String, String> TARGETS = targets();
