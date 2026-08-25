@@ -69,11 +69,13 @@ jobs:
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/src
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source
           rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source-v2
+          rm -rf build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v3-delta
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src build/mmo-workspace/fabric-platform/mythiclib-fabric/src
           if [ -d fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source ]; then
             cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source
           fi
           cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source-v2 build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-source-v2
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v3-delta build/mmo-workspace/fabric-platform/mythiclib-fabric/legacy-api-v3-delta
           cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle build/mmo-workspace/fabric-platform/mythiclib-fabric/build.gradle
 
           cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
@@ -130,6 +132,14 @@ jobs:
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/item/NBTItem.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/cooldown/CooldownMap.class'
           unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/rpg/provided/PlayerResource.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/StatManager.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/DamageManager.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/SkillManager.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/script/Script.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/script/variable/VariableList.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/skill/handler/MythicLibSkillHandler.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/event/AttackUnregisteredEvent.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/event/mitigation/PlayerBlockEvent.class'
           unzip -l "$JAR" | grep -q 'mythiclib-1.7.1-defaults.zip.part1'
           sha256sum "$JAR" | tee build/MythicLib-Fabric-SHA256.txt
 
