@@ -1,0 +1,223 @@
+name: Fabric MMO Ports
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - 'fabric-mmo-ports/**'
+      - '.github/workflows/fabric-mmo-ports.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'fabric-mmo-ports/**'
+      - '.github/workflows/fabric-mmo-ports.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 8.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+
+      - name: Restore buildable source workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find fabric-mmo-ports/bootstrap-m0.8/chunks -maxdepth 1 -name 'part*' -type f | wc -l)" -eq 10
+          mkdir -p build/mmo-workspace
+          cat fabric-mmo-ports/bootstrap-m0.8/chunks/part* | base64 -d > build/mmo-workspace.tar.gz
+          echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
+
+          cp -a fabric-mmo-ports/overlay-m0.9/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.0/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.1/mmocore-brigadier.patch
+          cp -a fabric-mmo-ports/overlay-m1.2/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.3/mythiclib-brigadier.patch
+
+          cp fabric-mmo-ports/overlay-m1.3/source.tar.gz build/mmo-overlay-m1.3.tar.gz
+          echo '1ba9e3f2c2164d1260207abe9360a75a0ec6e385239e0c4a35afc83db09c4c21  build/mmo-overlay-m1.3.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m1.3.tar.gz -C build/mmo-workspace
+          cp -a fabric-mmo-ports/overlay-m1.4/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.5/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.6/. build/mmo-workspace/
+
+          base64 -d fabric-mmo-ports/overlay-m1.7/source.tar.gz.b64 > build/mmo-overlay-m1.7.tar.gz
+          echo '3604b61ab7c73bcf76d4dc3e67eee70f71758efe0a9d9c87799c24123fbf7fea  build/mmo-overlay-m1.7.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m1.7.tar.gz -C build/mmo-workspace
+
+          base64 -d fabric-mmo-ports/overlay-m1.8/source.tar.gz.b64 > build/mmo-overlay-m1.8.tar.gz
+          echo '0f6385fd6225ed56057fc546d12d45bbed28bea8005ab9c76bff89549f2ec2a9  build/mmo-overlay-m1.8.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
+
+          cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
+          echo '25387d389ddc3ee0da2663071859a6199b5ceddc428070b4383b0b6ff3ed334f  build/mmo-overlay-m2.0.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
+
+          cat fabric-mmo-ports/overlay-m2.1/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.1.tar.gz
+          echo '4796017166c914ae52ad7f717f24a2f6c2fdacc68738e7412a72d6a40d529328  build/mmo-overlay-m2.1.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
+
+          for overlay in overlay-m1.5 overlay-m1.6 overlay-m1.7 overlay-m1.8 overlay-m2.0 overlay-m2.1 overlay-m2.2 overlay-m2.3 overlay-m2.4; do
+            test -e "fabric-mmo-ports/$overlay"
+            rm -rf "build/mmo-workspace/$overlay"
+            cp -a "fabric-mmo-ports/$overlay" "build/mmo-workspace/$overlay"
+          done
+
+          # Canonical Fabric modules are authoritative. Legacy overlays provide generated/runtime
+          # inputs only and must never overwrite the current production source tree.
+          for module in mythiclib-fabric mmocore-fabric mmoitems-fabric mythicmobs-fabric; do
+            rm -rf "build/mmo-workspace/fabric-platform/$module/src"
+            cp -a "fabric-mmo-ports/fabric-platform/$module/src" "build/mmo-workspace/fabric-platform/$module/src"
+            cp "fabric-mmo-ports/fabric-platform/$module/build.gradle" "build/mmo-workspace/fabric-platform/$module/build.gradle"
+          done
+
+          test -f build/mmo-workspace/fabric-platform/mmoitems-fabric/src/main/java/vn/svframe/mmoitemsfabric/MMOItemsPlaceholderConditionBridge.java
+          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/MythicSkillRuntime.java
+          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillContext.java
+          test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometry.java
+          test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometryCompat.java
+          test -f build/mmo-workspace/overlay-m2.4/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/MythicMobsParity.java
+          test -f build/mmo-workspace/overlay-m2.3/mmocore-runtime/src/main/java/vn/svframe/mmocorefabric/runtime/gameplay/ProfessionRuntime.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeInstanceModifier.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatModifier.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeTemporaryStatModifier.java
+
+          SMOKE_SOURCE="build/mmo-workspace/fabric-platform/server-smoke/src/main/java/vn/svframe/fabricmmo/smoke/ServerSmokeMod.java"
+          test -f "$SMOKE_SOURCE"
+          echo '--- MythicMobs materialization smoke predicate ---'
+          grep -n -E 'materialization|materialized|mechanicCount|conditionCount|targeterCount|active=' "$SMOKE_SOURCE" || true
+
+          tar -czf build/mmo-workspace-restored.tar.gz -C build/mmo-workspace .
+
+      - name: Upload restored source workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Restored-Source
+          path: build/mmo-workspace-restored.tar.gz
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
+
+      - name: Normalize Fabric metadata version
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/mmo-workspace/fabric-platform -path '*/src/main/resources/fabric.mod.json' -print0 | xargs -0 sed -i 's/${version}/0.8.0-dev/g'
+
+      - name: Java 21 runtime compile and smoke gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace
+          chmod +x build-offline.sh
+          ./build-offline.sh
+
+          STAT_OUT="$(mktemp -d)"
+          javac --release 21 -d "$STAT_OUT" \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeInstanceModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeTemporaryStatModifier.java \
+            ../../fabric-mmo-ports/tests/NativeStatEngineSmoke.java
+          java -cp "$STAT_OUT" NativeStatEngineSmoke | tee mythiclib-native-stat-smoke.log
+          grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' mythiclib-native-stat-smoke.log
+
+          cd fabric-platform
+          gradle --no-daemon :mythicmobs-fabric:prepareM21Sources
+          M22_OUT="$(mktemp -d)"
+          M22_SRC="mythicmobs-fabric/build/generated/m2.1-source/fabric-platform/mythicmobs-fabric/src/main/java"
+          javac --release 21 -d "$M22_OUT" \
+            $(find "$M22_SRC/vn/svframe/mythicmobsfabric/engine" -name '*.java' -print) \
+            ../overlay-m2.2/tests/ParticleGeometrySmoke.java \
+            ../overlay-m2.4/tests/MythicMobsParitySurfaceSmoke.java
+          java -cp "$M22_OUT" ParticleGeometrySmoke | tee ../m2.2-particle-smoke.log
+          grep -q 'MYTHICMOBS_PARTICLE_GEOMETRY_M2_2=PASS particles=124' ../m2.2-particle-smoke.log
+          java -cp "$M22_OUT" MythicMobsParitySurfaceSmoke | tee ../m2.4-parity-smoke.log
+          grep -q 'MYTHICMOBS_PARITY_M2_4=PASS mechanics=157 conditions=93 targeters=72' ../m2.4-parity-smoke.log
+
+      - name: Fabric Loom remapJar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          gradle --no-daemon --stacktrace clean remapJar
+
+      - name: Dedicated Fabric server boot gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          mkdir -p run server-smoke/run/config
+          rm -rf server-smoke/run/config/MMOCore server-smoke/run/config/MythicLib server-smoke/run/config/MMOItems server-smoke/run/config/MythicMobs
+          cp -a server-smoke/fixtures/. server-smoke/run/config/
+          printf 'eula=true\n' > run/eula.txt
+          printf 'eula=true\n' > server-smoke/run/eula.txt
+          gradle --no-daemon --stacktrace :server-smoke:runServer 2>&1 | tee ../../fabric-server-boot.log
+          grep -q 'MMOCORE_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
+          grep -q 'MYTHICLIB_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
+          grep -q 'MMOITEMS_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
+          grep -q 'MYTHICMOBS_LEGACY_CONFIG_BOOT=PASS' ../../fabric-server-boot.log
+          grep -q 'FABRIC_MMO_DEDICATED_SERVER_BOOT=PASS' ../../fabric-server-boot.log
+          ! grep -q 'Unexpected token in curve' ../../fabric-server-boot.log
+          ! grep -q 'Unexpected curve token' ../../fabric-server-boot.log
+
+      - name: Verify four remapped Fabric jars
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/fabric-mmo-jars
+          cp build/mmo-workspace/fabric-platform/mmocore-fabric/build/libs/MMOCore-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          cp build/mmo-workspace/fabric-platform/mmoitems-fabric/build/libs/MMOItems-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          cp build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/MythicLib-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          cp build/mmo-workspace/fabric-platform/mythicmobs-fabric/build/libs/MythicMobs-Fabric-0.8.0-dev.jar build/fabric-mmo-jars/
+          test "$(find build/fabric-mmo-jars -maxdepth 1 -name '*.jar' -type f | wc -l)" -eq 4
+          for jar in build/fabric-mmo-jars/*.jar; do
+            unzip -p "$jar" fabric.mod.json | grep -q '"environment": "server"'
+            unzip -l "$jar" | grep -q '/runtime/'
+          done
+          unzip -l build/fabric-mmo-jars/MythicMobs-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mythicmobsfabric/engine/MythicMobsParity.class'
+          unzip -l build/fabric-mmo-jars/MMOItems-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mmoitemsfabric/mixin/ExperienceOrbMendingMixin.class'
+          unzip -l build/fabric-mmo-jars/MMOItems-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mmoitemsfabric/MMOItemsDurabilityIngressMod.class'
+          unzip -l build/fabric-mmo-jars/MMOCore-Fabric-0.8.0-dev.jar | grep -q 'vn/svframe/mmocorefabric/MMOCoreDefaultConfigMod.class'
+          sha256sum build/fabric-mmo-jars/*.jar | tee build/fabric-mmo-jars/SHA256SUMS
+
+      - name: Upload four Fabric JARs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Ports-integrated-dev
+          path: build/fabric-mmo-jars/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload dedicated-server boot log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Server-Boot-Log
+          path: build/fabric-server-boot.log
+          if-no-files-found: ignore
+          retention-days: 14

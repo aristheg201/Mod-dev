@@ -1,0 +1,37 @@
+base { archivesName = 'MMOItems-Fabric' }
+
+// M1.5 contains the inventory/equipment/crafting/modifier parity runtime.  Fold
+// it into one generated tree so replacement classes overwrite the baseline
+// before Loom sees the sources.
+def generatedRoot = file("$buildDir/generated/mmoitems-runtime")
+def generatedRuntime = file("$generatedRoot/mmoitems-runtime")
+def generatedJava = file("$generatedRuntime/src/main/java")
+
+def prepareParityRuntime = tasks.register('prepareParityRuntime') {
+    inputs.dir(rootProject.file('../mmoitems-runtime'))
+    inputs.dir(rootProject.file('../overlay-m1.5/mmoitems-runtime'))
+    outputs.dir(generatedRuntime)
+
+    doLast {
+        project.delete(generatedRoot)
+        generatedRoot.mkdirs()
+        copy {
+            from rootProject.file('../mmoitems-runtime')
+            into generatedRuntime
+        }
+        copy {
+            from rootProject.file('../overlay-m1.5/mmoitems-runtime')
+            into generatedRuntime
+        }
+        if (!generatedJava.isDirectory()) {
+            throw new GradleException("Generated MMOItems runtime source root missing: ${generatedJava}")
+        }
+    }
+}
+
+sourceSets.main.java.srcDirs += generatedJava
+sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
+sourceSets.main.resources.srcDirs += '../../mmoitems-runtime/src/main/resources'
+
+tasks.named('compileJava').configure { dependsOn prepareParityRuntime }
+tasks.named('sourcesJar').configure { dependsOn prepareParityRuntime }

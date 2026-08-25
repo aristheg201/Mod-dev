@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "vn.svframe.mythiclibfabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityDamageMixin",
+    "ServerPlayNetworkHandlerActionMixin",
+    "ProjectileEntitySnapshotMixin",
+    "PersistentProjectileTriggerMixin",
+    "CrossbowTriggerMixin",
+    "BlockItemPlaceTriggerMixin",
+    "ServerPlayerTeleportTriggerMixin",
+    "WorkbenchScreenMixin",
+    "VanillaCraftingScreenMixin",
+    "DisplayEntityAccessor",
+    "TextDisplayEntityAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

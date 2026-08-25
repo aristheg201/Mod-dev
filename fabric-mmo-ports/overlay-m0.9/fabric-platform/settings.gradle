@@ -1,0 +1,10 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'fabric-mmo-ports'
+include 'mythiclib-fabric', 'mmocore-fabric', 'mmoitems-fabric', 'mythicmobs-fabric', 'server-smoke'

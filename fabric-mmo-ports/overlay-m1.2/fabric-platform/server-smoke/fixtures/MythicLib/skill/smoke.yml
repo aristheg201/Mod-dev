@@ -1,0 +1,10 @@
+SMOKE_SKILL:
+  source: script:smoke_script
+  name: Smoke Skill
+  trigger: CAST
+  parameters:
+    damage:
+      player:
+        base: 1
+        per-level: 0
+      item: 0

@@ -1,0 +1,5 @@
+strength:
+  name: Strength
+  max-points: 10
+  buff:
+    attack_damage: 1

@@ -1,0 +1,165 @@
+base { archivesName = 'MMOCore-Fabric' }
+
+// Build one deterministic runtime source tree. This mirrors the historical
+// overlay order without asking javac/Loom to compile duplicate classes from
+// several source roots.
+def generatedRoot = file("$buildDir/generated/mmocore-runtime")
+def generatedRuntime = file("$generatedRoot/mmocore-runtime")
+def generatedJava = file("$generatedRuntime/src/main/java")
+def m17Archive = file("$buildDir/generated/mmocore-m1.7.tar.gz")
+def m17ExpectedSha256 = '3604b61ab7c73bcf76d4dc3e67eee70f71758efe0a9d9c87799c24123fbf7fea'
+def m23Runtime = rootProject.file('../overlay-m2.3/mmocore-runtime')
+def m25Archive = file("$buildDir/generated/mmocore-m2.5.tar.gz")
+def m25ExpectedSha256 = '5a05fe6915db7b9c8c6d61f5cabaf0fcd27fa0bfbc9d62fee34ffd392e830c38'
+def m25LocalDir = rootProject.file('../overlay-m2.5')
+def m25RepoDir = rootProject.file('../../../fabric-mmo-ports/overlay-m2.5')
+def m26Archive = file("$buildDir/generated/mmocore-m2.6.tar.gz")
+def m26ExpectedSha256 = '6b0c31d9382c393bb55ca62a67863a59b082eacbbecf6f0d59eef2992bd099cf'
+def m26LocalDir = rootProject.file('../overlay-m2.6')
+def m26RepoDir = rootProject.file('../../../fabric-mmo-ports/overlay-m2.6')
+def professionIngress = file('src/main/java/vn/svframe/mmocorefabric/MMOCoreProfessionExperienceMod.java')
+
+def prepareParityRuntime = tasks.register('prepareParityRuntime') {
+    inputs.dir(rootProject.file('../mmocore-runtime'))
+    inputs.dir(rootProject.file('../overlay-m1.6/mmocore-runtime'))
+    inputs.file(rootProject.file('../overlay-m1.7/source.tar.gz.b64'))
+    inputs.dir(m23Runtime)
+    outputs.dir(generatedRuntime)
+
+    doLast {
+        project.delete(generatedRoot)
+        generatedRoot.mkdirs()
+
+        copy { from rootProject.file('../mmocore-runtime'); into generatedRuntime }
+        copy { from rootProject.file('../overlay-m1.6/mmocore-runtime'); into generatedRuntime }
+
+        def encodedFile = rootProject.file('../overlay-m1.7/source.tar.gz.b64')
+        byte[] archiveBytes
+        try {
+            archiveBytes = java.util.Base64.decoder.decode(encodedFile.getText('UTF-8').replaceAll('\\s+', ''))
+        } catch (IllegalArgumentException e) {
+            throw new GradleException('Invalid base64 in MMOCore M1.7 source overlay', e)
+        }
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha256 = new java.math.BigInteger(1, digest).toString(16).padLeft(64, '0')
+        if (actualSha256 != m17ExpectedSha256) throw new GradleException("MMOCore M1.7 source checksum mismatch: ${actualSha256}")
+        m17Archive.parentFile.mkdirs()
+        m17Archive.bytes = archiveBytes
+
+        def extracted = file("$buildDir/generated/mmocore-m1.7-extracted")
+        project.delete(extracted)
+        copy { from tarTree(resources.gzip(m17Archive)); into extracted }
+
+        def javaFiles = fileTree(extracted) { include '**/*.java' }.files
+        if (javaFiles.isEmpty()) throw new GradleException("MMOCore M1.7 archive contains no Java sources under ${extracted}")
+        generatedJava.mkdirs()
+        javaFiles.each { source ->
+            def text = source.getText('UTF-8')
+            def matcher = text =~ /(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*;/
+            if (!matcher.find()) throw new GradleException("MMOCore M1.7 source has no package declaration: ${source}")
+            def packagePath = matcher.group(1).replace('.', '/')
+            def targetDir = new File(generatedJava, packagePath)
+            targetDir.mkdirs()
+            new File(targetDir, source.name).setText(text, 'UTF-8')
+        }
+
+        if (!m23Runtime.isDirectory()) throw new GradleException("MMOCore M2.3 runtime root missing: ${m23Runtime}")
+        copy { from m23Runtime; into generatedRuntime }
+
+        def m25Dir = m25LocalDir.isDirectory() && !fileTree(m25LocalDir) { include 'source.tar.gz.b64.part*' }.files.isEmpty()
+                ? m25LocalDir : m25RepoDir
+        def m25Parts = fileTree(m25Dir) { include 'source.tar.gz.b64.part*' }.files.toList().sort { a, b -> a.name <=> b.name }
+        if (m25Parts.isEmpty()) throw new GradleException("Missing MMOCore M2.5 source overlay parts under ${m25Dir}")
+        def m25Encoded = m25Parts.collect { it.getText('UTF-8').trim() }.join('')
+        byte[] m25Bytes
+        try {
+            m25Bytes = java.util.Base64.decoder.decode(m25Encoded)
+        } catch (IllegalArgumentException e) {
+            throw new GradleException('Invalid base64 in MMOCore M2.5 source overlay parts', e)
+        }
+        def m25Digest = java.security.MessageDigest.getInstance('SHA-256').digest(m25Bytes)
+        def m25ActualSha256 = new java.math.BigInteger(1, m25Digest).toString(16).padLeft(64, '0')
+        if (m25ActualSha256 != m25ExpectedSha256) throw new GradleException("MMOCore M2.5 source checksum mismatch: ${m25ActualSha256}")
+        m25Archive.parentFile.mkdirs()
+        m25Archive.bytes = m25Bytes
+
+        def m25Extracted = file("$buildDir/generated/mmocore-m2.5-extracted")
+        project.delete(m25Extracted)
+        copy { from tarTree(resources.gzip(m25Archive)); into m25Extracted }
+        def m25Runtime = new File(m25Extracted, 'overlay-m2.5/mmocore-runtime')
+        if (!m25Runtime.isDirectory()) throw new GradleException("MMOCore M2.5 runtime root missing: ${m25Runtime}")
+        copy { from m25Runtime; into generatedRuntime }
+
+        // M2.5 also carries the Fabric ingress changes which bind the new
+        // authoritative PlayerProgress/resource runtime to the server module.
+        def m25FabricJava = new File(m25Extracted, 'fabric-platform/mmocore-fabric/src/main/java')
+        if (!m25FabricJava.isDirectory()) throw new GradleException("MMOCore M2.5 Fabric source root missing: ${m25FabricJava}")
+        copy { from m25FabricJava; into file('src/main/java') }
+
+        // M2.6 carries native social request parity (friend/party/guild invite lifecycle).
+        def m26Dir = m26LocalDir.isDirectory() && !fileTree(m26LocalDir) { include 'source.tar.gz.b64.part*' }.files.isEmpty()
+                ? m26LocalDir : m26RepoDir
+        def m26Parts = fileTree(m26Dir) { include 'source.tar.gz.b64.part*' }.files.toList().sort { a, b -> a.name <=> b.name }
+        if (m26Parts.isEmpty()) throw new GradleException("Missing MMOCore M2.6 source overlay parts under ${m26Dir}")
+        byte[] m26Bytes
+        try {
+            m26Bytes = java.util.Base64.decoder.decode(m26Parts.collect { it.getText('UTF-8').trim() }.join(''))
+        } catch (IllegalArgumentException e) {
+            throw new GradleException('Invalid base64 in MMOCore M2.6 source overlay parts', e)
+        }
+        def m26Digest = java.security.MessageDigest.getInstance('SHA-256').digest(m26Bytes)
+        def m26ActualSha256 = new java.math.BigInteger(1, m26Digest).toString(16).padLeft(64, '0')
+        if (m26ActualSha256 != m26ExpectedSha256) throw new GradleException("MMOCore M2.6 source checksum mismatch: ${m26ActualSha256}")
+        m26Archive.parentFile.mkdirs()
+        m26Archive.bytes = m26Bytes
+
+        def m26Extracted = file("$buildDir/generated/mmocore-m2.6-extracted")
+        project.delete(m26Extracted)
+        copy { from tarTree(resources.gzip(m26Archive)); into m26Extracted }
+        def m26Root = new File(m26Extracted, 'overlay-m2.6')
+        def m26Runtime = new File(m26Root, 'mmocore-runtime')
+        if (!m26Runtime.isDirectory()) throw new GradleException("MMOCore M2.6 runtime root missing: ${m26Runtime}")
+        copy { from m26Runtime; into generatedRuntime }
+
+        def m26FabricJava = new File(m26Root, 'fabric-platform/mmocore-fabric/src/main/java')
+        if (!m26FabricJava.isDirectory()) throw new GradleException("MMOCore M2.6 Fabric source root missing: ${m26FabricJava}")
+        copy { from m26FabricJava; into file('src/main/java') }
+
+        // The provider callback also declares current(...), therefore the
+        // unqualified call resolves to OptionalDouble. Qualify the static
+        // MMOCore resource lookup before javac/Loom compiles this overlay.
+        def resourceSource = file('src/main/java/vn/svframe/mmocorefabric/MMOCoreResourceMod.java')
+        def resourceText = resourceSource.getText('UTF-8')
+        def oldAdd = 'set(player, key, current(player, key) + amount);'
+        def newAdd = 'set(player, key, MMOCoreResourceMod.current(player, key) + amount);'
+        if (resourceText.contains(oldAdd)) resourceSource.setText(resourceText.replace(oldAdd, newAdd), 'UTF-8')
+        else if (!resourceText.contains(newAdd)) throw new GradleException('MMOCore M2.5 resource add callback changed; refusing fuzzy patch')
+
+        if (!generatedJava.isDirectory()) throw new GradleException("Generated MMOCore runtime source root missing: ${generatedJava}")
+    }
+}
+
+def prepareFabric121Compatibility = tasks.register('prepareFabric121Compatibility') {
+    inputs.file(professionIngress)
+    doLast {
+        def text = professionIngress.getText('UTF-8')
+        def oldFly = 'player.getAbilities().flying || player.isInPose(EntityPose.GLIDING)'
+        def newFly = 'player.getAbilities().flying || player.isFallFlying()'
+        def oldGround = '!player.getAbilities().flying && !player.isInPose(EntityPose.GLIDING)'
+        def newGround = '!player.getAbilities().flying && !player.isFallFlying()'
+        def oldState = text.contains(oldFly) && text.contains(oldGround)
+        def newState = text.contains(newFly) && text.contains(newGround)
+        if (oldState) {
+            professionIngress.setText(text.replace(oldFly, newFly).replace(oldGround, newGround), 'UTF-8')
+        } else if (!newState) {
+            throw new GradleException('MMOCore profession movement gliding expressions changed; refusing fuzzy 1.21.1 patch')
+        }
+    }
+}
+
+sourceSets.main.java.srcDirs += generatedJava
+sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
+sourceSets.main.resources.srcDirs += '../../mmocore-runtime/src/main/resources'
+
+tasks.named('compileJava').configure { dependsOn prepareParityRuntime; dependsOn prepareFabric121Compatibility }
+tasks.named('sourcesJar').configure { dependsOn prepareParityRuntime; dependsOn prepareFabric121Compatibility }

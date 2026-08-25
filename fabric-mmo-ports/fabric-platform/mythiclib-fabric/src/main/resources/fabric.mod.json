@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "mythiclibfabric",
+  "version": "${version}",
+  "name": "MythicLib Fabric",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "vn.svframe.mythiclibfabric.MythicLibFabricMod",
+      "vn.svframe.mythiclibfabric.MythicLibStatMod",
+      "vn.svframe.mythiclibfabric.MythicLibCombatMod",
+      "vn.svframe.mythiclibfabric.MythicLibPassiveMod",
+      "vn.svframe.mythiclibfabric.MythicLibArmorPassiveMod",
+      "vn.svframe.mythiclibfabric.MythicLibPlayerDataMod",
+      "vn.svframe.mythiclibfabric.MythicLibCraftingBootstrap"
+    ]
+  },
+  "mixins": [
+    "mythiclibfabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

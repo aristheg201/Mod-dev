@@ -1,0 +1,5 @@
+name: Smoke Skill
+material: STONE
+cooldown:
+  base: 1
+  per-level: 0

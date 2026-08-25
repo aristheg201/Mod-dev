@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "mmoitemsfabric",
+  "version": "${version}",
+  "name": "MMOItems Fabric",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "vn.svframe.mmoitemsfabric.MMOItemsFabricMod",
+      "vn.svframe.mmoitemsfabric.MMOItemsStatBridgeMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "mythiclibfabric": ">=0.8.0-dev"
+  }
+}

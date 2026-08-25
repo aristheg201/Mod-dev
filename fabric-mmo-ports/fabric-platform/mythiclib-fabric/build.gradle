@@ -1,0 +1,431 @@
+base { archivesName = 'SVFrameLib' }
+version = '1.7.1-fabric'
+
+// Canonical native Fabric module. Shared platform-neutral MythicLib runtime is
+// compiled into the same artifact. Canonical runtime sources in the repository
+// replace their restored bootstrap counterparts before javac runs.
+def restoredRuntime = rootProject.file('../mythiclib-runtime')
+def canonicalRuntime = rootProject.file('../../../fabric-mmo-ports/mythiclib-runtime')
+
+def syncCanonicalMythicLibRuntime = tasks.register('syncCanonicalMythicLibRuntime') {
+    inputs.dir(canonicalRuntime)
+    outputs.dir(restoredRuntime)
+    doLast {
+        if (canonicalRuntime.isDirectory()) {
+            copy {
+                from canonicalRuntime
+                into restoredRuntime
+            }
+        }
+    }
+}
+
+// Native io.lumine.mythic.lib.* compatibility/API base bundle.
+def legacyApiParts = fileTree(file('legacy-api-source-v2')) {
+    include 'source.tar.gz.b64.part*'
+}
+def generatedLegacyApi = layout.buildDirectory.dir('generated/legacy-api-src')
+def legacyApiSha256 = '2d88eb27f876a72c71ecf67ea73a95e6bfd2fdd75abf1c64f912d26dd509fce8'
+
+def unpackLegacyApiSources = tasks.register('unpackLegacyApiSources') {
+    inputs.files(legacyApiParts)
+    outputs.dir(generatedLegacyApi)
+    doLast {
+        def parts = legacyApiParts.files.sort { a, b -> a.name <=> b.name }
+        if (parts.size() != 7) throw new GradleException("Expected 7 MythicLib legacy API source parts, got ${parts.size()}")
+        byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
+        if (actualSha != legacyApiSha256) throw new GradleException("MythicLib legacy API source checksum mismatch: ${actualSha}")
+        def outDir = generatedLegacyApi.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        def archive = new File(temporaryDir, 'legacy-api-source.tar.gz')
+        archive.bytes = archiveBytes
+        copy { from tarTree(resources.gzip(archive)); into outDir }
+    }
+}
+
+// V3 adds the remaining native manager/module/script/variable/skill/event surface
+// without Bukkit/Paper imports. The archive is split into small verified chunks
+// to keep repository transport deterministic.
+def legacyApiV3Parts = fileTree(file('legacy-api-v3-fixed2')) {
+    include 'source.tar.gz.b64.part*'
+}
+def generatedLegacyApiV3 = layout.buildDirectory.dir('generated/legacy-api-v3-src')
+def legacyApiV3Sha256 = '2f1a7ca0fc23fc9f5f6cda011e880d30e0485b6b74ae954b3e1d155f5cb60ba4'
+
+def unpackLegacyApiV3Sources = tasks.register('unpackLegacyApiV3Sources') {
+    inputs.files(legacyApiV3Parts)
+    outputs.dir(generatedLegacyApiV3)
+    doLast {
+        def parts = legacyApiV3Parts.files.sort { a, b -> a.name <=> b.name }
+        if (parts.size() != 13) throw new GradleException("Expected 13 MythicLib V3 delta parts, got ${parts.size()}")
+        byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
+        if (actualSha != legacyApiV3Sha256) throw new GradleException("MythicLib V3 delta checksum mismatch: ${actualSha}")
+        def outDir = generatedLegacyApiV3.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        def archive = new File(temporaryDir, 'legacy-api-v3-delta.tar.gz')
+        archive.bytes = archiveBytes
+        copy { from tarTree(resources.gzip(archive)); into outDir }
+
+        // Java 9+ implicitly imports java.lang.Module. The V3 compatibility
+        // bundle intentionally keeps the original MythicLib class name Module,
+        // so wildcard module imports make those manager stubs ambiguous on Java 21.
+        // Normalize only the generated manager sources; the verified archive bytes
+        // remain immutable and checksum-protected.
+        fileTree(outDir) { include 'io/lumine/mythic/lib/manager/*.java' }.each { source ->
+            def text = source.getText('UTF-8')
+            def wildcard = 'import io.lumine.mythic.lib.module.*;'
+            if (text.contains(wildcard)) {
+                source.setText(text.replace(wildcard,
+                        'import io.lumine.mythic.lib.module.MMOPlugin;import io.lumine.mythic.lib.module.Module;'), 'UTF-8')
+            }
+        }
+
+        // Adapt the V3 script/skill compatibility delta to the V2 native API base.
+        // These generated sources preserve MythicLib 1.7.1 ordering: conditions are
+        // evaluated by the result phase, then mechanics run during whenCast.
+        def bridge = new File(outDir, 'io/lumine/mythic/lib/skill/SkillMetadataContextBridge.java')
+        bridge.parentFile.mkdirs()
+        bridge.setText('''package io.lumine.mythic.lib.skill;
+
+import io.lumine.mythic.lib.skill.handler.SkillHandler;
+import vn.svframe.mythiclibfabric.runtime.script.ScriptContext;
+
+import java.util.UUID;
+
+public final class SkillMetadataContextBridge {
+    private SkillMetadataContextBridge() {}
+
+    public static ScriptContext context(SkillMetadata metadata) {
+        if (metadata == null || metadata.getCaster() == null)
+            throw new IllegalArgumentException("Skill metadata/caster cannot be null");
+
+        UUID caster = metadata.getCaster().getData().getUniqueId();
+        var targetEntity = metadata.getTargetEntityOrNull();
+        UUID target = targetEntity == null ? caster : targetEntity.getUuid();
+        ScriptContext context = new ScriptContext(caster, target);
+
+        if (metadata.getCast() != null) {
+            SkillHandler<?> handler = metadata.getCast().getHandler();
+            if (handler != null) for (String key : handler.getParameters()) {
+                double value = metadata.getParameter(key);
+                context.numbers().put(key, value);
+                context.numbers().put("parameter." + key, value);
+                context.numbers().put("modifier." + key, value);
+                context.objects().put(key, value);
+                context.objects().put("parameter." + key, value);
+                context.objects().put("modifier." + key, value);
+            }
+        }
+
+        if (metadata.hasAttackSource()) context.objects().put("attack", metadata.getAttackSource());
+        context.objects().put("skill_metadata", metadata);
+        return context;
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/script/MechanicQueue.java').setText('''package io.lumine.mythic.lib.script;
+
+import io.lumine.mythic.lib.script.mechanic.Mechanic;
+import io.lumine.mythic.lib.script.mechanic.RawMechanic;
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import vn.svframe.mythiclibfabric.MythicLibFabricMod;
+import vn.svframe.mythiclibfabric.runtime.script.ExpressionRuntime;
+import vn.svframe.mythiclibfabric.runtime.script.ScriptLineParser;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class MechanicQueue {
+    private static final Logger LOG = Logger.getLogger("MythicLib");
+    private final Iterator<Mechanic> queue;
+    private final SkillMetadata metadata;
+    private final Script script;
+    private int counter;
+
+    public MechanicQueue(SkillMetadata metadata, Script script) {
+        this.metadata = metadata;
+        this.script = script;
+        this.queue = script.getMechanics().iterator();
+    }
+
+    public boolean next() {
+        while (queue.hasNext()) {
+            counter++;
+            Mechanic mechanic = queue.next();
+            if (mechanic instanceof RawMechanic raw) {
+                ScriptLineParser.Call call = ScriptLineParser.parse(raw.raw());
+                if (call.name().equals("delay")) {
+                    long ticks = delayTicks(call);
+                    MythicLibFabricMod.schedule((int) Math.min(Integer.MAX_VALUE, Math.max(1L, ticks)), this::next);
+                    return false;
+                }
+            }
+            try {
+                mechanic.cast(metadata);
+            } catch (RuntimeException exception) {
+                LOG.log(Level.WARNING, "Could not execute mechanic n" + counter + " from script '" + script.getId() + "': " + exception.getMessage());
+                return true;
+            }
+        }
+        return true;
+    }
+
+    private long delayTicks(ScriptLineParser.Call call) {
+        String expression = call.params().getOrDefault("amount", "0");
+        try {
+            var context = io.lumine.mythic.lib.skill.SkillMetadataContextBridge.context(metadata);
+            return (long) new ExpressionRuntime().evaluate(expression, context.numbers());
+        } catch (RuntimeException ignored) {
+            try { return (long) Double.parseDouble(expression); }
+            catch (NumberFormatException invalid) { return 0L; }
+        }
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/script/Script.java').setText('''package io.lumine.mythic.lib.script;
+
+import io.lumine.mythic.lib.api.player.MMOPlayerData;
+import io.lumine.mythic.lib.script.condition.Condition;
+import io.lumine.mythic.lib.script.mechanic.Mechanic;
+import io.lumine.mythic.lib.script.condition.RawCondition;
+import io.lumine.mythic.lib.script.mechanic.RawMechanic;
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import io.lumine.mythic.lib.util.PostLoadAction;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class Script {
+    private final String id;
+    private final boolean pub;
+    private final List<String> conditions;
+    private final List<String> mechanics;
+
+    public Script(String id, List<String> mechanics) { this(id, true, List.of(), mechanics); }
+    public Script(String id, boolean pub) { this(id, pub, List.of(), List.of()); }
+    public Script(String id, boolean pub, List<String> conditions, List<String> mechanics) {
+        this.id = Objects.requireNonNull(id);
+        this.pub = pub;
+        this.conditions = List.copyOf(conditions);
+        this.mechanics = List.copyOf(mechanics);
+    }
+
+    public PostLoadAction getPostLoadAction() { return new PostLoadAction(x -> {}); }
+    public String getId() { return id; }
+    public boolean isPublic() { return pub; }
+
+    public List<Mechanic> getMechanics() {
+        List<Mechanic> out = new ArrayList<>();
+        for (String line : mechanics) out.add(new RawMechanic(line));
+        return List.copyOf(out);
+    }
+
+    public List<Condition> getConditions() {
+        List<Condition> out = new ArrayList<>();
+        for (String line : conditions) out.add(new RawCondition(line));
+        return List.copyOf(out);
+    }
+
+    public boolean cast(MMOPlayerData data) { return cast(SkillMetadata.of(data)); }
+
+    public boolean cast(SkillMetadata metadata) {
+        for (Condition condition : getConditions())
+            if (!condition.checkIfMet(metadata)) return false;
+        new MechanicQueue(metadata, this).next();
+        return true;
+    }
+
+    public List<String> rawConditions() { return conditions; }
+    public List<String> rawMechanics() { return mechanics; }
+}
+''', 'UTF-8')
+
+        def scriptFiles = [
+                'io/lumine/mythic/lib/script/Script.java',
+                'io/lumine/mythic/lib/script/mechanic/RawMechanic.java',
+                'io/lumine/mythic/lib/script/condition/RawCondition.java'
+        ]
+        scriptFiles.each { relative ->
+            def source = new File(outDir, relative)
+            source.setText(source.getText('UTF-8').replace('metadata.context()',
+                    'io.lumine.mythic.lib.skill.SkillMetadataContextBridge.context(metadata)'), 'UTF-8')
+        }
+
+        new File(outDir, 'io/lumine/mythic/lib/skill/handler/ScriptSkillHandler.java').setText('''package io.lumine.mythic.lib.skill.handler;
+
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import io.lumine.mythic.lib.skill.result.def.SimpleSkillResult;
+import io.lumine.mythic.lib.util.configobject.ConfigObject;
+import vn.svframe.mythiclibfabric.MythicLibFabricMod;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class ScriptSkillHandler extends SkillHandler<SimpleSkillResult> {
+    public ScriptSkillHandler(String id) { super(id); }
+
+    public ScriptSkillHandler(String id, ConfigObject cfg) {
+        super(id);
+        if (cfg != null && cfg.contains("modifiers")) {
+            String raw = cfg.getString("modifiers", "");
+            for (String modifier : raw.split("[,;\\s]+"))
+                if (!modifier.isBlank()) registerModifiers(modifier.trim());
+        }
+    }
+
+    @Override
+    public SimpleSkillResult getResult(SkillMetadata metadata) {
+        return new SimpleSkillResult(metadata != null && metadata.getCaster() != null);
+    }
+
+    @Override
+    public void whenCast(SimpleSkillResult result, SkillMetadata metadata) {
+        if (!result.isSuccessful()) return;
+        Map<String, Object> params = new LinkedHashMap<>();
+        for (String key : getParameters()) params.put(key, metadata.getParameter(key));
+        var entity = metadata.getTargetEntityOrNull();
+        UUID target = entity == null ? null : entity.getUuid();
+        MythicLibFabricMod.castSkill(getId(), metadata.getCaster().getData().getUniqueId(), target, params);
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/skill/handler/MythicLibSkillHandler.java').setText('''package io.lumine.mythic.lib.skill.handler;
+
+import io.lumine.mythic.lib.script.MechanicQueue;
+import io.lumine.mythic.lib.script.Script;
+import io.lumine.mythic.lib.script.condition.Condition;
+import io.lumine.mythic.lib.skill.SkillMetadata;
+import io.lumine.mythic.lib.skill.result.def.SimpleSkillResult;
+import io.lumine.mythic.lib.util.configobject.ConfigObject;
+
+import java.util.Objects;
+
+public class MythicLibSkillHandler extends ScriptSkillHandler {
+    private final Script script;
+
+    public MythicLibSkillHandler(String id) { super(id); this.script = null; }
+    public MythicLibSkillHandler(ConfigObject cfg) { super("MythicLibSkillHandler", cfg); this.script = null; }
+    public MythicLibSkillHandler(Script script) {
+        super(Objects.requireNonNull(script, "script").getId());
+        this.script = script;
+    }
+
+    @Override
+    public SimpleSkillResult getResult(SkillMetadata metadata) {
+        if (script == null) return super.getResult(metadata);
+        if (metadata == null || metadata.getCaster() == null) return new SimpleSkillResult(false);
+        for (Condition condition : script.getConditions())
+            if (!condition.checkIfMet(metadata)) return new SimpleSkillResult(false);
+        return new SimpleSkillResult(true);
+    }
+
+    @Override
+    public void whenCast(SimpleSkillResult result, SkillMetadata metadata) {
+        if (!result.isSuccessful()) return;
+        if (script == null) { super.whenCast(result, metadata); return; }
+        new MechanicQueue(metadata, script).next();
+    }
+}
+''', 'UTF-8')
+
+        new File(outDir, 'io/lumine/mythic/lib/skill/result/def/AttackSkillResult.java').setText('''package io.lumine.mythic.lib.skill.result.def;
+
+import io.lumine.mythic.lib.damage.AttackMetadata;
+import io.lumine.mythic.lib.skill.result.SkillResult;
+
+public class AttackSkillResult implements SkillResult {
+    private final AttackMetadata attack;
+    public AttackSkillResult(AttackMetadata attack) { this.attack = attack; }
+    public AttackMetadata getAttack() { return attack; }
+    public boolean isSuccessful() { return attack != null; }
+}
+''', 'UTF-8')
+    }
+}
+
+// V4 is the bytecode-parity foundation overlay reconstructed from the 1.7.1 JAR.
+// It deliberately runs after V2/V3 and replaces matching source FQNs rather than
+// compiling duplicate compatibility classes.
+def legacyApiV4Parts = fileTree(file('legacy-api-v4-parity')) {
+    include 'source.tar.gz.b64.part*'
+}
+def generatedLegacyApiV4 = layout.buildDirectory.dir('generated/legacy-api-v4-src')
+def legacyApiV4Sha256 = '70651693193487fe55f136e7e41515069ca04e5c559251c3560f963410d456c5'
+
+def unpackLegacyApiV4Sources = tasks.register('unpackLegacyApiV4Sources') {
+    inputs.files(legacyApiV4Parts)
+    outputs.dir(generatedLegacyApiV4)
+    doLast {
+        def parts = legacyApiV4Parts.files.sort { a, b -> a.name <=> b.name }
+        if (parts.size() != 4) throw new GradleException("Expected 4 MythicLib V4 parity parts, got ${parts.size()}")
+        byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
+        if (actualSha != legacyApiV4Sha256) throw new GradleException("MythicLib V4 parity checksum mismatch: ${actualSha}")
+        def outDir = generatedLegacyApiV4.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        def archive = new File(temporaryDir, 'legacy-api-v4-parity.tar.gz')
+        archive.bytes = archiveBytes
+        copy { from tarTree(resources.gzip(archive)); into outDir }
+    }
+}
+
+def generatedLegacyApiMerged = layout.buildDirectory.dir('generated/legacy-api-merged-src')
+
+def mergeLegacyApiSources = tasks.register('mergeLegacyApiSources') {
+    dependsOn(unpackLegacyApiSources)
+    dependsOn(unpackLegacyApiV3Sources)
+    dependsOn(unpackLegacyApiV4Sources)
+    outputs.dir(generatedLegacyApiMerged)
+    doLast {
+        def outDir = generatedLegacyApiMerged.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        [generatedLegacyApi.get().asFile, generatedLegacyApiV3.get().asFile, generatedLegacyApiV4.get().asFile].each { root ->
+            fileTree(root) { include '**/*.java' }.files.sort { a, b -> a.path <=> b.path }.each { source ->
+                def relative = root.toPath().relativize(source.toPath()).toString()
+                def target = new File(outDir, relative)
+                target.parentFile.mkdirs()
+                target.bytes = source.bytes
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir rootProject.file('../mythiclib-runtime/src/main/java')
+            srcDir rootProject.file('../common-runtime/src/main/java')
+            srcDir generatedLegacyApiMerged
+        }
+        resources {
+            srcDir rootProject.file('../mythiclib-runtime/src/main/resources')
+        }
+    }
+}
+
+tasks.named('compileJava').configure {
+    dependsOn(syncCanonicalMythicLibRuntime)
+    dependsOn(mergeLegacyApiSources)
+}
+tasks.named('processResources').configure { dependsOn(syncCanonicalMythicLibRuntime) }
+
+
+dependencies {
+    compileOnly 'net.luckperms:api:5.4'
+}

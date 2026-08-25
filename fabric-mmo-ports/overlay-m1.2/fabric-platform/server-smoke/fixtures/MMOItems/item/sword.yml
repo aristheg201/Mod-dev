@@ -1,0 +1,11 @@
+SMOKE_BLADE:
+  base:
+    material: IRON_SWORD
+    name: Smoke Blade
+    custom-model-data: 101.0
+    attack-damage: 7
+    ability:
+      ability1:
+        type: SMOKE_SKILL
+        mode: RIGHT_CLICK
+        cooldown: 0

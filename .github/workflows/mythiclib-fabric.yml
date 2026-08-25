@@ -1,0 +1,179 @@
+name: SVFrameLib Fabric 1.21.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - 'fabric-mmo-ports/fabric-platform/mythiclib-fabric/**'
+      - 'fabric-mmo-ports/mythiclib-runtime/**'
+      - 'fabric-mmo-ports/common-runtime/**'
+      - 'fabric-mmo-ports/svframelib-final/**'
+      - '.github/workflows/mythiclib-fabric.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+
+      - name: Restore canonical SVFrameLib workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/mmo-workspace
+          cat fabric-mmo-ports/bootstrap-m0.8/chunks/part* | base64 -d > build/mmo-workspace.tar.gz
+          echo '99f090bc86fe3e57215e009d55ff3eadf7582cf1418d98052a978922872fa75c  build/mmo-workspace.tar.gz' | sha256sum -c -
+          tar -xzf build/mmo-workspace.tar.gz -C build/mmo-workspace
+
+          cp -a fabric-mmo-ports/overlay-m0.9/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.0/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.1/mmocore-brigadier.patch
+          cp -a fabric-mmo-ports/overlay-m1.2/. build/mmo-workspace/
+          patch -d build/mmo-workspace -p1 < fabric-mmo-ports/overlay-m1.3/mythiclib-brigadier.patch
+          cp fabric-mmo-ports/overlay-m1.3/source.tar.gz build/mmo-overlay-m1.3.tar.gz
+          tar -xzf build/mmo-overlay-m1.3.tar.gz -C build/mmo-workspace
+          cp -a fabric-mmo-ports/overlay-m1.4/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.5/. build/mmo-workspace/
+          cp -a fabric-mmo-ports/overlay-m1.6/. build/mmo-workspace/
+          base64 -d fabric-mmo-ports/overlay-m1.7/source.tar.gz.b64 > build/mmo-overlay-m1.7.tar.gz
+          tar -xzf build/mmo-overlay-m1.7.tar.gz -C build/mmo-workspace
+          base64 -d fabric-mmo-ports/overlay-m1.8/source.tar.gz.b64 > build/mmo-overlay-m1.8.tar.gz
+          tar -xzf build/mmo-overlay-m1.8.tar.gz -C build/mmo-workspace
+          cat fabric-mmo-ports/overlay-m2.0/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.0.tar.gz
+          tar -xzf build/mmo-overlay-m2.0.tar.gz -C build/mmo-workspace
+          cat fabric-mmo-ports/overlay-m2.1/source.tar.gz.b64.part* | base64 -d > build/mmo-overlay-m2.1.tar.gz
+          tar -xzf build/mmo-overlay-m2.1.tar.gz -C build/mmo-workspace
+
+          MOD=build/mmo-workspace/fabric-platform/mythiclib-fabric
+          rm -rf "$MOD/src" "$MOD/legacy-api-source" "$MOD/legacy-api-source-v2" "$MOD/legacy-api-v3-delta" "$MOD/legacy-api-v3-fixed2" "$MOD/legacy-api-v4-parity"
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/src "$MOD/src"
+          if [ -d fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source ]; then
+            cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source "$MOD/legacy-api-source"
+          fi
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-source-v2 "$MOD/legacy-api-source-v2"
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v3-fixed2 "$MOD/legacy-api-v3-fixed2"
+          cp -a fabric-mmo-ports/fabric-platform/mythiclib-fabric/legacy-api-v4-parity "$MOD/legacy-api-v4-parity"
+          cp fabric-mmo-ports/fabric-platform/mythiclib-fabric/build.gradle "$MOD/build.gradle"
+          cp -a fabric-mmo-ports/mythiclib-runtime/. build/mmo-workspace/mythiclib-runtime/
+          if [ -d fabric-mmo-ports/common-runtime ]; then
+            cp -a fabric-mmo-ports/common-runtime/. build/mmo-workspace/common-runtime/
+          fi
+
+          {
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part00
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part01
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part02
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part03
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_00
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_01
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_02
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_03
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_04
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_05
+            cat fabric-mmo-ports/svframelib-final/text-overlay/p04_06
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part05
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part06
+            cat fabric-mmo-ports/svframelib-final/text-overlay/part07
+          } > build/svframelib-overlay.tar.gz.b64
+          base64 -d build/svframelib-overlay.tar.gz.b64 > build/svframelib-overlay.tar.gz
+          echo '30ec6e8bbdc4e9403dc8f32d689971812863b9417c8c39f7a19244b0caa89e80  build/svframelib-overlay.tar.gz' | sha256sum -c -
+          tar -xzf build/svframelib-overlay.tar.gz -C build/mmo-workspace
+
+          sed -i "s/archivesName = 'MythicLib-Fabric'/archivesName = 'SVFrameLib'/" "$MOD/build.gradle"
+          if ! grep -q "^version = '1.7.1-fabric'" "$MOD/build.gradle"; then
+            printf "\nversion = '1.7.1-fabric'\n" >> "$MOD/build.gradle"
+          fi
+          grep -q '"id": "svframelib"' "$MOD/src/main/resources/fabric.mod.json"
+          grep -q '"name": "SVFrameLib"' "$MOD/src/main/resources/fabric.mod.json"
+          grep -q '"version": "1.7.1-fabric"' "$MOD/src/main/resources/fabric.mod.json"
+
+      - name: SVFrameLib full parity gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace
+          chmod +x build-offline.sh
+          ./build-offline.sh
+          STAT_OUT="$(mktemp -d)"
+          javac --release 21 -d "$STAT_OUT" \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeInstanceModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatModifier.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeTemporaryStatModifier.java \
+            ../../fabric-mmo-ports/tests/NativeStatEngineSmoke.java
+          java -cp "$STAT_OUT" NativeStatEngineSmoke | tee svframelib-native-stat-smoke.log
+          grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' svframelib-native-stat-smoke.log
+
+      - name: Loom compile and remap SVFrameLib
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          gradle --no-daemon --stacktrace :mythiclib-fabric:clean :mythiclib-fabric:remapJar
+
+      - name: Verify SVFrameLib Fabric JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR=build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/SVFrameLib-1.7.1-fabric.jar
+          test -s "$JAR"
+          unzip -p "$JAR" fabric.mod.json | grep -q '"id": "svframelib"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"name": "SVFrameLib"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"version": "1.7.1-fabric"'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"environment": "server"'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/MythicLibFabricMod.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/FabricScriptPlatform.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/ScriptProjectileCallbackRegistry.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/mythiclibfabric/runtime/script/ScriptEngine.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/api/player/MMOPlayerData.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/damage/AttackMetadata.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/player/modifier/ModifierMap.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/manager/SkillManager.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/script/Script.class'
+          unzip -l "$JAR" | grep -q 'io/lumine/mythic/lib/skill/handler/MythicLibSkillHandler.class'
+          sha256sum "$JAR" | tee build/SVFrameLib-SHA256.txt
+
+      - name: Dedicated SVFrameLib Fabric server boot gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/mmo-workspace/fabric-platform
+          mkdir -p run mythiclib-fabric/run
+          printf 'eula=true\n' > run/eula.txt
+          printf 'eula=true\n' > mythiclib-fabric/run/eula.txt
+          set +e
+          timeout 90s gradle --no-daemon --stacktrace :mythiclib-fabric:runServer > ../../svframelib-fabric-boot.log 2>&1
+          status=$?
+          set -e
+          cat ../../svframelib-fabric-boot.log
+          if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then exit "$status"; fi
+          grep -Eq 'MythicLib Fabric online|SVFrameLib.*online' ../../svframelib-fabric-boot.log
+          ! grep -q 'Mixin apply failed' ../../svframelib-fabric-boot.log
+          ! grep -q 'Could not execute entrypoint stage' ../../svframelib-fabric-boot.log
+          ! grep -q 'Exception in server tick loop' ../../svframelib-fabric-boot.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SVFrameLib-Fabric-1.21.1
+          path: |
+            build/mmo-workspace/fabric-platform/mythiclib-fabric/build/libs/SVFrameLib-1.7.1-fabric.jar
+            build/SVFrameLib-SHA256.txt
+            build/svframelib-fabric-boot.log
+          if-no-files-found: error
+          retention-days: 14

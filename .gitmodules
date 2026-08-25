@@ -1,0 +1,9 @@
+[submodule "fabric-mmo-ports/upstream/MMOItems"]
+	path = fabric-mmo-ports/upstream/MMOItems
+	url = https://github.com/Hephaisto-dev/mmoitems.git
+[submodule "fabric-mmo-ports/upstream/MMOCore"]
+	path = fabric-mmo-ports/upstream/MMOCore
+	url = https://github.com/GaLaXyILY/MMOCORE.git
+[submodule "fabric-mmo-ports/upstream/MythicLib"]
+	path = fabric-mmo-ports/upstream/MythicLib
+	url = https://github.com/Hephaisto-dev/Mythiclib.git

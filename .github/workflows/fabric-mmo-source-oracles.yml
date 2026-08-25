@@ -1,0 +1,103 @@
+name: Fabric MMO Source Oracles
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/fabric-mmo-ports
+    paths:
+      - '.github/workflows/fabric-mmo-source-oracles.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fabric-mmo-source-oracles.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-oracles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout port repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 8.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+
+      - name: Fetch exact-version source oracles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/source-oracles build/dependencies/runtime build/dependency-project
+          git clone --depth=1 --branch main https://github.com/DragonBaiMo/MMOCore-Change.git build/source-oracles/MMOCore-1.13.1
+          git clone --depth=1 --branch master https://github.com/Hephaisto-dev/mmoitems.git build/source-oracles/MMOItems-6.10.1
+          git clone --depth=1 --branch master https://github.com/Hephaisto-dev/Mythiclib.git build/source-oracles/MythicLib-1.7.1
+
+          grep -q '<version>1.13.1-SNAPSHOT</version>' build/source-oracles/MMOCore-1.13.1/pom.xml
+          grep -q '<version>6.10.1-SNAPSHOT</version>' build/source-oracles/MMOItems-6.10.1/pom.xml
+          grep -q '<version>1.7.1-SNAPSHOT</version>' build/source-oracles/MythicLib-1.7.1/pom.xml
+
+          rm -rf build/source-oracles/*/.git
+          find build/source-oracles -type f -name '*.java' | wc -l | tee build/source-oracles/JAVA_SOURCE_COUNT.txt
+          tar -czf build/fabric-mmo-source-oracles.tar.gz -C build/source-oracles .
+          sha256sum build/fabric-mmo-source-oracles.tar.gz > build/fabric-mmo-source-oracles.sha256
+
+          cat > build/dependency-project/pom.xml <<'POM'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>vn.svframe</groupId><artifactId>fabric-mmo-runtime-oracle</artifactId><version>1</version>
+            <repositories>
+              <repository><id>spigot</id><url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url></repository>
+              <repository><id>modrinth</id><url>https://api.modrinth.com/maven</url></repository>
+            </repositories>
+            <dependencies>
+              <dependency><groupId>org.spigotmc</groupId><artifactId>spigot-api</artifactId><version>1.21.1-R0.1-SNAPSHOT</version></dependency>
+              <dependency><groupId>maven.modrinth</groupId><artifactId>cardboard</artifactId><version>1.21.1-9</version></dependency>
+              <dependency><groupId>maven.modrinth</groupId><artifactId>SVKv1SZo</artifactId><version>s1QTgemS</version></dependency>
+            </dependencies>
+          </project>
+          POM
+          mvn -q -f build/dependency-project/pom.xml dependency:copy-dependencies \
+            -DincludeScope=runtime -DoutputDirectory="$GITHUB_WORKSPACE/build/dependencies/runtime"
+          SPIGOT_JAR="$(find build/dependencies/runtime -maxdepth 1 -name 'spigot-api-*.jar' -type f | head -1)"
+          CARDBOARD_JAR="$(find build/dependencies/runtime -maxdepth 1 -iname '*cardboard*.jar' -type f | head -1)"
+          ICOMMON_JAR="$(find build/dependencies/runtime -maxdepth 1 -type f -name '*.jar' | grep -Ei '/(SVKv1SZo|iCommon)[^/]*\.jar$' | head -1)"
+          test -n "$SPIGOT_JAR"
+          test -n "$CARDBOARD_JAR"
+          test -n "$ICOMMON_JAR"
+          cp "$SPIGOT_JAR" build/dependencies/spigot-api-1.21.1.jar
+          cp "$CARDBOARD_JAR" build/dependencies/Cardboard-1.21.1.jar
+          cp "$ICOMMON_JAR" build/dependencies/iCommon-1.21.1.jar
+          find build/dependencies/runtime -type f -name '*.jar' -printf '%f\n' | sort > build/dependencies/RUNTIME_JARS.txt
+          sha256sum build/dependencies/spigot-api-1.21.1.jar > build/dependencies/spigot-api-1.21.1.sha256
+          sha256sum build/dependencies/Cardboard-1.21.1.jar > build/dependencies/Cardboard-1.21.1.sha256
+          sha256sum build/dependencies/iCommon-1.21.1.jar > build/dependencies/iCommon-1.21.1.sha256
+
+          GRADLE_BIN="$(command -v gradle)"
+          GRADLE_HOME="$(dirname "$(dirname "$GRADLE_BIN")")"
+          tar -czf build/dependencies/gradle-8.8-linux.tar.gz -C "$GRADLE_HOME" .
+          test -s build/dependencies/gradle-8.8-linux.tar.gz
+          sha256sum build/dependencies/gradle-8.8-linux.tar.gz > build/dependencies/gradle-8.8-linux.sha256
+
+      - name: Upload source oracle bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: FabricMMO-Source-Oracles
+          path: |
+            build/fabric-mmo-source-oracles.tar.gz
+            build/fabric-mmo-source-oracles.sha256
+            build/dependencies/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

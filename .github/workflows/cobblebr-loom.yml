@@ -4,9 +4,23 @@ on:
   push:
     branches:
       - build/cobblebr-loom
+    paths:
+      - 'bootstrap/**'
+      - 'src/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/cobblebr-loom.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'bootstrap/**'
+      - 'src/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/cobblebr-loom.yml'
   workflow_dispatch:
 
 permissions:

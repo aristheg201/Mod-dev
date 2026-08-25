@@ -1,0 +1,35 @@
+{
+  "required": true,
+  "package": "vn.svframe.mmoitemsfabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ServerPlayNetworkHandlerAbilityMixin",
+    "CrossbowAbilityMixin",
+    "MMOItemsCreateStackMixin",
+    "MMOItemsRequirementTriggerMixin",
+    "MMOItemsGemScalingMixin",
+    "ScreenHandlerGemInteractionMixin",
+    "ScreenHandlerRepairInteractionMixin",
+    "ScreenHandlerUpgradeInteractionMixin",
+    "ScreenHandlerRevisionMixin",
+    "ScreenHandlerRestrictionMixin",
+    "CraftingStationScreenMixin",
+    "CraftingStationParityMixin",
+    "CraftingStationConditionParityMixin",
+    "CraftingStationAccessors",
+    "CraftingQueueEntryAccessor",
+    "CraftingStationStationAccessor",
+    "CraftingStationRecipeAccessor",
+    "CraftingStationConditionAccessor",
+    "CraftingStationQueueParityMixin",
+    "EnchantmentRestrictionMixin",
+    "AbstractFurnaceRestrictionMixin",
+    "ItemStackCustomDurabilityMixin",
+    "ExperienceOrbMendingMixin",
+    "PlayerItemDropRestrictionMixin",
+    "ItemEntityRevisionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
