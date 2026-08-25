@@ -3,8 +3,8 @@ package vn.svframe.mythiclibfabric;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import vn.svframe.compat.YamlLite;
 import vn.svframe.mythiclibfabric.runtime.DamagePacket;
@@ -21,13 +21,11 @@ import vn.svframe.mythiclibfabric.runtime.script.ScriptContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -89,10 +87,10 @@ public final class MythicLibCombatRuntime {
 
         /*
          * Bukkit 1.7.1 listener order is observable and therefore part of combat
-         * parity.  ElementalDamage and MitigationModule run at NORMAL (the
+         * parity. ElementalDamage and MitigationModule run at NORMAL (the
          * elemental listener is registered first), LegacyAttackEffects and
          * OnHitModule run at HIGH (legacy listener first), and DamageReduction
-         * runs at HIGHEST.  Keep the same sequence here instead of grouping
+         * runs at HIGHEST. Keep the same sequence here instead of grouping
          * attack-side and defense-side work.
          */
         if (attacker != null) applyElementalDamage(attacker, target, damage, settings);
@@ -130,7 +128,10 @@ public final class MythicLibCombatRuntime {
             if (offense != 0.0d) damage.additiveModifier(offense / 100.0d, type);
         }
 
-        if (target.getGroup() == EntityGroup.UNDEAD) {
+        // EntityGroup was removed from modern Minecraft. The native 1.21.1
+        // equivalent of Bukkit's undead entity group is the vanilla undead
+        // entity-type tag, which tracks the same gameplay classification.
+        if (target.getType().isIn(EntityTypeTags.UNDEAD)) {
             double undead = StatProviderRegistry.stat(attacker.getUuid(), "UNDEAD_DAMAGE");
             if (undead != 0.0d) damage.additiveModifier(undead / 100.0d);
         }
@@ -145,8 +146,6 @@ public final class MythicLibCombatRuntime {
                                              NativeDamageMetadata damage, MythicLibDamageSettings settings) {
         UUID targetId = target.getUuid();
 
-        // ENVIRONMENTAL always applies. The legacy formula only caps the upper
-        // bound at 100%; negative reduction intentionally amplifies damage.
         applySpecificReduction(damage, StatProviderRegistry.stat(targetId, "DAMAGE_REDUCTION"));
 
         boolean byEntity = source.getSource() != null || source.getAttacker() != null;
