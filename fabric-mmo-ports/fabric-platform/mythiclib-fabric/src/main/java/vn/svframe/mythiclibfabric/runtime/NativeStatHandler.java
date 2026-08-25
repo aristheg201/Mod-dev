@@ -54,6 +54,26 @@ public class NativeStatHandler {
         return stat;
     }
 
+    public double configuredBaseValue() {
+        return baseValue;
+    }
+
+    public boolean hasMinValue() {
+        return hasMinValue;
+    }
+
+    public boolean hasMaxValue() {
+        return hasMaxValue;
+    }
+
+    public double minValue() {
+        return minValue;
+    }
+
+    public double maxValue() {
+        return maxValue;
+    }
+
     public DecimalFormat decimalFormat() {
         return (DecimalFormat) decimalFormat.clone();
     }
