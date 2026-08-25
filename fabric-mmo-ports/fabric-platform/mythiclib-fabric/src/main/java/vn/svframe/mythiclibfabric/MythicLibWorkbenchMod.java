@@ -94,9 +94,10 @@ public final class MythicLibWorkbenchMod {
             ItemStack output = event.result();
             if (output.isEmpty()) break;
             if (craftToCompletion) {
+                if (!canFullyInsert(player, output)) break;
                 ItemStack remaining = output.copy();
                 player.getInventory().insertStack(remaining);
-                if (!remaining.isEmpty()) break;
+                if (!remaining.isEmpty()) throw new IllegalStateException("MythicLib workbench capacity preflight diverged for " + match.get().recipe().id());
             } else {
                 ItemStack cursor = session.handler.getCursorStack();
                 if (cursor.isEmpty()) session.handler.setCursorStack(output.copy());
@@ -114,6 +115,18 @@ public final class MythicLibWorkbenchMod {
             refreshResult(session);
         } while (craftToCompletion && crafted < 64);
         if (crafted > 0 && session.handler != null) session.handler.sendContentUpdates();
+    }
+
+    private static boolean canFullyInsert(ServerPlayerEntity player, ItemStack output) {
+        int remaining = output.getCount();
+        for (ItemStack stack : player.getInventory().main) {
+            if (stack.isEmpty()) remaining -= Math.min(output.getMaxCount(), player.getInventory().getMaxCountPerStack());
+            else if (ItemStack.areItemsAndComponentsEqual(stack, output)) {
+                remaining -= Math.max(0, Math.min(stack.getMaxCount(), player.getInventory().getMaxCountPerStack()) - stack.getCount());
+            }
+            if (remaining <= 0) return true;
+        }
+        return false;
     }
 
     private static void shiftIntoWorkbench(Session session, Slot source) {
