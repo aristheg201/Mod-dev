@@ -46,8 +46,9 @@ def unpackLegacyApiSources = tasks.register('unpackLegacyApiSources') {
 }
 
 // V3 adds the remaining native manager/module/script/variable/skill/event surface
-// without Bukkit/Paper imports. It only contains files not present in V2.
-def legacyApiV3Parts = fileTree(file('legacy-api-v3-delta')) {
+// without Bukkit/Paper imports. The archive is split into small verified chunks
+// to keep repository transport deterministic.
+def legacyApiV3Parts = fileTree(file('legacy-api-v3-fixed2')) {
     include 'source.tar.gz.b64.part*'
 }
 def generatedLegacyApiV3 = layout.buildDirectory.dir('generated/legacy-api-v3-src')
@@ -58,7 +59,7 @@ def unpackLegacyApiV3Sources = tasks.register('unpackLegacyApiV3Sources') {
     outputs.dir(generatedLegacyApiV3)
     doLast {
         def parts = legacyApiV3Parts.files.sort { a, b -> a.name <=> b.name }
-        if (parts.size() != 2) throw new GradleException("Expected 2 MythicLib V3 delta parts, got ${parts.size()}")
+        if (parts.size() != 13) throw new GradleException("Expected 13 MythicLib V3 delta parts, got ${parts.size()}")
         byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
         def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
         def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
