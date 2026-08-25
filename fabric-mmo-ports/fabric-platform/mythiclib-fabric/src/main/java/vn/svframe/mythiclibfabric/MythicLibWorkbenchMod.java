@@ -14,7 +14,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import vn.svframe.mythiclibfabric.runtime.MythicLibWorkbenchLayout;
-import vn.svframe.mythiclibfabric.runtime.NativeCraftingRuntime;
+import vn.svframe.mythiclibfabric.runtime.MythicLibCraftingRuntime;
 
 import java.util.Map;
 import java.util.UUID;
@@ -84,8 +84,8 @@ public final class MythicLibWorkbenchMod {
     private static void craftResult(ServerPlayerEntity player, Session session, boolean craftToCompletion) {
         int crafted = 0;
         do {
-            NativeCraftingRuntime.SlotAccess access = slotAccess(session);
-            var match = NativeCraftingRuntime.match(NativeCraftingRuntime.Station.CUSTOM, stationKey(session.layout), access);
+            MythicLibCraftingRuntime.SlotAccess access = slotAccess(session);
+            var match = MythicLibCraftingRuntime.match(MythicLibCraftingRuntime.Station.CUSTOM, stationKey(session.layout), access);
             if (match.isEmpty()) break;
             ItemStack output = match.get().recipe().createResult();
             if (output.isEmpty()) break;
@@ -145,15 +145,15 @@ public final class MythicLibWorkbenchMod {
             if (SESSIONS.remove(player.getUuid(), session)) returnInputs(player, session);
         }
     }
-    private static NativeCraftingRuntime.SlotAccess slotAccess(Session session) {
-        return new NativeCraftingRuntime.SlotAccess() {
+    private static MythicLibCraftingRuntime.SlotAccess slotAccess(Session session) {
+        return new MythicLibCraftingRuntime.SlotAccess() {
             @Override public ItemStack get(int logicalSlot) { int raw = logicalToRaw(session.layout, logicalSlot); return raw < 0 ? ItemStack.EMPTY : session.inventory.getStack(raw); }
             @Override public void set(int logicalSlot, ItemStack stack) { int raw = logicalToRaw(session.layout, logicalSlot); if (raw >= 0) session.inventory.setStack(raw, stack); }
             @Override public void markDirty() { session.inventory.markDirty(); }
         };
     }
     private static void refreshResult(Session session) {
-        session.inventory.setStack(session.layout.resultSlot(), NativeCraftingRuntime.result(NativeCraftingRuntime.Station.CUSTOM, stationKey(session.layout), slotAccess(session)));
+        session.inventory.setStack(session.layout.resultSlot(), MythicLibCraftingRuntime.result(MythicLibCraftingRuntime.Station.CUSTOM, stationKey(session.layout), slotAccess(session)));
     }
     private static int logicalToRaw(MythicLibWorkbenchLayout layout, int logicalSlot) {
         int[] input = layout.inputSlots(); return logicalSlot < 0 || logicalSlot >= input.length ? -1 : input[logicalSlot];
