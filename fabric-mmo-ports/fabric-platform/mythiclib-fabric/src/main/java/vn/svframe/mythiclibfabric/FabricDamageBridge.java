@@ -69,6 +69,34 @@ public final class FabricDamageBridge {
         return classify(source, settings);
     }
 
+    /** Native 1.21.1 equivalent of Bukkit EntityDamageEvent.DamageCause classification. */
+    public static String causeKey(DamageSource source) {
+        if (source == null) return "CUSTOM";
+        if (source.isOf(DamageTypes.MAGIC) || source.isOf(DamageTypes.INDIRECT_MAGIC)) return "MAGIC";
+        if (source.isOf(DamageTypes.DRAGON_BREATH)) return "DRAGON_BREATH";
+        if (source.isOf(DamageTypes.WITHER) || source.isOf(DamageTypes.WITHER_SKULL)) return "WITHER";
+        if (source.isOf(DamageTypes.ON_FIRE)) return "FIRE_TICK";
+        if (source.isOf(DamageTypes.IN_FIRE) || source.isOf(DamageTypes.CAMPFIRE)) return "FIRE";
+        if (source.isOf(DamageTypes.LAVA)) return "LAVA";
+        if (source.isOf(DamageTypes.HOT_FLOOR)) return "HOT_FLOOR";
+        if (source.isOf(DamageTypes.FREEZE)) return "FREEZE";
+        if (source.isOf(DamageTypes.STARVE)) return "STARVATION";
+        if (source.isOf(DamageTypes.DRY_OUT)) return "DRYOUT";
+        if (source.isOf(DamageTypes.DROWN)) return "DROWNING";
+        if (source.isOf(DamageTypes.FALL)) return "FALL";
+        if (source.isOf(DamageTypes.FLY_INTO_WALL)) return "FLY_INTO_WALL";
+        if (source.isOf(DamageTypes.CACTUS) || source.isOf(DamageTypes.SWEET_BERRY_BUSH)) return "CONTACT";
+        if (source.isOf(DamageTypes.CRAMMING)) return "CRAMMING";
+        if (source.isOf(DamageTypes.SONIC_BOOM)) return "SONIC_BOOM";
+        if (source.isOf(DamageTypes.LIGHTNING_BOLT)) return "LIGHTNING";
+        if (source.isOf(DamageTypes.THORNS)) return "THORNS";
+        if (source.isOf(DamageTypes.EXPLOSION) || source.isOf(DamageTypes.PLAYER_EXPLOSION) || source.isOf(DamageTypes.BAD_RESPAWN_POINT)) return "ENTITY_EXPLOSION";
+        if (source.isOf(DamageTypes.FALLING_ANVIL) || source.isOf(DamageTypes.FALLING_BLOCK) || source.isOf(DamageTypes.FALLING_STALACTITE)) return "FALLING_BLOCK";
+        if (source.getSource() instanceof ProjectileEntity || source.isOf(DamageTypes.ARROW) || source.isOf(DamageTypes.TRIDENT) || source.isOf(DamageTypes.MOB_PROJECTILE) || source.isOf(DamageTypes.FIREWORKS) || source.isOf(DamageTypes.THROWN)) return "PROJECTILE";
+        if (source.getAttacker() instanceof LivingEntity) return "ENTITY_ATTACK";
+        return "CUSTOM";
+    }
+
     private static List<DamageType> classify(DamageSource source, MythicLibDamageSettings value) {
         if (source.isOf(DamageTypes.MAGIC) || source.isOf(DamageTypes.INDIRECT_MAGIC) || source.isOf(DamageTypes.DRAGON_BREATH)) {
             return value.source(source.isOf(DamageTypes.DRAGON_BREATH) ? "DRAGON_BREATH" : "MAGIC", List.of(DamageType.MAGIC));
