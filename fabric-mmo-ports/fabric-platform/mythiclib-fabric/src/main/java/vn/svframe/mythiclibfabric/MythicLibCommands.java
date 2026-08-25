@@ -169,15 +169,14 @@ final class MythicLibCommands {
         debug.then(literal("attributes")
                 .then(argument("player", EntityArgumentType.player())
                         .executes(ctx -> dumpAttributes(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player")))));
-        LiteralArgumentBuilder<ServerCommandSource> healthScaleDebug = literal("healthscale");
-        healthScaleDebug.then(literal("set")
-                .then(argument("player", EntityArgumentType.player())
-                        .then(argument("scale", DoubleArgumentType.doubleArg(0.0001d))
-                                .executes(ctx -> healthScaleSet(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player"), DoubleArgumentType.getDouble(ctx, "scale"))))));
-        healthScaleDebug.then(literal("reset")
-                .then(argument("player", EntityArgumentType.player())
-                        .executes(ctx -> healthScaleReset(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player")))));
-        debug.then(healthScaleDebug);
+        debug.then(literal("healthscale")
+                .then(literal("set")
+                        .then(argument("player", EntityArgumentType.player())
+                                .then(argument("scale", DoubleArgumentType.doubleArg(0.0001d))
+                                        .executes(ctx -> healthScaleSet(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player"), DoubleArgumentType.getDouble(ctx, "scale"))))))
+                .then(literal("reset")
+                        .then(argument("player", EntityArgumentType.player())
+                                .executes(ctx -> healthScaleReset(ctx.getSource(), EntityArgumentType.getPlayer(ctx, "player"))))));
         debug.then(literal("info").executes(ctx -> {
             success(ctx.getSource(), "MythicLib Fabric | " + MythicLibFabricMod.definitionSummary() + " | " + FabricDamageBridge.summary());
             return 1;
@@ -276,7 +275,7 @@ final class MythicLibCommands {
 
     private static int statClear(ServerCommandSource source, ServerPlayerEntity player, String key) {
         int removed = 0;
-        for (NativeStatEngine.StatInstance instance : MythicLibStatMod.engine().instances(player.getUuid())) removed += instance.remove(key);
+        for (NativeStatEngine.StatInstance instance : MythicLibStatMod.engine().instances(player.getUuid())) removed += instance.removeIf(modifier -> modifier.key().equals(key));
         success(source, "Removed " + removed + " modifier(s) with key '" + key + "' from " + player.getGameProfile().getName());
         return 1;
     }
