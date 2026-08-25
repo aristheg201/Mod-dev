@@ -19,21 +19,20 @@ def syncCanonicalMythicLibRuntime = tasks.register('syncCanonicalMythicLibRuntim
     }
 }
 
-// Full legacy io.lumine.mythic.lib.* compatibility/API batch. The source bundle
-// is split only to keep GitHub transport deterministic; javac sees normal .java
-// files generated from the verified archive before compilation.
-def legacyApiParts = fileTree(file('legacy-api-source')) {
+// Native io.lumine.mythic.lib.* compatibility/API source bundle. It is stored as
+// deterministic text chunks for Git transport and compiled as ordinary Java.
+def legacyApiParts = fileTree(file('legacy-api-source-v2')) {
     include 'source.tar.gz.b64.part*'
 }
 def generatedLegacyApi = layout.buildDirectory.dir('generated/legacy-api-src')
-def legacyApiSha256 = 'c7f555783e858d1eaa7d742730019fa6677ce525f4b18fa88a52a6279dd5de04'
+def legacyApiSha256 = '2d88eb27f876a72c71ecf67ea73a95e6bfd2fdd75abf1c64f912d26dd509fce8'
 
 def unpackLegacyApiSources = tasks.register('unpackLegacyApiSources') {
     inputs.files(legacyApiParts)
     outputs.dir(generatedLegacyApi)
     doLast {
         def parts = legacyApiParts.files.sort { a, b -> a.name <=> b.name }
-        if (parts.size() != 4) throw new GradleException("Expected 4 MythicLib legacy API source parts, got ${parts.size()}")
+        if (parts.size() != 7) throw new GradleException("Expected 7 MythicLib legacy API source parts, got ${parts.size()}")
 
         byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
         def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
