@@ -1,7 +1,15 @@
 base { archivesName = 'MythicLib-Fabric' }
 
-// Canonical Fabric adapter plus the shared MythicLib runtime and shared YAML parser
-// form one native Fabric module. These are source inputs, not generated overlays.
-sourceSets.main.java.srcDirs += '../../mythiclib-runtime/src/main/java'
-sourceSets.main.java.srcDirs += '../../common-runtime/src/main/java'
-sourceSets.main.resources.srcDirs += '../../mythiclib-runtime/src/main/resources'
+// Canonical native Fabric module. Compile the shared MythicLib runtime and YAML parser
+// directly into the same artifact; no Bukkit/Paper bridge and no generated compatibility shim.
+sourceSets {
+    main {
+        java {
+            srcDir rootProject.file('../mythiclib-runtime/src/main/java')
+            srcDir rootProject.file('../common-runtime/src/main/java')
+        }
+        resources {
+            srcDir rootProject.file('../mythiclib-runtime/src/main/resources')
+        }
+    }
+}
