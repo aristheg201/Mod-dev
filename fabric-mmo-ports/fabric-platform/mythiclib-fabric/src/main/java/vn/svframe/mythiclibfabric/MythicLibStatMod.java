@@ -16,7 +16,11 @@ public final class MythicLibStatMod implements ModInitializer {
     public void onInitialize() {
         registerProvider();
         ServerTickEvents.END_SERVER_TICK.register(server -> ENGINE.tick(MythicLibFabricMod.currentTick()));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ENGINE.clear(handler.player.getUuid()));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ENGINE.onSessionOpen(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ENGINE.onSessionClose(handler.player.getUuid());
+            ENGINE.clear(handler.player.getUuid());
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> ENGINE.clear());
     }
 
