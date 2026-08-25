@@ -85,7 +85,7 @@ public final class MythicLibWorkbenchMod {
         int crafted = 0;
         do {
             MythicLibCraftingRuntime.SlotAccess access = slotAccess(session);
-            var match = MythicLibCraftingRuntime.match(MythicLibCraftingRuntime.Station.CUSTOM, stationKey(session.layout), access);
+            var match = MythicLibCraftingRuntime.match(MythicLibCraftingRuntime.Station.CUSTOM, stationKey(session.layout), access, permission -> MythicLibPermissionBridge.has(player, permission));
             if (match.isEmpty()) break;
             ItemStack proposed = match.get().recipe().createResult();
             if (proposed.isEmpty()) break;
