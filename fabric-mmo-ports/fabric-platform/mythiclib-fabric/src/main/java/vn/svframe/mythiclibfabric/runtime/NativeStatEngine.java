@@ -1,5 +1,6 @@
 package vn.svframe.mythiclibfabric.runtime;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -127,13 +128,23 @@ public final class NativeStatEngine {
     }
 
     public static final class StatInstance {
+        private static final DecimalFormat DEFAULT_DECIMAL = new DecimalFormat("0.##");
+
+        private final NativeStatEngine owner;
+        private final UUID entityId;
         private final String stat;
         private final Map<UUID, Modifier> modifiers = new LinkedHashMap<>();
-        private double base;
-        private double defaultBase;
+        private double explicitBase;
+        private double explicitDefaultBase;
 
-        private StatInstance(String stat) {
+        private StatInstance(NativeStatEngine owner, UUID entityId, String stat) {
+            this.owner = owner;
+            this.entityId = entityId;
             this.stat = stat;
+        }
+
+        public UUID entityId() {
+            return entityId;
         }
 
         public String stat() {
@@ -141,21 +152,25 @@ public final class NativeStatEngine {
         }
 
         public synchronized double base() {
-            return base;
+            NativeStatHandler handler = owner.handler(stat);
+            return handler == null ? explicitBase : handler.getBaseValue(this);
         }
 
         public synchronized double defaultBase() {
-            return defaultBase;
+            NativeStatHandler handler = owner.handler(stat);
+            return handler == null ? explicitDefaultBase : handler.getPlayerDefaultBase();
         }
 
         public synchronized void setBase(double value) {
             requireFinite(value, "base");
-            base = value;
+            explicitBase = value;
+            notifyUpdate();
         }
 
         public synchronized void setDefaultBase(double value) {
             requireFinite(value, "defaultBase");
-            defaultBase = value;
+            explicitDefaultBase = value;
+            notifyUpdate();
         }
 
         public synchronized Modifier modifier(UUID id) {
@@ -172,17 +187,22 @@ public final class NativeStatEngine {
 
         public synchronized void register(Modifier modifier) {
             modifiers.put(Objects.requireNonNull(modifier, "modifier").id(), modifier);
+            notifyUpdate();
         }
 
         public synchronized Modifier remove(UUID id) {
-            return modifiers.remove(id);
+            Modifier removed = modifiers.remove(id);
+            if (removed != null) notifyUpdate();
+            return removed;
         }
 
         public synchronized int removeIf(Predicate<Modifier> predicate) {
             Objects.requireNonNull(predicate, "predicate");
             int before = modifiers.size();
             modifiers.values().removeIf(predicate);
-            return before - modifiers.size();
+            int removed = before - modifiers.size();
+            if (removed > 0) notifyUpdate();
+            return removed;
         }
 
         public synchronized boolean isEmpty() {
@@ -190,11 +210,11 @@ public final class NativeStatEngine {
         }
 
         public synchronized double total() {
-            return total(base, EquipmentSlot.MAIN_HAND, modifier -> true);
+            return total(base(), EquipmentSlot.MAIN_HAND, modifier -> true);
         }
 
         public synchronized double total(EquipmentSlot actionHand) {
-            return total(base, actionHand, modifier -> true);
+            return total(base(), actionHand, modifier -> true);
         }
 
         public synchronized double total(double startingBase, EquipmentSlot actionHand) {
@@ -206,36 +226,72 @@ public final class NativeStatEngine {
             return total(startingBase, actionHand, Objects.requireNonNull(filter, "filter"));
         }
 
+        public synchronized String formatFinal() {
+            return format(finalValue(EquipmentSlot.MAIN_HAND));
+        }
+
+        public synchronized String format(double value) {
+            NativeStatHandler handler = owner.handler(stat);
+            if (handler != null) return handler.format(value);
+            synchronized (DEFAULT_DECIMAL) {
+                return DEFAULT_DECIMAL.format(value);
+            }
+        }
+
+        public synchronized double finalValue(EquipmentSlot actionHand) {
+            NativeStatHandler handler = owner.handler(stat);
+            return handler == null ? total(actionHand) : handler.getFinalValue(this, actionHand);
+        }
+
         private double total(double startingBase, EquipmentSlot actionHand, Predicate<Modifier> filter) {
             requireFinite(startingBase, "startingBase");
             Objects.requireNonNull(actionHand, "actionHand");
+            NativeStatHandler handler = owner.handler(stat);
+            NativeStatHandler.ModifierEditor editor = handler == null ? null : handler.modifierEditor();
             double value = startingBase;
             double additiveMultiplier = 1.0d;
             double relativeMultiplier = 1.0d;
-            for (Modifier modifier : modifiers.values()) {
-                if (!filter.test(modifier)) continue;
-                if (!actionHand.isCompatible(modifier.source(), modifier.slot())) continue;
+            for (Modifier original : modifiers.values()) {
+                if (!filter.test(original)) continue;
+                if (!actionHand.isCompatible(original.source(), original.slot())) continue;
+                Modifier modifier = editor == null ? original : editor.apply(this, original);
+                if (modifier == null) continue;
                 switch (modifier.type()) {
                     case FLAT -> value += modifier.value();
                     case ADDITIVE_MULTIPLIER -> additiveMultiplier += modifier.value() / 100.0d;
                     case RELATIVE -> relativeMultiplier *= 1.0d + modifier.value() / 100.0d;
                 }
             }
-            return value * additiveMultiplier * relativeMultiplier;
+            value = value * additiveMultiplier * relativeMultiplier;
+            return handler == null ? value : handler.clampValue(value);
         }
 
         private synchronized int expire(long tick) {
             int before = modifiers.size();
             modifiers.values().removeIf(modifier -> modifier.expired(tick));
-            return before - modifiers.size();
+            int removed = before - modifiers.size();
+            if (removed > 0) notifyUpdate();
+            return removed;
+        }
+
+        private void notifyUpdate() {
+            NativeStatHandler handler = owner.handler(stat);
+            if (handler != null) handler.runUpdates(this);
         }
     }
 
     private static final class EntityStats {
+        private final NativeStatEngine owner;
+        private final UUID entityId;
         private final Map<String, StatInstance> stats = new ConcurrentHashMap<>();
 
+        private EntityStats(NativeStatEngine owner, UUID entityId) {
+            this.owner = owner;
+            this.entityId = entityId;
+        }
+
         private StatInstance instance(String stat) {
-            return stats.computeIfAbsent(normalize(stat), StatInstance::new);
+            return stats.computeIfAbsent(normalize(stat), value -> new StatInstance(owner, entityId, value));
         }
 
         private Collection<StatInstance> instances() {
@@ -244,12 +300,30 @@ public final class NativeStatEngine {
     }
 
     private final Map<UUID, EntityStats> entities = new ConcurrentHashMap<>();
+    private final Map<String, NativeStatHandler> handlers = new ConcurrentHashMap<>();
+
+    public NativeStatHandler registerHandler(NativeStatHandler handler) {
+        Objects.requireNonNull(handler, "handler");
+        return handlers.put(normalize(handler.stat()), handler);
+    }
+
+    public NativeStatHandler removeHandler(String stat) {
+        return handlers.remove(normalize(stat));
+    }
+
+    public NativeStatHandler handler(String stat) {
+        return handlers.get(normalize(stat));
+    }
+
+    public Collection<NativeStatHandler> handlers() {
+        return List.copyOf(handlers.values());
+    }
 
     public StatInstance instance(UUID entityId, String stat) {
         Objects.requireNonNull(entityId, "entityId");
         String normalized = normalize(stat);
         if (normalized.isEmpty()) throw new IllegalArgumentException("stat must not be blank");
-        return entities.computeIfAbsent(entityId, ignored -> new EntityStats()).instance(normalized);
+        return entities.computeIfAbsent(entityId, id -> new EntityStats(this, id)).instance(normalized);
     }
 
     public Collection<StatInstance> instances(UUID entityId) {
@@ -266,7 +340,7 @@ public final class NativeStatEngine {
         EntityStats entity = entities.get(entityId);
         if (entity == null) return 0.0d;
         StatInstance instance = entity.stats.get(normalize(stat));
-        return instance == null ? 0.0d : instance.total(actionHand);
+        return instance == null ? 0.0d : instance.finalValue(actionHand);
     }
 
     public void setBase(UUID entityId, String stat, double value) {
@@ -314,6 +388,24 @@ public final class NativeStatEngine {
         if (instance == null) return 0;
         String expected = key == null ? "" : key;
         return instance.removeIf(modifier -> modifier.key().equals(expected));
+    }
+
+    public void update(UUID entityId, String stat) {
+        EntityStats entity = entities.get(entityId);
+        if (entity == null) return;
+        StatInstance instance = entity.stats.get(normalize(stat));
+        if (instance == null) return;
+        NativeStatHandler handler = handler(stat);
+        if (handler != null) handler.runUpdates(instance);
+    }
+
+    public void updateOnLogin(UUID entityId) {
+        EntityStats entity = entities.get(entityId);
+        if (entity == null) return;
+        for (StatInstance instance : entity.instances()) {
+            NativeStatHandler handler = handler(instance.stat());
+            if (handler != null && handler.updateOnLogin()) handler.runUpdates(instance);
+        }
     }
 
     public int tick(long currentTick) {
