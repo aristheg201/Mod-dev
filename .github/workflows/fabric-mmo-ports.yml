@@ -91,12 +91,14 @@ jobs:
           done
 
           test -f build/mmo-workspace/fabric-platform/mmoitems-fabric/src/main/java/vn/svframe/mmoitemsfabric/MMOItemsPlaceholderConditionBridge.java
-          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillRuntime.java
-          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/FabricSkillPlatform.java
+          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/MythicSkillRuntime.java
+          test -f build/mmo-workspace/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/SkillContext.java
           test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometry.java
           test -f build/mmo-workspace/overlay-m2.2/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/ParticleGeometryCompat.java
           test -f build/mmo-workspace/overlay-m2.4/fabric-platform/mythicmobs-fabric/src/main/java/vn/svframe/mythicmobsfabric/engine/MythicMobsParity.java
           test -f build/mmo-workspace/overlay-m2.3/mmocore-runtime/src/main/java/vn/svframe/mmocorefabric/runtime/gameplay/ProfessionRuntime.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java
+          test -f build/mmo-workspace/fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java
 
           SMOKE_SOURCE="build/mmo-workspace/fabric-platform/server-smoke/src/main/java/vn/svframe/fabricmmo/smoke/ServerSmokeMod.java"
           test -f "$SMOKE_SOURCE"
@@ -127,6 +129,14 @@ jobs:
           cd build/mmo-workspace
           chmod +x build-offline.sh
           ./build-offline.sh
+
+          STAT_OUT="$(mktemp -d)"
+          javac --release 21 -d "$STAT_OUT" \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatHandler.java \
+            fabric-platform/mythiclib-fabric/src/main/java/vn/svframe/mythiclibfabric/runtime/NativeStatEngine.java \
+            ../fabric-mmo-ports/tests/NativeStatEngineSmoke.java
+          java -cp "$STAT_OUT" NativeStatEngineSmoke | tee mythiclib-native-stat-smoke.log
+          grep -q 'MYTHICLIB_NATIVE_STAT_RUNTIME=PASS' mythiclib-native-stat-smoke.log
 
           cd fabric-platform
           gradle --no-daemon :mythicmobs-fabric:prepareM21Sources
