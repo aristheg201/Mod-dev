@@ -355,6 +355,51 @@ public class AttackSkillResult implements SkillResult {
     }
 }
 
+// V4 is the bytecode-parity foundation overlay reconstructed from the 1.7.1 JAR.
+// It deliberately runs after V2/V3 and replaces matching source FQNs rather than
+// compiling duplicate compatibility classes.
+def legacyApiV4Parts = fileTree(file('legacy-api-v4-parity')) {
+    include 'source.tar.gz.b64.part*'
+}
+def generatedLegacyApiV4 = layout.buildDirectory.dir('generated/legacy-api-v4-src')
+def legacyApiV4Sha256 = '70651693193487fe55f136e7e41515069ca04e5c559251c3560f963410d456c5'
+
+def unpackLegacyApiV4Sources = tasks.register('unpackLegacyApiV4Sources') {
+    inputs.files(legacyApiV4Parts)
+    outputs.dir(generatedLegacyApiV4)
+    doLast {
+        def parts = legacyApiV4Parts.files.sort { a, b -> a.name <=> b.name }
+        if (parts.size() != 4) throw new GradleException("Expected 4 MythicLib V4 parity parts, got ${parts.size()}")
+        byte[] archiveBytes = Base64.decoder.decode(parts.collect { it.getText('UTF-8') }.join(''))
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(archiveBytes)
+        def actualSha = digest.collect { String.format('%02x', it & 0xff) }.join('')
+        if (actualSha != legacyApiV4Sha256) throw new GradleException("MythicLib V4 parity checksum mismatch: ${actualSha}")
+        def outDir = generatedLegacyApiV4.get().asFile
+        delete(outDir)
+        outDir.mkdirs()
+        def archive = new File(temporaryDir, 'legacy-api-v4-parity.tar.gz')
+        archive.bytes = archiveBytes
+        copy { from tarTree(resources.gzip(archive)); into outDir }
+    }
+}
+
+def overlayLegacyApiV4Sources = tasks.register('overlayLegacyApiV4Sources') {
+    dependsOn(unpackLegacyApiSources)
+    dependsOn(unpackLegacyApiV3Sources)
+    dependsOn(unpackLegacyApiV4Sources)
+    outputs.upToDateWhen { false }
+    doLast {
+        def v2Dir = generatedLegacyApi.get().asFile
+        def v3Dir = generatedLegacyApiV3.get().asFile
+        def v4Dir = generatedLegacyApiV4.get().asFile
+        fileTree(v4Dir) { include '**/*.java' }.each { replacement ->
+            def relative = v4Dir.toPath().relativize(replacement.toPath()).toString()
+            delete(new File(v2Dir, relative))
+            delete(new File(v3Dir, relative))
+        }
+    }
+}
+
 sourceSets {
     main {
         java {
@@ -362,6 +407,7 @@ sourceSets {
             srcDir rootProject.file('../common-runtime/src/main/java')
             srcDir generatedLegacyApi
             srcDir generatedLegacyApiV3
+            srcDir generatedLegacyApiV4
         }
         resources {
             srcDir rootProject.file('../mythiclib-runtime/src/main/resources')
@@ -371,7 +417,6 @@ sourceSets {
 
 tasks.named('compileJava').configure {
     dependsOn(syncCanonicalMythicLibRuntime)
-    dependsOn(unpackLegacyApiSources)
-    dependsOn(unpackLegacyApiV3Sources)
+    dependsOn(overlayLegacyApiV4Sources)
 }
 tasks.named('processResources').configure { dependsOn(syncCanonicalMythicLibRuntime) }
