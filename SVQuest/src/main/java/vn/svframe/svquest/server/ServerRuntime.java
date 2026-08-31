@@ -37,6 +37,8 @@ public final class ServerRuntime {
                 context.server().execute(() -> handle(context.player(), payload.action())));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            QuestEventBus.install(server, engine);
+
             ReflectionIntegrationBridge bridge = new ReflectionIntegrationBridge(server, engine);
             integrations = bridge;
             bridge.install();
@@ -86,7 +88,10 @@ public final class ServerRuntime {
             if (seasonal != null) seasonal.onQuit(handler.player);
             store.unload(handler.player.getUuid());
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> store.saveAll());
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            QuestEventBus.clear();
+            store.saveAll();
+        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
                 literal("svquest")
@@ -131,8 +136,10 @@ public final class ServerRuntime {
             return;
         }
         try {
-            int result = player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
-            if (result >= 0) engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id));
+            // Yarn 1.21.1 executeWithPrefix returns void. Reaching this line without an exception means
+            // the server accepted and dispatched the whitelisted launcher command.
+            player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
+            engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id));
         } catch (Throwable t) {
             SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
             player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này."), false);
