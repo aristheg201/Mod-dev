@@ -25,6 +25,7 @@ public final class ServerRuntime {
     private final QuestEngine engine = new QuestEngine(store, new RewardDispatcher());
     private volatile ReflectionIntegrationBridge integrations;
     private volatile ProductionProgressPoller productionPoller;
+    private volatile SeasonProgressPoller seasonPoller;
 
     public void register() {
         engine.setSync(this::sendState);
@@ -39,17 +40,22 @@ public final class ServerRuntime {
 
             ProductionProgressPoller poller = new ProductionProgressPoller(server, engine);
             productionPoller = poller;
+            SeasonProgressPoller seasonal = new SeasonProgressPoller(server, engine);
+            seasonPoller = seasonal;
 
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 bridge.onJoin(player);
                 poller.onJoin(player);
+                seasonal.onJoin(player);
             }
-            SVQuest.LOGGER.info("SVQuest production integration bridge + progress poller installed.");
+            SVQuest.LOGGER.info("SVQuest production integrations installed.");
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             ProductionProgressPoller poller = productionPoller;
             if (poller != null) poller.tick();
+            SeasonProgressPoller seasonal = seasonPoller;
+            if (seasonal != null) seasonal.tick();
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -57,6 +63,8 @@ public final class ServerRuntime {
             if (bridge != null) bridge.onJoin(handler.player);
             ProductionProgressPoller poller = productionPoller;
             if (poller != null) poller.onJoin(handler.player);
+            SeasonProgressPoller seasonal = seasonPoller;
+            if (seasonal != null) seasonal.onJoin(handler.player);
             sendState(handler.player);
         });
 
@@ -65,6 +73,8 @@ public final class ServerRuntime {
             if (bridge != null) bridge.onQuit(handler.player);
             ProductionProgressPoller poller = productionPoller;
             if (poller != null) poller.onQuit(handler.player);
+            SeasonProgressPoller seasonal = seasonPoller;
+            if (seasonal != null) seasonal.onQuit(handler.player);
             store.unload(handler.player.getUuid());
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> store.saveAll());
