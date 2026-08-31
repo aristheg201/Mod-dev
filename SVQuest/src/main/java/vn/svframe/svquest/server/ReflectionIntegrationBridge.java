@@ -44,6 +44,7 @@ public final class ReflectionIntegrationBridge {
     }
 
     public void onJoin(ServerPlayerEntity player) {
+        if (loaded("cobblemon")) migrateExistingCobblemonPlayer(player);
         snapshotSkills(player, false);
         if (loaded("soulbreeding")) subscribeSoulBreeding(player);
     }
@@ -52,6 +53,33 @@ public final class ReflectionIntegrationBridge {
         learnedSkillCounts.remove(player.getUuid());
         skillBindings.remove(player.getUuid());
         unsubscribeSoulBreeding(player);
+    }
+
+    /**
+     * Existing players cannot re-run Cobblemon's one-time starter chooser. If they already own any
+     * Pokémon in party or PC, satisfy only the starter objective when that objective is active.
+     */
+    private void migrateExistingCobblemonPlayer(ServerPlayerEntity player) {
+        try {
+            Class<?> cobblemon = Class.forName("com.cobblemon.mod.common.Cobblemon");
+            Object instance = cobblemon.getField("INSTANCE").get(null);
+            Object storage = cobblemon.getMethod("getStorage").invoke(instance);
+            if (storage == null) return;
+
+            Object party = storage.getClass().getMethod("getParty", ServerPlayerEntity.class).invoke(storage, player);
+            int occupied = intValue(invoke(party, "occupied"));
+            if (occupied > 0) {
+                engine.signal(player, "starter");
+                return;
+            }
+
+            Object pc = storage.getClass().getMethod("getPC", ServerPlayerEntity.class).invoke(storage, player);
+            if (pc instanceof Iterable<?> iterable && iterable.iterator().hasNext()) {
+                engine.signal(player, "starter");
+            }
+        } catch (Throwable t) {
+            SVQuest.LOGGER.debug("Existing-player starter migration failed safely for {}: {}", player.getName().getString(), t.toString());
+        }
     }
 
     private void installCobblemon() throws Exception {
