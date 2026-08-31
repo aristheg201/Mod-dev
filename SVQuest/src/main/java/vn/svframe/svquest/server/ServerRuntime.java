@@ -21,12 +21,34 @@ import static net.minecraft.server.command.CommandManager.literal;
 
 public final class ServerRuntime {
     private final QuestStateStore store = new QuestStateStore();
+    private final QuestEngine engine = new QuestEngine(store, new RewardDispatcher());
+    private volatile ReflectionIntegrationBridge integrations;
 
     public void register() {
+        engine.setSync(this::sendState);
+
         ServerPlayNetworking.registerGlobalReceiver(ActionPayload.ID, (payload, context) ->
                 context.server().execute(() -> handle(context.player(), payload.action())));
 
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> store.unload(handler.player.getUuid()));
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            ReflectionIntegrationBridge bridge = new ReflectionIntegrationBridge(server, engine);
+            integrations = bridge;
+            bridge.install();
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) bridge.onJoin(player);
+            SVQuest.LOGGER.info("SVQuest production integration bridge installed.");
+        });
+
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ReflectionIntegrationBridge bridge = integrations;
+            if (bridge != null) bridge.onJoin(handler.player);
+            sendState(handler.player);
+        });
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ReflectionIntegrationBridge bridge = integrations;
+            if (bridge != null) bridge.onQuit(handler.player);
+            store.unload(handler.player.getUuid());
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> store.saveAll());
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
@@ -39,8 +61,7 @@ public final class ServerRuntime {
                                                 .then(argument("amount", integer())
                                                         .executes(ctx -> {
                                                             ServerPlayerEntity target = getPlayer(ctx, "player");
-                                                            store.get(target.getUuid()).add(getString(ctx, "key"), getInteger(ctx, "amount"));
-                                                            sendState(target);
+                                                            engine.adminAdd(target, getString(ctx, "key"), getInteger(ctx, "amount"));
                                                             ctx.getSource().sendFeedback(() -> Text.literal("SVQuest progress updated for " + target.getName().getString()), false);
                                                             return 1;
                                                         })))))
@@ -50,8 +71,7 @@ public final class ServerRuntime {
                                                 .then(argument("value", integer(0))
                                                         .executes(ctx -> {
                                                             ServerPlayerEntity target = getPlayer(ctx, "player");
-                                                            store.get(target.getUuid()).set(getString(ctx, "key"), getInteger(ctx, "value"));
-                                                            sendState(target);
+                                                            engine.adminSet(target, getString(ctx, "key"), getInteger(ctx, "value"));
                                                             return 1;
                                                         })))))
         ));
@@ -72,10 +92,11 @@ public final class ServerRuntime {
                 return;
             }
             try {
+                // Player executes only a server-owned whitelist entry. The client can never supply an arbitrary command.
                 player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
             } catch (Throwable t) {
                 SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
-                player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này. Hãy dùng lệnh fallback."), false);
+                player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này. Command fallback vẫn được giữ."), false);
             }
         }
     }
