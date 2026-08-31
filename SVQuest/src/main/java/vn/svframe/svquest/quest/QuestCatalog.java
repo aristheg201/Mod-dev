@@ -24,6 +24,7 @@ import java.util.zip.GZIPInputStream;
  */
 public final class QuestCatalog {
     private static final Gson GSON = new Gson();
+    private static final int CATALOG_PARTS = 8;
     private QuestCatalog() {}
 
     public record Objective(String type, String target, String metaKey, long amount, String mode,
@@ -51,12 +52,15 @@ public final class QuestCatalog {
 
     static {
         List<Quest> loaded = loadBundled();
-        if (loaded.size() < 600) {
-            throw new IllegalStateException("SVQuest full catalog did not load: expected >=600 quests, got " + loaded.size());
+        if (loaded.size() != 618) {
+            throw new IllegalStateException("SVQuest full catalog did not load: expected 618 quests, got " + loaded.size());
         }
         QUESTS = Collections.unmodifiableList(loaded);
         LinkedHashMap<String, Quest> map = new LinkedHashMap<>();
         for (Quest quest : loaded) map.put(quest.id(), quest);
+        if (map.size() != loaded.size()) {
+            throw new IllegalStateException("SVQuest full catalog contains duplicate quest ids");
+        }
         BY_ID = Collections.unmodifiableMap(map);
     }
 
@@ -90,15 +94,28 @@ public final class QuestCatalog {
     }
 
     private static List<Quest> loadBundled() {
-        try (InputStream raw = QuestCatalog.class.getResourceAsStream("/svquest/default_quests.json.gz.b64")) {
-            if (raw == null) throw new IllegalStateException("Missing /svquest/default_quests.json.gz.b64");
-            String b64 = new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", "");
+        try {
+            StringBuilder encoded = new StringBuilder(45000);
+            for (int i = 0; i < CATALOG_PARTS; i++) {
+                String path = String.format(Locale.ROOT, "/svquest/full/default_quests.%02d.b64", i);
+                try (InputStream raw = QuestCatalog.class.getResourceAsStream(path)) {
+                    if (raw == null) throw new IllegalStateException("Missing " + path);
+                    encoded.append(new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", ""));
+                }
+            }
+            String b64 = encoded.toString();
+            if (b64.length() != 44932) {
+                throw new IllegalStateException("Corrupt SVQuest catalog payload length: " + b64.length());
+            }
             byte[] gz = Base64.getDecoder().decode(b64);
             String json;
             try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gz))) {
                 json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             }
             JsonObject root = GSON.fromJson(json, JsonObject.class);
+            if (root == null || !root.has("quests") || !root.get("quests").isJsonArray()) {
+                throw new IllegalStateException("SVQuest catalog JSON has no quests array");
+            }
             JsonArray quests = root.getAsJsonArray("quests");
             ArrayList<Quest> out = new ArrayList<>(quests.size());
             for (JsonElement element : quests) {
