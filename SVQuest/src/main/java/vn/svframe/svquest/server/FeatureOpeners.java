@@ -33,7 +33,7 @@ public final class FeatureOpeners {
             BlockPos origin = player.getBlockPos();
             Class<?> towerBlockClass = Class.forName("battle.tower.block.HoloBattleTowerBlock");
             BlockPos nearest = null;
-            double nearestSq = Double.MAX_VALUE;
+            int nearestSq = Integer.MAX_VALUE;
 
             int horizontal = 16;
             int vertical = 8;
@@ -43,10 +43,10 @@ public final class FeatureOpeners {
                         BlockPos pos = origin.add(dx, dy, dz);
                         Object block = world.getBlockState(pos).getBlock();
                         if (!towerBlockClass.isInstance(block)) continue;
-                        double d = pos.getSquaredDistance(origin);
+                        int d = dx * dx + dy * dy + dz * dz;
                         if (d < nearestSq) {
                             nearestSq = d;
-                            nearest = pos.toImmutable();
+                            nearest = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
                         }
                     }
                 }
