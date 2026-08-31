@@ -1,0 +1,38 @@
+name: Recover SVQuest beta5 source
+
+on:
+  push:
+    branches: [build/svquest]
+    paths:
+      - '.github/workflows/svquest-recover-beta5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct archived source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovered
+          cat bootstrap/source.b64.part* | tr -d '\r\n' | base64 --decode > recovered/svquest-source.tar.gz
+          gzip -t recovered/svquest-source.tar.gz
+          mkdir -p recovered/source
+          tar -xzf recovered/svquest-source.tar.gz -C recovered/source
+          echo '--- archive size ---'
+          stat -c '%n %s bytes' recovered/svquest-source.tar.gz
+          echo '--- source files ---'
+          find recovered/source -type f -printf '%P %s bytes\n' | sort | tee recovered/file-list.txt
+          echo '--- java count ---'
+          find recovered/source -type f -name '*.java' | wc -l | tee recovered/java-count.txt
+      - name: Upload recovered source
+        uses: actions/upload-artifact@v4
+        with:
+          name: SVQuest-beta5-source-restored
+          path: recovered/
+          if-no-files-found: error
