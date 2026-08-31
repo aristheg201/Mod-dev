@@ -53,7 +53,6 @@ public final class QuestStateStore {
                 SVQuest.LOGGER.error("Could not load SVQuest v3 state for {}", id, e);
             }
         }
-        // Beta.5 stored JSON under config/svquest/data. Import it once when v3 state is empty.
         if (state.progress.isEmpty() && state.claimed.isEmpty()) importBeta5(id, state);
         state.normalize();
         return state;
@@ -103,7 +102,7 @@ public final class QuestStateStore {
         public int claimedCount() { return claimed.size(); }
         public boolean unlocked(QuestCatalog.Quest quest) { return QuestCatalog.unlocked(claimed, quest); }
 
-        /** Apply one real gameplay event to every currently-unlocked objective that matches it. */
+        /** One event increments all currently unlocked matching objectives. */
         public boolean emit(String type, long amount, Map<String, String> meta) {
             if (type == null || type.isBlank()) return false;
             String normalized = type.trim().toUpperCase(java.util.Locale.ROOT);
@@ -116,8 +115,27 @@ public final class QuestStateStore {
                     if (!normalized.equals(objective.type()) || !QuestCatalog.matches(objective, meta)) continue;
                     String key = QuestCatalog.progressKey(quest, i);
                     long before = progress(key);
-                    long after = objective.maxMode() ? Math.max(before, positive)
-                            : Math.min(objective.amount(), before + positive);
+                    long after = objective.maxMode() ? Math.max(before, positive) : Math.min(objective.amount(), before + positive);
+                    if (after != before) { progress.put(key, after); changed = true; }
+                }
+            }
+            return changed;
+        }
+
+        /** Mirrors an absolute counter owned by another mod without repeatedly adding it every poll. */
+        public boolean absolute(String type, long value, Map<String, String> meta) {
+            if (type == null || type.isBlank()) return false;
+            String normalized = type.trim().toUpperCase(java.util.Locale.ROOT);
+            long positive = Math.max(0, value);
+            boolean changed = false;
+            for (QuestCatalog.Quest quest : QuestCatalog.QUESTS) {
+                if (claimed(quest.id()) || !unlocked(quest)) continue;
+                for (int i = 0; i < quest.objectives().size(); i++) {
+                    QuestCatalog.Objective objective = quest.objectives().get(i);
+                    if (!normalized.equals(objective.type()) || !QuestCatalog.matches(objective, meta)) continue;
+                    String key = QuestCatalog.progressKey(quest, i);
+                    long before = progress(key);
+                    long after = Math.min(objective.amount(), Math.max(before, positive));
                     if (after != before) { progress.put(key, after); changed = true; }
                 }
             }
@@ -140,11 +158,10 @@ public final class QuestStateStore {
 
         public boolean claim(String id) { return id != null && claimed.add(id); }
 
-        /** Admin path: objective key may be questId#index or a legacy event type. */
         public void adminSet(String key, long value) {
             if (key == null || key.isBlank()) return;
             if (key.contains("#")) progress.put(key, Math.max(0, value));
-            else emit(key, Math.max(0, value), Map.of());
+            else absolute(key, Math.max(0, value), Map.of());
         }
 
         public void adminAdd(String key, long amount) {
