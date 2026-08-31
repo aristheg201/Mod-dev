@@ -3,15 +3,15 @@
   "id": "svquest",
   "version": "${version}",
   "name": "SVQuest",
-  "description": "Server progression quests and unified client GUI for the SVFrame Cobblemon server.",
+  "description": "Gameplay progression and unified native GUI for the SVFrame Cobblemon server.",
   "authors": ["SVFrame"],
   "license": "All-Rights-Reserved",
   "environment": "*",
   "entrypoints": {
     "main": ["vn.svframe.svquest.SVQuest"],
-    "client": ["vn.svframe.svquest.client.SVQuestClient"]
+    "client": ["vn.svframe.svquest.client.SVQuestClient"],
+    "server": ["vn.svframe.svquest.server.SVQuestDedicatedServer"]
   },
-  "mixins": ["svquest.mixins.json"],
   "depends": {
     "fabricloader": ">=0.16.5",
     "minecraft": "1.21.1",
