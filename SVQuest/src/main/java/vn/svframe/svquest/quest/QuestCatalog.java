@@ -22,9 +22,9 @@ public final class QuestCatalog {
 
     public static final List<Quest> QUESTS = List.of(
             new Quest("first_partner", "KHỞI ĐẦU", "Đồng đội đầu tiên",
-                    "Chọn starter và tự tay bắt Pokémon đầu tiên.",
+                    "Có Pokémon đồng hành và tự tay bắt thêm Pokémon đầu tiên. Người chơi cũ được nhận diện tự động.",
                     List.of(
-                            new Objective("starter", "Chọn starter", 1),
+                            new Objective("starter", "Có Pokémon đồng hành", 1),
                             new Objective("capture", "Bắt Pokémon hoang dã", 1)
                     ),
                     List.of("8 Poké Ball", "25.000 CobbleDollars", "20 BeastCoin")),
