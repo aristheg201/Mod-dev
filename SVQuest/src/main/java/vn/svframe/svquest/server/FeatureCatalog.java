@@ -15,9 +15,7 @@ public final class FeatureCatalog {
         COMMANDS.put("hunts", "hunts");
         COMMANDS.put("raids", "raid list");
         COMMANDS.put("ranked", "ranked");
-        COMMANDS.put("battle_tower", "battletower");
         COMMANDS.put("battle_factory", "battlefactory");
-        COMMANDS.put("breeding", "breeding");
         COMMANDS.put("wonder_trade", "wondertrade");
         COMMANDS.put("sts", "sts");
         COMMANDS.put("research", "research");
