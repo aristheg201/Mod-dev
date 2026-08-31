@@ -1,0 +1,1 @@
+SVQuest build source is restored from bootstrap/svquest-source-beta6.tar.gz by .github/workflows/svquest-loom.yml. This bundle contains the complete Yarn-named source, resources, quest catalog and Gradle Loom project. No Minecraft/Fabric compile stubs are used in the CI build.

@@ -1,0 +1,70 @@
+name: SVQuest Loom build
+
+on:
+  push:
+    branches:
+      - build/svquest
+    paths:
+      - 'bootstrap/svquest-source-*.tar.gz'
+      - '.github/workflows/svquest-loom.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore SVQuest source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf SVQuest
+          tar -xzf bootstrap/svquest-source-beta6.tar.gz
+          test -f SVQuest/src/main/resources/fabric.mod.json
+          test -f SVQuest/src/main/java/vn/svframe/svquest/client/SVQuestClient.java
+          test ! -d SVQuest/src/compileStubs
+          test ! -f SVQuest/src/main/java/vn/svframe/svquest/mixin/ExpeditionDataMixin.java
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Loom remap build
+        working-directory: SVQuest
+        run: gradle --no-daemon clean remapJar sourcesJar
+
+      - name: Verify artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd SVQuest
+          JAR="$(find build/libs -maxdepth 1 -type f -name 'SVQuest-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          test -n "$JAR"
+          unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/SVQuestClient.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/SVQuest.class'
+          ! unzip -l "$JAR" | grep -q 'ExpeditionDataMixin.class'
+          ! unzip -l "$JAR" | grep -q '/compileStubs/'
+          sha256sum "$JAR" | tee build/libs/SHA256.txt
+
+      - name: Upload Loom artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SVQuest-Loom-remapped
+          path: |
+            SVQuest/build/libs/SVQuest-*.jar
+            SVQuest/build/libs/SHA256.txt
+            SVQuest/build/libs/fabric.mod.built.json
+          if-no-files-found: error
