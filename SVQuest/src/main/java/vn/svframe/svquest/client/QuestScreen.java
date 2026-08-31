@@ -31,6 +31,11 @@ public final class QuestScreen extends Screen {
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         hits.clear();
+
+        // Minecraft 1.21.1 Screen#render() applies the menu blur in renderBackground().
+        // It MUST run before SVQuest draws its own UI; running it last blurs the entire hub.
+        super.render(ctx, mouseX, mouseY, delta);
+
         ctx.fill(0, 0, width, height, 0xB9000000);
         int w = Math.min(1240, Math.max(720, width - 24));
         int h = Math.min(720, Math.max(440, height - 24));
@@ -40,7 +45,6 @@ public final class QuestScreen extends Screen {
         int contentY = y + 103;
         if (tab == Tab.PROGRESS) progress(ctx, x + 14, contentY, w - 28, h - 117, mouseX, mouseY);
         else featureGrid(ctx, x + 14, contentY, w - 28, h - 117, mouseX, mouseY);
-        super.render(ctx, mouseX, mouseY, delta);
     }
 
     private void header(DrawContext ctx, int x, int y, int w, int mx, int my) {
