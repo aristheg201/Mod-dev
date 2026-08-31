@@ -1,146 +1,174 @@
 package vn.svframe.svquest.quest;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 /**
- * Server gameplay progression. This intentionally contains no storyline/lore chapter gates.
- * Objective keys are emitted only by server-side gameplay integrations.
+ * Full SVQuest catalog restored from beta.5. The bundled catalog contains 618 gameplay quests.
+ * No story chapter is invented here: progression, activities, Pokémon research and endgame only.
  */
 public final class QuestCatalog {
+    private static final Gson GSON = new Gson();
     private QuestCatalog() {}
 
-    public record Objective(String key, String label, int target, String featureId) {
-        public Objective(String key, String label, int target) { this(key, label, target, ""); }
+    public record Objective(String type, String target, String metaKey, long amount, String mode,
+                            String label, String featureId) {
+        public boolean maxMode() { return "max".equalsIgnoreCase(mode); }
     }
 
-    public record Quest(String id, String phase, String title, String description,
-                        List<Objective> objectives, List<String> rewards) {}
+    public record Reward(String type, String item, int count, long amount, String command, String label) {}
 
-    /** Metrics which legitimately carry across quest boundaries. */
-    public static final Set<String> CARRY_OVER = Set.of("capture", "pokemon_level", "trainer_level");
+    public record Quest(String id, String category, String title, String description,
+                        List<Objective> objectives, List<Reward> rewards, List<String> prerequisites) {
+        public String phase() {
+            return switch (category == null ? "" : category.toLowerCase(Locale.ROOT)) {
+                case "progression" -> "TIẾN TRÌNH";
+                case "activity" -> "HOẠT ĐỘNG";
+                case "pokemon" -> "POKÉMON";
+                case "endgame" -> "ENDGAME";
+                default -> "NHIỆM VỤ";
+            };
+        }
+    }
 
-    public static final List<Quest> QUESTS = List.of(
-            new Quest("first_partner", "KHỞI ĐẦU", "Đồng đội đầu tiên",
-                    "Có Pokémon đồng hành và tự tay bắt thêm Pokémon đầu tiên. Người chơi cũ được nhận diện tự động.",
-                    List.of(
-                            new Objective("starter", "Có Pokémon đồng hành", 1),
-                            new Objective("capture", "Bắt Pokémon hoang dã", 1)
-                    ),
-                    List.of("8 Poké Ball", "25.000 CobbleDollars", "20 BeastCoin")),
+    public static final List<Quest> QUESTS;
+    public static final Map<String, Quest> BY_ID;
 
-            new Quest("build_team", "KHỞI ĐẦU", "Xây dựng đội hình",
-                    "Dùng tài nguyên vừa nhận để mở rộng party trước khi bước vào huấn luyện.",
-                    List.of(new Objective("capture", "Tổng Pokémon đã bắt", 3)),
-                    List.of("6 EXP Candy S", "4 Great Ball")),
-
-            new Quest("training", "HUẤN LUYỆN", "Huấn luyện chuyên sâu",
-                    "Tăng cấp và tiến hóa một Pokémon bằng gameplay thật.",
-                    List.of(
-                            new Objective("pokemon_level", "Có Pokémon đạt Lv.25", 25),
-                            new Objective("evolve", "Tiến hóa Pokémon", 1)
-                    ),
-                    List.of("40 BeastCoin", "Tera Shard hỗ trợ bước sau")),
-
-            new Quest("trainer_power", "TRAINER", "Sức mạnh Trainer",
-                    "Tăng SVFrameMMO level và thắng battle để mở build Pokémon Skill.",
-                    List.of(
-                            new Objective("trainer_level", "SVFrameMMO đạt Lv.5", 5),
-                            new Objective("battle_win", "Thắng Pokémon battle", 5)
-                    ),
-                    List.of("100 BeastCoin", "1 Skill Point")),
-
-            new Quest("first_skill", "POKÉMON SKILLS", "Kỹ năng đầu tiên",
-                    "Mua thật một Pokémon Skill rồi bind nó vào skill bar.",
-                    List.of(
-                            new Objective("skill_purchase", "Mua Pokémon Skill", 1, "pokemon_skills"),
-                            new Objective("skill_bind", "Bind Pokémon Skill", 1, "pokemon_skills")
-                    ),
-                    List.of("1 Skill Point", "8 EXP Candy M")),
-
-            new Quest("economy", "KINH TẾ", "Giao dịch thực chiến",
-                    "Dùng shop và GTS thật; chỉ giao dịch thành công mới được tính.",
-                    List.of(
-                            new Objective("shop_purchase", "Mua thành công trong SkiesShop", 1, "shop"),
-                            new Objective("gts_listing", "Đăng Pokémon lên GTS", 1, "gts"),
-                            new Objective("gts_trade", "Mua Pokémon trên GTS", 1, "gts")
-                    ),
-                    List.of("50.000 CobbleDollars", "20 HunterCoin")),
-
-            new Quest("breeding", "BREEDING", "Thế hệ tiếp theo",
-                    "Trải nghiệm breeding bằng egg thật, không tính việc chỉ mở menu.",
-                    List.of(
-                            new Objective("collect_egg", "Nhận/collect Egg", 1, "breeding"),
-                            new Objective("hatch", "Ấp nở Egg", 1, "breeding")
-                    ),
-                    List.of("Breeding resources", "60 BeastCoin")),
-
-            new Quest("tera_mega", "TỐI ƯU", "Sức mạnh biến đổi",
-                    "Thực hiện Tera và Mega trong battle để xác nhận đã dùng mechanic.",
-                    List.of(
-                            new Objective("tera_use", "Terastallize trong battle", 1),
-                            new Objective("mega_use", "Mega Evolution trong battle", 1)
-                    ),
-                    List.of("Optimization resources", "80 BeastCoin")),
-
-            new Quest("hunts_raids", "HOẠT ĐỘNG", "Săn và Raid",
-                    "Bước vào content combat server sau khi đội hình đã có nền tảng.",
-                    List.of(
-                            new Objective("hunt_complete", "Hoàn thành Hunt", 1, "hunts"),
-                            new Objective("raid_complete", "Hoàn thành NovaRaid", 1, "raids")
-                    ),
-                    List.of("Raid resources", "100 BeastCoin")),
-
-            new Quest("competitive", "THỬ THÁCH", "Tower & Ranked",
-                    "Tiến vào PvE/PvP có thứ hạng.",
-                    List.of(
-                            new Objective("battle_tower_win", "Thắng Battle Tower", 3, "battle_tower"),
-                            new Objective("ranked_win", "Thắng Ranked", 3, "ranked")
-                    ),
-                    List.of("Competitive resources", "30 HunterCoin")),
-
-            new Quest("research_collection", "KHÁM PHÁ", "Nghiên cứu & trao đổi",
-                    "Mở rộng collection qua Research và các hệ trade utility.",
-                    List.of(
-                            new Objective("research_complete", "Hoàn thành Research Task", 1, "research"),
-                            new Objective("wonder_trade", "Hoàn tất WonderTrade", 1, "wonder_trade"),
-                            new Objective("sts_trade", "Hoàn tất STS", 1, "sts")
-                    ),
-                    List.of("Collection resources", "40 HunterCoin")),
-
-            new Quest("server_activities", "HOẠT ĐỘNG", "Nội dung mở rộng",
-                    "Khám phá các hoạt động dài hạn ngoài battle truyền thống.",
-                    List.of(
-                            new Objective("expedition_complete", "Hoàn thành Expedition", 1, "expeditions"),
-                            new Objective("showcase_complete", "Tham gia/hoàn tất Showcase", 1, "showcase"),
-                            new Objective("minigame_complete", "Hoàn thành Minigame", 1)
-                    ),
-                    List.of("Activity resources", "50 HunterCoin")),
-
-            new Quest("seasonal", "MÙA", "Nhịp chơi hằng ngày",
-                    "Dùng Daily, Calendar và Battle Pass như vòng lặp progression thường xuyên.",
-                    List.of(
-                            new Objective("daily_claim", "Nhận Daily Reward", 1, "daily"),
-                            new Objective("battlepass_progress", "Tăng Battle Pass", 1, "battle_pass")
-                    ),
-                    List.of("Season resources", "100 BeastCoin")),
-
-            new Quest("endgame", "ENDGAME", "Trainer cấp cao",
-                    "Đội hình hoàn chỉnh tiến tới Fusion/Potara và content endgame.",
-                    List.of(
-                            new Objective("fusion_complete", "Hoàn tất Fusion/Potara", 1, "fusion"),
-                            new Objective("ranked_high", "Đạt mốc Ranked cao", 1, "ranked"),
-                            new Objective("endgame_raid", "Hoàn thành raid endgame", 1, "raids")
-                    ),
-                    List.of("Endgame rewards", "Hoàn tất lộ trình SVQuest"))
-    );
+    static {
+        List<Quest> loaded = loadBundled();
+        if (loaded.size() < 600) {
+            throw new IllegalStateException("SVQuest full catalog did not load: expected >=600 quests, got " + loaded.size());
+        }
+        QUESTS = Collections.unmodifiableList(loaded);
+        LinkedHashMap<String, Quest> map = new LinkedHashMap<>();
+        for (Quest quest : loaded) map.put(quest.id(), quest);
+        BY_ID = Collections.unmodifiableMap(map);
+    }
 
     public static Quest byIndex(int index) {
         return QUESTS.get(Math.max(0, Math.min(index, QUESTS.size() - 1)));
     }
 
-    public static boolean currentAccepts(int questIndex, String key) {
-        if (CARRY_OVER.contains(key)) return true;
-        return byIndex(questIndex).objectives().stream().anyMatch(o -> o.key().equals(key));
+    public static Quest byId(String id) { return BY_ID.get(id); }
+
+    public static boolean unlocked(Set<String> claimed, Quest quest) {
+        if (quest == null) return false;
+        for (String prerequisite : quest.prerequisites()) {
+            if (!claimed.contains(prerequisite)) return false;
+        }
+        return true;
     }
+
+    public static String progressKey(Quest quest, int objectiveIndex) {
+        return quest.id() + "#" + objectiveIndex;
+    }
+
+    public static boolean matches(Objective objective, Map<String, String> meta) {
+        String target = clean(objective.target());
+        if (target.isEmpty() || target.equals("*")) return true;
+        String key = clean(objective.metaKey());
+        if (key.isEmpty()) key = "target";
+        String actual = meta == null ? "" : clean(meta.get(key));
+        if (actual.equalsIgnoreCase(target)) return true;
+        for (String part : actual.split(",")) if (part.trim().equalsIgnoreCase(target)) return true;
+        return false;
+    }
+
+    private static List<Quest> loadBundled() {
+        try (InputStream raw = QuestCatalog.class.getResourceAsStream("/svquest/default_quests.json.gz.b64")) {
+            if (raw == null) throw new IllegalStateException("Missing /svquest/default_quests.json.gz.b64");
+            String b64 = new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", "");
+            byte[] gz = Base64.getDecoder().decode(b64);
+            String json;
+            try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gz))) {
+                json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            JsonObject root = GSON.fromJson(json, JsonObject.class);
+            JsonArray quests = root.getAsJsonArray("quests");
+            ArrayList<Quest> out = new ArrayList<>(quests.size());
+            for (JsonElement element : quests) {
+                JsonObject q = element.getAsJsonObject();
+                String id = str(q, "id");
+                if (id.isBlank()) continue;
+                ArrayList<Objective> objectives = new ArrayList<>();
+                JsonArray objectiveArray = q.has("objectives") ? q.getAsJsonArray("objectives") : new JsonArray();
+                for (JsonElement objectiveElement : objectiveArray) {
+                    JsonObject o = objectiveElement.getAsJsonObject();
+                    String type = str(o, "type").toUpperCase(Locale.ROOT);
+                    String target = str(o, "target");
+                    String metaKey = str(o, "metaKey");
+                    long amount = Math.max(1L, lng(o, "amount", 1L));
+                    String mode = str(o, "mode");
+                    String label = str(o, "label");
+                    objectives.add(new Objective(type, target, metaKey, amount, mode, label,
+                            featureFor(type, target)));
+                }
+                ArrayList<Reward> rewards = new ArrayList<>();
+                JsonArray rewardArray = q.has("rewards") ? q.getAsJsonArray("rewards") : new JsonArray();
+                for (JsonElement rewardElement : rewardArray) {
+                    JsonObject r = rewardElement.getAsJsonObject();
+                    rewards.add(new Reward(str(r, "type").toUpperCase(Locale.ROOT), str(r, "item"),
+                            (int) lng(r, "count", 1), lng(r, "amount", 0), str(r, "command"), str(r, "label")));
+                }
+                ArrayList<String> prerequisites = new ArrayList<>();
+                if (q.has("prerequisites")) for (JsonElement p : q.getAsJsonArray("prerequisites")) prerequisites.add(p.getAsString());
+                out.add(new Quest(id, str(q, "category"), str(q, "title"), str(q, "description"),
+                        List.copyOf(objectives), List.copyOf(rewards), List.copyOf(prerequisites)));
+            }
+            return out;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to decode full SVQuest beta.5 catalog", e);
+        }
+    }
+
+    private static String featureFor(String type, String target) {
+        return switch (type) {
+            case "FEATURE_OPEN" -> target;
+            case "SHOP_BUY", "SHOP_SELL" -> "shop";
+            case "CRATE_OPEN", "ARCADE_GACHA_PULL" -> "gacha";
+            case "BREED_EGG", "HATCH" -> "breeding";
+            case "POKESKILL_PURCHASE", "POKESKILL_COUNT" -> "pokemon_skills";
+            case "GTS_LIST", "GTS_PURCHASE" -> "gts";
+            case "WONDERTRADE" -> "wonder_trade";
+            case "STS_SELL" -> "sts";
+            case "RESEARCH_CAPTURE", "RESEARCH_DEFEAT", "RESEARCH_EVOLVE", "RESEARCH_LEVEL_UP", "RESEARCH_FISH", "RESEARCH_FRIENDSHIP" -> "research";
+            case "HUNT_COMPLETE" -> "hunts";
+            case "RAID_WIN" -> "raids";
+            case "RANKED_WIN" -> "ranked";
+            case "TOWER_WIN" -> "battle_tower";
+            case "FACTORY_RUN_COMPLETE" -> "battle_factory";
+            case "EXPEDITION_COMPLETE" -> "expeditions";
+            case "SHOWCASE_PLACE", "SVF_SHOWCASE_SUBMIT", "SVF_SHOWCASE_VOTE" -> "showcase";
+            case "SKIN_PURCHASE" -> "skins";
+            case "FUSION_DANCE", "FUSION_POTARA" -> "fusion";
+            default -> "";
+        };
+    }
+
+    private static String str(JsonObject obj, String key) {
+        if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return "";
+        try { return obj.get(key).getAsString(); } catch (Exception ignored) { return ""; }
+    }
+
+    private static long lng(JsonObject obj, String key, long fallback) {
+        if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return fallback;
+        try { return obj.get(key).getAsLong(); } catch (Exception ignored) { return fallback; }
+    }
+
+    private static String clean(String value) { return value == null ? "" : value.trim(); }
 }
