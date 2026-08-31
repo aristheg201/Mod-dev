@@ -12,6 +12,12 @@
     "client": ["vn.svframe.svquest.client.SVQuestClient"],
     "server": ["vn.svframe.svquest.server.SVQuestDedicatedServer"]
   },
+  "mixins": [
+    {
+      "config": "svquest.questfix.mixins.json",
+      "environment": "server"
+    }
+  ],
   "depends": {
     "fabricloader": ">=0.16.5",
     "minecraft": "1.21.1",

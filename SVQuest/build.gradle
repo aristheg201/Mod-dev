@@ -18,18 +18,51 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
+// Keep QuestScreen's rendered beta.9 GUI locked while allowing its quest-state logic to evolve.
+// The build payload is the reviewed beta.9 source with only graph/claim/state adaptations.
+tasks.register('prepareBeta9QuestScreen') {
+    inputs.file('src/main/resources/svquest/questscreen_beta9_logic.java.gz.b64')
+    outputs.file('src/main/java/vn/svframe/svquest/client/QuestScreen.java')
+    doLast {
+        def source = file('src/main/resources/svquest/questscreen_beta9_logic.java.gz.b64')
+        def target = file('src/main/java/vn/svframe/svquest/client/QuestScreen.java')
+        byte[] compressed = java.util.Base64.getDecoder().decode(source.text.replaceAll('\\s', ''))
+        def gzip = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(compressed))
+        target.parentFile.mkdirs()
+        target.bytes = gzip.bytes
+        gzip.close()
+    }
+}
+
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand(version: project.version) }
-    // Only the logo source payload is build-time material. Keep the compressed quest catalog
-    // resource in the final jar because QuestCatalog decodes it at runtime on both client/server.
+    // Build-only binary/source payloads must never leak into the runtime jar.
     exclude 'assets/svquest/textures/gui/server_logo.b64'
+    exclude 'svquest/questfix_mixins.zip.b64'
+    exclude 'svquest/questscreen_beta9_logic.java.gz.b64'
 
     doLast {
         def source = file('src/main/resources/assets/svquest/textures/gui/server_logo.b64')
         def output = file("$buildDir/resources/main/assets/svquest/textures/gui/server_logo.png")
         output.parentFile.mkdirs()
         output.bytes = java.util.Base64.getDecoder().decode(source.text.replaceAll('\\s', ''))
+    }
+}
+
+// These classes are the proven beta.5 *production-remapped* optional-mod hooks.
+// Inject them only after Loom has remapped the normal project jar; otherwise TinyRemapper
+// would treat their intermediary Minecraft names as named-source bytecode.
+remapJar {
+    doLast {
+        def source = file('src/main/resources/svquest/questfix_mixins.zip.b64')
+        def payload = file("$buildDir/tmp/questfix_mixins.zip")
+        payload.parentFile.mkdirs()
+        payload.bytes = java.util.Base64.getDecoder().decode(source.text.replaceAll('\\s', ''))
+        ant.zip(destfile: archiveFile.get().asFile, update: true) {
+            zipfileset(src: payload)
+        }
+        payload.delete()
     }
 }
 
@@ -43,3 +76,6 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
     withSourcesJar()
 }
+
+tasks.named('compileJava').configure { dependsOn 'prepareBeta9QuestScreen' }
+tasks.named('sourcesJar').configure { dependsOn 'prepareBeta9QuestScreen' }

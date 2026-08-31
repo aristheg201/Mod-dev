@@ -1,0 +1,19 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "vn.svframe.svquest.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "PebblesCrateMixin",
+    "ArcadeLuckMixin$Gacha",
+    "ArcadeLuckMixin$Roulette",
+    "ArcadeLuckMixin$Blackjack",
+    "SvfTaiXiuMixin",
+    "SvfMatchBetMixin",
+    "SvfTournamentMixin",
+    "SvfEventShowcaseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

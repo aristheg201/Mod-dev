@@ -41,38 +41,71 @@ public final class QuestStateStore {
     private PlayerState load(UUID id) {
         PlayerState state = new PlayerState();
         Path file = dir.resolve(id + ".properties");
+        Properties legacy = null;
+        boolean loadedV3 = false;
+
         if (Files.isRegularFile(file)) {
             Properties p = new Properties();
             try (InputStream in = Files.newInputStream(file)) {
                 p.load(in);
-                for (String key : p.stringPropertyNames()) {
-                    if (key.startsWith("progress.")) state.progress.put(key.substring(9), parseLong(p.getProperty(key), 0));
-                    else if (key.startsWith("claimed.") && Boolean.parseBoolean(p.getProperty(key))) state.claimed.add(key.substring(8));
+                if ("3".equals(p.getProperty("schema"))) {
+                    for (String key : p.stringPropertyNames()) {
+                        if (key.startsWith("progress.")) state.progress.put(key.substring(9), parseLong(p.getProperty(key), 0));
+                        else if (key.startsWith("claimed.") && Boolean.parseBoolean(p.getProperty(key))) state.claimed.add(key.substring(8));
+                    }
+                    loadedV3 = true;
+                } else {
+                    legacy = p;
                 }
             } catch (Exception e) {
-                SVQuest.LOGGER.error("Could not load SVQuest v3 state for {}", id, e);
+                SVQuest.LOGGER.error("Could not load SVQuest player state for {}", id, e);
             }
         }
-        if (state.progress.isEmpty() && state.claimed.isEmpty()) importBeta5(id, state);
+
+        if (!loadedV3) {
+            boolean imported = importBeta5(id, state);
+            if (!imported && legacy != null) migrateBeta9(id, legacy, state);
+        }
         state.normalize();
         return state;
     }
 
-    private void importBeta5(UUID id, PlayerState state) {
+    /** beta.5 already used questId#objectiveIndex keys and manual claimed quest IDs. */
+    private boolean importBeta5(UUID id, PlayerState state) {
         Path json = beta5Dir.resolve(id + ".json");
-        if (!Files.isRegularFile(json)) return;
+        if (!Files.isRegularFile(json)) return false;
         try {
             JsonObject root = GSON.fromJson(Files.readString(json, StandardCharsets.UTF_8), JsonObject.class);
-            if (root.has("progress")) {
+            if (root == null) return false;
+            if (root.has("progress") && root.get("progress").isJsonObject()) {
                 for (var e : root.getAsJsonObject("progress").entrySet()) {
                     try { state.progress.put(e.getKey(), Math.max(0, e.getValue().getAsLong())); } catch (Exception ignored) { }
                 }
             }
-            if (root.has("claimed")) for (var e : root.getAsJsonArray("claimed")) state.claimed.add(e.getAsString());
+            if (root.has("claimed") && root.get("claimed").isJsonArray()) {
+                for (var e : root.getAsJsonArray("claimed")) state.claimed.add(e.getAsString());
+            }
             SVQuest.LOGGER.info("Imported beta.5 SVQuest state for {}", id);
+            return true;
         } catch (Throwable t) {
             SVQuest.LOGGER.warn("Could not import beta.5 SVQuest state for {}: {}", id, t.toString());
+            return false;
         }
+    }
+
+    /**
+     * beta.9 stored a different 14-step linear catalog and generic progress keys. Those counters cannot be
+     * safely projected onto the restored 618-quest graph. Preserve only rewarded IDs that actually exist in
+     * the restored catalog; otherwise start the restored graph clean rather than inventing progress.
+     */
+    private void migrateBeta9(UUID id, Properties p, PlayerState state) {
+        int kept = 0;
+        for (String key : p.stringPropertyNames()) {
+            if (!key.startsWith("rewarded.") || !Boolean.parseBoolean(p.getProperty(key))) continue;
+            String questId = key.substring(9);
+            if (QuestCatalog.byId(questId) != null && state.claimed.add(questId)) kept++;
+        }
+        SVQuest.LOGGER.info("Migrated beta.9 SVQuest state for {}: kept {} compatible claimed quest ids; incompatible linear counters were not projected.", id, kept);
     }
 
     private void save(UUID id, PlayerState state) {
@@ -107,6 +140,7 @@ public final class QuestStateStore {
             if (type == null || type.isBlank()) return false;
             String normalized = type.trim().toUpperCase(java.util.Locale.ROOT);
             long positive = Math.max(0, amount);
+            if (positive <= 0) return false;
             boolean changed = false;
             for (QuestCatalog.Quest quest : QuestCatalog.QUESTS) {
                 if (claimed(quest.id()) || !unlocked(quest)) continue;
@@ -156,7 +190,13 @@ public final class QuestStateStore {
             return out;
         }
 
-        public boolean claim(String id) { return id != null && claimed.add(id); }
+        public boolean claim(String id) {
+            QuestCatalog.Quest quest = QuestCatalog.byId(id);
+            if (quest == null || claimed(id) || !complete(quest)) return false;
+            if (!claimed.add(id)) return false;
+            canonicalize(quest);
+            return true;
+        }
 
         public void adminSet(String key, long value) {
             if (key == null || key.isBlank()) return;
@@ -170,9 +210,31 @@ public final class QuestStateStore {
             else emit(key, Math.max(0, amount), Map.of());
         }
 
+        public boolean reconcileClaimedProgress() {
+            boolean changed = false;
+            for (String id : new HashSet<>(claimed)) {
+                QuestCatalog.Quest quest = QuestCatalog.byId(id);
+                if (quest == null) continue;
+                for (int i = 0; i < quest.objectives().size(); i++) {
+                    String key = QuestCatalog.progressKey(quest, i);
+                    long target = quest.objectives().get(i).amount();
+                    if (progress(key) < target) { progress.put(key, target); changed = true; }
+                }
+            }
+            return changed;
+        }
+
+        private void canonicalize(QuestCatalog.Quest quest) {
+            for (int i = 0; i < quest.objectives().size(); i++) {
+                String key = QuestCatalog.progressKey(quest, i);
+                progress.merge(key, quest.objectives().get(i).amount(), (a, b) -> Math.max(a, b));
+            }
+        }
+
         private void normalize() {
             progress.replaceAll((k, v) -> Math.max(0, v));
             claimed.removeIf(id -> QuestCatalog.byId(id) == null);
+            reconcileClaimedProgress();
         }
 
         public String encode() {

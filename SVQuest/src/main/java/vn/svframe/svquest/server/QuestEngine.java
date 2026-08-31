@@ -1,6 +1,7 @@
 package vn.svframe.svquest.server;
 
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import vn.svframe.svquest.SVQuest;
 import vn.svframe.svquest.quest.QuestCatalog;
 
@@ -42,7 +43,7 @@ public final class QuestEngine {
     public void emit(ServerPlayerEntity player, String type) { emit(player, type, 1, Map.of()); }
     public void emit(ServerPlayerEntity player, String type, long amount) { emit(player, type, amount, Map.of()); }
     public void emit(ServerPlayerEntity player, String type, long amount, Map<String, String> meta) {
-        if (player == null || type == null || type.isBlank()) return;
+        if (player == null || type == null || type.isBlank() || amount <= 0) return;
         mutate(player, state -> state.emit(alias(type), amount, meta == null ? Map.of() : meta), "event:" + type);
     }
 
@@ -51,39 +52,56 @@ public final class QuestEngine {
         mutate(player, state -> state.absolute(alias(type), value, meta == null ? Map.of() : meta), "absolute:" + type);
     }
 
+    /** Manual, server-authoritative reward claim. Completing objectives never grants rewards by itself. */
+    public void claim(ServerPlayerEntity player, String questId) {
+        if (player == null || questId == null || questId.isBlank() || questId.length() > 96) return;
+        try {
+            QuestCatalog.Quest quest = QuestCatalog.byId(questId.trim());
+            QuestStateStore.PlayerState state = store.get(player.getUuid());
+            if (quest == null || state.claimed(quest.id())) {
+                sync.send(player);
+                return;
+            }
+            if (!state.unlocked(quest)) {
+                player.sendMessage(Text.literal("§cNhiệm vụ này chưa được mở khóa."), false);
+                sync.send(player);
+                return;
+            }
+            if (!state.complete(quest)) {
+                player.sendMessage(Text.literal("§eNhiệm vụ này chưa hoàn thành đủ mục tiêu."), false);
+                sync.send(player);
+                return;
+            }
+            if (!state.claim(quest.id())) {
+                sync.send(player);
+                return;
+            }
+            store.saveNow(player.getUuid());
+            rewards.grant(player, quest);
+            sync.send(player);
+        } catch (Throwable t) {
+            SVQuest.LOGGER.error("SVQuest claim failed safely for {} / {}", player.getName().getString(), questId, t);
+            sync.send(player);
+        }
+    }
+
     public void adminAdd(ServerPlayerEntity player, String key, long amount) {
         mutate(player, state -> { state.adminAdd(key, amount); return true; }, "admin-add:" + key);
     }
     public void adminSet(ServerPlayerEntity player, String key, long value) {
         mutate(player, state -> { state.adminSet(key, value); return true; }, "admin-set:" + key);
     }
-    public void reconcile(ServerPlayerEntity player) { mutate(player, state -> false, "reconcile"); }
+    public void reconcile(ServerPlayerEntity player) { mutate(player, state -> state.reconcileClaimedProgress(), "reconcile"); }
 
     private void mutate(ServerPlayerEntity player, Mutation operation, String source) {
         try {
             QuestStateStore.PlayerState state = store.get(player.getUuid());
             boolean changed = operation.apply(state);
-            boolean claimedAny = claimCompleted(player, state);
-            if (changed || claimedAny) store.saveNow(player.getUuid());
+            if (changed) store.saveNow(player.getUuid());
             sync.send(player);
         } catch (Throwable t) {
             SVQuest.LOGGER.error("SVQuest progression failed safely for {} ({})", player.getName().getString(), source, t);
         }
-    }
-
-    private boolean claimCompleted(ServerPlayerEntity player, QuestStateStore.PlayerState state) {
-        boolean any = false;
-        for (int guard = 0; guard < QuestCatalog.QUESTS.size(); guard++) {
-            var completed = state.completeUnclaimed();
-            if (completed.isEmpty()) break;
-            boolean round = false;
-            for (QuestCatalog.Quest quest : completed) {
-                if (!state.claim(quest.id())) continue;
-                round = true; any = true; rewards.grant(player, quest);
-            }
-            if (!round) break;
-        }
-        return any;
     }
 
     private static String alias(String key) {

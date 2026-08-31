@@ -108,6 +108,12 @@ public final class ServerRuntime {
                 literal("svquest")
                         .executes(ctx -> { sendState(ctx.getSource().getPlayerOrThrow()); return 1; })
                         .then(literal("sync").executes(ctx -> { sendState(ctx.getSource().getPlayerOrThrow()); return 1; }))
+                        .then(literal("claim")
+                                .then(argument("quest", word())
+                                        .executes(ctx -> {
+                                            engine.claim(ctx.getSource().getPlayerOrThrow(), getString(ctx, "quest"));
+                                            return 1;
+                                        })))
                         .then(literal("progress").requires(src -> src.hasPermissionLevel(2))
                                 .then(argument("player", player())
                                         .then(argument("key", word())
@@ -134,6 +140,10 @@ public final class ServerRuntime {
     private void handle(ServerPlayerEntity player, String action) {
         if (action == null || action.length() > 128) return;
         if (action.equals("sync")) { sendState(player); return; }
+        if (action.startsWith("claim:")) {
+            engine.claim(player, action.substring("claim:".length()));
+            return;
+        }
         if (!action.startsWith("feature:")) return;
 
         String id = action.substring("feature:".length());

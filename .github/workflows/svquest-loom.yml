@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -31,7 +33,11 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Assert clean architecture
+      - name: Restore reviewed beta.9 QuestScreen source
+        working-directory: SVQuest
+        run: gradle --no-daemon prepareBeta9QuestScreen
+
+      - name: Assert quest architecture and beta.9 GUI contract
         shell: bash
         run: |
           set -euo pipefail
@@ -39,9 +45,40 @@ jobs:
           test -f SVQuest/src/main/java/vn/svframe/svquest/client/SVQuestClient.java
           test -f SVQuest/src/main/java/vn/svframe/svquest/server/SVQuestDedicatedServer.java
           test -f SVQuest/src/main/resources/assets/svquest/textures/gui/server_logo.png
+          test -f SVQuest/src/main/resources/svquest.questfix.mixins.json
+          test -f SVQuest/src/main/resources/svquest/questfix_mixins.zip.b64
           test ! -d SVQuest/src/compileStubs
           ! grep -R --line-number --include='*.java' 'net\.minecraft\.class_' SVQuest/src/main/java
           ! find SVQuest/src/main/java -type f -name '*Mixin.java' | grep -q .
+          ! grep -q 'claimCompleted' SVQuest/src/main/java/vn/svframe/svquest/server/QuestEngine.java
+          test "$(grep -o 'rewards\.grant' SVQuest/src/main/java/vn/svframe/svquest/server/QuestEngine.java | wc -l)" -eq 1
+          grep -q 'action.startsWith("claim:")' SVQuest/src/main/java/vn/svframe/svquest/server/ServerRuntime.java
+          grep -q 'progressKey(quest, index)' SVQuest/src/main/java/vn/svframe/svquest/server/QuestStateStore.java
+
+          git show 5412f2796e5199a3ee4963aa8ea1b38e7aced167:SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java > /tmp/QuestScreen.beta9.java
+          python3 - <<'PY'
+          import re
+          from collections import Counter
+          from pathlib import Path
+          old = Path('/tmp/QuestScreen.beta9.java').read_text()
+          new = Path('SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java').read_text()
+          # No palette drift: exact multiset of every ARGB/RGB literal must remain beta.9.
+          hx = re.compile(r'0x[0-9A-Fa-f]+')
+          assert Counter(hx.findall(old)) == Counter(hx.findall(new)), 'QuestScreen color palette changed from beta.9'
+          required = [
+              'LỘ TRÌNH GAMEPLAY', 'TIẾN TRÌNH', 'HOẠT ĐỘNG', 'POKÉMON', 'CỬA HÀNG', 'DỊCH VỤ',
+              'MỤC TIÊU', 'PHẦN THƯỞNG', 'YÊU CẦU', 'HOÀN THÀNH', 'ĐANG THỰC HIỆN', 'CHƯA MỞ KHÓA',
+              'Chọn hệ thống để mở giao diện tương ứng.',
+              'Math.max(205, Math.min(278, w / 4))',
+              'Math.max(28, Math.round(railTrackH * (visibleRows / (float) QuestCatalog.QUESTS.size())))'
+          ]
+          for token in required:
+              assert token in new, f'beta.9 GUI contract missing: {token}'
+          forbidden = ['NHIỆM VỤ SVFRAME', 'HOÀN TẤT']
+          for token in forbidden:
+              assert token not in new, f'beta.10 GUI wording leaked into beta.9 GUI: {token}'
+          print('beta.9 GUI visual contract OK')
+          PY
 
       - name: Loom remap build
         working-directory: SVQuest
@@ -56,12 +93,23 @@ jobs:
           test -n "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/SVQuest.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/QuestApi.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/SVQuestClient.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/QuestScreen.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/server/SVQuestDedicatedServer.class'
           unzip -l "$JAR" | grep -q 'assets/svquest/textures/gui/server_logo.png'
+          unzip -l "$JAR" | grep -q 'svquest.questfix.mixins.json'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/PebblesCrateMixin.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/ArcadeLuckMixin\$Gacha.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/ArcadeLuckMixin\$Roulette.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/ArcadeLuckMixin\$Blackjack.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/SvfTaiXiuMixin.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/SvfMatchBetMixin.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/SvfTournamentMixin.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/SvfEventShowcaseMixin.class'
           ! unzip -l "$JAR" | grep -q 'compileStubs'
-          ! unzip -l "$JAR" | grep -q 'Mixin.class'
+          ! unzip -l "$JAR" | grep -q 'questfix_mixins.zip.b64'
+          ! unzip -l "$JAR" | grep -q 'questscreen_beta9_logic.java.gz.b64'
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
       - name: Install virtual display
@@ -115,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: SVQuest-beta.6-GitHub-Loom
+          name: SVQuest-beta.11-GitHub-Loom
           path: |
             SVQuest/build/libs/SVQuest-*.jar
             SVQuest/build/libs/SHA256.txt
