@@ -114,6 +114,7 @@ public final class ServerRuntime {
         }
         if (action.startsWith("feature:")) {
             String id = action.substring("feature:".length());
+            if (FeatureOpeners.handle(player, id)) return;
             String command = FeatureCatalog.COMMANDS.get(id);
             if (command == null) {
                 player.sendMessage(Text.literal("§cTính năng này chưa được cấu hình trên server."), false);
@@ -123,7 +124,7 @@ public final class ServerRuntime {
                 player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
             } catch (Throwable t) {
                 SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
-                player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này. Command fallback vẫn được giữ."), false);
+                player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này."), false);
             }
         }
     }
