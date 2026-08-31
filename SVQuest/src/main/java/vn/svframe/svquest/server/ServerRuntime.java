@@ -40,6 +40,7 @@ public final class ServerRuntime {
             ReflectionIntegrationBridge bridge = new ReflectionIntegrationBridge(server, engine);
             integrations = bridge;
             bridge.install();
+            new CobblemonMilestoneBridge(server, engine).install();
 
             ProductionProgressPoller poller = new ProductionProgressPoller(server, engine);
             productionPoller = poller;
