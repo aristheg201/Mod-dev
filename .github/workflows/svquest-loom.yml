@@ -5,7 +5,7 @@ on:
     branches:
       - build/svquest
     paths:
-      - 'bootstrap/source.b64.part*'
+      - 'SVQuest/**'
       - '.github/workflows/svquest-loom.yml'
   workflow_dispatch:
 
@@ -13,30 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-smoke-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Restore SVQuest source
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat bootstrap/source.b64.part* | tr -d '\r\n' | base64 --decode > /tmp/svquest-source.tar.gz
-          gzip -t /tmp/svquest-source.tar.gz
-          echo '--- source archive ---'
-          tar -tzf /tmp/svquest-source.tar.gz | sed -n '1,220p'
-          rm -rf SVQuest
-          tar -xzf /tmp/svquest-source.tar.gz
-          test -f SVQuest/src/main/resources/fabric.mod.json
-          test -f SVQuest/src/main/java/vn/svframe/svquest/client/SVQuestClient.java
-          echo '--- SVQuestClient.java ---'
-          nl -ba SVQuest/src/main/java/vn/svframe/svquest/client/SVQuestClient.java | sed -n '1,180p'
-          echo '--- build.gradle ---'
-          sed -n '1,220p' SVQuest/build.gradle
-          echo '--- mixin config ---'
-          cat SVQuest/src/main/resources/svquest.mixins.json || true
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -49,11 +31,23 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      - name: Assert clean architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f SVQuest/src/main/resources/fabric.mod.json
+          test -f SVQuest/src/main/java/vn/svframe/svquest/client/SVQuestClient.java
+          test -f SVQuest/src/main/java/vn/svframe/svquest/server/SVQuestDedicatedServer.java
+          test -f SVQuest/src/main/resources/assets/svquest/textures/gui/server_logo.png
+          test ! -d SVQuest/src/compileStubs
+          ! grep -R --line-number --include='*.java' 'net\.minecraft\.class_' SVQuest/src/main/java
+          ! find SVQuest/src/main/java -type f -name '*Mixin.java' | grep -q .
+
       - name: Loom remap build
         working-directory: SVQuest
-        run: gradle --no-daemon clean remapJar sourcesJar
+        run: gradle --no-daemon clean remapJar sourcesJar --stacktrace
 
-      - name: Verify artifact
+      - name: Verify remapped artifact
         shell: bash
         run: |
           set -euo pipefail
@@ -61,16 +55,71 @@ jobs:
           JAR="$(find build/libs -maxdepth 1 -type f -name 'SVQuest-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
           test -n "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
-          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/SVQuestClient.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/SVQuest.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/SVQuestClient.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/QuestScreen.class'
+          unzip -l "$JAR" | grep -q 'vn/svframe/svquest/server/SVQuestDedicatedServer.class'
+          unzip -l "$JAR" | grep -q 'assets/svquest/textures/gui/server_logo.png'
+          ! unzip -l "$JAR" | grep -q 'compileStubs'
+          ! unzip -l "$JAR" | grep -q 'Mixin.class'
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
-      - name: Upload Loom artifact
+      - name: Install virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb
+
+      - name: Client startup smoke test
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd SVQuest
+          rm -rf run
+          set +e
+          timeout 100s xvfb-run -a gradle --no-daemon runClient > build/client-smoke.log 2>&1
+          code=$?
+          set -e
+          cat build/client-smoke.log
+          if grep -E -q "IncompatibleClassChangeError|Could not execute entrypoint stage 'client'|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Exception in thread \"Render thread\"" build/client-smoke.log; then
+            echo 'Fatal client startup signature detected.' >&2
+            exit 1
+          fi
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            echo "runClient exited unexpectedly with code $code" >&2
+            exit "$code"
+          fi
+
+      - name: Dedicated server startup smoke test
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd SVQuest
+          rm -rf run
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          set +e
+          timeout 75s gradle --no-daemon runServer > build/server-smoke.log 2>&1
+          code=$?
+          set -e
+          cat build/server-smoke.log
+          if grep -E -q "Could not execute entrypoint stage 'server'|Could not execute entrypoint stage 'main'|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception" build/server-smoke.log; then
+            echo 'Fatal server startup signature detected.' >&2
+            exit 1
+          fi
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            echo "runServer exited unexpectedly with code $code" >&2
+            exit "$code"
+          fi
+
+      - name: Upload GitHub Loom artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: SVQuest-Loom-remapped
+          name: SVQuest-beta.6-GitHub-Loom
           path: |
             SVQuest/build/libs/SVQuest-*.jar
             SVQuest/build/libs/SHA256.txt
             SVQuest/build/libs/fabric.mod.built.json
-          if-no-files-found: error
+            SVQuest/build/client-smoke.log
+            SVQuest/build/server-smoke.log
+          if-no-files-found: warn
