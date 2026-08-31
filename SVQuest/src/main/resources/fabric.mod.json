@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "svquest",
+  "version": "${version}",
+  "name": "SVQuest",
+  "description": "Server progression quests and unified client GUI for the SVFrame Cobblemon server.",
+  "authors": ["SVFrame"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["vn.svframe.svquest.SVQuest"],
+    "client": ["vn.svframe.svquest.client.SVQuestClient"]
+  },
+  "mixins": ["svquest.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.5",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
