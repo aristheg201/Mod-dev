@@ -2,6 +2,7 @@ package vn.svframe.svquest.server;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,6 +24,7 @@ public final class ServerRuntime {
     private final QuestStateStore store = new QuestStateStore();
     private final QuestEngine engine = new QuestEngine(store, new RewardDispatcher());
     private volatile ReflectionIntegrationBridge integrations;
+    private volatile ProductionProgressPoller productionPoller;
 
     public void register() {
         engine.setSync(this::sendState);
@@ -34,19 +36,35 @@ public final class ServerRuntime {
             ReflectionIntegrationBridge bridge = new ReflectionIntegrationBridge(server, engine);
             integrations = bridge;
             bridge.install();
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) bridge.onJoin(player);
-            SVQuest.LOGGER.info("SVQuest production integration bridge installed.");
+
+            ProductionProgressPoller poller = new ProductionProgressPoller(server, engine);
+            productionPoller = poller;
+
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                bridge.onJoin(player);
+                poller.onJoin(player);
+            }
+            SVQuest.LOGGER.info("SVQuest production integration bridge + progress poller installed.");
+        });
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            ProductionProgressPoller poller = productionPoller;
+            if (poller != null) poller.tick();
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ReflectionIntegrationBridge bridge = integrations;
             if (bridge != null) bridge.onJoin(handler.player);
+            ProductionProgressPoller poller = productionPoller;
+            if (poller != null) poller.onJoin(handler.player);
             sendState(handler.player);
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ReflectionIntegrationBridge bridge = integrations;
             if (bridge != null) bridge.onQuit(handler.player);
+            ProductionProgressPoller poller = productionPoller;
+            if (poller != null) poller.onQuit(handler.player);
             store.unload(handler.player.getUuid());
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> store.saveAll());
@@ -92,7 +110,6 @@ public final class ServerRuntime {
                 return;
             }
             try {
-                // Player executes only a server-owned whitelist entry. The client can never supply an arbitrary command.
                 player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
             } catch (Throwable t) {
                 SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
