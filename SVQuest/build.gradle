@@ -13,12 +13,10 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:intermediary:${project.minecraft_version}:v2"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
-
-sourceSets.main.java.srcDir 'src/compileStubs/java'
 
 processResources {
     inputs.property 'version', project.version
@@ -35,12 +33,3 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
     withSourcesJar()
 }
-
-def stubRoots = [
-    'battle/**', 'com/barto/**', 'com/cobblemon/**', 'com/cobblemonexpeditions/**',
-    'com/kingpixel/**', 'com/pokeskies/**', 'com/svframe/showcase/**',
-    'com/svframe/svfallinone/**', 'kotlin/**', 'org/Fil/**', 'tech/sethi/**',
-    'vn/svframe/svframemmo/**'
-]
-tasks.named('jar') { stubRoots.each { exclude it } }
-tasks.named('sourcesJar') { stubRoots.each { exclude it } }
