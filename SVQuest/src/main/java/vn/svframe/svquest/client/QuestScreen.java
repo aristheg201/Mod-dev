@@ -10,299 +10,231 @@ import vn.svframe.svquest.quest.QuestCatalog;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Native MMO hub: progression + feature launcher. No story chapter UI. */
 public final class QuestScreen extends Screen {
     private static final Identifier LOGO = Identifier.of(SVQuest.MOD_ID, "textures/gui/server_logo.png");
-    private static final int LOGO_W = 512;
-    private static final int LOGO_H = 355;
-
-    private static final int BG = 0xE70A0E16;
-    private static final int PANEL = 0xE8161D2A;
-    private static final int PANEL_2 = 0xF0202938;
-    private static final int BORDER = 0xFF334156;
-    private static final int ACCENT = 0xFFFF4FD1;
-    private static final int CYAN = 0xFF55DDF2;
-    private static final int GREEN = 0xFF72E58B;
-    private static final int GOLD = 0xFFFFCF5A;
-    private static final int TEXT = 0xFFF3F6FA;
-    private static final int MUTED = 0xFFA9B3C5;
-    private static final int LOCKED = 0xFF6B7280;
+    private static final int LOGO_W = 512, LOGO_H = 355;
+    private static final int BG = 0xF20A0E16, HEADER = 0xFA111827, PANEL = 0xF217202D;
+    private static final int CARD = 0xFA202B3B, CARD_HOVER = 0xFA29384C, BORDER = 0xFF35445B;
+    private static final int MAGENTA = 0xFFFF4FD1, CYAN = 0xFF56DDF2, GREEN = 0xFF75E690;
+    private static final int GOLD = 0xFFFFCF5A, RED = 0xFFFF6B7A, TEXT = 0xFFF5F7FB;
+    private static final int MUTED = 0xFF9EAABD, DIM = 0xFF667085;
 
     private enum Tab { PROGRESS, ACTIVITIES, POKEMON, SHOPS, SERVICES }
     private Tab tab = Tab.PROGRESS;
+    private int selectedQuest = -1;
     private final List<Hit> hits = new ArrayList<>();
 
-    public QuestScreen() {
-        super(Text.literal("SVQuest"));
-    }
-
-    @Override
-    public boolean shouldPause() { return false; }
+    public QuestScreen() { super(Text.literal("SVQuest")); }
+    @Override public boolean shouldPause() { return false; }
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         hits.clear();
-        ctx.fill(0, 0, width, height, 0xB0000000);
-
-        int maxW = Math.min(1180, width - 28);
-        int maxH = Math.min(680, height - 28);
-        int x = (width - maxW) / 2;
-        int y = (height - maxH) / 2;
-        int right = x + maxW;
-        int bottom = y + maxH;
-
-        panel(ctx, x, y, right, bottom, BG, 0xFF252F42);
-        drawHeader(ctx, x, y, maxW, mouseX, mouseY);
-
-        int contentY = y + 104;
-        if (tab == Tab.PROGRESS) drawProgress(ctx, x + 18, contentY, maxW - 36, maxH - 122, mouseX, mouseY);
-        else drawFeatureGrid(ctx, x + 18, contentY, maxW - 36, maxH - 122, mouseX, mouseY);
-
+        ctx.fill(0, 0, width, height, 0xB9000000);
+        int w = Math.min(1240, Math.max(720, width - 24));
+        int h = Math.min(720, Math.max(440, height - 24));
+        int x = (width - w) / 2, y = (height - h) / 2;
+        panel(ctx, x, y, x + w, y + h, BG, 0xFF2E3B50);
+        header(ctx, x, y, w, mouseX, mouseY);
+        int contentY = y + 103;
+        if (tab == Tab.PROGRESS) progress(ctx, x + 14, contentY, w - 28, h - 117, mouseX, mouseY);
+        else featureGrid(ctx, x + 14, contentY, w - 28, h - 117, mouseX, mouseY);
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawHeader(DrawContext ctx, int x, int y, int w, int mx, int my) {
-        int logoH = 76;
-        int logoW = (int) (logoH * (LOGO_W / (float) LOGO_H));
-        try {
-            ctx.drawTexture(LOGO, x + 18, y + 10, 0, 0, logoW, logoH, LOGO_W, LOGO_H);
-        } catch (Throwable ignored) {
-            ctx.drawText(textRenderer, "SVFRAME COBBLEMON", x + 22, y + 38, ACCENT, true);
-        }
+    private void header(DrawContext ctx, int x, int y, int w, int mx, int my) {
+        ctx.fill(x + 1, y + 1, x + w - 1, y + 76, HEADER);
+        int logoH = 58, logoW = Math.round(logoH * (LOGO_W / (float) LOGO_H));
+        try { ctx.drawTexture(LOGO, x + 15, y + 8, 0, 0, logoW, logoH, LOGO_W, LOGO_H); }
+        catch (Throwable ignored) { ctx.drawText(textRenderer, "SVFRAME", x + 18, y + 30, MAGENTA, true); }
+        int tx = x + 26 + logoW;
+        ctx.drawText(textRenderer, "SVQUEST", tx, y + 15, TEXT, true);
+        ctx.drawText(textRenderer, "Progression • Pokémon MMO Hub", tx, y + 31, CYAN, false);
+        boolean online = SVQuestClient.STATE.serverAvailable();
+        ctx.drawText(textRenderer, online ? "● SERVER SYNC" : "● CHƯA ĐỒNG BỘ", tx, y + 49, online ? GREEN : GOLD, false);
 
-        int titleX = x + 18 + logoW + 16;
-        ctx.drawText(textRenderer, "SVQUEST", titleX, y + 19, TEXT, true);
-        ctx.drawText(textRenderer, "Tiến trình gameplay • launcher tính năng • không cần nhớ command", titleX, y + 36, MUTED, false);
-        String status = SVQuestClient.STATE.serverAvailable() ? "● Đã đồng bộ server" : "● Chưa nhận dữ liệu server";
-        ctx.drawText(textRenderer, status, titleX, y + 55, SVQuestClient.STATE.serverAvailable() ? GREEN : GOLD, false);
+        int closeX = x + w - 29;
+        boolean closeHover = inside(mx, my, closeX, y + 10, 18, 18);
+        panel(ctx, closeX, y + 10, closeX + 18, y + 28, closeHover ? 0xFF6B2733 : 0xFF263144, closeHover ? RED : BORDER);
+        drawCentered(ctx, "×", closeX, y + 15, 18, closeHover ? 0xFFFFFFFF : MUTED);
+        hits.add(new Hit(closeX, y + 10, 18, 18, "close"));
 
-        String[] labels = {"TIẾN TRÌNH", "HOẠT ĐỘNG", "POKÉMON", "CỬA HÀNG", "DỊCH VỤ"};
+        String[] names = {"TIẾN TRÌNH", "HOẠT ĐỘNG", "POKÉMON", "CỬA HÀNG", "DỊCH VỤ"};
         Tab[] tabs = Tab.values();
-        int navY = y + 82;
-        int gap = 6;
-        int navX = x + 18;
-        int available = w - 36;
-        int bw = (available - gap * (labels.length - 1)) / labels.length;
-        for (int i = 0; i < labels.length; i++) {
-            boolean active = tab == tabs[i];
-            boolean hover = inside(mx, my, navX, navY, bw, 20);
-            int fill = active ? 0xFF7A236B : hover ? 0xFF303B50 : 0xFF232C3C;
-            panel(ctx, navX, navY, navX + bw, navY + 20, fill, active ? ACCENT : BORDER);
-            drawCentered(ctx, labels[i], navX, navY + 6, bw, active ? 0xFFFFFFFF : 0xFFD3DBE8);
-            hits.add(new Hit(navX, navY, bw, 20, "tab:" + tabs[i].name()));
+        int navX = x + 14, navY = y + 78, gap = 5, bw = (w - 28 - gap * 4) / 5;
+        for (int i = 0; i < names.length; i++) {
+            boolean active = tab == tabs[i], hover = inside(mx, my, navX, navY, bw, 22);
+            panel(ctx, navX, navY, navX + bw, navY + 22, active ? 0xFF762766 : hover ? 0xFF2A3649 : 0xFF1A2331, active ? MAGENTA : BORDER);
+            drawCentered(ctx, names[i], navX, navY + 7, bw, active ? 0xFFFFFFFF : 0xFFC9D1DE);
+            hits.add(new Hit(navX, navY, bw, 22, "tab:" + tabs[i].name()));
             navX += bw + gap;
         }
     }
 
-    private void drawProgress(DrawContext ctx, int x, int y, int w, int h, int mx, int my) {
-        int leftW = Math.max(190, Math.min(255, w / 4));
-        int gap = 12;
-        drawJourneyRail(ctx, x, y, leftW, h, mx, my);
-        drawQuestDetails(ctx, x + leftW + gap, y, w - leftW - gap, h, mx, my);
+    private void progress(DrawContext ctx, int x, int y, int w, int h, int mx, int my) {
+        int current = clampCurrent();
+        if (selectedQuest < 0 || selectedQuest >= QuestCatalog.QUESTS.size()) selectedQuest = current;
+        int railW = Math.max(205, Math.min(278, w / 4)), gap = 10;
+        journeyRail(ctx, x, y, railW, h, current, mx, my);
+        questDetail(ctx, x + railW + gap, y, w - railW - gap, h, current, mx, my);
     }
 
-    private void drawJourneyRail(DrawContext ctx, int x, int y, int w, int h, int mx, int my) {
+    private void journeyRail(DrawContext ctx, int x, int y, int w, int h, int current, int mx, int my) {
         panel(ctx, x, y, x + w, y + h, PANEL, BORDER);
-        ctx.drawText(textRenderer, "LỘ TRÌNH GAMEPLAY", x + 12, y + 12, TEXT, true);
-        ctx.drawText(textRenderer, "Biết mình đang ở đâu và còn gì phía trước.", x + 12, y + 28, MUTED, false);
-
-        int current = Math.max(0, Math.min(SVQuestClient.STATE.questIndex(), QuestCatalog.QUESTS.size() - 1));
-        int rowY = y + 50;
-        int rowH = Math.max(34, Math.min(48, (h - 62) / QuestCatalog.QUESTS.size()));
+        ctx.drawText(textRenderer, "LỘ TRÌNH GAMEPLAY", x + 12, y + 11, TEXT, true);
+        String count = (current + 1) + "/" + QuestCatalog.QUESTS.size() + " mốc";
+        ctx.drawText(textRenderer, count, x + w - 12 - textRenderer.getWidth(count), y + 11, CYAN, false);
+        int top = y + 32, available = h - 42;
+        int rowH = Math.max(28, Math.min(39, available / QuestCatalog.QUESTS.size()));
         for (int i = 0; i < QuestCatalog.QUESTS.size(); i++) {
             var q = QuestCatalog.QUESTS.get(i);
-            boolean done = i < current;
-            boolean active = i == current;
-            boolean hover = inside(mx, my, x + 8, rowY, w - 16, rowH - 4);
-            int fill = active ? 0xFF29384F : hover ? 0xFF202B3C : 0xFF171F2B;
-            panel(ctx, x + 8, rowY, x + w - 8, rowY + rowH - 4, fill, active ? CYAN : 0xFF263247);
-            ctx.fill(x + 13, rowY + 9, x + 17, rowY + rowH - 13, done ? GREEN : active ? CYAN : LOCKED);
-            ctx.drawText(textRenderer, q.phase(), x + 24, rowY + 7, done ? GREEN : active ? CYAN : MUTED, false);
-            ctx.drawText(textRenderer, trim(q.title(), Math.max(12, (w - 40) / 6)), x + 24, rowY + 20, active ? TEXT : 0xFFC1C8D4, false);
-            rowY += rowH;
+            int ry = top + i * rowH;
+            boolean selected = i == selectedQuest, active = i == current, done = i < current;
+            boolean hover = inside(mx, my, x + 7, ry, w - 14, rowH - 3);
+            panel(ctx, x + 7, ry, x + w - 7, ry + rowH - 3, selected ? 0xFF2C3A50 : hover ? 0xFF222D3E : 0xFF171F2B, selected ? CYAN : 0xFF263247);
+            int stateColor = done ? GREEN : active ? GOLD : DIM;
+            ctx.fill(x + 12, ry + 7, x + 15, ry + rowH - 10, stateColor);
+            ctx.drawText(textRenderer, done ? "✓" : active ? "▶" : "◆", x + 20, ry + 6, stateColor, true);
+            ctx.drawText(textRenderer, trim(q.title(), Math.max(14, (w - 52) / 6)), x + 34, ry + 6, selected ? TEXT : 0xFFC5CDDA, false);
+            if (rowH >= 36) ctx.drawText(textRenderer, q.phase(), x + 34, ry + 19, active ? GOLD : DIM, false);
+            hits.add(new Hit(x + 7, ry, w - 14, rowH - 3, "quest:" + i));
         }
     }
 
-    private void drawQuestDetails(DrawContext ctx, int x, int y, int w, int h, int mx, int my) {
-        int current = Math.max(0, Math.min(SVQuestClient.STATE.questIndex(), QuestCatalog.QUESTS.size() - 1));
-        var q = QuestCatalog.byIndex(current);
+    private void questDetail(DrawContext ctx, int x, int y, int w, int h, int current, int mx, int my) {
+        var q = QuestCatalog.byIndex(selectedQuest);
+        boolean active = selectedQuest == current, done = selectedQuest < current, future = selectedQuest > current;
         panel(ctx, x, y, x + w, y + h, PANEL, BORDER);
+        int badgeW = Math.min(160, textRenderer.getWidth(q.phase()) + 20);
+        panel(ctx, x + 16, y + 13, x + 16 + badgeW, y + 34, active ? 0xFF61461D : done ? 0xFF1F4931 : 0xFF273348, active ? GOLD : done ? GREEN : BORDER);
+        drawCentered(ctx, q.phase(), x + 16, y + 20, badgeW, active ? GOLD : done ? GREEN : MUTED);
+        String stateText = done ? "HOÀN THÀNH" : active ? "ĐANG THỰC HIỆN" : "CHƯA MỞ KHÓA";
+        int stateColor = done ? GREEN : active ? GOLD : DIM;
+        ctx.drawText(textRenderer, stateText, x + w - 16 - textRenderer.getWidth(stateText), y + 20, stateColor, true);
+        ctx.drawText(textRenderer, q.title(), x + 16, y + 46, TEXT, true);
+        drawWrapped(ctx, q.description(), x + 16, y + 63, w - 32, MUTED, 2);
 
-        ctx.drawText(textRenderer, q.phase(), x + 18, y + 16, CYAN, true);
-        ctx.drawText(textRenderer, q.title(), x + 18, y + 34, TEXT, true);
-        ctx.drawText(textRenderer, q.description(), x + 18, y + 52, MUTED, false);
+        if (future) {
+            int fy = y + 96;
+            panel(ctx, x + 16, fy, x + w - 16, fy + 38, 0xFF181E29, BORDER);
+            ctx.drawText(textRenderer, "YÊU CẦU", x + 27, fy + 8, GOLD, true);
+            ctx.drawText(textRenderer, "Hoàn thành “" + QuestCatalog.byIndex(current).title() + "” trước.", x + 27, fy + 22, MUTED, false);
+        }
 
-        int actionW = Math.min(180, w / 3);
-        int actionX = x + w - actionW - 18;
-        int actionY = y + 14;
-        panel(ctx, actionX, actionY, actionX + actionW, actionY + 25, 0xFF7A236B, ACCENT);
-        drawCentered(ctx, "ĐỒNG BỘ TIẾN TRÌNH", actionX, actionY + 8, actionW, 0xFFFFFFFF);
-        hits.add(new Hit(actionX, actionY, actionW, 25, "action:sync"));
-
-        int oy = y + 86;
-        ctx.drawText(textRenderer, "MỤC TIÊU", x + 18, oy, GOLD, true);
-        oy += 19;
+        int oy = future ? y + 148 : y + 101;
+        ctx.drawText(textRenderer, "MỤC TIÊU", x + 16, oy, CYAN, true);
+        oy += 17;
         for (var o : q.objectives()) {
             int value = SVQuestClient.STATE.progress(o.key());
-            boolean done = value >= o.target();
-            panel(ctx, x + 18, oy, x + w - 18, oy + 40, PANEL_2, done ? GREEN : BORDER);
-            ctx.drawText(textRenderer, done ? "✓" : "○", x + 28, oy + 8, done ? GREEN : MUTED, true);
-            ctx.drawText(textRenderer, o.label(), x + 46, oy + 7, TEXT, false);
-            String valueText = Math.min(value, o.target()) + " / " + o.target();
-            ctx.drawText(textRenderer, valueText, x + w - 18 - textRenderer.getWidth(valueText) - 10, oy + 7, done ? GREEN : MUTED, false);
-            int bx = x + 46;
-            int by = oy + 25;
-            int bw = w - 92;
-            ctx.fill(bx, by, bx + bw, by + 5, 0xFF101722);
-            int progressW = o.target() <= 0 ? bw : (int) (bw * Math.min(1f, value / (float) o.target()));
-            ctx.fill(bx, by, bx + progressW, by + 5, done ? GREEN : CYAN);
-            oy += 48;
+            boolean objectiveDone = done || value >= o.target();
+            int cardH = o.featureId().isBlank() ? 40 : 50;
+            panel(ctx, x + 16, oy, x + w - 16, oy + cardH, CARD, objectiveDone ? 0xFF376449 : BORDER);
+            ctx.drawText(textRenderer, objectiveDone ? "✓" : "○", x + 26, oy + 8, objectiveDone ? GREEN : MUTED, true);
+            ctx.drawText(textRenderer, o.label(), x + 44, oy + 7, TEXT, false);
+            String n = Math.min(value, o.target()) + " / " + o.target();
+            ctx.drawText(textRenderer, n, x + w - 27 - textRenderer.getWidth(n), oy + 7, objectiveDone ? GREEN : MUTED, false);
+            int bx = x + 44, by = oy + 25, barW = Math.max(30, w - 88 - (o.featureId().isBlank() ? 0 : 115));
+            ctx.fill(bx, by, bx + barW, by + 5, 0xFF0D131C);
+            int pw = o.target() <= 0 ? barW : Math.round(barW * Math.min(1f, value / (float) o.target()));
+            ctx.fill(bx, by, bx + pw, by + 5, objectiveDone ? GREEN : CYAN);
+            if (!o.featureId().isBlank() && active && !objectiveDone) actionButton(ctx, x + w - 124, oy + 22, 96, 19, "MỞ HỆ", "feature:" + o.featureId(), mx, my);
+            oy += cardH + 7;
         }
 
-        oy += 2;
-        ctx.drawText(textRenderer, "PHẦN THƯỞNG → NUÔI QUEST KẾ TIẾP", x + 18, oy, GOLD, true);
-        oy += 17;
-        int chipX = x + 18;
+        oy += 4;
+        ctx.drawText(textRenderer, "PHẦN THƯỞNG", x + 16, oy, GOLD, true);
+        oy += 16;
+        int chipX = x + 16;
         for (String reward : q.rewards()) {
-            int cw = textRenderer.getWidth(reward) + 18;
-            if (chipX + cw > x + w - 18) { chipX = x + 18; oy += 24; }
-            panel(ctx, chipX, oy, chipX + cw, oy + 19, 0xFF2B3422, 0xFF657A40);
-            ctx.drawText(textRenderer, reward, chipX + 9, oy + 6, 0xFFE6F4C8, false);
-            chipX += cw + 7;
+            int cw = textRenderer.getWidth(reward) + 16;
+            if (chipX + cw > x + w - 16) { chipX = x + 16; oy += 23; }
+            panel(ctx, chipX, oy, chipX + cw, oy + 19, 0xFF293421, 0xFF607543);
+            ctx.drawText(textRenderer, reward, chipX + 8, oy + 6, 0xFFE6F5CA, false);
+            chipX += cw + 6;
         }
 
-        int quickY = Math.max(oy + 38, y + h - 118);
-        ctx.drawText(textRenderer, "MỞ NHANH HỆ LIÊN QUAN", x + 18, quickY, CYAN, true);
-        quickY += 17;
-        String[][] quick = switch (current) {
-            case 0, 1, 2 -> new String[][]{{"Pokémon Skills", "pokemon_skills"}, {"Shop", "shop"}, {"GTS", "gts"}};
-            case 3, 4 -> new String[][]{{"Pokémon Skills", "pokemon_skills"}, {"Ranked", "ranked"}, {"Hunts", "hunts"}};
-            case 5 -> new String[][]{{"Shop", "shop"}, {"GTS", "gts"}, {"Skin Shop", "skins"}};
-            case 6 -> new String[][]{{"Raids", "raids"}, {"Ranked", "ranked"}, {"Battle Tower", "battle_tower"}};
-            default -> new String[][]{{"Research", "research"}, {"Fusion", "fusion"}, {"Raids", "raids"}};
-        };
-        int bw = (w - 36 - 16) / 3;
-        for (int i = 0; i < quick.length; i++) {
-            int bx = x + 18 + i * (bw + 8);
-            button(ctx, bx, quickY, bw, 29, quick[i][0], quick[i][1], mx, my);
-        }
+        int bottomY = y + h - 49;
+        if (active) {
+            actionButton(ctx, x + 16, bottomY, 146, 28, "ĐỒNG BỘ", "sync", mx, my);
+            if (current < QuestCatalog.QUESTS.size() - 1) ctx.drawText(textRenderer, "Tiếp theo: " + QuestCatalog.byIndex(current + 1).title(), x + 178, bottomY + 10, MUTED, false);
+        } else if (done) ctx.drawText(textRenderer, "✓ Mốc này đã hoàn thành.", x + 16, bottomY + 10, GREEN, true);
+        else ctx.drawText(textRenderer, "Nhìn trước mục tiêu để chuẩn bị đội hình và tài nguyên.", x + 16, bottomY + 10, MUTED, false);
+    }
 
-        if (current < QuestCatalog.QUESTS.size() - 1) {
-            var next = QuestCatalog.byIndex(current + 1);
-            int ny = y + h - 48;
-            ctx.drawText(textRenderer, "TIẾP THEO", x + 18, ny, MUTED, true);
-            ctx.drawText(textRenderer, next.title() + "  🔒", x + 90, ny, 0xFFD7DEEA, false);
+    private void featureGrid(DrawContext ctx, int x, int y, int w, int h, int mx, int my) {
+        panel(ctx, x, y, x + w, y + h, PANEL, BORDER);
+        String title = switch (tab) { case ACTIVITIES -> "HOẠT ĐỘNG"; case POKEMON -> "POKÉMON"; case SHOPS -> "CỬA HÀNG"; case SERVICES -> "DỊCH VỤ"; default -> ""; };
+        ctx.drawText(textRenderer, title, x + 16, y + 13, TEXT, true);
+        ctx.drawText(textRenderer, "Click card để mở trực tiếp hệ thống server.", x + 16, y + 30, MUTED, false);
+        String[][] cards = cards(tab);
+        int cols = w >= 900 ? 4 : 3, gap = 9, cw = (w - 32 - gap * (cols - 1)) / cols, ch = 78, startY = y + 53;
+        for (int i = 0; i < cards.length; i++) {
+            int col = i % cols, row = i / cols, cx = x + 16 + col * (cw + gap), cy = startY + row * (ch + gap);
+            if (cy + ch > y + h - 12) break;
+            boolean hover = inside(mx, my, cx, cy, cw, ch);
+            panel(ctx, cx, cy, cx + cw, cy + ch, hover ? CARD_HOVER : CARD, hover ? CYAN : BORDER);
+            ctx.fill(cx + 9, cy + 10, cx + 13, cy + ch - 10, categoryColor(tab));
+            ctx.drawText(textRenderer, cards[i][0], cx + 22, cy + 14, TEXT, true);
+            drawWrapped(ctx, cards[i][1], cx + 22, cy + 31, cw - 34, MUTED, 2);
+            ctx.drawText(textRenderer, hover ? "MỞ  ›" : "MỞ", cx + 22, cy + 59, hover ? CYAN : DIM, true);
+            hits.add(new Hit(cx, cy, cw, ch, "feature:" + cards[i][2]));
         }
     }
 
-    private void drawFeatureGrid(DrawContext ctx, int x, int y, int w, int h, int mx, int my) {
-        panel(ctx, x, y, x + w, y + h, PANEL, BORDER);
-        String title = switch (tab) {
-            case ACTIVITIES -> "HOẠT ĐỘNG";
-            case POKEMON -> "POKÉMON";
-            case SHOPS -> "CỬA HÀNG";
-            case SERVICES -> "DỊCH VỤ";
-            default -> "TIẾN TRÌNH";
-        };
-        ctx.drawText(textRenderer, title, x + 16, y + 14, TEXT, true);
-        ctx.drawText(textRenderer, "Click để mở trực tiếp. Command chỉ là implementation detail bên dưới.", x + 16, y + 31, MUTED, false);
-
-        String[][] cards = switch (tab) {
-            case ACTIVITIES -> new String[][]{
-                    {"NovaRaids", "Raid boss & lịch raid", "raids"}, {"Ranked", "PvP xếp hạng", "ranked"},
-                    {"Battle Tower", "Chuỗi battle PvE", "battle_tower"}, {"Battle Factory", "Đội hình rental", "battle_factory"},
-                    {"Hunts", "Săn mục tiêu", "hunts"}, {"Expeditions", "Hoạt động expedition", "expeditions"},
-                    {"Showcase", "Trưng bày Pokémon", "showcase"}, {"Daily", "Daily rewards", "daily"},
-                    {"Battle Pass", "Tiến trình mùa", "battle_pass"}
-            };
-            case POKEMON -> new String[][]{
-                    {"Pokémon Skills", "936+ skill / build", "pokemon_skills"}, {"Breeding", "Trứng & lai tạo", "breeding"},
-                    {"Research", "Research tasks", "research"}, {"WonderTrade", "Đổi Pokémon ngẫu nhiên", "wonder_trade"},
-                    {"STS", "Trade / storage utility", "sts"}, {"GTS", "Marketplace Pokémon", "gts"},
-                    {"Fusion", "Potara / Fusion endgame", "fusion"}, {"Skins", "Skin Pokémon", "skins"}
-            };
-            case SHOPS -> new String[][]{
-                    {"Shop chính", "Vật phẩm cơ bản", "shop"}, {"Skin Shop", "Trang phục Pokémon", "skins"},
-                    {"GTS", "Player marketplace", "gts"}, {"Hunter", "HunterCoin content", "hunts"},
-                    {"Pokémon Skills", "Mua skill bằng BeastCoin", "pokemon_skills"}, {"Raid", "Tài nguyên raid", "raids"}
-            };
-            case SERVICES -> new String[][]{
-                    {"Homes", "Nhà của bạn", "homes"}, {"Warps", "Điểm dịch chuyển", "warps"},
-                    {"Waypoints", "GPS / dẫn đường", "waypoints"}, {"Claims", "Bảo vệ khu vực", "claims"},
-                    {"GTS", "Giao dịch Pokémon", "gts"}, {"Skin Inventory", "Kho skin", "skins"}
-            };
+    private String[][] cards(Tab tab) {
+        return switch (tab) {
+            case ACTIVITIES -> new String[][]{{"NovaRaids","Raid boss, lịch raid và phần thưởng.","raids"},{"Ranked","PvP xếp hạng Bronze → Master.","ranked"},{"Battle Tower","Chuỗi PvE thử thách đội hình.","battle_tower"},{"Battle Factory","Battle với đội hình rental.","battle_factory"},{"Hunts","Săn Pokémon theo mục tiêu.","hunts"},{"Expeditions","Gửi Pokémon đi expedition.","expeditions"},{"Showcase","Trưng bày và thi Pokémon.","showcase"},{"Daily","Nhận phần thưởng hằng ngày.","daily"},{"Battle Pass","Tiến trình mùa và nhiệm vụ.","battle_pass"}};
+            case POKEMON -> new String[][]{{"Pokémon Skills","936 skill, mua/bind/build trực tiếp.","pokemon_skills"},{"Breeding","Lai tạo, Egg và hatch.","breeding"},{"Research","Research Tasks & Pokédex.","research"},{"WonderTrade","Đổi Pokémon ngẫu nhiên.","wonder_trade"},{"STS","Hệ trade/storage utility.","sts"},{"GTS","Marketplace Pokémon giữa player.","gts"},{"Fusion / Potara","Fusion endgame của server.","fusion"},{"Skins","Kho và trang phục Pokémon.","skins"}};
+            case SHOPS -> new String[][]{{"Shop chính","Poké Ball, berry, medicine, resource.","shop"},{"Skin Shop","Skin bằng BeastCoin/CobbleDollars.","skins"},{"GTS","Mua bán Pokémon giữa player.","gts"},{"Hunter Shop","Nội dung dùng HunterCoin.","hunter_shop"},{"Tera Lab","Tài nguyên Tera và tối ưu.","tera_lab"},{"Gacha","Key / gacha content.","gacha"},{"Rank Shop","Quyền lợi và rank server.","rank_shop"}};
+            case SERVICES -> new String[][]{{"Home","Quản lý home cá nhân.","homes"},{"Warp","Đi tới khu chức năng.","warps"},{"Waypoint / GPS","Dẫn đường tới địa điểm.","waypoints"},{"Claim","Bảo vệ vùng đất.","claims"},{"GTS","Dịch vụ marketplace Pokémon.","gts"},{"Skin Inventory","Xem kho skin hiện có.","skin_inventory"},{"Exchange","Đổi tiền/tài nguyên.","exchange"}};
             default -> new String[0][0];
         };
-
-        int cols = w >= 900 ? 3 : 2;
-        int gap = 10;
-        int cardW = (w - 32 - gap * (cols - 1)) / cols;
-        int cardH = 74;
-        int startY = y + 54;
-        for (int i = 0; i < cards.length; i++) {
-            int col = i % cols;
-            int row = i / cols;
-            int cx = x + 16 + col * (cardW + gap);
-            int cy = startY + row * (cardH + gap);
-            featureCard(ctx, cx, cy, cardW, cardH, cards[i][0], cards[i][1], cards[i][2], mx, my);
-        }
     }
 
-    private void featureCard(DrawContext ctx, int x, int y, int w, int h, String title, String desc, String id, int mx, int my) {
+    private int categoryColor(Tab tab) { return switch (tab) { case ACTIVITIES -> GOLD; case POKEMON -> CYAN; case SHOPS -> GREEN; case SERVICES -> MAGENTA; default -> BORDER; }; }
+
+    private void actionButton(DrawContext ctx, int x, int y, int w, int h, String label, String action, int mx, int my) {
         boolean hover = inside(mx, my, x, y, w, h);
-        panel(ctx, x, y, x + w, y + h, hover ? 0xFF28354A : PANEL_2, hover ? CYAN : BORDER);
-        ctx.fill(x + 9, y + 10, x + 13, y + h - 10, hover ? CYAN : 0xFF52657E);
-        ctx.drawText(textRenderer, title, x + 23, y + 13, TEXT, true);
-        ctx.drawText(textRenderer, desc, x + 23, y + 31, MUTED, false);
-        String open = "MỞ  ›";
-        ctx.drawText(textRenderer, open, x + w - textRenderer.getWidth(open) - 16, y + h - 18, hover ? CYAN : 0xFFD9E0EB, true);
-        hits.add(new Hit(x, y, w, h, "action:feature:" + id));
-    }
-
-    private void button(DrawContext ctx, int x, int y, int w, int h, String label, String id, int mx, int my) {
-        boolean hover = inside(mx, my, x, y, w, h);
-        panel(ctx, x, y, x + w, y + h, hover ? 0xFF31516A : 0xFF26384B, hover ? CYAN : 0xFF3C5974);
-        drawCentered(ctx, label, x, y + 10, w, hover ? 0xFFFFFFFF : 0xFFE6EDF7);
-        hits.add(new Hit(x, y, w, h, "action:feature:" + id));
-    }
-
-    private void panel(DrawContext ctx, int x1, int y1, int x2, int y2, int fill, int border) {
-        ctx.fill(x1, y1, x2, y2, border);
-        ctx.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill);
-    }
-
-    private void drawCentered(DrawContext ctx, String s, int x, int y, int w, int color) {
-        ctx.drawText(textRenderer, s, x + (w - textRenderer.getWidth(s)) / 2, y, color, false);
-    }
-
-    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
-        return mx >= x && mx < x + w && my >= y && my < y + h;
-    }
-
-    private static String trim(String s, int max) {
-        if (s.length() <= max) return s;
-        return s.substring(0, Math.max(1, max - 1)) + "…";
+        panel(ctx, x, y, x + w, y + h, hover ? 0xFF8A3378 : 0xFF68265E, hover ? 0xFFFF82DF : MAGENTA);
+        drawCentered(ctx, label, x, y + Math.max(5, (h - 8) / 2), w, 0xFFFFFFFF);
+        hits.add(new Hit(x, y, w, h, "action:" + action));
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            for (Hit hit : hits) {
-                if (!hit.contains(mouseX, mouseY)) continue;
-                if (hit.action.startsWith("tab:")) {
-                    try { tab = Tab.valueOf(hit.action.substring(4)); }
-                    catch (Exception ignored) {}
-                    return true;
-                }
-                if (hit.action.startsWith("action:")) {
-                    SVQuestClient.action(hit.action.substring(7));
-                    return true;
-                }
+        if (button == 0) for (Hit hit : new ArrayList<>(hits)) {
+            if (!inside(mouseX, mouseY, hit.x, hit.y, hit.w, hit.h)) continue;
+            String a = hit.action;
+            if (a.equals("close")) { close(); return true; }
+            if (a.startsWith("tab:")) { tab = Tab.valueOf(a.substring(4)); return true; }
+            if (a.startsWith("quest:")) { selectedQuest = Integer.parseInt(a.substring(6)); return true; }
+            if (a.startsWith("feature:")) { SVQuestClient.action(a); return true; }
+            if (a.startsWith("action:")) {
+                String nested = a.substring(7);
+                if (nested.equals("sync")) SVQuestClient.requestSync(); else SVQuestClient.action(nested);
+                return true;
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private record Hit(int x, int y, int w, int h, String action) {
-        boolean contains(double mx, double my) { return inside(mx, my, x, y, w, h); }
+    private int clampCurrent() { return Math.max(0, Math.min(SVQuestClient.STATE.questIndex(), QuestCatalog.QUESTS.size() - 1)); }
+    private void drawWrapped(DrawContext ctx, String text, int x, int y, int maxWidth, int color, int maxLines) {
+        if (text == null || text.isBlank()) return;
+        String[] words = text.split(" "); StringBuilder line = new StringBuilder(); int lines = 0;
+        for (String word : words) {
+            String candidate = line.isEmpty() ? word : line + " " + word;
+            if (textRenderer.getWidth(candidate) > maxWidth && !line.isEmpty()) {
+                ctx.drawText(textRenderer, line.toString(), x, y + lines * 11, color, false); lines++;
+                if (lines >= maxLines) return; line.setLength(0); line.append(word);
+            } else { if (!line.isEmpty()) line.append(' '); line.append(word); }
+        }
+        if (!line.isEmpty() && lines < maxLines) ctx.drawText(textRenderer, line.toString(), x, y + lines * 11, color, false);
     }
+    private void panel(DrawContext ctx, int x1, int y1, int x2, int y2, int fill, int border) { ctx.fill(x1,y1,x2,y2,fill); ctx.fill(x1,y1,x2,y1+1,border); ctx.fill(x1,y2-1,x2,y2,border); ctx.fill(x1,y1,x1+1,y2,border); ctx.fill(x2-1,y1,x2,y2,border); }
+    private void drawCentered(DrawContext ctx, String s, int x, int y, int w, int color) { ctx.drawText(textRenderer, s, x + (w - textRenderer.getWidth(s)) / 2, y, color, false); }
+    private String trim(String s, int chars) { return s.length() <= chars ? s : s.substring(0, Math.max(1, chars - 1)) + "…"; }
+    private boolean inside(double px, double py, int x, int y, int w, int h) { return px >= x && px < x + w && py >= y && py < y + h; }
+    private record Hit(int x, int y, int w, int h, String action) {}
 }
