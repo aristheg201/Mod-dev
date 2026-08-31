@@ -21,7 +21,9 @@ dependencies {
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand(version: project.version) }
-    exclude '**/*.b64'
+    // Only the logo source payload is build-time material. Keep the compressed quest catalog
+    // resource in the final jar because QuestCatalog decodes it at runtime on both client/server.
+    exclude 'assets/svquest/textures/gui/server_logo.b64'
 
     doLast {
         def source = file('src/main/resources/assets/svquest/textures/gui/server_logo.b64')
