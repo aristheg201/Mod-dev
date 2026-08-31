@@ -33,69 +33,100 @@ public final class ServerRuntime {
 
     public void register() {
         engine.setSync(this::sendState);
-        ServerPlayNetworking.registerGlobalReceiver(ActionPayload.ID, (payload, context) -> context.server().execute(() -> handle(context.player(), payload.action())));
+
+        ServerPlayNetworking.registerGlobalReceiver(ActionPayload.ID, (payload, context) ->
+                context.server().execute(() -> handle(context.player(), payload.action())));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             QuestEventBus.install(server, engine);
+
             ReflectionIntegrationBridge bridge = new ReflectionIntegrationBridge(server, engine);
             integrations = bridge;
             bridge.install();
+
             new CobblemonMilestoneBridge(server, engine).install();
             new SkiesShopSellBridge(engine).install();
 
-            productionPoller = new ProductionProgressPoller(server, engine);
-            seasonPoller = new SeasonProgressPoller(server, engine);
+            ProductionProgressPoller poller = new ProductionProgressPoller(server, engine);
+            productionPoller = poller;
+            SeasonProgressPoller seasonal = new SeasonProgressPoller(server, engine);
+            seasonPoller = seasonal;
             researchMirror = new ResearchProgressMirror(server, engine);
             svFrameMirror = new SVFrameProgressMirror(server, engine);
 
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 bridge.onJoin(player);
-                productionPoller.onJoin(player);
-                seasonPoller.onJoin(player);
+                poller.onJoin(player);
+                seasonal.onJoin(player);
                 engine.reconcile(player);
             }
             SVQuest.LOGGER.info("SVQuest full quest runtime loaded: {} quests.", vn.svframe.svquest.quest.QuestCatalog.QUESTS.size());
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (productionPoller != null) productionPoller.tick();
-            if (seasonPoller != null) seasonPoller.tick();
-            if (researchMirror != null) researchMirror.tick();
-            if (svFrameMirror != null) svFrameMirror.tick();
+            ProductionProgressPoller poller = productionPoller;
+            if (poller != null) poller.tick();
+            SeasonProgressPoller seasonal = seasonPoller;
+            if (seasonal != null) seasonal.tick();
+            ResearchProgressMirror research = researchMirror;
+            if (research != null) research.tick();
+            SVFrameProgressMirror frame = svFrameMirror;
+            if (frame != null) frame.tick();
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            if (integrations != null) integrations.onJoin(handler.player);
-            if (productionPoller != null) productionPoller.onJoin(handler.player);
-            if (seasonPoller != null) seasonPoller.onJoin(handler.player);
+            ReflectionIntegrationBridge bridge = integrations;
+            if (bridge != null) bridge.onJoin(handler.player);
+            ProductionProgressPoller poller = productionPoller;
+            if (poller != null) poller.onJoin(handler.player);
+            SeasonProgressPoller seasonal = seasonPoller;
+            if (seasonal != null) seasonal.onJoin(handler.player);
             engine.reconcile(handler.player);
             sendState(handler.player);
         });
+
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            if (integrations != null) integrations.onQuit(handler.player);
-            if (productionPoller != null) productionPoller.onQuit(handler.player);
-            if (seasonPoller != null) seasonPoller.onQuit(handler.player);
+            ReflectionIntegrationBridge bridge = integrations;
+            if (bridge != null) bridge.onQuit(handler.player);
+            ProductionProgressPoller poller = productionPoller;
+            if (poller != null) poller.onQuit(handler.player);
+            SeasonProgressPoller seasonal = seasonPoller;
+            if (seasonal != null) seasonal.onQuit(handler.player);
             store.unload(handler.player.getUuid());
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> { QuestEventBus.clear(); store.saveAll(); });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            QuestEventBus.clear();
+            integrations = null;
+            productionPoller = null;
+            seasonPoller = null;
+            researchMirror = null;
+            svFrameMirror = null;
+            store.saveAll();
+        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
                 literal("svquest")
                         .executes(ctx -> { sendState(ctx.getSource().getPlayerOrThrow()); return 1; })
                         .then(literal("sync").executes(ctx -> { sendState(ctx.getSource().getPlayerOrThrow()); return 1; }))
                         .then(literal("progress").requires(src -> src.hasPermissionLevel(2))
-                                .then(argument("player", player()).then(argument("key", word()).then(argument("amount", integer()).executes(ctx -> {
-                                    ServerPlayerEntity target = getPlayer(ctx, "player");
-                                    engine.adminAdd(target, getString(ctx, "key"), getInteger(ctx, "amount"));
-                                    ctx.getSource().sendFeedback(() -> Text.literal("SVQuest progress updated for " + target.getName().getString()), false);
-                                    return 1;
-                                })))))
+                                .then(argument("player", player())
+                                        .then(argument("key", word())
+                                                .then(argument("amount", integer())
+                                                        .executes(ctx -> {
+                                                            ServerPlayerEntity target = getPlayer(ctx, "player");
+                                                            engine.adminAdd(target, getString(ctx, "key"), getInteger(ctx, "amount"));
+                                                            ctx.getSource().sendFeedback(() -> Text.literal("SVQuest progress updated for " + target.getName().getString()), false);
+                                                            return 1;
+                                                        })))))
                         .then(literal("set").requires(src -> src.hasPermissionLevel(2))
-                                .then(argument("player", player()).then(argument("key", word()).then(argument("value", integer(0)).executes(ctx -> {
-                                    ServerPlayerEntity target = getPlayer(ctx, "player");
-                                    engine.adminSet(target, getString(ctx, "key"), getInteger(ctx, "value"));
-                                    return 1;
-                                })))))
+                                .then(argument("player", player())
+                                        .then(argument("key", word())
+                                                .then(argument("value", integer(0))
+                                                        .executes(ctx -> {
+                                                            ServerPlayerEntity target = getPlayer(ctx, "player");
+                                                            engine.adminSet(target, getString(ctx, "key"), getInteger(ctx, "value"));
+                                                            return 1;
+                                                        })))))
         ));
         SVQuest.LOGGER.info("SVQuest dedicated-server runtime registered.");
     }
@@ -104,10 +135,17 @@ public final class ServerRuntime {
         if (action == null || action.length() > 128) return;
         if (action.equals("sync")) { sendState(player); return; }
         if (!action.startsWith("feature:")) return;
+
         String id = action.substring("feature:".length());
-        if (FeatureOpeners.handle(player, id)) { engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id)); return; }
+        if (FeatureOpeners.handle(player, id)) {
+            engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id));
+            return;
+        }
         String command = FeatureCatalog.COMMANDS.get(id);
-        if (command == null) { player.sendMessage(Text.literal("§cTính năng này chưa được cấu hình trên server."), false); return; }
+        if (command == null) {
+            player.sendMessage(Text.literal("§cTính năng này chưa được cấu hình trên server."), false);
+            return;
+        }
         try {
             player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
             engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id));
