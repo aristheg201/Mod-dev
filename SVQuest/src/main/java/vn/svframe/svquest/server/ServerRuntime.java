@@ -11,6 +11,8 @@ import vn.svframe.svquest.SVQuest;
 import vn.svframe.svquest.network.ActionPayload;
 import vn.svframe.svquest.network.StatePayload;
 
+import java.util.Map;
+
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
@@ -26,6 +28,7 @@ public final class ServerRuntime {
     private volatile ReflectionIntegrationBridge integrations;
     private volatile ProductionProgressPoller productionPoller;
     private volatile SeasonProgressPoller seasonPoller;
+    private volatile ResearchProgressMirror researchMirror;
 
     public void register() {
         engine.setSync(this::sendState);
@@ -42,13 +45,15 @@ public final class ServerRuntime {
             productionPoller = poller;
             SeasonProgressPoller seasonal = new SeasonProgressPoller(server, engine);
             seasonPoller = seasonal;
+            researchMirror = new ResearchProgressMirror(server, engine);
 
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                 bridge.onJoin(player);
                 poller.onJoin(player);
                 seasonal.onJoin(player);
+                engine.reconcile(player);
             }
-            SVQuest.LOGGER.info("SVQuest production integrations installed.");
+            SVQuest.LOGGER.info("SVQuest full quest runtime loaded: {} quests.", vn.svframe.svquest.quest.QuestCatalog.QUESTS.size());
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -56,6 +61,8 @@ public final class ServerRuntime {
             if (poller != null) poller.tick();
             SeasonProgressPoller seasonal = seasonPoller;
             if (seasonal != null) seasonal.tick();
+            ResearchProgressMirror research = researchMirror;
+            if (research != null) research.tick();
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -65,6 +72,7 @@ public final class ServerRuntime {
             if (poller != null) poller.onJoin(handler.player);
             SeasonProgressPoller seasonal = seasonPoller;
             if (seasonal != null) seasonal.onJoin(handler.player);
+            engine.reconcile(handler.player);
             sendState(handler.player);
         });
 
@@ -108,32 +116,30 @@ public final class ServerRuntime {
 
     private void handle(ServerPlayerEntity player, String action) {
         if (action == null || action.length() > 128) return;
-        if (action.equals("sync")) {
-            sendState(player);
+        if (action.equals("sync")) { sendState(player); return; }
+        if (!action.startsWith("feature:")) return;
+
+        String id = action.substring("feature:".length());
+        if (FeatureOpeners.handle(player, id)) {
+            engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id));
             return;
         }
-        if (action.startsWith("feature:")) {
-            String id = action.substring("feature:".length());
-            if (FeatureOpeners.handle(player, id)) return;
-            String command = FeatureCatalog.COMMANDS.get(id);
-            if (command == null) {
-                player.sendMessage(Text.literal("§cTính năng này chưa được cấu hình trên server."), false);
-                return;
-            }
-            try {
-                player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
-            } catch (Throwable t) {
-                SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
-                player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này."), false);
-            }
+        String command = FeatureCatalog.COMMANDS.get(id);
+        if (command == null) {
+            player.sendMessage(Text.literal("§cTính năng này chưa được cấu hình trên server."), false);
+            return;
+        }
+        try {
+            int result = player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource(), command);
+            if (result >= 0) engine.emit(player, "FEATURE_OPEN", 1, Map.of("target", id));
+        } catch (Throwable t) {
+            SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
+            player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này."), false);
         }
     }
 
     private void sendState(ServerPlayerEntity player) {
-        try {
-            ServerPlayNetworking.send(player, new StatePayload(store.get(player.getUuid()).encode()));
-        } catch (Throwable t) {
-            SVQuest.LOGGER.debug("Could not send SVQuest state to {}: {}", player.getName().getString(), t.toString());
-        }
+        try { ServerPlayNetworking.send(player, new StatePayload(store.get(player.getUuid()).encode())); }
+        catch (Throwable t) { SVQuest.LOGGER.debug("Could not send SVQuest state to {}: {}", player.getName().getString(), t.toString()); }
     }
 }
