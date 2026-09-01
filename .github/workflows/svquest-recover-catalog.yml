@@ -29,6 +29,7 @@ jobs:
           from pathlib import Path
 
           TARGET='9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555'
+          BAD_OFFSET=307219
           enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
           assert len(enc)==44932, len(enc)
           gz=base64.b64decode(enc)
@@ -40,14 +41,14 @@ jobs:
           if flags & 0x02: pos+=2
           raw=zlib.decompress(gz[pos:-8],-15)
 
-          bad=b'Chinh ph\xe1\xe1c Legendary Raid'
-          good='Chinh phục Legendary Raid'.encode('utf-8')
-          print('bad occurrence count:',raw.count(bad))
-          assert raw.count(bad)==1
-          assert good not in raw
-          repaired=raw.replace(bad,good)
+          print('raw bytes:',len(raw),'raw sha256:',hashlib.sha256(raw).hexdigest())
+          print('repair context before:',repr(raw[BAD_OFFSET-40:BAD_OFFSET+42].decode('utf-8',errors='replace')))
+          print('bad bytes:',raw[BAD_OFFSET:BAD_OFFSET+2].hex())
+          assert len(raw)==312842, len(raw)
+          assert raw[BAD_OFFSET:BAD_OFFSET+2]==b'\xe1\xe1', raw[BAD_OFFSET:BAD_OFFSET+2].hex()
 
-          text=repaired.decode('utf-8')  # strict: no replacement characters allowed
+          repaired=raw[:BAD_OFFSET] + 'ụ'.encode('utf-8') + raw[BAD_OFFSET+2:]
+          text=repaired.decode('utf-8')  # STRICT. No U+FFFD recovery allowed.
           root=json.loads(text)
           quests=root['quests']
           assert len(quests)==618
@@ -60,6 +61,8 @@ jobs:
           assert not dangling, dangling[:20]
           target=[q for q in quests if q['id']=='endmaster_12_raid_solo_champion']
           assert len(target)==1
+          print('repair context after:',repr(repaired[BAD_OFFSET-40:BAD_OFFSET+43].decode('utf-8')))
+          print('quest title:',repr(target[0]['title']))
           assert target[0]['title']=='Chinh phục Legendary Raid', target[0]['title']
           assert '\ufffd' not in text
 
@@ -68,11 +71,9 @@ jobs:
           print('repaired raw sha256:',digest)
           print('canonical target sha256:',TARGET)
           print('canonical match:',digest==TARGET)
-          print('quest title:',target[0]['title'])
           print('catalog: 618 quests / 1617 objectives / unique ids / no dangling prerequisites / strict UTF-8 OK')
           Path('/tmp/svquest-recovery/recovered-default_quests.json').write_bytes(repaired)
 
-          # Produce deterministic clean payload and eight chunks for inspection/use.
           clean_gz=gzip.compress(repaired,compresslevel=9,mtime=0)
           clean_enc=base64.b64encode(clean_gz).decode('ascii')
           print('clean gzip bytes:',len(clean_gz),'b64 chars:',len(clean_enc),'gzip sha256:',hashlib.sha256(clean_gz).hexdigest())
