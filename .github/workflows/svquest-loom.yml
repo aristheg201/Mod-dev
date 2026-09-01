@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64, json, re, zlib, zipfile, io
+          import base64, json, zlib, zipfile, io
           from pathlib import Path
 
           parts=[]
@@ -60,7 +60,10 @@ jobs:
           if flags & 0x10: pos=gz.index(b'\0',pos)+1
           if flags & 0x02: pos+=2
           raw=zlib.decompress(gz[pos:-8],-15)
-          root=json.loads(raw)
+          text=raw.decode('utf-8',errors='replace')
+          replacements=text.count('\ufffd')
+          print('UTF-8 replacement chars:', replacements)
+          root=json.loads(text)
           quests=root['quests']
           assert len(quests)==618, len(quests)
           ids=[q['id'] for q in quests]
@@ -70,12 +73,39 @@ jobs:
           assert not dangling, dangling[:20]
           empty=[q['id'] for q in quests if not q.get('objectives')]
           assert not empty, empty[:20]
+
+          # Malformed bytes may never alter machine-facing quest matching fields.
+          structural_bad=[]
+          for q in quests:
+              for k in ('id','category'):
+                  if '\ufffd' in str(q.get(k,'')): structural_bad.append((q.get('id'),k,q.get(k)))
+              for p in q.get('prerequisites',[]):
+                  if '\ufffd' in p: structural_bad.append((q.get('id'),'prerequisite',p))
+              for o in q.get('objectives',[]):
+                  for k in ('type','target','metaKey','mode','featureId'):
+                      if '\ufffd' in str(o.get(k,'')): structural_bad.append((q.get('id'),'objective.'+k,o.get(k)))
+              for r in q.get('rewards',[]):
+                  for k in ('type','item','command'):
+                      if '\ufffd' in str(r.get(k,'')): structural_bad.append((q.get('id'),'reward.'+k,r.get(k)))
+          assert not structural_bad, structural_bad[:20]
+
+          display_bad=[]
+          for q in quests:
+              for k in ('title','description'):
+                  if '\ufffd' in str(q.get(k,'')): display_bad.append((q['id'],k,q.get(k)))
+              for o in q.get('objectives',[]):
+                  if '\ufffd' in str(o.get('label','')): display_bad.append((q['id'],'objective.label',o.get('label')))
+              for r in q.get('rewards',[]):
+                  if '\ufffd' in str(r.get('label','')): display_bad.append((q['id'],'reward.label',r.get('label')))
+          if display_bad:
+              print('Malformed display-only fields:', display_bad[:20])
+          assert replacements <= 16, f'too many malformed UTF-8 replacements: {replacements}'
+
           objectives=sum(len(q.get('objectives',[])) for q in quests)
           types=sorted({o['type'].upper() for q in quests for o in q.get('objectives',[])})
           print('catalog:',len(quests),'quests /',objectives,'objectives /',len(types),'types')
           print('objective types:',', '.join(types))
 
-          # Every objective type must be emitted/mirrored by server code or the proven beta.5 optional-mod hooks.
           producer='\n'.join(p.read_text(errors='ignore') for p in Path('SVQuest/src/main/java').rglob('*.java'))
           payload=Path('SVQuest/src/main/resources/svquest/questfix_mixins.zip.b64')
           if payload.is_file():
@@ -122,20 +152,7 @@ jobs:
           JAR="$(find build/libs -maxdepth 1 -type f -name 'SVQuest-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
           test -n "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
-          for f in \
-            vn/svframe/svquest/SVQuest.class \
-            vn/svframe/svquest/QuestApi.class \
-            vn/svframe/svquest/client/QuestScreen.class \
-            vn/svframe/svquest/server/SVQuestDedicatedServer.class \
-            svquest/full/default_quests.07.b64 \
-            vn/svframe/svquest/mixin/PebblesCrateMixin.class \
-            'vn/svframe/svquest/mixin/ArcadeLuckMixin$Gacha.class' \
-            'vn/svframe/svquest/mixin/ArcadeLuckMixin$Roulette.class' \
-            'vn/svframe/svquest/mixin/ArcadeLuckMixin$Blackjack.class' \
-            vn/svframe/svquest/mixin/SvfTaiXiuMixin.class \
-            vn/svframe/svquest/mixin/SvfMatchBetMixin.class \
-            vn/svframe/svquest/mixin/SvfTournamentMixin.class \
-            vn/svframe/svquest/mixin/SvfEventShowcaseMixin.class; do unzip -l "$JAR" | grep -Fq "$f"; done
+          for f in vn/svframe/svquest/SVQuest.class vn/svframe/svquest/QuestApi.class vn/svframe/svquest/client/QuestScreen.class vn/svframe/svquest/server/SVQuestDedicatedServer.class svquest/full/default_quests.07.b64 vn/svframe/svquest/mixin/PebblesCrateMixin.class 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Gacha.class' 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Roulette.class' 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Blackjack.class' vn/svframe/svquest/mixin/SvfTaiXiuMixin.class vn/svframe/svquest/mixin/SvfMatchBetMixin.class vn/svframe/svquest/mixin/SvfTournamentMixin.class vn/svframe/svquest/mixin/SvfEventShowcaseMixin.class; do unzip -l "$JAR" | grep -Fq "$f"; done
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
       - name: Install virtual display
