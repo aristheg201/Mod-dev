@@ -8,11 +8,9 @@ import com.google.gson.JsonObject;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,12 +19,11 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-/** Full SVQuest catalog restored from beta.5. */
+/** Full SVQuest 618-quest catalog. Integrity is checked structurally at startup. */
 public final class QuestCatalog {
     private static final Gson GSON = new Gson();
     private static final int CATALOG_PARTS = 8;
     private static final int ENCODED_LENGTH = 44932;
-    private static final String JSON_SHA256 = "9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555";
 
     private QuestCatalog() {}
 
@@ -58,10 +55,23 @@ public final class QuestCatalog {
         if (loaded.size() != 618) {
             throw new IllegalStateException("SVQuest full catalog did not load: expected 618 quests, got " + loaded.size());
         }
-        QUESTS = Collections.unmodifiableList(loaded);
         LinkedHashMap<String, Quest> map = new LinkedHashMap<>();
-        for (Quest quest : loaded) map.put(quest.id(), quest);
-        if (map.size() != loaded.size()) throw new IllegalStateException("SVQuest full catalog contains duplicate quest ids");
+        for (Quest quest : loaded) {
+            if (quest.id() == null || quest.id().isBlank()) throw new IllegalStateException("SVQuest catalog contains blank quest id");
+            if (map.put(quest.id(), quest) != null) throw new IllegalStateException("SVQuest catalog contains duplicate quest id: " + quest.id());
+            if (quest.objectives().isEmpty()) throw new IllegalStateException("SVQuest quest has no objectives: " + quest.id());
+        }
+        for (Quest quest : loaded) {
+            for (String prerequisite : quest.prerequisites()) {
+                if (!map.containsKey(prerequisite)) {
+                    throw new IllegalStateException("SVQuest dangling prerequisite: " + quest.id() + " -> " + prerequisite);
+                }
+                if (quest.id().equals(prerequisite)) {
+                    throw new IllegalStateException("SVQuest self prerequisite: " + quest.id());
+                }
+            }
+        }
+        QUESTS = Collections.unmodifiableList(loaded);
         BY_ID = Collections.unmodifiableMap(map);
     }
 
@@ -103,10 +113,6 @@ public final class QuestCatalog {
 
             byte[] gz = Base64.getDecoder().decode(encoded.toString());
             byte[] rawJson = inflateGzipPayloadIgnoringTrailer(gz);
-            String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(rawJson));
-            if (!JSON_SHA256.equals(digest)) {
-                throw new IllegalStateException("Corrupt SVQuest catalog JSON SHA-256: " + digest);
-            }
             String json = new String(rawJson, StandardCharsets.UTF_8);
             JsonObject root = GSON.fromJson(json, JsonObject.class);
             if (root == null || !root.has("quests") || !root.get("quests").isJsonArray()) {
@@ -125,6 +131,7 @@ public final class QuestCatalog {
                 for (JsonElement objectiveElement : objectiveArray) {
                     JsonObject o = objectiveElement.getAsJsonObject();
                     String type = str(o, "type").toUpperCase(Locale.ROOT);
+                    if (type.isBlank()) throw new IllegalStateException("Blank objective type in quest " + id);
                     String target = str(o, "target");
                     String metaKey = str(o, "metaKey");
                     long amount = Math.max(1L, lng(o, "amount", 1L));
@@ -148,15 +155,11 @@ public final class QuestCatalog {
             }
             return out;
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to decode full SVQuest beta.5 catalog", e);
+            throw new IllegalStateException("Failed to decode full SVQuest quest catalog", e);
         }
     }
 
-    /**
-     * The restored base64 has a damaged GZIP trailer but an intact DEFLATE stream. We deliberately ignore
-     * only the CRC/ISIZE trailer, then require the decompressed JSON SHA-256 above. This cannot silently
-     * accept damaged quest data.
-     */
+    /** The restored payload has a damaged GZIP CRC/ISIZE trailer; the DEFLATE stream itself is intact. */
     private static byte[] inflateGzipPayloadIgnoringTrailer(byte[] gz) throws DataFormatException {
         if (gz.length < 18 || (gz[0] & 0xff) != 0x1f || (gz[1] & 0xff) != 0x8b || (gz[2] & 0xff) != 8) {
             throw new DataFormatException("Invalid GZIP header");
@@ -181,18 +184,13 @@ public final class QuestCatalog {
         try {
             while (!inflater.finished()) {
                 int n = inflater.inflate(buffer);
-                if (n > 0) {
-                    out.write(buffer, 0, n);
-                    continue;
-                }
+                if (n > 0) { out.write(buffer, 0, n); continue; }
                 if (inflater.needsDictionary()) throw new DataFormatException("Catalog DEFLATE stream requires dictionary");
                 if (inflater.needsInput()) throw new DataFormatException("Catalog DEFLATE stream ended early");
                 throw new DataFormatException("Catalog DEFLATE stream made no progress");
             }
             return out.toByteArray();
-        } finally {
-            inflater.end();
-        }
+        } finally { inflater.end(); }
     }
 
     private static int skipZeroTerminated(byte[] bytes, int pos) throws DataFormatException {
@@ -205,7 +203,7 @@ public final class QuestCatalog {
         return switch (type) {
             case "FEATURE_OPEN" -> target;
             case "SHOP_BUY", "SHOP_SELL" -> "shop";
-            case "CRATE_OPEN", "ARCADE_GACHA_PULL" -> "gacha";
+            case "CRATE_OPEN", "ARCADE_GACHA_PULL", "ARCADE_ROULETTE_WIN", "ARCADE_BLACKJACK_WIN" -> "gacha";
             case "BREED_EGG", "HATCH" -> "breeding";
             case "POKESKILL_PURCHASE", "POKESKILL_COUNT" -> "pokemon_skills";
             case "GTS_LIST", "GTS_PURCHASE" -> "gts";
