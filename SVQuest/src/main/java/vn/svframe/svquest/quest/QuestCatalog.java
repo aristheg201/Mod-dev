@@ -4,26 +4,44 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.fabricmc.loader.api.FabricLoader;
+import vn.svframe.svquest.SVQuest;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
-/** Full SVQuest 618-quest catalog. Integrity is checked structurally at startup. */
+/**
+ * Runtime quest catalog. Quest content lives in JSON, never in Java.
+ *
+ * Server files: config/svquest/quests/*.json
+ * Client catalog: replaced by the server-synchronised JSON catalog after login.
+ */
 public final class QuestCatalog {
     private static final Gson GSON = new Gson();
-    private static final int CATALOG_PARTS = 8;
-    private static final int ENCODED_LENGTH = 44932;
+    private static final String DEFAULT_RESOURCE = "/svquest/defaults/quests.json";
 
     private QuestCatalog() {}
 
@@ -34,49 +52,89 @@ public final class QuestCatalog {
 
     public record Reward(String type, String item, int count, long amount, String command, String label) {}
 
-    public record Quest(String id, String category, String title, String description,
-                        List<Objective> objectives, List<Reward> rewards, List<String> prerequisites) {
-        public String phase() {
-            return switch (category == null ? "" : category.toLowerCase(Locale.ROOT)) {
-                case "progression" -> "TIẾN TRÌNH";
-                case "activity" -> "HOẠT ĐỘNG";
-                case "pokemon" -> "POKÉMON";
-                case "endgame" -> "ENDGAME";
-                default -> "NHIỆM VỤ";
-            };
-        }
-    }
+    public record Quest(String id, String category, String phase, String title, String description,
+                        List<Objective> objectives, List<Reward> rewards, List<String> prerequisites) {}
 
-    public static final List<Quest> QUESTS;
-    public static final Map<String, Quest> BY_ID;
+    public static volatile List<Quest> QUESTS = List.of();
+    public static volatile Map<String, Quest> BY_ID = Map.of();
+    private static volatile String compressedCatalog = "";
 
     static {
-        List<Quest> loaded = loadBundled();
-        if (loaded.size() != 618) {
-            throw new IllegalStateException("SVQuest full catalog did not load: expected 618 quests, got " + loaded.size());
+        try {
+            install(parseDocument(readResourceStrict(DEFAULT_RESOURCE), DEFAULT_RESOURCE), DEFAULT_RESOURCE);
+        } catch (Throwable t) {
+            throw new ExceptionInInitializerError(new IllegalStateException("Could not load SVQuest default config catalog", t));
         }
-        LinkedHashMap<String, Quest> map = new LinkedHashMap<>();
-        for (Quest quest : loaded) {
-            if (quest.id() == null || quest.id().isBlank()) throw new IllegalStateException("SVQuest catalog contains blank quest id");
-            if (map.put(quest.id(), quest) != null) throw new IllegalStateException("SVQuest catalog contains duplicate quest id: " + quest.id());
-            if (quest.objectives().isEmpty()) throw new IllegalStateException("SVQuest quest has no objectives: " + quest.id());
-        }
-        for (Quest quest : loaded) {
-            for (String prerequisite : quest.prerequisites()) {
-                if (!map.containsKey(prerequisite)) {
-                    throw new IllegalStateException("SVQuest dangling prerequisite: " + quest.id() + " -> " + prerequisite);
-                }
-                if (quest.id().equals(prerequisite)) {
-                    throw new IllegalStateException("SVQuest self prerequisite: " + quest.id());
-                }
-            }
-        }
-        QUESTS = Collections.unmodifiableList(loaded);
-        BY_ID = Collections.unmodifiableMap(map);
     }
 
-    public static Quest byIndex(int index) { return QUESTS.get(Math.max(0, Math.min(index, QUESTS.size() - 1))); }
-    public static Quest byId(String id) { return BY_ID.get(id); }
+    /** Reloads every *.json file from config/svquest/quests in lexical filename order. */
+    public static synchronized int reloadFromConfig() {
+        Path dir = FabricLoader.getInstance().getConfigDir().resolve("svquest/quests");
+        try {
+            Files.createDirectories(dir);
+            List<Path> files;
+            try (var stream = Files.list(dir)) {
+                files = stream.filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".json"))
+                        .sorted()
+                        .toList();
+            }
+            if (files.isEmpty()) {
+                Path starter = dir.resolve("00-starter.json");
+                try (InputStream in = QuestCatalog.class.getResourceAsStream(DEFAULT_RESOURCE)) {
+                    if (in == null) throw new IOException("Missing bundled config template " + DEFAULT_RESOURCE);
+                    Files.copy(in, starter, StandardCopyOption.REPLACE_EXISTING);
+                }
+                files = List.of(starter);
+                SVQuest.LOGGER.info("Created editable SVQuest quest config: {}", starter);
+            }
+
+            ArrayList<Quest> loaded = new ArrayList<>();
+            for (Path file : files) loaded.addAll(parseDocument(readStrict(file), file.toString()));
+            install(loaded, dir.toString());
+            return loaded.size();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to reload SVQuest config catalog", e);
+        }
+    }
+
+    /** Installs a catalog received from the authoritative server on the client. */
+    public static synchronized int installRemoteJson(String json) {
+        try {
+            List<Quest> loaded = parseDocument(json, "server-sync");
+            install(loaded, "server-sync");
+            return loaded.size();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to install server SVQuest catalog", e);
+        }
+    }
+
+    public static synchronized int installRemoteCompressedBase64(String encoded) {
+        try {
+            byte[] compressed = Base64.getDecoder().decode(encoded);
+            byte[] raw;
+            try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(compressed))) {
+                raw = gzip.readAllBytes();
+            }
+            String json = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(java.nio.ByteBuffer.wrap(raw)).toString();
+            return installRemoteJson(json);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to decode server SVQuest catalog", e);
+        }
+    }
+
+    public static String compressedBase64() { return compressedCatalog; }
+
+    public static Quest byIndex(int index) {
+        List<Quest> quests = QUESTS;
+        if (quests.isEmpty()) return null;
+        return quests.get(Math.max(0, Math.min(index, quests.size() - 1)));
+    }
+
+    public static Quest byId(String id) { return id == null ? null : BY_ID.get(id); }
 
     public static boolean unlocked(Set<String> claimed, Quest quest) {
         if (quest == null) return false;
@@ -97,135 +155,151 @@ public final class QuestCatalog {
         return false;
     }
 
-    private static List<Quest> loadBundled() {
-        try {
-            StringBuilder encoded = new StringBuilder(ENCODED_LENGTH);
-            for (int i = 0; i < CATALOG_PARTS; i++) {
-                String path = String.format(Locale.ROOT, "/svquest/full/default_quests.%02d.b64", i);
-                try (InputStream raw = QuestCatalog.class.getResourceAsStream(path)) {
-                    if (raw == null) throw new IllegalStateException("Missing " + path);
-                    encoded.append(new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", ""));
-                }
+    private static void install(List<Quest> quests, String source) throws IOException {
+        Catalog validated = validate(quests, source);
+        QUESTS = validated.quests();
+        BY_ID = validated.byId();
+        compressedCatalog = gzipBase64(exportJson(validated.quests()));
+        long objectives = validated.quests().stream().mapToLong(q -> q.objectives().size()).sum();
+        SVQuest.LOGGER.info("SVQuest catalog loaded from {}: {} quests / {} objectives.", source, validated.quests().size(), objectives);
+    }
+
+    private static Catalog validate(List<Quest> quests, String source) {
+        if (quests == null || quests.isEmpty()) throw new IllegalStateException("SVQuest catalog is empty: " + source);
+        LinkedHashMap<String, Quest> map = new LinkedHashMap<>();
+        for (Quest quest : quests) {
+            if (quest.id() == null || quest.id().isBlank()) throw new IllegalStateException("Blank quest id in " + source);
+            if (quest.id().length() > 96) throw new IllegalStateException("Quest id is too long: " + quest.id());
+            if (map.put(quest.id(), quest) != null) throw new IllegalStateException("Duplicate quest id: " + quest.id());
+            if (quest.objectives().isEmpty()) throw new IllegalStateException("Quest has no objectives: " + quest.id());
+            for (Objective objective : quest.objectives()) {
+                if (objective.type() == null || objective.type().isBlank()) throw new IllegalStateException("Blank objective type: " + quest.id());
+                if (objective.amount() <= 0) throw new IllegalStateException("Objective amount must be positive: " + quest.id());
             }
-            if (encoded.length() != ENCODED_LENGTH) {
-                throw new IllegalStateException("Corrupt SVQuest catalog payload length: " + encoded.length());
+        }
+        for (Quest quest : quests) {
+            for (String prerequisite : quest.prerequisites()) {
+                if (!map.containsKey(prerequisite)) throw new IllegalStateException("Dangling prerequisite: " + quest.id() + " -> " + prerequisite);
+                if (quest.id().equals(prerequisite)) throw new IllegalStateException("Self prerequisite: " + quest.id());
+            }
+        }
+        detectCycles(map);
+        return new Catalog(Collections.unmodifiableList(new ArrayList<>(quests)), Collections.unmodifiableMap(map));
+    }
+
+    private static void detectCycles(Map<String, Quest> quests) {
+        Set<String> visiting = new HashSet<>(), visited = new HashSet<>();
+        for (String id : quests.keySet()) dfs(id, quests, visiting, visited);
+    }
+
+    private static void dfs(String id, Map<String, Quest> quests, Set<String> visiting, Set<String> visited) {
+        if (visited.contains(id)) return;
+        if (!visiting.add(id)) throw new IllegalStateException("Prerequisite cycle detected at quest: " + id);
+        for (String prerequisite : quests.get(id).prerequisites()) dfs(prerequisite, quests, visiting, visited);
+        visiting.remove(id);
+        visited.add(id);
+    }
+
+    private static List<Quest> parseDocument(String json, String source) {
+        JsonElement root = JsonParser.parseString(json);
+        JsonArray array;
+        if (root.isJsonArray()) array = root.getAsJsonArray();
+        else if (root.isJsonObject() && root.getAsJsonObject().has("quests")) array = root.getAsJsonObject().getAsJsonArray("quests");
+        else if (root.isJsonObject()) { array = new JsonArray(); array.add(root); }
+        else throw new IllegalStateException("Unsupported quest JSON root in " + source);
+
+        ArrayList<Quest> out = new ArrayList<>(array.size());
+        for (JsonElement element : array) {
+            if (!element.isJsonObject()) throw new IllegalStateException("Quest entry is not an object in " + source);
+            JsonObject q = element.getAsJsonObject();
+            if (q.has("enabled") && !bool(q, "enabled", true)) continue;
+            String id = str(q, "id");
+            String category = str(q, "category");
+            String phase = str(q, "phase");
+            if (phase.isBlank()) phase = category;
+
+            ArrayList<Objective> objectives = new ArrayList<>();
+            JsonArray objectiveArray = q.has("objectives") && q.get("objectives").isJsonArray() ? q.getAsJsonArray("objectives") : new JsonArray();
+            for (JsonElement objectiveElement : objectiveArray) {
+                JsonObject o = objectiveElement.getAsJsonObject();
+                objectives.add(new Objective(
+                        str(o, "type").toUpperCase(Locale.ROOT),
+                        str(o, "target"),
+                        str(o, "metaKey"),
+                        Math.max(1L, lng(o, "amount", 1L)),
+                        str(o, "mode"),
+                        str(o, "label"),
+                        str(o, "featureId")
+                ));
             }
 
-            byte[] gz = Base64.getDecoder().decode(encoded.toString());
-            byte[] rawJson = inflateGzipPayloadIgnoringTrailer(gz);
-            String json = new String(rawJson, StandardCharsets.UTF_8);
-            JsonObject root = GSON.fromJson(json, JsonObject.class);
-            if (root == null || !root.has("quests") || !root.get("quests").isJsonArray()) {
-                throw new IllegalStateException("SVQuest catalog JSON has no quests array");
+            ArrayList<Reward> rewards = new ArrayList<>();
+            JsonArray rewardArray = q.has("rewards") && q.get("rewards").isJsonArray() ? q.getAsJsonArray("rewards") : new JsonArray();
+            for (JsonElement rewardElement : rewardArray) {
+                JsonObject r = rewardElement.getAsJsonObject();
+                rewards.add(new Reward(
+                        str(r, "type").toUpperCase(Locale.ROOT),
+                        str(r, "item"),
+                        (int) Math.max(1L, lng(r, "count", 1L)),
+                        Math.max(0L, lng(r, "amount", 0L)),
+                        str(r, "command"),
+                        str(r, "label")
+                ));
             }
 
-            JsonArray quests = root.getAsJsonArray("quests");
-            ArrayList<Quest> out = new ArrayList<>(quests.size());
-            for (JsonElement element : quests) {
-                JsonObject q = element.getAsJsonObject();
-                String id = str(q, "id");
-                if (id.isBlank()) continue;
-
-                ArrayList<Objective> objectives = new ArrayList<>();
-                JsonArray objectiveArray = q.has("objectives") ? q.getAsJsonArray("objectives") : new JsonArray();
-                for (JsonElement objectiveElement : objectiveArray) {
-                    JsonObject o = objectiveElement.getAsJsonObject();
-                    String type = str(o, "type").toUpperCase(Locale.ROOT);
-                    if (type.isBlank()) throw new IllegalStateException("Blank objective type in quest " + id);
-                    String target = str(o, "target");
-                    String metaKey = str(o, "metaKey");
-                    long amount = Math.max(1L, lng(o, "amount", 1L));
-                    String mode = str(o, "mode");
-                    String label = str(o, "label");
-                    objectives.add(new Objective(type, target, metaKey, amount, mode, label, featureFor(type, target)));
-                }
-
-                ArrayList<Reward> rewards = new ArrayList<>();
-                JsonArray rewardArray = q.has("rewards") ? q.getAsJsonArray("rewards") : new JsonArray();
-                for (JsonElement rewardElement : rewardArray) {
-                    JsonObject r = rewardElement.getAsJsonObject();
-                    rewards.add(new Reward(str(r, "type").toUpperCase(Locale.ROOT), str(r, "item"),
-                            (int) lng(r, "count", 1), lng(r, "amount", 0), str(r, "command"), str(r, "label")));
-                }
-
-                ArrayList<String> prerequisites = new ArrayList<>();
-                if (q.has("prerequisites")) for (JsonElement p : q.getAsJsonArray("prerequisites")) prerequisites.add(p.getAsString());
-                out.add(new Quest(id, str(q, "category"), str(q, "title"), str(q, "description"),
-                        List.copyOf(objectives), List.copyOf(rewards), List.copyOf(prerequisites)));
+            ArrayList<String> prerequisites = new ArrayList<>();
+            if (q.has("prerequisites") && q.get("prerequisites").isJsonArray()) {
+                for (JsonElement p : q.getAsJsonArray("prerequisites")) prerequisites.add(p.getAsString().trim());
             }
-            return out;
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to decode full SVQuest quest catalog", e);
+            out.add(new Quest(id, category, phase, str(q, "title"), str(q, "description"),
+                    List.copyOf(objectives), List.copyOf(rewards), List.copyOf(prerequisites)));
+        }
+        return out;
+    }
+
+    private static String exportJson(List<Quest> quests) {
+        JsonObject root = new JsonObject();
+        root.add("quests", GSON.toJsonTree(quests));
+        return GSON.toJson(root);
+    }
+
+    private static String gzipBase64(String text) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzip = new GZIPOutputStream(bytes)) {
+            gzip.write(text.getBytes(StandardCharsets.UTF_8));
+        }
+        return Base64.getEncoder().encodeToString(bytes.toByteArray());
+    }
+
+    private static String readResourceStrict(String path) throws IOException {
+        try (InputStream in = QuestCatalog.class.getResourceAsStream(path)) {
+            if (in == null) throw new IOException("Missing resource " + path);
+            return readStrict(in, path);
         }
     }
 
-    /** The restored payload has a damaged GZIP CRC/ISIZE trailer; the DEFLATE stream itself is intact. */
-    private static byte[] inflateGzipPayloadIgnoringTrailer(byte[] gz) throws DataFormatException {
-        if (gz.length < 18 || (gz[0] & 0xff) != 0x1f || (gz[1] & 0xff) != 0x8b || (gz[2] & 0xff) != 8) {
-            throw new DataFormatException("Invalid GZIP header");
-        }
-        int flags = gz[3] & 0xff;
-        int pos = 10;
-        if ((flags & 0x04) != 0) {
-            if (pos + 2 > gz.length) throw new DataFormatException("Truncated GZIP FEXTRA");
-            int xlen = (gz[pos] & 0xff) | ((gz[pos + 1] & 0xff) << 8);
-            pos += 2 + xlen;
-        }
-        if ((flags & 0x08) != 0) pos = skipZeroTerminated(gz, pos);
-        if ((flags & 0x10) != 0) pos = skipZeroTerminated(gz, pos);
-        if ((flags & 0x02) != 0) pos += 2;
-        int end = gz.length - 8;
-        if (pos >= end) throw new DataFormatException("Invalid GZIP payload bounds");
-
-        Inflater inflater = new Inflater(true);
-        inflater.setInput(gz, pos, end - pos);
-        ByteArrayOutputStream out = new ByteArrayOutputStream(600_000);
-        byte[] buffer = new byte[8192];
-        try {
-            while (!inflater.finished()) {
-                int n = inflater.inflate(buffer);
-                if (n > 0) { out.write(buffer, 0, n); continue; }
-                if (inflater.needsDictionary()) throw new DataFormatException("Catalog DEFLATE stream requires dictionary");
-                if (inflater.needsInput()) throw new DataFormatException("Catalog DEFLATE stream ended early");
-                throw new DataFormatException("Catalog DEFLATE stream made no progress");
-            }
-            return out.toByteArray();
-        } finally { inflater.end(); }
+    private static String readStrict(Path path) throws IOException {
+        try (InputStream in = Files.newInputStream(path)) { return readStrict(in, path.toString()); }
     }
 
-    private static int skipZeroTerminated(byte[] bytes, int pos) throws DataFormatException {
-        while (pos < bytes.length && bytes[pos++] != 0) { }
-        if (pos > bytes.length) throw new DataFormatException("Truncated GZIP string field");
-        return pos;
-    }
-
-    private static String featureFor(String type, String target) {
-        return switch (type) {
-            case "FEATURE_OPEN" -> target;
-            case "SHOP_BUY", "SHOP_SELL" -> "shop";
-            case "CRATE_OPEN", "ARCADE_GACHA_PULL", "ARCADE_ROULETTE_WIN", "ARCADE_BLACKJACK_WIN" -> "gacha";
-            case "BREED_EGG", "HATCH" -> "breeding";
-            case "POKESKILL_PURCHASE", "POKESKILL_COUNT" -> "pokemon_skills";
-            case "GTS_LIST", "GTS_PURCHASE" -> "gts";
-            case "WONDERTRADE" -> "wonder_trade";
-            case "STS_SELL" -> "sts";
-            case "RESEARCH_CAPTURE", "RESEARCH_DEFEAT", "RESEARCH_EVOLVE", "RESEARCH_LEVEL_UP", "RESEARCH_FISH", "RESEARCH_FRIENDSHIP" -> "research";
-            case "HUNT_COMPLETE" -> "hunts";
-            case "RAID_WIN" -> "raids";
-            case "RANKED_WIN" -> "ranked";
-            case "TOWER_WIN" -> "battle_tower";
-            case "FACTORY_RUN_COMPLETE" -> "battle_factory";
-            case "EXPEDITION_COMPLETE" -> "expeditions";
-            case "SHOWCASE_PLACE", "SVF_SHOWCASE_SUBMIT", "SVF_SHOWCASE_VOTE" -> "showcase";
-            case "SKIN_PURCHASE" -> "skins";
-            case "FUSION_DANCE", "FUSION_POTARA" -> "fusion";
-            default -> "";
-        };
+    private static String readStrict(InputStream in, String source) throws IOException {
+        var decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
+        try (Reader reader = new InputStreamReader(in, decoder)) {
+            StringBuilder out = new StringBuilder();
+            char[] buffer = new char[8192];
+            int n;
+            while ((n = reader.read(buffer)) >= 0) out.append(buffer, 0, n);
+            return out.toString();
+        } catch (CharacterCodingException e) {
+            throw new IOException("Invalid UTF-8 in " + source, e);
+        }
     }
 
     private static String str(JsonObject obj, String key) {
         if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return "";
-        try { return obj.get(key).getAsString(); } catch (Exception ignored) { return ""; }
+        try { return obj.get(key).getAsString().trim(); } catch (Exception ignored) { return ""; }
     }
 
     private static long lng(JsonObject obj, String key, long fallback) {
@@ -233,5 +307,12 @@ public final class QuestCatalog {
         try { return obj.get(key).getAsLong(); } catch (Exception ignored) { return fallback; }
     }
 
+    private static boolean bool(JsonObject obj, String key, boolean fallback) {
+        if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return fallback;
+        try { return obj.get(key).getAsBoolean(); } catch (Exception ignored) { return fallback; }
+    }
+
     private static String clean(String value) { return value == null ? "" : value.trim(); }
+
+    private record Catalog(List<Quest> quests, Map<String, Quest> byId) {}
 }
