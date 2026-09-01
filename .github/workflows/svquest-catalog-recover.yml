@@ -24,7 +24,10 @@ jobs:
         run: |
           set -euo pipefail
           git show 8a804b653d14219994f512ca21e90fe6fd641af4:bootstrap/svquest-source-beta6.tar.gz > /tmp/svquest-source-beta6.tar.gz
-          echo 'a69e3e4acbab0470259e532eda284beb6478700f4b70e4f213abc2b78805cd19  /tmp/svquest-source-beta6.tar.gz' | sha256sum -c -
+          echo '--- actual blob ---'
+          stat -c '%s bytes' /tmp/svquest-source-beta6.tar.gz
+          sha256sum /tmp/svquest-source-beta6.tar.gz
+          gzip -t /tmp/svquest-source-beta6.tar.gz
           echo '--- archive ---'
           tar -tzvf /tmp/svquest-source-beta6.tar.gz
           mkdir -p /tmp/svq6
@@ -39,31 +42,31 @@ jobs:
           python3 - <<'PY'
           import base64, gzip, hashlib, json, re, zlib
           from pathlib import Path
-
           root=Path('/tmp/svq6')
           candidates=[]
           for p in root.rglob('*'):
-              if p.is_file() and any(k in p.name.lower() or k in str(p).lower() for k in ('quest','catalog','objective')):
+              if p.is_file() and any(k in str(p).lower() for k in ('quest','catalog','objective')):
                   candidates.append(p)
           print('CANDIDATES')
           for p in candidates: print(p.relative_to(root),p.stat().st_size)
 
+          def check_json(data,tag):
+              try:
+                  text=data.decode('utf-8','strict')
+                  obj=json.loads(text)
+              except Exception as e:
+                  print('JSON_FAIL',tag,repr(e)); return None
+              quests=obj.get('quests') if isinstance(obj,dict) else None
+              if isinstance(quests,list):
+                  ids=[q.get('id') for q in quests]
+                  known=set(ids)
+                  objectives=sum(len(q.get('objectives',[])) for q in quests)
+                  dangling=[(q.get('id'),x) for q in quests for x in q.get('prerequisites',[]) if x not in known]
+                  print('VALID_CATALOG',tag,'bytes',len(data),'sha256',hashlib.sha256(data).hexdigest(),'quests',len(quests),'objectives',objectives,'unique',len(ids)==len(known),'dangling',len(dangling))
+                  return data
+              print('JSON_NO_QUESTS',tag); return None
+
           def inspect(raw,label):
-              def check_json(data,tag):
-                  try:
-                      text=data.decode('utf-8','strict')
-                      obj=json.loads(text)
-                  except Exception as e:
-                      print('JSON_FAIL',tag,repr(e)); return None
-                  quests=obj.get('quests') if isinstance(obj,dict) else None
-                  if isinstance(quests,list):
-                      ids=[q.get('id') for q in quests]
-                      objectives=sum(len(q.get('objectives',[])) for q in quests)
-                      dangling=[(q.get('id'),x) for q in quests for x in q.get('prerequisites',[]) if x not in set(ids)]
-                      print('VALID_CATALOG',tag,'bytes',len(data),'sha256',hashlib.sha256(data).hexdigest(),'quests',len(quests),'objectives',objectives,'unique',len(ids)==len(set(ids)),'dangling',len(dangling))
-                      return data
-                  print('JSON_NO_QUESTS',tag)
-                  return None
               check_json(raw,label)
               if raw[:2]==b'\x1f\x8b':
                   try: check_json(gzip.decompress(raw),label+' -> gzip')
@@ -90,8 +93,7 @@ jobs:
               except Exception: pass
 
           for p in candidates:
-              if p.stat().st_size <= 2_000_000:
-                  inspect(p.read_bytes(),str(p.relative_to(root)))
+              if p.stat().st_size <= 2_000_000: inspect(p.read_bytes(),str(p.relative_to(root)))
 
           print('--- TEXT HITS ---')
           for p in root.rglob('*'):
@@ -101,5 +103,5 @@ jobs:
               hits=[line for line in t.splitlines() if any(k in line for k in ('618','default_quests','QuestCatalog','POKESKILL_PURCHASE','FUSION_POTARA'))]
               if hits:
                   print('FILE',p.relative_to(root))
-                  for line in hits[:80]: print(line)
+                  for line in hits[:100]: print(line)
           PY
