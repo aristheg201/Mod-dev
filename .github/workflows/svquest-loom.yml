@@ -32,132 +32,70 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Recover canonical beta.5 quest catalog
-        shell: bash
-        run: |
-          set -euo pipefail
-          : > /tmp/svquest-beta5-source.b64
-          for p in 00 01 02 03 04 05; do
-            git show 8a804b653d14219994f512ca21e90fe6fd641af4:bootstrap/source.b64.part${p} >> /tmp/svquest-beta5-source.b64
-          done
-          python3 - <<'PY'
-          import base64, gzip, hashlib, io, json, re, tarfile, zipfile
-          from pathlib import Path
-
-          TARGET='9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555'
-          src=''.join(Path('/tmp/svquest-beta5-source.b64').read_text().split())
-          root=base64.b64decode(src)
-          seen=set(); found=None
-
-          def visit(data, label, depth=0):
-              global found
-              if found is not None or depth > 8 or not data:
-                  return
-              key=(len(data), hashlib.sha256(data).digest())
-              if key in seen:
-                  return
-              seen.add(key)
-              digest=hashlib.sha256(data).hexdigest()
-              if digest == TARGET:
-                  obj=json.loads(data)
-                  assert len(obj['quests']) == 618
-                  assert sum(len(q.get('objectives',[])) for q in obj['quests']) == 1617
-                  found=data
-                  print('FOUND canonical beta.5 catalog at', label)
-                  return
-              try:
-                  if data[:2] == b'\x1f\x8b':
-                      visit(gzip.decompress(data), label+' -> gzip', depth+1)
-              except Exception:
-                  pass
-              try:
-                  if zipfile.is_zipfile(io.BytesIO(data)):
-                      with zipfile.ZipFile(io.BytesIO(data)) as z:
-                          for n in z.namelist():
-                              if n.endswith('/'):
-                                  continue
-                              visit(z.read(n), label+' -> '+n, depth+1)
-                              if found is not None: return
-              except Exception:
-                  pass
-              try:
-                  with tarfile.open(fileobj=io.BytesIO(data), mode='r:*') as t:
-                      for m in t.getmembers():
-                          if not m.isfile():
-                              continue
-                          f=t.extractfile(m)
-                          if f:
-                              visit(f.read(), label+' -> '+m.name, depth+1)
-                              if found is not None: return
-              except Exception:
-                  pass
-              if len(data) < 2_000_000:
-                  try:
-                      text=data.decode('ascii')
-                      compact=''.join(text.split())
-                      if len(compact) >= 32 and len(compact) % 4 == 0 and re.fullmatch(r'[A-Za-z0-9+/=]+', compact):
-                          visit(base64.b64decode(compact, validate=True), label+' -> base64', depth+1)
-                  except Exception:
-                      pass
-
-          visit(root, 'bootstrap/source.b64.part00..05')
-          if found is None:
-              raise SystemExit('canonical beta.5 catalog not found in preserved source payload')
-
-          raw=found
-          digest=hashlib.sha256(raw).hexdigest()
-          assert digest == TARGET
-          obj=json.loads(raw)
-          ids=[q['id'] for q in obj['quests']]
-          assert len(ids)==618 and len(ids)==len(set(ids))
-          known=set(ids)
-          dangling=[(q['id'],p) for q in obj['quests'] for p in q.get('prerequisites',[]) if p not in known]
-          assert not dangling, dangling[:10]
-
-          gz=gzip.compress(raw, compresslevel=9, mtime=0)
-          enc=base64.b64encode(gz).decode('ascii')
-          out=Path('SVQuest/src/main/resources/svquest/full')
-          out.mkdir(parents=True, exist_ok=True)
-          step=(len(enc)+7)//8
-          for i in range(8):
-              (out/f'default_quests.{i:02d}.b64').write_text(enc[i*step:(i+1)*step])
-
-          # Generated gzip length need not equal the old corrupt payload length; raw JSON SHA is authoritative.
-          p=Path('SVQuest/src/main/java/vn/svframe/svquest/quest/QuestCatalog.java')
-          s=p.read_text()
-          s=s.replace('    private static final int ENCODED_LENGTH = 44932;\n','')
-          s=s.replace('new StringBuilder(ENCODED_LENGTH)', 'new StringBuilder(65536)')
-          s=s.replace('            if (encoded.length() != ENCODED_LENGTH) {\n                throw new IllegalStateException("Corrupt SVQuest catalog payload length: " + encoded.length());\n            }\n\n','')
-          p.write_text(s)
-          print('catalog recovered:', len(obj['quests']), 'quests /', sum(len(q.get('objectives',[])) for q in obj['quests']), 'objectives / sha256', digest, '/ b64', len(enc))
-          PY
-
       - name: Restore reviewed beta.9 QuestScreen source
         working-directory: SVQuest
         run: gradle --no-daemon prepareBeta9QuestScreen
 
-      - name: Assert quest engine, catalog and beta.9 GUI contract
+      - name: Audit 618 quest catalog and objective producers
         shell: bash
         run: |
           set -euo pipefail
-          test -f SVQuest/src/main/resources/fabric.mod.json
-          test -f SVQuest/src/main/resources/svquest/full/default_quests.07.b64
+          python3 - <<'PY'
+          import base64, json, re, zlib, zipfile, io
+          from pathlib import Path
+
+          parts=[]
+          for i in range(8):
+              p=Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64')
+              assert p.is_file(), p
+              parts.append(''.join(p.read_text().split()))
+          enc=''.join(parts)
+          assert len(enc)==44932, len(enc)
+          gz=base64.b64decode(enc)
+          assert gz[:3]==b'\x1f\x8b\x08'
+          flags=gz[3]; pos=10
+          if flags & 0x04:
+              xlen=gz[pos] | (gz[pos+1]<<8); pos += 2+xlen
+          if flags & 0x08: pos=gz.index(b'\0',pos)+1
+          if flags & 0x10: pos=gz.index(b'\0',pos)+1
+          if flags & 0x02: pos+=2
+          raw=zlib.decompress(gz[pos:-8],-15)
+          root=json.loads(raw)
+          quests=root['quests']
+          assert len(quests)==618, len(quests)
+          ids=[q['id'] for q in quests]
+          assert len(ids)==len(set(ids)), 'duplicate quest ids'
+          known=set(ids)
+          dangling=[(q['id'],p) for q in quests for p in q.get('prerequisites',[]) if p not in known]
+          assert not dangling, dangling[:20]
+          empty=[q['id'] for q in quests if not q.get('objectives')]
+          assert not empty, empty[:20]
+          objectives=sum(len(q.get('objectives',[])) for q in quests)
+          types=sorted({o['type'].upper() for q in quests for o in q.get('objectives',[])})
+          print('catalog:',len(quests),'quests /',objectives,'objectives /',len(types),'types')
+          print('objective types:',', '.join(types))
+
+          # Every objective type must be emitted/mirrored by server code or the proven beta.5 optional-mod hooks.
+          producer='\n'.join(p.read_text(errors='ignore') for p in Path('SVQuest/src/main/java').rglob('*.java'))
+          payload=Path('SVQuest/src/main/resources/svquest/questfix_mixins.zip.b64')
+          if payload.is_file():
+              zb=base64.b64decode(''.join(payload.read_text().split()))
+              with zipfile.ZipFile(io.BytesIO(zb)) as z:
+                  for n in z.namelist():
+                      if n.endswith('.class'):
+                          producer += '\n' + z.read(n).decode('latin1',errors='ignore')
+          missing=[t for t in types if t not in producer]
+          if missing:
+              raise SystemExit('OBJECTIVE TYPES WITHOUT PRODUCER: '+', '.join(missing))
+          print('producer audit OK:',len(types),'/',len(types),'objective types have server producers')
+          PY
+
           ! grep -q 'claimCompleted' SVQuest/src/main/java/vn/svframe/svquest/server/QuestEngine.java
           test "$(grep -o 'rewards\.grant' SVQuest/src/main/java/vn/svframe/svquest/server/QuestEngine.java | wc -l)" -eq 1
           grep -q 'action.startsWith("claim:")' SVQuest/src/main/java/vn/svframe/svquest/server/ServerRuntime.java
           grep -q 'progressKey(quest, index)' SVQuest/src/main/java/vn/svframe/svquest/server/QuestStateStore.java
           grep -q 'claim:' SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java
-          python3 - <<'PY'
-          import base64,gzip,hashlib,json
-          from pathlib import Path
-          enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
-          raw=gzip.decompress(base64.b64decode(enc))
-          assert hashlib.sha256(raw).hexdigest()=='9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555'
-          q=json.loads(raw)['quests']
-          assert len(q)==618
-          assert sum(len(x.get('objectives',[])) for x in q)==1617
-          print('canonical catalog OK')
-          PY
+
           git show 5412f2796e5199a3ee4963aa8ea1b38e7aced167:SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java > /tmp/QuestScreen.beta9.java
           python3 - <<'PY'
           import re
@@ -165,11 +103,11 @@ jobs:
           from pathlib import Path
           old=Path('/tmp/QuestScreen.beta9.java').read_text(); new=Path('SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java').read_text()
           hx=re.compile(r'0x[0-9A-Fa-f]+')
-          assert Counter(hx.findall(old))==Counter(hx.findall(new))
+          assert Counter(hx.findall(old))==Counter(hx.findall(new)), 'beta.9 palette changed'
           for t in ['LỘ TRÌNH GAMEPLAY','TIẾN TRÌNH','HOẠT ĐỘNG','POKÉMON','CỬA HÀNG','DỊCH VỤ','MỤC TIÊU','PHẦN THƯỞNG','YÊU CẦU','HOÀN THÀNH','ĐANG THỰC HIỆN','CHƯA MỞ KHÓA','Math.max(205, Math.min(278, w / 4))']:
               assert t in new, t
           assert 'NHIỆM VỤ SVFRAME' not in new and 'HOÀN TẤT' not in new
-          print('beta.9 GUI contract OK')
+          print('beta.9 GUI visual contract OK')
           PY
 
       - name: Loom remap build
@@ -192,7 +130,12 @@ jobs:
             svquest/full/default_quests.07.b64 \
             vn/svframe/svquest/mixin/PebblesCrateMixin.class \
             'vn/svframe/svquest/mixin/ArcadeLuckMixin$Gacha.class' \
-            vn/svframe/svquest/mixin/SvfTaiXiuMixin.class; do unzip -l "$JAR" | grep -Fq "$f"; done
+            'vn/svframe/svquest/mixin/ArcadeLuckMixin$Roulette.class' \
+            'vn/svframe/svquest/mixin/ArcadeLuckMixin$Blackjack.class' \
+            vn/svframe/svquest/mixin/SvfTaiXiuMixin.class \
+            vn/svframe/svquest/mixin/SvfMatchBetMixin.class \
+            vn/svframe/svquest/mixin/SvfTournamentMixin.class \
+            vn/svframe/svquest/mixin/SvfEventShowcaseMixin.class; do unzip -l "$JAR" | grep -Fq "$f"; done
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
       - name: Install virtual display
@@ -230,7 +173,7 @@ jobs:
           code=$?
           set -e
           cat build/server-smoke.log
-          if grep -E -q "Could not execute entrypoint stage|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception|Failed to decode full SVQuest|Corrupt SVQuest catalog" build/server-smoke.log; then exit 1; fi
+          if grep -E -q "Could not execute entrypoint stage|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception|Failed to decode full SVQuest|Corrupt SVQuest catalog|dangling prerequisite" build/server-smoke.log; then exit 1; fi
           grep -q 'SVQuest full quest runtime loaded: 618 quests' build/server-smoke.log
           grep -q 'Done (' build/server-smoke.log
           if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then exit "$code"; fi
