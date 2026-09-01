@@ -1,0 +1,24 @@
+{
+  "commands": {
+    "pokemon_skills": "pokeskill",
+    "gts": "gts",
+    "skins": "trangphuc",
+    "shop": "shop",
+    "hunts": "hunts",
+    "raids": "raid list",
+    "ranked": "ranked",
+    "battle_factory": "battlefactory",
+    "wonder_trade": "wondertrade",
+    "sts": "sts",
+    "research": "research",
+    "expeditions": "expeditions",
+    "showcase": "showcase",
+    "daily": "daily",
+    "battle_pass": "battlepass",
+    "fusion": "fusion",
+    "homes": "home",
+    "warps": "warp",
+    "waypoints": "waypoint",
+    "claims": "claim"
+  }
+}
