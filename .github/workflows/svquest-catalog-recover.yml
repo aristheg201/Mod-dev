@@ -1,0 +1,110 @@
+name: SVQuest catalog recovery
+
+on:
+  push:
+    branches: [build/svquest]
+    paths:
+      - '.github/workflows/svquest-catalog-recover.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download preserved successful run 41 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SVQuest-beta.6-GitHub-Loom
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 33429627527
+          path: /tmp/run41
+
+      - name: Inspect every catalog-like payload in run 41
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '--- artifact files ---'
+          find /tmp/run41 -maxdepth 3 -type f -printf '%p %s bytes\n' | sort
+          python3 - <<'PY'
+          import base64, gzip, hashlib, io, json, re, zipfile, zlib
+          from pathlib import Path
+
+          def strict_json(raw, label):
+              try:
+                  text=raw.decode('utf-8')
+                  obj=json.loads(text)
+                  q=obj.get('quests') if isinstance(obj,dict) else None
+                  if isinstance(q,list):
+                      print('VALID JSON',label,'bytes',len(raw),'sha256',hashlib.sha256(raw).hexdigest(),'quests',len(q),'objectives',sum(len(x.get('objectives',[])) for x in q))
+                      return raw
+              except Exception as e:
+                  print('JSON FAIL',label,repr(e))
+              return None
+
+          def try_payload(data,label):
+              strict_json(data,label)
+              try:
+                  if data[:2]==b'\x1f\x8b':
+                      try:
+                          strict_json(gzip.decompress(data),label+' -> gzip')
+                      except Exception as e:
+                          print('GZIP FAIL',label,repr(e))
+                          # Ignore trailer only; useful for known old resource corruption.
+                          try:
+                              flags=data[3]; pos=10
+                              if flags & 0x04:
+                                  xlen=data[pos] | (data[pos+1]<<8); pos += 2+xlen
+                              if flags & 0x08: pos=data.index(b'\0',pos)+1
+                              if flags & 0x10: pos=data.index(b'\0',pos)+1
+                              if flags & 0x02: pos+=2
+                              strict_json(zlib.decompress(data[pos:-8],-15),label+' -> raw-deflate')
+                          except Exception as e2:
+                              print('RAW DEFLATE FAIL',label,repr(e2))
+              except Exception:
+                  pass
+              try:
+                  s=''.join(data.decode('ascii').split())
+                  if len(s)>=32 and re.fullmatch(r'[A-Za-z0-9+/=]+',s):
+                      dec=base64.b64decode(s)
+                      print('BASE64',label,'chars',len(s),'decoded',len(dec),'sha256',hashlib.sha256(dec).hexdigest())
+                      try_payload(dec,label+' -> base64')
+              except Exception:
+                  pass
+
+          jars=sorted(Path('/tmp/run41').rglob('*.jar'))
+          print('JARS',[(str(j),j.stat().st_size) for j in jars])
+          for jar in jars:
+              print('\n===',jar,'===')
+              with zipfile.ZipFile(jar) as z:
+                  names=z.namelist()
+                  hits=[n for n in names if 'quest' in n.lower() or 'catalog' in n.lower()]
+                  for n in hits:
+                      info=z.getinfo(n)
+                      print('ENTRY',n,info.file_size,'bytes')
+                  # inspect individual plausible payloads
+                  for n in hits:
+                      if n.endswith('/') or not any(x in n.lower() for x in ('.json','.b64','.gz','.txt')):
+                          continue
+                      try_payload(z.read(n),str(jar)+'!'+n)
+                  # inspect ordered chunk families
+                  families={}
+                  for n in names:
+                      m=re.match(r'(.*/default_quests)\.(\d\d)\.b64$',n)
+                      if m:
+                          families.setdefault(m.group(1),[]).append((int(m.group(2)),n))
+                  for root,items in families.items():
+                      items=sorted(items)
+                      joined=b''.join(z.read(n).strip() for _,n in items)
+                      print('FAMILY',root,'parts',[i for i,_ in items],'joined',len(joined))
+                      try_payload(joined,str(jar)+'!'+root+'.*.b64')
+          PY
