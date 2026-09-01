@@ -18,13 +18,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
-/**
- * Full SVQuest catalog restored from beta.5. The bundled catalog contains 618 gameplay quests.
- * No story chapter is invented here: progression, activities, Pokémon research and endgame only.
- */
+/** Full SVQuest catalog restored from the beta.5 quest data. */
 public final class QuestCatalog {
     private static final Gson GSON = new Gson();
-    private static final int CATALOG_PARTS = 8;
+    private static final String CATALOG_RESOURCE = "/svquest/default_quests.json.gz.b64";
     private QuestCatalog() {}
 
     public record Objective(String type, String target, String metaKey, long amount, String mode,
@@ -58,29 +55,20 @@ public final class QuestCatalog {
         QUESTS = Collections.unmodifiableList(loaded);
         LinkedHashMap<String, Quest> map = new LinkedHashMap<>();
         for (Quest quest : loaded) map.put(quest.id(), quest);
-        if (map.size() != loaded.size()) {
-            throw new IllegalStateException("SVQuest full catalog contains duplicate quest ids");
-        }
+        if (map.size() != loaded.size()) throw new IllegalStateException("SVQuest full catalog contains duplicate quest ids");
         BY_ID = Collections.unmodifiableMap(map);
     }
 
-    public static Quest byIndex(int index) {
-        return QUESTS.get(Math.max(0, Math.min(index, QUESTS.size() - 1)));
-    }
-
+    public static Quest byIndex(int index) { return QUESTS.get(Math.max(0, Math.min(index, QUESTS.size() - 1))); }
     public static Quest byId(String id) { return BY_ID.get(id); }
 
     public static boolean unlocked(Set<String> claimed, Quest quest) {
         if (quest == null) return false;
-        for (String prerequisite : quest.prerequisites()) {
-            if (!claimed.contains(prerequisite)) return false;
-        }
+        for (String prerequisite : quest.prerequisites()) if (!claimed.contains(prerequisite)) return false;
         return true;
     }
 
-    public static String progressKey(Quest quest, int objectiveIndex) {
-        return quest.id() + "#" + objectiveIndex;
-    }
+    public static String progressKey(Quest quest, int objectiveIndex) { return quest.id() + "#" + objectiveIndex; }
 
     public static boolean matches(Objective objective, Map<String, String> meta) {
         String target = clean(objective.target());
@@ -94,19 +82,9 @@ public final class QuestCatalog {
     }
 
     private static List<Quest> loadBundled() {
-        try {
-            StringBuilder encoded = new StringBuilder(45000);
-            for (int i = 0; i < CATALOG_PARTS; i++) {
-                String path = String.format(Locale.ROOT, "/svquest/full/default_quests.%02d.b64", i);
-                try (InputStream raw = QuestCatalog.class.getResourceAsStream(path)) {
-                    if (raw == null) throw new IllegalStateException("Missing " + path);
-                    encoded.append(new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", ""));
-                }
-            }
-            String b64 = encoded.toString();
-            if (b64.length() != 44932) {
-                throw new IllegalStateException("Corrupt SVQuest catalog payload length: " + b64.length());
-            }
+        try (InputStream raw = QuestCatalog.class.getResourceAsStream(CATALOG_RESOURCE)) {
+            if (raw == null) throw new IllegalStateException("Missing " + CATALOG_RESOURCE);
+            String b64 = new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", "");
             byte[] gz = Base64.getDecoder().decode(b64);
             String json;
             try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gz))) {
@@ -132,8 +110,7 @@ public final class QuestCatalog {
                     long amount = Math.max(1L, lng(o, "amount", 1L));
                     String mode = str(o, "mode");
                     String label = str(o, "label");
-                    objectives.add(new Objective(type, target, metaKey, amount, mode, label,
-                            featureFor(type, target)));
+                    objectives.add(new Objective(type, target, metaKey, amount, mode, label, featureFor(type, target)));
                 }
                 ArrayList<Reward> rewards = new ArrayList<>();
                 JsonArray rewardArray = q.has("rewards") ? q.getAsJsonArray("rewards") : new JsonArray();
