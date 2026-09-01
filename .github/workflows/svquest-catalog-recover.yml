@@ -25,7 +25,7 @@ jobs:
           echo '--- research jar ---'
           stat -c '%s bytes' /tmp/research.jar
           sha256sum /tmp/research.jar
-          unzip -l /tmp/research.jar | grep -Ei 'master_config|config|json' | head -n 100
+          unzip -l /tmp/research.jar | grep -Ei 'master_config|default_config' | head -n 30 || true
           MASTER=$(unzip -Z1 /tmp/research.jar | grep -E '(^|/)master_config\.json$' | head -n1)
           test -n "$MASTER"
           unzip -p /tmp/research.jar "$MASTER" > /tmp/master_config.json
@@ -41,7 +41,6 @@ jobs:
           import base64,json,re,zlib
           from pathlib import Path
 
-          # Load corrupt catalog and retain the fully clean prefix only.
           enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
           gz=base64.b64decode(enc); flags=gz[3]; pos=10
           if flags & 4: x=gz[pos]|gz[pos+1]<<8; pos+=2+x
@@ -68,40 +67,34 @@ jobs:
           print('MASTER_TYPE',type(master).__name__)
           if isinstance(master,dict): print('MASTER_TOP_KEYS',list(master)[:50])
 
-          # Walk recursively and print structural summary + exact sample-containing objects.
-          def walk(x,path='$'):
-              if isinstance(x,dict):
-                  for k,v in x.items():
-                      yield from walk(v,path+'.'+str(k))
-              elif isinstance(x,list):
-                  for i,v in enumerate(x): yield from walk(v,path+f'[{i}]')
-              else:
-                  yield path,x
+          def contains(x,needle):
+              try: return needle in json.dumps(x,ensure_ascii=False).lower()
+              except Exception: return False
 
-          flat=list(walk(master))
-          for needle in ['bulbasaur','tyrantrum','aurorus','hawlucha','carbink','pikachu']:
-              print('\n=== MASTER HITS',needle,'===')
-              shown=0
-              # Print nearest dicts whose JSON contains species name.
-              stack=[('$',master)]
-              while stack and shown<20:
-                  path,x=stack.pop()
-                  if isinstance(x,dict):
-                      text=json.dumps(x,ensure_ascii=False).lower()
-                      if needle in text and len(text)<12000:
-                          print(path,json.dumps(x,ensure_ascii=False,separators=(',',':'))[:12000]); shown+=1
-                      for k,v in reversed(list(x.items())): stack.append((path+'.'+str(k),v))
-                  elif isinstance(x,list):
-                      for i,v in reversed(list(enumerate(x))): stack.append((path+f'[{i}]',v))
-              print('HIT_OBJECTS',shown)
+          def find_small(x,needle,path='$',out=None):
+              if out is None: out=[]
+              if len(out)>=12: return out
+              if isinstance(x,dict):
+                  if contains(x,needle):
+                      text=json.dumps(x,ensure_ascii=False,separators=(',',':'))
+                      if len(text)<16000: out.append((path,text))
+                  for k,v in x.items():
+                      if isinstance(v,(dict,list)) and contains(v,needle): find_small(v,needle,path+'.'+str(k),out)
+              elif isinstance(x,list):
+                  for i,v in enumerate(x):
+                      if isinstance(v,(dict,list)) and contains(v,needle): find_small(v,needle,path+f'[{i}]',out)
+              return out
+
+          for needle in ['bulbasaur','wartortle','pikachu','terrakion','tyrantrum','aurorus','hawlucha','carbink']:
+              print('\n=== MASTER',needle,'===')
+              for path,text in find_small(master,needle): print(path,text)
 
           samples=['research_1_bulbasaur','research_8_wartortle','research_25_pikachu','research_639_terrakion','research_697_tyrantrum']
-          print('\n=== SVQUEST CLEAN SAMPLES ===')
           byid={q['id']:q for q in good}
+          print('\n=== SVQUEST CLEAN SAMPLES ===')
           for qid in samples: print(qid,json.dumps(byid[qid],ensure_ascii=False,separators=(',',':')))
 
-          # Verify missing tail selection hypothesis exactly: 699..1003 odd = 153.
           tail=list(range(699,1004,2))
-          print('TAIL_SEQUENCE',len(tail),tail[:10],tail[-10:])
           assert len(tail)==153
+          print('TAIL_SEQUENCE',len(tail),tail[:12],tail[-12:])
           PY
