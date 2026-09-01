@@ -10,7 +10,7 @@ import vn.svframe.svquest.quest.QuestCatalog;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 
-/** Grants only rewards defined in the bundled server-owned quest catalog. */
+/** Grants rewards defined by quest config. A non-empty command is the generic, no-code-path reward mechanism. */
 public final class RewardDispatcher {
     public void grant(ServerPlayerEntity player, QuestCatalog.Quest quest) {
         boolean failed = false;
@@ -27,6 +27,12 @@ public final class RewardDispatcher {
     }
 
     private static void grantOne(ServerPlayerEntity player, QuestCatalog.Reward reward) throws ReflectiveOperationException {
+        if (!reward.command().isBlank()) {
+            command(player, expand(player, reward.command(), reward));
+            return;
+        }
+
+        // Legacy convenience adapters remain for old data. New rewards can always use command directly.
         switch (reward.type()) {
             case "ITEM" -> {
                 if (!reward.item().isBlank()) command(player, "give " + player.getName().getString() + " " + reward.item() + " " + Math.max(1, reward.count()));
@@ -35,11 +41,17 @@ public final class RewardDispatcher {
             case "BEASTCOIN" -> bEconomy(player, "beastcoin", reward.amount());
             case "HUNTERCOIN" -> bEconomy(player, "huntercoin", reward.amount());
             case "SKILL_POINT" -> skillPoints(player, (int) reward.amount());
-            case "COMMAND" -> {
-                if (!reward.command().isBlank()) command(player, reward.command().replace("%player%", player.getName().getString()));
-            }
-            default -> SVQuest.LOGGER.debug("Ignoring unknown SVQuest reward type {}", reward.type());
+            default -> SVQuest.LOGGER.debug("Ignoring reward without command/known legacy adapter: {}", reward.type());
         }
+    }
+
+    private static String expand(ServerPlayerEntity player, String template, QuestCatalog.Reward reward) {
+        return template
+                .replace("%player%", player.getName().getString())
+                .replace("%uuid%", player.getUuidAsString())
+                .replace("%amount%", Long.toString(reward.amount()))
+                .replace("%count%", Integer.toString(Math.max(1, reward.count())))
+                .replace("%item%", reward.item());
     }
 
     private static void command(ServerPlayerEntity player, String command) {
@@ -54,7 +66,6 @@ public final class RewardDispatcher {
             command(player, "cobbledollars give " + player.getName().getString() + " " + amount);
             return;
         }
-        // Some production builds expose cobbledollars through BEconomy instead.
         try { bEconomy(player, "cobbledollars", amount); } catch (Throwable ignored) { }
     }
 
