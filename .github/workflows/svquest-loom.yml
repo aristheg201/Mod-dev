@@ -37,7 +37,7 @@ jobs:
         working-directory: SVQuest
         run: gradle --no-daemon prepareBeta9QuestScreen
 
-      - name: Assert quest architecture and beta.9 GUI contract
+      - name: Assert quest architecture, catalog and beta.9 GUI contract
         shell: bash
         run: |
           set -euo pipefail
@@ -47,6 +47,7 @@ jobs:
           test -f SVQuest/src/main/resources/assets/svquest/textures/gui/server_logo.png
           test -f SVQuest/src/main/resources/svquest.questfix.mixins.json
           test -f SVQuest/src/main/resources/svquest/questfix_mixins.zip.b64
+          test -f SVQuest/src/main/resources/svquest/default_quests.json.gz.b64
           test ! -d SVQuest/src/compileStubs
           ! grep -R --line-number --include='*.java' 'net\.minecraft\.class_' SVQuest/src/main/java
           ! find SVQuest/src/main/java -type f -name '*Mixin.java' | grep -q .
@@ -54,6 +55,27 @@ jobs:
           test "$(grep -o 'rewards\.grant' SVQuest/src/main/java/vn/svframe/svquest/server/QuestEngine.java | wc -l)" -eq 1
           grep -q 'action.startsWith("claim:")' SVQuest/src/main/java/vn/svframe/svquest/server/ServerRuntime.java
           grep -q 'progressKey(quest, index)' SVQuest/src/main/java/vn/svframe/svquest/server/QuestStateStore.java
+          grep -q 'claim:' SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java
+
+          python3 - <<'PY'
+          import base64, gzip, hashlib, json
+          from pathlib import Path
+          p = Path('SVQuest/src/main/resources/svquest/default_quests.json.gz.b64')
+          raw = gzip.decompress(base64.b64decode(''.join(p.read_text().split())))
+          digest = hashlib.sha256(raw).hexdigest()
+          assert digest == '9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555', digest
+          root = json.loads(raw)
+          quests = root['quests']
+          objectives = sum(len(q.get('objectives', [])) for q in quests)
+          assert len(quests) == 618, len(quests)
+          assert objectives == 1617, objectives
+          ids = [q['id'] for q in quests]
+          assert len(ids) == len(set(ids)), 'duplicate quest ids'
+          known = set(ids)
+          dangling = [(q['id'], p) for q in quests for p in q.get('prerequisites', []) if p not in known]
+          assert not dangling, dangling[:10]
+          print('catalog OK:', len(quests), 'quests /', objectives, 'objectives / sha256', digest)
+          PY
 
           git show 5412f2796e5199a3ee4963aa8ea1b38e7aced167:SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java > /tmp/QuestScreen.beta9.java
           python3 - <<'PY'
@@ -62,7 +84,6 @@ jobs:
           from pathlib import Path
           old = Path('/tmp/QuestScreen.beta9.java').read_text()
           new = Path('SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java').read_text()
-          # No palette drift: exact multiset of every ARGB/RGB literal must remain beta.9.
           hx = re.compile(r'0x[0-9A-Fa-f]+')
           assert Counter(hx.findall(old)) == Counter(hx.findall(new)), 'QuestScreen color palette changed from beta.9'
           required = [
@@ -84,7 +105,7 @@ jobs:
         working-directory: SVQuest
         run: gradle --no-daemon clean remapJar sourcesJar --stacktrace
 
-      - name: Verify remapped artifact
+      - name: Verify remapped artifact and objective producers
         shell: bash
         run: |
           set -euo pipefail
@@ -98,6 +119,7 @@ jobs:
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/QuestScreen.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/server/SVQuestDedicatedServer.class'
           unzip -l "$JAR" | grep -q 'assets/svquest/textures/gui/server_logo.png'
+          unzip -l "$JAR" | grep -q 'svquest/default_quests.json.gz.b64'
           unzip -l "$JAR" | grep -q 'svquest.questfix.mixins.json'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/PebblesCrateMixin.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/ArcadeLuckMixin\$Gacha.class'
@@ -137,25 +159,31 @@ jobs:
             exit "$code"
           fi
 
-      - name: Dedicated server startup smoke test
+      - name: Dedicated server smoke test on remapped jar
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           cd SVQuest
-          rm -rf run
-          mkdir -p run
-          printf 'eula=true\n' > run/eula.txt
+          JAR="$(find build/libs -maxdepth 1 -type f -name 'SVQuest-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          rm -rf build/prod-server
+          mkdir -p build/prod-server/mods
+          cp "$JAR" build/prod-server/mods/
+          curl -fL --retry 3 -o build/prod-server/mods/fabric-api.jar 'https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.116.9+1.21.1/fabric-api-0.116.9+1.21.1.jar'
+          curl -fL --retry 3 -o build/prod-server/fabric-server.jar 'https://meta.fabricmc.net/v2/versions/loader/1.21.1/0.18.4/1.1.0/server/jar'
+          printf 'eula=true\n' > build/prod-server/eula.txt
           set +e
-          timeout 75s gradle --no-daemon runServer > build/server-smoke.log 2>&1
+          (cd build/prod-server && timeout 120s java -Xms512M -Xmx1G -jar fabric-server.jar nogui) > build/server-smoke.log 2>&1
           code=$?
           set -e
           cat build/server-smoke.log
-          if grep -E -q "Could not execute entrypoint stage 'server'|Could not execute entrypoint stage 'main'|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception" build/server-smoke.log; then
-            echo 'Fatal server startup signature detected.' >&2
+          if grep -E -q "Could not execute entrypoint stage 'server'|Could not execute entrypoint stage 'main'|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception|Failed to decode full SVQuest|Corrupt SVQuest catalog" build/server-smoke.log; then
+            echo 'Fatal production server startup signature detected.' >&2
             exit 1
           fi
+          grep -q 'SVQuest full quest runtime loaded: 618 quests' build/server-smoke.log
+          grep -q 'Done (' build/server-smoke.log
           if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            echo "runServer exited unexpectedly with code $code" >&2
+            echo "production server exited unexpectedly with code $code" >&2
             exit "$code"
           fi
 
