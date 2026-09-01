@@ -37,7 +37,7 @@ jobs:
         working-directory: SVQuest
         run: gradle --no-daemon prepareBeta9QuestScreen
 
-      - name: Assert quest architecture, catalog and beta.9 GUI contract
+      - name: Assert quest architecture, canonical catalog and beta.9 GUI contract
         shell: bash
         run: |
           set -euo pipefail
@@ -47,7 +47,7 @@ jobs:
           test -f SVQuest/src/main/resources/assets/svquest/textures/gui/server_logo.png
           test -f SVQuest/src/main/resources/svquest.questfix.mixins.json
           test -f SVQuest/src/main/resources/svquest/questfix_mixins.zip.b64
-          test -f SVQuest/src/main/resources/svquest/default_quests.json.gz.b64
+          test -f SVQuest/src/main/resources/svquest/full/default_quests.07.b64
           test ! -d SVQuest/src/compileStubs
           ! grep -R --line-number --include='*.java' 'net\.minecraft\.class_' SVQuest/src/main/java
           ! find SVQuest/src/main/java -type f -name '*Mixin.java' | grep -q .
@@ -58,10 +58,28 @@ jobs:
           grep -q 'claim:' SVQuest/src/main/java/vn/svframe/svquest/client/QuestScreen.java
 
           python3 - <<'PY'
-          import base64, gzip, hashlib, json
+          import base64, hashlib, json, zlib
           from pathlib import Path
-          p = Path('SVQuest/src/main/resources/svquest/default_quests.json.gz.b64')
-          raw = gzip.decompress(base64.b64decode(''.join(p.read_text().split())))
+
+          encoded = ''.join(
+              ''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split())
+              for i in range(8)
+          )
+          assert len(encoded) == 44932, len(encoded)
+          gz = base64.b64decode(encoded)
+          assert gz[:3] == b'\x1f\x8b\x08'
+          flags = gz[3]
+          pos = 10
+          if flags & 0x04:
+              xlen = gz[pos] | (gz[pos + 1] << 8)
+              pos += 2 + xlen
+          if flags & 0x08:
+              pos = gz.index(b'\x00', pos) + 1
+          if flags & 0x10:
+              pos = gz.index(b'\x00', pos) + 1
+          if flags & 0x02:
+              pos += 2
+          raw = zlib.decompress(gz[pos:-8], -15)
           digest = hashlib.sha256(raw).hexdigest()
           assert digest == '9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555', digest
           root = json.loads(raw)
@@ -119,7 +137,7 @@ jobs:
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/client/QuestScreen.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/server/SVQuestDedicatedServer.class'
           unzip -l "$JAR" | grep -q 'assets/svquest/textures/gui/server_logo.png'
-          unzip -l "$JAR" | grep -q 'svquest/default_quests.json.gz.b64'
+          unzip -l "$JAR" | grep -q 'svquest/full/default_quests.07.b64'
           unzip -l "$JAR" | grep -q 'svquest.questfix.mixins.json'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/PebblesCrateMixin.class'
           unzip -l "$JAR" | grep -q 'vn/svframe/svquest/mixin/ArcadeLuckMixin\$Gacha.class'

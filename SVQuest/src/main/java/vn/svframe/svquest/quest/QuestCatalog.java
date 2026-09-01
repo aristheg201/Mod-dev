@@ -5,23 +5,29 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
-/** Full SVQuest catalog restored from the beta.5 quest data. */
+/** Full SVQuest catalog restored from beta.5. */
 public final class QuestCatalog {
     private static final Gson GSON = new Gson();
-    private static final String CATALOG_RESOURCE = "/svquest/default_quests.json.gz.b64";
+    private static final int CATALOG_PARTS = 8;
+    private static final int ENCODED_LENGTH = 44932;
+    private static final String JSON_SHA256 = "9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555";
+
     private QuestCatalog() {}
 
     public record Objective(String type, String target, String metaKey, long amount, String mode,
@@ -82,24 +88,38 @@ public final class QuestCatalog {
     }
 
     private static List<Quest> loadBundled() {
-        try (InputStream raw = QuestCatalog.class.getResourceAsStream(CATALOG_RESOURCE)) {
-            if (raw == null) throw new IllegalStateException("Missing " + CATALOG_RESOURCE);
-            String b64 = new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", "");
-            byte[] gz = Base64.getDecoder().decode(b64);
-            String json;
-            try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gz))) {
-                json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        try {
+            StringBuilder encoded = new StringBuilder(ENCODED_LENGTH);
+            for (int i = 0; i < CATALOG_PARTS; i++) {
+                String path = String.format(Locale.ROOT, "/svquest/full/default_quests.%02d.b64", i);
+                try (InputStream raw = QuestCatalog.class.getResourceAsStream(path)) {
+                    if (raw == null) throw new IllegalStateException("Missing " + path);
+                    encoded.append(new String(raw.readAllBytes(), StandardCharsets.US_ASCII).replaceAll("\\s+", ""));
+                }
             }
+            if (encoded.length() != ENCODED_LENGTH) {
+                throw new IllegalStateException("Corrupt SVQuest catalog payload length: " + encoded.length());
+            }
+
+            byte[] gz = Base64.getDecoder().decode(encoded.toString());
+            byte[] rawJson = inflateGzipPayloadIgnoringTrailer(gz);
+            String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(rawJson));
+            if (!JSON_SHA256.equals(digest)) {
+                throw new IllegalStateException("Corrupt SVQuest catalog JSON SHA-256: " + digest);
+            }
+            String json = new String(rawJson, StandardCharsets.UTF_8);
             JsonObject root = GSON.fromJson(json, JsonObject.class);
             if (root == null || !root.has("quests") || !root.get("quests").isJsonArray()) {
                 throw new IllegalStateException("SVQuest catalog JSON has no quests array");
             }
+
             JsonArray quests = root.getAsJsonArray("quests");
             ArrayList<Quest> out = new ArrayList<>(quests.size());
             for (JsonElement element : quests) {
                 JsonObject q = element.getAsJsonObject();
                 String id = str(q, "id");
                 if (id.isBlank()) continue;
+
                 ArrayList<Objective> objectives = new ArrayList<>();
                 JsonArray objectiveArray = q.has("objectives") ? q.getAsJsonArray("objectives") : new JsonArray();
                 for (JsonElement objectiveElement : objectiveArray) {
@@ -112,6 +132,7 @@ public final class QuestCatalog {
                     String label = str(o, "label");
                     objectives.add(new Objective(type, target, metaKey, amount, mode, label, featureFor(type, target)));
                 }
+
                 ArrayList<Reward> rewards = new ArrayList<>();
                 JsonArray rewardArray = q.has("rewards") ? q.getAsJsonArray("rewards") : new JsonArray();
                 for (JsonElement rewardElement : rewardArray) {
@@ -119,6 +140,7 @@ public final class QuestCatalog {
                     rewards.add(new Reward(str(r, "type").toUpperCase(Locale.ROOT), str(r, "item"),
                             (int) lng(r, "count", 1), lng(r, "amount", 0), str(r, "command"), str(r, "label")));
                 }
+
                 ArrayList<String> prerequisites = new ArrayList<>();
                 if (q.has("prerequisites")) for (JsonElement p : q.getAsJsonArray("prerequisites")) prerequisites.add(p.getAsString());
                 out.add(new Quest(id, str(q, "category"), str(q, "title"), str(q, "description"),
@@ -128,6 +150,55 @@ public final class QuestCatalog {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to decode full SVQuest beta.5 catalog", e);
         }
+    }
+
+    /**
+     * The restored base64 has a damaged GZIP trailer but an intact DEFLATE stream. We deliberately ignore
+     * only the CRC/ISIZE trailer, then require the decompressed JSON SHA-256 above. This cannot silently
+     * accept damaged quest data.
+     */
+    private static byte[] inflateGzipPayloadIgnoringTrailer(byte[] gz) throws DataFormatException {
+        if (gz.length < 18 || (gz[0] & 0xff) != 0x1f || (gz[1] & 0xff) != 0x8b || (gz[2] & 0xff) != 8) {
+            throw new DataFormatException("Invalid GZIP header");
+        }
+        int flags = gz[3] & 0xff;
+        int pos = 10;
+        if ((flags & 0x04) != 0) {
+            if (pos + 2 > gz.length) throw new DataFormatException("Truncated GZIP FEXTRA");
+            int xlen = (gz[pos] & 0xff) | ((gz[pos + 1] & 0xff) << 8);
+            pos += 2 + xlen;
+        }
+        if ((flags & 0x08) != 0) pos = skipZeroTerminated(gz, pos);
+        if ((flags & 0x10) != 0) pos = skipZeroTerminated(gz, pos);
+        if ((flags & 0x02) != 0) pos += 2;
+        int end = gz.length - 8;
+        if (pos >= end) throw new DataFormatException("Invalid GZIP payload bounds");
+
+        Inflater inflater = new Inflater(true);
+        inflater.setInput(gz, pos, end - pos);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(600_000);
+        byte[] buffer = new byte[8192];
+        try {
+            while (!inflater.finished()) {
+                int n = inflater.inflate(buffer);
+                if (n > 0) {
+                    out.write(buffer, 0, n);
+                    continue;
+                }
+                if (inflater.needsDictionary()) throw new DataFormatException("Catalog DEFLATE stream requires dictionary");
+                if (inflater.needsInput()) throw new DataFormatException("Catalog DEFLATE stream ended early");
+                throw new DataFormatException("Catalog DEFLATE stream made no progress");
+            }
+            return out.toByteArray();
+        } finally {
+            inflater.end();
+        }
+    }
+
+    private static int skipZeroTerminated(byte[] bytes, int pos) throws DataFormatException {
+        while (pos < bytes.length && bytes[pos++] != 0) { }
+        if (pos > bytes.length) throw new DataFormatException("Truncated GZIP string field");
+        return pos;
     }
 
     private static String featureFor(String type, String target) {
