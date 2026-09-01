@@ -37,10 +37,11 @@ tasks.register('prepareBeta9QuestScreen') {
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand(version: project.version) }
-    // Build-only binary/source payloads must never leak into the runtime jar.
+    // Build-only and retired recovery payloads must never leak into the runtime jar.
     exclude 'assets/svquest/textures/gui/server_logo.b64'
     exclude 'svquest/questfix_mixins.zip.b64'
     exclude 'svquest/questscreen_beta9_logic.java.gz.b64'
+    exclude 'svquest/full/**'
 
     doLast {
         def source = file('src/main/resources/assets/svquest/textures/gui/server_logo.b64')
