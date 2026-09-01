@@ -19,89 +19,98 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract exact historical SVQuest beta6 source bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          git show 8a804b653d14219994f512ca21e90fe6fd641af4:bootstrap/svquest-source-beta6.tar.gz > /tmp/svquest-source-beta6.tar.gz
-          echo '--- actual blob ---'
-          stat -c '%s bytes' /tmp/svquest-source-beta6.tar.gz
-          sha256sum /tmp/svquest-source-beta6.tar.gz
-          gzip -t /tmp/svquest-source-beta6.tar.gz
-          echo '--- archive ---'
-          tar -tzvf /tmp/svquest-source-beta6.tar.gz
-          mkdir -p /tmp/svq6
-          tar -xzf /tmp/svquest-source-beta6.tar.gz -C /tmp/svq6
-          echo '--- extracted ---'
-          find /tmp/svq6 -type f -printf '%P %s bytes\n' | sort
-
-      - name: Strictly inspect every quest/catalog payload
+      - name: Localize corruption in current 618-quest payload
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64, gzip, hashlib, json, re, zlib
+          import base64, hashlib, json, re, zlib
           from pathlib import Path
-          root=Path('/tmp/svq6')
-          candidates=[]
-          for p in root.rglob('*'):
-              if p.is_file() and any(k in str(p).lower() for k in ('quest','catalog','objective')):
-                  candidates.append(p)
-          print('CANDIDATES')
-          for p in candidates: print(p.relative_to(root),p.stat().st_size)
 
-          def check_json(data,tag):
+          enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
+          gz=base64.b64decode(enc)
+          flags=gz[3]; pos=10
+          if flags & 0x04:
+              xlen=gz[pos] | (gz[pos+1]<<8); pos += 2+xlen
+          if flags & 0x08: pos=gz.index(b'\0',pos)+1
+          if flags & 0x10: pos=gz.index(b'\0',pos)+1
+          if flags & 0x02: pos+=2
+          raw=zlib.decompress(gz[pos:-8],-15)
+          print('encoded',len(enc),'gzip',len(gz),'raw',len(raw),'sha256',hashlib.sha256(raw).hexdigest())
+          print('head',repr(raw[:600]))
+          print('tail',repr(raw[-600:]))
+
+          # UTF-8 corruption map.
+          bad=[]; i=0
+          while i < len(raw):
               try:
-                  text=data.decode('utf-8','strict')
-                  obj=json.loads(text)
+                  raw[i:].decode('utf-8','strict'); break
+              except UnicodeDecodeError as e:
+                  p=i+e.start; bad.append((p,raw[p:p+max(1,e.end-e.start)])); i=i+max(e.end, e.start+1)
+          print('invalid_utf8_events',len(bad))
+          if bad:
+              ranges=[]; s=prev=bad[0][0]
+              for p,_ in bad[1:]:
+                  if p-prev<=16: prev=p
+                  else: ranges.append((s,prev)); s=prev=p
+              ranges.append((s,prev))
+              print('invalid_utf8_ranges',len(ranges),ranges[:100])
+              for s,e in ranges[:30]:
+                  print('BAD_RANGE',s,e,repr(raw[max(0,s-120):min(len(raw),e+160)]))
+
+          text=raw.decode('utf-8','replace')
+          print('replacement_chars',text.count('\ufffd'))
+          try:
+              obj=json.loads(text)
+              print('WHOLE_JSON_OK',len(obj.get('quests',[])))
+          except Exception as e:
+              print('WHOLE_JSON_FAIL',repr(e))
+              if isinstance(e,json.JSONDecodeError):
+                  print('JSON_ERROR_CONTEXT',repr(text[max(0,e.pos-400):e.pos+400]))
+
+          # Independent structural markers do not require valid UTF-8.
+          for pat in [b'"id"',b'"objectives"',b'"rewards"',b'"prerequisites"',b'"type"']:
+              print('COUNT',pat.decode(),raw.count(pat))
+          idre=re.compile(br'"id"\s*:\s*"([^"\\]{1,160})"')
+          ids=[(m.start(),m.group(1).decode('ascii','replace')) for m in idre.finditer(raw)]
+          print('ID_MARKERS',len(ids),'unique',len({x for _,x in ids}))
+          print('FIRST_IDS',ids[:30])
+          print('LAST_IDS',ids[-30:])
+
+          # Parse each quest independently between consecutive ID markers. This reveals exactly which records are damaged.
+          good=[]; badq=[]
+          for n,(marker,qid) in enumerate(ids):
+              start=raw.rfind(b'{', max(0,marker-256), marker+1)
+              if start<0: badq.append((n,qid,'no-start')); continue
+              nextmarker=ids[n+1][0] if n+1<len(ids) else len(raw)
+              nextstart=raw.rfind(b'{', max(0,nextmarker-256), nextmarker+1) if n+1<len(ids) else len(raw)
+              endbound=nextstart if nextstart>start else nextmarker
+              # candidate ends at final } before next quest start
+              end=raw.rfind(b'}', start, endbound)
+              if end<start:
+                  badq.append((n,qid,'no-end')); continue
+              data=raw[start:end+1]
+              try:
+                  q=json.loads(data.decode('utf-8','strict'))
+                  if q.get('id')!=qid: raise ValueError('id mismatch '+str(q.get('id')))
+                  good.append((n,qid,len(q.get('objectives',[])),len(q.get('rewards',[]))))
               except Exception as e:
-                  print('JSON_FAIL',tag,repr(e)); return None
-              quests=obj.get('quests') if isinstance(obj,dict) else None
-              if isinstance(quests,list):
-                  ids=[q.get('id') for q in quests]
-                  known=set(ids)
-                  objectives=sum(len(q.get('objectives',[])) for q in quests)
-                  dangling=[(q.get('id'),x) for q in quests for x in q.get('prerequisites',[]) if x not in known]
-                  print('VALID_CATALOG',tag,'bytes',len(data),'sha256',hashlib.sha256(data).hexdigest(),'quests',len(quests),'objectives',objectives,'unique',len(ids)==len(known),'dangling',len(dangling))
-                  return data
-              print('JSON_NO_QUESTS',tag); return None
+                  # Retry only text-byte replacement; if structure is intact this succeeds and tells us corruption is display-text only.
+                  try:
+                      q=json.loads(data.decode('utf-8','replace'))
+                      if q.get('id')!=qid: raise ValueError('id mismatch')
+                      good.append((n,qid,len(q.get('objectives',[])),len(q.get('rewards',[]))))
+                      badq.append((n,qid,'utf8-only:'+repr(e)))
+                  except Exception as e2:
+                      badq.append((n,qid,'structural:'+repr(e2)))
+          print('QUEST_SEGMENTS_GOOD',len(good),'OBJECTIVES',sum(x[2] for x in good),'REWARDS',sum(x[3] for x in good))
+          print('QUEST_SEGMENTS_ISSUES',len(badq))
+          for x in badq: print('QUEST_ISSUE',x)
 
-          def inspect(raw,label):
-              check_json(raw,label)
-              if raw[:2]==b'\x1f\x8b':
-                  try: check_json(gzip.decompress(raw),label+' -> gzip')
-                  except Exception as e: print('GZIP_FAIL',label,repr(e))
-              try:
-                  s=''.join(raw.decode('ascii','strict').split())
-                  if len(s)>=32 and re.fullmatch(r'[A-Za-z0-9+/=]+',s):
-                      dec=base64.b64decode(s,validate=True)
-                      print('BASE64',label,'chars',len(s),'decoded',len(dec),'sha256',hashlib.sha256(dec).hexdigest())
-                      check_json(dec,label+' -> base64')
-                      if dec[:2]==b'\x1f\x8b':
-                          try: check_json(gzip.decompress(dec),label+' -> base64 -> gzip')
-                          except Exception as e:
-                              print('GZIP_FAIL',label+' -> base64',repr(e))
-                              try:
-                                  flags=dec[3]; pos=10
-                                  if flags & 0x04:
-                                      xlen=dec[pos] | (dec[pos+1]<<8); pos += 2+xlen
-                                  if flags & 0x08: pos=dec.index(b'\0',pos)+1
-                                  if flags & 0x10: pos=dec.index(b'\0',pos)+1
-                                  if flags & 0x02: pos+=2
-                                  check_json(zlib.decompress(dec[pos:-8],-15),label+' -> base64 -> raw-deflate')
-                              except Exception as e2: print('RAW_DEFLATE_FAIL',label,repr(e2))
-              except Exception: pass
-
-          for p in candidates:
-              if p.stat().st_size <= 2_000_000: inspect(p.read_bytes(),str(p.relative_to(root)))
-
-          print('--- TEXT HITS ---')
-          for p in root.rglob('*'):
-              if not p.is_file() or p.stat().st_size > 1_000_000: continue
-              try: t=p.read_text(errors='strict')
-              except Exception: continue
-              hits=[line for line in t.splitlines() if any(k in line for k in ('618','default_quests','QuestCatalog','POKESKILL_PURCHASE','FUSION_POTARA'))]
-              if hits:
-                  print('FILE',p.relative_to(root))
-                  for line in hits[:100]: print(line)
+          # Locate all objective type tokens, useful even if surrounding records are damaged.
+          typere=re.compile(br'"type"\s*:\s*"([A-Za-z0-9_:-]+)"')
+          types={}
+          for m in typere.finditer(raw):
+              t=m.group(1).decode('ascii'); types[t]=types.get(t,0)+1
+          print('TYPE_COUNTS',sorted(types.items()))
           PY
