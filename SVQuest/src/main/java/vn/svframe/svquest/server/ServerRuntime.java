@@ -5,11 +5,14 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import vn.svframe.svquest.SVQuest;
 import vn.svframe.svquest.network.ActionPayload;
+import vn.svframe.svquest.network.CatalogPayload;
 import vn.svframe.svquest.network.StatePayload;
+import vn.svframe.svquest.quest.QuestCatalog;
 
 import java.util.Map;
 
@@ -23,6 +26,8 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public final class ServerRuntime {
+    private static final int CATALOG_CHUNK_CHARS = 20_000;
+
     private final QuestStateStore store = new QuestStateStore();
     private final QuestEngine engine = new QuestEngine(store, new RewardDispatcher());
     private volatile ReflectionIntegrationBridge integrations;
@@ -38,6 +43,10 @@ public final class ServerRuntime {
                 context.server().execute(() -> handle(context.player(), payload.action())));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            int quests = QuestCatalog.reloadFromConfig();
+            try { FeatureCatalog.reloadFromConfig(); }
+            catch (Throwable t) { SVQuest.LOGGER.error("Could not reload SVQuest feature config", t); }
+
             QuestEventBus.install(server, engine);
 
             ReflectionIntegrationBridge bridge = new ReflectionIntegrationBridge(server, engine);
@@ -59,8 +68,10 @@ public final class ServerRuntime {
                 poller.onJoin(player);
                 seasonal.onJoin(player);
                 engine.reconcile(player);
+                sendCatalog(player);
+                sendState(player);
             }
-            SVQuest.LOGGER.info("SVQuest full quest runtime loaded: {} quests.", vn.svframe.svquest.quest.QuestCatalog.QUESTS.size());
+            SVQuest.LOGGER.info("SVQuest config quest runtime loaded: {} quests.", quests);
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -82,6 +93,7 @@ public final class ServerRuntime {
             SeasonProgressPoller seasonal = seasonPoller;
             if (seasonal != null) seasonal.onJoin(handler.player);
             engine.reconcile(handler.player);
+            sendCatalog(handler.player);
             sendState(handler.player);
         });
 
@@ -106,8 +118,10 @@ public final class ServerRuntime {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
                 literal("svquest")
-                        .executes(ctx -> { sendState(ctx.getSource().getPlayerOrThrow()); return 1; })
-                        .then(literal("sync").executes(ctx -> { sendState(ctx.getSource().getPlayerOrThrow()); return 1; }))
+                        .executes(ctx -> { sendCatalog(ctx.getSource().getPlayerOrThrow()); sendState(ctx.getSource().getPlayerOrThrow()); return 1; })
+                        .then(literal("sync").executes(ctx -> { sendCatalog(ctx.getSource().getPlayerOrThrow()); sendState(ctx.getSource().getPlayerOrThrow()); return 1; }))
+                        .then(literal("reload").requires(src -> src.hasPermissionLevel(2))
+                                .executes(ctx -> reload(ctx.getSource().getServer(), ctx.getSource())))
                         .then(literal("claim")
                                 .then(argument("quest", word())
                                         .executes(ctx -> {
@@ -137,9 +151,27 @@ public final class ServerRuntime {
         SVQuest.LOGGER.info("SVQuest dedicated-server runtime registered.");
     }
 
+    private int reload(MinecraftServer server, net.minecraft.server.command.ServerCommandSource source) {
+        try {
+            int quests = QuestCatalog.reloadFromConfig();
+            int features = FeatureCatalog.reloadFromConfig();
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                engine.reconcile(player);
+                sendCatalog(player);
+                sendState(player);
+            }
+            source.sendFeedback(() -> Text.literal("SVQuest reloaded: " + quests + " quests / " + features + " feature commands."), true);
+            return 1;
+        } catch (Throwable t) {
+            SVQuest.LOGGER.error("SVQuest reload rejected; previous runtime catalog remains active", t);
+            source.sendError(Text.literal("SVQuest reload failed; previous valid catalog is still active. Check server log."));
+            return 0;
+        }
+    }
+
     private void handle(ServerPlayerEntity player, String action) {
         if (action == null || action.length() > 128) return;
-        if (action.equals("sync")) { sendState(player); return; }
+        if (action.equals("sync")) { sendCatalog(player); sendState(player); return; }
         if (action.startsWith("claim:")) {
             engine.claim(player, action.substring("claim:".length()));
             return;
@@ -162,6 +194,20 @@ public final class ServerRuntime {
         } catch (Throwable t) {
             SVQuest.LOGGER.warn("Feature action '{}' failed safely for {}: {}", id, player.getName().getString(), t.toString());
             player.sendMessage(Text.literal("§cKhông thể mở tính năng này lúc này."), false);
+        }
+    }
+
+    private void sendCatalog(ServerPlayerEntity player) {
+        try {
+            String encoded = QuestCatalog.compressedBase64();
+            int total = Math.max(1, (encoded.length() + CATALOG_CHUNK_CHARS - 1) / CATALOG_CHUNK_CHARS);
+            for (int index = 0; index < total; index++) {
+                int start = index * CATALOG_CHUNK_CHARS;
+                int end = Math.min(encoded.length(), start + CATALOG_CHUNK_CHARS);
+                ServerPlayNetworking.send(player, new CatalogPayload(index + "/" + total + ":" + encoded.substring(start, end)));
+            }
+        } catch (Throwable t) {
+            SVQuest.LOGGER.debug("Could not send SVQuest catalog to {}: {}", player.getName().getString(), t.toString());
         }
     }
 
