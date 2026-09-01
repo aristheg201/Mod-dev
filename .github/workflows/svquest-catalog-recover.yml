@@ -17,15 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Load Research Tasks 2.0 master config
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fL --retry 3 -o /tmp/research.jar 'https://cdn.modrinth.com/data/zoP5qy7S/versions/BMbNXB3F/cobblemonresearchtasks-2.0.jar'
-          unzip -p /tmp/research.jar data/cobblemonresearchtasks/default_config/master_config.json > /tmp/master_config.json
-          python3 -m json.tool /tmp/master_config.json >/dev/null
-
-      - name: Analyze reward generator and corrupt tail boundaries
+      - name: Concise reward and endgame diagnostics
         shell: bash
         run: |
           set -euo pipefail
@@ -58,53 +50,49 @@ jobs:
           research=[q for q in good if re.match(r'^research_\d+_',q['id'])]
           assert len(research)==347
 
-          def fp(r): return json.dumps(r,sort_keys=True,separators=(',',':'))
+          def fp(r): return json.dumps(r,sort_keys=True,separators=(',',':'),ensure_ascii=False)
           fps=[fp(q['rewards']) for q in research]
-          print('RESEARCH_REWARD_UNIQUE',len(set(fps)))
-          counts=collections.Counter(fps)
-          print('REWARD_COUNTS')
-          for k,v in counts.most_common(): print(v,k)
-          print('REWARD_SEQUENCE_FIRST_80')
-          for i,q in enumerate(research[:80]):
-              dex=int(q['id'].split('_')[1]); print(i,dex,q['id'],fp(q['rewards']))
-          print('REWARD_SEQUENCE_LAST_80')
-          for i,q in enumerate(research[-80:],start=len(research)-80):
-              dex=int(q['id'].split('_')[1]); print(i,dex,q['id'],fp(q['rewards']))
+          order=[]
+          for f in fps:
+              if f not in order: order.append(f)
+          label={f:f'R{i}' for i,f in enumerate(order)}
+          print('=== RESEARCH REWARD RULE ===')
+          print('unique',len(order))
+          for f in order:
+              idx=[i for i,x in enumerate(fps) if x==f]
+              dex=[int(research[i]['id'].split('_')[1]) for i in idx]
+              print(label[f],f)
+              print(' ordinals=',idx)
+              print(' dex=',dex)
+          print('last40=',[(i,int(q['id'].split('_')[1]),label[fps[i]]) for i,q in list(enumerate(research))[-40:]])
+          for mod in (2,3,5,10,20,25,50,100):
+              groups={r:collections.Counter(int(q['id'].split('_')[1])%mod for i,q in enumerate(research) if label[fps[i]]==r) for r in set(label.values())}
+              print('residue_mod',mod,{k:dict(v) for k,v in sorted(groups.items())})
 
-          # Test exact periodicity of reward fingerprints by research ordinal.
-          periods=[]
-          for p in range(1,121):
-              ok=sum(1 for i in range(p,len(fps)) if fps[i]==fps[i-p])
-              total=len(fps)-p
-              if total and ok/total>.90: periods.append((p,ok,total,ok/total))
-          print('HIGH_PERIOD_MATCH',periods)
-          # Best periods regardless of threshold.
-          score=[]
-          for p in range(1,121):
-              ok=sum(1 for i in range(p,len(fps)) if fps[i]==fps[i-p]); total=len(fps)-p
-              score.append((ok/total,p,ok,total))
-          print('BEST_PERIODS',sorted(score,reverse=True)[:20])
-
-          master=json.load(open('/tmp/master_config.json'))
-          print('MASTER_REWARDS_TYPE',type(master.get('rewards')).__name__)
-          if isinstance(master.get('rewards'),dict):
-              print('MASTER_REWARD_KEYS_SAMPLE',list(master['rewards'])[:30])
-              for sp in ['bulbasaur','wartortle','pikachu','terrakion','tyrantrum','aurorus','hawlucha']:
-                  hits=[]
-                  for k,v in master['rewards'].items():
-                      if sp in str(k).lower() or sp in json.dumps(v).lower(): hits.append((k,v))
-                  print('MASTER_REWARD',sp,json.dumps(hits[:5],ensure_ascii=False,separators=(',',':')))
-
-          # The final 10 records can still be delimited because rewards/prerequisites markers survived.
-          # Split by rewards marker and print the last 14 record-like windows in replacement text.
-          text=raw.decode('utf-8','replace')
-          marks=[m.start() for m in re.finditer(r'"rewards"\s*:',text)]
-          print('REWARDS_MARKERS',len(marks))
-          assert len(marks)==618
-          for idx in range(604,618):
-              a=marks[idx-1] if idx>0 else 0
-              b=marks[idx+1] if idx+1<len(marks) else len(text)
-              window=text[max(0,a):min(len(text),b)]
-              print('\n=== RECORD_AROUND',idx,'===')
-              print(window[:5000])
+          print('=== FINAL 10 RAW RECORD SIGNALS ===')
+          marks=[m.start() for m in re.finditer(br'"rewards"\s*:',raw)]
+          assert len(marks)==618, len(marks)
+          keyval=re.compile(br'"(id|type|target|metaKey|mode|item|command|openFeature)"\s*:\s*"([^"\\]{0,180})"')
+          numval=re.compile(br'"(amount|count)"\s*:\s*(-?\d+)')
+          prereq=re.compile(br'"prerequisites"\s*:\s*\[([^\]]{0,1000})\]')
+          quoted=re.compile(br'"([A-Za-z][A-Za-z0-9_:.\-/]{2,100})"')
+          for idx in range(608,618):
+              left=marks[idx-1] if idx else 0
+              cur=marks[idx]
+              right=marks[idx+1] if idx+1<len(marks) else len(raw)
+              before=raw[left:cur]
+              after=raw[cur:right]
+              pairs=[]
+              for part,name in ((before,'PRE'),(after,'POST')):
+                  kv=[(a.decode('ascii','replace'),b.decode('ascii','replace')) for a,b in keyval.findall(part)]
+                  nv=[(a.decode(),b.decode()) for a,b in numval.findall(part)]
+                  pr=[]
+                  for m in prereq.finditer(part): pr.extend(x.decode('ascii','replace') for x in quoted.findall(m.group(1)))
+                  toks=[]
+                  for x in quoted.findall(part):
+                      s=x.decode('ascii','replace')
+                      if s not in toks: toks.append(s)
+                  pairs.append((name,kv,nv,pr,toks[:80]))
+              print('RECORD',idx)
+              for x in pairs: print(x)
           PY
