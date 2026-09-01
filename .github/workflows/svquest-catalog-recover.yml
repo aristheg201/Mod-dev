@@ -17,37 +17,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download exact Cobblemon Research Tasks 2.0
+      - name: Load Research Tasks 2.0 master config
         shell: bash
         run: |
           set -euo pipefail
           curl -fL --retry 3 -o /tmp/research.jar 'https://cdn.modrinth.com/data/zoP5qy7S/versions/BMbNXB3F/cobblemonresearchtasks-2.0.jar'
-          echo '--- research jar ---'
-          stat -c '%s bytes' /tmp/research.jar
-          sha256sum /tmp/research.jar
-          unzip -l /tmp/research.jar | grep -Ei 'master_config|default_config' | head -n 30 || true
-          MASTER=$(unzip -Z1 /tmp/research.jar | grep -E '(^|/)master_config\.json$' | head -n1)
-          test -n "$MASTER"
-          unzip -p /tmp/research.jar "$MASTER" > /tmp/master_config.json
+          unzip -p /tmp/research.jar data/cobblemonresearchtasks/default_config/master_config.json > /tmp/master_config.json
           python3 -m json.tool /tmp/master_config.json >/dev/null
-          echo "MASTER=$MASTER"
-          stat -c '%s bytes' /tmp/master_config.json
 
-      - name: Compare known-clean SVQuest research quests to master config
+      - name: Analyze reward generator and corrupt tail boundaries
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64,json,re,zlib
+          import base64,collections,json,re,zlib
           from pathlib import Path
 
           enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
           gz=base64.b64decode(enc); flags=gz[3]; pos=10
-          if flags & 4: x=gz[pos]|gz[pos+1]<<8; pos+=2+x
-          if flags & 8: pos=gz.index(b'\0',pos)+1
-          if flags & 16: pos=gz.index(b'\0',pos)+1
-          if flags & 2: pos+=2
+          if flags&4: x=gz[pos]|gz[pos+1]<<8; pos+=2+x
+          if flags&8: pos=gz.index(b'\0',pos)+1
+          if flags&16: pos=gz.index(b'\0',pos)+1
+          if flags&2: pos+=2
           raw=zlib.decompress(gz[pos:-8],-15)
+
           idre=re.compile(br'"id"\s*:\s*"([^"\\]{1,160})"')
           ids=[(m.start(),m.group(1).decode('ascii','replace')) for m in idre.finditer(raw)]
           good=[]
@@ -62,39 +55,56 @@ jobs:
               if q.get('id')!=qid: break
               good.append(q)
           assert len(good)==455
+          research=[q for q in good if re.match(r'^research_\d+_',q['id'])]
+          assert len(research)==347
+
+          def fp(r): return json.dumps(r,sort_keys=True,separators=(',',':'))
+          fps=[fp(q['rewards']) for q in research]
+          print('RESEARCH_REWARD_UNIQUE',len(set(fps)))
+          counts=collections.Counter(fps)
+          print('REWARD_COUNTS')
+          for k,v in counts.most_common(): print(v,k)
+          print('REWARD_SEQUENCE_FIRST_80')
+          for i,q in enumerate(research[:80]):
+              dex=int(q['id'].split('_')[1]); print(i,dex,q['id'],fp(q['rewards']))
+          print('REWARD_SEQUENCE_LAST_80')
+          for i,q in enumerate(research[-80:],start=len(research)-80):
+              dex=int(q['id'].split('_')[1]); print(i,dex,q['id'],fp(q['rewards']))
+
+          # Test exact periodicity of reward fingerprints by research ordinal.
+          periods=[]
+          for p in range(1,121):
+              ok=sum(1 for i in range(p,len(fps)) if fps[i]==fps[i-p])
+              total=len(fps)-p
+              if total and ok/total>.90: periods.append((p,ok,total,ok/total))
+          print('HIGH_PERIOD_MATCH',periods)
+          # Best periods regardless of threshold.
+          score=[]
+          for p in range(1,121):
+              ok=sum(1 for i in range(p,len(fps)) if fps[i]==fps[i-p]); total=len(fps)-p
+              score.append((ok/total,p,ok,total))
+          print('BEST_PERIODS',sorted(score,reverse=True)[:20])
 
           master=json.load(open('/tmp/master_config.json'))
-          print('MASTER_TYPE',type(master).__name__)
-          if isinstance(master,dict): print('MASTER_TOP_KEYS',list(master)[:50])
+          print('MASTER_REWARDS_TYPE',type(master.get('rewards')).__name__)
+          if isinstance(master.get('rewards'),dict):
+              print('MASTER_REWARD_KEYS_SAMPLE',list(master['rewards'])[:30])
+              for sp in ['bulbasaur','wartortle','pikachu','terrakion','tyrantrum','aurorus','hawlucha']:
+                  hits=[]
+                  for k,v in master['rewards'].items():
+                      if sp in str(k).lower() or sp in json.dumps(v).lower(): hits.append((k,v))
+                  print('MASTER_REWARD',sp,json.dumps(hits[:5],ensure_ascii=False,separators=(',',':')))
 
-          def contains(x,needle):
-              try: return needle in json.dumps(x,ensure_ascii=False).lower()
-              except Exception: return False
-
-          def find_small(x,needle,path='$',out=None):
-              if out is None: out=[]
-              if len(out)>=12: return out
-              if isinstance(x,dict):
-                  if contains(x,needle):
-                      text=json.dumps(x,ensure_ascii=False,separators=(',',':'))
-                      if len(text)<16000: out.append((path,text))
-                  for k,v in x.items():
-                      if isinstance(v,(dict,list)) and contains(v,needle): find_small(v,needle,path+'.'+str(k),out)
-              elif isinstance(x,list):
-                  for i,v in enumerate(x):
-                      if isinstance(v,(dict,list)) and contains(v,needle): find_small(v,needle,path+f'[{i}]',out)
-              return out
-
-          for needle in ['bulbasaur','wartortle','pikachu','terrakion','tyrantrum','aurorus','hawlucha','carbink']:
-              print('\n=== MASTER',needle,'===')
-              for path,text in find_small(master,needle): print(path,text)
-
-          samples=['research_1_bulbasaur','research_8_wartortle','research_25_pikachu','research_639_terrakion','research_697_tyrantrum']
-          byid={q['id']:q for q in good}
-          print('\n=== SVQUEST CLEAN SAMPLES ===')
-          for qid in samples: print(qid,json.dumps(byid[qid],ensure_ascii=False,separators=(',',':')))
-
-          tail=list(range(699,1004,2))
-          assert len(tail)==153
-          print('TAIL_SEQUENCE',len(tail),tail[:12],tail[-12:])
+          # The final 10 records can still be delimited because rewards/prerequisites markers survived.
+          # Split by rewards marker and print the last 14 record-like windows in replacement text.
+          text=raw.decode('utf-8','replace')
+          marks=[m.start() for m in re.finditer(r'"rewards"\s*:',text)]
+          print('REWARDS_MARKERS',len(marks))
+          assert len(marks)==618
+          for idx in range(604,618):
+              a=marks[idx-1] if idx>0 else 0
+              b=marks[idx+1] if idx+1<len(marks) else len(text)
+              window=text[max(0,a):min(len(text),b)]
+              print('\n=== RECORD_AROUND',idx,'===')
+              print(window[:5000])
           PY
