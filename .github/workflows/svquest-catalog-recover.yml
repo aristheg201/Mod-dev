@@ -16,101 +16,55 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Localize corruption in current 618-quest payload
+      - name: Infer clean quest schema before corruption boundary
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64, hashlib, json, re, zlib
+          import base64,json,re,zlib
           from pathlib import Path
-
           enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
-          gz=base64.b64decode(enc)
-          flags=gz[3]; pos=10
-          if flags & 0x04:
-              xlen=gz[pos] | (gz[pos+1]<<8); pos += 2+xlen
-          if flags & 0x08: pos=gz.index(b'\0',pos)+1
-          if flags & 0x10: pos=gz.index(b'\0',pos)+1
-          if flags & 0x02: pos+=2
+          gz=base64.b64decode(enc); flags=gz[3]; pos=10
+          if flags & 4: x=gz[pos]|gz[pos+1]<<8; pos+=2+x
+          if flags & 8: pos=gz.index(b'\0',pos)+1
+          if flags & 16: pos=gz.index(b'\0',pos)+1
+          if flags & 2: pos+=2
           raw=zlib.decompress(gz[pos:-8],-15)
-          print('encoded',len(enc),'gzip',len(gz),'raw',len(raw),'sha256',hashlib.sha256(raw).hexdigest())
-          print('head',repr(raw[:600]))
-          print('tail',repr(raw[-600:]))
-
-          # UTF-8 corruption map.
-          bad=[]; i=0
-          while i < len(raw):
-              try:
-                  raw[i:].decode('utf-8','strict'); break
-              except UnicodeDecodeError as e:
-                  p=i+e.start; bad.append((p,raw[p:p+max(1,e.end-e.start)])); i=i+max(e.end, e.start+1)
-          print('invalid_utf8_events',len(bad))
-          if bad:
-              ranges=[]; s=prev=bad[0][0]
-              for p,_ in bad[1:]:
-                  if p-prev<=16: prev=p
-                  else: ranges.append((s,prev)); s=prev=p
-              ranges.append((s,prev))
-              print('invalid_utf8_ranges',len(ranges),ranges[:100])
-              for s,e in ranges[:30]:
-                  print('BAD_RANGE',s,e,repr(raw[max(0,s-120):min(len(raw),e+160)]))
-
-          text=raw.decode('utf-8','replace')
-          print('replacement_chars',text.count('\ufffd'))
-          try:
-              obj=json.loads(text)
-              print('WHOLE_JSON_OK',len(obj.get('quests',[])))
-          except Exception as e:
-              print('WHOLE_JSON_FAIL',repr(e))
-              if isinstance(e,json.JSONDecodeError):
-                  print('JSON_ERROR_CONTEXT',repr(text[max(0,e.pos-400):e.pos+400]))
-
-          # Independent structural markers do not require valid UTF-8.
-          for pat in [b'"id"',b'"objectives"',b'"rewards"',b'"prerequisites"',b'"type"']:
-              print('COUNT',pat.decode(),raw.count(pat))
           idre=re.compile(br'"id"\s*:\s*"([^"\\]{1,160})"')
           ids=[(m.start(),m.group(1).decode('ascii','replace')) for m in idre.finditer(raw)]
-          print('ID_MARKERS',len(ids),'unique',len({x for _,x in ids}))
-          print('FIRST_IDS',ids[:30])
-          print('LAST_IDS',ids[-30:])
-
-          # Parse each quest independently between consecutive ID markers. This reveals exactly which records are damaged.
-          good=[]; badq=[]
+          good=[]
           for n,(marker,qid) in enumerate(ids):
-              start=raw.rfind(b'{', max(0,marker-256), marker+1)
-              if start<0: badq.append((n,qid,'no-start')); continue
-              nextmarker=ids[n+1][0] if n+1<len(ids) else len(raw)
-              nextstart=raw.rfind(b'{', max(0,nextmarker-256), nextmarker+1) if n+1<len(ids) else len(raw)
-              endbound=nextstart if nextstart>start else nextmarker
-              # candidate ends at final } before next quest start
-              end=raw.rfind(b'}', start, endbound)
-              if end<start:
-                  badq.append((n,qid,'no-end')); continue
-              data=raw[start:end+1]
-              try:
-                  q=json.loads(data.decode('utf-8','strict'))
-                  if q.get('id')!=qid: raise ValueError('id mismatch '+str(q.get('id')))
-                  good.append((n,qid,len(q.get('objectives',[])),len(q.get('rewards',[]))))
-              except Exception as e:
-                  # Retry only text-byte replacement; if structure is intact this succeeds and tells us corruption is display-text only.
-                  try:
-                      q=json.loads(data.decode('utf-8','replace'))
-                      if q.get('id')!=qid: raise ValueError('id mismatch')
-                      good.append((n,qid,len(q.get('objectives',[])),len(q.get('rewards',[]))))
-                      badq.append((n,qid,'utf8-only:'+repr(e)))
-                  except Exception as e2:
-                      badq.append((n,qid,'structural:'+repr(e2)))
-          print('QUEST_SEGMENTS_GOOD',len(good),'OBJECTIVES',sum(x[2] for x in good),'REWARDS',sum(x[3] for x in good))
-          print('QUEST_SEGMENTS_ISSUES',len(badq))
-          for x in badq: print('QUEST_ISSUE',x)
-
-          # Locate all objective type tokens, useful even if surrounding records are damaged.
-          typere=re.compile(br'"type"\s*:\s*"([A-Za-z0-9_:-]+)"')
-          types={}
-          for m in typere.finditer(raw):
-              t=m.group(1).decode('ascii'); types[t]=types.get(t,0)+1
-          print('TYPE_COUNTS',sorted(types.items()))
+              start=raw.rfind(b'{',max(0,marker-256),marker+1)
+              nxt=ids[n+1][0] if n+1<len(ids) else len(raw)
+              nstart=raw.rfind(b'{',max(0,nxt-256),nxt+1) if n+1<len(ids) else len(raw)
+              end=raw.rfind(b'}',start,nstart if nstart>start else nxt)
+              if start<0 or end<start: break
+              try: q=json.loads(raw[start:end+1].decode('utf-8','strict'))
+              except Exception: break
+              if q.get('id')!=qid: break
+              good.append(q)
+          print('GOOD_PREFIX',len(good))
+          for i,q in enumerate(good):
+              if i<80 or i>=400:
+                  print('Q',i,q['id'],q.get('category'),len(q.get('objectives',[])),len(q.get('rewards',[])),q.get('prerequisites',[]),q.get('openFeature'),q.get('optional'))
+          research=[(i,q) for i,q in enumerate(good) if q['id'].startswith('research_')]
+          print('RESEARCH_GOOD_COUNT',len(research),'FIRST_INDEX',research[0][0] if research else None,'LAST_INDEX',research[-1][0] if research else None)
+          print('RESEARCH_FIRST_20')
+          for i,q in research[:20]: print(i,json.dumps(q,ensure_ascii=False,separators=(',',':')))
+          print('RESEARCH_LAST_30')
+          for i,q in research[-30:]: print(i,json.dumps(q,ensure_ascii=False,separators=(',',':')))
+          # Analyze numerical dex sequence encoded in IDs.
+          nums=[]
+          for i,q in research:
+              m=re.match(r'research_(\d+)_',q['id'])
+              if m: nums.append((i,int(m.group(1)),q['id']))
+          print('DEX_NUMS_COUNT',len(nums))
+          print('DEX_FIRST',nums[:30])
+          print('DEX_LAST',nums[-50:])
+          if nums:
+              diffs={}
+              for a,b in zip(nums,nums[1:]): diffs[b[1]-a[1]]=diffs.get(b[1]-a[1],0)+1
+              print('DEX_DIFFS',sorted(diffs.items()))
+          # Core quests after/before research naming patterns.
+          print('NON_RESEARCH_COUNT',sum(not q['id'].startswith('research_') for q in good))
           PY
