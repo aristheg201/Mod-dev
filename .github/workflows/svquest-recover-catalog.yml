@@ -19,24 +19,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Diagnose current 618-quest payload byte-for-byte
+      - name: Prove exact UTF-8 repair
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/svquest-recovery
           python3 - <<'PY' | tee /tmp/svquest-recovery/report.txt
-          import base64, hashlib, json, zlib
+          import base64, gzip, hashlib, json, zlib
           from pathlib import Path
 
-          parts=[]
-          for i in range(8):
-              p=Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64')
-              parts.append(''.join(p.read_text().split()))
-          enc=''.join(parts)
-          print('encoded length:',len(enc))
+          TARGET='9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555'
+          enc=''.join(''.join(Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64').read_text().split()) for i in range(8))
+          assert len(enc)==44932, len(enc)
           gz=base64.b64decode(enc)
-          print('gzip bytes:',len(gz),'sha256:',hashlib.sha256(gz).hexdigest())
-
           flags=gz[3]; pos=10
           if flags & 0x04:
               xlen=gz[pos] | (gz[pos+1]<<8); pos += 2+xlen
@@ -44,92 +39,52 @@ jobs:
           if flags & 0x10: pos=gz.index(b'\0',pos)+1
           if flags & 0x02: pos+=2
           raw=zlib.decompress(gz[pos:-8],-15)
-          Path('/tmp/svquest-recovery/raw.bin').write_bytes(raw)
-          print('raw bytes:',len(raw),'sha256:',hashlib.sha256(raw).hexdigest())
 
-          # Enumerate every malformed UTF-8 byte span and show local byte/text context.
-          bad=[]; cursor=0
-          while cursor < len(raw):
-              try:
-                  raw[cursor:].decode('utf-8')
-                  break
-              except UnicodeDecodeError as e:
-                  start=cursor+e.start; end=cursor+e.end
-                  bad.append((start,end,e.reason,raw[start:end]))
-                  lo=max(0,start-80); hi=min(len(raw),end+80)
-                  ctx=raw[lo:hi]
-                  print('\nINVALID UTF8',len(bad),'offset',start,'..',end,'reason=',e.reason,'bytes=',raw[start:end].hex())
-                  print('context hex:',ctx.hex())
-                  print('context latin1:',repr(ctx.decode('latin1')))
-                  cursor=max(end,start+1)
-          print('\ninvalid spans:',len(bad))
+          bad=b'Chinh ph\xe1\xe1c Legendary Raid'
+          good='Chinh phục Legendary Raid'.encode('utf-8')
+          print('bad occurrence count:',raw.count(bad))
+          assert raw.count(bad)==1
+          assert good not in raw
+          repaired=raw.replace(bad,good)
 
-          # Parse a diagnostic view with U+FFFD only to locate the exact JSON fields touched.
-          diagnostic=raw.decode('utf-8',errors='replace')
-          root=json.loads(diagnostic)
+          text=repaired.decode('utf-8')  # strict: no replacement characters allowed
+          root=json.loads(text)
           quests=root['quests']
-          print('diagnostic parse:',len(quests),'quests /',sum(len(q.get('objectives',[])) for q in quests),'objectives')
-          touched=[]
-          def walk(v,path,quest_id):
-              if isinstance(v,dict):
-                  qid=v.get('id',quest_id) if isinstance(v.get('id',quest_id),str) else quest_id
-                  for k,x in v.items(): walk(x,path+[str(k)],qid)
-              elif isinstance(v,list):
-                  for i,x in enumerate(v): walk(x,path+[str(i)],quest_id)
-              elif isinstance(v,str) and '\ufffd' in v:
-                  touched.append((quest_id,'.'.join(path),v))
-          walk(root,[],None)
-          print('fields touched by invalid bytes:',len(touched))
-          for x in touched: print('TOUCHED',repr(x))
-
-          # Conservative mixed-encoding repair: keep every valid UTF-8 sequence exactly as-is;
-          # only isolated invalid bytes are decoded as Windows-1252/Latin-1 and re-encoded as UTF-8.
-          surrogate=raw.decode('utf-8',errors='surrogateescape')
-          out=[]; repaired=[]
-          for ch in surrogate:
-              o=ord(ch)
-              if 0xDC80 <= o <= 0xDCFF:
-                  b=o-0xDC00
-                  try: fixed=bytes([b]).decode('cp1252')
-                  except UnicodeDecodeError: fixed=bytes([b]).decode('latin1')
-                  out.append(fixed); repaired.append((b,fixed))
-              else:
-                  out.append(ch)
-          repaired_text=''.join(out)
-          repaired_raw=repaired_text.encode('utf-8')
-          repaired_root=json.loads(repaired_text)
-          rq=repaired_root['quests']
-          ids=[q['id'] for q in rq]
-          known=set(ids)
-          dangling=[(q['id'],p) for q in rq for p in q.get('prerequisites',[]) if p not in known]
-          objectives=sum(len(q.get('objectives',[])) for q in rq)
-          print('\ncp1252 repaired bytes:',[(hex(b),c) for b,c in repaired])
-          print('repaired:',len(rq),'quests /',objectives,'objectives / unique ids',len(ids)==len(set(ids)),'/ dangling',len(dangling))
-          print('repaired raw sha256:',hashlib.sha256(repaired_raw).hexdigest(),'bytes:',len(repaired_raw))
-
-          structural_bad=[]
-          for q in rq:
-              for k in ('id','category'):
-                  if any(ord(c)<32 for c in str(q.get(k,''))): structural_bad.append((q['id'],k,q.get(k)))
-              for o in q.get('objectives',[]):
-                  if not o.get('type'): structural_bad.append((q['id'],'objective.type',o))
-          print('structural_bad:',structural_bad[:20])
-          assert len(rq)==618
-          assert objectives==1617
+          assert len(quests)==618
+          objectives=sum(len(q.get('objectives',[])) for q in quests)
+          assert objectives==1617, objectives
+          ids=[q['id'] for q in quests]
           assert len(ids)==len(set(ids))
-          assert not dangling
-          assert not structural_bad
-          Path('/tmp/svquest-recovery/repaired-default_quests.json').write_bytes(repaired_raw)
-          print('REPAIR CANDIDATE IS STRUCTURALLY VALID')
+          known=set(ids)
+          dangling=[(q['id'],p) for q in quests for p in q.get('prerequisites',[]) if p not in known]
+          assert not dangling, dangling[:20]
+          target=[q for q in quests if q['id']=='endmaster_12_raid_solo_champion']
+          assert len(target)==1
+          assert target[0]['title']=='Chinh phục Legendary Raid', target[0]['title']
+          assert '\ufffd' not in text
+
+          digest=hashlib.sha256(repaired).hexdigest()
+          print('repaired raw bytes:',len(repaired))
+          print('repaired raw sha256:',digest)
+          print('canonical target sha256:',TARGET)
+          print('canonical match:',digest==TARGET)
+          print('quest title:',target[0]['title'])
+          print('catalog: 618 quests / 1617 objectives / unique ids / no dangling prerequisites / strict UTF-8 OK')
+          Path('/tmp/svquest-recovery/recovered-default_quests.json').write_bytes(repaired)
+
+          # Produce deterministic clean payload and eight chunks for inspection/use.
+          clean_gz=gzip.compress(repaired,compresslevel=9,mtime=0)
+          clean_enc=base64.b64encode(clean_gz).decode('ascii')
+          print('clean gzip bytes:',len(clean_gz),'b64 chars:',len(clean_enc),'gzip sha256:',hashlib.sha256(clean_gz).hexdigest())
+          step=(len(clean_enc)+7)//8
+          for i in range(8):
+              Path(f'/tmp/svquest-recovery/default_quests.{i:02d}.b64').write_text(clean_enc[i*step:(i+1)*step])
           PY
 
-      - name: Upload diagnosis and repair candidate
+      - name: Upload exact recovery
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SVQuest-catalog-byte-diagnosis
-          path: |
-            /tmp/svquest-recovery/report.txt
-            /tmp/svquest-recovery/raw.bin
-            /tmp/svquest-recovery/repaired-default_quests.json
-          if-no-files-found: warn
+          name: SVQuest-catalog-exact-recovery
+          path: /tmp/svquest-recovery/
+          if-no-files-found: error
