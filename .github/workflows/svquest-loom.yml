@@ -36,88 +36,48 @@ jobs:
         working-directory: SVQuest
         run: gradle --no-daemon prepareBeta9QuestScreen
 
-      - name: Audit 618 quest catalog and objective producers
+      - name: Audit config-driven quest catalog
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64, json, zlib, zipfile, io
+          import json
           from pathlib import Path
 
-          parts=[]
-          for i in range(8):
-              p=Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64')
-              assert p.is_file(), p
-              parts.append(''.join(p.read_text().split()))
-          enc=''.join(parts)
-          assert len(enc)==44932, len(enc)
-          gz=base64.b64decode(enc)
-          assert gz[:3]==b'\x1f\x8b\x08'
-          flags=gz[3]; pos=10
-          if flags & 0x04:
-              xlen=gz[pos] | (gz[pos+1]<<8); pos += 2+xlen
-          if flags & 0x08: pos=gz.index(b'\0',pos)+1
-          if flags & 0x10: pos=gz.index(b'\0',pos)+1
-          if flags & 0x02: pos+=2
-          raw=zlib.decompress(gz[pos:-8],-15)
-          text=raw.decode('utf-8',errors='replace')
-          replacements=text.count('\ufffd')
-          print('UTF-8 replacement chars:', replacements)
+          quest_path=Path('SVQuest/src/main/resources/svquest/defaults/quests.json')
+          feature_path=Path('SVQuest/src/main/resources/svquest/defaults/features.json')
+          text=quest_path.read_text(encoding='utf-8', errors='strict')
           root=json.loads(text)
           quests=root['quests']
-          assert len(quests)==618, len(quests)
-          ids=[q['id'] for q in quests]
+          assert quests, 'default config must contain at least one quest so the GUI is never empty before server sync'
+          ids=[q['id'] for q in quests if q.get('enabled', True)]
           assert len(ids)==len(set(ids)), 'duplicate quest ids'
           known=set(ids)
-          dangling=[(q['id'],p) for q in quests for p in q.get('prerequisites',[]) if p not in known]
-          assert not dangling, dangling[:20]
-          empty=[q['id'] for q in quests if not q.get('objectives')]
-          assert not empty, empty[:20]
-
-          # Malformed bytes may never alter machine-facing quest matching fields.
-          structural_bad=[]
+          objectives=0
           for q in quests:
-              for k in ('id','category'):
-                  if '\ufffd' in str(q.get(k,'')): structural_bad.append((q.get('id'),k,q.get(k)))
+              if not q.get('enabled', True): continue
+              assert q.get('id') and len(q['id']) <= 96
+              assert q.get('objectives'), q['id']
+              for o in q['objectives']:
+                  objectives += 1
+                  assert o.get('type'), (q['id'], o)
+                  assert int(o.get('amount',1)) > 0
+                  assert 'featureId' in o, (q['id'], o)
               for p in q.get('prerequisites',[]):
-                  if '\ufffd' in p: structural_bad.append((q.get('id'),'prerequisite',p))
-              for o in q.get('objectives',[]):
-                  for k in ('type','target','metaKey','mode','featureId'):
-                      if '\ufffd' in str(o.get(k,'')): structural_bad.append((q.get('id'),'objective.'+k,o.get(k)))
-              for r in q.get('rewards',[]):
-                  for k in ('type','item','command'):
-                      if '\ufffd' in str(r.get(k,'')): structural_bad.append((q.get('id'),'reward.'+k,r.get(k)))
-          assert not structural_bad, structural_bad[:20]
+                  assert p in known, (q['id'],p)
+                  assert p != q['id']
+          features=json.loads(feature_path.read_text(encoding='utf-8', errors='strict'))['commands']
+          assert isinstance(features,dict)
+          print('config audit OK:',len(ids),'default quests /',objectives,'objectives /',len(features),'feature commands')
 
-          display_bad=[]
-          for q in quests:
-              for k in ('title','description'):
-                  if '\ufffd' in str(q.get(k,'')): display_bad.append((q['id'],k,q.get(k)))
-              for o in q.get('objectives',[]):
-                  if '\ufffd' in str(o.get('label','')): display_bad.append((q['id'],'objective.label',o.get('label')))
-              for r in q.get('rewards',[]):
-                  if '\ufffd' in str(r.get('label','')): display_bad.append((q['id'],'reward.label',r.get('label')))
-          if display_bad:
-              print('Malformed display-only fields:', display_bad[:20])
-          assert replacements <= 16, f'too many malformed UTF-8 replacements: {replacements}'
-
-          objectives=sum(len(q.get('objectives',[])) for q in quests)
-          types=sorted({o['type'].upper() for q in quests for o in q.get('objectives',[])})
-          print('catalog:',len(quests),'quests /',objectives,'objectives /',len(types),'types')
-          print('objective types:',', '.join(types))
-
-          producer='\n'.join(p.read_text(errors='ignore') for p in Path('SVQuest/src/main/java').rglob('*.java'))
-          payload=Path('SVQuest/src/main/resources/svquest/questfix_mixins.zip.b64')
-          if payload.is_file():
-              zb=base64.b64decode(''.join(payload.read_text().split()))
-              with zipfile.ZipFile(io.BytesIO(zb)) as z:
-                  for n in z.namelist():
-                      if n.endswith('.class'):
-                          producer += '\n' + z.read(n).decode('latin1',errors='ignore')
-          missing=[t for t in types if t not in producer]
-          if missing:
-              raise SystemExit('OBJECTIVE TYPES WITHOUT PRODUCER: '+', '.join(missing))
-          print('producer audit OK:',len(types),'/',len(types),'objective types have server producers')
+          java='\n'.join(p.read_text(encoding='utf-8') for p in Path('SVQuest/src/main/java').rglob('*.java'))
+          forbidden=['CATALOG_PARTS','ENCODED_LENGTH','expected 618 quests','featureFor(String type','ALIASES = Map.ofEntries']
+          for token in forbidden:
+              assert token not in java, 'hardcoded catalog token remains: '+token
+          assert 'config/svquest/quests' in Path('SVQuest/src/main/java/vn/svframe/svquest/quest/QuestCatalog.java').read_text()
+          assert 'literal("reload")' in Path('SVQuest/src/main/java/vn/svframe/svquest/server/ServerRuntime.java').read_text()
+          assert 'CatalogPayload' in java
+          print('no fixed quest count / alias map / feature inference remains in Java')
           PY
 
           ! grep -q 'claimCompleted' SVQuest/src/main/java/vn/svframe/svquest/server/QuestEngine.java
@@ -152,7 +112,7 @@ jobs:
           JAR="$(find build/libs -maxdepth 1 -type f -name 'SVQuest-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
           test -n "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
-          for f in vn/svframe/svquest/SVQuest.class vn/svframe/svquest/QuestApi.class vn/svframe/svquest/client/QuestScreen.class vn/svframe/svquest/server/SVQuestDedicatedServer.class svquest/full/default_quests.07.b64 vn/svframe/svquest/mixin/PebblesCrateMixin.class 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Gacha.class' 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Roulette.class' 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Blackjack.class' vn/svframe/svquest/mixin/SvfTaiXiuMixin.class vn/svframe/svquest/mixin/SvfMatchBetMixin.class vn/svframe/svquest/mixin/SvfTournamentMixin.class vn/svframe/svquest/mixin/SvfEventShowcaseMixin.class; do unzip -l "$JAR" | grep -Fq "$f"; done
+          for f in vn/svframe/svquest/SVQuest.class vn/svframe/svquest/QuestApi.class vn/svframe/svquest/client/QuestScreen.class vn/svframe/svquest/network/CatalogPayload.class vn/svframe/svquest/server/SVQuestDedicatedServer.class svquest/defaults/quests.json svquest/defaults/features.json vn/svframe/svquest/mixin/PebblesCrateMixin.class 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Gacha.class' 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Roulette.class' 'vn/svframe/svquest/mixin/ArcadeLuckMixin$Blackjack.class' vn/svframe/svquest/mixin/SvfTaiXiuMixin.class vn/svframe/svquest/mixin/SvfMatchBetMixin.class vn/svframe/svquest/mixin/SvfTournamentMixin.class vn/svframe/svquest/mixin/SvfEventShowcaseMixin.class; do unzip -l "$JAR" | grep -Fq "$f"; done
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
       - name: Install virtual display
@@ -190,9 +150,11 @@ jobs:
           code=$?
           set -e
           cat build/server-smoke.log
-          if grep -E -q "Could not execute entrypoint stage|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception|Failed to decode full SVQuest|Corrupt SVQuest catalog|dangling prerequisite" build/server-smoke.log; then exit 1; fi
-          grep -q 'SVQuest full quest runtime loaded: 618 quests' build/server-smoke.log
+          if grep -E -q "Could not execute entrypoint stage|IncompatibleClassChangeError|NoClassDefFoundError|NoSuchMethodError|NoSuchFieldError|Mixin apply failed|Encountered an unexpected exception|Failed to reload SVQuest config catalog|Prerequisite cycle detected|Dangling prerequisite" build/server-smoke.log; then exit 1; fi
+          grep -q 'SVQuest config quest runtime loaded:' build/server-smoke.log
           grep -q 'Done (' build/server-smoke.log
+          test -f build/prod-server/config/svquest/quests/00-starter.json
+          test -f build/prod-server/config/svquest/features.json
           if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then exit "$code"; fi
 
       - name: Upload GitHub Loom artifact
