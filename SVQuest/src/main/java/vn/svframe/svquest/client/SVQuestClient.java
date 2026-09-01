@@ -9,6 +9,7 @@ import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 import vn.svframe.svquest.SVQuest;
 import vn.svframe.svquest.network.ActionPayload;
+import vn.svframe.svquest.network.CatalogPayload;
 import vn.svframe.svquest.network.StatePayload;
 
 public final class SVQuestClient implements ClientModInitializer {
@@ -20,6 +21,8 @@ public final class SVQuestClient implements ClientModInitializer {
         openKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.svquest.open", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_J, "category.svquest"));
 
+        ClientPlayNetworking.registerGlobalReceiver(CatalogPayload.ID, (payload, context) ->
+                context.client().execute(() -> STATE.acceptCatalogChunk(payload.chunk())));
         ClientPlayNetworking.registerGlobalReceiver(StatePayload.ID, (payload, context) ->
                 context.client().execute(() -> STATE.apply(payload.state())));
 
