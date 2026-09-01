@@ -19,46 +19,87 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reconstruct preserved pre-beta6 source archive
+      - name: Extract exact historical SVQuest beta6 source bundle
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/recovered
-          : > /tmp/source.b64
-          for p in 00 01 02 03 04 05; do
-            git show 8a804b653d14219994f512ca21e90fe6fd641af4:bootstrap/source.b64.part${p} >> /tmp/source.b64
-          done
-          tr -d '\r\n' < /tmp/source.b64 | base64 --decode > /tmp/source.tar.gz
-          gzip -t /tmp/source.tar.gz
-          tar -xzf /tmp/source.tar.gz -C /tmp/recovered
-          echo '--- files ---'
-          find /tmp/recovered -type f -printf '%P %s bytes\n' | sort
+          git show 8a804b653d14219994f512ca21e90fe6fd641af4:bootstrap/svquest-source-beta6.tar.gz > /tmp/svquest-source-beta6.tar.gz
+          echo 'a69e3e4acbab0470259e532eda284beb6478700f4b70e4f213abc2b78805cd19  /tmp/svquest-source-beta6.tar.gz' | sha256sum -c -
+          echo '--- archive ---'
+          tar -tzvf /tmp/svquest-source-beta6.tar.gz
+          mkdir -p /tmp/svq6
+          tar -xzf /tmp/svquest-source-beta6.tar.gz -C /tmp/svq6
+          echo '--- extracted ---'
+          find /tmp/svq6 -type f -printf '%P %s bytes\n' | sort
 
-      - name: Locate quest catalog source or generator
+      - name: Strictly inspect every quest/catalog payload
         shell: bash
         run: |
           set -euo pipefail
-          echo '--- filenames containing quest/catalog ---'
-          find /tmp/recovered -type f | grep -Ei 'quest|catalog|progress|objective|reward' || true
-          echo '--- text hits: 618/default_quests/objectives/prerequisites ---'
-          grep -RInaE '618|default_quests|objectives|prerequisites|QuestCatalog|Bắt Pokémon|POKESKILL_PURCHASE|FUSION_POTARA|RAID_WIN|RANKED_WIN' /tmp/recovered 2>/dev/null | head -n 1000 || true
-          echo '--- all Java source headers ---'
-          find /tmp/recovered -type f -name '*.java' -print | sort
-          echo '--- archive summary ---'
-          printf 'files='; find /tmp/recovered -type f | wc -l
-          printf 'java='; find /tmp/recovered -type f -name '*.java' | wc -l
-          printf 'json='; find /tmp/recovered -type f -name '*.json' | wc -l
-          printf 'b64='; find /tmp/recovered -type f -name '*.b64' | wc -l
+          python3 - <<'PY'
+          import base64, gzip, hashlib, json, re, zlib
+          from pathlib import Path
 
-      - name: Print small likely generator/source files completely
-        shell: bash
-        run: |
-          set -euo pipefail
-          while IFS= read -r f; do
-            size=$(stat -c '%s' "$f")
-            if [ "$size" -le 120000 ]; then
-              echo "===== ${f#/tmp/recovered/} ($size bytes) ====="
-              cat "$f"
-              echo
-            fi
-          done < <(find /tmp/recovered -type f \( -iname '*quest*' -o -iname '*catalog*' -o -iname '*progress*' \) | sort)
+          root=Path('/tmp/svq6')
+          candidates=[]
+          for p in root.rglob('*'):
+              if p.is_file() and any(k in p.name.lower() or k in str(p).lower() for k in ('quest','catalog','objective')):
+                  candidates.append(p)
+          print('CANDIDATES')
+          for p in candidates: print(p.relative_to(root),p.stat().st_size)
+
+          def inspect(raw,label):
+              def check_json(data,tag):
+                  try:
+                      text=data.decode('utf-8','strict')
+                      obj=json.loads(text)
+                  except Exception as e:
+                      print('JSON_FAIL',tag,repr(e)); return None
+                  quests=obj.get('quests') if isinstance(obj,dict) else None
+                  if isinstance(quests,list):
+                      ids=[q.get('id') for q in quests]
+                      objectives=sum(len(q.get('objectives',[])) for q in quests)
+                      dangling=[(q.get('id'),x) for q in quests for x in q.get('prerequisites',[]) if x not in set(ids)]
+                      print('VALID_CATALOG',tag,'bytes',len(data),'sha256',hashlib.sha256(data).hexdigest(),'quests',len(quests),'objectives',objectives,'unique',len(ids)==len(set(ids)),'dangling',len(dangling))
+                      return data
+                  print('JSON_NO_QUESTS',tag)
+                  return None
+              check_json(raw,label)
+              if raw[:2]==b'\x1f\x8b':
+                  try: check_json(gzip.decompress(raw),label+' -> gzip')
+                  except Exception as e: print('GZIP_FAIL',label,repr(e))
+              try:
+                  s=''.join(raw.decode('ascii','strict').split())
+                  if len(s)>=32 and re.fullmatch(r'[A-Za-z0-9+/=]+',s):
+                      dec=base64.b64decode(s,validate=True)
+                      print('BASE64',label,'chars',len(s),'decoded',len(dec),'sha256',hashlib.sha256(dec).hexdigest())
+                      check_json(dec,label+' -> base64')
+                      if dec[:2]==b'\x1f\x8b':
+                          try: check_json(gzip.decompress(dec),label+' -> base64 -> gzip')
+                          except Exception as e:
+                              print('GZIP_FAIL',label+' -> base64',repr(e))
+                              try:
+                                  flags=dec[3]; pos=10
+                                  if flags & 0x04:
+                                      xlen=dec[pos] | (dec[pos+1]<<8); pos += 2+xlen
+                                  if flags & 0x08: pos=dec.index(b'\0',pos)+1
+                                  if flags & 0x10: pos=dec.index(b'\0',pos)+1
+                                  if flags & 0x02: pos+=2
+                                  check_json(zlib.decompress(dec[pos:-8],-15),label+' -> base64 -> raw-deflate')
+                              except Exception as e2: print('RAW_DEFLATE_FAIL',label,repr(e2))
+              except Exception: pass
+
+          for p in candidates:
+              if p.stat().st_size <= 2_000_000:
+                  inspect(p.read_bytes(),str(p.relative_to(root)))
+
+          print('--- TEXT HITS ---')
+          for p in root.rglob('*'):
+              if not p.is_file() or p.stat().st_size > 1_000_000: continue
+              try: t=p.read_text(errors='strict')
+              except Exception: continue
+              hits=[line for line in t.splitlines() if any(k in line for k in ('618','default_quests','QuestCatalog','POKESKILL_PURCHASE','FUSION_POTARA'))]
+              if hits:
+                  print('FILE',p.relative_to(root))
+                  for line in hits[:80]: print(line)
+          PY
