@@ -1,0 +1,24 @@
+{
+  "quests": [
+    {
+      "id": "starter_choose_pokemon",
+      "category": "progression",
+      "phase": "KHỞI ĐẦU",
+      "title": "Chọn Pokémon khởi đầu",
+      "description": "Chọn Pokémon khởi đầu để bắt đầu hành trình.",
+      "objectives": [
+        {
+          "type": "STARTER_CHOSEN",
+          "target": "*",
+          "metaKey": "target",
+          "amount": 1,
+          "mode": "sum",
+          "label": "Chọn Pokémon khởi đầu",
+          "featureId": ""
+        }
+      ],
+      "rewards": [],
+      "prerequisites": []
+    }
+  ]
+}
