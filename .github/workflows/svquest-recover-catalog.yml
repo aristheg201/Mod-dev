@@ -9,152 +9,127 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
   recover:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download historical beta.6 artifacts
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Diagnose current 618-quest payload byte-for-byte
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/svquest-history
-          for id in 9765171406 9765289179; do
-            curl -fL --retry 3 \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H 'Accept: application/vnd.github+json' \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" \
-              -o "/tmp/svquest-history/${id}.zip"
-          done
-          ls -lh /tmp/svquest-history
-
-      - name: Recursively inspect artifacts for clean quest catalog
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY' | tee /tmp/svquest-history/recovery-report.txt
-          import base64, gzip, hashlib, io, json, re, zipfile
+          mkdir -p /tmp/svquest-recovery
+          python3 - <<'PY' | tee /tmp/svquest-recovery/report.txt
+          import base64, hashlib, json, zlib
           from pathlib import Path
 
-          TARGET_SHA='9c8973547f7cafc6d8b272fada60e34e2d3cb7798ef31982c838f0ef1b3af555'
-          found=[]
-          seen=set()
+          parts=[]
+          for i in range(8):
+              p=Path(f'SVQuest/src/main/resources/svquest/full/default_quests.{i:02d}.b64')
+              parts.append(''.join(p.read_text().split()))
+          enc=''.join(parts)
+          print('encoded length:',len(enc))
+          gz=base64.b64decode(enc)
+          print('gzip bytes:',len(gz),'sha256:',hashlib.sha256(gz).hexdigest())
 
-          def test_catalog(data,label):
-              try:
-                  text=data.decode('utf-8')
-              except UnicodeDecodeError:
-                  return False
-              try:
-                  root=json.loads(text)
-              except Exception:
-                  return False
-              if not isinstance(root,dict) or not isinstance(root.get('quests'),list):
-                  return False
-              quests=root['quests']
-              objectives=sum(len(q.get('objectives',[])) for q in quests if isinstance(q,dict))
-              digest=hashlib.sha256(data).hexdigest()
-              ids=[q.get('id') for q in quests if isinstance(q,dict)]
-              unique=len(ids)==len(set(ids)) and all(isinstance(x,str) and x for x in ids)
-              known=set(ids)
-              dangling=[]
-              for q in quests:
-                  if not isinstance(q,dict): continue
-                  for p in q.get('prerequisites',[]):
-                      if p not in known: dangling.append((q.get('id'),p))
-              print(f'CATALOG {label}: quests={len(quests)} objectives={objectives} sha256={digest} unique_ids={unique} dangling={len(dangling)} bytes={len(data)}')
-              if len(quests)==618 and objectives==1617 and unique and not dangling:
-                  out=Path('/tmp/svquest-history/recovered-default_quests.json')
-                  out.write_bytes(data)
-                  found.append((label,digest,len(data)))
-                  print('ACCEPTED 618/1617 clean UTF-8 catalog:', label)
-                  if digest==TARGET_SHA:
-                      print('CANONICAL SHA MATCH')
-                  return True
-              return False
+          flags=gz[3]; pos=10
+          if flags & 0x04:
+              xlen=gz[pos] | (gz[pos+1]<<8); pos += 2+xlen
+          if flags & 0x08: pos=gz.index(b'\0',pos)+1
+          if flags & 0x10: pos=gz.index(b'\0',pos)+1
+          if flags & 0x02: pos+=2
+          raw=zlib.decompress(gz[pos:-8],-15)
+          Path('/tmp/svquest-recovery/raw.bin').write_bytes(raw)
+          print('raw bytes:',len(raw),'sha256:',hashlib.sha256(raw).hexdigest())
 
-          def maybe_base64(data,label,depth):
-              if len(data)>2_000_000: return
+          # Enumerate every malformed UTF-8 byte span and show local byte/text context.
+          bad=[]; cursor=0
+          while cursor < len(raw):
               try:
-                  text=data.decode('ascii')
-              except Exception:
-                  return
-              compact=''.join(text.split())
-              if len(compact)<64 or len(compact)%4 or not re.fullmatch(r'[A-Za-z0-9+/=]+',compact):
-                  return
-              try:
-                  decoded=base64.b64decode(compact,validate=True)
-              except Exception:
-                  return
-              visit(decoded,label+' -> base64',depth+1)
+                  raw[cursor:].decode('utf-8')
+                  break
+              except UnicodeDecodeError as e:
+                  start=cursor+e.start; end=cursor+e.end
+                  bad.append((start,end,e.reason,raw[start:end]))
+                  lo=max(0,start-80); hi=min(len(raw),end+80)
+                  ctx=raw[lo:hi]
+                  print('\nINVALID UTF8',len(bad),'offset',start,'..',end,'reason=',e.reason,'bytes=',raw[start:end].hex())
+                  print('context hex:',ctx.hex())
+                  print('context latin1:',repr(ctx.decode('latin1')))
+                  cursor=max(end,start+1)
+          print('\ninvalid spans:',len(bad))
 
-          def visit(data,label,depth=0):
-              if depth>6 or not data: return
-              key=(len(data),hashlib.sha256(data).digest())
-              if key in seen: return
-              seen.add(key)
-              test_catalog(data,label)
-              if data[:2]==b'\x1f\x8b':
-                  try: visit(gzip.decompress(data),label+' -> gzip',depth+1)
-                  except Exception as e: print('gzip failed',label,repr(e))
-              try:
-                  if zipfile.is_zipfile(io.BytesIO(data)):
-                      with zipfile.ZipFile(io.BytesIO(data)) as z:
-                          names=z.namelist()
-                          print(f'ZIP {label}: {len(names)} entries')
-                          for n in names:
-                              if n.endswith('/'): continue
-                              lower=n.lower()
-                              if any(x in lower for x in ('quest','svquest','catalog','json','source')):
-                                  print('  ENTRY',n)
-                              try: child=z.read(n)
-                              except Exception: continue
-                              if lower.endswith(('.zip','.jar','.json','.json.gz','.gz','.b64','.txt','.java')) or b'"quests"' in child[:2000000]:
-                                  visit(child,label+' -> '+n,depth+1)
-              except Exception as e:
-                  print('zip inspect failed',label,repr(e))
-              maybe_base64(data,label,depth)
+          # Parse a diagnostic view with U+FFFD only to locate the exact JSON fields touched.
+          diagnostic=raw.decode('utf-8',errors='replace')
+          root=json.loads(diagnostic)
+          quests=root['quests']
+          print('diagnostic parse:',len(quests),'quests /',sum(len(q.get('objectives',[])) for q in quests),'objectives')
+          touched=[]
+          def walk(v,path,quest_id):
+              if isinstance(v,dict):
+                  qid=v.get('id',quest_id) if isinstance(v.get('id',quest_id),str) else quest_id
+                  for k,x in v.items(): walk(x,path+[str(k)],qid)
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,path+[str(i)],quest_id)
+              elif isinstance(v,str) and '\ufffd' in v:
+                  touched.append((quest_id,'.'.join(path),v))
+          walk(root,[],None)
+          print('fields touched by invalid bytes:',len(touched))
+          for x in touched: print('TOUCHED',repr(x))
 
-          for p in sorted(Path('/tmp/svquest-history').glob('*.zip')):
-              print('\n===',p.name,'===')
-              visit(p.read_bytes(),p.name)
+          # Conservative mixed-encoding repair: keep every valid UTF-8 sequence exactly as-is;
+          # only isolated invalid bytes are decoded as Windows-1252/Latin-1 and re-encoded as UTF-8.
+          surrogate=raw.decode('utf-8',errors='surrogateescape')
+          out=[]; repaired=[]
+          for ch in surrogate:
+              o=ord(ch)
+              if 0xDC80 <= o <= 0xDCFF:
+                  b=o-0xDC00
+                  try: fixed=bytes([b]).decode('cp1252')
+                  except UnicodeDecodeError: fixed=bytes([b]).decode('latin1')
+                  out.append(fixed); repaired.append((b,fixed))
+              else:
+                  out.append(ch)
+          repaired_text=''.join(out)
+          repaired_raw=repaired_text.encode('utf-8')
+          repaired_root=json.loads(repaired_text)
+          rq=repaired_root['quests']
+          ids=[q['id'] for q in rq]
+          known=set(ids)
+          dangling=[(q['id'],p) for q in rq for p in q.get('prerequisites',[]) if p not in known]
+          objectives=sum(len(q.get('objectives',[])) for q in rq)
+          print('\ncp1252 repaired bytes:',[(hex(b),c) for b,c in repaired])
+          print('repaired:',len(rq),'quests /',objectives,'objectives / unique ids',len(ids)==len(set(ids)),'/ dangling',len(dangling))
+          print('repaired raw sha256:',hashlib.sha256(repaired_raw).hexdigest(),'bytes:',len(repaired_raw))
 
-          # Also inspect every historical catalog representation still reachable through git.
-          refs=[
-              ('88822f01f57c7dea6ab39fe8bc3897d09b0aed87','SVQuest/src/main/resources/svquest/catalog/default_quests.00.b64'),
-              ('58bdf1ea2a615e4d52bf364a6d6f5fb2533fb275','SVQuest/src/main/resources/svquest/catalog/default_quests.01.b64'),
-              ('e10aee1ad839bda54ad26dfda2dddfb8734fc592','SVQuest/src/main/resources/svquest/catalog/default_quests.02.b64'),
-              ('cb859b795165968393b6b3a205f651787b6ff6dc','svquest/default_quests.json.gz.b64'),
-          ]
-          import subprocess
-          for ref,path in refs:
-              try:
-                  data=subprocess.check_output(['git','show',f'{ref}:{path}'])
-              except Exception as e:
-                  print('git show failed',ref,path,e); continue
-              print('\n=== GIT',ref[:8],path,len(data),'bytes ===')
-              visit(data,f'git:{ref[:8]}:{path}')
-
-          if not found:
-              raise SystemExit('NO CLEAN 618/1617 CATALOG FOUND IN HISTORICAL ARTIFACTS OR GIT REPRESENTATIONS')
-          print('\nRECOVERED:',found)
+          structural_bad=[]
+          for q in rq:
+              for k in ('id','category'):
+                  if any(ord(c)<32 for c in str(q.get(k,''))): structural_bad.append((q['id'],k,q.get(k)))
+              for o in q.get('objectives',[]):
+                  if not o.get('type'): structural_bad.append((q['id'],'objective.type',o))
+          print('structural_bad:',structural_bad[:20])
+          assert len(rq)==618
+          assert objectives==1617
+          assert len(ids)==len(set(ids))
+          assert not dangling
+          assert not structural_bad
+          Path('/tmp/svquest-recovery/repaired-default_quests.json').write_bytes(repaired_raw)
+          print('REPAIR CANDIDATE IS STRUCTURALLY VALID')
           PY
 
-      - name: Upload recovery evidence
+      - name: Upload diagnosis and repair candidate
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SVQuest-catalog-recovery-report
+          name: SVQuest-catalog-byte-diagnosis
           path: |
-            /tmp/svquest-history/recovery-report.txt
-            /tmp/svquest-history/recovered-default_quests.json
+            /tmp/svquest-recovery/report.txt
+            /tmp/svquest-recovery/raw.bin
+            /tmp/svquest-recovery/repaired-default_quests.json
           if-no-files-found: warn
