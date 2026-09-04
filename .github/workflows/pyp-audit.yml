@@ -1,6 +1,7 @@
 name: ProtectYourPack static audit
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - ProtectYourPack
@@ -9,7 +10,7 @@ on:
       - .github/workflows/pyp-audit.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
@@ -18,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -32,72 +35,87 @@ jobs:
           JAR="ProtectYourPack-1.2.1.jar"
           WORK="${RUNNER_TEMP}/pyp-audit"
           DECOMP="${WORK}/decompiled"
-          mkdir -p "$WORK" "$DECOMP"
+          REPORT="audit/ProtectYourPack-audit.txt"
+          mkdir -p "$WORK" "$DECOMP" audit
+          : > "$REPORT"
 
-          echo '=== FILE ==='
-          ls -lh "$JAR"
-          sha256sum "$JAR"
+          section() {
+            printf '\n===== %s =====\n' "$1" >> "$REPORT"
+          }
 
-          echo
-          echo '=== FABRIC MOD METADATA ==='
-          unzip -p "$JAR" fabric.mod.json || true
+          section "FILE"
+          ls -lh "$JAR" >> "$REPORT"
+          sha256sum "$JAR" >> "$REPORT"
 
-          echo
-          echo '=== MANIFEST ==='
-          unzip -p "$JAR" META-INF/MANIFEST.MF || true
+          section "FABRIC MOD METADATA"
+          unzip -p "$JAR" fabric.mod.json >> "$REPORT" 2>/dev/null || echo 'fabric.mod.json not found' >> "$REPORT"
 
-          echo
-          echo '=== MIXIN / ACCESS WIDENER RESOURCES ==='
-          jar tf "$JAR" | grep -Ei '(mixin.*\.json$|mixins.*\.json$|\.accesswidener$)' || true
-          while IFS= read -r f; do
+          section "MANIFEST"
+          unzip -p "$JAR" META-INF/MANIFEST.MF >> "$REPORT" 2>/dev/null || true
+
+          section "MIXIN / ACCESS WIDENER RESOURCES"
+          mapfile -t RESOURCES < <(jar tf "$JAR" | grep -Ei '(mixin.*\.json$|mixins.*\.json$|\.accesswidener$)' || true)
+          printf '%s\n' "${RESOURCES[@]}" >> "$REPORT"
+          for f in "${RESOURCES[@]}"; do
             [ -n "$f" ] || continue
-            echo
-            echo "--- $f ---"
-            unzip -p "$JAR" "$f" || true
-          done < <(jar tf "$JAR" | grep -Ei '(mixin.*\.json$|mixins.*\.json$|\.accesswidener$)' || true)
+            printf '\n--- %s ---\n' "$f" >> "$REPORT"
+            unzip -p "$JAR" "$f" >> "$REPORT" 2>/dev/null || true
+          done
 
-          echo
-          echo '=== CLASS LIST ==='
-          jar tf "$JAR" | grep '\.class$' | sort
+          section "CLASS LIST"
+          jar tf "$JAR" | grep '\.class$' | sort >> "$REPORT"
 
-          echo
-          echo '=== DOWNLOAD CFR ==='
           curl -fL --retry 3 --retry-delay 2 \
             -o "$WORK/cfr.jar" \
             'https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar'
 
-          echo
-          echo '=== DECOMPILE ==='
           java -jar "$WORK/cfr.jar" "$JAR" \
             --outputdir "$DECOMP" \
             --silent true \
             --caseinsensitivefs true
 
-          echo
-          echo '=== DECOMPILED FILE LIST ==='
-          find "$DECOMP" -type f -name '*.java' -print | sort
+          section "DECOMPILED FILE LIST"
+          find "$DECOMP" -type f -name '*.java' -print | sed "s#${DECOMP}/##" | sort >> "$REPORT"
 
-          echo
-          echo '=== PERFORMANCE-SENSITIVE REFERENCES ==='
           PATTERN='ClientTickEvents|ServerTickEvents|END_CLIENT_TICK|END_SERVER_TICK|START_CLIENT_TICK|START_SERVER_TICK|Files\.|File\(|File\.|listFiles\(|Files\.walk|Files\.list|readAllBytes|readString|writeString|MessageDigest|SHA-1|SHA-256|ZipFile|JarFile|WatchService|ScheduledExecutor|scheduleAtFixedRate|scheduleWithFixedDelay|TimerTask|CompletableFuture|\.join\(|\.get\(|Thread\.sleep|new Thread|ExecutorService|ResourceReload|ReloadListener|registerReloadListener|send\(|sendPacket|ClientPlayNetworking|ServerPlayNetworking|stream\(\)|\.stream\(|collect\(|Collectors\.|Pattern\.compile|System\.gc|LOGGER\.(info|warn|error|debug|trace)'
-          grep -RInE "$PATTERN" "$DECOMP" || true
 
-          echo
-          echo '=== SUSPECT FILE EXCERPTS ==='
+          section "PERFORMANCE-SENSITIVE REFERENCES"
+          grep -RInE "$PATTERN" "$DECOMP" | sed "s#${DECOMP}/##" >> "$REPORT" || true
+
+          section "SUSPECT CONTEXT"
           mapfile -t SUSPECTS < <(grep -RIlE "$PATTERN" "$DECOMP" | sort -u || true)
           if [ "${#SUSPECTS[@]}" -eq 0 ]; then
-            echo 'No suspect files matched the static pattern set.'
+            echo 'No suspect files matched the static pattern set.' >> "$REPORT"
           else
             for f in "${SUSPECTS[@]}"; do
-              echo
-              echo "##### $f #####"
-              sed -n '1,320p' "$f"
+              rel="${f#${DECOMP}/}"
+              printf '\n##### %s #####\n' "$rel" >> "$REPORT"
+              grep -nE -B 6 -A 10 "$PATTERN" "$f" >> "$REPORT" || true
             done
           fi
 
-          echo
-          echo '=== ENTRYPOINT / EVENT REGISTRATION REFERENCES ==='
-          grep -RInE 'implements (ModInitializer|ClientModInitializer)|onInitialize\(|onInitializeClient\(|register\(|EVENT|Tick|JOIN|DISCONNECT|RESOURCE|Reload' "$DECOMP" || true
+          section "ENTRYPOINT / EVENT REGISTRATION REFERENCES"
+          grep -RInE 'implements (ModInitializer|ClientModInitializer)|onInitialize\(|onInitializeClient\(|register\(|EVENT|Tick|JOIN|DISCONNECT|RESOURCE|Reload' "$DECOMP" | sed "s#${DECOMP}/##" >> "$REPORT" || true
 
-          echo
-          echo '=== AUDIT COMPLETE ==='
+          section "TOP API COUNTS"
+          for token in 'Files.' 'MessageDigest' 'ZipFile' 'JarFile' 'Tick' 'CompletableFuture' 'Executor' 'send(' 'stream()' 'LOGGER.'; do
+            count=$(grep -RIF "$token" "$DECOMP" | wc -l || true)
+            printf '%-24s %s\n' "$token" "$count" >> "$REPORT"
+          done
+
+          section "AUDIT COMPLETE"
+          echo 'Static report generated from ProtectYourPack-1.2.1.jar.' >> "$REPORT"
+
+      - name: Commit audit report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit/ProtectYourPack-audit.txt
+          if git diff --cached --quiet; then
+            echo 'Audit report unchanged.'
+            exit 0
+          fi
+          git commit -m 'chore: update ProtectYourPack audit report [skip ci]'
+          git push origin HEAD:ProtectYourPack
