@@ -1,0 +1,31 @@
+name: Export patched ProtectYourPack jar
+
+on:
+  push:
+    branches: [ProtectYourPack]
+    paths:
+      - .github/workflows/pyp-export.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify patched jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ProtectYourPack-1.2.1.jar
+          sha256sum ProtectYourPack-1.2.1.jar
+          jar tf ProtectYourPack-1.2.1.jar | grep -q '^com/svframe/pyp/PypRuntimeScheduler.class$'
+      - name: Upload patched jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProtectYourPack-1.2.1-patched
+          path: ProtectYourPack-1.2.1.jar
+          if-no-files-found: error
+          retention-days: 7
