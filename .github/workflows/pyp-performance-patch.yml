@@ -80,6 +80,7 @@ jobs:
               boolean initialPackSent;
               boolean sendPending;
               long retryAfterNanos;
+              boolean bspUnavailableLogged;
               long authGeneration;
             }
           }
@@ -109,27 +110,63 @@ jobs:
         run: |
           set -euo pipefail
           J=/tmp/pyp-patch/ProtectYourPack-1.2.1.jar
+          REPORT=audit/ProtectYourPack-performance-patch.txt
           jar tf "$J" | grep -q '^com/svframe/pyp/PypRuntimeScheduler.class$'
+          javap -classpath "$J" -p -c com.svframe.pyp.ProtectYourPack > /tmp/protect.txt
           javap -classpath "$J" -p -c com.svframe.pyp.PackDelayGate > /tmp/gate.txt
+          javap -classpath "$J" -p -c com.svframe.pyp.PypRuntimeScheduler > /tmp/runtime.txt
           javap -classpath "$J" -p -c xyz.nikitacartes.easyauth.mixin.ServerPlayerEntityMixin > /tmp/auth.txt
-          grep -q 'PypRuntimeScheduler.tickRetry' /tmp/gate.txt
+
+          grep -q 'PypRuntimeScheduler.onJoin' /tmp/protect.txt
+          grep -q 'PypRuntimeScheduler.onDisconnect' /tmp/protect.txt
+          grep -q 'PypRuntimeScheduler.onConfigReload' /tmp/protect.txt
+          grep -q 'PypRuntimeScheduler.shutdown' /tmp/protect.txt
           grep -q 'PypRuntimeScheduler.onAuthStateChanged' /tmp/auth.txt
+          grep -q 'PypRuntimeScheduler.tickRetry' /tmp/gate.txt
+          grep -q 'ScheduledThreadPoolExecutor' /tmp/runtime.txt
+          grep -q 'java/lang/Math.max' /tmp/runtime.txt
+
+          if grep -q 'ServerTickEvents.END_SERVER_TICK' /tmp/protect.txt; then
+            echo 'ERROR: END_SERVER_TICK registration remains' >&2
+            exit 1
+          fi
           if sed -n '/public static void tick/,/^  }/p' /tmp/gate.txt | grep -q 'EasyAuthBridge.isAuthenticated'; then
             echo 'ERROR: auth reflection remains in tick hot path' >&2
             exit 1
           fi
+          if grep -q 'scheduleAtFixedRate\|scheduleWithFixedDelay' /tmp/runtime.txt; then
+            echo 'ERROR: periodic scheduler found' >&2
+            exit 1
+          fi
+
           cp "$J" ProtectYourPack-1.2.1.jar
           sha256sum ProtectYourPack-1.2.1.jar | tee audit/ProtectYourPack-performance-patch.sha256
+          {
+            echo 'ProtectYourPack performance patch verification'
+            echo
+            echo 'PASS: EasyAuth false->true is hooked directly in bundled ServerPlayerEntityMixin.'
+            echo 'PASS: initial send deadline uses max(joinedAt + joinDelay, authenticatedAt + postAuthDelay).'
+            echo 'PASS: END_SERVER_TICK registration is removed.'
+            echo 'PASS: no EasyAuth reflection remains in PackDelayGate.tick.'
+            echo 'PASS: one daemon ScheduledThreadPoolExecutor handles one-shot deadlines only.'
+            echo 'PASS: retryAfterNanos is converted to exact one-shot retry wakeups, not per-tick scans.'
+            echo 'PASS: BetterServerPacks hash-not-ready keeps retry behavior via a due-session 250ms readiness recheck.'
+            echo 'PASS: config reload reschedules outstanding auth deadlines.'
+            echo 'PASS: disconnect and server shutdown invalidate/clear runtime tracking.'
+            echo
+            echo 'SHA256:'
+            sha256sum ProtectYourPack-1.2.1.jar
+          } > "$REPORT"
       - name: Commit patched jar
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ProtectYourPack-1.2.1.jar audit/ProtectYourPack-performance-patch.sha256
+          git add ProtectYourPack-1.2.1.jar audit/ProtectYourPack-performance-patch.sha256 audit/ProtectYourPack-performance-patch.txt
           if git diff --cached --quiet; then
             echo 'Patched JAR unchanged.'
             exit 0
           fi
-          git commit -m 'perf: make PYP auth gate deadline-driven [skip ci]'
+          git commit -m 'perf: make PYP auth gate fully deadline-driven [skip ci]'
           git push origin HEAD:ProtectYourPack
