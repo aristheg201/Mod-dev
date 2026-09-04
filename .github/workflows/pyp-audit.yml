@@ -36,8 +36,10 @@ jobs:
           WORK="${RUNNER_TEMP}/pyp-audit"
           DECOMP="${WORK}/decompiled"
           REPORT="audit/ProtectYourPack-audit.txt"
+          HOT="audit/ProtectYourPack-hotpaths.txt"
           mkdir -p "$WORK" "$DECOMP" audit
           : > "$REPORT"
+          : > "$HOT"
 
           section() {
             printf '\n===== %s =====\n' "$1" >> "$REPORT"
@@ -65,14 +67,8 @@ jobs:
           section "CLASS LIST"
           jar tf "$JAR" | grep '\.class$' | sort >> "$REPORT"
 
-          curl -fL --retry 3 --retry-delay 2 \
-            -o "$WORK/cfr.jar" \
-            'https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar'
-
-          java -jar "$WORK/cfr.jar" "$JAR" \
-            --outputdir "$DECOMP" \
-            --silent true \
-            --caseinsensitivefs true
+          curl -fL --retry 3 --retry-delay 2 -o "$WORK/cfr.jar" 'https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar'
+          java -jar "$WORK/cfr.jar" "$JAR" --outputdir "$DECOMP" --silent true --caseinsensitivefs true
 
           section "DECOMPILED FILE LIST"
           find "$DECOMP" -type f -name '*.java' -print | sed "s#${DECOMP}/##" | sort >> "$REPORT"
@@ -84,15 +80,12 @@ jobs:
 
           section "SUSPECT CONTEXT"
           mapfile -t SUSPECTS < <(grep -RIlE "$PATTERN" "$DECOMP" | sort -u || true)
-          if [ "${#SUSPECTS[@]}" -eq 0 ]; then
-            echo 'No suspect files matched the static pattern set.' >> "$REPORT"
-          else
-            for f in "${SUSPECTS[@]}"; do
-              rel="${f#${DECOMP}/}"
-              printf '\n##### %s #####\n' "$rel" >> "$REPORT"
-              grep -nE -B 6 -A 10 "$PATTERN" "$f" >> "$REPORT" || true
-            done
-          fi
+          for f in "${SUSPECTS[@]}"; do
+            [ -n "$f" ] || continue
+            rel="${f#${DECOMP}/}"
+            printf '\n##### %s #####\n' "$rel" >> "$REPORT"
+            grep -nE -B 6 -A 10 "$PATTERN" "$f" >> "$REPORT" || true
+          done
 
           section "ENTRYPOINT / EVENT REGISTRATION REFERENCES"
           grep -RInE 'implements (ModInitializer|ClientModInitializer)|onInitialize\(|onInitializeClient\(|register\(|EVENT|Tick|JOIN|DISCONNECT|RESOURCE|Reload' "$DECOMP" | sed "s#${DECOMP}/##" >> "$REPORT" || true
@@ -103,19 +96,33 @@ jobs:
             printf '%-24s %s\n' "$token" "$count" >> "$REPORT"
           done
 
+          printf 'Focused hotpath excerpts from ProtectYourPack-1.2.1.jar\n' >> "$HOT"
+          for rel in \
+            com/svframe/pyp/ProtectYourPack.java \
+            com/svframe/pyp/PackDelayGate.java \
+            com/svframe/pyp/PypBuildWorkerX.java \
+            com/svframe/pyp/R2DeliveryService.java \
+            com/svframe/pyp/PackSquashRunner.java \
+            com/svframe/pyp/PackSourcePreparer.java; do
+            f="$DECOMP/$rel"
+            [ -f "$f" ] || continue
+            printf '\n===== %s =====\n' "$rel" >> "$HOT"
+            nl -ba "$f" | sed -n '1,460p' >> "$HOT"
+          done
+
           section "AUDIT COMPLETE"
           echo 'Static report generated from ProtectYourPack-1.2.1.jar.' >> "$REPORT"
 
-      - name: Commit audit report
+      - name: Commit audit reports
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add audit/ProtectYourPack-audit.txt
+          git add audit/ProtectYourPack-audit.txt audit/ProtectYourPack-hotpaths.txt
           if git diff --cached --quiet; then
-            echo 'Audit report unchanged.'
+            echo 'Audit reports unchanged.'
             exit 0
           fi
-          git commit -m 'chore: update ProtectYourPack audit report [skip ci]'
+          git commit -m 'chore: update ProtectYourPack audit reports [skip ci]'
           git push origin HEAD:ProtectYourPack
