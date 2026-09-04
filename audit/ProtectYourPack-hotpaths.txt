@@ -547,6 +547,173 @@ Focused hotpath excerpts from ProtectYourPack-1.2.1.jar
    459	        }
    460	    }
 
+===== com/svframe/pyp/EasyAuthBridge.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 */
+     4	package com.svframe.pyp;
+     5	
+     6	import java.lang.reflect.InvocationTargetException;
+     7	import java.lang.reflect.Method;
+     8	
+     9	final class EasyAuthBridge {
+    10	    private static final String PLAYER_AUTH_CLASS = "xyz.nikitacartes.easyauth.utils.PlayerAuth";
+    11	    private static final String AUTH_METHOD = "easyAuth$isAuthenticated";
+    12	    private static volatile Lookup lookup;
+    13	
+    14	    private EasyAuthBridge() {
+    15	    }
+    16	
+    17	    static Boolean isAuthenticated(Object object) {
+    18	        if (object == null) {
+    19	            return null;
+    20	        }
+    21	        Lookup lookup = EasyAuthBridge.resolve();
+    22	        if (!lookup.available || !lookup.type.isInstance(object)) {
+    23	            return null;
+    24	        }
+    25	        try {
+    26	            return (Boolean)lookup.method.invoke(object, new Object[0]);
+    27	        }
+    28	        catch (IllegalAccessException illegalAccessException) {
+    29	            throw new IllegalStateException("EasyAuth authentication state is inaccessible", illegalAccessException);
+    30	        }
+    31	        catch (InvocationTargetException invocationTargetException) {
+    32	            Throwable throwable = invocationTargetException.getCause() == null ? invocationTargetException : invocationTargetException.getCause();
+    33	            throw new IllegalStateException("EasyAuth authentication state lookup failed", throwable);
+    34	        }
+    35	    }
+    36	
+    37	    static boolean available() {
+    38	        return EasyAuthBridge.resolve().available;
+    39	    }
+    40	
+    41	    /*
+    42	     * WARNING - Removed try catching itself - possible behaviour change.
+    43	     */
+    44	    private static Lookup resolve() {
+    45	        Lookup lookup = EasyAuthBridge.lookup;
+    46	        if (lookup != null) {
+    47	            return lookup;
+    48	        }
+    49	        Class<EasyAuthBridge> clazz = EasyAuthBridge.class;
+    50	        synchronized (EasyAuthBridge.class) {
+    51	            if (EasyAuthBridge.lookup != null) {
+    52	                // ** MonitorExit[var1_1] (shouldn't be in output)
+    53	                return EasyAuthBridge.lookup;
+    54	            }
+    55	            try {
+    56	                Class<?> clazz2 = Class.forName(PLAYER_AUTH_CLASS, false, EasyAuthBridge.class.getClassLoader());
+    57	                Method method = clazz2.getMethod(AUTH_METHOD, new Class[0]);
+    58	                if (method.getReturnType() != Boolean.TYPE && method.getReturnType() != Boolean.class) {
+    59	                    throw new NoSuchMethodException("easyAuth$isAuthenticated must return boolean");
+    60	                }
+    61	                EasyAuthBridge.lookup = new Lookup(true, clazz2, method);
+    62	            }
+    63	            catch (LinkageError | ReflectiveOperationException throwable) {
+    64	                EasyAuthBridge.lookup = new Lookup(false, null, null);
+    65	            }
+    66	            return EasyAuthBridge.lookup;
+    67	        }
+    68	    }
+    69	
+    70	    private record Lookup(boolean available, Class<?> type, Method method) {
+    71	    }
+    72	}
+    73	
+
+===== com/svframe/pyp/BetterServerPacksBridge.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 * 
+     4	 * Could not load the following classes:
+     5	 *  net.minecraft.class_3244
+     6	 */
+     7	package com.svframe.pyp;
+     8	
+     9	import java.lang.reflect.InvocationTargetException;
+    10	import java.lang.reflect.Method;
+    11	import net.minecraft.class_3244;
+    12	
+    13	final class BetterServerPacksBridge {
+    14	    private static final String MAIN = "de.fisch37.betterserverpacksfabric.Main";
+    15	    private static final String HANDLER = "de.fisch37.betterserverpacksfabric.ResourcePackHandler";
+    16	    private static volatile Lookup lookup;
+    17	
+    18	    private BetterServerPacksBridge() {
+    19	    }
+    20	
+    21	    static boolean available() {
+    22	        return BetterServerPacksBridge.resolve().available;
+    23	    }
+    24	
+    25	    static byte[] getHash() {
+    26	        Lookup lookup = BetterServerPacksBridge.resolve();
+    27	        if (!lookup.available) {
+    28	            return null;
+    29	        }
+    30	        try {
+    31	            return (byte[])lookup.getHash.invoke(null, new Object[0]);
+    32	        }
+    33	        catch (IllegalAccessException | InvocationTargetException reflectiveOperationException) {
+    34	            throw new IllegalStateException("BetterServerPacks Main.getHash() failed", BetterServerPacksBridge.unwrap(reflectiveOperationException));
+    35	        }
+    36	    }
+    37	
+    38	    static void push(class_3244 class_32442) {
+    39	        Lookup lookup = BetterServerPacksBridge.resolve();
+    40	        if (!lookup.available) {
+    41	            throw new IllegalStateException("BetterServerPacks is not installed");
+    42	        }
+    43	        try {
+    44	            lookup.push.invoke(null, class_32442);
+    45	        }
+    46	        catch (IllegalAccessException | InvocationTargetException reflectiveOperationException) {
+    47	            throw new IllegalStateException("BetterServerPacks ResourcePackHandler.push() failed", BetterServerPacksBridge.unwrap(reflectiveOperationException));
+    48	        }
+    49	    }
+    50	
+    51	    /*
+    52	     * WARNING - Removed try catching itself - possible behaviour change.
+    53	     */
+    54	    private static Lookup resolve() {
+    55	        Lookup lookup = BetterServerPacksBridge.lookup;
+    56	        if (lookup != null) {
+    57	            return lookup;
+    58	        }
+    59	        Class<BetterServerPacksBridge> clazz = BetterServerPacksBridge.class;
+    60	        synchronized (BetterServerPacksBridge.class) {
+    61	            if (BetterServerPacksBridge.lookup != null) {
+    62	                // ** MonitorExit[var1_1] (shouldn't be in output)
+    63	                return BetterServerPacksBridge.lookup;
+    64	            }
+    65	            try {
+    66	                Class<?> clazz2 = Class.forName(MAIN, false, BetterServerPacksBridge.class.getClassLoader());
+    67	                Class<?> clazz3 = Class.forName(HANDLER, false, BetterServerPacksBridge.class.getClassLoader());
+    68	                Method method = clazz2.getMethod("getHash", new Class[0]);
+    69	                Method method2 = clazz3.getMethod("push", class_3244.class);
+    70	                BetterServerPacksBridge.lookup = new Lookup(true, method, method2);
+    71	            }
+    72	            catch (LinkageError | ReflectiveOperationException throwable) {
+    73	                BetterServerPacksBridge.lookup = new Lookup(false, null, null);
+    74	            }
+    75	            return BetterServerPacksBridge.lookup;
+    76	        }
+    77	    }
+    78	
+    79	    private static Throwable unwrap(Exception exception) {
+    80	        InvocationTargetException invocationTargetException;
+    81	        if (exception instanceof InvocationTargetException && (invocationTargetException = (InvocationTargetException)exception).getCause() != null) {
+    82	            return invocationTargetException.getCause();
+    83	        }
+    84	        return exception;
+    85	    }
+    86	
+    87	    private record Lookup(boolean available, Method getHash, Method push) {
+    88	    }
+    89	}
+    90	
+
 ===== com/svframe/pyp/PypBuildWorkerX.java =====
      1	/*
      2	 * Decompiled with CFR 0.152.
