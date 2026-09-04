@@ -100,6 +100,8 @@ jobs:
           for rel in \
             com/svframe/pyp/ProtectYourPack.java \
             com/svframe/pyp/PackDelayGate.java \
+            com/svframe/pyp/EasyAuthBridge.java \
+            com/svframe/pyp/BetterServerPacksBridge.java \
             com/svframe/pyp/PypBuildWorkerX.java \
             com/svframe/pyp/R2DeliveryService.java \
             com/svframe/pyp/PackSquashRunner.java \
