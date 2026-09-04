@@ -85,7 +85,13 @@ public final class PypJarPatcher implements Opcodes {
                     AbstractInsnNode next = insn.getNext();
                     if (insn instanceof FieldInsnNode f && f.getOpcode() == PUTFIELD
                             && f.owner.equals(STATE) && f.name.equals("retryAfterNanos") && f.desc.equals("J")) {
-                        m.instructions.insert(insn, new MethodInsnNode(INVOKESTATIC, RUNTIME, "markRetryNeeded", "()V", false));
+                        boolean alreadyHooked = next instanceof MethodInsnNode mi
+                                && mi.getOpcode() == INVOKESTATIC
+                                && mi.owner.equals(RUNTIME)
+                                && mi.name.equals("markRetryNeeded");
+                        if (!alreadyHooked) {
+                            m.instructions.insert(insn, new MethodInsnNode(INVOKESTATIC, RUNTIME, "markRetryNeeded", "()V", false));
+                        }
                     }
                     insn = next;
                 }
