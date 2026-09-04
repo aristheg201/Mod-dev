@@ -1,0 +1,14 @@
+ProtectYourPack performance patch verification
+
+PASS: EasyAuth false->true is hooked directly in bundled ServerPlayerEntityMixin.
+PASS: initial send deadline uses max(joinedAt + joinDelay, authenticatedAt + postAuthDelay).
+PASS: END_SERVER_TICK registration is removed.
+PASS: no EasyAuth reflection remains in PackDelayGate.tick.
+PASS: one daemon ScheduledThreadPoolExecutor handles one-shot deadlines only.
+PASS: retryAfterNanos is converted to exact one-shot retry wakeups, not per-tick scans.
+PASS: BetterServerPacks hash-not-ready keeps retry behavior via a due-session 250ms readiness recheck.
+PASS: config reload reschedules outstanding auth deadlines.
+PASS: disconnect and server shutdown invalidate/clear runtime tracking.
+
+SHA256:
+b8a51b08a268b4fea8749df0c54b4750c4ea1d825519b787b797d603a2d790c3  ProtectYourPack-1.2.1.jar
