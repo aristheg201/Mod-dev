@@ -11,6 +11,8 @@ public final class PypJarPatcher implements Opcodes {
     private static final String RUNTIME = "com/svframe/pyp/PypRuntimeScheduler";
     private static final String AUTH_MIXIN = "xyz/nikitacartes/easyauth/mixin/ServerPlayerEntityMixin";
     private static final String PROTECT = "com/svframe/pyp/ProtectYourPack";
+    private static final String SERVER_TICK_EVENTS = "net/fabricmc/fabric/api/event/lifecycle/v1/ServerTickEvents";
+    private static final String EVENT = "net/fabricmc/fabric/api/event/Event";
 
     public static void main(String[] args) throws Exception {
         if (args.length != 3) throw new IllegalArgumentException("usage: PypJarPatcher <input.jar> <runtime.class> <output.jar>");
@@ -95,7 +97,8 @@ public final class PypJarPatcher implements Opcodes {
         c.access &= ~ACC_PRIVATE;
         boolean hasGeneration = false;
         for (FieldNode f : c.fields) {
-            if (Set.of("joinedAtNanos", "authenticatedAtNanos", "initialPackSent", "sendPending", "retryAfterNanos").contains(f.name)) {
+            if (Set.of("joinedAtNanos", "authenticatedAtNanos", "initialPackSent", "sendPending",
+                    "retryAfterNanos", "bspUnavailableLogged").contains(f.name)) {
                 f.access &= ~ACC_PRIVATE;
             }
             if (f.name.equals("authGeneration")) hasGeneration = true;
@@ -109,6 +112,7 @@ public final class PypJarPatcher implements Opcodes {
             if (m.name.equals("easyAuth$setAuthenticated") && m.desc.equals("(Z)V")) { target = m; break; }
         }
         if (target == null) throw new IllegalStateException("EasyAuth setter not found");
+        if (containsCall(target, RUNTIME, "onAuthStateChanged")) return;
         for (AbstractInsnNode insn = target.instructions.getFirst(); insn != null; insn = insn.getNext()) {
             if (insn.getOpcode() != RETURN) continue;
             InsnList hook = new InsnList();
@@ -124,6 +128,20 @@ public final class PypJarPatcher implements Opcodes {
 
     private static void patchProtect(ClassNode c) {
         for (MethodNode m : c.methods) {
+            if (m.name.equals("onInitialize") && m.desc.equals("()V")) removeTickRegistration(m);
+
+            if (m.name.equals("reloadConfig")) {
+                for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
+                    if (i instanceof MethodInsnNode mi && mi.getOpcode() == INVOKESTATIC
+                            && mi.owner.equals(GATE) && mi.name.equals("initialize")) {
+                        if (!containsCall(m, RUNTIME, "onConfigReload")) {
+                            m.instructions.insert(i, new MethodInsnNode(INVOKESTATIC, RUNTIME, "onConfigReload", "()V", false));
+                        }
+                        break;
+                    }
+                }
+            }
+
             boolean joinLambda = false, disconnectLambda = false, stoppingLambda = false;
             for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
                 if (i instanceof MethodInsnNode mi) {
@@ -131,6 +149,11 @@ public final class PypJarPatcher implements Opcodes {
                     if (mi.owner.equals(GATE) && mi.name.equals("onDisconnect")) disconnectLambda = true;
                     if (mi.owner.equals("com/svframe/pyp/R2DeliveryService") && mi.name.equals("shutdown")) stoppingLambda = true;
                 }
+            }
+            if ((joinLambda && containsCall(m, RUNTIME, "onJoin"))
+                    || (disconnectLambda && containsCall(m, RUNTIME, "onDisconnect"))
+                    || (stoppingLambda && containsCall(m, RUNTIME, "shutdown"))) {
+                continue;
             }
             for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
                 if (i.getOpcode() != RETURN) continue;
@@ -148,6 +171,35 @@ public final class PypJarPatcher implements Opcodes {
                 if (hook.size() > 0) m.instructions.insertBefore(i, hook);
             }
         }
+    }
+
+    private static void removeTickRegistration(MethodNode m) {
+        for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
+            if (!(i instanceof FieldInsnNode f) || f.getOpcode() != GETSTATIC
+                    || !f.owner.equals(SERVER_TICK_EVENTS) || !f.name.equals("END_SERVER_TICK")) continue;
+            AbstractInsnNode end = i;
+            while (end != null) {
+                if (end instanceof MethodInsnNode mi && mi.getOpcode() == INVOKEVIRTUAL
+                        && mi.owner.equals(EVENT) && mi.name.equals("register")) break;
+                end = end.getNext();
+            }
+            if (end == null) throw new IllegalStateException("END_SERVER_TICK register call not found");
+            AbstractInsnNode cursor = i;
+            while (true) {
+                AbstractInsnNode next = cursor.getNext();
+                m.instructions.remove(cursor);
+                if (cursor == end) break;
+                cursor = next;
+            }
+            return;
+        }
+    }
+
+    private static boolean containsCall(MethodNode m, String owner, String name) {
+        for (AbstractInsnNode i = m.instructions.getFirst(); i != null; i = i.getNext()) {
+            if (i instanceof MethodInsnNode mi && mi.owner.equals(owner) && mi.name.equals(name)) return true;
+        }
+        return false;
     }
 
     private static final class SafeWriter extends ClassWriter {
