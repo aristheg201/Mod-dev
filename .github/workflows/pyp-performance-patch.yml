@@ -1,0 +1,135 @@
+name: ProtectYourPack performance patch
+
+on:
+  push:
+    branches: [ProtectYourPack]
+    paths:
+      - tools/pyp-patch/**
+      - .github/workflows/pyp-performance-patch.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Prepare ASM
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pyp-patch/lib
+          curl -fL --retry 3 -o /tmp/pyp-patch/lib/asm.jar https://repo1.maven.org/maven2/org/ow2/asm/asm/9.7.1/asm-9.7.1.jar
+          curl -fL --retry 3 -o /tmp/pyp-patch/lib/asm-tree.jar https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/9.7.1/asm-tree-9.7.1.jar
+      - name: Compile runtime scheduler against descriptor stubs
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/pyp-patch/stubs
+          OUT=/tmp/pyp-patch/runtime
+          mkdir -p "$SRC/com/svframe/pyp" "$SRC/net/minecraft/server" "$SRC/net/minecraft" "$SRC/xyz/nikitacartes/easyauth/utils" "$OUT"
+          cat > "$SRC/net/minecraft/class_3222.java" <<'JAVA'
+          package net.minecraft;
+          public class class_3222 {}
+          JAVA
+          cat > "$SRC/net/minecraft/class_3244.java" <<'JAVA'
+          package net.minecraft;
+          public class class_3244 { public class_3222 field_14140; }
+          JAVA
+          cat > "$SRC/net/minecraft/server/MinecraftServer.java" <<'JAVA'
+          package net.minecraft.server;
+          public abstract class MinecraftServer implements java.util.concurrent.Executor {}
+          JAVA
+          cat > "$SRC/xyz/nikitacartes/easyauth/utils/PlayerAuth.java" <<'JAVA'
+          package xyz.nikitacartes.easyauth.utils;
+          public interface PlayerAuth { boolean easyAuth$isAuthenticated(); }
+          JAVA
+          cat > "$SRC/com/svframe/pyp/PypConfig.java" <<'JAVA'
+          package com.svframe.pyp;
+          public class PypConfig {
+            public boolean delayEnabled(){return false;}
+            public boolean isR2Mode(){return false;}
+            public int joinDelaySeconds(){return 0;}
+            public int postAuthDelaySeconds(){return 0;}
+          }
+          JAVA
+          cat > "$SRC/com/svframe/pyp/PackDelayGate.java" <<'JAVA'
+          package com.svframe.pyp;
+          import java.util.Map;
+          import net.minecraft.class_3244;
+          import net.minecraft.server.MinecraftServer;
+          public class PackDelayGate {
+            static Map<class_3244,SessionState> SESSIONS;
+            static PypConfig config;
+            static long secondsToNanos(int v){return 0;}
+            static long saturatingAdd(long a,long b){return 0;}
+            static void releaseBetterServerPacks(class_3244 h, SessionState s){}
+            static boolean queueR2Send(MinecraftServer srv,class_3244 h,SessionState s,PypConfig c,boolean a,boolean b){return false;}
+            static class SessionState {
+              long joinedAtNanos;
+              long authenticatedAtNanos;
+              boolean initialPackSent;
+              boolean sendPending;
+              long retryAfterNanos;
+              long authGeneration;
+            }
+          }
+          JAVA
+          javac -source 21 -target 21 -d "$OUT" \
+            "$SRC/net/minecraft/class_3222.java" \
+            "$SRC/net/minecraft/class_3244.java" \
+            "$SRC/net/minecraft/server/MinecraftServer.java" \
+            "$SRC/xyz/nikitacartes/easyauth/utils/PlayerAuth.java" \
+            "$SRC/com/svframe/pyp/PypConfig.java" \
+            "$SRC/com/svframe/pyp/PackDelayGate.java" \
+            tools/pyp-patch/src/com/svframe/pyp/PypRuntimeScheduler.java
+          test -f "$OUT/com/svframe/pyp/PypRuntimeScheduler.class"
+      - name: Compile and run bytecode patcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          CP=/tmp/pyp-patch/lib/asm.jar:/tmp/pyp-patch/lib/asm-tree.jar
+          mkdir -p /tmp/pyp-patch/patcher
+          javac -source 21 -target 21 -cp "$CP" -d /tmp/pyp-patch/patcher tools/pyp-patch/PypJarPatcher.java
+          java -cp "/tmp/pyp-patch/patcher:$CP" PypJarPatcher \
+            ProtectYourPack-1.2.1.jar \
+            /tmp/pyp-patch/runtime/com/svframe/pyp/PypRuntimeScheduler.class \
+            /tmp/pyp-patch/ProtectYourPack-1.2.1.jar
+      - name: Verify patched hot path
+        shell: bash
+        run: |
+          set -euo pipefail
+          J=/tmp/pyp-patch/ProtectYourPack-1.2.1.jar
+          jar tf "$J" | grep -q '^com/svframe/pyp/PypRuntimeScheduler.class$'
+          javap -classpath "$J" -p -c com.svframe.pyp.PackDelayGate > /tmp/gate.txt
+          javap -classpath "$J" -p -c xyz.nikitacartes.easyauth.mixin.ServerPlayerEntityMixin > /tmp/auth.txt
+          grep -q 'PypRuntimeScheduler.tickRetry' /tmp/gate.txt
+          grep -q 'PypRuntimeScheduler.onAuthStateChanged' /tmp/auth.txt
+          if sed -n '/public static void tick/,/^  }/p' /tmp/gate.txt | grep -q 'EasyAuthBridge.isAuthenticated'; then
+            echo 'ERROR: auth reflection remains in tick hot path' >&2
+            exit 1
+          fi
+          cp "$J" ProtectYourPack-1.2.1.jar
+          sha256sum ProtectYourPack-1.2.1.jar | tee audit/ProtectYourPack-performance-patch.sha256
+      - name: Commit patched jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ProtectYourPack-1.2.1.jar audit/ProtectYourPack-performance-patch.sha256
+          if git diff --cached --quiet; then
+            echo 'Patched JAR unchanged.'
+            exit 0
+          fi
+          git commit -m 'perf: make PYP auth gate deadline-driven [skip ci]'
+          git push origin HEAD:ProtectYourPack
