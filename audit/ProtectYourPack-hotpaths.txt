@@ -1,0 +1,1338 @@
+Focused hotpath excerpts from ProtectYourPack-1.2.1.jar
+
+===== com/svframe/pyp/ProtectYourPack.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 * 
+     4	 * Could not load the following classes:
+     5	 *  net.fabricmc.api.ModInitializer
+     6	 *  net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+     7	 *  net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+     8	 *  net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+     9	 */
+    10	package com.svframe.pyp;
+    11	
+    12	import com.svframe.pyp.PackDelayGate;
+    13	import com.svframe.pyp.PypBuildManager;
+    14	import com.svframe.pyp.PypCommands;
+    15	import com.svframe.pyp.PypConfig;
+    16	import com.svframe.pyp.R2DeliveryService;
+    17	import java.nio.file.Files;
+    18	import java.nio.file.LinkOption;
+    19	import java.nio.file.Path;
+    20	import net.fabricmc.api.ModInitializer;
+    21	import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+    22	import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+    23	import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+    24	
+    25	public final class ProtectYourPack
+    26	implements ModInitializer {
+    27	    public static final String MOD_ID = "protect_your_pack";
+    28	    public static final String VERSION = "1.2.1";
+    29	    private static volatile PypConfig config = PypConfig.defaults();
+    30	    private static final PypBuildManager BUILD_MANAGER = new PypBuildManager(Path.of(".", new String[0]));
+    31	
+    32	    public void onInitialize() {
+    33	        config = PypConfig.load();
+    34	        PackDelayGate.initialize(config);
+    35	        PypCommands.register();
+    36	        ServerPlayConnectionEvents.JOIN.register((class_32442, packetSender, minecraftServer) -> PackDelayGate.onJoin(class_32442));
+    37	        ServerPlayConnectionEvents.DISCONNECT.register((class_32442, minecraftServer) -> PackDelayGate.onDisconnect(class_32442));
+    38	        ServerTickEvents.END_SERVER_TICK.register(PackDelayGate::tick);
+    39	        ServerLifecycleEvents.SERVER_STARTED.register(minecraftServer -> {
+    40	            PypConfig pypConfig = config;
+    41	            Path path = ProtectYourPack.resolveGamePath(pypConfig.sourcePack());
+    42	            if (!Files.exists(path, new LinkOption[0])) {
+    43	                System.out.println("[PYP] No valid source pack found yet. Put any valid .zip directly in pyp/input/ then run /pyp rebuild.");
+    44	                return;
+    45	            }
+    46	            if (pypConfig.buildOnStartup() && !BUILD_MANAGER.requestBuild(pypConfig, false)) {
+    47	                System.out.println("[PYP] Startup build not started because another build is running.");
+    48	            }
+    49	        });
+    50	        ServerLifecycleEvents.SERVER_STOPPING.register(minecraftServer -> {
+    51	            BUILD_MANAGER.shutdown();
+    52	            R2DeliveryService.shutdown();
+    53	        });
+    54	        ProtectYourPack.logConfig("loaded");
+    55	    }
+    56	
+    57	    public static synchronized PypConfig reloadConfig() {
+    58	        PypConfig pypConfig;
+    59	        config = pypConfig = PypConfig.load();
+    60	        PackDelayGate.initialize(pypConfig);
+    61	        ProtectYourPack.logConfig("reloaded");
+    62	        return pypConfig;
+    63	    }
+    64	
+    65	    private static void logConfig(String string) {
+    66	        PypConfig pypConfig = config;
+    67	        System.out.println("[PYP] Protect Your Pack 1.2.1 " + string + ". deliveryMode=" + pypConfig.deliveryMode() + ", source=" + pypConfig.sourcePack() + ", output=" + pypConfig.outputPack() + ", delay=" + pypConfig.delayEnabled() + " (join=" + pypConfig.joinDelaySeconds() + "s, postAuth=" + pypConfig.postAuthDelaySeconds() + "s), grace=" + pypConfig.resourcePackGraceEnabled() + "/" + pypConfig.resourcePackLoadGraceSeconds() + "s");
+    68	    }
+    69	
+    70	    static Path resolveGamePath(String string) {
+    71	        Path path = Path.of(string, new String[0]);
+    72	        return path.isAbsolute() ? path.normalize() : Path.of(".", new String[0]).toAbsolutePath().normalize().resolve(path).normalize();
+    73	    }
+    74	
+    75	    public static PypConfig config() {
+    76	        return config;
+    77	    }
+    78	
+    79	    public static PypBuildManager buildManager() {
+    80	        return BUILD_MANAGER;
+    81	    }
+    82	}
+    83	
+
+===== com/svframe/pyp/PackDelayGate.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 * 
+     4	 * Could not load the following classes:
+     5	 *  net.minecraft.class_2561
+     6	 *  net.minecraft.class_2596
+     7	 *  net.minecraft.class_2720
+     8	 *  net.minecraft.class_2856
+     9	 *  net.minecraft.class_3244
+    10	 *  net.minecraft.server.MinecraftServer
+    11	 */
+    12	package com.svframe.pyp;
+    13	
+    14	import com.svframe.pyp.BetterServerPacksBridge;
+    15	import com.svframe.pyp.EasyAuthBridge;
+    16	import com.svframe.pyp.PypConfig;
+    17	import com.svframe.pyp.R2DeliveryService;
+    18	import java.nio.charset.StandardCharsets;
+    19	import java.util.ArrayList;
+    20	import java.util.List;
+    21	import java.util.Locale;
+    22	import java.util.Map;
+    23	import java.util.Optional;
+    24	import java.util.UUID;
+    25	import java.util.concurrent.ConcurrentHashMap;
+    26	import java.util.concurrent.atomic.AtomicLong;
+    27	import net.minecraft.class_2561;
+    28	import net.minecraft.class_2596;
+    29	import net.minecraft.class_2720;
+    30	import net.minecraft.class_2856;
+    31	import net.minecraft.class_3244;
+    32	import net.minecraft.server.MinecraftServer;
+    33	
+    34	public final class PackDelayGate {
+    35	    private static final Map<class_3244, SessionState> SESSIONS = new ConcurrentHashMap<class_3244, SessionState>();
+    36	    private static final ThreadLocal<Boolean> INTERNAL_BSP_PUSH = ThreadLocal.withInitial(() -> false);
+    37	    private static final AtomicLong LAST_MANUAL_SEND_NANOS = new AtomicLong(-1L);
+    38	    private static volatile PypConfig config = PypConfig.defaults();
+    39	
+    40	    private PackDelayGate() {
+    41	    }
+    42	
+    43	    public static void initialize(PypConfig pypConfig) {
+    44	        config = pypConfig;
+    45	        R2DeliveryService.initialize(pypConfig);
+    46	        if (!(pypConfig.delayEnabled() || pypConfig.resourcePackGraceEnabled() || pypConfig.isR2Mode())) {
+    47	            SESSIONS.clear();
+    48	        }
+    49	    }
+    50	
+    51	    public static void onJoin(class_3244 class_32443) {
+    52	        SESSIONS.computeIfAbsent(class_32443, class_32442 -> new SessionState(System.nanoTime()));
+    53	        PackDelayGate.debug("Tracking joined connection " + PackDelayGate.identity(class_32443));
+    54	    }
+    55	
+    56	    public static void onDisconnect(class_3244 class_32442) {
+    57	        SessionState sessionState = SESSIONS.remove(class_32442);
+    58	        if (sessionState != null && sessionState.packLoading) {
+    59	            PackDelayGate.info("Resource-pack grace ended by disconnect for " + PackDelayGate.playerName(class_32442) + ", lastStatus=" + sessionState.lastPackStatus);
+    60	        }
+    61	    }
+    62	
+    63	    public static boolean shouldSuppressBetterServerPacksPush(class_3244 class_32443) {
+    64	        PypConfig pypConfig = config;
+    65	        SessionState sessionState = SESSIONS.computeIfAbsent(class_32443, class_32442 -> new SessionState(System.nanoTime()));
+    66	        if (pypConfig.isR2Mode()) {
+    67	            PackDelayGate.debug("Suppressed BetterServerPacks push because deliveryMode=r2 for " + PackDelayGate.playerName(class_32443));
+    68	            return true;
+    69	        }
+    70	        if (Boolean.TRUE.equals(INTERNAL_BSP_PUSH.get())) {
+    71	            return false;
+    72	        }
+    73	        if (!pypConfig.delayEnabled()) {
+    74	            PackDelayGate.startResourcePackGrace(class_32443, sessionState, "BetterServerPacks push (delay disabled)");
+    75	            return false;
+    76	        }
+    77	        if (sessionState.initialPackSent) {
+    78	            PackDelayGate.startResourcePackGrace(class_32443, sessionState, "BetterServerPacks later/manual push");
+    79	            return false;
+    80	        }
+    81	        PackDelayGate.debug("Suppressed BetterServerPacks initial push for " + PackDelayGate.playerName(class_32443));
+    82	        return true;
+    83	    }
+    84	
+    85	    public static void onResourcePackStatus(class_3244 class_32442, class_2856 class_28562) {
+    86	        boolean bl;
+    87	        String string;
+    88	        Object object;
+    89	        UUID uUID;
+    90	        SessionState sessionState = SESSIONS.get(class_32442);
+    91	        if (sessionState == null) {
+    92	            return;
+    93	        }
+    94	        try {
+    95	            uUID = class_28562.comp_2163();
+    96	            object = class_28562.comp_2164();
+    97	            string = object == null ? "UNKNOWN" : object.name();
+    98	            bl = object != null && object.method_55627();
+    99	        }
+   100	        catch (Throwable throwable) {
+   101	            System.err.println("[PYP] Failed to read resource-pack status for " + PackDelayGate.playerName(class_32442) + ": " + PackDelayGate.safeMessage(throwable));
+   102	            return;
+   103	        }
+   104	        object = sessionState.lastPackId;
+   105	        if (config.isR2Mode() && object != null && uUID != null && !((UUID)object).equals(uUID)) {
+   106	            PackDelayGate.debug("Ignoring stale resource-pack status for " + PackDelayGate.playerName(class_32442) + ": " + string);
+   107	            return;
+   108	        }
+   109	        sessionState.lastPackStatus = string;
+   110	        PackDelayGate.info("Resource-pack status for " + PackDelayGate.playerName(class_32442) + ": " + string + " (graceActive=" + sessionState.packLoading + ")");
+   111	        if (bl) {
+   112	            PackDelayGate.endGrace(class_32442, sessionState, string);
+   113	        }
+   114	    }
+   115	
+   116	    public static boolean isResourcePackGraceActive(class_3244 class_32442) {
+   117	        PypConfig pypConfig = config;
+   118	        if (!pypConfig.resourcePackGraceEnabled()) {
+   119	            return false;
+   120	        }
+   121	        SessionState sessionState = SESSIONS.get(class_32442);
+   122	        if (sessionState == null || !sessionState.packLoading) {
+   123	            return false;
+   124	        }
+   125	        long l = System.nanoTime();
+   126	        if (sessionState.packGraceDeadlineNanos > 0L && l >= sessionState.packGraceDeadlineNanos) {
+   127	            sessionState.packLoading = false;
+   128	            sessionState.packGraceDeadlineNanos = -1L;
+   129	            PackDelayGate.info("Resource-pack grace expired for " + PackDelayGate.playerName(class_32442) + " after " + pypConfig.resourcePackLoadGraceSeconds() + "s, lastStatus=" + sessionState.lastPackStatus);
+   130	            return false;
+   131	        }
+   132	        return true;
+   133	    }
+   134	
+   135	    public static void tick(MinecraftServer minecraftServer) {
+   136	        PypConfig pypConfig = config;
+   137	        if (SESSIONS.isEmpty()) {
+   138	            return;
+   139	        }
+   140	        long l = System.nanoTime();
+   141	        long l2 = PackDelayGate.secondsToNanos(pypConfig.joinDelaySeconds());
+   142	        long l3 = PackDelayGate.secondsToNanos(pypConfig.postAuthDelaySeconds());
+   143	        for (Map.Entry<class_3244, SessionState> entry : SESSIONS.entrySet()) {
+   144	            long l4;
+   145	            Boolean bl;
+   146	            class_3244 class_32442 = entry.getKey();
+   147	            SessionState sessionState = entry.getValue();
+   148	            if (sessionState.initialPackSent || sessionState.sendPending || l < sessionState.retryAfterNanos) continue;
+   149	            if (!pypConfig.delayEnabled()) {
+   150	                if (!pypConfig.isR2Mode()) continue;
+   151	                PackDelayGate.queueR2Send(minecraftServer, class_32442, sessionState, pypConfig, true, false);
+   152	                continue;
+   153	            }
+   154	            try {
+   155	                bl = EasyAuthBridge.isAuthenticated(class_32442.field_14140);
+   156	            }
+   157	            catch (Throwable throwable) {
+   158	                if (sessionState.authReadFailureLogged) continue;
+   159	                sessionState.authReadFailureLogged = true;
+   160	                System.err.println("[PYP] Failed to read EasyAuth state for " + PackDelayGate.playerName(class_32442) + ": " + PackDelayGate.safeMessage(throwable));
+   161	                continue;
+   162	            }
+   163	            if (bl == null) {
+   164	                if (sessionState.missingAuthLogged) continue;
+   165	                sessionState.missingAuthLogged = true;
+   166	                System.err.println("[PYP] EasyAuth PlayerAuth unavailable for " + PackDelayGate.playerName(class_32442) + "; pack remains gated.");
+   167	                continue;
+   168	            }
+   169	            if (!bl.booleanValue()) {
+   170	                sessionState.authenticatedAtNanos = -1L;
+   171	                continue;
+   172	            }
+   173	            if (sessionState.authenticatedAtNanos < 0L) {
+   174	                sessionState.authenticatedAtNanos = l;
+   175	            }
+   176	            if (l < (l4 = Math.max(PackDelayGate.saturatingAdd(sessionState.joinedAtNanos, l2), PackDelayGate.saturatingAdd(sessionState.authenticatedAtNanos, l3)))) continue;
+   177	            if (pypConfig.isR2Mode()) {
+   178	                PackDelayGate.queueR2Send(minecraftServer, class_32442, sessionState, pypConfig, true, false);
+   179	                continue;
+   180	            }
+   181	            PackDelayGate.releaseBetterServerPacks(class_32442, sessionState);
+   182	        }
+   183	    }
+   184	
+   185	    public static String sendNow(MinecraftServer minecraftServer, String string, boolean bl) {
+   186	        Map.Entry<class_3244, SessionState> entry = PackDelayGate.findByName(string);
+   187	        if (entry == null) {
+   188	            return "Player not found: " + string;
+   189	        }
+   190	        if (bl && !config.isR2Mode()) {
+   191	            return "R2 test blocked while deliveryMode=" + config.deliveryMode() + "; set deliveryMode=r2 first to prevent a second resource-pack sender";
+   192	        }
+   193	        String string2 = PackDelayGate.claimGlobalManualSend(config);
+   194	        if (string2 != null) {
+   195	            return string2;
+   196	        }
+   197	        return PackDelayGate.sendEntry(minecraftServer, entry, bl);
+   198	    }
+   199	
+   200	    public static int sendAll(MinecraftServer minecraftServer, boolean bl) {
+   201	        if (bl && !config.isR2Mode()) {
+   202	            return -2;
+   203	        }
+   204	        String string = PackDelayGate.claimGlobalManualSend(config);
+   205	        if (string != null) {
+   206	            return -1;
+   207	        }
+   208	        int n = 0;
+   209	        for (Map.Entry<class_3244, SessionState> entry : new ArrayList<Map.Entry<class_3244, SessionState>>(SESSIONS.entrySet())) {
+   210	            String string2 = PackDelayGate.sendEntry(minecraftServer, entry, bl);
+   211	            if (!string2.startsWith("Queued") && !string2.startsWith("Sent")) continue;
+   212	            ++n;
+   213	        }
+   214	        return n;
+   215	    }
+   216	
+   217	    /*
+   218	     * WARNING - Removed try catching itself - possible behaviour change.
+   219	     */
+   220	    private static String sendEntry(MinecraftServer minecraftServer, Map.Entry<class_3244, SessionState> entry, boolean bl) {
+   221	        PypConfig pypConfig = config;
+   222	        class_3244 class_32442 = entry.getKey();
+   223	        SessionState sessionState = entry.getValue();
+   224	        if (bl || pypConfig.isR2Mode()) {
+   225	            String string = PackDelayGate.cooldownMessage(sessionState, pypConfig);
+   226	            if (string != null) {
+   227	                return string;
+   228	            }
+   229	            if (!R2DeliveryService.ready()) {
+   230	                return "R2 unavailable: " + R2DeliveryService.validationError();
+   231	            }
+   232	            boolean bl2 = PackDelayGate.queueR2Send(minecraftServer, class_32442, sessionState, pypConfig, false, true);
+   233	            return bl2 ? "Queued R2 resource pack for " + PackDelayGate.playerName(class_32442) : "R2 send was not queued";
+   234	        }
+   235	        if (!BetterServerPacksBridge.available()) {
+   236	            return "BetterServerPacks is not installed";
+   237	        }
+   238	        String string = PackDelayGate.cooldownMessage(sessionState, pypConfig);
+   239	        if (string != null) {
+   240	            return string;
+   241	        }
+   242	        try {
+   243	            sessionState.initialPackSent = true;
+   244	            sessionState.lastPackId = null;
+   245	            PackDelayGate.startResourcePackGrace(class_32442, sessionState, "manual BetterServerPacks push");
+   246	            sessionState.lastSendAtNanos = System.nanoTime();
+   247	            INTERNAL_BSP_PUSH.set(true);
+   248	            BetterServerPacksBridge.push(class_32442);
+   249	            String string2 = "Sent BetterServerPacks resource pack to " + PackDelayGate.playerName(class_32442);
+   250	            return string2;
+   251	        }
+   252	        catch (Throwable throwable) {
+   253	            sessionState.packLoading = false;
+   254	            String string3 = "BetterServerPacks send failed: " + PackDelayGate.safeMessage(throwable);
+   255	            return string3;
+   256	        }
+   257	        finally {
+   258	            INTERNAL_BSP_PUSH.set(false);
+   259	        }
+   260	    }
+   261	
+   262	    public static String statusFor(String string) {
+   263	        Map.Entry<class_3244, SessionState> entry = PackDelayGate.findByName(string);
+   264	        if (entry == null) {
+   265	            return "Player not found: " + string;
+   266	        }
+   267	        SessionState sessionState = entry.getValue();
+   268	        long l = sessionState.lastSendAtNanos <= 0L ? -1L : Math.max(0L, (System.nanoTime() - sessionState.lastSendAtNanos) / 1000000000L);
+   269	        return "player=" + PackDelayGate.playerName(entry.getKey()) + ", mode=" + config.deliveryMode() + ", status=" + sessionState.lastPackStatus + ", loading=" + sessionState.packLoading + ", pending=" + sessionState.sendPending + ", lastSend=" + (String)(l < 0L ? "never" : l + "s ago");
+   270	    }
+   271	
+   272	    public static String r2StatusLine() {
+   273	        String string = R2DeliveryService.validationError();
+   274	        return "mode=" + config.deliveryMode() + ", ready=" + R2DeliveryService.ready() + ", bucket=" + config.r2Bucket() + ", object=" + config.r2Object() + ", expiry=" + config.r2UrlExpirationSeconds() + "s, signerQueue=" + R2DeliveryService.queueSize() + (String)(string == null ? "" : ", error=" + string);
+   275	    }
+   276	
+   277	    public static List<String> onlineNames() {
+   278	        return SESSIONS.keySet().stream().map(PackDelayGate::playerName).sorted(String.CASE_INSENSITIVE_ORDER).toList();
+   279	    }
+   280	
+   281	    private static void releaseBetterServerPacks(class_3244 class_32442, SessionState sessionState) {
+   282	        if (!BetterServerPacksBridge.available()) {
+   283	            if (!sessionState.bspUnavailableLogged) {
+   284	                sessionState.bspUnavailableLogged = true;
+   285	                System.err.println("[PYP] deliveryMode=betterserverpacks but BetterServerPacks is not installed; pack remains gated.");
+   286	            }
+   287	            return;
+   288	        }
+   289	        try {
+   290	            if (BetterServerPacksBridge.getHash() == null) {
+   291	                return;
+   292	            }
+   293	            sessionState.initialPackSent = true;
+   294	            sessionState.lastPackId = null;
+   295	            sessionState.lastSendAtNanos = System.nanoTime();
+   296	            PackDelayGate.startResourcePackGrace(class_32442, sessionState, "initial post-auth BetterServerPacks push");
+   297	            INTERNAL_BSP_PUSH.set(true);
+   298	            BetterServerPacksBridge.push(class_32442);
+   299	            PackDelayGate.debug("Released BetterServerPacks push for " + PackDelayGate.playerName(class_32442));
+   300	        }
+   301	        catch (Throwable throwable) {
+   302	            sessionState.initialPackSent = false;
+   303	            sessionState.packLoading = false;
+   304	            sessionState.retryAfterNanos = PackDelayGate.saturatingAdd(System.nanoTime(), PackDelayGate.secondsToNanos(5));
+   305	            System.err.println("[PYP] BetterServerPacks push failed; retrying later: " + PackDelayGate.safeMessage(throwable));
+   306	        }
+   307	        finally {
+   308	            INTERNAL_BSP_PUSH.set(false);
+   309	        }
+   310	    }
+   311	
+   312	    private static boolean queueR2Send(MinecraftServer minecraftServer, class_3244 class_32442, SessionState sessionState, PypConfig pypConfig, boolean bl, boolean bl2) {
+   313	        if (sessionState.sendPending) {
+   314	            return false;
+   315	        }
+   316	        String string2 = pypConfig.r2ValidationError();
+   317	        if (string2 != null) {
+   318	            if (!sessionState.r2ConfigErrorLogged || bl2) {
+   319	                sessionState.r2ConfigErrorLogged = true;
+   320	                System.err.println("[PYP] R2 pack not sent to " + PackDelayGate.playerName(class_32442) + ": " + string2);
+   321	            }
+   322	            sessionState.retryAfterNanos = PackDelayGate.saturatingAdd(System.nanoTime(), PackDelayGate.secondsToNanos(10));
+   323	            return false;
+   324	        }
+   325	        sessionState.sendPending = true;
+   326	        UUID uUID = PackDelayGate.packId(pypConfig.resourcePackSha1());
+   327	        boolean bl3 = R2DeliveryService.presignAsync(string -> minecraftServer.execute(() -> {
+   328	            if (SESSIONS.get(class_32442) != sessionState) {
+   329	                return;
+   330	            }
+   331	            sessionState.sendPending = false;
+   332	            if (!config.isR2Mode() && !bl2) {
+   333	                return;
+   334	            }
+   335	            try {
+   336	                Optional optional = pypConfig.resourcePackPrompt().isBlank() ? Optional.empty() : Optional.of(class_2561.method_43470((String)pypConfig.resourcePackPrompt()));
+   337	                class_2720 class_27202 = new class_2720(uUID, string, pypConfig.resourcePackSha1(), pypConfig.resourcePackRequired(), optional);
+   338	                sessionState.lastPackId = uUID;
+   339	                sessionState.lastPackStatus = "PUSHED";
+   340	                sessionState.lastSendAtNanos = System.nanoTime();
+   341	                sessionState.initialPackSent = bl || sessionState.initialPackSent;
+   342	                PackDelayGate.startResourcePackGrace(class_32442, sessionState, bl ? "initial post-auth R2 push" : "manual R2 push");
+   343	                class_32442.method_14364((class_2596)class_27202);
+   344	                PackDelayGate.info("Generated temporary R2 URL and sent resource-pack request to " + PackDelayGate.playerName(class_32442) + " (expires=" + pypConfig.r2UrlExpirationSeconds() + "s)");
+   345	            }
+   346	            catch (Throwable throwable) {
+   347	                sessionState.packLoading = false;
+   348	                sessionState.retryAfterNanos = PackDelayGate.saturatingAdd(System.nanoTime(), PackDelayGate.secondsToNanos(5));
+   349	                System.err.println("[PYP] R2 resource-pack send failed for " + PackDelayGate.playerName(class_32442) + ": " + PackDelayGate.safeMessage(throwable));
+   350	            }
+   351	        }), throwable -> minecraftServer.execute(() -> {
+   352	            if (SESSIONS.get(class_32442) != sessionState) {
+   353	                return;
+   354	            }
+   355	            sessionState.sendPending = false;
+   356	            sessionState.retryAfterNanos = PackDelayGate.saturatingAdd(System.nanoTime(), PackDelayGate.secondsToNanos(5));
+   357	            System.err.println("[PYP] R2 presigning failed for " + PackDelayGate.playerName(class_32442) + ": " + PackDelayGate.safeMessage(throwable));
+   358	        }));
+   359	        if (!bl3) {
+   360	            sessionState.sendPending = false;
+   361	        }
+   362	        return bl3;
+   363	    }
+   364	
+   365	    private static String claimGlobalManualSend(PypConfig pypConfig) {
+   366	        long l;
+   367	        long l2;
+   368	        int n = pypConfig.resourcePackGlobalResendIntervalSeconds();
+   369	        if (n <= 0) {
+   370	            return null;
+   371	        }
+   372	        long l3 = PackDelayGate.secondsToNanos(n);
+   373	        do {
+   374	            long l4;
+   375	            l2 = LAST_MANUAL_SEND_NANOS.get();
+   376	            l = System.nanoTime();
+   377	            if (l2 <= 0L || (l4 = l3 - (l - l2)) <= 0L) continue;
+   378	            return "Global resource-pack resend cooldown: " + (l4 + 999999999L) / 1000000000L + "s remaining";
+   379	        } while (!LAST_MANUAL_SEND_NANOS.compareAndSet(l2, l));
+   380	        return null;
+   381	    }
+   382	
+   383	    private static String cooldownMessage(SessionState sessionState, PypConfig pypConfig) {
+   384	        if (sessionState.lastSendAtNanos <= 0L || pypConfig.resourcePackMinResendIntervalSeconds() <= 0) {
+   385	            return null;
+   386	        }
+   387	        long l = PackDelayGate.secondsToNanos(pypConfig.resourcePackMinResendIntervalSeconds());
+   388	        long l2 = l - (System.nanoTime() - sessionState.lastSendAtNanos);
+   389	        if (l2 <= 0L) {
+   390	            return null;
+   391	        }
+   392	        return "Resource-pack resend cooldown: " + (l2 + 999999999L) / 1000000000L + "s remaining";
+   393	    }
+   394	
+   395	    private static Map.Entry<class_3244, SessionState> findByName(String string) {
+   396	        if (string == null) {
+   397	            return null;
+   398	        }
+   399	        for (Map.Entry<class_3244, SessionState> entry : SESSIONS.entrySet()) {
+   400	            if (!PackDelayGate.playerName(entry.getKey()).equalsIgnoreCase(string)) continue;
+   401	            return entry;
+   402	        }
+   403	        return null;
+   404	    }
+   405	
+   406	    private static UUID packId(String string) {
+   407	        return UUID.nameUUIDFromBytes(("pyp-r2:" + string.toLowerCase(Locale.ROOT)).getBytes(StandardCharsets.UTF_8));
+   408	    }
+   409	
+   410	    private static void startResourcePackGrace(class_3244 class_32442, SessionState sessionState, String string) {
+   411	        PypConfig pypConfig = config;
+   412	        if (!pypConfig.resourcePackGraceEnabled()) {
+   413	            return;
+   414	        }
+   415	        sessionState.packLoading = true;
+   416	        sessionState.packGraceDeadlineNanos = PackDelayGate.saturatingAdd(System.nanoTime(), PackDelayGate.secondsToNanos(pypConfig.resourcePackLoadGraceSeconds()));
+   417	        PackDelayGate.info("Resource-pack grace started for " + PackDelayGate.playerName(class_32442) + " (max=" + pypConfig.resourcePackLoadGraceSeconds() + "s, reason=" + string + ")");
+   418	    }
+   419	
+   420	    private static void endGrace(class_3244 class_32442, SessionState sessionState, String string) {
+   421	        sessionState.packLoading = false;
+   422	        sessionState.packGraceDeadlineNanos = -1L;
+   423	        PackDelayGate.info("Resource-pack grace finished for " + PackDelayGate.playerName(class_32442) + " with status=" + string);
+   424	    }
+   425	
+   426	    private static String playerName(class_3244 class_32442) {
+   427	        try {
+   428	            String string;
+   429	            if (class_32442.field_14140 != null && class_32442.field_14140.method_7334() != null && (string = class_32442.field_14140.method_7334().getName()) != null && !string.isBlank()) {
+   430	                return string;
+   431	            }
+   432	        }
+   433	        catch (Throwable throwable) {
+   434	            // empty catch block
+   435	        }
+   436	        return PackDelayGate.identity(class_32442);
+   437	    }
+   438	
+   439	    private static long secondsToNanos(int n) {
+   440	        return (long)n * 1000000000L;
+   441	    }
+   442	
+   443	    private static long saturatingAdd(long l, long l2) {
+   444	        long l3 = l + l2;
+   445	        return ((l ^ l3) & (l2 ^ l3)) < 0L ? Long.MAX_VALUE : l3;
+   446	    }
+   447	
+   448	    private static String identity(Object object) {
+   449	        return object.getClass().getSimpleName() + "@" + Integer.toHexString(System.identityHashCode(object));
+   450	    }
+   451	
+   452	    private static String safeMessage(Throwable throwable) {
+   453	        return throwable == null ? "unknown error" : (throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage());
+   454	    }
+   455	
+   456	    private static void debug(String string) {
+   457	        if (config.debugLogging()) {
+   458	            System.out.println("[PYP] " + string);
+   459	        }
+   460	    }
+
+===== com/svframe/pyp/PypBuildWorkerX.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 */
+     4	package com.svframe.pyp;
+     5	
+     6	import com.svframe.pyp.Hashing;
+     7	import com.svframe.pyp.PackSourcePreparer;
+     8	import com.svframe.pyp.PackSquashProvisioner;
+     9	import com.svframe.pyp.PackSquashRunner;
+    10	import com.svframe.pyp.PypConfig;
+    11	import com.svframe.pyp.ZipNamePatcher;
+    12	import java.io.IOException;
+    13	import java.io.InputStream;
+    14	import java.io.OutputStream;
+    15	import java.nio.charset.StandardCharsets;
+    16	import java.nio.file.AtomicMoveNotSupportedException;
+    17	import java.nio.file.CopyOption;
+    18	import java.nio.file.Files;
+    19	import java.nio.file.LinkOption;
+    20	import java.nio.file.OpenOption;
+    21	import java.nio.file.Path;
+    22	import java.nio.file.StandardCopyOption;
+    23	import java.nio.file.StandardOpenOption;
+    24	import java.nio.file.attribute.FileAttribute;
+    25	import java.time.Instant;
+    26	import java.util.ArrayList;
+    27	import java.util.HashSet;
+    28	import java.util.Iterator;
+    29	import java.util.LinkedHashMap;
+    30	import java.util.List;
+    31	import java.util.Locale;
+    32	import java.util.Properties;
+    33	import java.util.Set;
+    34	import java.util.concurrent.ExecutorService;
+    35	import java.util.concurrent.Executors;
+    36	import java.util.concurrent.atomic.AtomicBoolean;
+    37	
+    38	public final class PypBuildWorkerX {
+    39	    private final Path gameDir;
+    40	    private final ExecutorService executor;
+    41	    private final AtomicBoolean running = new AtomicBoolean(false);
+    42	    private final PackSquashRunner runner = new PackSquashRunner();
+    43	    private volatile State state = State.IDLE;
+    44	    private volatile String message = "Not built yet";
+    45	    private volatile long startedAtMillis;
+    46	    private volatile long finishedAtMillis;
+    47	    private volatile String sourceSha256 = "";
+    48	    private volatile String outputSha1 = "";
+    49	    private volatile String outputSha256 = "";
+    50	    private volatile long inputBytes = -1L;
+    51	    private volatile long outputBytes = -1L;
+    52	    private volatile int skippedFiles;
+    53	
+    54	    public PypBuildWorkerX(Path path) {
+    55	        this.gameDir = path.toAbsolutePath().normalize();
+    56	        this.executor = Executors.newSingleThreadExecutor(runnable -> {
+    57	            Thread thread = new Thread(runnable, "PYP-PackSquash");
+    58	            thread.setDaemon(true);
+    59	            return thread;
+    60	        });
+    61	    }
+    62	
+    63	    public boolean requestBuild(PypConfig pypConfig, boolean bl) {
+    64	        if (!this.running.compareAndSet(false, true)) {
+    65	            return false;
+    66	        }
+    67	        this.state = State.RUNNING;
+    68	        this.message = "Build started";
+    69	        this.startedAtMillis = System.currentTimeMillis();
+    70	        this.executor.submit(() -> {
+    71	            try {
+    72	                this.build(pypConfig, bl);
+    73	            }
+    74	            catch (Throwable throwable) {
+    75	                this.state = State.FAILED;
+    76	                this.message = throwable.getClass().getSimpleName() + ": " + (throwable.getMessage() == null ? throwable.toString() : throwable.getMessage());
+    77	                System.err.println("[PYP] Build failed: " + this.message);
+    78	                throwable.printStackTrace(System.err);
+    79	            }
+    80	            finally {
+    81	                this.finishedAtMillis = System.currentTimeMillis();
+    82	                this.running.set(false);
+    83	            }
+    84	        });
+    85	        return true;
+    86	    }
+    87	
+    88	    private void build(PypConfig pypConfig, boolean bl) throws Exception {
+    89	        Object object;
+    90	        boolean bl2;
+    91	        Path path = this.resolve(pypConfig.sourcePack());
+    92	        Path path2 = this.resolve(pypConfig.outputPack());
+    93	        Path path3 = this.resolve(pypConfig.packsquashOptionsFile());
+    94	        Path path4 = this.gameDir.resolve("pyp/work").normalize();
+    95	        Path path5 = this.gameDir.resolve("pyp/state.properties").normalize();
+    96	        Path path6 = this.gameDir.resolve("pyp/skipped-files.txt").normalize();
+    97	        Files.createDirectories(path4, new FileAttribute[0]);
+    98	        if (!Files.exists(path, new LinkOption[0])) {
+    99	            throw new IOException("Source pack not found: " + String.valueOf(path));
+   100	        }
+   101	        if (!Files.isRegularFile(path, new LinkOption[0]) && !Files.isDirectory(path, new LinkOption[0])) {
+   102	            throw new IOException("Source pack must be a ZIP file or directory: " + String.valueOf(path));
+   103	        }
+   104	        if (!Files.isRegularFile(path3, new LinkOption[0])) {
+   105	            throw new IOException("PackSquash options file not found: " + String.valueOf(path3) + ". Set packsquashOptionsFile in config/pyp/config.json or create the file.");
+   106	        }
+   107	        this.inputBytes = Files.isRegularFile(path, new LinkOption[0]) ? Files.size(path) : -1L;
+   108	        String string = Hashing.sha256(path);
+   109	        String string2 = Hashing.sha256(path3);
+   110	        String string3 = pypConfig.packSquashErrorPolicy() + ":" + pypConfig.maxSkipPasses();
+   111	        String string4 = this.runnerIdentity(pypConfig);
+   112	        Properties properties = PypBuildWorkerX.loadState(path5);
+   113	        boolean bl3 = bl2 = string.equals(properties.getProperty("sourceSha256", "")) && string2.equals(properties.getProperty("optionsSha256", "")) && string3.equals(properties.getProperty("errorPolicyIdentity", "")) && string4.equals(properties.getProperty("packsquashRunnerIdentity", ""));
+   114	        if (!bl && bl2 && Files.isRegularFile(path2, new LinkOption[0])) {
+   115	            this.sourceSha256 = string;
+   116	            this.outputSha1 = Hashing.sha1(path2);
+   117	            this.outputSha256 = Hashing.sha256(path2);
+   118	            this.outputBytes = Files.size(path2);
+   119	            this.skippedFiles = PypBuildWorkerX.parseInt(properties.getProperty("skippedFiles", "0"), 0);
+   120	            this.state = State.SKIPPED;
+   121	            this.message = "Source, PackSquash options and policy unchanged; existing output kept";
+   122	            System.out.println("[PYP] Build skipped: source/options/policy unchanged.");
+   123	            return;
+   124	        }
+   125	        Path path7 = PackSquashProvisioner.resolveExecutable(pypConfig, this.gameDir);
+   126	        Path path8 = path2.toAbsolutePath().normalize().getParent();
+   127	        if (path8 != null) {
+   128	            Files.createDirectories(path8, new FileAttribute[0]);
+   129	        }
+   130	        Path path9 = path2.resolveSibling(path2.getFileName().toString() + ".building.zip");
+   131	        Files.deleteIfExists(path9);
+   132	        LinkedHashMap<String, SkippedAsset> linkedHashMap = new LinkedHashMap<String, SkippedAsset>();
+   133	        try {
+   134	            object = PackSourcePreparer.prepare(path, path4);
+   135	            try {
+   136	                Object object2;
+   137	                System.out.println("[PYP] Running PackSquash v0.4.1 on " + String.valueOf(path) + " -> " + String.valueOf(path2) + " (options=" + String.valueOf(path3) + ", errorPolicy=" + pypConfig.packSquashErrorPolicy() + ")");
+   138	                int n = 0;
+   139	                block7: while (true) {
+   140	                    ++n;
+   141	                    Files.deleteIfExists(path9);
+   142	                    object2 = PypBuildWorkerX.buildSkipIncludeOptions(linkedHashMap.values());
+   143	                    PackSquashRunner.RunResult runResult = this.runner.run(path7, ((PackSourcePreparer)object).directory(), path9, path3, (String)object2, pypConfig.logPackSquashOutput());
+   144	                    if (runResult.success()) break;
+   145	                    if (!pypConfig.skipFileOnPackSquashError()) {
+   146	                        throw new IOException("PackSquash exited with code " + runResult.exitCode() + " (" + runResult.describeFailure() + ")");
+   147	                    }
+   148	                    if (n > pypConfig.maxSkipPasses()) {
+   149	                        throw new IOException("PackSquash still fails after " + pypConfig.maxSkipPasses() + " skip passes; last error: " + runResult.describeFailure());
+   150	                    }
+   151	                    List<PackSquashRunner.Failure> list = runResult.failures().stream().filter(failure -> !linkedHashMap.containsKey(failure.relativePath())).toList();
+   152	                    if (list.isEmpty()) {
+   153	                        throw new IOException("PackSquash exited with code " + runResult.exitCode() + " but PYP could not identify a new pack file to passthrough; last output: " + runResult.describeFailure());
+   154	                    }
+   155	                    Iterator<PackSquashRunner.Failure> iterator = list.iterator();
+   156	                    while (true) {
+   157	                        if (!iterator.hasNext()) continue block7;
+   158	                        PackSquashRunner.Failure failure2 = iterator.next();
+   159	                        SkippedAsset skippedAsset2 = PypBuildWorkerX.quarantineAsCustom(((PackSourcePreparer)object).directory(), failure2, linkedHashMap.values());
+   160	                        linkedHashMap.put(skippedAsset2.originalRelative(), skippedAsset2);
+   161	                        System.err.println("[PYP] PackSquash could not process " + skippedAsset2.originalRelative() + "; retrying with raw passthrough. Reason: " + skippedAsset2.reason());
+   162	                    }
+   163	                    break;
+   164	                }
+   165	                if (!linkedHashMap.isEmpty()) {
+   166	                    object2 = linkedHashMap.values().stream().map(skippedAsset -> new ZipNamePatcher.Rename(skippedAsset.shadowRelative(), skippedAsset.originalRelative())).toList();
+   167	                    ZipNamePatcher.patch(path9, (List<ZipNamePatcher.Rename>)object2);
+   168	                }
+   169	            }
+   170	            finally {
+   171	                if (object != null) {
+   172	                    ((PackSourcePreparer)object).close();
+   173	                }
+   174	            }
+   175	        }
+   176	        catch (Throwable throwable) {
+   177	            Files.deleteIfExists(path9);
+   178	            throw throwable;
+   179	        }
+   180	        if (!Files.isRegularFile(path9, new LinkOption[0]) || Files.size(path9) <= 0L) {
+   181	            Files.deleteIfExists(path9);
+   182	            throw new IOException("PackSquash completed but did not produce a non-empty output ZIP");
+   183	        }
+   184	        PypBuildWorkerX.atomicReplace(path9, path2);
+   185	        this.sourceSha256 = string;
+   186	        this.outputSha1 = Hashing.sha1(path2);
+   187	        this.outputSha256 = Hashing.sha256(path2);
+   188	        this.outputBytes = Files.size(path2);
+   189	        this.skippedFiles = linkedHashMap.size();
+   190	        PypBuildWorkerX.writeSidecars(path2, this.outputSha1, this.outputSha256);
+   191	        PypBuildWorkerX.writeSkippedReport(path6, linkedHashMap.values());
+   192	        object = new Properties();
+   193	        ((Properties)object).setProperty("sourceSha256", string);
+   194	        ((Properties)object).setProperty("optionsSha256", string2);
+   195	        ((Properties)object).setProperty("errorPolicyIdentity", string3);
+   196	        ((Properties)object).setProperty("packsquashVersion", "0.4.1");
+   197	        ((Properties)object).setProperty("packsquashRunnerIdentity", string4);
+   198	        ((Properties)object).setProperty("outputSha1", this.outputSha1);
+   199	        ((Properties)object).setProperty("outputSha256", this.outputSha256);
+   200	        ((Properties)object).setProperty("skippedFiles", Integer.toString(this.skippedFiles));
+   201	        ((Properties)object).setProperty("builtAt", Instant.now().toString());
+   202	        PypBuildWorkerX.saveState(path5, (Properties)object);
+   203	        this.state = State.SUCCESS;
+   204	        this.message = this.skippedFiles == 0 ? "Protected pack built successfully" : "Protected pack built successfully; " + this.skippedFiles + " file(s) passed through raw";
+   205	        System.out.println("[PYP] Build complete. output=" + String.valueOf(path2) + " size=" + this.outputBytes + " SHA-1=" + this.outputSha1 + " SHA-256=" + this.outputSha256 + " passthrough=" + this.skippedFiles);
+   206	        if (this.skippedFiles > 0) {
+   207	            System.out.println("[PYP] Passthrough report: " + String.valueOf(path6));
+   208	        }
+   209	        System.out.println((String)(pypConfig.isR2Mode() ? "[PYP] Upload this output to R2 object " + pypConfig.r2Bucket() + "/" + pypConfig.r2Object() + " and set resourcePackSha1=" + this.outputSha1 : "[PYP] Upload this output to your external pack source, then reload BetterServerPacks."));
+   210	    }
+   211	
+   212	    private static SkippedAsset quarantineAsCustom(Path path, PackSquashRunner.Failure failure, Iterable<SkippedAsset> iterable) throws IOException {
+   213	        Path path2 = path.toAbsolutePath().normalize();
+   214	        Path path3 = path2.resolve(failure.relativePath()).normalize();
+   215	        if (!path3.startsWith(path2) || !Files.isRegularFile(path3, new LinkOption[0])) {
+   216	            throw new IOException("PackSquash error path is not a regular file inside the staged pack: " + failure.relativePath());
+   217	        }
+   218	        HashSet<String> hashSet = new HashSet<String>();
+   219	        for (SkippedAsset object2 : iterable) {
+   220	            hashSet.add(object2.shadowRelative());
+   221	        }
+   222	        String string = PypBuildWorkerX.chooseShadowRelative(path2, failure.relativePath(), hashSet);
+   223	        Path path4 = path2.resolve(string).normalize();
+   224	        Path path5 = path4.getParent();
+   225	        if (path5 != null) {
+   226	            Files.createDirectories(path5, new FileAttribute[0]);
+   227	        }
+   228	        try {
+   229	            Files.move(path3, path4, StandardCopyOption.ATOMIC_MOVE);
+   230	        }
+   231	        catch (AtomicMoveNotSupportedException atomicMoveNotSupportedException) {
+   232	            Files.move(path3, path4, new CopyOption[0]);
+   233	        }
+   234	        return new SkippedAsset(failure.relativePath(), string, failure.reason());
+   235	    }
+   236	
+   237	    private static String chooseShadowRelative(Path path, String string, Set<String> set) throws IOException {
+   238	        String string2;
+   239	        String string3 = string.replace('\\', '/');
+   240	        int n = string3.lastIndexOf(47);
+   241	        String string4 = n >= 0 ? string3.substring(0, n + 1) : "";
+   242	        String string5 = string2 = n >= 0 ? string3.substring(n + 1) : string3;
+   243	        if (string2.isEmpty()) {
+   244	            throw new IOException("Cannot create passthrough name for: " + string);
+   245	        }
+   246	        char[] cArray = new char[]{'x', 'y', 'z', 'q', 'v', 'k', 'm', 'r'};
+   247	        for (int i = string2.length() - 1; i >= 0; --i) {
+   248	            char c = string2.charAt(i);
+   249	            if (c > '\u007f' || c == '.' || c == '-' || c == '_') continue;
+   250	            for (char c2 : cArray) {
+   251	                String string6;
+   252	                String string7;
+   253	                if (c2 == c || (string7 = string4 + (string6 = string2.substring(0, i) + c2 + string2.substring(i + 1))).getBytes(StandardCharsets.UTF_8).length != string3.getBytes(StandardCharsets.UTF_8).length || set.contains(string7) || Files.exists(path.resolve(string7).normalize(), new LinkOption[0])) continue;
+   254	                return string7;
+   255	            }
+   256	        }
+   257	        throw new IOException("Could not create an equal-length temporary custom filename for " + string);
+   258	    }
+   259	
+   260	    private static String buildSkipIncludeOptions(Iterable<SkippedAsset> iterable) {
+   261	        StringBuilder stringBuilder = new StringBuilder();
+   262	        boolean bl = false;
+   263	        for (SkippedAsset skippedAsset : iterable) {
+   264	            bl = true;
+   265	            stringBuilder.append("[\"").append(PypBuildWorkerX.escapeTomlKey(skippedAsset.shadowRelative())).append("\"]\n").append("force_include = true\n\n");
+   266	        }
+   267	        if (!bl) {
+   268	            return "";
+   269	        }
+   270	        return "# PYP temporary passthrough rules for PackSquash failures\n" + String.valueOf(stringBuilder);
+   271	    }
+   272	
+   273	    private static String escapeTomlKey(String string) {
+   274	        return string.replace("\\", "\\\\").replace("\"", "\\\"");
+   275	    }
+   276	
+   277	    private static void writeSkippedReport(Path path, Iterable<SkippedAsset> iterable) throws IOException {
+   278	        ArrayList arrayList = new ArrayList();
+   279	        iterable.forEach(arrayList::add);
+   280	        if (arrayList.isEmpty()) {
+   281	            Files.deleteIfExists(path);
+   282	            return;
+   283	        }
+   284	        Files.createDirectories(path.getParent(), new FileAttribute[0]);
+   285	        StringBuilder stringBuilder = new StringBuilder();
+   286	        stringBuilder.append("Protect Your Pack passthrough report\n").append("Built: ").append(Instant.now()).append('\n').append("Files below were preserved byte-for-byte because PackSquash could not process them.\n\n");
+   287	        for (SkippedAsset skippedAsset : arrayList) {
+   288	            stringBuilder.append(skippedAsset.originalRelative()).append('\n').append("  Reason: ").append(skippedAsset.reason()).append("\n\n");
+   289	        }
+   290	        Files.writeString(path, (CharSequence)stringBuilder.toString(), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+   291	    }
+   292	
+   293	    public String statusLine(PypConfig pypConfig) {
+   294	        String string = this.finishedAtMillis > 0L && this.startedAtMillis > 0L ? (double)Math.max(0L, this.finishedAtMillis - this.startedAtMillis) / 1000.0 + "s" : "n/a";
+   295	        return "state=" + String.valueOf((Object)this.state) + ", message=" + this.message + ", source=" + pypConfig.sourcePack() + ", output=" + pypConfig.outputPack() + ", PackSquashOptions=" + pypConfig.packsquashOptionsFile() + ", errorPolicy=" + pypConfig.packSquashErrorPolicy() + ", input=" + PypBuildWorkerX.humanBytes(this.inputBytes) + ", outputSize=" + PypBuildWorkerX.humanBytes(this.outputBytes) + ", passthrough=" + this.skippedFiles + ", SHA1=" + PypBuildWorkerX.shortHash(this.outputSha1) + ", SHA256=" + PypBuildWorkerX.shortHash(this.outputSha256) + ", lastDuration=" + string;
+   296	    }
+   297	
+   298	    public State state() {
+   299	        return this.state;
+   300	    }
+   301	
+   302	    public boolean isRunning() {
+   303	        return this.running.get();
+   304	    }
+   305	
+   306	    public void shutdown() {
+   307	        this.runner.shutdown();
+   308	        this.executor.shutdownNow();
+   309	    }
+   310	
+   311	    private String runnerIdentity(PypConfig pypConfig) throws IOException {
+   312	        if (pypConfig.packsquashExecutable().isBlank()) {
+   313	            return "managed-v0.4.1";
+   314	        }
+   315	        Path path = this.resolve(pypConfig.packsquashExecutable());
+   316	        if (!Files.isRegularFile(path, new LinkOption[0])) {
+   317	            throw new IOException("Configured PackSquash executable not found: " + String.valueOf(path));
+   318	        }
+   319	        return "external:" + String.valueOf(path) + ":" + Hashing.sha256(path);
+   320	    }
+   321	
+   322	    private Path resolve(String string) {
+   323	        Path path = Path.of(string, new String[0]);
+   324	        return path.isAbsolute() ? path.normalize() : this.gameDir.resolve(path).normalize();
+   325	    }
+   326	
+   327	    private static void atomicReplace(Path path, Path path2) throws IOException {
+   328	        try {
+   329	            Files.move(path, path2, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+   330	        }
+   331	        catch (AtomicMoveNotSupportedException atomicMoveNotSupportedException) {
+   332	            Files.move(path, path2, StandardCopyOption.REPLACE_EXISTING);
+   333	        }
+   334	    }
+   335	
+   336	    private static Properties loadState(Path path) {
+   337	        Properties properties = new Properties();
+   338	        if (!Files.isRegularFile(path, new LinkOption[0])) {
+   339	            return properties;
+   340	        }
+   341	        try (InputStream inputStream = Files.newInputStream(path, new OpenOption[0]);){
+   342	            properties.load(inputStream);
+   343	        }
+   344	        catch (IOException iOException) {
+   345	            // empty catch block
+   346	        }
+   347	        return properties;
+   348	    }
+   349	
+   350	    private static void saveState(Path path, Properties properties) throws IOException {
+   351	        Files.createDirectories(path.getParent(), new FileAttribute[0]);
+   352	        try (OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);){
+   353	            properties.store(outputStream, "Protect Your Pack build state");
+   354	        }
+   355	    }
+   356	
+   357	    private static void writeSidecars(Path path, String string, String string2) throws IOException {
+   358	        Files.writeString(path.resolveSibling(String.valueOf(path.getFileName()) + ".sha1"), (CharSequence)(string + "\n"), StandardCharsets.US_ASCII, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+   359	        Files.writeString(path.resolveSibling(String.valueOf(path.getFileName()) + ".sha256"), (CharSequence)(string2 + "\n"), StandardCharsets.US_ASCII, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+   360	    }
+   361	
+   362	    private static int parseInt(String string, int n) {
+   363	        try {
+   364	            return Integer.parseInt(string);
+   365	        }
+   366	        catch (NumberFormatException numberFormatException) {
+   367	            return n;
+   368	        }
+   369	    }
+   370	
+   371	    private static String humanBytes(long l) {
+   372	        int n;
+   373	        if (l < 0L) {
+   374	            return "n/a";
+   375	        }
+   376	        double d = l;
+   377	        String[] stringArray = new String[]{"B", "KiB", "MiB", "GiB"};
+   378	        for (n = 0; d >= 1024.0 && n < stringArray.length - 1; d /= 1024.0, ++n) {
+   379	        }
+   380	        return String.format(Locale.ROOT, "%.1f%s", d, stringArray[n]);
+   381	    }
+   382	
+   383	    private static String shortHash(String string) {
+   384	        if (string == null || string.isBlank()) {
+   385	            return "n/a";
+   386	        }
+   387	        return string.length() <= 16 ? string : string.substring(0, 16) + "...";
+   388	    }
+   389	
+   390	    public static enum State {
+   391	        IDLE,
+   392	        RUNNING,
+   393	        SUCCESS,
+   394	        SKIPPED,
+   395	        FAILED;
+   396	
+   397	    }
+   398	
+   399	    private record SkippedAsset(String originalRelative, String shadowRelative, String reason) {
+   400	    }
+   401	}
+   402	
+
+===== com/svframe/pyp/R2DeliveryService.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 */
+     4	package com.svframe.pyp;
+     5	
+     6	import com.svframe.pyp.PypConfig;
+     7	import com.svframe.pyp.R2PresignedUrlService;
+     8	import java.util.concurrent.ArrayBlockingQueue;
+     9	import java.util.concurrent.ThreadFactory;
+    10	import java.util.concurrent.ThreadPoolExecutor;
+    11	import java.util.concurrent.TimeUnit;
+    12	import java.util.function.Consumer;
+    13	
+    14	final class R2DeliveryService {
+    15	    private static final ThreadPoolExecutor EXECUTOR = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(256), R2DeliveryService.daemonFactory(), new ThreadPoolExecutor.AbortPolicy());
+    16	    private static volatile R2PresignedUrlService signer;
+    17	    private static volatile String validationError;
+    18	
+    19	    private R2DeliveryService() {
+    20	    }
+    21	
+    22	    static synchronized void initialize(PypConfig pypConfig) {
+    23	        block4: {
+    24	            signer = null;
+    25	            String string = pypConfig.r2ValidationError();
+    26	            if (string != null) {
+    27	                validationError = string;
+    28	                if (pypConfig.isR2Mode()) {
+    29	                    System.err.println("[PYP] R2 delivery disabled: " + string);
+    30	                }
+    31	                return;
+    32	            }
+    33	            try {
+    34	                signer = new R2PresignedUrlService(pypConfig);
+    35	                validationError = null;
+    36	                System.out.println("[PYP] R2 presigner ready. bucket=" + pypConfig.r2Bucket() + ", object=" + pypConfig.r2Object() + ", expiry=" + pypConfig.r2UrlExpirationSeconds() + "s");
+    37	            }
+    38	            catch (RuntimeException runtimeException) {
+    39	                validationError = runtimeException.getMessage();
+    40	                if (!pypConfig.isR2Mode()) break block4;
+    41	                System.err.println("[PYP] R2 delivery disabled: " + runtimeException.getMessage());
+    42	            }
+    43	        }
+    44	    }
+    45	
+    46	    static boolean ready() {
+    47	        return signer != null;
+    48	    }
+    49	
+    50	    static String validationError() {
+    51	        return validationError;
+    52	    }
+    53	
+    54	    static boolean presignAsync(Consumer<String> consumer, Consumer<Throwable> consumer2) {
+    55	        R2PresignedUrlService r2PresignedUrlService = signer;
+    56	        if (r2PresignedUrlService == null) {
+    57	            consumer2.accept(new IllegalStateException(validationError == null ? "R2 presigner unavailable" : validationError));
+    58	            return false;
+    59	        }
+    60	        try {
+    61	            EXECUTOR.execute(() -> {
+    62	                try {
+    63	                    consumer.accept(r2PresignedUrlService.presignGet());
+    64	                }
+    65	                catch (Throwable throwable) {
+    66	                    consumer2.accept(throwable);
+    67	                }
+    68	            });
+    69	            return true;
+    70	        }
+    71	        catch (RuntimeException runtimeException) {
+    72	            consumer2.accept(new IllegalStateException("R2 presign queue is full", runtimeException));
+    73	            return false;
+    74	        }
+    75	    }
+    76	
+    77	    static int queueSize() {
+    78	        return EXECUTOR.getQueue().size();
+    79	    }
+    80	
+    81	    static void shutdown() {
+    82	        EXECUTOR.shutdownNow();
+    83	    }
+    84	
+    85	    private static ThreadFactory daemonFactory() {
+    86	        return runnable -> {
+    87	            Thread thread = new Thread(runnable, "PYP-R2-Presigner");
+    88	            thread.setDaemon(true);
+    89	            return thread;
+    90	        };
+    91	    }
+    92	
+    93	    static {
+    94	        validationError = "R2 delivery is not initialized";
+    95	    }
+    96	}
+    97	
+
+===== com/svframe/pyp/PackSquashRunner.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 */
+     4	package com.svframe.pyp;
+     5	
+     6	import java.io.BufferedReader;
+     7	import java.io.Closeable;
+     8	import java.io.IOException;
+     9	import java.io.InputStreamReader;
+    10	import java.io.OutputStream;
+    11	import java.nio.charset.StandardCharsets;
+    12	import java.nio.file.Files;
+    13	import java.nio.file.LinkOption;
+    14	import java.nio.file.Path;
+    15	import java.nio.file.attribute.FileAttribute;
+    16	import java.util.ArrayList;
+    17	import java.util.LinkedHashMap;
+    18	import java.util.List;
+    19	import java.util.concurrent.atomic.AtomicReference;
+    20	import java.util.regex.Pattern;
+    21	
+    22	final class PackSquashRunner {
+    23	    private static final Pattern FORBIDDEN_KEYS = Pattern.compile("(?m)^\\s*(pack_directory|output_file_path)\\s*=");
+    24	    private static final Pattern ANSI = Pattern.compile("\\u001B\\[[;\\d]*[ -/]*[@-~]");
+    25	    private final AtomicReference<Process> activeProcess = new AtomicReference();
+    26	
+    27	    PackSquashRunner() {
+    28	    }
+    29	
+    30	    /*
+    31	     * WARNING - Removed try catching itself - possible behaviour change.
+    32	     */
+    33	    RunResult run(Path path, Path path2, Path path3, Path path4, String string, boolean bl) throws Exception {
+    34	        String string2 = Files.readString(path4, StandardCharsets.UTF_8);
+    35	        if (FORBIDDEN_KEYS.matcher(string2).find()) {
+    36	            throw new IOException("Do not set pack_directory or output_file_path in " + String.valueOf(path4) + "; PYP injects them automatically.");
+    37	        }
+    38	        Files.createDirectories(path3.toAbsolutePath().normalize().getParent(), new FileAttribute[0]);
+    39	        String string3 = "pack_directory = " + PackSquashRunner.tomlString(path2.toAbsolutePath().normalize().toString()) + "\noutput_file_path = " + PackSquashRunner.tomlString(path3.toAbsolutePath().normalize().toString()) + "\n\n" + string2 + (String)(string == null || string.isBlank() ? "" : "\n\n" + string + "\n");
+    40	        ProcessBuilder processBuilder = new ProcessBuilder(path.toAbsolutePath().normalize().toString());
+    41	        processBuilder.directory(Path.of(".", new String[0]).toAbsolutePath().normalize().toFile());
+    42	        processBuilder.redirectErrorStream(true);
+    43	        Process process = processBuilder.start();
+    44	        if (!this.activeProcess.compareAndSet(null, process)) {
+    45	            process.destroyForcibly();
+    46	            throw new IllegalStateException("Another PackSquash process is already active");
+    47	        }
+    48	        LinkedHashMap<String, Failure> linkedHashMap = new LinkedHashMap<String, Failure>();
+    49	        ArrayList<String> arrayList = new ArrayList<String>();
+    50	        try {
+    51	            Object object;
+    52	            try (Closeable closeable = process.getOutputStream();){
+    53	                ((OutputStream)closeable).write(string3.getBytes(StandardCharsets.UTF_8));
+    54	            }
+    55	            closeable = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+    56	            try {
+    57	                while ((object = ((BufferedReader)closeable).readLine()) != null) {
+    58	                    if (bl) {
+    59	                        System.out.println("[PYP/PackSquash] " + (String)object);
+    60	                    }
+    61	                    PackSquashRunner.rememberTail(arrayList, (String)object);
+    62	                    Failure failure = PackSquashRunner.parseFileFailure(path2, (String)object);
+    63	                    if (failure == null) continue;
+    64	                    linkedHashMap.putIfAbsent(failure.relativePath(), failure);
+    65	                }
+    66	            }
+    67	            finally {
+    68	                ((BufferedReader)closeable).close();
+    69	            }
+    70	            int n = process.waitFor();
+    71	            object = new RunResult(n, List.copyOf(linkedHashMap.values()), List.copyOf(arrayList));
+    72	            return object;
+    73	        }
+    74	        finally {
+    75	            this.activeProcess.compareAndSet(process, null);
+    76	        }
+    77	    }
+    78	
+    79	    void shutdown() {
+    80	        Process process = this.activeProcess.getAndSet(null);
+    81	        if (process != null && process.isAlive()) {
+    82	            process.destroyForcibly();
+    83	        }
+    84	    }
+    85	
+    86	    private static Failure parseFileFailure(Path path, String string) {
+    87	        String string2 = ANSI.matcher(string).replaceAll("").trim();
+    88	        if (!string2.startsWith("! ")) {
+    89	            return null;
+    90	        }
+    91	        String string3 = string2.substring(2).trim();
+    92	        int n = string3.indexOf(": ");
+    93	        if (n <= 0) {
+    94	            return null;
+    95	        }
+    96	        String string4 = string3.substring(0, n).trim().replace('\\', '/');
+    97	        String string5 = string3.substring(n + 2).trim();
+    98	        if (string4.isBlank() || string4.equals("Pack processing error")) {
+    99	            return null;
+   100	        }
+   101	        Path path2 = path.toAbsolutePath().normalize();
+   102	        Path path3 = path2.resolve(string4).normalize();
+   103	        if (!path3.startsWith(path2) || !Files.isRegularFile(path3, new LinkOption[0])) {
+   104	            return null;
+   105	        }
+   106	        return new Failure(string4, string5);
+   107	    }
+   108	
+   109	    private static void rememberTail(List<String> list, String string) {
+   110	        if (list.size() == 24) {
+   111	            list.remove(0);
+   112	        }
+   113	        list.add(string);
+   114	    }
+   115	
+   116	    private static String tomlString(String string) {
+   117	        return "\"" + string.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t") + "\"";
+   118	    }
+   119	
+   120	    record Failure(String relativePath, String reason) {
+   121	    }
+   122	
+   123	    record RunResult(int exitCode, List<Failure> failures, List<String> outputTail) {
+   124	        boolean success() {
+   125	            return this.exitCode == 0;
+   126	        }
+   127	
+   128	        String describeFailure() {
+   129	            if (!this.failures.isEmpty()) {
+   130	                Failure failure = this.failures.get(0);
+   131	                return failure.relativePath() + ": " + failure.reason();
+   132	            }
+   133	            if (!this.outputTail.isEmpty()) {
+   134	                return this.outputTail.get(this.outputTail.size() - 1);
+   135	            }
+   136	            return "no diagnostic output";
+   137	        }
+   138	    }
+   139	}
+   140	
+
+===== com/svframe/pyp/PackSourcePreparer.java =====
+     1	/*
+     2	 * Decompiled with CFR 0.152.
+     3	 */
+     4	package com.svframe.pyp;
+     5	
+     6	import java.io.IOException;
+     7	import java.io.InputStream;
+     8	import java.io.OutputStream;
+     9	import java.nio.file.FileVisitOption;
+    10	import java.nio.file.Files;
+    11	import java.nio.file.LinkOption;
+    12	import java.nio.file.OpenOption;
+    13	import java.nio.file.Path;
+    14	import java.nio.file.StandardCopyOption;
+    15	import java.nio.file.attribute.FileAttribute;
+    16	import java.nio.file.attribute.FileTime;
+    17	import java.util.Comparator;
+    18	import java.util.UUID;
+    19	import java.util.stream.Stream;
+    20	import java.util.zip.ZipEntry;
+    21	import java.util.zip.ZipInputStream;
+    22	
+    23	final class PackSourcePreparer
+    24	implements AutoCloseable {
+    25	    private final Path directory;
+    26	    private final Path cleanupRoot;
+    27	
+    28	    private PackSourcePreparer(Path path, Path path2) {
+    29	        this.directory = path;
+    30	        this.cleanupRoot = path2;
+    31	    }
+    32	
+    33	    static PackSourcePreparer prepare(Path path, Path path2) throws IOException {
+    34	        if (!Files.isRegularFile(path, new LinkOption[0]) && !Files.isDirectory(path, new LinkOption[0])) {
+    35	            throw new IOException("Source pack does not exist: " + String.valueOf(path));
+    36	        }
+    37	        Path path3 = path2.resolve("source-" + String.valueOf(UUID.randomUUID())).toAbsolutePath().normalize();
+    38	        Files.createDirectories(path3, new FileAttribute[0]);
+    39	        try {
+    40	            if (Files.isDirectory(path, new LinkOption[0])) {
+    41	                PackSourcePreparer.copyDirectory(path.toAbsolutePath().normalize(), path3);
+    42	            } else {
+    43	                PackSourcePreparer.extractZip(path, path3);
+    44	            }
+    45	        }
+    46	        catch (Throwable throwable) {
+    47	            PackSourcePreparer.deleteRecursively(path3);
+    48	            if (throwable instanceof IOException) {
+    49	                IOException iOException = (IOException)throwable;
+    50	                throw iOException;
+    51	            }
+    52	            throw new IOException("Failed to stage source pack", throwable);
+    53	        }
+    54	        return new PackSourcePreparer(path3, path3);
+    55	    }
+    56	
+    57	    private static void extractZip(Path path, Path path2) throws IOException {
+    58	        try (InputStream inputStream = Files.newInputStream(path, new OpenOption[0]);
+    59	             ZipInputStream zipInputStream = new ZipInputStream(inputStream);){
+    60	            ZipEntry zipEntry;
+    61	            byte[] byArray = new byte[131072];
+    62	            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+    63	                String string = zipEntry.getName().replace('\\', '/');
+    64	                if (string.isBlank()) continue;
+    65	                Path path3 = path2.resolve(string).normalize();
+    66	                if (!path3.startsWith(path2)) {
+    67	                    throw new IOException("Unsafe ZIP entry path: " + zipEntry.getName());
+    68	                }
+    69	                if (zipEntry.isDirectory() || string.endsWith("/")) {
+    70	                    Files.createDirectories(path3, new FileAttribute[0]);
+    71	                    continue;
+    72	                }
+    73	                Path path4 = path3.getParent();
+    74	                if (path4 != null) {
+    75	                    Files.createDirectories(path4, new FileAttribute[0]);
+    76	                }
+    77	                try (Object object = Files.newOutputStream(path3, new OpenOption[0]);){
+    78	                    int n;
+    79	                    while ((n = zipInputStream.read(byArray)) >= 0) {
+    80	                        if (n <= 0) continue;
+    81	                        ((OutputStream)object).write(byArray, 0, n);
+    82	                    }
+    83	                }
+    84	                object = zipEntry.getLastModifiedTime();
+    85	                if (object == null) continue;
+    86	                try {
+    87	                    Files.setLastModifiedTime(path3, (FileTime)object);
+    88	                }
+    89	                catch (IOException iOException) {}
+    90	            }
+    91	        }
+    92	    }
+    93	
+    94	    private static void copyDirectory(Path path, Path path2) throws IOException {
+    95	        try (Stream<Path> stream = Files.walk(path, new FileVisitOption[0]);){
+    96	            for (Path path3 : stream.sorted().toList()) {
+    97	                Path path4 = path.relativize(path3);
+    98	                Path path5 = path2.resolve(path4).normalize();
+    99	                if (!path5.startsWith(path2)) {
+   100	                    throw new IOException("Unsafe source path: " + String.valueOf(path3));
+   101	                }
+   102	                if (Files.isDirectory(path3, new LinkOption[0])) {
+   103	                    Files.createDirectories(path5, new FileAttribute[0]);
+   104	                    continue;
+   105	                }
+   106	                if (!Files.isRegularFile(path3, new LinkOption[0])) continue;
+   107	                Path path6 = path5.getParent();
+   108	                if (path6 != null) {
+   109	                    Files.createDirectories(path6, new FileAttribute[0]);
+   110	                }
+   111	                Files.copy(path3, path5, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+   112	            }
+   113	        }
+   114	    }
+   115	
+   116	    Path directory() {
+   117	        return this.directory;
+   118	    }
+   119	
+   120	    @Override
+   121	    public void close() {
+   122	        if (this.cleanupRoot != null) {
+   123	            try {
+   124	                PackSourcePreparer.deleteRecursively(this.cleanupRoot);
+   125	            }
+   126	            catch (IOException iOException) {
+   127	                // empty catch block
+   128	            }
+   129	        }
+   130	    }
+   131	
+   132	    static void deleteRecursively(Path path) throws IOException {
+   133	        if (path == null || !Files.exists(path, new LinkOption[0])) {
+   134	            return;
+   135	        }
+   136	        try (Stream<Path> stream = Files.walk(path, new FileVisitOption[0]);){
+   137	            for (Path path2 : stream.sorted(Comparator.reverseOrder()).toList()) {
+   138	                Files.deleteIfExists(path2);
+   139	            }
+   140	        }
+   141	    }
+   142	}
+   143	
