@@ -1,0 +1,103 @@
+name: ProtectYourPack static audit
+
+on:
+  push:
+    branches:
+      - ProtectYourPack
+    paths:
+      - ProtectYourPack-1.2.1.jar
+      - .github/workflows/pyp-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Inspect and decompile ProtectYourPack
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="ProtectYourPack-1.2.1.jar"
+          WORK="${RUNNER_TEMP}/pyp-audit"
+          DECOMP="${WORK}/decompiled"
+          mkdir -p "$WORK" "$DECOMP"
+
+          echo '=== FILE ==='
+          ls -lh "$JAR"
+          sha256sum "$JAR"
+
+          echo
+          echo '=== FABRIC MOD METADATA ==='
+          unzip -p "$JAR" fabric.mod.json || true
+
+          echo
+          echo '=== MANIFEST ==='
+          unzip -p "$JAR" META-INF/MANIFEST.MF || true
+
+          echo
+          echo '=== MIXIN / ACCESS WIDENER RESOURCES ==='
+          jar tf "$JAR" | grep -Ei '(mixin.*\.json$|mixins.*\.json$|\.accesswidener$)' || true
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            echo
+            echo "--- $f ---"
+            unzip -p "$JAR" "$f" || true
+          done < <(jar tf "$JAR" | grep -Ei '(mixin.*\.json$|mixins.*\.json$|\.accesswidener$)' || true)
+
+          echo
+          echo '=== CLASS LIST ==='
+          jar tf "$JAR" | grep '\.class$' | sort
+
+          echo
+          echo '=== DOWNLOAD CFR ==='
+          curl -fL --retry 3 --retry-delay 2 \
+            -o "$WORK/cfr.jar" \
+            'https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar'
+
+          echo
+          echo '=== DECOMPILE ==='
+          java -jar "$WORK/cfr.jar" "$JAR" \
+            --outputdir "$DECOMP" \
+            --silent true \
+            --caseinsensitivefs true
+
+          echo
+          echo '=== DECOMPILED FILE LIST ==='
+          find "$DECOMP" -type f -name '*.java' -print | sort
+
+          echo
+          echo '=== PERFORMANCE-SENSITIVE REFERENCES ==='
+          PATTERN='ClientTickEvents|ServerTickEvents|END_CLIENT_TICK|END_SERVER_TICK|START_CLIENT_TICK|START_SERVER_TICK|Files\.|File\(|File\.|listFiles\(|Files\.walk|Files\.list|readAllBytes|readString|writeString|MessageDigest|SHA-1|SHA-256|ZipFile|JarFile|WatchService|ScheduledExecutor|scheduleAtFixedRate|scheduleWithFixedDelay|TimerTask|CompletableFuture|\.join\(|\.get\(|Thread\.sleep|new Thread|ExecutorService|ResourceReload|ReloadListener|registerReloadListener|send\(|sendPacket|ClientPlayNetworking|ServerPlayNetworking|stream\(\)|\.stream\(|collect\(|Collectors\.|Pattern\.compile|System\.gc|LOGGER\.(info|warn|error|debug|trace)'
+          grep -RInE "$PATTERN" "$DECOMP" || true
+
+          echo
+          echo '=== SUSPECT FILE EXCERPTS ==='
+          mapfile -t SUSPECTS < <(grep -RIlE "$PATTERN" "$DECOMP" | sort -u || true)
+          if [ "${#SUSPECTS[@]}" -eq 0 ]; then
+            echo 'No suspect files matched the static pattern set.'
+          else
+            for f in "${SUSPECTS[@]}"; do
+              echo
+              echo "##### $f #####"
+              sed -n '1,320p' "$f"
+            done
+          fi
+
+          echo
+          echo '=== ENTRYPOINT / EVENT REGISTRATION REFERENCES ==='
+          grep -RInE 'implements (ModInitializer|ClientModInitializer)|onInitialize\(|onInitializeClient\(|register\(|EVENT|Tick|JOIN|DISCONNECT|RESOURCE|Reload' "$DECOMP" || true
+
+          echo
+          echo '=== AUDIT COMPLETE ==='
