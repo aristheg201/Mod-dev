@@ -38,7 +38,9 @@ jobs:
           p = Path('common/src/main/java/dev/matthiesen/cobblemon_luckperms_npc_compat/common/molang/PlayerFunctionsExtension.java')
           s = p.read_text()
           s = s.replace('import com.cobblemon.mod.common.api.molang.MoLangFunctions;', 'import com.cobblemon.mod.common.api.molang.function.PlayerMoLangFunctions;')
+          s = s.replace('import java.util.function.Function;', 'import kotlin.jvm.functions.Function1;')
           s = s.replace('MoLangFunctions.INSTANCE.getPlayerFunctions().add(', 'PlayerMoLangFunctions.INSTANCE.getCustom().add(')
+          s = s.replace('HashMap<String, Function<MoParams, Object>> map = new HashMap<>();', 'HashMap<String, Function1<MoParams, Object>> map = new HashMap<>();')
           p.write_text(s)
           PY
       - name: Build Fabric jar
