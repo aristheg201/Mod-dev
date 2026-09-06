@@ -1,0 +1,210 @@
+name: Cobblemon 1.8 remaining ports
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/cobblemon-1.8-port-batch.yml'
+  workflow_dispatch:
+
+jobs:
+  tim-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-tim-core.git work
+      - name: Port metadata/dependencies to Cobblemon 1.8
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('modCobblemonVersion=1.7.3','modCobblemonVersion=1.8.0')
+          s=s.replace('cobblemon_version=1.7.3+1.21.1','cobblemon_version=1.8.0+1.21.1')
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tim-core-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  capture-xp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-capture-xp.git work
+      - name: Port metadata/dependencies to Cobblemon 1.8
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('modCobblemonVersion=1.7.3','modCobblemonVersion=1.8.0')
+          s=s.replace('cobblemon_version=1.7.3+1.21.1','cobblemon_version=1.8.0+1.21.1')
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capture-xp-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  fixed-starter-ivs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-fixed-starter-ivs.git work
+      - name: Port metadata/dependencies to Cobblemon 1.8
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('modCobblemonVersion=1.7.3','modCobblemonVersion=1.8.0')
+          s=s.replace('cobblemon_version=1.7.3+1.21.1','cobblemon_version=1.8.0+1.21.1')
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fixed-starter-ivs-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  spawn-notification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-spawn-notification.git work
+      - name: Port metadata/dependencies to Cobblemon 1.8
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('modCobblemonVersion=1.7.3','modCobblemonVersion=1.8.0')
+          s=s.replace('cobblemon_version=1.7.3+1.21.1','cobblemon_version=1.8.0+1.21.1')
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spawn-notification-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  cobblemon-parts-refabricated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 https://github.com/Spudstak/CobblemonPartsRefabricated.git work
+      - name: Port dependency to Cobblemon 1.8
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('loader_version=0.18.2','loader_version=0.19.0')
+          s=s.replace('mod_version=1.0.1','mod_version=1.0.1+1.8-port.1')
+          p.write_text(s)
+          p=Path('build.gradle'); s=p.read_text()
+          s=s.replace('maven.modrinth:cobblemon:1.7.3','maven.modrinth:cobblemon:YgmyyFcs')
+          p.write_text(s)
+          p=Path('src/main/resources/fabric.mod.json'); s=p.read_text()
+          s=s.replace('"cobblemon": ">=1.7.3"','"cobblemon": ">=1.8.0 <1.9.0"')
+          s=s.replace('"fabricloader": ">=0.18.2"','"fabricloader": ">=0.19.0"')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-parts-refabricated-1.8
+          path: |
+            work/build/libs/*.jar
+            !work/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  rad-gyms:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 https://github.com/gitoido-mc/rad-gyms.git work
+      - name: Port dependency range to Cobblemon 1.8
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          s=s.replace('cobblemon_version=1.7.3','cobblemon_version=1.8.0')
+          p.write_text(s)
+          p=Path('fabric/src/main/resources/fabric.mod.json'); s=p.read_text()
+          s=s.replace('"cobblemon": ">=${cobblemon_version}+1.21.1 <1.8.0+1.21.1"','"cobblemon": ">=${cobblemon_version}+1.21.1 <1.9.0+1.21.1"')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rad-gyms-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
