@@ -27,6 +27,7 @@ jobs:
           set -euxo pipefail
           python3 - <<'PY'
           from pathlib import Path
+
           p = Path('gradle.properties')
           s = p.read_text()
           s = s.replace('loader_version=0.18.1', 'loader_version=0.18.4')
@@ -42,6 +43,65 @@ jobs:
           s = s.replace('"minecraft_version" to project.property("minecraft_version"),', '"minecraft_version" to project.property("minecraft_version").toString(),')
           s = s.replace('"loader_version" to project.property("loader_version"),', '"loader_version" to project.property("loader_version").toString(),')
           s = s.replace('"kotlin_loader_version" to project.property("kotlin_loader_version")', '"kotlin_loader_version" to project.property("kotlin_loader_version").toString()')
+          p.write_text(s)
+
+          p = Path('src/main/kotlin/com/the_number_two/trainerattributeslib/attributes/AttributeEffects.kt')
+          s = p.read_text()
+          s = s.replace('import com.cobblemon.mod.common.Cobblemon\n', '')
+          s = s.replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n', '')
+          old = '''        CobblemonEvents.SPAWN_BUCKET_CHOSEN.subscribe(Priority.LOWEST) { event ->
+            val entity = event.spawnCause.entity as? LivingEntity ?: return@subscribe
+
+            val weightedBuckets = buildMap<SpawnBucket, Float> {
+                event.bucketWeights.forEach { (bucket, baseWeight) ->
+                    val attribute = TrainerAttributes.TIERED_SPAWN_BUCKETS[bucket.name] ?: return@forEach
+
+                    val modifier = AttributeUtils
+                        .getAttributeValue(entity, attribute, 0.0)
+                        .toFloat()
+
+                    val scaledWeight = baseWeight + (baseWeight * modifier)
+                    put(bucket, scaledWeight.coerceAtLeast(0f))
+                }
+            }
+
+            event.bucket = weightedBuckets.entries.weightedSelection { it.value }?.key
+                    ?: Cobblemon.bestSpawner.config.buckets.first()
+        }
+'''
+          new = '''        CobblemonEvents.SPAWN_BUCKET_CHOSEN.subscribe(Priority.LOWEST) { event ->
+            val entity = event.spawnCause.entity as? LivingEntity ?: return@subscribe
+
+            val weightedBuckets = buildMap<String, Float> {
+                event.bucketWeights.forEach { (bucket, baseWeight) ->
+                    val attribute = TrainerAttributes.TIERED_SPAWN_BUCKETS[bucket] ?: return@forEach
+
+                    val modifier = AttributeUtils
+                        .getAttributeValue(entity, attribute, 0.0)
+                        .toFloat()
+
+                    val scaledWeight = baseWeight + (baseWeight * modifier)
+                    put(bucket, scaledWeight.coerceAtLeast(0f))
+                }
+            }
+
+            event.bucket = weightedBuckets.entries.weightedSelection { it.value }?.key
+                    ?: event.bucketWeights.keys.first()
+        }
+'''
+          if old not in s:
+              raise SystemExit('AttributeEffects spawn block not found')
+          p.write_text(s.replace(old, new))
+
+          p = Path('src/main/kotlin/com/the_number_two/trainerattributeslib/influences/TieredSpawnBucketInfluence.kt')
+          s = p.read_text()
+          s = s.replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n', '')
+          s = s.replace('override fun affectBucketWeights(bucketWeights: MutableMap<SpawnBucket, Float>) {', 'override fun affectBucketWeights(bucketWeights: MutableMap<String, Float>) {')
+          s = s.replace('println("MODIFIED WEIGHT ${it.key.name} = ${it.value}")', 'println("MODIFIED WEIGHT ${it.key} = ${it.value}")')
+          p.write_text(s)
+
+          p = Path('src/main/kotlin/com/the_number_two/trainerattributeslib/influences/TypedBucketMultiplyingInfluence.kt')
+          s = p.read_text().replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n', '')
           p.write_text(s)
           PY
       - name: Build
