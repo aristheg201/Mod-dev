@@ -31,12 +31,12 @@ jobs:
           from pathlib import Path
 
           p=Path('gradle.properties'); s=p.read_text()
-          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.18.4')
           s=s.replace('cobblemon_version=1.7.3','cobblemon_version=1.8.0')
           p.write_text(s)
 
           p=Path('build.gradle.kts'); s=p.read_text()
-          s=s.replace('version = scmVersion.version', 'version = "0.4.4+1.8-port.1"')
+          s=s.replace('version = scmVersion.version', 'version = "0.4.4+1.8-port.2"')
           s=s.replace('maven("https://maven.internal.gito.lol/releases/")', 'maven("https://maven.fabricmc.net/")')
           p.write_text(s)
 
@@ -49,7 +49,7 @@ jobs:
           p.write_text(s)
 
           p=Path('fabric/src/main/resources/fabric.mod.json'); s=p.read_text()
-          s=s.replace('"fabricloader": ">=0.17.2"', '"fabricloader": ">=0.19.0"')
+          s=s.replace('"fabricloader": ">=0.17.2"', '"fabricloader": ">=0.18.4"')
           s=s.replace('"cobblemon": ">=${cobblemon_version}+1.21.1 <1.8.0+1.21.1"','"cobblemon": ">=${cobblemon_version}+1.21.1 <1.9.0+1.21.1"')
           p.write_text(s)
 
@@ -85,7 +85,7 @@ jobs:
         run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: rad-gyms-0.4.4-cobblemon-1.8
+          name: RadGyms-0.4.4-Cobblemon-1.8-Loader-0.18.4
           path: |
             work/fabric/build/libs/*.jar
             !work/fabric/build/libs/*-sources.jar
