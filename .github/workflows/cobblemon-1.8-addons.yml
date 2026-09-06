@@ -30,8 +30,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p = Path('gradle/libs.versions.toml')
-          s = p.read_text()
-          s = s.replace('cobblemon = "1.7.3+1.21.1"', 'cobblemon = "1.8.0+1.21.1"')
+          s = p.read_text().replace('cobblemon = "1.7.3+1.21.1"', 'cobblemon = "1.8.0+1.21.1"')
           p.write_text(s)
           p = Path('fabric/src/main/resources/fabric.mod.json')
           s = p.read_text().replace('"cobblemon": ">=1.7.3 <1.8.0"', '"cobblemon": ">=1.8.0 <1.9.0"')
@@ -63,8 +62,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p = Path('gradle.properties')
-          s = p.read_text()
-          s = s.replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          s = p.read_text().replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
           s = s.replace('mod_version=1.2.0-SNAPSHOT', 'mod_version=1.2.0+1.8.0-port.1')
           p.write_text(s)
           p = Path('fabric/src/main/resources/fabric.mod.json')
@@ -78,4 +76,24 @@ jobs:
         with:
           name: cobblemon-extra-balls-1.8-baseline
           path: work/extra-balls/fabric/build/libs/*.jar
+          if-no-files-found: error
+
+  svframe-leaderboards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Build leaderboard extension
+        working-directory: cobblemon-1.8-ports/svframe-leaderboards
+        run: gradle --no-daemon build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: svframe-leaderboards
+          path: cobblemon-1.8-ports/svframe-leaderboards/build/libs/*.jar
           if-no-files-found: error
