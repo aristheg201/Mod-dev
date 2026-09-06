@@ -44,8 +44,10 @@ jobs:
 
           p=Path('fabric/src/main/kotlin/lol/gito/radgyms/fabric/datagen/provider/RecipeProvider.kt')
           s=p.read_text()
+          s=s.replace('import com.cobblemon.mod.common.item.CobblemonItem\n', '')
           s=s.replace('Pair<GymKey, CobblemonItem>', 'Pair<GymKey, Item>')
           s=s.replace('Pair<PokeCache, CobblemonItem>', 'Pair<PokeCache, Item>')
+          s=s.replace('Pair<PokeCache, Item> =\n        when (type) {', 'Pair<PokeCache, Item> = when (type) {')
           p.write_text(s)
           PY
       - name: Build Fabric
