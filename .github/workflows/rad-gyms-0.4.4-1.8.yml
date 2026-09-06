@@ -58,7 +58,16 @@ jobs:
           s=s.replace('import com.cobblemon.mod.common.item.CobblemonItem\n', '')
           s=s.replace('Pair<GymKey, CobblemonItem>', 'Pair<GymKey, Item>')
           s=s.replace('Pair<PokeCache, CobblemonItem>', 'Pair<PokeCache, Item>')
-          s=s.replace('Pair<PokeCache, Item> =\n        when (type) {', 'Pair<PokeCache, Item> = when (type) {')
+          old='Pair<PokeCache, Item> =\n        when (type) {'
+          s=s.replace(old, 'Pair<PokeCache, Item> = when (type) {')
+          start=s.index('    private fun elementalTypeCacheConfig')
+          end=s.index('\n    private fun shardConfig', start)
+          block=s[start:end]
+          lines=block.splitlines()
+          for i in range(1, len(lines)):
+              if lines[i].startswith('    '):
+                  lines[i]=lines[i][4:]
+          s=s[:start]+'\n'.join(lines)+s[end:]
           p.write_text(s)
           PY
       - name: Build Fabric
