@@ -1,0 +1,50 @@
+name: Parts Refabricated Cobblemon 1.8 Loader 0.18.4
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/parts-refabricated-1.8-loader0184.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch source
+        run: git clone --depth 1 https://github.com/Spudstak/CobblemonPartsRefabricated.git work
+      - name: Apply Cobblemon 1.8 / Loader 0.18.4 port
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('loader_version=0.18.2','loader_version=0.18.4')
+          s=s.replace('mod_version=1.0.1','mod_version=1.0.1+1.8-port.2')
+          p.write_text(s)
+
+          p=Path('build.gradle'); s=p.read_text()
+          s=s.replace('maven.modrinth:cobblemon:1.7.3','maven.modrinth:cobblemon:YgmyyFcs')
+          p.write_text(s)
+
+          p=Path('src/main/resources/fabric.mod.json'); s=p.read_text()
+          s=s.replace('"cobblemon": ">=1.7.3"','"cobblemon": ">=1.8.0 <1.9.0"')
+          s=s.replace('"fabricloader": ">=0.18.2"','"fabricloader": ">=0.18.4"')
+          p.write_text(s)
+          PY
+      - name: Build
+        working-directory: work
+        run: ./gradlew --no-daemon build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CobblemonPartsRefabricated-1.8-Loader-0.18.4
+          path: |
+            work/build/libs/*.jar
+            !work/build/libs/*-sources.jar
+          if-no-files-found: error
