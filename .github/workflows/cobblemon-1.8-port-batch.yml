@@ -16,12 +16,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
       - name: Fetch source
         run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-tim-core.git work
       - name: Port metadata/dependencies to Cobblemon 1.8
         working-directory: work
         run: |
-          chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
           p=Path('gradle.properties'); s=p.read_text()
@@ -32,7 +34,7 @@ jobs:
           PY
       - name: Build Fabric
         working-directory: work
-        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+        run: gradle --no-daemon --configure-on-demand :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: tim-core-cobblemon-1.8
@@ -48,12 +50,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
       - name: Fetch source
         run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-capture-xp.git work
       - name: Port metadata/dependencies to Cobblemon 1.8
         working-directory: work
         run: |
-          chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
           p=Path('gradle.properties'); s=p.read_text()
@@ -64,7 +68,7 @@ jobs:
           PY
       - name: Build Fabric
         working-directory: work
-        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+        run: gradle --no-daemon --configure-on-demand :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: capture-xp-cobblemon-1.8
@@ -80,12 +84,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
       - name: Fetch source
         run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-fixed-starter-ivs.git work
       - name: Port metadata/dependencies to Cobblemon 1.8
         working-directory: work
         run: |
-          chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
           p=Path('gradle.properties'); s=p.read_text()
@@ -96,7 +102,7 @@ jobs:
           PY
       - name: Build Fabric
         working-directory: work
-        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+        run: gradle --no-daemon --configure-on-demand :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: fixed-starter-ivs-cobblemon-1.8
@@ -112,12 +118,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
       - name: Fetch source
         run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-spawn-notification.git work
       - name: Port metadata/dependencies to Cobblemon 1.8
         working-directory: work
         run: |
-          chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
           p=Path('gradle.properties'); s=p.read_text()
@@ -128,7 +136,7 @@ jobs:
           PY
       - name: Build Fabric
         working-directory: work
-        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+        run: gradle --no-daemon --configure-on-demand :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: spawn-notification-cobblemon-1.8
