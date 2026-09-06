@@ -1,0 +1,89 @@
+name: RCT API 0.15.2 Cobblemon 1.8 port
+
+on:
+  push:
+    branches: [port/cobblemon-1.8-addons]
+    paths: ['.github/workflows/rctapi-cobblemon-1.8.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch exact RCT API 0.15.2
+        run: git clone --depth 1 --branch v0.15.2-beta-1.21.1 https://gitlab.com/srcmc/rct/api.git work
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('gradle.properties')
+          s=p.read_text()
+          s=s.replace('mod_version=0.15.2-beta', 'mod_version=0.15.2-beta+1.8-port.1')
+          s=s.replace('fabric_loader_version=0.17.2', 'fabric_loader_version=0.18.4')
+          s=s.replace('fabric_api_version=0.116.6+1.21.1', 'fabric_api_version=0.116.15+1.21.1')
+          s=s.replace('cobblemon_version=1.7.0+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          s=s.replace('cobblemon_min_version=1.7', 'cobblemon_min_version=1.8')
+          p.write_text(s)
+
+          # Use the exact released Cobblemon 1.8 Fabric jar from Modrinth Maven.
+          for name in ['common/build.gradle', 'fabric/build.gradle']:
+              p=Path(name)
+              s=p.read_text()
+              s=s.replace('modApi "com.cobblemon:mod:$rootProject.cobblemon_version"', 'modApi "maven.modrinth:MdwFAVRL:YgmyyFcs"')
+              s=s.replace('modImplementation "com.cobblemon:fabric:$rootProject.cobblemon_version"', 'modImplementation "maven.modrinth:MdwFAVRL:YgmyyFcs"')
+              p.write_text(s)
+
+          # Ensure Modrinth Maven is resolvable from every subproject.
+          p=Path('build.gradle')
+          s=p.read_text()
+          marker='maven { url = "https://api.modrinth.com/maven" }'
+          if marker not in s:
+              if 'repositories {' in s:
+                  s=s.replace('repositories {', 'repositories {\n        '+marker, 1)
+              else:
+                  s='allprojects { repositories { '+marker+' } }\n'+s
+          p.write_text(s)
+
+          # Cobblemon 1.8 removed BattleActor.upkeep(); postUpdate() is the
+          # corresponding post-turn actor update hook present in 1.8.
+          p=Path('common/src/main/java/com/gitlab/srcmc/rctapi/mixins/BattleActorMixin.java')
+          s=p.read_text().replace('@Inject(method = "upkeep", at = @At("TAIL"), remap = false)',
+                                  '@Inject(method = "postUpdate", at = @At("TAIL"), remap = false)')
+          p.write_text(s)
+
+          # Cobblemon 1.8 removed PokemonBattle.afterDispatches/getAfterDispatches.
+          # This shadow is unused by RCT API 0.15.2, so remove it rather than
+          # emulating dead state.
+          p=Path('common/src/main/java/com/gitlab/srcmc/rctapi/mixins/PokemonBattleMixin.java')
+          s=p.read_text()
+          s=s.replace('import kotlin.Unit;\n', '')
+          s=s.replace('import kotlin.jvm.functions.Function0;\n', '')
+          block='''    @Shadow(remap = false)\n    public abstract List<Function0<Unit>> getAfterDispatches();\n\n'''
+          s=s.replace(block, '')
+          p.write_text(s)
+
+          # Patch generated/template dependency metadata if present.
+          for p in Path('.').rglob('fabric.mod.json'):
+              s=p.read_text()
+              s=s.replace('>=1.7', '>=1.8')
+              s=s.replace('>=0.17.2', '>=0.18.4')
+              p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rctapi-0.15.2-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+            !work/fabric/build/libs/*-dev*.jar
+          if-no-files-found: error
