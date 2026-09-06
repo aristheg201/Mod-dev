@@ -16,9 +16,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.0'
       - name: Fetch upstream source
         run: git clone --depth 1 https://github.com/Just0x02/TrainerAttributesLib.git work/trainerattributeslib
-      - name: Apply Cobblemon 1.8 baseline port
+      - name: Apply Cobblemon 1.8 port
         working-directory: work/trainerattributeslib
         run: |
           set -euxo pipefail
@@ -30,6 +33,15 @@ jobs:
           s = s.replace('fabric_version=0.116.7+1.21.1', 'fabric_version=0.116.15+1.21.1')
           s = s.replace('mod_version=1.7.3-1.0.2', 'mod_version=1.8.0-1.0.3-port.1')
           s = s.replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          p.write_text(s)
+
+          p = Path('build.gradle.kts')
+          s = p.read_text()
+          s = s.replace('properties["owo_version"]', 'project.property("owo_version")')
+          s = s.replace('properties["accessories_version"]', 'project.property("accessories_version")')
+          s = s.replace('"minecraft_version" to project.property("minecraft_version"),', '"minecraft_version" to project.property("minecraft_version").toString(),')
+          s = s.replace('"loader_version" to project.property("loader_version"),', '"loader_version" to project.property("loader_version").toString(),')
+          s = s.replace('"kotlin_loader_version" to project.property("kotlin_loader_version")', '"kotlin_loader_version" to project.property("kotlin_loader_version").toString()')
           p.write_text(s)
           PY
       - name: Build
