@@ -23,9 +23,9 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          p=Path('gradle.properties'); s=p.read_text()
-          s=s.replace('mod_version=3.0.2', 'mod_version=3.0.2+1.8-port.1')
-          p.write_text(s)
+          p=Path('gradle.properties')
+          b=p.read_bytes().replace(b'mod_version=3.0.2', b'mod_version=3.0.2+1.8-port.1')
+          p.write_bytes(b)
 
           p=Path('gradle/libs.versions.toml'); s=p.read_text()
           s=s.replace('fabric_loader = "0.17.2"', 'fabric_loader = "0.18.4"')
@@ -36,7 +36,8 @@ jobs:
           p.write_text(s)
 
           p=Path('build.gradle.kts'); s=p.read_text()
-          s += '\nallprojects {\n    repositories {\n        maven("https://api.modrinth.com/maven")\n    }\n}\n'
+          if 'https://api.modrinth.com/maven' not in s:
+              s += '\nallprojects {\n    repositories {\n        maven("https://api.modrinth.com/maven")\n    }\n}\n'
           p.write_text(s)
 
           p=Path('common/src/main/java/com/emperdog/releaserewards/loot/ReleaseUtils.java')
@@ -45,12 +46,11 @@ jobs:
           new='new ElementalType("bird", Component.empty(), 0, 0, 0, 0, ReleaseRewards.resource("empty"), "bird", ReleaseRewards.resource("empty"))'
           if old not in s:
               raise SystemExit('Expected ElementalType constructor not found')
-          s=s.replace(old,new)
-          p.write_text(s)
+          p.write_text(s.replace(old,new))
           PY
       - name: Build Fabric
         working-directory: work
-        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+        run: ./gradlew --no-daemon :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: releaserewards-3.0.2-cobblemon-1.8
