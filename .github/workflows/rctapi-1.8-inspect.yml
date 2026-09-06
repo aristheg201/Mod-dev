@@ -1,0 +1,26 @@
+name: RCT API 0.15.2 Cobblemon 1.8 inspect
+
+on:
+  push:
+    branches: [port/cobblemon-1.8-addons]
+    paths: ['.github/workflows/rctapi-1.8-inspect.yml']
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch RCT API 0.15.2
+        run: |
+          git clone --depth 1 --branch v0.15.2-beta-1.21.1 https://gitlab.com/srcmc/rct/api.git work
+      - name: Inspect mixins and build metadata
+        working-directory: work
+        run: |
+          echo '===== BattleActorMixin ====='
+          sed -n '1,240p' common/src/main/java/com/gitlab/srcmc/rctapi/mixins/BattleActorMixin.java
+          echo '===== PokemonBattleMixin ====='
+          sed -n '1,220p' common/src/main/java/com/gitlab/srcmc/rctapi/mixins/PokemonBattleMixin.java
+          echo '===== gradle.properties ====='
+          cat gradle.properties
+          echo '===== Cobblemon references ====='
+          grep -RniE 'cobblemon|mega_showdown|fabric_loader' gradle.properties build.gradle common/build.gradle fabric/build.gradle settings.gradle || true
