@@ -73,7 +73,11 @@ jobs:
           p=Path('fabric/src/main/kotlin/lol/gito/radgyms/fabric/datagen/provider/StructureLootDataProvider.kt')
           s=p.read_text()
           s=s.replace('import com.cobblemon.mod.common.item.CobblemonItem\n', '')
-          s=s.replace('is CobblemonItem -> TYPED_GEM_WEIGHT', 'in gems.values -> TYPED_GEM_WEIGHT')
+          s=s.replace(
+              '    private fun getWeight(item: ItemLike): Int {\n        val weight =',
+              '    private fun getWeight(item: ItemLike): Int {\n        if (gems.values.any { it === item }) {\n            return TYPED_GEM_WEIGHT\n        }\n\n        val weight =',
+          )
+          s=s.replace('                is CobblemonItem -> TYPED_GEM_WEIGHT\n', '')
           p.write_text(s)
           PY
       - name: Build Fabric
