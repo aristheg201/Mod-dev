@@ -29,6 +29,7 @@ jobs:
           chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
+
           p=Path('gradle.properties'); s=p.read_text()
           s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
           s=s.replace('cobblemon_version=1.7.3','cobblemon_version=1.8.0')
@@ -36,9 +37,19 @@ jobs:
 
           p=Path('build.gradle.kts'); s=p.read_text()
           s=s.replace('version = scmVersion.version', 'version = "0.4.4+1.8-port.1"')
+          s=s.replace('maven("https://maven.internal.gito.lol/releases/")', 'maven("https://maven.fabricmc.net/")')
+          p.write_text(s)
+
+          p=Path('common/build.gradle.kts'); s=p.read_text()
+          s=s.replace('modImplementation("com.cobblemon:mod:${property("cobblemon_version")}+${property("minecraft_version")}") {', 'modImplementation("maven.modrinth:MdwFAVRL:YgmyyFcs") {')
+          p.write_text(s)
+
+          p=Path('fabric/build.gradle.kts'); s=p.read_text()
+          s=s.replace('modImplementation("com.cobblemon:fabric:${property("cobblemon_version")}+${property("minecraft_version")}") {', 'modImplementation("maven.modrinth:MdwFAVRL:YgmyyFcs") {')
           p.write_text(s)
 
           p=Path('fabric/src/main/resources/fabric.mod.json'); s=p.read_text()
+          s=s.replace('"fabricloader": ">=0.17.2"', '"fabricloader": ">=0.19.0"')
           s=s.replace('"cobblemon": ">=${cobblemon_version}+1.21.1 <1.8.0+1.21.1"','"cobblemon": ">=${cobblemon_version}+1.21.1 <1.9.0+1.21.1"')
           p.write_text(s)
 
