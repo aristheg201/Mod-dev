@@ -1,0 +1,44 @@
+name: TrainerAttributesLib Cobblemon 1.8 build
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/trainerattributeslib-1.8.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/Just0x02/TrainerAttributesLib.git work/trainerattributeslib
+      - name: Apply Cobblemon 1.8 baseline port
+        working-directory: work/trainerattributeslib
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle.properties')
+          s = p.read_text()
+          s = s.replace('loader_version=0.18.1', 'loader_version=0.18.4')
+          s = s.replace('fabric_version=0.116.7+1.21.1', 'fabric_version=0.116.15+1.21.1')
+          s = s.replace('mod_version=1.7.3-1.0.2', 'mod_version=1.8.0-1.0.3-port.1')
+          s = s.replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          p.write_text(s)
+          PY
+      - name: Build
+        working-directory: work/trainerattributeslib
+        run: gradle --no-daemon build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trainerattributeslib-cobblemon-1.8
+          path: |
+            work/trainerattributeslib/build/libs/*.jar
+            !work/trainerattributeslib/build/libs/*-sources.jar
+          if-no-files-found: error
