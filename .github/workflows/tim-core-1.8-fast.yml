@@ -1,0 +1,61 @@
+name: Tim Core Cobblemon 1.8 fast port
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/tim-core-1.8-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Fetch source
+        run: git clone --depth 1 --branch 'v1.7.3/main' https://github.com/timinc-cobble/cobblemon-tim-core.git work
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('modCobblemonVersion=1.7.3','modCobblemonVersion=1.8.0')
+          s=s.replace('cobblemon_version=1.7.3+1.21.1','cobblemon_version=1.8.0+1.21.1')
+          s=s.replace('fabric_loader_version=0.17.2','fabric_loader_version=0.19.0')
+          p.write_text(s)
+
+          p=Path('common/src/main/kotlin/us/timinc/mc/cobblemon/timcore/SpawnBucketExtensions.kt')
+          s=p.read_text()
+          s=s.replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n','')
+          s=s.replace('fun SpawnBucket.getTranslatedName(): MutableComponent? =', 'fun String.getTranslatedName(): MutableComponent? =')
+          s=s.replace('TimCore.getBucketKeyFromName(this.name)', 'TimCore.getBucketKeyFromName(this)')
+          p.write_text(s)
+
+          p=Path('common/src/main/kotlin/us/timinc/mc/cobblemon/timcore/event/EntityDidSpawnEvent.kt')
+          s=p.read_text()
+          s=s.replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n','')
+          s=s.replace('val bucket: SpawnBucket', 'val bucket: String')
+          p.write_text(s)
+
+          p=Path('common/src/main/kotlin/us/timinc/mc/cobblemon/timcore/handler/AttachBucket.kt')
+          s=p.read_text().replace('evt.bucket.name)', 'evt.bucket)')
+          p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: gradle --no-daemon --configure-on-demand :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tim-core-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
