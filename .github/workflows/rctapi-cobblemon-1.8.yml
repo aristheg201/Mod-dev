@@ -32,7 +32,6 @@ jobs:
           s=s.replace('cobblemon_min_version=1.7', 'cobblemon_min_version=1.8')
           p.write_text(s)
 
-          # Use the exact released Cobblemon 1.8 Fabric jar from Modrinth Maven.
           for name in ['common/build.gradle', 'fabric/build.gradle']:
               p=Path(name)
               s=p.read_text()
@@ -40,7 +39,6 @@ jobs:
               s=s.replace('modImplementation "com.cobblemon:fabric:$rootProject.cobblemon_version"', 'modImplementation "maven.modrinth:MdwFAVRL:YgmyyFcs"')
               p.write_text(s)
 
-          # Ensure Modrinth Maven is resolvable from every subproject.
           p=Path('build.gradle')
           s=p.read_text()
           marker='maven { url = "https://api.modrinth.com/maven" }'
@@ -51,25 +49,18 @@ jobs:
                   s='allprojects { repositories { '+marker+' } }\n'+s
           p.write_text(s)
 
-          # Cobblemon 1.8 removed BattleActor.upkeep(); postUpdate() is the
-          # corresponding post-turn actor update hook present in 1.8.
           p=Path('common/src/main/java/com/gitlab/srcmc/rctapi/mixins/BattleActorMixin.java')
           s=p.read_text().replace('@Inject(method = "upkeep", at = @At("TAIL"), remap = false)',
                                   '@Inject(method = "postUpdate", at = @At("TAIL"), remap = false)')
           p.write_text(s)
 
-          # Cobblemon 1.8 removed PokemonBattle.afterDispatches/getAfterDispatches.
-          # This shadow is unused by RCT API 0.15.2, so remove it rather than
-          # emulating dead state.
           p=Path('common/src/main/java/com/gitlab/srcmc/rctapi/mixins/PokemonBattleMixin.java')
           s=p.read_text()
           s=s.replace('import kotlin.Unit;\n', '')
           s=s.replace('import kotlin.jvm.functions.Function0;\n', '')
-          block='''    @Shadow(remap = false)\n    public abstract List<Function0<Unit>> getAfterDispatches();\n\n'''
-          s=s.replace(block, '')
+          s=s.replace('    @Shadow(remap = false)\n    public abstract List<Function0<Unit>> getAfterDispatches();\n\n', '')
           p.write_text(s)
 
-          # Patch generated/template dependency metadata if present.
           for p in Path('.').rglob('fabric.mod.json'):
               s=p.read_text()
               s=s.replace('>=1.7', '>=1.8')
@@ -78,7 +69,7 @@ jobs:
           PY
       - name: Build Fabric
         working-directory: work
-        run: ./gradlew --no-daemon --configure-on-demand :fabric:build --stacktrace
+        run: ./gradlew --no-daemon :fabric:build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: rctapi-0.15.2-cobblemon-1.8
