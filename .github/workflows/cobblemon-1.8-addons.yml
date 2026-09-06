@@ -113,19 +113,6 @@ jobs:
       - name: Build leaderboard extension
         working-directory: cobblemon-1.8-ports/svframe-leaderboards
         run: gradle --no-daemon build
-      - name: Publish direct jar to branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          JAR="$(find cobblemon-1.8-ports/svframe-leaderboards/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
-          test -n "$JAR"
-          mkdir -p dist
-          cp "$JAR" dist/SVFrameLeaderboards-0.1.0.jar
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add dist/SVFrameLeaderboards-0.1.0.jar
-          git commit -m 'Publish SVFrameLeaderboards jar [skip ci]' || exit 0
-          git push origin "HEAD:${GITHUB_REF_NAME}"
       - uses: actions/upload-artifact@v4
         with:
           name: svframe-leaderboards
@@ -133,3 +120,44 @@ jobs:
             cobblemon-1.8-ports/svframe-leaderboards/build/libs/*.jar
             !cobblemon-1.8-ports/svframe-leaderboards/build/libs/*-sources.jar
           if-no-files-found: error
+
+  publish-dist:
+    needs:
+      - luckperms-npc-compat
+      - extra-balls
+      - svframe-leaderboards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: port/cobblemon-1.8-addons
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobblemon-luckperms-npc-compat-1.8
+          path: delivery/luckperms
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobblemon-extra-balls-1.8-baseline
+          path: delivery/extra-balls
+      - uses: actions/download-artifact@v4
+        with:
+          name: svframe-leaderboards
+          path: delivery/leaderboards
+      - name: Publish direct jars
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          LUCK="$(find delivery/luckperms -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          EXTRA="$(find delivery/extra-balls -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          LEADER="$(find delivery/leaderboards -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          test -n "$LUCK" && test -n "$EXTRA" && test -n "$LEADER"
+          cp "$LUCK" dist/CobblemonLuckPermsNPCCompat-1.8-port.jar
+          cp "$EXTRA" dist/CobblemonExtraBalls-1.8-port.jar
+          cp "$LEADER" dist/SVFrameLeaderboards-0.1.0.jar
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/*.jar
+          git commit -m 'Publish Cobblemon 1.8 addon jars [skip ci]' || exit 0
+          git push origin HEAD:port/cobblemon-1.8-addons
