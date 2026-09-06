@@ -1,0 +1,79 @@
+name: Cobblemon 1.8 addon ports
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/cobblemon-1.8-addons.yml'
+      - 'cobblemon-1.8-ports/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  luckperms-npc-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/Matthiesen-dev/cobblemon-luckperms-npc-compat.git work/luckperms-npc
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work/luckperms-npc
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle/libs.versions.toml')
+          s = p.read_text()
+          s = s.replace('cobblemon = "1.7.3+1.21.1"', 'cobblemon = "1.8.0+1.21.1"')
+          p.write_text(s)
+          p = Path('fabric/src/main/resources/fabric.mod.json')
+          s = p.read_text().replace('"cobblemon": ">=1.7.3 <1.8.0"', '"cobblemon": ">=1.8.0 <1.9.0"')
+          p.write_text(s)
+          PY
+      - name: Build Fabric jar
+        working-directory: work/luckperms-npc
+        run: ./gradlew --no-daemon :fabric:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-luckperms-npc-compat-1.8
+          path: work/luckperms-npc/fabric/build/libs/*.jar
+          if-no-files-found: error
+
+  extra-balls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/JPANv2/cobblemon_extra_balls.git work/extra-balls
+      - name: Apply Cobblemon 1.8 port baseline
+        working-directory: work/extra-balls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle.properties')
+          s = p.read_text()
+          s = s.replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          s = s.replace('mod_version=1.2.0-SNAPSHOT', 'mod_version=1.2.0+1.8.0-port.1')
+          p.write_text(s)
+          p = Path('fabric/src/main/resources/fabric.mod.json')
+          s = p.read_text().replace('"cobblemon": ">=1.7.1 <1.8.0"', '"cobblemon": ">=1.8.0 <1.9.0"')
+          p.write_text(s)
+          PY
+      - name: Build Fabric jar
+        working-directory: work/extra-balls
+        run: ./gradlew --no-daemon :fabric:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-extra-balls-1.8-baseline
+          path: work/extra-balls/fabric/build/libs/*.jar
+          if-no-files-found: error
