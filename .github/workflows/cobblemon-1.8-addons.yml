@@ -26,6 +26,7 @@ jobs:
       - name: Apply Cobblemon 1.8 port
         working-directory: work/luckperms-npc
         run: |
+          chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
           p = Path('gradle/libs.versions.toml')
@@ -58,6 +59,7 @@ jobs:
       - name: Apply Cobblemon 1.8 port baseline
         working-directory: work/extra-balls
         run: |
+          chmod +x gradlew
           python3 - <<'PY'
           from pathlib import Path
           p = Path('gradle.properties')
