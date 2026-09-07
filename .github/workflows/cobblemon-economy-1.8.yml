@@ -16,6 +16,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.0'
       - name: Fetch upstream source
         run: git clone --depth 1 https://github.com/Ryvexam/CobblemonEconomyMod.git work/cobblemon-economy
       - name: Apply Cobblemon 1.8 port
@@ -35,6 +38,8 @@ jobs:
 
           p = Path('build.gradle.kts')
           s = p.read_text()
+          s = s.replace('id("fabric-loom") version "1.7-SNAPSHOT"', 'id("fabric-loom") version "1.14.10"')
+          s = s.replace('kotlin("jvm") version "1.9.22"', 'kotlin("jvm") version "2.2.20"')
           s = s.replace('modImplementation("maven.modrinth:cobblemon:1.7.1")', 'modImplementation("maven.modrinth:MdwFAVRL:YgmyyFcs")')
           p.write_text(s)
 
@@ -50,9 +55,7 @@ jobs:
         run: git diff -- gradle.properties build.gradle.kts src/main/java/com/cobblemon/economy/events/CobblemonListeners.java
       - name: Build
         working-directory: work/cobblemon-economy
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon build --stacktrace
+        run: gradle --no-daemon build --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: cobblemon-economy-0.0.17-cobblemon-1.8
