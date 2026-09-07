@@ -8,10 +8,16 @@ on:
       - '.github/workflows/cobblemon-economy-1.8.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: port/cobblemon-1.8-addons
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -46,13 +52,22 @@ jobs:
           for p in Path('src').rglob('*.java'):
               s = p.read_text()
               patched = s.replace('PokedexEntryProgress.CAUGHT', 'PokedexEntryProgress.OWNED')
+              patched = patched.replace(
+                  'new ModelWidget(x, y, w, h, pokemon.asRenderablePokemon(), scale, 0.0f, 0.0, false, true)',
+                  'new ModelWidget(x, y, w, h, pokemon.asRenderablePokemon(), scale, 0.0f, 0.0, false, true, 13)'
+              )
               if patched != s:
                   p.write_text(patched)
                   print(f'patched {p}')
+
+          p = Path('src/main/resources/fabric.mod.json')
+          s = p.read_text()
+          s = s.replace('"cobblemon": ">=1.7.1"', '"cobblemon": ">=1.8.0 <1.9.0"')
+          p.write_text(s)
           PY
       - name: Show port diff
         working-directory: work/cobblemon-economy
-        run: git diff -- gradle.properties build.gradle.kts src/main/java/com/cobblemon/economy/events/CobblemonListeners.java
+        run: git diff -- gradle.properties build.gradle.kts src/main/java/com/cobblemon/economy/events/CobblemonListeners.java src/main/java/com/cobblemon/economy/client/QuestBoardScreen.java src/main/resources/fabric.mod.json
       - name: Build
         working-directory: work/cobblemon-economy
         run: gradle --no-daemon build --stacktrace
@@ -63,3 +78,16 @@ jobs:
             work/cobblemon-economy/build/libs/*.jar
             !work/cobblemon-economy/build/libs/*-sources.jar
           if-no-files-found: error
+      - name: Publish direct JAR
+        run: |
+          set -euxo pipefail
+          mkdir -p dist
+          JAR="$(find work/cobblemon-economy/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          test -n "$JAR"
+          cp "$JAR" dist/CobblemonEconomy-0.0.17-1.8-port.jar
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add dist/CobblemonEconomy-0.0.17-1.8-port.jar
+          git diff --cached --quiet && exit 0
+          git commit -m 'Publish Cobblemon Economy 1.8 port [skip ci]'
+          git push origin HEAD:port/cobblemon-1.8-addons
