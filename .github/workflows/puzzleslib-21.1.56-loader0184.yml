@@ -1,0 +1,71 @@
+name: PuzzlesLib 21.1.56 Loader 0.18.4
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/puzzleslib-21.1.56-loader0184.yml'
+  workflow_dispatch:
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Download official PuzzlesLib 21.1.56 Fabric jar
+        run: |
+          curl -fL --retry 4 --retry-delay 2 \
+            -o PuzzlesLib-v21.1.56-mc1.21.1-Fabric.jar \
+            'https://github.com/Fuzss/puzzles-lib/releases/download/v21.1.56-mc1.21.1%2Ffabric/PuzzlesLib-v21.1.56-mc1.21.1-Fabric.jar'
+          unzip -t PuzzlesLib-v21.1.56-mc1.21.1-Fabric.jar
+          unzip -p PuzzlesLib-v21.1.56-mc1.21.1-Fabric.jar fabric.mod.json > fabric.mod.before.json
+          cat fabric.mod.before.json
+
+      - name: Lower Fabric Loader dependency to 0.18.4
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, zipfile, shutil, tempfile
+
+          src = Path('PuzzlesLib-v21.1.56-mc1.21.1-Fabric.jar')
+          out = Path('PuzzlesLib-v21.1.56-mc1.21.1-Fabric-Loader-0.18.4.jar')
+
+          with zipfile.ZipFile(src, 'r') as zin:
+              meta = json.loads(zin.read('fabric.mod.json'))
+              depends = meta.setdefault('depends', {})
+              old = depends.get('fabricloader')
+              print('old fabricloader dependency:', old)
+              depends['fabricloader'] = '>=0.18.4'
+              print('new fabricloader dependency:', depends['fabricloader'])
+
+              with zipfile.ZipFile(out, 'w') as zout:
+                  for info in zin.infolist():
+                      data = zin.read(info.filename)
+                      if info.filename == 'fabric.mod.json':
+                          data = (json.dumps(meta, indent=2, ensure_ascii=False) + '\n').encode('utf-8')
+                      zout.writestr(info, data)
+
+          with zipfile.ZipFile(out, 'r') as z:
+              patched = json.loads(z.read('fabric.mod.json'))
+              assert patched['version'] == '21.1.56', patched['version']
+              assert patched['depends']['fabricloader'] == '>=0.18.4', patched['depends']
+              assert z.testzip() is None
+              print(json.dumps(patched, indent=2))
+          PY
+
+      - name: Validate patched jar
+        run: |
+          unzip -t PuzzlesLib-v21.1.56-mc1.21.1-Fabric-Loader-0.18.4.jar
+          test "$(unzip -p PuzzlesLib-v21.1.56-mc1.21.1-Fabric-Loader-0.18.4.jar fabric.mod.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["depends"]["fabricloader"])')" = ">=0.18.4"
+          test "$(unzip -p PuzzlesLib-v21.1.56-mc1.21.1-Fabric-Loader-0.18.4.jar fabric.mod.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" = "21.1.56"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PuzzlesLib-21.1.56-Loader-0.18.4
+          path: PuzzlesLib-v21.1.56-mc1.21.1-Fabric-Loader-0.18.4.jar
+          if-no-files-found: error

@@ -1,0 +1,69 @@
+name: CNPC Cobblemon Addon Cobblemon 1.8 port
+
+on:
+  push:
+    branches: [port/cobblemon-1.8-addons]
+    paths: ['.github/workflows/cnpc-addon-cobblemon-1.8.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Fetch 1.21.1 source
+        run: git clone --depth 1 --branch 1.21.1 https://github.com/Goodbird-git/CNPC-Cobblemon-Addon.git work
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('gradle.properties'); s=p.read_text()
+          s=s.replace('mod_version = 1.0.0', 'mod_version = 1.0.0+1.8-port.1')
+          s=s.replace('fabric_loader_version = 0.18.1', 'fabric_loader_version = 0.18.4')
+          s=s.replace('fabric_api_version = 0.116.7+1.21.1', 'fabric_api_version = 0.116.15+1.21.1')
+          p.write_text(s)
+
+          p=Path('build.gradle'); s=p.read_text()
+          if 'https://api.modrinth.com/maven' not in s:
+              s=s.replace('repositories {', 'repositories {\n        maven { url = "https://api.modrinth.com/maven" }', 1)
+          s=s.replace('modCompileOnly "curse.maven:cobblemon-687131:7247586"', 'modCompileOnly "maven.modrinth:MdwFAVRL:YgmyyFcs"')
+          s=s.replace("implementation files('../lib/Cobblemon-fabric-1.7.2+1.21.1---dev-shadow.jar')", 'implementation "maven.modrinth:MdwFAVRL:YgmyyFcs"')
+          p.write_text(s)
+
+          p=Path('common/src/main/java/com/goodbird/cnpccobblemonaddon/mixin/impl/ItemDropEntryMixin.java')
+          s=p.read_text()
+          s=s.replace('import net.minecraft.core.component.DataComponentMap;\n', 'import com.google.gson.JsonElement;\n')
+          s=s.replace('import net.minecraft.core.component.DataComponents;\n', '')
+          s=s.replace('import net.minecraft.nbt.CompoundTag;\n', '')
+          s=s.replace('void setComponents(DataComponentMap tag);', 'void setComponents(JsonElement tag);')
+          p.write_text(s)
+
+          p=Path('common/src/main/java/com/goodbird/cnpccobblemonaddon/data/PokemonDropData.java')
+          s=p.read_text()
+          s=s.replace('import com.goodbird.cnpccobblemonaddon.mixin.impl.ItemDropEntryMixin;\n', 'import com.goodbird.cnpccobblemonaddon.mixin.impl.ItemDropEntryMixin;\nimport com.mojang.serialization.JsonOps;\nimport net.minecraft.core.component.DataComponentMap;\n')
+          s=s.replace('entry.setComponents(dropStackEntry.getComponents());', 'DataComponentMap.CODEC.encodeStart(JsonOps.INSTANCE, dropStackEntry.getComponents()).result().ifPresent(entry::setComponents);')
+          p.write_text(s)
+
+          for p in Path('.').rglob('fabric.mod.json'):
+              s=p.read_text().replace('>=0.18.1', '>=0.18.4')
+              p.write_text(s)
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: gradle --no-daemon :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cnpccobblemonaddon-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+            !work/fabric/build/libs/*-dev*.jar
+          if-no-files-found: error

@@ -1,0 +1,55 @@
+name: Extra Balls 1.8 Fabric fast build
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/extra-balls-1.8-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/JPANv2/cobblemon_extra_balls.git work
+      - name: Apply Cobblemon 1.8 Fabric port
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle.properties')
+          s = p.read_text().replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          s = s.replace('mod_version=1.2.0-SNAPSHOT', 'mod_version=1.2.0+1.8.0-port.1')
+          p.write_text(s)
+          p = Path('fabric/src/main/resources/fabric.mod.json')
+          s = p.read_text().replace('"cobblemon": ">=1.7.1 <1.8.0"', '"cobblemon": ">=1.8.0 <1.9.0"')
+          p.write_text(s)
+          for rel in [
+              'common/src/main/java/com/jpan/cobblemon/extra_balls/items/XPSyphonPotion.java',
+              'common/src/main/java/com/jpan/cobblemon/extra_balls/items/BallSwapper.java',
+              'common/src/main/java/com/jpan/cobblemon/extra_balls/items/EVSyphonPotion.java',
+          ]:
+              p = Path(rel)
+              s = p.read_text()
+              s = s.replace('this.use(sp,sp.getItemInHand(usedHand));', 'this.use(sp,sp.getItemInHand(usedHand), false);')
+              s = s.replace('this.use(sp, sp.getItemInHand(usedHand));', 'this.use(sp, sp.getItemInHand(usedHand), false);')
+              p.write_text(s)
+          PY
+      - name: Build Fabric only
+        working-directory: work
+        run: ./gradlew --configure-on-demand --no-daemon :fabric:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-extra-balls-1.8-baseline
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+          if-no-files-found: error

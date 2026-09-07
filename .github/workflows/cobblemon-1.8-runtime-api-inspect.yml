@@ -1,0 +1,29 @@
+name: Cobblemon 1.8 runtime API inspect
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/cobblemon-1.8-runtime-api-inspect.yml'
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Download Cobblemon 1.8
+        run: curl -L --fail -o cobblemon.jar 'https://api.modrinth.com/maven/maven/modrinth/MdwFAVRL/YgmyyFcs/MdwFAVRL-YgmyyFcs.jar'
+      - name: Inspect changed runtime API
+        run: |
+          javap -classpath cobblemon.jar -p com.cobblemon.mod.common.api.battles.model.actor.BattleActor
+          echo '===== PokemonBattle ====='
+          javap -classpath cobblemon.jar -p com.cobblemon.mod.common.api.battles.model.PokemonBattle
+          echo '===== ItemDropEntry ====='
+          javap -classpath cobblemon.jar -p com.cobblemon.mod.common.api.drop.ItemDropEntry
+          echo '===== ElementalType ====='
+          javap -classpath cobblemon.jar -p com.cobblemon.mod.common.api.types.ElementalType

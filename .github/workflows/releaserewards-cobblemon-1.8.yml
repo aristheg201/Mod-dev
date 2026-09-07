@@ -1,0 +1,61 @@
+name: ReleaseRewards 3.0.2 Cobblemon 1.8 port
+
+on:
+  push:
+    branches: [port/cobblemon-1.8-addons]
+    paths: ['.github/workflows/releaserewards-cobblemon-1.8.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch ReleaseRewards 3.0.2 source
+        run: git clone --depth 1 https://github.com/anabsolutesloth/cobblemonreleaserewards.git work
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('gradle.properties')
+          b=p.read_bytes().replace(b'mod_version=3.0.2', b'mod_version=3.0.2+1.8-port.1')
+          p.write_bytes(b)
+
+          p=Path('gradle/libs.versions.toml'); s=p.read_text()
+          s=s.replace('fabric_loader = "0.17.2"', 'fabric_loader = "0.18.4"')
+          s=s.replace('fabric_api = "0.116.6+1.21.1"', 'fabric_api = "0.116.15+1.21.1"')
+          s=s.replace('cobblemon = "1.7.3+1.21.1"', 'cobblemon = "YgmyyFcs"')
+          s=s.replace('cobblemon_common = { module = "com.cobblemon:mod", version.ref = "cobblemon" }', 'cobblemon_common = { module = "maven.modrinth:MdwFAVRL", version.ref = "cobblemon" }')
+          s=s.replace('cobblemon_fabric = { module = "com.cobblemon:fabric", version.ref = "cobblemon" }', 'cobblemon_fabric = { module = "maven.modrinth:MdwFAVRL", version.ref = "cobblemon" }')
+          p.write_text(s)
+
+          p=Path('build.gradle.kts'); s=p.read_text()
+          if 'https://api.modrinth.com/maven' not in s:
+              s += '\nallprojects {\n    repositories {\n        maven("https://api.modrinth.com/maven")\n    }\n}\n'
+          p.write_text(s)
+
+          p=Path('common/src/main/java/com/emperdog/releaserewards/loot/ReleaseUtils.java')
+          s=p.read_text()
+          old='new ElementalType("bird", Component.empty(), 0, 0, ReleaseRewards.resource("empty"), "bird")'
+          new='new ElementalType("bird", Component.empty(), 0, 0, 0, 0, ReleaseRewards.resource("empty"), "bird", ReleaseRewards.resource("empty"))'
+          if old not in s:
+              raise SystemExit('Expected ElementalType constructor not found')
+          p.write_text(s.replace(old,new))
+          PY
+      - name: Build Fabric
+        working-directory: work
+        run: ./gradlew --no-daemon :fabric:build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: releaserewards-3.0.2-cobblemon-1.8
+          path: |
+            work/fabric/build/libs/*.jar
+            !work/fabric/build/libs/*-sources.jar
+            !work/fabric/build/libs/*-dev*.jar
+          if-no-files-found: error

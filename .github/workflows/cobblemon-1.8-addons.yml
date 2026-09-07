@@ -1,0 +1,163 @@
+name: Cobblemon 1.8 addon ports
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/cobblemon-1.8-addons.yml'
+      - 'cobblemon-1.8-ports/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  luckperms-npc-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/Matthiesen-dev/cobblemon-luckperms-npc-compat.git work/luckperms-npc
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work/luckperms-npc
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle/libs.versions.toml')
+          s = p.read_text().replace('cobblemon = "1.7.3+1.21.1"', 'cobblemon = "1.8.0+1.21.1"')
+          p.write_text(s)
+          p = Path('fabric/src/main/resources/fabric.mod.json')
+          s = p.read_text().replace('"cobblemon": ">=1.7.3 <1.8.0"', '"cobblemon": ">=1.8.0 <1.9.0"')
+          p.write_text(s)
+          p = Path('common/src/main/java/dev/matthiesen/cobblemon_luckperms_npc_compat/common/molang/PlayerFunctionsExtension.java')
+          s = p.read_text()
+          s = s.replace('import com.cobblemon.mod.common.api.molang.MoLangFunctions;', 'import com.cobblemon.mod.common.api.molang.function.PlayerMoLangFunctions;')
+          s = s.replace('import java.util.function.Function;', 'import kotlin.jvm.functions.Function1;')
+          s = s.replace('MoLangFunctions.INSTANCE.getPlayerFunctions().add(', 'PlayerMoLangFunctions.INSTANCE.getCustom().add(')
+          s = s.replace('HashMap<String, Function<MoParams, Object>> map = new HashMap<>();', 'HashMap<String, Function1<MoParams, Object>> map = new HashMap<>();')
+          p.write_text(s)
+          PY
+      - name: Build Fabric jar
+        working-directory: work/luckperms-npc
+        run: ./gradlew --no-daemon :fabric:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-luckperms-npc-compat-1.8
+          path: |
+            work/luckperms-npc/fabric/build/libs/*.jar
+            !work/luckperms-npc/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  extra-balls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/JPANv2/cobblemon_extra_balls.git work/extra-balls
+      - name: Apply Cobblemon 1.8 port baseline
+        working-directory: work/extra-balls
+        run: |
+          chmod +x gradlew
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle.properties')
+          s = p.read_text().replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          s = s.replace('mod_version=1.2.0-SNAPSHOT', 'mod_version=1.2.0+1.8.0-port.1')
+          p.write_text(s)
+          p = Path('fabric/src/main/resources/fabric.mod.json')
+          s = p.read_text().replace('"cobblemon": ">=1.7.1 <1.8.0"', '"cobblemon": ">=1.8.0 <1.9.0"')
+          p.write_text(s)
+          for rel in [
+              'common/src/main/java/com/jpan/cobblemon/extra_balls/items/XPSyphonPotion.java',
+              'common/src/main/java/com/jpan/cobblemon/extra_balls/items/BallSwapper.java',
+              'common/src/main/java/com/jpan/cobblemon/extra_balls/items/EVSyphonPotion.java',
+          ]:
+              p = Path(rel)
+              s = p.read_text()
+              s = s.replace('this.use(sp,sp.getItemInHand(usedHand));', 'this.use(sp,sp.getItemInHand(usedHand), false);')
+              s = s.replace('this.use(sp, sp.getItemInHand(usedHand));', 'this.use(sp, sp.getItemInHand(usedHand), false);')
+              p.write_text(s)
+          PY
+      - name: Build Fabric jar
+        working-directory: work/extra-balls
+        run: ./gradlew --no-daemon :fabric:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-extra-balls-1.8-baseline
+          path: |
+            work/extra-balls/fabric/build/libs/*.jar
+            !work/extra-balls/fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  svframe-leaderboards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.0'
+      - name: Build leaderboard extension
+        working-directory: cobblemon-1.8-ports/svframe-leaderboards
+        run: gradle --no-daemon build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: svframe-leaderboards
+          path: |
+            cobblemon-1.8-ports/svframe-leaderboards/build/libs/*.jar
+            !cobblemon-1.8-ports/svframe-leaderboards/build/libs/*-sources.jar
+          if-no-files-found: error
+
+  publish-dist:
+    needs:
+      - luckperms-npc-compat
+      - extra-balls
+      - svframe-leaderboards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: port/cobblemon-1.8-addons
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobblemon-luckperms-npc-compat-1.8
+          path: delivery/luckperms
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobblemon-extra-balls-1.8-baseline
+          path: delivery/extra-balls
+      - uses: actions/download-artifact@v4
+        with:
+          name: svframe-leaderboards
+          path: delivery/leaderboards
+      - name: Publish direct jars
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          LUCK="$(find delivery/luckperms -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          EXTRA="$(find delivery/extra-balls -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          LEADER="$(find delivery/leaderboards -type f -name '*.jar' ! -name '*-sources.jar' | head -n 1)"
+          test -n "$LUCK" && test -n "$EXTRA" && test -n "$LEADER"
+          cp "$LUCK" dist/CobblemonLuckPermsNPCCompat-1.8-port.jar
+          cp "$EXTRA" dist/CobblemonExtraBalls-1.8-port.jar
+          cp "$LEADER" dist/SVFrameLeaderboards-0.1.0.jar
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/*.jar
+          git commit -m 'Publish Cobblemon 1.8 addon jars [skip ci]' || exit 0
+          git push origin HEAD:port/cobblemon-1.8-addons

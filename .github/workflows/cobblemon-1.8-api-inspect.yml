@@ -1,0 +1,27 @@
+name: Cobblemon 1.8 API inspect
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/cobblemon-1.8-api-inspect.yml'
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Download Cobblemon 1.8 Fabric
+        run: |
+          set -euxo pipefail
+          curl -fL 'https://api.modrinth.com/maven/maven/modrinth/MdwFAVRL/YgmyyFcs/MdwFAVRL-YgmyyFcs.jar' -o cobblemon.jar
+          jar tf cobblemon.jar | grep 'client/gui/summary/widgets/ModelWidget' || true
+      - name: Inspect ModelWidget
+        run: |
+          set -euxo pipefail
+          javap -classpath cobblemon.jar -p -c -l -v com.cobblemon.mod.common.client.gui.summary.widgets.ModelWidget

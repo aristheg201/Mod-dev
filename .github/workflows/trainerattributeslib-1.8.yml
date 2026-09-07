@@ -1,0 +1,72 @@
+name: TrainerAttributesLib Cobblemon 1.8 build
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/trainerattributeslib-1.8.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.0'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/Just0x02/TrainerAttributesLib.git work/trainerattributeslib
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work/trainerattributeslib
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('gradle.properties')
+          s = p.read_text()
+          s = s.replace('loader_version=0.18.1', 'loader_version=0.18.4')
+          s = s.replace('fabric_version=0.116.7+1.21.1', 'fabric_version=0.116.15+1.21.1')
+          s = s.replace('mod_version=1.7.3-1.0.2', 'mod_version=1.8.0-1.0.3-port.1')
+          s = s.replace('cobblemon_version=1.7.3+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          p.write_text(s)
+          p = Path('build.gradle.kts')
+          s = p.read_text()
+          s = s.replace('properties["owo_version"]', 'project.property("owo_version")')
+          s = s.replace('properties["accessories_version"]', 'project.property("accessories_version")')
+          s = s.replace('"minecraft_version" to project.property("minecraft_version"),', '"minecraft_version" to project.property("minecraft_version").toString(),')
+          s = s.replace('"loader_version" to project.property("loader_version"),', '"loader_version" to project.property("loader_version").toString(),')
+          s = s.replace('"kotlin_loader_version" to project.property("kotlin_loader_version")', '"kotlin_loader_version" to project.property("kotlin_loader_version").toString()')
+          p.write_text(s)
+          p = Path('src/main/kotlin/com/the_number_two/trainerattributeslib/attributes/AttributeEffects.kt')
+          s = p.read_text()
+          s = s.replace('import com.cobblemon.mod.common.Cobblemon\n', '')
+          s = s.replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n', '')
+          s = s.replace('buildMap<SpawnBucket, Float>', 'buildMap<String, Float>')
+          s = s.replace('TIERED_SPAWN_BUCKETS[bucket.name]', 'TIERED_SPAWN_BUCKETS[bucket]')
+          s = s.replace('?: Cobblemon.bestSpawner.config.buckets.first()', '?: event.bucketWeights.keys.first()')
+          p.write_text(s)
+          p = Path('src/main/kotlin/com/the_number_two/trainerattributeslib/influences/TieredSpawnBucketInfluence.kt')
+          s = p.read_text()
+          s = s.replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n', '')
+          s = s.replace('MutableMap<SpawnBucket, Float>', 'MutableMap<String, Float>')
+          s = s.replace('${it.key.name}', '${it.key}')
+          p.write_text(s)
+          p = Path('src/main/kotlin/com/the_number_two/trainerattributeslib/influences/TypedBucketMultiplyingInfluence.kt')
+          s = p.read_text().replace('import com.cobblemon.mod.common.api.spawning.SpawnBucket\n', '')
+          p.write_text(s)
+          PY
+      - name: Build
+        working-directory: work/trainerattributeslib
+        run: gradle --no-daemon build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trainerattributeslib-cobblemon-1.8
+          path: |
+            work/trainerattributeslib/build/libs/*.jar
+            !work/trainerattributeslib/build/libs/*-sources.jar
+          if-no-files-found: error
