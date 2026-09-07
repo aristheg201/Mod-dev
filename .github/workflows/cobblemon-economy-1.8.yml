@@ -1,0 +1,62 @@
+name: Cobblemon Economy 1.8 port
+
+on:
+  push:
+    branches:
+      - port/cobblemon-1.8-addons
+    paths:
+      - '.github/workflows/cobblemon-economy-1.8.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Fetch upstream source
+        run: git clone --depth 1 https://github.com/Ryvexam/CobblemonEconomyMod.git work/cobblemon-economy
+      - name: Apply Cobblemon 1.8 port
+        working-directory: work/cobblemon-economy
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('gradle.properties')
+          s = p.read_text()
+          s = s.replace('loader_version=0.16.5', 'loader_version=0.18.4')
+          s = s.replace('fabric_version=0.103.0+1.21.1', 'fabric_version=0.116.15+1.21.1')
+          s = s.replace('mod_version=0.0.17', 'mod_version=0.0.17+1.8-port.1')
+          s = s.replace('cobblemon_version=1.7.1+1.21.1', 'cobblemon_version=1.8.0+1.21.1')
+          p.write_text(s)
+
+          p = Path('build.gradle.kts')
+          s = p.read_text()
+          s = s.replace('modImplementation("maven.modrinth:cobblemon:1.7.1")', 'modImplementation("maven.modrinth:MdwFAVRL:YgmyyFcs")')
+          p.write_text(s)
+
+          for p in Path('src').rglob('*.java'):
+              s = p.read_text()
+              patched = s.replace('PokedexEntryProgress.CAUGHT', 'PokedexEntryProgress.OWNED')
+              if patched != s:
+                  p.write_text(patched)
+                  print(f'patched {p}')
+          PY
+      - name: Show port diff
+        working-directory: work/cobblemon-economy
+        run: git diff -- gradle.properties build.gradle.kts src/main/java/com/cobblemon/economy/events/CobblemonListeners.java
+      - name: Build
+        working-directory: work/cobblemon-economy
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-economy-0.0.17-cobblemon-1.8
+          path: |
+            work/cobblemon-economy/build/libs/*.jar
+            !work/cobblemon-economy/build/libs/*-sources.jar
+          if-no-files-found: error
