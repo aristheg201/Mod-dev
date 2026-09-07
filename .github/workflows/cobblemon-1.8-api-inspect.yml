@@ -20,10 +20,8 @@ jobs:
         run: |
           set -euxo pipefail
           curl -fL 'https://api.modrinth.com/maven/maven/modrinth/MdwFAVRL/YgmyyFcs/MdwFAVRL-YgmyyFcs.jar' -o cobblemon.jar
-          jar tf cobblemon.jar | grep -E 'PokemonSelectingItem|PlayerMoLangFunctions|AbstractMoLangFunctionHolder' || true
-      - name: Inspect APIs
+          jar tf cobblemon.jar | grep 'client/gui/summary/widgets/ModelWidget' || true
+      - name: Inspect ModelWidget
         run: |
           set -euxo pipefail
-          javap -classpath cobblemon.jar -p -c com.cobblemon.mod.common.api.item.PokemonSelectingItem
-          javap -classpath cobblemon.jar -p -c com.cobblemon.mod.common.api.molang.function.PlayerMoLangFunctions || true
-          javap -classpath cobblemon.jar -p -c com.cobblemon.mod.common.api.molang.function.AbstractMoLangFunctionHolder || true
+          javap -classpath cobblemon.jar -p -c -l -v com.cobblemon.mod.common.client.gui.summary.widgets.ModelWidget
