@@ -1,0 +1,38 @@
+name: CobblemonExtras 1.8 Port
+
+on:
+  push:
+    branches: [cobblemonextras-1.8-port]
+    paths:
+      - 'ports/cobblemonextras-1.8/**'
+      - '.github/workflows/cobblemonextras-1.8-port.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Clone upstream CobblemonExtras 1.5.0
+        run: git clone https://github.com/chasem-dev/CobblemonExtras.git upstream
+      - name: Pin upstream commit
+        working-directory: upstream
+        run: git checkout ec84192936b7f84690ec03e08180148d4cdc2284
+      - name: Apply 1.8 port patch
+        run: bash ports/cobblemonextras-1.8/apply-port.sh upstream
+      - name: Build Fabric
+        working-directory: upstream
+        run: |
+          chmod +x gradlew
+          ./gradlew :fabric:build --stacktrace
+      - name: Upload Fabric jars
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobblemonextras-1.8-port
+          path: upstream/fabric/build/libs/*.jar
+          if-no-files-found: ignore
