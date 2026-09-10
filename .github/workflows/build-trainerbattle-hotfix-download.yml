@@ -1,0 +1,237 @@
+name: Build Trainer Battle Hotfix Download
+
+on:
+  push:
+    branches: [trainerbattle-hotfix-download]
+    paths:
+      - '.github/workflows/build-trainerbattle-hotfix-download.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+
+      - name: Download exact upstream binary
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://api.modrinth.com/v2/project/pwjgeBtv/version' -o /tmp/versions.json
+          URL=$(jq -r '[.[] | select(.version_number == "1.11.13+1.8.0")][0].files | ((map(select(.primary == true))[0] // .[0]).url)' /tmp/versions.json)
+          test -n "$URL" && test "$URL" != null
+          curl -fL --retry 4 --retry-all-errors "$URL" -o /tmp/original.jar
+          unzip -p /tmp/original.jar fabric.mod.json > /tmp/original.fabric.mod.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/original.fabric.mod.json'))
+          assert p['id']=='cobblemontrainerbattle'
+          assert p['version']=='1.11.13+1.8.0'
+          PY
+          javap -classpath /tmp/original.jar -c -p kiwiapollo.cobblemontrainerbattle.battle.BattleHistoryStorage > /tmp/original.javap.txt
+          grep -q 'onEndTick(net.minecraft.server.MinecraftServer)' /tmp/original.javap.txt
+          grep -q 'toNbtCompound' /tmp/original.javap.txt
+
+      - name: Create patch project
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hotfix
+          mkdir -p /tmp/hotfix/src/main/java/svperf/trainerbattle/mixin /tmp/hotfix/src/main/resources
+          cat > /tmp/hotfix/settings.gradle <<'EOF'
+          pluginManagement { repositories { maven { url='https://maven.fabricmc.net/' }; gradlePluginPortal(); mavenCentral() } }
+          rootProject.name='trainerbattle-svperf-hotfix'
+          EOF
+          cat > /tmp/hotfix/build.gradle <<'EOF'
+          plugins { id 'fabric-loom' version '1.9-SNAPSHOT' }
+          version='1.0.0'
+          group='svperf.trainerbattle'
+          base { archivesName='trainerbattle-svperf-hotfix' }
+          repositories { mavenCentral(); maven { url='https://maven.fabricmc.net/' } }
+          dependencies {
+            minecraft 'com.mojang:minecraft:1.21.1'
+            mappings 'net.fabricmc:yarn:1.21.1+build.3:v2'
+            modImplementation 'net.fabricmc:fabric-loader:0.16.9'
+            compileOnly files('/tmp/original.jar')
+          }
+          java { toolchain.languageVersion=JavaLanguageVersion.of(21) }
+          tasks.withType(JavaCompile).configureEach { options.release=21 }
+          EOF
+          cat > /tmp/hotfix/src/main/resources/svperf.trainerbattle.mixins.json <<'EOF'
+          {
+            "required": true,
+            "minVersion": "0.8",
+            "package": "svperf.trainerbattle.mixin",
+            "compatibilityLevel": "JAVA_21",
+            "mixins": ["BattleHistoryStorageMixin"],
+            "injectors": {"defaultRequire": 1}
+          }
+          EOF
+          cat > /tmp/hotfix/src/main/java/svperf/trainerbattle/mixin/BattleHistoryStorageMixin.java <<'EOF'
+          package svperf.trainerbattle.mixin;
+
+          import net.minecraft.nbt.NbtCompound;
+          import net.minecraft.nbt.NbtIo;
+          import net.minecraft.server.MinecraftServer;
+          import net.minecraft.util.WorldSavePath;
+          import org.slf4j.Logger;
+          import org.slf4j.LoggerFactory;
+          import org.spongepowered.asm.mixin.Mixin;
+          import org.spongepowered.asm.mixin.Pseudo;
+          import org.spongepowered.asm.mixin.Unique;
+          import org.spongepowered.asm.mixin.injection.At;
+          import org.spongepowered.asm.mixin.injection.Inject;
+          import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+          import java.lang.reflect.Field;
+          import java.lang.reflect.Method;
+          import java.nio.file.*;
+          import java.util.*;
+          import java.util.concurrent.*;
+          import java.util.concurrent.atomic.AtomicBoolean;
+
+          @Pseudo
+          @Mixin(targets="kiwiapollo.cobblemontrainerbattle.battle.BattleHistoryStorage", remap=false)
+          public abstract class BattleHistoryStorageMixin {
+            @Unique private static final Logger SVLOG=LoggerFactory.getLogger("TrainerBattle-SVPerf");
+            @Unique private static final int INTERVAL=20*60*20;
+            @Unique private static final AtomicBoolean RUNNING=new AtomicBoolean(false);
+            @Unique private static volatile ExecutorService IO;
+            @Unique private static volatile Field STORAGE;
+            @Unique private static volatile Method TO_NBT;
+
+            @Inject(method="onEndTick", at=@At("HEAD"), cancellable=true, remap=false)
+            private void svperf$onEndTick(MinecraftServer server, CallbackInfo ci) {
+              ci.cancel();
+              if (server.getTicks()%INTERVAL!=0) return;
+              if (!RUNNING.compareAndSet(false,true)) {
+                SVLOG.warn("Coalescing Trainer Battle history save; previous async I/O is still active");
+                return;
+              }
+              final Map<UUID,NbtCompound> snapshot;
+              try { snapshot=svperf$snapshot(); }
+              catch(Throwable t) { RUNNING.set(false); SVLOG.error("Trainer Battle history snapshot failed",t); return; }
+              final Path dir=server.getSavePath(WorldSavePath.ROOT).resolve("cobblemontrainerbattle").resolve("battle_history");
+              try {
+                svperf$io().execute(() -> { try { svperf$write(snapshot,dir); } finally { RUNNING.set(false); } });
+              } catch(Throwable t) { RUNNING.set(false); SVLOG.error("Could not queue Trainer Battle history I/O",t); }
+            }
+
+            @Inject(method="onServerStopped", at=@At("HEAD"), remap=false)
+            private void svperf$beforeStop(MinecraftServer server, CallbackInfo ci) {
+              ExecutorService e=IO;
+              if (e==null) return;
+              e.shutdown();
+              try { if(!e.awaitTermination(60,TimeUnit.SECONDS)) e.shutdownNow(); }
+              catch(InterruptedException x) { Thread.currentThread().interrupt(); e.shutdownNow(); }
+              finally { IO=null; RUNNING.set(false); }
+            }
+
+            @Unique private Map<UUID,NbtCompound> svperf$snapshot() throws Exception {
+              Class<?> c=Class.forName("kiwiapollo.cobblemontrainerbattle.battle.BattleHistoryStorage");
+              Field f=STORAGE;
+              if(f==null){ f=c.getDeclaredField("storage"); f.setAccessible(true); STORAGE=f; }
+              Method m=TO_NBT;
+              if(m==null){ m=c.getDeclaredMethod("toNbtCompound",Map.class); m.setAccessible(true); TO_NBT=m; }
+              Object raw=f.get(null);
+              if(!(raw instanceof Map<?,?> src)) throw new IllegalStateException("Battle history storage is not Map");
+              Map<UUID,NbtCompound> out=new LinkedHashMap<>(src.size());
+              for(Map.Entry<?,?> en:src.entrySet()) {
+                if(en.getKey() instanceof UUID id && en.getValue() instanceof Map<?,?> histories) {
+                  Object n=m.invoke(this,histories);
+                  if(n instanceof NbtCompound tag) out.put(id,tag);
+                }
+              }
+              return out;
+            }
+
+            @Unique private static synchronized ExecutorService svperf$io() {
+              if(IO==null || IO.isShutdown() || IO.isTerminated()) {
+                IO=Executors.newSingleThreadExecutor(r -> { Thread t=new Thread(r,"CobblemonTrainerBattle-IO"); t.setDaemon(true); return t; });
+              }
+              return IO;
+            }
+
+            @Unique private static void svperf$write(Map<UUID,NbtCompound> snapshot, Path dir) {
+              long start=System.nanoTime(); int count=0;
+              try { Files.createDirectories(dir); }
+              catch(Exception e){ SVLOG.error("Could not create Trainer Battle history directory",e); return; }
+              for(Map.Entry<UUID,NbtCompound> en:snapshot.entrySet()) {
+                Path dst=dir.resolve(en.getKey()+".dat"), old=dir.resolve(en.getKey()+".dat_old"), tmp=dir.resolve(en.getKey()+".dat.tmp");
+                try {
+                  Files.deleteIfExists(tmp);
+                  NbtIo.writeCompressed(en.getValue(),tmp);
+                  if(Files.exists(dst)) Files.copy(dst,old,StandardCopyOption.REPLACE_EXISTING);
+                  try { Files.move(tmp,dst,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }
+                  catch(AtomicMoveNotSupportedException x){ Files.move(tmp,dst,StandardCopyOption.REPLACE_EXISTING); }
+                  count++;
+                } catch(Exception e){ SVLOG.error("Async Trainer Battle history write failed for {}",en.getKey(),e); try{Files.deleteIfExists(tmp);}catch(Exception ignored){} }
+              }
+              SVLOG.info("Asynchronously saved Trainer Battle histories: {}/{} files in {} ms",count,snapshot.size(),TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start));
+            }
+          }
+          EOF
+
+      - name: Build patch class
+        working-directory: /tmp/hotfix
+        run: |
+          set -euo pipefail
+          gradle --no-daemon clean build --stacktrace
+          P=$(find build/libs -type f -name '*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)
+          cp "$P" /tmp/patch.jar
+          jar tf /tmp/patch.jar | grep -q 'svperf/trainerbattle/mixin/BattleHistoryStorageMixin.class'
+
+      - name: Merge patch into upstream JAR
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/merged /tmp/pex
+          mkdir -p /tmp/merged /tmp/pex
+          cd /tmp/merged && unzip -q /tmp/original.jar
+          cd /tmp/pex && unzip -q /tmp/patch.jar 'svperf/trainerbattle/mixin/*' 'svperf.trainerbattle.mixins.json'
+          cp -R /tmp/pex/svperf /tmp/merged/
+          cp /tmp/pex/svperf.trainerbattle.mixins.json /tmp/merged/
+          python3 - <<'PY'
+          import json
+          p='/tmp/merged/fabric.mod.json'
+          d=json.load(open(p))
+          if 'svperf.trainerbattle.mixins.json' not in d['mixins']: d['mixins'].append('svperf.trainerbattle.mixins.json')
+          d.setdefault('custom',{})['svperf:trainerbattle_async_save_hotfix']='1'
+          with open(p,'w') as f: json.dump(d,f,indent=2); f.write('\n')
+          PY
+          find /tmp/merged/META-INF -maxdepth 1 -type f \( -name '*.SF' -o -name '*.RSA' -o -name '*.DSA' \) -delete 2>/dev/null || true
+          cd /tmp/merged && zip -q -r '/tmp/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar' .
+
+      - name: Verify and publish direct-download JAR
+        run: |
+          set -euo pipefail
+          J='/tmp/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar'
+          unzip -t "$J" >/dev/null
+          python3 - <<'PY'
+          import json,zipfile
+          j='/tmp/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar'
+          with zipfile.ZipFile(j) as z:
+            n=set(z.namelist()); d=json.loads(z.read('fabric.mod.json'))
+            assert d['id']=='cobblemontrainerbattle'
+            assert d['version']=='1.11.13+1.8.0'
+            assert d.get('custom',{}).get('svperf:trainerbattle_async_save_hotfix')=='1'
+            assert 'svperf/trainerbattle/mixin/BattleHistoryStorageMixin.class' in n
+            assert 'svperf.trainerbattle.mixins.json' in n
+            assert 'svperf.trainerbattle.mixins.json' in d['mixins']
+          PY
+          javap -classpath "$J" -c -p svperf.trainerbattle.mixin.BattleHistoryStorageMixin | grep -q 'CobblemonTrainerBattle-IO'
+          mkdir -p downloads
+          cp "$J" downloads/
+          sha256sum "$J" > downloads/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads
+          git commit -m 'Publish Trainer Battle async-save hotfix [skip ci]'
+          git push origin HEAD:trainerbattle-hotfix-download
