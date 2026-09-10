@@ -1,0 +1,19 @@
+name: Upload Trainer Battle Chat Artifact
+
+on:
+  push:
+    branches: [trainerbattle-hotfix-download]
+    paths:
+      - '.github/workflows/upload-trainerbattle-chat-artifact.yml'
+
+jobs:
+  upload:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-trainer-battle-1.11.13-1.8.0-SVPERF-ASYNC-SAVE
+          path: downloads/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar
+          if-no-files-found: error
+          compression-level: 0
