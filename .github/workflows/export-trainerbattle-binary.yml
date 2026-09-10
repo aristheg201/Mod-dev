@@ -1,0 +1,32 @@
+name: Export Trainer Battle Binary
+
+on:
+  push:
+    branches: [trainerbattle-hotfix-download]
+    paths:
+      - '.github/workflows/export-trainerbattle-binary.yml'
+
+permissions:
+  contents: read
+
+env:
+  JAR: downloads/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact binary
+        run: |
+          set -euo pipefail
+          test "$(stat -c '%s' "$JAR")" = "13022806"
+          echo '9645c6e1b92fbec6c0a0b78ebfe1d761b3430388ab0c01643778bcad61457cad  '"$JAR" | sha256sum -c -
+      - name: Upload exact JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-trainer-battle-1.11.13-1.8.0-SVPERF-ASYNC-SAVE
+          path: ${{ env.JAR }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
