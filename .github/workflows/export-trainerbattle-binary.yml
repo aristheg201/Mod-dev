@@ -17,11 +17,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Verify exact binary
+      - name: Verify published binary
         run: |
           set -euo pipefail
           test "$(stat -c '%s' "$JAR")" = "13022806"
-          echo '9645c6e1b92fbec6c0a0b78ebfe1d761b3430388ab0c01643778bcad61457cad  '"$JAR" | sha256sum -c -
+          echo 'c27359fe82358627e96a500165ace431268caadbbd03e54378dd056484dcf017  '"$JAR" | sha256sum -c -
       - name: Upload exact JAR
         uses: actions/upload-artifact@v4
         with:
