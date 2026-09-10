@@ -1,0 +1,38 @@
+name: Export Trainer Battle As JAR Artifact
+
+on:
+  push:
+    branches: [trainerbattle-hotfix-download]
+    paths:
+      - '.github/workflows/export-trainerbattle-as-jar-artifact.yml'
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand verified JAR root
+        run: |
+          set -euo pipefail
+          J='downloads/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar'
+          rm -rf /tmp/jarroot
+          mkdir -p /tmp/jarroot
+          unzip -q "$J" -d /tmp/jarroot
+          test -f /tmp/jarroot/fabric.mod.json
+          test -f /tmp/jarroot/svperf.trainerbattle.mixins.json
+          test -f /tmp/jarroot/svperf/trainerbattle/mixin/BattleHistoryStorageMixin.class
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/jarroot/fabric.mod.json'))
+          assert p['id']=='cobblemontrainerbattle'
+          assert p['version']=='1.11.13+1.8.0'
+          assert p.get('custom',{}).get('svperf:trainerbattle_async_save_hotfix')=='1'
+          assert 'svperf.trainerbattle.mixins.json' in p['mixins']
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trainerbattle-direct-jar
+          path: /tmp/jarroot/
+          if-no-files-found: error
+          include-hidden-files: true
+          compression-level: 6
