@@ -1,20 +1,21 @@
 # Continuation checkpoint
 
-Only feature/svarcade-production-20260912. Keep Actions manual-only.
-All 52 requirements remain mandatory. Production gate remains blocked.
+Only feature/svarcade-production-20260912. Actions remain manual-only.
+The complete 52-requirement production gate remains blocked.
 
-BotRuntime now preserves completed-prefix results only for explicit bounded
-strategies; ordinary strategies still fail their post-compute deadline check.
-Empty decisions are typed, not fake actions. Pending work includes completed but
-unpolled tasks in its capacity bound. Session cancellation, failure isolation,
-bounded failure history, detailed poll results and node/think-time metrics exist.
-The worker service is intended to be shared across sessions, not created per bot.
+Added generic BotProfile/BotDecisionSource/BotSystem. Exactly EASY/NORMAL/HARD
+profiles are parsed from data; the scheduler has no difficulty-specific tuning.
+Owner-thread scheduling shares the bounded worker service, respects delays and
+retry/pending deadlines, issues expiring controllers, cancels stale/closed work,
+and serializes assignments/attempt seeds/remaining delays, never live futures.
+All results still enter ActionDispatcher. Session cleanup owns the scheduler.
 
-Java 21 -Xlint:all -Werror: BotWorkerChecks, SearchChecks and BoardSearchChecks
-executed and passed. Tests exercise real GenericSession, ActionDispatcher and
-IntentGate for stale state, expiry, permissions, range, failures and teardown.
-Full Gradle/JUnit/Fabric/compatibility/load verification remains unexecuted.
+Actually executed: Java 21 -Xlint:all -Werror BotSystemChecks passes, including
+real core session/dispatcher scheduling and restore of delayed/in-flight work.
+SearchChecks, BoardSearchChecks and BotWorkerChecks passed in preceding slices.
+These are targeted tests, not full Gradle/JUnit/Fabric or release matrix evidence.
 
-Next: finish real bot/session/config source and scheduling bindings for board
-play, then the remaining TD/server/editor/reward/recovery/integration/UI scope.
-No release claim, no automatic workflow runs, no intentional feature deferrals.
+Next code: connect BoardDecisionSource and registered system/config factories,
+using the runtime's hashed repetition-count snapshot (not replaying history on
+the server thread), then finish remaining TD/Fabric/editor/integration scope.
+No complete playable mod or production completion is claimed by this checkpoint.
