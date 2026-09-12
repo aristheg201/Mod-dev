@@ -6,7 +6,7 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 
 /** One authoritative, transactional ingress for both human intents and bot decisions. */
-public final class ActionDispatcher {
+public final class ActionDispatcher implements AutoCloseable {
     public record Effect(Id type, Map<String, Object> data) {
         public Effect { Objects.requireNonNull(type); data = Values.map(data); }
     }
@@ -26,27 +26,32 @@ public final class ActionDispatcher {
     private final Deque<Event> events = new ArrayDeque<>();
     private final int eventCapacity;
     private boolean applying;
+    private boolean closed;
     public ActionDispatcher(GenericSession session, ArenaRuntime arenas, RateLimiter limiter,
                             Registry<Handler> handlers, double range, int eventCapacity) {
-        if (eventCapacity < 1) throw new IllegalArgumentException("Event capacity");
+        if (eventCapacity < 1 || eventCapacity > 1_000_000) throw new IllegalArgumentException("Event capacity");
         this.session = session; this.handlers = handlers; this.eventCapacity = eventCapacity;
         Map<Id, IntentGate.Rule> rules = new HashMap<>();
         handlers.ids().forEach(id -> rules.put(id, handlers.require(id)));
         gate = new IntentGate(session, arenas, limiter, new Registry<>(rules), range);
+        session.resources().own("security/action-dispatcher/" + UUID.randomUUID(), this::close);
     }
     public UUID issueController(UUID actor, long expires) {
-        session.thread().check(); UUID token = gate.issue(actor, expires);
+        session.thread().check(); if (closed) throw new IllegalStateException("Dispatcher closed");
+        UUID token = gate.issue(actor, expires);
         if (session.participants().get(actor).kind() == Participant.Kind.BOT) botControllers.put(actor, new BotController(token, 0));
         return token;
     }
     public void revokeController(UUID actor) { session.thread().check(); gate.revoke(actor); botControllers.remove(actor); }
     public IntentGate.Result dispatchHuman(IntentGate.Facts facts, IntentGate.Intent intent) {
         session.thread().check();
+        if (closed) return denied("session");
         if (!isKind(facts.actor(), Participant.Kind.PLAYER)) return denied("participant_kind");
         return dispatch(facts, intent);
     }
     public IntentGate.Result dispatchBot(IntentGate.Facts facts, UUID intendedSession, long revision, BotRuntime.Decision decision) {
         session.thread().check();
+        if (closed) return denied("session");
         if (!isKind(facts.actor(), Participant.Kind.BOT)) return denied("participant_kind");
         BotController controller = botControllers.get(facts.actor());
         if (controller == null || controller.sequence() == Long.MAX_VALUE) return denied("controller");
@@ -57,6 +62,7 @@ public final class ActionDispatcher {
         Participant participant = session.participants().get(actor); return participant != null && participant.kind() == kind;
     }
     private IntentGate.Result dispatch(IntentGate.Facts facts, IntentGate.Intent intent) {
+        if (closed) return denied("session");
         if (applying) return denied("reentrant");
         applying = true;
         Prepared prepared = null; boolean started = false;
@@ -84,5 +90,9 @@ public final class ActionDispatcher {
         while (!events.isEmpty() && result.size() < maximum) result.add(events.removeFirst());
         return List.copyOf(result);
     }
+    public Map<String, Integer> ownedCounts() {
+        session.thread().check(); return Map.of("events", events.size(), "bot_controllers", botControllers.size(), "grants", gate.controllers());
+    }
+    @Override public void close() { session.thread().check(); closed = true; events.clear(); botControllers.clear(); gate.close(); }
     private static IntentGate.Result denied(String reason) { return new IntentGate.Result(false, reason); }
 }

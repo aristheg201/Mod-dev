@@ -1,23 +1,22 @@
 # Continuation checkpoint
 
-Branch: feature/svarcade-production-20260912. Actions remain manual-only.
-All 52 production requirements remain mandatory. No release approval.
+Branch: feature/svarcade-production-20260912. Keep Actions manual-only.
+All 52 requirements remain mandatory. The production release gate stays blocked.
 
-Current capabilities: typed session services, lifecycle/security teardown,
-deterministic PathSystem, spatial TargetingSystem, transactional CurrencySystem,
-and pure immutable grid movement rules. Movement data defines ray/offset vectors,
-occupancy, orientation, first-move constraints, protected roles, compound moves,
-transient capture trails and promotion choices. Java has no named chess-piece or
-Pokemon branches. Repetition keys preserve effective rights, not visual identity.
+MovementSystem and BoardSystem now compose typed capabilities. Board state owns
+compact full move history, effective repetition counts and atomic prepared moves.
+BoardMoveHandler sends humans and bots through the same ActionDispatcher with
+phase, turn, legality, replay and event-backpressure checks. Dispatcher resources
+are now session-owned: queued events, bot controllers and grants clear on close.
+Board snapshots validate dimensions, references, counters and final history key.
+Full history replay is a pure off-thread operation with caller-supplied budgeting.
 
-Targeted Java 21 tests pass, including initial-position perft through depth 4
-(197281), Kiwipete through depth 3 (97862), sparse-position perft, castling through
-attack rejection, pinned en-passant rejection, promotion, check/double-check,
-checkmate/stalemate and effective repetition keys. Currency/path/security/targeting
-checks also pass. Test-only BoardFixtures declares standard chess as data.
-The pure rules are not yet a complete playable Chess definition or Fabric mod.
-Full Gradle/JUnit/Fabric and production matrix remain unexecuted in this environment.
+Local Java 21 standalone checks all pass: BoardChecks (perft and special rules),
+BoardSessionChecks (real dispatcher/composition/history/recovery), CurrencyChecks,
+PathChecks, SecurityLifecycleChecks and TargetingChecks. Full JUnit/Gradle/Fabric
+and production integration/load evidence have not run in this environment.
+No GitHub Actions invocation. This is not a playable complete Fabric release yet.
 
-Next: wire generic board/movement sessions, history/adjudication/clocks and shared
-action ingress; then continue remaining gameplay and server/integration scope.
-Use local-test -> commit -> push. Do not audit or re-plan the repository.
+Next: generic turn clocks, adjudication/draw/resign and bounded board strategies;
+continue TD combat/deployment/waves and the remaining server/integration scope.
+Code -> targeted local test -> commit -> push. Do not audit/re-plan the repository.
