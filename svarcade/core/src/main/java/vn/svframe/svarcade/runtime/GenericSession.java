@@ -14,11 +14,13 @@ public final class GenericSession {
     private final Map<UUID, Participant> participants;
     private final ThreadGuard thread;
     private final ResourceTracker resources;
+    private final SessionServices services;
     private final ArenaRuntime arenas;
     private final ArenaRuntime.Lease lease;
     private final Map<Id, SessionSystem> systems = new LinkedHashMap<>();
     private Status status = Status.CREATED;
     private long revision;
+    private boolean cleaning;
     private long lastTick = -1;
 
     public GenericSession(UUID id, Definition definition, String arena, List<Participant> participants,
@@ -32,6 +34,7 @@ public final class GenericSession {
         if (players < definition.minPlayers() || players > definition.maxPlayers()) throw new IllegalArgumentException("Participant limits");
         this.participants = Map.copyOf(copy);
         resources = new ResourceTracker(thread);
+        services = new SessionServices(thread);
         lease = arenas.acquire(new ArenaRuntime.Key(definition.id(), arena), id);
     }
     void restoreRevision(long revision) {
@@ -45,21 +48,31 @@ public final class GenericSession {
         try {
             Set<Id> expected = new HashSet<>(); definition.systems().forEach(s -> expected.add(s.id()));
             if (states != null && !expected.equals(states.keySet())) throw new IllegalArgumentException("Recovery system set mismatch");
+            services.validatePlan(definition.systems(), factories);
             for (Definition.SystemSpec spec : definition.systems()) {
-                SessionSystem system = Objects.requireNonNull(factories.require(spec.id()).create(this, spec.config()));
+                SystemFactory factory = factories.require(spec.id());
+                services.begin(spec.id(), factory);
+                SessionSystem system = Objects.requireNonNull(factory.create(this, spec.config()));
                 systems.put(spec.id(), system);
                 resources.own("system/" + spec.id(), system::close);
+                services.finish();
                 if (states == null) system.start();
                 else { SystemState state = states.get(spec.id()); system.restore(state.schema(), state.data()); }
             }
-            status = Status.RUNNING; revision++;
-        } catch (RuntimeException e) { close(); throw e; }
+            if (status != Status.CREATED) throw new IllegalStateException("Session closed during initialization");
+            status = Status.RUNNING; changed();
+        } catch (RuntimeException e) { services.stopPublication(); close(); throw e; }
     }
     public void tick(long tick) {
         thread.check(); if (status != Status.RUNNING) return;
         if (tick < 0 || tick <= lastTick) throw new IllegalArgumentException("Non-increasing session tick");
         lastTick = tick;
-        try { for (SessionSystem system : systems.values()) system.tick(tick); }
+        try {
+            for (SessionSystem system : systems.values()) {
+                if (status != Status.RUNNING) break;
+                system.tick(tick);
+            }
+        }
         catch (RuntimeException e) { close(); throw e; }
     }
     public Map<Id, SystemState> snapshot() {
@@ -69,17 +82,28 @@ public final class GenericSession {
         return Map.copyOf(result);
     }
     public List<ResourceTracker.Failure> close() {
-        thread.check(); if (status == Status.CLOSED) return List.of();
-        status = Status.CLOSING; revision++;
-        List<ResourceTracker.Failure> failures = resources.cleanup();
-        if (resources.size() == 0) { arenas.release(lease); status = Status.CLOSED; }
-        return failures;
+        thread.check(); if (status == Status.CLOSED || cleaning) return List.of();
+        if (status != Status.CLOSING) {
+            status = Status.CLOSING;
+            if (revision < Long.MAX_VALUE) revision++;
+        }
+        services.stopPublication(); cleaning = true;
+        try {
+            List<ResourceTracker.Failure> failures = resources.cleanup();
+            if (resources.size() == 0) { services.clear(); arenas.release(lease); status = Status.CLOSED; }
+            return failures;
+        } finally { cleaning = false; }
     }
-    public void changed() { thread.check(); revision++; }
+    public void changed() {
+        thread.check();
+        if (status == Status.CLOSING || status == Status.CLOSED) throw new IllegalStateException("Session is closing");
+        revision = Math.incrementExact(revision);
+    }
     public UUID id() { return id; }
     public Definition definition() { return definition; }
     public Map<UUID, Participant> participants() { return participants; }
     public ResourceTracker resources() { return resources; }
+    public SessionServices services() { return services; }
     public ArenaRuntime.Lease lease() { return lease; }
     public ThreadGuard thread() { return thread; }
     public Status status() { thread.check(); return status; }
