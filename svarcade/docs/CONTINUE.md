@@ -1,18 +1,14 @@
 # Continuation checkpoint
 
-Work only on feature/svarcade-production-20260912. Keep Actions manual-only.
-All 52 requirements remain the single release scope; no production approval.
+Branch: feature/svarcade-production-20260912. Actions remain manual-only.
+All 52 requirements remain mandatory; production release is blocked.
 
-Implemented in this checkpoint: typed session capability contracts, scoped factory
-publication, dependency/order validation, cleanup lifetime, stop ticking after
-closure, reentrant-close protection, and checked revision increments.
+Added typed SessionServices and lifecycle guards, then session-owned controller
+revocation, lazy grant expiry, rate-capacity recovery without caller maintenance,
+and exclusion of non-members from a session's rate-limit key space.
+Targeted Java 21 checks pass with -Xlint:all -Werror. JUnit bridges are present;
+full Gradle/JUnit/Fabric verification is not claimed. Dependencies cannot be
+fetched in this execution environment (DNS unavailable).
 
-Verification: `python3 tools/verify_offline.py` with Java 21 passed. The checks are
-also called by JUnit tests during a normal Gradle test run. This is targeted
-verification, not evidence that the existing complete JUnit suite or Fabric build
-ran here. Current execution environment has Java 21 but no Gradle/dependency cache
-and cannot resolve GitHub/Maven DNS. Source transfer and checkpoints use the
-GitHub connector; do not turn on Actions to bypass this constraint.
-
-Next code: security lifecycle ownership, then reusable gameplay systems and their
-real configuration/runtime bindings. Read only related files; do not re-audit.
+Next implementation: generic gameplay systems and configuration bindings; retain
+local-test -> commit -> push checkpoints. Do not start over or audit the repo.

@@ -5,7 +5,7 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 
 /** Shared ingress for human and bot intents; callers supply server-derived facts. */
-public final class IntentGate {
+public final class IntentGate implements AutoCloseable {
     public record Intent(UUID session, UUID controller, long sequence, long revision, Id action, Map<String, Object> payload) {
         public Intent { Objects.requireNonNull(session); Objects.requireNonNull(controller); Objects.requireNonNull(action); payload = Values.map(payload); }
     }
@@ -24,12 +24,16 @@ public final class IntentGate {
     private final RateLimiter limiter;
     private final Registry<Rule> rules;
     private final double maxDistanceSquared;
+    private boolean closed;
     public IntentGate(GenericSession session, ArenaRuntime arenas, RateLimiter limiter, Registry<Rule> rules, double maxDistance) {
         if (!Double.isFinite(maxDistance) || maxDistance < 0 || !Double.isFinite(maxDistance * maxDistance)) throw new IllegalArgumentException("Interaction distance");
-        this.session = session; this.arenas = arenas; this.limiter = limiter; this.rules = rules; maxDistanceSquared = maxDistance * maxDistance;
+        this.session = Objects.requireNonNull(session); this.arenas = Objects.requireNonNull(arenas);
+        this.limiter = Objects.requireNonNull(limiter); this.rules = Objects.requireNonNull(rules); maxDistanceSquared = maxDistance * maxDistance;
+        session.resources().own("security/intent-gate/" + UUID.randomUUID(), this::close);
     }
     public UUID issue(UUID actor, long expires) {
         session.thread().check();
+        if (closed || session.status() == GenericSession.Status.CLOSED || session.status() == GenericSession.Status.CLOSING) throw new IllegalStateException("Controller owner closed");
         Participant p = session.participants().get(actor);
         if (p == null || p.kind() == Participant.Kind.SPECTATOR || expires < 0) throw new IllegalArgumentException("Invalid controller owner");
         UUID token = UUID.randomUUID(); controllers.put(actor, new Grant(token, expires, -1)); return token;
@@ -37,16 +41,18 @@ public final class IntentGate {
     public void revoke(UUID actor) { session.thread().check(); controllers.remove(actor); }
     public Result validate(Facts facts, Intent intent) {
         session.thread().check();
+        if (closed || session.status() != GenericSession.Status.RUNNING || !intent.session().equals(session.id())) return deny("session");
         if (facts.tick() < 0) return deny("time");
-        if (!limiter.allow(facts.actor(), facts.tick())) return deny("rate");
-        if (session.status() != GenericSession.Status.RUNNING || !intent.session().equals(session.id())) return deny("session");
         Participant p = session.participants().get(facts.actor());
+        // Only authenticated members consume this session's bounded key space.
         if (p == null || p.kind() == Participant.Kind.SPECTATOR) return deny("membership");
+        if (!limiter.allow(facts.actor(), facts.tick())) return deny("rate");
         if (!arenas.owns(session.lease())) return deny("arena");
         if (!facts.permission()) return deny("permission");
         if (!Double.isFinite(facts.distanceSquared()) || facts.distanceSquared() < 0 || facts.distanceSquared() > maxDistanceSquared) return deny("range");
         Grant grant = controllers.get(facts.actor());
-        if (grant == null || !grant.token().equals(intent.controller()) || facts.tick() >= grant.expires()) return deny("controller");
+        if (grant != null && facts.tick() >= grant.expires()) { controllers.remove(facts.actor(), grant); grant = null; }
+        if (grant == null || !grant.token().equals(intent.controller())) return deny("controller");
         if (intent.sequence() < 0 || intent.sequence() <= grant.sequence()) return deny("replay");
         if (intent.revision() != session.revision()) return deny("stale");
         if (!rules.contains(intent.action())) return deny("action");
@@ -55,5 +61,7 @@ public final class IntentGate {
         controllers.put(facts.actor(), new Grant(grant.token(), grant.expires(), intent.sequence()));
         return new Result(true, "accepted");
     }
+    public int controllers() { session.thread().check(); return controllers.size(); }
+    @Override public void close() { session.thread().check(); closed = true; controllers.clear(); }
     private static Result deny(String reason) { return new Result(false, reason); }
 }
