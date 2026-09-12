@@ -28,8 +28,9 @@ not a product roadmap or permission to ship incomplete features.
   single-writer atomic state-file persistence, explicit session recovery envelopes.
 - RAM editor transaction with immutable preview, bounded undo, selection reset,
   cancel, validation and explicit asynchronous publication callback.
-- A 52-requirement evidence manifest and a fail-closed production gate. Development
-  CI reports this gate without labeling a passing core job as release approval.
+- A 52-requirement evidence manifest and a fail-closed production gate. The
+  workflow is manual-only; no checkpoint push creates an Actions run. Do not
+  dispatch it until the entire scope and final full-matrix workflow are complete.
 
 ## Integration contracts that must be respected
 
@@ -83,3 +84,6 @@ The tests intentionally run without Minecraft/Cobblemon on their classpath.
 Use `gradle :core:check :core:jar` from `svarcade/`. Detailed evidence is generated
 under `core/build/test-results` and retained by the SVArcade workflow. Production
 release requires `python3 tools/release_gate.py` to pass; it currently must fail.
+
+Checkpoint rule: local targeted tests → commit → push this branch → continue.
+Never use Actions in this development loop; retain clean commit messages.

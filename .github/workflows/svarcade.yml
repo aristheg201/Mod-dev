@@ -1,10 +1,5 @@
 name: SVArcade verification
 on:
-  push:
-    branches: ['feature/svarcade-production-20260912']
-    paths: ['svarcade/**', '.github/workflows/svarcade.yml']
-  pull_request:
-    paths: ['svarcade/**', '.github/workflows/svarcade.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,10 +22,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Require completed production scope
+        run: python3 tools/release_gate.py
       - name: Compile and test isolated core
         run: gradle --no-daemon :core:check :core:jar
-      - name: Report single-release requirement status
-        run: python3 tools/release_gate.py --report-only
       - name: Retain test evidence
         if: always()
         uses: actions/upload-artifact@v4
