@@ -44,9 +44,9 @@ and `close()` must tolerate partially initialized/restored state.
 
 FSM action/condition functions are pure over immutable data. World effects require
 separate tracked effect execution; they must not be hidden inside a reducer or
-replayed by recovery. `IntentGate.validate()` consumes accepted sequence numbers;
-apply the validated operation immediately on the same owner thread through the
-appropriate system transaction. Facts come from server state, never client claims.
+replayed by recovery. `ActionDispatcher` owns validation, preparation, apply/rollback, revision and
+bounded event publication. BotRuntime has no arbitrary mutation callback; it
+submits decisions to that same dispatcher with the original session/revision. Facts come from server state, never client claims.
 
 The runtime keeps sessions with failed startup/cleanup reachable. An adapter must
 retain that runtime and drive cleanup/recovery; simply constructing a GenericSession
@@ -93,3 +93,8 @@ are package-root-relative, `#/pointer` stays in the current file. References are
 expanded before schema checks; transitive files participate in the fingerprint.
 System dependencies are compiled into stable topological start order; cycles fail
 reload before publication.
+
+Action handlers prepare without mutation. Apply/rollback modify only their owned
+system state; the dispatcher owns revision/event publication. Rollback failure
+closes the session. Handler effects are bounded runtime events, not a durable
+reward outbox. Human/bot controllers share validation and expiry semantics.

@@ -8,6 +8,7 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.persistence.*;
 import vn.svframe.svarcade.bot.*;
+import vn.svframe.svarcade.security.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BotAndRuntimeTest {
@@ -45,9 +46,11 @@ class BotAndRuntimeTest {
         })), 1, 1)) {
             var context = new BotRuntime.Context(session.id(), person, session.revision(), Map.of("visible", 1), new Node(Map.of("depth", 1), "bot"));
             assertTrue(bots.submit(context, strategy, 1_000_000_000, 10)); assertTrue(computed.await(5, TimeUnit.SECONDS));
+            var dispatcher = new ActionDispatcher(session, runtime.arenas(), new RateLimiter(8, 20, 1), new Registry<>(Map.of()), 10, 10);
+            dispatcher.issueController(person, 100);
             session.changed();
             long deadline = System.nanoTime() + 5_000_000_000L;
-            while (bots.pending() > 0 && System.nanoTime() < deadline) { bots.poll(session, person, d -> fail("Stale decision applied")); Thread.onSpinWait(); }
+            while (bots.pending() > 0 && System.nanoTime() < deadline) { bots.poll(session, person, dispatcher, new IntentGate.Facts(person, 1, 0, true)); Thread.onSpinWait(); }
             assertEquals(0, bots.pending()); assertEquals(1L, bots.metrics().get("stale"));
         }
     }

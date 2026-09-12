@@ -2,7 +2,8 @@ package vn.svframe.svarcade.bot;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
+import vn.svframe.svarcade.security.ActionDispatcher;
+import vn.svframe.svarcade.security.IntentGate;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 
@@ -21,7 +22,7 @@ public final class BotRuntime implements AutoCloseable {
     private final Registry<Strategy> strategies;
     private final ThreadPoolExecutor executor;
     private final Map<UUID, Pending> pending = new HashMap<>();
-    private long stale, failed, applied;
+    private long stale, failed, applied, rejected;
     private boolean closed;
     public BotRuntime(ThreadGuard thread, Registry<Strategy> strategies, int workers, int queueCapacity) {
         if (workers < 1 || workers > 32 || queueCapacity < 1) throw new IllegalArgumentException("Bot worker limits");
@@ -43,14 +44,19 @@ public final class BotRuntime implements AutoCloseable {
         try { executor.execute(task); return true; }
         catch (RejectedExecutionException e) { pending.remove(context.participant(), entry); return false; }
     }
-    /** applyValidated must pass the decision through the same authoritative intent gate as players. */
-    public boolean poll(GenericSession session, UUID participant, Consumer<Decision> applyValidated) {
-        thread.check(); Pending work = pending.get(participant);
+    /** Workers have no mutation callback; every completed decision enters the shared dispatcher. */
+    public boolean poll(GenericSession session, UUID participant, ActionDispatcher dispatcher, IntentGate.Facts facts) {
+        thread.check(); if (!participant.equals(facts.actor())) throw new IllegalArgumentException("Bot actor mismatch");
+        Pending work = pending.get(participant);
         if (work == null || !work.future().isDone()) return false;
         pending.remove(participant);
         if (session.status() != GenericSession.Status.RUNNING || !session.id().equals(work.context().session()) || session.revision() != work.context().revision()
                 || !session.participants().containsKey(participant) || session.participants().get(participant).kind() != Participant.Kind.BOT) { stale++; return false; }
-        try { applyValidated.accept(work.future().get()); applied++; return true; }
+        try {
+            IntentGate.Result result = dispatcher.dispatchBot(facts, work.context().session(), work.context().revision(), work.future().get());
+            if (result.accepted()) applied++; else rejected++;
+            return result.accepted();
+        }
         catch (CancellationException | ExecutionException e) { failed++; return false; }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); failed++; return false; }
     }
@@ -64,5 +70,5 @@ public final class BotRuntime implements AutoCloseable {
         pending.clear(); executor.shutdownNow();
     }
     public int pending() { thread.check(); return pending.size(); }
-    public Map<String, Long> metrics() { thread.check(); return Map.of("stale", stale, "failed", failed, "applied", applied); }
+    public Map<String, Long> metrics() { thread.check(); return Map.of("stale", stale, "failed", failed, "applied", applied, "rejected", rejected); }
 }

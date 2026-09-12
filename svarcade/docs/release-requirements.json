@@ -78,7 +78,8 @@
       "requirement": "Bots are first-class Participants through BotRuntime/Controller/DecisionContext/Strategy/ThinkBudget. Exactly EASY/NORMAL/HARD standard difficulties.",
       "status": "in_progress",
       "evidence": [
-        "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java"
+        "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java",
+        "core/src/test/java/vn/svframe/svarcade/ActionDispatcherTest.java"
       ]
     },
     {
@@ -93,7 +94,8 @@
       "status": "in_progress",
       "evidence": [
         "core/src/test/java/vn/svframe/svarcade/SecurityTest.java",
-        "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java"
+        "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java",
+        "core/src/test/java/vn/svframe/svarcade/ActionDispatcherTest.java"
       ]
     },
     {
@@ -307,7 +309,8 @@
       "requirement": "Authoritative intent validation: membership, arena, phase, turn, controller, range, resource owner, currency, upgrade prerequisites, placement, permissions and rate. Bots use the same relevant validation path.",
       "status": "in_progress",
       "evidence": [
-        "core/src/test/java/vn/svframe/svarcade/SecurityTest.java"
+        "core/src/test/java/vn/svframe/svarcade/SecurityTest.java",
+        "core/src/test/java/vn/svframe/svarcade/ActionDispatcherTest.java"
       ]
     },
     {
