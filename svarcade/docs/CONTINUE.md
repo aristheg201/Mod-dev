@@ -1,14 +1,18 @@
 # Continuation checkpoint
 
-Branch: feature/svarcade-production-20260912. Actions remain manual-only.
-All 52 requirements remain mandatory; production release is blocked.
+Branch: feature/svarcade-production-20260912. Keep Actions manual-only.
+No production approval: the full 52-requirement scope remains mandatory.
 
-Added typed SessionServices and lifecycle guards, then session-owned controller
-revocation, lazy grant expiry, rate-capacity recovery without caller maintenance,
-and exclusion of non-members from a session's rate-limit key space.
-Targeted Java 21 checks pass with -Xlint:all -Werror. JUnit bridges are present;
-full Gradle/JUnit/Fabric verification is not claimed. Dependencies cannot be
-fetched in this execution environment (DNS unavailable).
+Typed session services, lifecycle guards and security-controller/rate lifecycle
+are checkpointed. Generic PathSystem now composes through SystemSchema/SystemFactory
+and a typed PathAccess service. Routes use immutable arc-length polylines; agents
+have canonical IDs, speed/capacity/time bounds, one-time drainable arrivals and
+explicit validated versioned recovery. Tests include real GenericSession composition.
 
-Next implementation: generic gameplay systems and configuration bindings; retain
-local-test -> commit -> push checkpoints. Do not start over or audit the repo.
+Local Java 21 targeted checks: PathChecks and SecurityLifecycleChecks PASS using
+-Xlint:all -Werror. Earlier SessionChecks passed in its checkpoint environment.
+JUnit bridges are present. Full Gradle/JUnit, Fabric and production matrix have
+not run here; dependency downloads fail in this environment. No Actions dispatched.
+
+Next code: spatial indexing/target selection and further generic gameplay systems.
+Continue with local-test -> commit -> push; do not audit the repo again.
