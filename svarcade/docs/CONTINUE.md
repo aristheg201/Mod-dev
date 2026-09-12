@@ -1,21 +1,18 @@
 # Continuation checkpoint
 
 Branch: feature/svarcade-production-20260912. Actions remain manual-only.
-All 52 production requirements remain mandatory; no production approval.
+All 52 production requirements remain mandatory. Production release remains blocked.
 
-Added TurnSystem with configurable monotonic time banks, increment, pause/resume,
-commit-time expiry checks, explicit remaining-time restore and periodic persistence
-dirtiness. GenericSession now separates persistence dirtyVersion from action revision,
-so temporal checkpoints do not automatically invalidate legal pending intents.
-Clock expiry is revalidated at action commit. BoardMoveHandler composes board and
-clock changes atomically; CompositeChange rolls back only completed components.
+Added generic ObjectiveSystem with authored bounded/clamped counters and a single
+immutable result, valid winning teams/reasons, sparse atomic commit/rollback and
+explicit recovery. Empty winners can represent co-op defeat; draws are distinct.
+The same result capability can be consumed by board rules and wave objectives.
+Typed session composition and failure cases pass Java 21 targeted checks.
 
-Local Java 21 checks pass: BoardRules/perft, BoardSession, Currency, Path, Security,
-Targeting and Turn. Turn tests include signed nanoTime wrap, elapsed-time rollback,
-expiry between prepare/apply, real human/bot board+clock transactions and restart.
-No Actions dispatched. Full Gradle/JUnit/Fabric/compatibility/performance acceptance
-has not run here; default complete games and server bindings are still mandatory.
+Previously checkpointed: session capabilities/security, Path, Targeting, Currency,
+Board/Movement/perft, shared human/bot actions, compact history, monotonic clocks
+and atomic board-clock switching. No full Gradle/JUnit/Fabric or production
+compatibility/load evidence is claimed; no Actions dispatched.
 
-Next: objective/result primitives, data-defined draw/mate/resign adjudication,
-bounded board bots; continue TD and server integration rather than re-auditing.
-Use targeted local-test -> commit -> push checkpoints on the same branch.
+Next: data-defined adjudication/draw/resign/timeout and bounded board strategies;
+continue TD and server bindings within the same scope. Do not re-audit or re-plan.
