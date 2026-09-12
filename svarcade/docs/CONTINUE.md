@@ -1,20 +1,19 @@
 # Continuation checkpoint
 
-Branch: feature/svarcade-production-20260912. Keep Actions manual-only.
-All 52 requirements remain mandatory; production gate remains blocked.
+Branch: feature/svarcade-production-20260912. Actions remain manual-only.
+All 52 requirements are still mandatory; this checkpoint is not release approval.
 
-BoardAdjudicationSystem now composes Board, Movement, Objective and Turn capabilities.
-Human/bot actions support current-position and intended-legal-move draw claims,
-draw offer/accept/decline, resignation, automatic repetition/quiet limits and
-material-aware timeout. Move, history, clock, offer state and outcome are prepared
-as one flat transaction. Terminal moves freeze clocks in the same commit; a claim
-by intended move ends the match without executing that move. Offers survive their
-owner's move and restart, and are consumed by the opponent's move transaction.
+Added reusable BoundedSearch: iterative minimax, alpha-beta, move ordering, bounded
+transposition table, quiescence with forced evasions, legal root fallback, seeded
+randomness, time/node budgets and distinct exhaustion versus cancellation.
+SearchChecks passed using javac/java 21 with -Xlint:all -Werror. This includes 200
+random layered DAGs comparing alpha-beta/TT against unpruned minimax, plus explicit
+budget, interruption, horizon, forced-evasion and fallback regressions. A JUnit
+bridge is included; Gradle/JUnit itself was not run in this network-isolated turn.
 
-Java 21 targeted tests pass for shared ingress, all these results, rollback on
-commit-time expiry, restart consistency, perft, currency, paths and targeting.
-No Actions dispatched. This does not claim completed Fabric/UI/bots/TD/rewards,
-full JUnit/Gradle or final compatibility/load evidence.
-
-Next: bounded board search strategies and actual bot/session/config wiring, then
-remaining TD/server/integration scope. Continue code-test-commit-push, no re-audit.
+Existing board adjudication, clocks, draw offers/claims, resignation, path,
+currency and targeting are retained from parent 29ef5d9. Next: connect search to
+immutable board state and actual bot/session/config scheduling, including preserving
+last completed search results on time exhaustion. Do not claim game bots complete
+until this wiring and same-dispatcher runtime tests exist. Then continue remaining
+TD/Fabric/editor/integration/persistence/reward/UI scope. No Actions dispatched.
