@@ -1,0 +1,5 @@
+allprojects {
+    group = 'vn.svframe.svarcade'
+    version = '1.0.0-development'
+    repositories { mavenCentral() }
+}

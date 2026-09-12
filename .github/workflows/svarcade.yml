@@ -1,0 +1,42 @@
+name: SVArcade verification
+on:
+  push:
+    branches: ['feature/svarcade-production-20260912']
+    paths: ['svarcade/**', '.github/workflows/svarcade.yml']
+  pull_request:
+    paths: ['svarcade/**', '.github/workflows/svarcade.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: svarcade-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: svarcade
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compile and test isolated core
+        run: gradle --no-daemon :core:check :core:jar
+      - name: Report single-release requirement status
+        run: python3 tools/release_gate.py --report-only
+      - name: Retain test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svarcade-core-test-evidence
+          path: |
+            svarcade/core/build/test-results/
+            svarcade/core/build/reports/tests/
+          if-no-files-found: error
