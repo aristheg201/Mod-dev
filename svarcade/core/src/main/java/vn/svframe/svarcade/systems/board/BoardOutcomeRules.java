@@ -35,11 +35,19 @@ public final class BoardOutcomeRules {
     }
     public Config config() { return config; }
     public Result draw(Cause cause) { return new Result(config.reasons().get(cause),Set.of(),true); }
-    public Optional<Result> automatic(GridPosition position, int occurrences) {
+    public Optional<Result> automatic(GridPosition position, int occurrences) { return automatic(position, occurrences, () -> { }); }
+    public Optional<Result> automatic(GridPosition position, int occurrences, Runnable checkpoint) {
+        boolean immobile = config.adjudicateImmobility() && movement.successors(position, checkpoint).isEmpty();
+        boolean threatened = immobile && movement.threatened(position, position.turn(), checkpoint);
+        return assess(position, occurrences, immobile, threatened, checkpoint);
+    }
+    /** Internal precomputed legality avoids generating successors twice in search. */
+    Optional<Result> assess(GridPosition position, int occurrences, boolean immobile, boolean threatened, Runnable checkpoint) {
+        checkpoint.run();
         if (occurrences<1) throw new IllegalArgumentException("Position occurrence count");
-        boolean immobile=config.adjudicateImmobility() && movement.successors(position).isEmpty();
-        if (immobile && movement.threatened(position,position.turn())) return Optional.of(new Result(config.reasons().get(Cause.IMMOBILE_THREATENED),opponents(position.turn()),false));
-        if (material.insufficientForAll(position)) return Optional.of(draw(Cause.MATERIAL));
+        immobile = config.adjudicateImmobility() && immobile;
+        if (immobile && threatened) return Optional.of(new Result(config.reasons().get(Cause.IMMOBILE_THREATENED),opponents(position.turn()),false));
+        if (material.insufficientForAll(position, checkpoint)) return Optional.of(draw(Cause.MATERIAL));
         if (immobile) return Optional.of(draw(Cause.IMMOBILE_SAFE));
         if (config.quietAutomatic()>0 && position.quietPlies()>=config.quietAutomatic()) return Optional.of(draw(Cause.QUIET_AUTO));
         if (config.repetitionAutomatic()>0 && occurrences>=config.repetitionAutomatic()) return Optional.of(draw(Cause.REPETITION_AUTO));
@@ -51,6 +59,9 @@ public final class BoardOutcomeRules {
     }
     public Optional<Result> claim(GridPosition position, int occurrences, Claim claim) {
         if (automatic(position,occurrences).isPresent()) return Optional.empty();
+        return claimThreshold(position, occurrences, claim);
+    }
+    Optional<Result> claimThreshold(GridPosition position, int occurrences, Claim claim) {
         return switch (claim) {
             case REPETITION -> config.repetitionClaim()>0 && occurrences>=config.repetitionClaim() ? Optional.of(draw(Cause.REPETITION_CLAIM)) : Optional.empty();
             case QUIET -> config.quietClaim()>0 && position.quietPlies()>=config.quietClaim() ? Optional.of(draw(Cause.QUIET_CLAIM)) : Optional.empty();

@@ -56,17 +56,20 @@ public final class MaterialRules {
     private void validate(Set<Id> types) {
         for (Id id : types) if (!definition.profiles().containsKey(id) || definition.profiles().get(id).royal()) throw new ConfigException("Material pattern requires a registered non-royal type: " + id);
     }
-    public boolean insufficient(GridPosition position, String team) {
+    public boolean insufficient(GridPosition position, String team) { return insufficient(position, team, () -> { }); }
+    public boolean insufficient(GridPosition position, String team, Runnable checkpoint) {
+        Objects.requireNonNull(checkpoint).run();
         if (!definition.teams().contains(team) || position.width()!=definition.width() || position.height()!=definition.height()) throw new IllegalArgumentException("Material board/team mismatch");
         Set<Id> subject = new HashSet<>(), opponent = new HashSet<>(); Map<Id,Integer> classes = new HashMap<>(); int count=0;
         for (int square=0; square<position.size(); square++) {
-            Piece piece=position.at(square); if (piece==null) continue;
+            checkpoint.run(); Piece piece=position.at(square); if (piece==null) continue;
             MovementDefinition.Profile profile=definition.profiles().get(piece.type()); if (profile==null) throw new ConfigException("Unknown material type");
             if (profile.royal()) continue;
             if (piece.team().equals(team)) { subject.add(piece.type()); count++; } else opponent.add(piece.type());
             int cell=cellClasses[square]; classes.merge(piece.type(),cell,(a,b) -> a.equals(b) ? a : -2);
         }
         for (Pattern pattern : patterns) {
+            checkpoint.run();
             if (count<pattern.minimum() || count>pattern.maximum() || !pattern.types().containsAll(subject)
                     || pattern.opponentTypes().isPresent() && !pattern.opponentTypes().get().containsAll(opponent)) continue;
             int common=-1; boolean matches=true;
@@ -79,8 +82,9 @@ public final class MaterialRules {
         }
         return false;
     }
-    public boolean insufficientForAll(GridPosition position) {
-        for (String team : definition.teams()) if (!insufficient(position,team)) return false;
+    public boolean insufficientForAll(GridPosition position) { return insufficientForAll(position, () -> { }); }
+    public boolean insufficientForAll(GridPosition position, Runnable checkpoint) {
+        for (String team : definition.teams()) if (!insufficient(position,team,checkpoint)) return false;
         return true;
     }
 }

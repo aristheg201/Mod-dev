@@ -17,8 +17,13 @@ public final class MovementRules {
     }
     private static final class Work {
         private int remaining;
-        Work(int remaining) { this.remaining = remaining; }
-        void spend() { if (--remaining < 0) throw new BudgetExceeded(); }
+        private final Runnable checkpoint;
+        Work(int remaining) { this(remaining, () -> { }); }
+        Work(int remaining, Runnable checkpoint) { this.remaining = remaining; this.checkpoint = Objects.requireNonNull(checkpoint); checkpoint.run(); }
+        void spend() {
+            if (--remaining < 0) throw new BudgetExceeded();
+            if ((remaining & 63) == 0) checkpoint.run();
+        }
     }
     private final MovementDefinition definition;
     public MovementRules(MovementDefinition definition) { this.definition = Objects.requireNonNull(definition); }
@@ -58,8 +63,10 @@ public final class MovementRules {
         Vector forward = definition.forward().get(team);
         return new Vector(vector.x() * forward.y() + vector.y() * forward.x(), -vector.x() * forward.x() + vector.y() * forward.y());
     }
-    public List<Successor> successors(GridPosition position) {
-        requireShape(position); Work work = new Work(definition.maxEvaluations());
+    public List<Successor> successors(GridPosition position) { return successors(position, () -> { }); }
+    /** Search cancellation/deadlines are checked inside move generation, not only between nodes. */
+    public List<Successor> successors(GridPosition position, Runnable checkpoint) {
+        requireShape(position); Work work = new Work(definition.maxEvaluations(), checkpoint);
         Map<Move, Candidate> candidates = new LinkedHashMap<>();
         for (int from = 0; from < position.size(); from++) {
             work.spend(); Piece piece = position.at(from);
@@ -105,6 +112,7 @@ public final class MovementRules {
         }
         List<Successor> legal = new ArrayList<>();
         for (Candidate candidate : candidates.values()) {
+            work.spend();
             GridPosition next = applyCandidate(position, candidate);
             if (!definition.protectRoyals() || safe(next, position.turn(), work)) legal.add(new Successor(candidate.move(), next, candidate.capture()));
         }
@@ -156,7 +164,10 @@ public final class MovementRules {
         }
         return count;
     }
-    public boolean threatened(GridPosition position, String team) { requireShape(position); return !safe(position, team, new Work(definition.maxEvaluations())); }
+    public boolean threatened(GridPosition position, String team) { return threatened(position, team, () -> { }); }
+    public boolean threatened(GridPosition position, String team, Runnable checkpoint) {
+        requireShape(position); return !safe(position, team, new Work(definition.maxEvaluations(), checkpoint));
+    }
     private boolean attacked(GridPosition position, int square, String team, Work work) {
         for (int from = 0; from < position.size(); from++) {
             work.spend(); Piece piece = position.at(from);
@@ -184,17 +195,19 @@ public final class MovementRules {
         return false;
     }
     /** Position equality ignores identities and irrelevant moved flags, retaining effective rights. */
-    public String repetitionKey(GridPosition position) {
+    public String repetitionKey(GridPosition position) { return repetitionKey(position, () -> { }); }
+    public String repetitionKey(GridPosition position, Runnable checkpoint) {
+        Objects.requireNonNull(checkpoint).run();
         requireShape(position); StringBuilder key = new StringBuilder().append(position.width()).append('x').append(position.height()).append('|'); token(key, position.turn());
         for (int square = 0; square < position.size(); square++) {
-            Piece p = position.at(square); if (p == null) continue;
+            checkpoint.run(); Piece p = position.at(square); if (p == null) continue;
             key.append(square).append('@'); token(key, p.type().toString()); token(key, p.team());
             for (Pattern pattern : profile(p).patterns()) if (pattern.unmovedOnly() && pattern.allowed(new Piece(p.identity(), p.type(), p.team(), false), square)) {
                 key.append(p.moved() ? "m1;" : "m0;"); break;
             }
         }
         for (Compound c : definition.compounds()) if (compoundRight(position, c)) { key.append('c'); token(key, c.id().toString()); }
-        if (position.trail() != null && successors(position).stream().anyMatch(s -> s.captureSquare() == position.trail().victim() && s.move().to() == position.trail().target())) key.append("|trail:").append(position.trail().target());
+        if (position.trail() != null && successors(position, checkpoint).stream().anyMatch(s -> s.captureSquare() == position.trail().victim() && s.move().to() == position.trail().target())) key.append("|trail:").append(position.trail().target());
         return key.toString();
     }
     private static void token(StringBuilder output, String value) { output.append(value.length()).append(':').append(value).append(';'); }
