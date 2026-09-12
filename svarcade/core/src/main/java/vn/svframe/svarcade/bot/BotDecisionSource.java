@@ -1,6 +1,7 @@
 package vn.svframe.svarcade.bot;
 
 import java.util.UUID;
+import java.util.Set;
 import vn.svframe.svarcade.config.Id;
 import vn.svframe.svarcade.runtime.SessionServices;
 import vn.svframe.svarcade.security.IntentGate;
@@ -12,6 +13,7 @@ public interface BotDecisionSource {
         /** Return a detached worker computation capturing immutable data, never this live source. */
         BotRuntime.Strategy snapshot(UUID actor, long seed);
     }
+    default Set<Id> requiredActions() { return Set.of(); }
     CompiledProfile compile(BotProfile profile);
     boolean eligible(UUID actor);
     IntentGate.Facts facts(UUID actor, long tick);

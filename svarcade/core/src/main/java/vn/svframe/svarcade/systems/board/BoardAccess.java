@@ -14,6 +14,8 @@ public interface BoardAccess {
     MoveChange prepareMove(UUID actor, Move move);
     long revision();
     int repetitions();
+    /** Immutable counts keyed by PositionKeys.digest(canonicalPosition). */
+    Map<String, Integer> repetitionCounts();
     int repetitions(String canonicalKey);
     List<Entry> history(int from, int maximum);
     Archive archive();

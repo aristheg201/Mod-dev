@@ -1,7 +1,5 @@
 package vn.svframe.svarcade.systems.board;
 
-import java.nio.charset.StandardCharsets;
-import java.security.*;
 import java.util.*;
 import java.util.function.Function;
 import vn.svframe.svarcade.config.*;
@@ -34,6 +32,8 @@ public final class BoardSystem implements SessionSystem, BoardAccess {
     private final Map<String, Integer> counts = new HashMap<>();
     private final String initialKey;
     private GridPosition position;
+    private GridPosition countSnapshotPosition;
+    private Map<String, Integer> countSnapshot = Map.of();
     private long revision;
     private boolean active, closed;
     public BoardSystem(Config config, MovementAccess movement, ThreadGuard thread, Function<UUID, Participant> participants) {
@@ -50,6 +50,11 @@ public final class BoardSystem implements SessionSystem, BoardAccess {
     @Override public GridPosition position() { requireActive(); return position; }
     @Override public long revision() { requireActive(); return revision; }
     @Override public int repetitions() { requireActive(); return counts.getOrDefault(history.isEmpty() ? initialKey : history.getLast().key(), 0); }
+    @Override public Map<String, Integer> repetitionCounts() {
+        requireActive();
+        if (countSnapshotPosition != position) { countSnapshot = Map.copyOf(counts); countSnapshotPosition = position; }
+        return countSnapshot;
+    }
     @Override public int repetitions(String canonicalKey) { requireActive(); return counts.getOrDefault(digest(canonicalKey), 0); }
     @Override public List<Entry> history(int from, int maximum) {
         requireActive(); if (from < 0 || from > history.size() || maximum < 1 || maximum > 256) throw new IllegalArgumentException("History page limits");
@@ -75,10 +80,7 @@ public final class BoardSystem implements SessionSystem, BoardAccess {
             }
         };
     }
-    public static String digest(String canonicalKey) {
-        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canonicalKey.getBytes(StandardCharsets.UTF_8))); }
-        catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
-    }
+    public static String digest(String canonicalKey) { return PositionKeys.digest(canonicalKey); }
     private static String encode(Entry e) {
         Move m = e.move(); return m.from() + ";" + m.to() + ";" + (m.promotion() == null ? "-" : m.promotion()) + ";" + (m.compound() == null ? "-" : m.compound()) + ";" + e.key();
     }
@@ -122,5 +124,5 @@ public final class BoardSystem implements SessionSystem, BoardAccess {
                 || !digest(movement.repetitionKey(current)).equals(expected)) throw new ConfigException("Board current state/history mismatch");
         position = current; revision = restoredRevision; history.clear(); history.addAll(restored); counts.clear(); counts.putAll(restoredCounts); active = true;
     }
-    @Override public void close() { thread.check(); active = false; closed = true; history.clear(); counts.clear(); position = null; }
+    @Override public void close() { thread.check(); active = false; closed = true; history.clear(); counts.clear(); position = null; countSnapshotPosition = null; countSnapshot = Map.of(); }
 }

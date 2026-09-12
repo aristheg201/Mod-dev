@@ -54,6 +54,7 @@ public final class BotSystem implements SessionSystem {
     public BotSystem(GenericSession session, BotRuntime workers, ActionDispatcher dispatcher, BotDecisionSource source, Config config) {
         this.session = Objects.requireNonNull(session); this.workers = Objects.requireNonNull(workers); this.dispatcher = Objects.requireNonNull(dispatcher);
         this.source = Objects.requireNonNull(source); this.config = Objects.requireNonNull(config); session.thread().check();
+        if (!dispatcher.actions().containsAll(source.requiredActions())) throw new ConfigException("Bot source references an unregistered action");
         Map<BotRuntime.Difficulty, BotDecisionSource.CompiledProfile> profiles = new EnumMap<>(BotRuntime.Difficulty.class);
         config.profiles().forEach((difficulty, profile) -> profiles.put(difficulty, Objects.requireNonNull(source.compile(profile)))); compiled = Map.copyOf(profiles);
         Set<String> teams = new HashSet<>(); session.participants().values().forEach(p -> teams.add(p.team()));

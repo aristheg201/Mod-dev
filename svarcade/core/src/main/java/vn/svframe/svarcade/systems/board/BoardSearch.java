@@ -10,13 +10,15 @@ import vn.svframe.svarcade.systems.objective.ObjectiveAccess.Result;
 
 /** Detached two-team board strategy using exactly the runtime's movement/outcome predicates. */
 public final class BoardSearch {
-    public record Snapshot(GridPosition position, Map<String, Integer> repetitions) {
+    public record Snapshot(GridPosition position, Map<String, Integer> repetitions, boolean digestedHistory) {
+        public Snapshot(GridPosition position, Map<String, Integer> repetitions) { this(position, repetitions, false); }
         public Snapshot {
             Objects.requireNonNull(position);
             if (repetitions.size() > 100_000) throw new ConfigException("Search history limit");
             long characters = 0;
             for (var entry : repetitions.entrySet()) {
                 if (entry.getKey() == null || entry.getValue() == null || entry.getValue() < 1) throw new ConfigException("Invalid search history");
+                if (digestedHistory && !entry.getKey().matches("[a-f0-9]{64}")) throw new ConfigException("Malformed persisted repetition key");
                 characters += entry.getKey().length();
                 if (characters > 4_194_304) throw new ConfigException("Search history byte budget");
             }
@@ -64,7 +66,7 @@ public final class BoardSearch {
             return state.key;
         }
         private int occurrences(State state, ThinkBudget budget) {
-            String key = canonical(state, budget); int count = snapshot.repetitions().getOrDefault(key, 0);
+            String key = canonical(state, budget); int count = snapshot.repetitions().getOrDefault(snapshot.digestedHistory() ? PositionKeys.digest(key) : key, 0);
             for (Trace trace = state.trace; trace != null; trace = trace.previous()) { budget.check(); if (key.equals(trace.position())) count = Math.incrementExact(count); }
             if (count < 1) throw new ConfigException("Root search history does not contain the current position");
             return count;

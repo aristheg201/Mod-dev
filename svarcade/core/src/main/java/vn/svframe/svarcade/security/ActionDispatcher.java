@@ -90,6 +90,7 @@ public final class ActionDispatcher implements AutoCloseable {
         while (!events.isEmpty() && result.size() < maximum) result.add(events.removeFirst());
         return List.copyOf(result);
     }
+    public Set<Id> actions() { session.thread().check(); return handlers.ids(); }
     public Map<String, Integer> ownedCounts() {
         session.thread().check(); return Map.of("events", events.size(), "bot_controllers", botControllers.size(), "grants", gate.controllers());
     }

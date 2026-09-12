@@ -1,21 +1,23 @@
 # Continuation checkpoint
 
 Only feature/svarcade-production-20260912. Actions remain manual-only.
-The complete 52-requirement production gate remains blocked.
+The single complete 52-requirement release remains blocked.
 
-Added generic BotProfile/BotDecisionSource/BotSystem. Exactly EASY/NORMAL/HARD
-profiles are parsed from data; the scheduler has no difficulty-specific tuning.
-Owner-thread scheduling shares the bounded worker service, respects delays and
-retry/pending deadlines, issues expiring controllers, cancels stale/closed work,
-and serializes assignments/attempt seeds/remaining delays, never live futures.
-All results still enter ActionDispatcher. Session cleanup owns the scheduler.
+BoardDecisionSource now binds real session Board/Movement/Adjudication capabilities
+to compiled immutable BoardBotStrategy workers. Snapshot repetition counts match
+the runtime's SHA-256 representation and are cached by immutable board identity;
+no move-history replay occurs on the server thread. Worker outputs map to the
+same move/claim/offer action handlers and clock transactions used by humans.
+Unregistered bot action bindings are rejected. Draw-offer acceptance is tunable.
 
-Actually executed: Java 21 -Xlint:all -Werror BotSystemChecks passes, including
-real core session/dispatcher scheduling and restore of delayed/in-flight work.
-SearchChecks, BoardSearchChecks and BotWorkerChecks passed in preceding slices.
-These are targeted tests, not full Gradle/JUnit/Fabric or release matrix evidence.
+Actually executed Java 21 -Xlint:all -Werror checks: BoardBotSessionChecks for
+EASY/NORMAL/HARD real core matches, legal moves and clock increments, intended
+claims without moving, mate, draw offers, permission/phase/expiry and pending-work
+restart. SearchChecks, BoardChecks (original perft), BoardSearchChecks,
+BotSystemChecks and BotWorkerChecks were recompiled and passed too.
+Full Gradle/JUnit/Fabric/in-world/compatibility/load suites are NOT claimed run.
 
-Next code: connect BoardDecisionSource and registered system/config factories,
-using the runtime's hashed repetition-count snapshot (not replaying history on
-the server thread), then finish remaining TD/Fabric/editor/integration scope.
-No complete playable mod or production completion is claimed by this checkpoint.
+Next: finish generic action-service/system factory composition and packaged
+configuration so production bootstrap need not hand-wire test factories, then
+remaining TD/Fabric/editor/rewards/recovery/integration/UI requirements.
+Board bot core integration exists; full playable Pokemon Chess is not yet complete.
