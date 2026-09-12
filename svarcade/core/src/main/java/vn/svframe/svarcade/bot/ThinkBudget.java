@@ -1,6 +1,7 @@
 package vn.svframe.svarcade.bot;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.function.LongSupplier;
 
@@ -16,6 +17,7 @@ public final class ThinkBudget {
     private final LongSupplier clock;
     private final long started, maxNanos, maxOperations;
     private long operations;
+    private Reason exhausted;
     public ThinkBudget(long maxNanos, long maxOperations) { this(maxNanos, maxOperations, System::nanoTime); }
     /** A monotonic clock can be injected for deterministic deadline verification. */
     public ThinkBudget(long maxNanos, long maxOperations, LongSupplier clock) {
@@ -25,16 +27,18 @@ public final class ThinkBudget {
     }
     public void visit() {
         check();
-        if (operations >= maxOperations) throw new Exhausted(Reason.OPERATIONS);
+        if (operations >= maxOperations) throw exhausted(Reason.OPERATIONS);
         operations++;
     }
     public void check() {
         checkCancellation();
-        if (elapsedNanos() >= maxNanos) throw new Exhausted(Reason.TIME);
+        if (elapsedNanos() >= maxNanos) throw exhausted(Reason.TIME);
     }
     public void checkCancellation() {
         if (Thread.currentThread().isInterrupted()) throw new CancellationException("Bot search cancelled");
     }
+    private Exhausted exhausted(Reason reason) { exhausted = reason; return new Exhausted(reason); }
+    public Optional<Reason> exhaustedReason() { return Optional.ofNullable(exhausted); }
     public long operations() { return operations; }
     public long elapsedNanos() { return clock.getAsLong() - started; }
 }
