@@ -1,18 +1,19 @@
 # Continuation checkpoint
 
 Branch: feature/svarcade-production-20260912. Actions remain manual-only.
-All 52 production requirements remain mandatory. Production release remains blocked.
+All 52 requirements remain mandatory; no production approval.
 
-Added generic ObjectiveSystem with authored bounded/clamped counters and a single
-immutable result, valid winning teams/reasons, sparse atomic commit/rollback and
-explicit recovery. Empty winners can represent co-op defeat; draws are distinct.
-The same result capability can be consumed by board rules and wave objectives.
-Typed session composition and failure cases pass Java 21 targeted checks.
+Added pure BoardOutcomeRules and MaterialRules. Definitions author repetition and
+quiet-move claim/automatic thresholds, result reason IDs, material-count proofs,
+opponent material constraints and square-class partitions. No named piece logic
+is embedded in production Java. Tests cover common insufficient-material cases,
+opposite-class and helpmate exceptions, mate priority, claim/automatic distinction,
+and timeout/resignation when opponents lack possible mating material.
 
-Previously checkpointed: session capabilities/security, Path, Targeting, Currency,
-Board/Movement/perft, shared human/bot actions, compact history, monotonic clocks
-and atomic board-clock switching. No full Gradle/JUnit/Fabric or production
-compatibility/load evidence is claimed; no Actions dispatched.
+Reference semantics: FIDE 2023 Laws (5.1.2, 6.9, 9.2, 9.3, 9.6), and the
+python-chess material checks documentation. Material proofs are conservative and
+do not claim to solve every fortress/blocked-position dead-position problem.
 
-Next: data-defined adjudication/draw/resign/timeout and bounded board strategies;
-continue TD and server bindings within the same scope. Do not re-audit or re-plan.
+Java 21 targeted checks pass. Full Gradle/JUnit/Fabric and final matrix have not
+run here. Next: stateful adjudication/action wiring and bounded board bots; then
+remaining TD and server/integration scope. Keep code-test-commit-push checkpoints.
