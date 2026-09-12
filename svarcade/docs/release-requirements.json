@@ -17,7 +17,8 @@
       "evidence": [
         "core/src/test/java/vn/svframe/svarcade/RuntimeTest.java",
         "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java",
-        "core/src/test/java/vn/svframe/svarcade/DependencyGraphTest.java"
+        "core/src/test/java/vn/svframe/svarcade/DependencyGraphTest.java",
+        "core/src/test/java/vn/svframe/svarcade/ReferenceResolverTest.java"
       ]
     },
     {
@@ -251,7 +252,8 @@
       "status": "in_progress",
       "evidence": [
         "core/src/test/java/vn/svframe/svarcade/DefinitionTest.java",
-        "core/src/test/java/vn/svframe/svarcade/DependencyGraphTest.java"
+        "core/src/test/java/vn/svframe/svarcade/DependencyGraphTest.java",
+        "core/src/test/java/vn/svframe/svarcade/ReferenceResolverTest.java"
       ]
     },
     {

@@ -87,3 +87,9 @@ release requires `python3 tools/release_gate.py` to pass; it currently must fail
 
 Checkpoint rule: local targeted tests → commit → push this branch → continue.
 Never use Actions in this development loop; retain clean commit messages.
+
+References use a sole `$ref: "package-file.yml#/json/pointer"` mapping; filenames
+are package-root-relative, `#/pointer` stays in the current file. References are
+expanded before schema checks; transitive files participate in the fingerprint.
+System dependencies are compiled into stable topological start order; cycles fail
+reload before publication.

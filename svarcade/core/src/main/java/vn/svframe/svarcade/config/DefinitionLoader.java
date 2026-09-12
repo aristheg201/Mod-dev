@@ -108,7 +108,14 @@ public final class DefinitionLoader {
             if (!resolved.startsWith(root)) throw new ConfigException("Definition path escapes package: " + name);
             return resolved;
         }
-        Node read(String name) throws IOException {
+        Node read(String name) {
+            ReferenceResolver resolver = new ReferenceResolver(file -> {
+                try { return readRaw(file).values(); }
+                catch (IOException e) { throw new ConfigException("Cannot read referenced file: " + file, e); }
+            });
+            return new Node(resolver.resolve(name), root.resolve(name).toString());
+        }
+        Node readRaw(String name) throws IOException {
             Path path = path(name);
             String key = root.relativize(path).toString();
             byte[] bytes = contents.get(key);
