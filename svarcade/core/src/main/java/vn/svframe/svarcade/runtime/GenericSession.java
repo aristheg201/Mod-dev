@@ -20,6 +20,7 @@ public final class GenericSession {
     private final Map<Id, SessionSystem> systems = new LinkedHashMap<>();
     private Status status = Status.CREATED;
     private long revision;
+    private long dirtyVersion;
     private boolean cleaning;
     private long lastTick = -1;
 
@@ -97,8 +98,15 @@ public final class GenericSession {
     public void changed() {
         thread.check();
         if (status == Status.CLOSING || status == Status.CLOSED) throw new IllegalStateException("Session is closing");
-        revision = Math.incrementExact(revision);
+        long nextRevision = Math.incrementExact(revision), nextDirty = Math.incrementExact(dirtyVersion);
+        revision = nextRevision; dirtyVersion = nextDirty;
     }
+    /** Persistence-only temporal progress does not invalidate otherwise legal pending intents. */
+    public void markDirty() {
+        thread.check(); if (status == Status.CLOSING || status == Status.CLOSED) throw new IllegalStateException("Session is closing");
+        dirtyVersion = Math.incrementExact(dirtyVersion);
+    }
+    public long dirtyVersion() { thread.check(); return dirtyVersion; }
     public UUID id() { return id; }
     public Definition definition() { return definition; }
     public Map<UUID, Participant> participants() { return participants; }

@@ -9,8 +9,9 @@ public interface BoardAccess {
     record Archive(GridPosition initial, List<Entry> moves) {
         public Archive { Objects.requireNonNull(initial); moves = List.copyOf(moves); }
     }
+    interface MoveChange extends StateChange { GridPosition result(); }
     GridPosition position();
-    StateChange prepareMove(UUID actor, Move move);
+    MoveChange prepareMove(UUID actor, Move move);
     long revision();
     int repetitions();
     int repetitions(String canonicalKey);

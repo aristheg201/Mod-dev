@@ -6,14 +6,19 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.security.*;
 import vn.svframe.svarcade.systems.board.MovementRules.Move;
+import vn.svframe.svarcade.systems.turn.TurnAccess;
 
 /** Intent adapter only. Human and bot moves both execute through ActionDispatcher. */
 public final class BoardMoveHandler implements ActionDispatcher.Handler {
     private final BoardAccess board;
     private final BooleanSupplier phaseAllows;
     private final Id effect;
+    private final TurnAccess clock;
     public BoardMoveHandler(BoardAccess board, BooleanSupplier phaseAllows, Id effect) {
-        this.board = Objects.requireNonNull(board); this.phaseAllows = Objects.requireNonNull(phaseAllows); this.effect = Objects.requireNonNull(effect);
+        this(board, null, phaseAllows, effect);
+    }
+    public BoardMoveHandler(BoardAccess board, TurnAccess clock, BooleanSupplier phaseAllows, Id effect) {
+        this.board = Objects.requireNonNull(board); this.clock = clock; this.phaseAllows = Objects.requireNonNull(phaseAllows); this.effect = Objects.requireNonNull(effect);
     }
     public static Move decode(Map<String, Object> payload, int size) {
         Node n = new Node(payload, "move-intent"); n.only("from", "to", "promotion", "compound");
@@ -27,12 +32,15 @@ public final class BoardMoveHandler implements ActionDispatcher.Handler {
     }
     @Override public Optional<String> reject(GenericSession session, IntentGate.Facts facts, IntentGate.Intent intent) {
         if (!phaseAllows.getAsBoolean()) return Optional.of("phase");
+        if (clock != null && (!clock.running() || clock.expired())) return Optional.of("clock");
         Participant actor = session.participants().get(facts.actor());
         if (actor == null || !actor.team().equals(board.position().turn())) return Optional.of("turn");
         return Optional.empty();
     }
     @Override public ActionDispatcher.Prepared prepare(GenericSession session, IntentGate.Facts facts, IntentGate.Intent intent) {
-        Move move = decode(intent.payload(), board.position().size()); StateChange change = board.prepareMove(facts.actor(), move);
+        Move move = decode(intent.payload(), board.position().size()); String turn = board.position().turn();
+        BoardAccess.MoveChange boardChange = board.prepareMove(facts.actor(), move);
+        StateChange change = clock == null ? boardChange : new CompositeChange(session.thread(), List.of(boardChange, clock.preparePass(turn, boardChange.result().turn())));
         return new ActionDispatcher.Prepared(change::apply, change::rollback, List.of(new ActionDispatcher.Effect(effect, encode(move))));
     }
 }

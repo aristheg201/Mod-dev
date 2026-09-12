@@ -56,14 +56,15 @@ public final class BoardSystem implements SessionSystem, BoardAccess {
         return List.copyOf(history.subList(from, Math.min(history.size(), from + maximum)));
     }
     @Override public Archive archive() { requireActive(); return new Archive(config.initial(), history); }
-    @Override public StateChange prepareMove(UUID actor, Move move) {
+    @Override public MoveChange prepareMove(UUID actor, Move move) {
         requireActive(); Participant participant = participants.apply(actor);
         if (participant == null || participant.kind() == Participant.Kind.SPECTATOR || !participant.team().equals(position.turn())) throw new IllegalArgumentException("Board turn or ownership");
         if (history.size() >= config.historyLimit() || revision == Long.MAX_VALUE) throw new IllegalStateException("Board history/revision capacity");
         GridPosition before = position, after = movement.apply(before, move);
         Entry entry = new Entry(move, digest(movement.repetitionKey(after))); long expected = revision;
-        return new StateChange() {
+        return new MoveChange() {
             private int state;
+            @Override public GridPosition result() { return after; }
             @Override public void apply() {
                 requireActive(); if (state != 0 || revision != expected || position != before) throw new IllegalStateException("Stale or reused board move");
                 history.add(entry); counts.merge(entry.key(), 1, Integer::sum); position = after; revision++; state = 1;
