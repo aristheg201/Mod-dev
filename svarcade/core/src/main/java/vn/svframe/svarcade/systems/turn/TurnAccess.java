@@ -7,6 +7,8 @@ public interface TurnAccess {
     boolean running();
     boolean expired();
     long remainingNanos(String team);
-    StateChange preparePass(String actingTeam, String nextTeam);
-    StateChange prepareRunning(boolean running);
+    default StateChange preparePass(String actingTeam, String nextTeam) { return preparePass(actingTeam, nextTeam, true); }
+    StateChange preparePass(String actingTeam, String nextTeam, boolean keepRunning);
+    default StateChange prepareRunning(boolean running) { return prepareRunning(running, false); }
+    StateChange prepareRunning(boolean running, boolean requireTimeRemaining);
 }

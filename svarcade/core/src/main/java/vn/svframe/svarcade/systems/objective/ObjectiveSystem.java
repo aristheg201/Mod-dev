@@ -58,6 +58,7 @@ public final class ObjectiveSystem implements SessionSystem, ObjectiveAccess {
         thread.check(); if (active || closed) throw new IllegalStateException("Objective already started/closed");
         config.counters().forEach((id, counter) -> counters.put(id, counter.initial())); active = true;
     }
+    @Override public Set<Id> reasons() { thread.check(); return config.reasons(); }
     @Override public long value(Id id) {
         requireActive(); Long value = counters.get(id); if (value == null) throw new IllegalArgumentException("Unknown objective counter: " + id); return value;
     }

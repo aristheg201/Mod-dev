@@ -14,11 +14,17 @@ public final class BoardMoveHandler implements ActionDispatcher.Handler {
     private final BooleanSupplier phaseAllows;
     private final Id effect;
     private final TurnAccess clock;
+    private final AdjudicationAccess adjudication;
     public BoardMoveHandler(BoardAccess board, BooleanSupplier phaseAllows, Id effect) {
         this(board, null, phaseAllows, effect);
     }
     public BoardMoveHandler(BoardAccess board, TurnAccess clock, BooleanSupplier phaseAllows, Id effect) {
-        this.board = Objects.requireNonNull(board); this.clock = clock; this.phaseAllows = Objects.requireNonNull(phaseAllows); this.effect = Objects.requireNonNull(effect);
+        this(board, clock, null, phaseAllows, effect);
+    }
+    public BoardMoveHandler(BoardAccess board, TurnAccess clock, AdjudicationAccess adjudication, BooleanSupplier phaseAllows, Id effect) {
+        this.board = Objects.requireNonNull(board); this.clock = clock; this.adjudication = adjudication;
+        this.phaseAllows = Objects.requireNonNull(phaseAllows); this.effect = Objects.requireNonNull(effect);
+        if (adjudication != null && clock == null) throw new IllegalArgumentException("Adjudication requires the matching turn clock");
     }
     public static Move decode(Map<String, Object> payload, int size) {
         Node n = new Node(payload, "move-intent"); n.only("from", "to", "promotion", "compound");
@@ -32,6 +38,7 @@ public final class BoardMoveHandler implements ActionDispatcher.Handler {
     }
     @Override public Optional<String> reject(GenericSession session, IntentGate.Facts facts, IntentGate.Intent intent) {
         if (!phaseAllows.getAsBoolean()) return Optional.of("phase");
+        if (adjudication != null && !adjudication.mayPlay()) return Optional.of("result_or_clock");
         if (clock != null && (!clock.running() || clock.expired())) return Optional.of("clock");
         Participant actor = session.participants().get(facts.actor());
         if (actor == null || !actor.team().equals(board.position().turn())) return Optional.of("turn");
@@ -40,7 +47,10 @@ public final class BoardMoveHandler implements ActionDispatcher.Handler {
     @Override public ActionDispatcher.Prepared prepare(GenericSession session, IntentGate.Facts facts, IntentGate.Intent intent) {
         Move move = decode(intent.payload(), board.position().size()); String turn = board.position().turn();
         BoardAccess.MoveChange boardChange = board.prepareMove(facts.actor(), move);
-        StateChange change = clock == null ? boardChange : new CompositeChange(session.thread(), List.of(boardChange, clock.preparePass(turn, boardChange.result().turn())));
+        AdjudicationAccess.MovePlan ending = adjudication == null ? new AdjudicationAccess.MovePlan(List.of(), false) : adjudication.prepareAfterMove(facts.actor(), boardChange.result());
+        List<StateChange> parts = new ArrayList<>(); parts.add(boardChange);
+        if (clock != null) parts.add(clock.preparePass(turn, boardChange.result().turn(), !ending.finishes()));
+        parts.addAll(ending.changes()); StateChange change = new CompositeChange(session.thread(), parts);
         return new ActionDispatcher.Prepared(change::apply, change::rollback, List.of(new ActionDispatcher.Effect(effect, encode(move))));
     }
 }

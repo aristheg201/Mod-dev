@@ -91,20 +91,22 @@ public final class TurnSystem implements SessionSystem, TurnAccess {
             }
         };
     }
-    @Override public StateChange preparePass(String actingTeam, String nextTeam) {
+    @Override public StateChange preparePass(String actingTeam, String nextTeam, boolean keepRunning) {
         requireActive(); State before = state;
         if (!before.running() || !before.team().equals(actingTeam) || !config.banks().containsKey(nextTeam) || actingTeam.equals(nextTeam)) throw new IllegalArgumentException("Invalid turn switch");
         return prepare(now -> {
             long left = remaining(before, actingTeam, now); if (config.enabled() && left == 0) throw new IllegalStateException("Clock expired");
             Bank bank = config.banks().get(actingTeam); Map<String, Long> balances = new LinkedHashMap<>(before.banks());
             balances.put(actingTeam, config.enabled() ? Math.min(bank.maximum(), Math.addExact(left, bank.increment())) : left);
-            return new State(nextTeam, true, balances, now);
+            return new State(nextTeam, keepRunning, balances, now);
         });
     }
-    @Override public StateChange prepareRunning(boolean running) {
+    @Override public StateChange prepareRunning(boolean running, boolean requireTimeRemaining) {
         requireActive(); State before = state;
         return prepare(now -> {
-            Map<String, Long> banks = new LinkedHashMap<>(before.banks()); banks.put(before.team(), remaining(before, before.team(), now));
+            long left = remaining(before, before.team(), now);
+            if (requireTimeRemaining && config.enabled() && left == 0) throw new IllegalStateException("Clock expired before state change");
+            Map<String, Long> banks = new LinkedHashMap<>(before.banks()); banks.put(before.team(), left);
             return new State(before.team(), running, banks, now);
         });
     }
