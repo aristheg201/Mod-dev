@@ -66,9 +66,7 @@ public final class DefinitionLoader {
                 specs.add(new Definition.SystemSpec(system, config));
             }
             if (specs.isEmpty()) throw game.error("systems", "At least one system is required");
-            for (Id system : selected) {
-                if (!selected.containsAll(systems.require(system).dependencies())) throw game.error("systems", "Missing dependency for " + system);
-            }
+            specs = DependencyGraph.order(specs, Definition.SystemSpec::id, spec -> systems.require(spec.id()).dependencies());
             Node arenaConfig = game.node("arenas"); arenaConfig.only("directory");
             Path arenaDir = files.path(arenaConfig.string("directory"));
             if (!Files.isDirectory(arenaDir)) throw game.error("arenas", "Expected directory");

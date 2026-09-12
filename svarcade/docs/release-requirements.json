@@ -16,7 +16,8 @@
       "status": "in_progress",
       "evidence": [
         "core/src/test/java/vn/svframe/svarcade/RuntimeTest.java",
-        "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java"
+        "core/src/test/java/vn/svframe/svarcade/BotAndRuntimeTest.java",
+        "core/src/test/java/vn/svframe/svarcade/DependencyGraphTest.java"
       ]
     },
     {
@@ -249,7 +250,8 @@
       "requirement": "Parse→schema→semantic→reference resolution→immutable candidate→atomic registry swap. Any invalid candidate retains old registry; live sessions retain old definition snapshots.",
       "status": "in_progress",
       "evidence": [
-        "core/src/test/java/vn/svframe/svarcade/DefinitionTest.java"
+        "core/src/test/java/vn/svframe/svarcade/DefinitionTest.java",
+        "core/src/test/java/vn/svframe/svarcade/DependencyGraphTest.java"
       ]
     },
     {
