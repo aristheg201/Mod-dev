@@ -1,21 +1,23 @@
 # Continuation checkpoint
 
 Branch: feature/svarcade-production-20260912. Actions remain manual-only.
-All 52 production requirements remain mandatory and release remains blocked.
+All 52 production requirements remain mandatory. No release approval.
 
-Added typed session services/lifecycle guards, controller/rate cleanup, deterministic
-PathSystem, spatial TargetingSystem, and match-local CurrencySystem. Currency config
-selects participant/team ownership and exact integral limits. Human/bot accounts
-receive identical funds; spectators have none. Prepared sparse ledger transactions
-support atomic apply/rollback with stale/replay/overflow checks and explicit restore.
-The authoritative dispatcher must publish session revision/effects after successful
-application; CurrencyAccess does not bypass that ingress or touch server economy.
+Current capabilities: typed session services, lifecycle/security teardown,
+deterministic PathSystem, spatial TargetingSystem, transactional CurrencySystem,
+and pure immutable grid movement rules. Movement data defines ray/offset vectors,
+occupancy, orientation, first-move constraints, protected roles, compound moves,
+transient capture trails and promotion choices. Java has no named chess-piece or
+Pokemon branches. Repetition keys preserve effective rights, not visual identity.
 
-Local Java 21 targeted checks pass: CurrencyChecks (including 2000 randomized
-transfer/rollback steps), PathChecks, SecurityLifecycleChecks and TargetingChecks
-(1600 oracle comparisons). JUnit bridges exist. Full Gradle/JUnit/Fabric and
-production load/performance matrix have not run in this dependency-isolated environment.
-No Actions were dispatched. These checks are not production release approval.
+Targeted Java 21 tests pass, including initial-position perft through depth 4
+(197281), Kiwipete through depth 3 (97862), sparse-position perft, castling through
+attack rejection, pinned en-passant rejection, promotion, check/double-check,
+checkmate/stalemate and effective repetition keys. Currency/path/security/targeting
+checks also pass. Test-only BoardFixtures declares standard chess as data.
+The pure rules are not yet a complete playable Chess definition or Fabric mod.
+Full Gradle/JUnit/Fabric and production matrix remain unexecuted in this environment.
 
-Next: continue composable gameplay systems and their action/config/server bindings.
-Do not re-audit the repository. Use local-test -> commit -> push checkpoints.
+Next: wire generic board/movement sessions, history/adjudication/clocks and shared
+action ingress; then continue remaining gameplay and server/integration scope.
+Use local-test -> commit -> push. Do not audit or re-plan the repository.
