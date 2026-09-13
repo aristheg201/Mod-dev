@@ -13,6 +13,7 @@ import vn.svframe.svarcade.systems.objective.ObjectiveSystem;
 import vn.svframe.svarcade.systems.path.PathSystem;
 import vn.svframe.svarcade.systems.targeting.TargetingSystem;
 import vn.svframe.svarcade.systems.turn.TurnSystem;
+import vn.svframe.svarcade.systems.upgrade.UpgradeSystem;
 
 /** Canonical registry of production generic systems currently implemented by core. */
 public final class CoreSystems {
@@ -48,6 +49,7 @@ public final class CoreSystems {
                 .add(TargetingSystem.ID, new TargetingSystem.Plan())
                 .add(CombatSystem.ID, new CombatSystem.Plan())
                 .add(DeployableSystem.ID, new DeployableSystem.Plan())
+                .add(UpgradeSystem.ID, new UpgradeSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
