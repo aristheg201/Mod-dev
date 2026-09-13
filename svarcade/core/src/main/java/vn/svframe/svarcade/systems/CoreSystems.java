@@ -3,7 +3,7 @@ package vn.svframe.svarcade.systems;
 import java.util.Map;
 import vn.svframe.svarcade.bot.*;
 import vn.svframe.svarcade.config.Registry;
-import vn.svframe.svarcade.runtime.SystemCatalog;
+import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.security.*;
 import vn.svframe.svarcade.systems.board.*;
 import vn.svframe.svarcade.systems.currency.CurrencySystem;
@@ -16,17 +16,30 @@ import vn.svframe.svarcade.systems.turn.TurnSystem;
 public final class CoreSystems {
     private CoreSystems() { }
 
-    public static SystemCatalog create() { return create(new Registry<>(Map.of())); }
+    public static SystemCatalog create() {
+        return create(new Registry<>(Map.of()), new Registry<>(Map.of()), new Registry<>(Map.of()));
+    }
 
     public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers) {
-        return common(actionHandlers).build();
+        return create(actionHandlers, new Registry<>(Map.of()), new Registry<>(Map.of()));
     }
 
-    public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers, BotRuntime botRuntime) {
-        return common(actionHandlers).add(BotSystem.ID, new BotSystem.Plan(botRuntime)).build();
+    public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers,
+                                       Registry<StateMachineRuntime.Action> stateActions,
+                                       Registry<StateMachineRuntime.Condition> stateConditions) {
+        return common(actionHandlers, stateActions, stateConditions).build();
     }
 
-    private static SystemCatalog.Builder common(Registry<ActionHandlerFactory> actionHandlers) {
+    public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers,
+                                       Registry<StateMachineRuntime.Action> stateActions,
+                                       Registry<StateMachineRuntime.Condition> stateConditions,
+                                       BotRuntime botRuntime) {
+        return common(actionHandlers, stateActions, stateConditions).add(BotSystem.ID, new BotSystem.Plan(botRuntime)).build();
+    }
+
+    private static SystemCatalog.Builder common(Registry<ActionHandlerFactory> actionHandlers,
+                                                Registry<StateMachineRuntime.Action> stateActions,
+                                                Registry<StateMachineRuntime.Condition> stateConditions) {
         return SystemCatalog.builder()
                 .add(MovementSystem.ID, new MovementSystem.Plan())
                 .add(TurnSystem.ID, new TurnSystem.Plan())
@@ -36,6 +49,7 @@ public final class CoreSystems {
                 .add(TargetingSystem.ID, new TargetingSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
-                .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers));
+                .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
+                .add(StateMachineSystem.ID, new StateMachineSystem.Plan(stateActions, stateConditions));
     }
 }
