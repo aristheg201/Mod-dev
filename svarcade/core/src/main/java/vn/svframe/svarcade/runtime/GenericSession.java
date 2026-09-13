@@ -52,7 +52,7 @@ public final class GenericSession {
             services.validatePlan(definition.systems(), factories);
             for (Definition.SystemSpec spec : definition.systems()) {
                 SystemFactory factory = factories.require(spec.id());
-                services.begin(spec.id(), factory);
+                services.begin(spec.id(), factory, spec.config());
                 SessionSystem system = Objects.requireNonNull(factory.create(this, spec.config()));
                 systems.put(spec.id(), system);
                 resources.own("system/" + spec.id(), system::close);

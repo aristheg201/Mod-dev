@@ -28,18 +28,18 @@ public final class SessionServices {
         for (Definition.SystemSpec spec : specs) {
             if (!systemIds.add(spec.id())) throw new ConfigException("Duplicate runtime system: " + spec.id());
             SystemFactory factory = factories.require(spec.id());
-            for (Key<?> key : factory.requires()) {
+            for (Key<?> key : factory.requires(spec.config())) {
                 if (!key.equals(available.get(key.id()))) throw new ConfigException("Missing or misordered capability " + key.id() + " for " + spec.id());
             }
-            for (Key<?> key : factory.provides()) {
+            for (Key<?> key : factory.provides(spec.config())) {
                 if (available.putIfAbsent(key.id(), key) != null) throw new ConfigException("Duplicate capability provider: " + key.id());
             }
         }
     }
-    void begin(Id owner, SystemFactory factory) {
+    void begin(Id owner, SystemFactory factory, Node config) {
         thread.check();
         if (closed || publishing != null) throw new IllegalStateException("Capability publication unavailable");
-        publishing = owner; exports = Set.copyOf(factory.provides()); imports = Set.copyOf(factory.requires());
+        publishing = owner; exports = Set.copyOf(factory.provides(config)); imports = Set.copyOf(factory.requires(config));
     }
     void finish() {
         thread.check();
