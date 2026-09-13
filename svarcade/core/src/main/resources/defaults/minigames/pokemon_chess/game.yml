@@ -1,0 +1,30 @@
+schema: 1
+id: svarcade:pokemon_chess
+enabled: true
+requires:
+  integrations:
+    - cobblemon
+players:
+  min: 2
+  max: 2
+systems:
+  - id: svarcade:movement
+    config: pieces.yml
+  - id: svarcade:turns
+    config: clock.yml
+  - id: svarcade:objectives
+    config: objectives.yml
+  - id: svarcade:board
+    config: board.yml
+  - id: svarcade:board_adjudication
+    config: rules.yml
+  - id: svarcade:state_machine
+    config: states.yml
+  - id: svarcade:actions
+    config: actions.yml
+  - id: svarcade:board_bot_source
+    config: bot-source.yml
+  - id: svarcade:bot
+    config: bots.yml
+arenas:
+  directory: arenas

@@ -1,0 +1,48 @@
+rate_limit:
+  max_keys: 128
+  capacity: 12
+  per_tick: 0.5
+max_distance: 12
+event_capacity: 2048
+actions:
+  svarcade_chess:move:
+    handler: svarcade:board_move
+    config:
+      effect: svarcade_chess:piece_moved
+      allowed_states: [PLAYING]
+  svarcade_chess:offer_draw:
+    handler: svarcade:board_command
+    config:
+      command: OFFER_DRAW
+      effect: svarcade_chess:draw_offered
+      allowed_states: [PLAYING]
+  svarcade_chess:accept_draw:
+    handler: svarcade:board_command
+    config:
+      command: ACCEPT_DRAW
+      effect: svarcade_chess:draw_accepted
+      allowed_states: [PLAYING]
+  svarcade_chess:decline_draw:
+    handler: svarcade:board_command
+    config:
+      command: DECLINE_DRAW
+      effect: svarcade_chess:draw_declined
+      allowed_states: [PLAYING]
+  svarcade_chess:resign:
+    handler: svarcade:board_command
+    config:
+      command: RESIGN
+      effect: svarcade_chess:resigned
+      allowed_states: [PLAYING]
+  svarcade_chess:claim_repetition:
+    handler: svarcade:board_command
+    config:
+      command: CLAIM_REPETITION
+      effect: svarcade_chess:repetition_claimed
+      allowed_states: [PLAYING]
+  svarcade_chess:claim_quiet:
+    handler: svarcade:board_command
+    config:
+      command: CLAIM_QUIET
+      effect: svarcade_chess:quiet_claimed
+      allowed_states: [PLAYING]

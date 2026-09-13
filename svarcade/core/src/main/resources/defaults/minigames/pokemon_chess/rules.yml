@@ -1,0 +1,42 @@
+repetition_claim: 3
+repetition_automatic: 5
+quiet_claim_plies: 100
+quiet_automatic_plies: 150
+adjudicate_immobility: true
+allow_draw_offers: true
+allow_resign: true
+reasons:
+  IMMOBILE_THREATENED: svarcade_chess:checkmate
+  IMMOBILE_SAFE: svarcade_chess:stalemate
+  MATERIAL: svarcade_chess:insufficient_material
+  REPETITION_CLAIM: svarcade_chess:repetition_claim
+  REPETITION_AUTO: svarcade_chess:repetition_auto
+  QUIET_CLAIM: svarcade_chess:fifty_move_claim
+  QUIET_AUTO: svarcade_chess:seventy_five_move_auto
+  AGREEMENT: svarcade_chess:draw_agreement
+  RESIGN: svarcade_chess:resignation
+  RESIGN_DRAW: svarcade_chess:resignation_draw
+  TIMEOUT: svarcade_chess:timeout
+  TIMEOUT_DRAW: svarcade_chess:timeout_draw
+material:
+  cell_classes:
+    - [0,2,4,6,9,11,13,15,16,18,20,22,25,27,29,31,32,34,36,38,41,43,45,47,48,50,52,54,57,59,61,63]
+    - [1,3,5,7,8,10,12,14,17,19,21,23,24,26,28,30,33,35,37,39,40,42,44,46,49,51,53,55,56,58,60,62]
+  patterns:
+    - types: []
+      minimum: 0
+      maximum: 0
+    - types: [svarcade_chess:bishop, svarcade_chess:knight]
+      minimum: 1
+      maximum: 1
+      opponent_types: []
+    - types: [svarcade_chess:bishop]
+      minimum: 1
+      maximum: 32
+      opponent_types: []
+      same_class_types: [svarcade_chess:bishop]
+    - types: [svarcade_chess:bishop]
+      minimum: 1
+      maximum: 32
+      opponent_types: [svarcade_chess:bishop]
+      same_class_types: [svarcade_chess:bishop]

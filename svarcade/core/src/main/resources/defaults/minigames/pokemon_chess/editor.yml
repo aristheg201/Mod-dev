@@ -1,0 +1,21 @@
+schema: 1
+wizard:
+  - id: board_region
+    tool: region
+    required: true
+  - id: white_stage
+    tool: point
+    required: true
+  - id: black_stage
+    tool: point
+    required: true
+  - id: spectator
+    tool: point
+    required: true
+  - id: orientation
+    tool: direction
+    required: true
+preview:
+  board_grid: true
+  stages: true
+  spectator: true

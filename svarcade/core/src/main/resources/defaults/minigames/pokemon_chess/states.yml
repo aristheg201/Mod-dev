@@ -1,0 +1,6 @@
+initial: PLAYING
+data:
+  accepting_actions: true
+states:
+  PLAYING:
+    terminal: false

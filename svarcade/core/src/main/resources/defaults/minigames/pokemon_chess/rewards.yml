@@ -1,0 +1,20 @@
+schema: 1
+profiles:
+  win:
+    - type: svarcade:stats
+      data:
+        metric: chess_wins
+        amount: 1
+  draw:
+    - type: svarcade:stats
+      data:
+        metric: chess_draws
+        amount: 1
+  loss:
+    - type: svarcade:stats
+      data:
+        metric: chess_losses
+        amount: 1
+claim_policy:
+  durable: true
+  idempotent: true

@@ -1,0 +1,13 @@
+teams:
+  white:
+    initial_ms: 600000
+    increment_ms: 5000
+    maximum_ms: 3600000
+  black:
+    initial_ms: 600000
+    increment_ms: 5000
+    maximum_ms: 3600000
+initial_team: white
+enabled: true
+starts_paused: false
+persistence_interval_ms: 1000

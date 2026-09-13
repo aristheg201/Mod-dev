@@ -1,0 +1,6 @@
+actions:
+  move: svarcade_chess:move
+  claim_repetition: svarcade_chess:claim_repetition
+  claim_quiet: svarcade_chess:claim_quiet
+  accept_draw: svarcade_chess:accept_draw
+allowed_states: [PLAYING]

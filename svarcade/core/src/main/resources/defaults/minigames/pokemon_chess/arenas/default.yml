@@ -1,0 +1,12 @@
+id: default
+world: world
+board:
+  origin: [0, 64, 0]
+  file_axis: [1, 0, 0]
+  rank_axis: [0, 0, 1]
+  square_size: 2.0
+player_stages:
+  white: [8.0, 66.0, -6.0, 0.0, 20.0]
+  black: [8.0, 66.0, 22.0, 180.0, 20.0]
+spectator:
+  position: [8.0, 72.0, 8.0, 0.0, 60.0]

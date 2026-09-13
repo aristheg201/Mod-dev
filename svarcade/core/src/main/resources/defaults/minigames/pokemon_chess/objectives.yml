@@ -1,0 +1,14 @@
+counters: {}
+reasons:
+  - svarcade_chess:checkmate
+  - svarcade_chess:stalemate
+  - svarcade_chess:insufficient_material
+  - svarcade_chess:repetition_claim
+  - svarcade_chess:repetition_auto
+  - svarcade_chess:fifty_move_claim
+  - svarcade_chess:seventy_five_move_auto
+  - svarcade_chess:draw_agreement
+  - svarcade_chess:resignation
+  - svarcade_chess:resignation_draw
+  - svarcade_chess:timeout
+  - svarcade_chess:timeout_draw

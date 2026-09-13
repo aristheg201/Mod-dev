@@ -1,0 +1,15 @@
+schema: 1
+messages:
+  title: svarcade.chess.title
+  turn: svarcade.chess.turn
+  check: svarcade.chess.check
+  checkmate: svarcade.chess.checkmate
+  stalemate: svarcade.chess.stalemate
+  draw_offer: svarcade.chess.draw_offer
+  timeout: svarcade.chess.timeout
+presentation:
+  selected_square_particle: minecraft:end_rod
+  legal_square_particle: minecraft:happy_villager
+  illegal_sound: minecraft:block.note_block.bass
+  move_sound: minecraft:block.amethyst_block.hit
+  check_sound: minecraft:entity.experience_orb.pickup

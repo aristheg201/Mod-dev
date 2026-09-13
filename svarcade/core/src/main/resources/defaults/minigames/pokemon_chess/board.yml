@@ -1,0 +1,40 @@
+history_limit: 16384
+initial:
+  width: 8
+  height: 8
+  turn: white
+  ply: 0
+  quiet_plies: 0
+  pieces:
+    - {square: 0, identity: 0, type: svarcade_chess:rook, team: white, moved: false}
+    - {square: 1, identity: 1, type: svarcade_chess:knight, team: white, moved: false}
+    - {square: 2, identity: 2, type: svarcade_chess:bishop, team: white, moved: false}
+    - {square: 3, identity: 3, type: svarcade_chess:queen, team: white, moved: false}
+    - {square: 4, identity: 4, type: svarcade_chess:king, team: white, moved: false}
+    - {square: 5, identity: 5, type: svarcade_chess:bishop, team: white, moved: false}
+    - {square: 6, identity: 6, type: svarcade_chess:knight, team: white, moved: false}
+    - {square: 7, identity: 7, type: svarcade_chess:rook, team: white, moved: false}
+    - {square: 8, identity: 8, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 9, identity: 9, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 10, identity: 10, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 11, identity: 11, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 12, identity: 12, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 13, identity: 13, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 14, identity: 14, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 15, identity: 15, type: svarcade_chess:pawn, team: white, moved: false}
+    - {square: 48, identity: 48, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 49, identity: 49, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 50, identity: 50, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 51, identity: 51, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 52, identity: 52, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 53, identity: 53, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 54, identity: 54, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 55, identity: 55, type: svarcade_chess:pawn, team: black, moved: false}
+    - {square: 56, identity: 56, type: svarcade_chess:rook, team: black, moved: false}
+    - {square: 57, identity: 57, type: svarcade_chess:knight, team: black, moved: false}
+    - {square: 58, identity: 58, type: svarcade_chess:bishop, team: black, moved: false}
+    - {square: 59, identity: 59, type: svarcade_chess:queen, team: black, moved: false}
+    - {square: 60, identity: 60, type: svarcade_chess:king, team: black, moved: false}
+    - {square: 61, identity: 61, type: svarcade_chess:bishop, team: black, moved: false}
+    - {square: 62, identity: 62, type: svarcade_chess:knight, team: black, moved: false}
+    - {square: 63, identity: 63, type: svarcade_chess:rook, team: black, moved: false}

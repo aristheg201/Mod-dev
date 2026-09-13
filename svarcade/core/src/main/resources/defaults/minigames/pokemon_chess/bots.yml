@@ -1,0 +1,80 @@
+source_system: svarcade:board_bot_source
+default_difficulty: NORMAL
+team_difficulties: {}
+max_bots_per_tick: 2
+seed: 918273645
+profiles:
+  EASY:
+    strategy: svarcade:minimax
+    think_nanos: 20000000
+    operations: 20000
+    delay_ticks: 10
+    retry_ticks: 4
+    pending_timeout_ticks: 40
+    controller_ttl_ticks: 40
+    parameters:
+      search:
+        depth: 1
+        alpha_beta: false
+        move_ordering: false
+        transposition_table: false
+        table_capacity: 0
+        quiescence: false
+        quiescence_depth: 0
+        max_successors: 256
+        randomness: 0.30
+      evaluation:
+        win_score: 100000
+        mobility: 0.25
+        piece_values:
+          svarcade_chess:pawn: 100
+          svarcade_chess:knight: 320
+          svarcade_chess:bishop: 330
+          svarcade_chess:rook: 500
+          svarcade_chess:queen: 900
+          svarcade_chess:king: 0
+      accept_draw_when_not_ahead: true
+  NORMAL:
+    strategy: svarcade:minimax
+    think_nanos: 100000000
+    operations: 250000
+    delay_ticks: 8
+    retry_ticks: 4
+    pending_timeout_ticks: 80
+    controller_ttl_ticks: 80
+    parameters:
+      search:
+        depth: 3
+        alpha_beta: true
+        move_ordering: true
+        transposition_table: true
+        table_capacity: 20000
+        quiescence: false
+        quiescence_depth: 0
+        max_successors: 512
+        randomness: 0.05
+      evaluation:
+        $ref: '#/profiles/EASY/parameters/evaluation'
+      accept_draw_when_not_ahead: true
+  HARD:
+    strategy: svarcade:minimax
+    think_nanos: 250000000
+    operations: 1000000
+    delay_ticks: 6
+    retry_ticks: 3
+    pending_timeout_ticks: 120
+    controller_ttl_ticks: 120
+    parameters:
+      search:
+        depth: 5
+        alpha_beta: true
+        move_ordering: true
+        transposition_table: true
+        table_capacity: 100000
+        quiescence: true
+        quiescence_depth: 2
+        max_successors: 1024
+        randomness: 0.0
+      evaluation:
+        $ref: '#/profiles/EASY/parameters/evaluation'
+      accept_draw_when_not_ahead: true

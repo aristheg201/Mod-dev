@@ -1,0 +1,165 @@
+width: 8
+height: 8
+teams: [white, black]
+forward:
+  white: [0, 1]
+  black: [0, -1]
+protect_royals: true
+royals_per_team: 1
+max_candidates: 4096
+max_evaluations: 1000000
+profiles:
+  svarcade_chess:rook:
+    royal: false
+    capturable: true
+    resets_quiet_clock: false
+    patterns:
+      - kind: RAY
+        vectors: [[1,0], [-1,0], [0,1], [0,-1]]
+        min_steps: 1
+        max_steps: 7
+        capture: OPTIONAL
+        relative: false
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: false
+  svarcade_chess:bishop:
+    royal: false
+    capturable: true
+    resets_quiet_clock: false
+    patterns:
+      - kind: RAY
+        vectors: [[1,1], [1,-1], [-1,1], [-1,-1]]
+        min_steps: 1
+        max_steps: 7
+        capture: OPTIONAL
+        relative: false
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: false
+  svarcade_chess:queen:
+    royal: false
+    capturable: true
+    resets_quiet_clock: false
+    patterns:
+      - kind: RAY
+        vectors: [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]
+        min_steps: 1
+        max_steps: 7
+        capture: OPTIONAL
+        relative: false
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: false
+  svarcade_chess:king:
+    royal: true
+    capturable: false
+    resets_quiet_clock: false
+    patterns:
+      - kind: OFFSET
+        vectors: [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]]
+        min_steps: 1
+        max_steps: 1
+        capture: OPTIONAL
+        relative: false
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: false
+  svarcade_chess:knight:
+    royal: false
+    capturable: true
+    resets_quiet_clock: false
+    patterns:
+      - kind: OFFSET
+        vectors: [[1,2], [2,1], [-1,2], [-2,1], [1,-2], [2,-1], [-1,-2], [-2,-1]]
+        min_steps: 1
+        max_steps: 1
+        capture: OPTIONAL
+        relative: false
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: false
+  svarcade_chess:pawn:
+    royal: false
+    capturable: true
+    resets_quiet_clock: true
+    patterns:
+      - kind: RAY
+        vectors: [[0,1]]
+        min_steps: 1
+        max_steps: 1
+        capture: NEVER
+        relative: true
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: false
+      - kind: RAY
+        vectors: [[0,1]]
+        min_steps: 2
+        max_steps: 2
+        capture: NEVER
+        relative: true
+        unmoved_only: true
+        origins:
+          white: [8,9,10,11,12,13,14,15]
+          black: [48,49,50,51,52,53,54,55]
+        creates_trail: true
+        captures_trail: false
+      - kind: OFFSET
+        vectors: [[-1,1], [1,1]]
+        min_steps: 1
+        max_steps: 1
+        capture: ONLY
+        relative: true
+        unmoved_only: false
+        creates_trail: false
+        captures_trail: true
+    promotion_squares:
+      white: [56,57,58,59,60,61,62,63]
+      black: [0,1,2,3,4,5,6,7]
+    promotion_choices: [svarcade_chess:queen, svarcade_chess:rook, svarcade_chess:bishop, svarcade_chess:knight]
+compounds:
+  - id: svarcade_chess:white_short
+    team: white
+    mover_type: svarcade_chess:king
+    from: 4
+    to: 6
+    companion_type: svarcade_chess:rook
+    companion_from: 7
+    companion_to: 5
+    empty: [5,6]
+    safe: [4,5,6]
+    unmoved_only: true
+  - id: svarcade_chess:white_long
+    team: white
+    mover_type: svarcade_chess:king
+    from: 4
+    to: 2
+    companion_type: svarcade_chess:rook
+    companion_from: 0
+    companion_to: 3
+    empty: [1,2,3]
+    safe: [4,3,2]
+    unmoved_only: true
+  - id: svarcade_chess:black_short
+    team: black
+    mover_type: svarcade_chess:king
+    from: 60
+    to: 62
+    companion_type: svarcade_chess:rook
+    companion_from: 63
+    companion_to: 61
+    empty: [61,62]
+    safe: [60,61,62]
+    unmoved_only: true
+  - id: svarcade_chess:black_long
+    team: black
+    mover_type: svarcade_chess:king
+    from: 60
+    to: 58
+    companion_type: svarcade_chess:rook
+    companion_from: 56
+    companion_to: 59
+    empty: [57,58,59]
+    safe: [60,59,58]
+    unmoved_only: true
