@@ -10,22 +10,50 @@ import vn.svframe.svarcade.security.IntentGate;
 /** Bridges owner-thread board capabilities to immutable worker snapshots, never party stats. */
 public final class BoardDecisionSource implements SessionSystem, BotDecisionSource {
     public static final Id ID = Id.of("svarcade:board_bot_source");
+    private record Config(BoardBotStrategy.Actions actions, Set<String> allowedStates) {
+        private Config { allowedStates = Set.copyOf(allowedStates); }
+        static Config parse(Node config) {
+            config.only("actions", "allowed_states");
+            Set<String> states = config.has("allowed_states") ? config.strings("allowed_states") : Set.of();
+            for (String state : states) if (!state.matches("[A-Za-z0-9_-]{1,80}")) throw config.error("allowed_states", "Invalid state identifier");
+            return new Config(BoardBotStrategy.Actions.parse(config.node("actions")), states);
+        }
+    }
     public static final class Plan implements SystemSchema, SystemFactory {
         private final Registry<BoardBotStrategy.Compiler> strategies;
-        private final Function<GenericSession, BooleanSupplier> phases;
+        private final Function<GenericSession, BooleanSupplier> legacyPhases;
         private final Function<GenericSession, BiFunction<UUID, Long, IntentGate.Facts>> facts;
+        public Plan(Registry<BoardBotStrategy.Compiler> strategies,
+                    Function<GenericSession, BiFunction<UUID, Long, IntentGate.Facts>> facts) {
+            this(strategies, null, facts);
+        }
+        /** Compatibility constructor for existing embedding tests; production definitions use allowed_states. */
         public Plan(Registry<BoardBotStrategy.Compiler> strategies, Function<GenericSession, BooleanSupplier> phases,
                     Function<GenericSession, BiFunction<UUID, Long, IntentGate.Facts>> facts) {
-            this.strategies = Objects.requireNonNull(strategies); this.phases = Objects.requireNonNull(phases); this.facts = Objects.requireNonNull(facts);
+            this.strategies = Objects.requireNonNull(strategies); legacyPhases = phases; this.facts = Objects.requireNonNull(facts);
         }
-        @Override public void validate(Node config) { config.only("actions"); BoardBotStrategy.Actions.parse(config.node("actions")); }
-        @Override public Set<Id> dependencies() { return Set.of(BoardSystem.ID, MovementSystem.ID, BoardAdjudicationSystem.ID); }
-        @Override public Set<SessionServices.Key<?>> requires() { return Set.of(BoardSystem.ACCESS, MovementSystem.ACCESS, BoardAdjudicationSystem.ACCESS); }
+        @Override public void validate(Node config) { Config.parse(config); }
+        @Override public Set<Id> dependencies(Node config) {
+            Config parsed = Config.parse(config); Set<Id> result = new LinkedHashSet<>(Set.of(BoardSystem.ID, MovementSystem.ID, BoardAdjudicationSystem.ID));
+            if (legacyPhases == null && !parsed.allowedStates().isEmpty()) result.add(StateMachineSystem.ID);
+            return Set.copyOf(result);
+        }
+        @Override public Set<SessionServices.Key<?>> requires(Node config) {
+            Config parsed = Config.parse(config); Set<SessionServices.Key<?>> result = new LinkedHashSet<>(Set.of(BoardSystem.ACCESS, MovementSystem.ACCESS, BoardAdjudicationSystem.ACCESS));
+            if (legacyPhases == null && !parsed.allowedStates().isEmpty()) result.add(StateMachineAccess.ACCESS);
+            return Set.copyOf(result);
+        }
         @Override public Set<SessionServices.Key<?>> provides() { return Set.of(BotDecisionSource.ACCESS); }
         @Override public SessionSystem create(GenericSession session, Node config) {
-            validate(config);
+            Config parsed = Config.parse(config); BooleanSupplier phase;
+            if (legacyPhases != null) phase = Objects.requireNonNull(legacyPhases.apply(session));
+            else if (parsed.allowedStates().isEmpty()) phase = () -> true;
+            else {
+                StateMachineAccess fsm = session.services().require(StateMachineAccess.ACCESS);
+                phase = () -> parsed.allowedStates().contains(fsm.state());
+            }
             BoardDecisionSource source = new BoardDecisionSource(session, session.services().require(BoardSystem.ACCESS), session.services().require(MovementSystem.ACCESS),
-                    session.services().require(BoardAdjudicationSystem.ACCESS), BoardBotStrategy.Actions.parse(config.node("actions")), strategies, phases.apply(session), facts.apply(session));
+                    session.services().require(BoardAdjudicationSystem.ACCESS), parsed.actions(), strategies, phase, facts.apply(session));
             session.services().provide(BotDecisionSource.ACCESS, source); return source;
         }
     }
