@@ -113,6 +113,7 @@ public final class GenericSession {
     public ResourceTracker resources() { return resources; }
     public SessionServices services() { return services; }
     public ArenaRuntime.Lease lease() { return lease; }
+    public ArenaRuntime arenaRuntime() { return arenas; }
     public ThreadGuard thread() { return thread; }
     public Status status() { thread.check(); return status; }
     public long revision() { thread.check(); return revision; }

@@ -6,7 +6,7 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 
 /** One authoritative, transactional ingress for both human intents and bot decisions. */
-public final class ActionDispatcher implements AutoCloseable {
+public final class ActionDispatcher implements ActionAccess, AutoCloseable {
     public record Effect(Id type, Map<String, Object> data) {
         public Effect { Objects.requireNonNull(type); data = Values.map(data); }
     }
@@ -30,26 +30,26 @@ public final class ActionDispatcher implements AutoCloseable {
     public ActionDispatcher(GenericSession session, ArenaRuntime arenas, RateLimiter limiter,
                             Registry<Handler> handlers, double range, int eventCapacity) {
         if (eventCapacity < 1 || eventCapacity > 1_000_000) throw new IllegalArgumentException("Event capacity");
-        this.session = session; this.handlers = handlers; this.eventCapacity = eventCapacity;
+        this.session = Objects.requireNonNull(session); this.handlers = Objects.requireNonNull(handlers); this.eventCapacity = eventCapacity;
         Map<Id, IntentGate.Rule> rules = new HashMap<>();
         handlers.ids().forEach(id -> rules.put(id, handlers.require(id)));
-        gate = new IntentGate(session, arenas, limiter, new Registry<>(rules), range);
+        gate = new IntentGate(session, Objects.requireNonNull(arenas), Objects.requireNonNull(limiter), new Registry<>(rules), range);
         session.resources().own("security/action-dispatcher/" + UUID.randomUUID(), this::close);
     }
-    public UUID issueController(UUID actor, long expires) {
+    @Override public UUID issueController(UUID actor, long expires) {
         session.thread().check(); if (closed) throw new IllegalStateException("Dispatcher closed");
         UUID token = gate.issue(actor, expires);
         if (session.participants().get(actor).kind() == Participant.Kind.BOT) botControllers.put(actor, new BotController(token, 0));
         return token;
     }
-    public void revokeController(UUID actor) { session.thread().check(); gate.revoke(actor); botControllers.remove(actor); }
-    public IntentGate.Result dispatchHuman(IntentGate.Facts facts, IntentGate.Intent intent) {
+    @Override public void revokeController(UUID actor) { session.thread().check(); gate.revoke(actor); botControllers.remove(actor); }
+    @Override public IntentGate.Result dispatchHuman(IntentGate.Facts facts, IntentGate.Intent intent) {
         session.thread().check();
         if (closed) return denied("session");
         if (!isKind(facts.actor(), Participant.Kind.PLAYER)) return denied("participant_kind");
         return dispatch(facts, intent);
     }
-    public IntentGate.Result dispatchBot(IntentGate.Facts facts, UUID intendedSession, long revision, BotRuntime.Decision decision) {
+    @Override public IntentGate.Result dispatchBot(IntentGate.Facts facts, UUID intendedSession, long revision, BotRuntime.Decision decision) {
         session.thread().check();
         if (closed) return denied("session");
         if (!isKind(facts.actor(), Participant.Kind.BOT)) return denied("participant_kind");
@@ -84,14 +84,14 @@ public final class ActionDispatcher implements AutoCloseable {
             return denied("action_failed");
         } finally { applying = false; }
     }
-    public List<Event> drainEvents(int maximum) {
+    @Override public List<Event> drainEvents(int maximum) {
         session.thread().check(); if (maximum < 1) throw new IllegalArgumentException("Drain limit");
         List<Event> result = new ArrayList<>();
         while (!events.isEmpty() && result.size() < maximum) result.add(events.removeFirst());
         return List.copyOf(result);
     }
-    public Set<Id> actions() { session.thread().check(); return handlers.ids(); }
-    public Map<String, Integer> ownedCounts() {
+    @Override public Set<Id> actions() { session.thread().check(); return handlers.ids(); }
+    @Override public Map<String, Integer> ownedCounts() {
         session.thread().check(); return Map.of("events", events.size(), "bot_controllers", botControllers.size(), "grants", gate.controllers());
     }
     @Override public void close() { session.thread().check(); closed = true; events.clear(); botControllers.clear(); gate.close(); }

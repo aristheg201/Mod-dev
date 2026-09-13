@@ -18,7 +18,8 @@ public final class SystemCatalogChecks {
                 Id.of("svarcade:path"),
                 Id.of("svarcade:targeting"),
                 Id.of("svarcade:board"),
-                Id.of("svarcade:board_adjudication"));
+                Id.of("svarcade:board_adjudication"),
+                Id.of("svarcade:actions"));
         Checks.equal(expected, catalog.schemas().ids());
         Checks.equal(expected, catalog.factories().ids());
         for (Id id : expected) Checks.equal(catalog.schemas().require(id), catalog.factories().require(id));
