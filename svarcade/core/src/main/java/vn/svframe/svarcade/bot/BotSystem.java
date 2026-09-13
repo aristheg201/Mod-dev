@@ -34,6 +34,27 @@ public final class BotSystem implements SessionSystem {
             catch (IllegalArgumentException e) { throw new ConfigException("Unsupported bot difficulty: " + value, e); }
         }
     }
+    public static final class Plan implements SystemSchema, SystemFactory {
+        private final BotRuntime workers;
+        public Plan(BotRuntime workers) { this.workers = Objects.requireNonNull(workers); }
+        private record Wired(Id source, Config config) { }
+        private Wired compile(Node n) {
+            n.only("source_system", "profiles", "default_difficulty", "team_difficulties", "max_bots_per_tick", "seed");
+            Id source = Id.of(n.string("source_system"));
+            Map<String, Object> values = new LinkedHashMap<>(n.values()); values.remove("source_system");
+            return new Wired(source, Config.parse(new Node(values, "bot-scheduler")));
+        }
+        @Override public void validate(Node config) { compile(config); }
+        @Override public Set<Id> dependencies(Node config) {
+            Wired wired = compile(config); return Set.of(ActionSystem.ID, wired.source());
+        }
+        @Override public Set<SessionServices.Key<?>> requires(Node config) { return Set.of(ActionSystem.ACCESS, BotDecisionSource.ACCESS); }
+        @Override public SessionSystem create(GenericSession session, Node config) {
+            Wired wired = compile(config);
+            return new BotSystem(session, workers, session.services().require(ActionSystem.ACCESS),
+                    session.services().require(BotDecisionSource.ACCESS), wired.config());
+        }
+    }
     private static final class Actor {
         final UUID id;
         final BotRuntime.Difficulty difficulty;
@@ -43,7 +64,7 @@ public final class BotSystem implements SessionSystem {
     }
     private final GenericSession session;
     private final BotRuntime workers;
-    private final ActionDispatcher dispatcher;
+    private final ActionAccess dispatcher;
     private final BotDecisionSource source;
     private final Config config;
     private final Map<BotRuntime.Difficulty, BotDecisionSource.CompiledProfile> compiled;
@@ -51,7 +72,7 @@ public final class BotSystem implements SessionSystem {
     private boolean active, closed;
     private long elapsed, lastTick = -1;
     private int cursor;
-    public BotSystem(GenericSession session, BotRuntime workers, ActionDispatcher dispatcher, BotDecisionSource source, Config config) {
+    public BotSystem(GenericSession session, BotRuntime workers, ActionAccess dispatcher, BotDecisionSource source, Config config) {
         this.session = Objects.requireNonNull(session); this.workers = Objects.requireNonNull(workers); this.dispatcher = Objects.requireNonNull(dispatcher);
         this.source = Objects.requireNonNull(source); this.config = Objects.requireNonNull(config); session.thread().check();
         if (!dispatcher.actions().containsAll(source.requiredActions())) throw new ConfigException("Bot source references an unregistered action");
@@ -91,7 +112,6 @@ public final class BotSystem implements SessionSystem {
                 continue;
             }
             if (elapsed < actor.due || !source.eligible(actor.id)) continue;
-            // No search or live-state callback is allowed inside the worker computation.
             long seed = config.seed() ^ actor.id.getMostSignificantBits() ^ actor.id.getLeastSignificantBits() ^ actor.attempt;
             BotRuntime.Strategy job = compiled.get(actor.difficulty).snapshot(actor.id, seed);
             BotRuntime.Context context = new BotRuntime.Context(session.id(), actor.id, session.revision(), Map.of("seed", seed), profile.parameters());
@@ -129,7 +149,6 @@ public final class BotSystem implements SessionSystem {
         long expected = session.participants().values().stream().filter(p -> p.kind() == Participant.Kind.BOT).count();
         if (seen.size() != expected) throw new ConfigException("Restored bot assignments do not match participants");
         restored.sort(Comparator.comparing(actor -> actor.id)); actors.addAll(restored); active = true;
-        // Futures/controller grants are deliberately never serialized or replayed after restart.
     }
     public Map<UUID, BotRuntime.Difficulty> assignments() {
         requireActive(); Map<UUID, BotRuntime.Difficulty> result = new LinkedHashMap<>(); actors.forEach(a -> result.put(a.id, a.difficulty)); return Map.copyOf(result);

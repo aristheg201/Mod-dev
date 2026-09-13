@@ -3,7 +3,7 @@ package vn.svframe.svarcade.bot;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.LongSupplier;
-import vn.svframe.svarcade.security.ActionDispatcher;
+import vn.svframe.svarcade.security.ActionAccess;
 import vn.svframe.svarcade.security.IntentGate;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
@@ -89,11 +89,11 @@ public final class BotRuntime implements AutoCloseable {
         try { executor.execute(task); return true; }
         catch (RejectedExecutionException e) { pending.remove(context.participant(), entry); saturated++; return false; }
     }
-    public boolean poll(GenericSession session, UUID participant, ActionDispatcher dispatcher, IntentGate.Facts facts) {
+    public boolean poll(GenericSession session, UUID participant, ActionAccess dispatcher, IntentGate.Facts facts) {
         return pollResult(session, participant, dispatcher, facts) == Poll.APPLIED;
     }
     /** No get() is performed until completion. Every result still crosses the shared intent gate. */
-    public Poll pollResult(GenericSession session, UUID participant, ActionDispatcher dispatcher, IntentGate.Facts facts) {
+    public Poll pollResult(GenericSession session, UUID participant, ActionAccess dispatcher, IntentGate.Facts facts) {
         thread.check(); if (!participant.equals(facts.actor())) throw new IllegalArgumentException("Bot actor mismatch");
         Pending work = pending.get(participant);
         if (work == null || !work.future().isDone()) return Poll.WAITING;

@@ -1,6 +1,7 @@
 package vn.svframe.svarcade.systems;
 
 import java.util.Map;
+import vn.svframe.svarcade.bot.*;
 import vn.svframe.svarcade.config.Registry;
 import vn.svframe.svarcade.runtime.SystemCatalog;
 import vn.svframe.svarcade.security.*;
@@ -18,6 +19,14 @@ public final class CoreSystems {
     public static SystemCatalog create() { return create(new Registry<>(Map.of())); }
 
     public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers) {
+        return common(actionHandlers).build();
+    }
+
+    public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers, BotRuntime botRuntime) {
+        return common(actionHandlers).add(BotSystem.ID, new BotSystem.Plan(botRuntime)).build();
+    }
+
+    private static SystemCatalog.Builder common(Registry<ActionHandlerFactory> actionHandlers) {
         return SystemCatalog.builder()
                 .add(MovementSystem.ID, new MovementSystem.Plan())
                 .add(TurnSystem.ID, new TurnSystem.Plan())
@@ -27,7 +36,6 @@ public final class CoreSystems {
                 .add(TargetingSystem.ID, new TargetingSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
-                .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
-                .build();
+                .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers));
     }
 }
