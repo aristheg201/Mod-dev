@@ -19,25 +19,22 @@ public final class CoreSystems {
     public static SystemCatalog create() {
         return create(new Registry<>(Map.of()), new Registry<>(Map.of()), new Registry<>(Map.of()));
     }
-
     public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers) {
         return create(actionHandlers, new Registry<>(Map.of()), new Registry<>(Map.of()));
     }
-
     public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers,
                                        Registry<StateMachineRuntime.Action> stateActions,
                                        Registry<StateMachineRuntime.Condition> stateConditions) {
-        return common(actionHandlers, stateActions, stateConditions).build();
+        return builder(actionHandlers, stateActions, stateConditions).build();
     }
-
     public static SystemCatalog create(Registry<ActionHandlerFactory> actionHandlers,
                                        Registry<StateMachineRuntime.Action> stateActions,
                                        Registry<StateMachineRuntime.Condition> stateConditions,
                                        BotRuntime botRuntime) {
-        return common(actionHandlers, stateActions, stateConditions).add(BotSystem.ID, new BotSystem.Plan(botRuntime)).build();
+        return builder(actionHandlers, stateActions, stateConditions).add(BotSystem.ID, new BotSystem.Plan(botRuntime)).build();
     }
-
-    private static SystemCatalog.Builder common(Registry<ActionHandlerFactory> actionHandlers,
+    /** Extension point for platform-owned or optional-integration systems without duplicating core registration. */
+    public static SystemCatalog.Builder builder(Registry<ActionHandlerFactory> actionHandlers,
                                                 Registry<StateMachineRuntime.Action> stateActions,
                                                 Registry<StateMachineRuntime.Condition> stateConditions) {
         return SystemCatalog.builder()
