@@ -15,6 +15,7 @@ import vn.svframe.svarcade.systems.shop.ShopSystem;
 import vn.svframe.svarcade.systems.targeting.TargetingSystem;
 import vn.svframe.svarcade.systems.turn.TurnSystem;
 import vn.svframe.svarcade.systems.upgrade.UpgradeSystem;
+import vn.svframe.svarcade.systems.wave.WaveSystem;
 
 /** Canonical registry of production generic systems currently implemented by core. */
 public final class CoreSystems {
@@ -52,6 +53,7 @@ public final class CoreSystems {
                 .add(DeployableSystem.ID, new DeployableSystem.Plan())
                 .add(UpgradeSystem.ID, new UpgradeSystem.Plan())
                 .add(ShopSystem.ID, new ShopSystem.Plan())
+                .add(WaveSystem.ID, new WaveSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
