@@ -13,7 +13,7 @@ public final class SystemCatalogChecks {
         Set<Id> expected = Set.of(
                 Id.of("svarcade:movement"), Id.of("svarcade:turns"), Id.of("svarcade:currency"),
                 Id.of("svarcade:objectives"), Id.of("svarcade:path"), Id.of("svarcade:targeting"), Id.of("svarcade:combat"),
-                Id.of("svarcade:deployables"), Id.of("svarcade:upgrades"), Id.of("svarcade:board"),
+                Id.of("svarcade:deployables"), Id.of("svarcade:upgrades"), Id.of("svarcade:shop"), Id.of("svarcade:board"),
                 Id.of("svarcade:board_adjudication"), Id.of("svarcade:actions"), Id.of("svarcade:state_machine"));
         Checks.equal(expected, catalog.schemas().ids());
         Checks.equal(expected, catalog.factories().ids());

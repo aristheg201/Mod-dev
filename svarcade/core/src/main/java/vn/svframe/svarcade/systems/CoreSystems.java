@@ -11,6 +11,7 @@ import vn.svframe.svarcade.systems.currency.CurrencySystem;
 import vn.svframe.svarcade.systems.deployable.DeployableSystem;
 import vn.svframe.svarcade.systems.objective.ObjectiveSystem;
 import vn.svframe.svarcade.systems.path.PathSystem;
+import vn.svframe.svarcade.systems.shop.ShopSystem;
 import vn.svframe.svarcade.systems.targeting.TargetingSystem;
 import vn.svframe.svarcade.systems.turn.TurnSystem;
 import vn.svframe.svarcade.systems.upgrade.UpgradeSystem;
@@ -50,6 +51,7 @@ public final class CoreSystems {
                 .add(CombatSystem.ID, new CombatSystem.Plan())
                 .add(DeployableSystem.ID, new DeployableSystem.Plan())
                 .add(UpgradeSystem.ID, new UpgradeSystem.Plan())
+                .add(ShopSystem.ID, new ShopSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
