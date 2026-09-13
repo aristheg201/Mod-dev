@@ -8,6 +8,7 @@ import vn.svframe.svarcade.security.*;
 import vn.svframe.svarcade.systems.board.*;
 import vn.svframe.svarcade.systems.combat.CombatSystem;
 import vn.svframe.svarcade.systems.currency.CurrencySystem;
+import vn.svframe.svarcade.systems.deployable.DeployableSystem;
 import vn.svframe.svarcade.systems.objective.ObjectiveSystem;
 import vn.svframe.svarcade.systems.path.PathSystem;
 import vn.svframe.svarcade.systems.targeting.TargetingSystem;
@@ -46,6 +47,7 @@ public final class CoreSystems {
                 .add(PathSystem.ID, new PathSystem.Plan())
                 .add(TargetingSystem.ID, new TargetingSystem.Plan())
                 .add(CombatSystem.ID, new CombatSystem.Plan())
+                .add(DeployableSystem.ID, new DeployableSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
