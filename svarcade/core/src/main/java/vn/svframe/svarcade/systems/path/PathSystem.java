@@ -70,6 +70,10 @@ public final class PathSystem implements SessionSystem, PathAccess {
         requireActive(); Agent a = agents.get(id); if (a == null) throw new IllegalArgumentException("Unknown path agent");
         return path(a.path()).at(a.distance());
     }
+    @Override public double progress(UUID id) {
+        requireActive(); Agent a = agents.get(id); if (a == null) throw new IllegalArgumentException("Unknown path agent");
+        double length = path(a.path()).length(); return length == 0 ? 1 : a.distance() / length;
+    }
     @Override public List<UUID> drainArrivals(int maximum) {
         requireActive(); if (maximum < 1) throw new IllegalArgumentException("Drain limit");
         List<UUID> result = new ArrayList<>(); Iterator<UUID> iterator = arrivals.iterator();

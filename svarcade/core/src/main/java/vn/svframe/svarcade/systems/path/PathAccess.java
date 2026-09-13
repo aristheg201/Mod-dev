@@ -10,6 +10,7 @@ public interface PathAccess {
     boolean remove(UUID id);
     Optional<Agent> agent(UUID id);
     Vec3 position(UUID id);
+    double progress(UUID id);
     List<UUID> drainArrivals(int maximum);
     int size();
 }
