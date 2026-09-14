@@ -33,6 +33,7 @@ public interface TargetingAccess {
     void upsert(Target target);
     boolean remove(UUID id);
     Optional<Target> select(UUID requester, Query query);
+    List<Target> selectMany(UUID requester, Query query, int maximum);
     int size();
     Map<String, Long> metrics();
 }

@@ -41,6 +41,7 @@ public final class TargetingSystem implements SessionSystem, TargetingAccess {
     @Override public void upsert(Target target) { requireActive(); index.upsert(target); }
     @Override public boolean remove(UUID id) { requireActive(); return index.remove(id); }
     @Override public Optional<Target> select(UUID requester, Query query) { requireActive(); return index.select(requester, query); }
+    @Override public List<Target> selectMany(UUID requester, Query query, int maximum) { requireActive(); return index.selectMany(requester, query, maximum); }
     @Override public int size() { thread.check(); return index.size(); }
     @Override public Map<String, Long> metrics() { return index.metrics(); }
     @Override public void close() { thread.check(); closed = true; active = false; index.clear(); }

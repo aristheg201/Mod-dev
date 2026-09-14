@@ -18,6 +18,7 @@ public final class SpatialTargetIndex implements TargetingAccess {
         private final Set<UUID> ids = new LinkedHashSet<>();
     }
     private record Cache(Area area, Map<Cell, Long> generations, List<UUID> candidates) { }
+    private record Ranked(Target target, double score) { }
     private final ThreadGuard thread;
     private final double cellSize, maxRange;
     private final int capacity, cacheCapacity, maxCells, maxCandidates;
@@ -32,7 +33,6 @@ public final class SpatialTargetIndex implements TargetingAccess {
                 || cacheCapacity < 1 || cacheCapacity > 16_384 || maxCells < 1 || maxCells > 65_536 || maxCandidates < 1 || maxCandidates > capacity || modes.isEmpty()) throw new IllegalArgumentException("Target index limits");
         this.thread = Objects.requireNonNull(thread); this.cellSize = cellSize; this.maxRange = maxRange;
         this.capacity = capacity; this.cacheCapacity = cacheCapacity; this.maxCells = maxCells; this.maxCandidates = maxCandidates; this.modes = Set.copyOf(modes);
-        // A definition's maximum legal range must fit at every sub-cell alignment.
         double span = Math.ceil(2 * maxRange / cellSize) + 1;
         if (!Double.isFinite(span) || span * span > maxCells) throw new IllegalArgumentException("Configured maximum range exceeds cell query budget");
     }
@@ -89,8 +89,8 @@ public final class SpatialTargetIndex implements TargetingAccess {
         }
         return new Cache(area, Map.copyOf(versions), List.copyOf(candidates));
     }
-    @Override public Optional<Target> select(UUID requester, Query query) {
-        thread.check(); Objects.requireNonNull(requester); Objects.requireNonNull(query);
+    private Cache cached(UUID requester, Query query) {
+        Objects.requireNonNull(requester); Objects.requireNonNull(query);
         if (query.range() > maxRange || !modes.contains(query.mode())) throw new IllegalArgumentException("Targeting mode or range unavailable");
         Area area = area(query); Cache cached = caches.get(requester); queries++;
         if (cached != null && valid(cached, area)) cacheHits++;
@@ -99,20 +99,33 @@ public final class SpatialTargetIndex implements TargetingAccess {
             if (!caches.containsKey(requester) && caches.size() == cacheCapacity) caches.remove(caches.keySet().iterator().next());
             caches.put(requester, cached);
         }
-        Target best = null; double bestScore = 0;
+        return cached;
+    }
+    private double score(Target target, Query query, double distance) {
+        return switch (query.mode()) {
+            case FIRST -> -target.progress(); case LAST -> target.progress();
+            case CLOSEST -> distance; case FARTHEST -> -distance;
+            case STRONGEST -> -target.strength(); case WEAKEST -> target.strength();
+            case LOWEST_HP -> target.health(); case HIGHEST_HP -> -target.health();
+        };
+    }
+    private List<Ranked> ranked(UUID requester, Query query) {
+        Cache cached = cached(requester, query); List<Ranked> values = new ArrayList<>();
         for (UUID id : cached.candidates()) {
             Target target = targets.get(id); examined++;
             if (target == null || target.health() == 0 || !query.filter().accepts(target.tags())) continue;
             double distance = target.position().distance(query.origin()); if (distance > query.range()) continue;
-            double score = switch (query.mode()) {
-                case FIRST -> -target.progress(); case LAST -> target.progress();
-                case CLOSEST -> distance; case FARTHEST -> -distance;
-                case STRONGEST -> -target.strength(); case WEAKEST -> target.strength();
-                case LOWEST_HP -> target.health(); case HIGHEST_HP -> -target.health();
-            };
-            if (best == null || score < bestScore || score == bestScore && target.id().compareTo(best.id()) < 0) { best = target; bestScore = score; }
+            values.add(new Ranked(target, score(target, query, distance)));
         }
-        return Optional.ofNullable(best);
+        values.sort(Comparator.comparingDouble(Ranked::score).thenComparing(value -> value.target().id()));
+        return values;
+    }
+    @Override public Optional<Target> select(UUID requester, Query query) {
+        thread.check(); List<Ranked> ranked = ranked(requester, query); return ranked.isEmpty() ? Optional.empty() : Optional.of(ranked.getFirst().target());
+    }
+    @Override public List<Target> selectMany(UUID requester, Query query, int maximum) {
+        thread.check(); if (maximum < 1 || maximum > maxCandidates) throw new IllegalArgumentException("Target multi-select limit");
+        List<Ranked> ranked = ranked(requester, query); return ranked.stream().limit(maximum).map(Ranked::target).toList();
     }
     public void clear() { thread.check(); targets.clear(); buckets.clear(); caches.clear(); }
     @Override public int size() { thread.check(); return targets.size(); }
