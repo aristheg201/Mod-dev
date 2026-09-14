@@ -19,6 +19,7 @@ import vn.svframe.svarcade.persistence.*;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.security.IntentGate;
 import vn.svframe.svarcade.systems.StandardRuntimeCatalog;
+import vn.svframe.svarcade.systems.presence.*;
 
 /** Server-only Fabric bootstrap. All authoritative runtime mutation stays on the Minecraft server thread. */
 public final class SVArcadeFabric implements ModInitializer {
@@ -45,7 +46,8 @@ public final class SVArcadeFabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(this::start);
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> stop());
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> restorePending(handler.player.getUuid()));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> { restorePending(handler.player.getUuid()); updatePresence(handler.player.getUuid(), true); });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> updatePresence(handler.player.getUuid(), false));
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> FabricBoardInputBridge.interact(runtime, tick, player, world, hand, hit));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> SVArcadeCommands.register(dispatcher, this));
     }
@@ -108,10 +110,32 @@ public final class SVArcadeFabric implements ModInitializer {
         if (!active && !protection.restore(player)) LOG.log(System.Logger.Level.WARNING, "SVArcade pending player-state restore failed for {0}", player);
     }
 
+    private void updatePresence(UUID player, boolean connected) {
+        GenericGameRuntime value = runtime; if (value == null) return;
+        Optional<GenericSession> found = value.sessionFor(player); if (found.isEmpty()) return; GenericSession session = found.get();
+        if (session.definition().systems().stream().noneMatch(spec -> spec.id().equals(PresenceSystem.ID))) return;
+        PresenceAccess presence = session.services().require(PresenceAccess.ACCESS);
+        if (connected) presence.reconnect(player, tick); else presence.disconnect(player, tick);
+    }
+
     private void tick() {
         ThreadGuard guard = thread; GenericGameRuntime value = runtime;
-        if (guard == null || value == null) return; guard.check(); value.tick(++tick);
+        if (guard == null || value == null) return; guard.check(); value.tick(++tick); processPresenceTimeouts(value);
         PersistenceManager manager = persistence; if (manager != null) manager.tick(value.sessions().values(), playerState, 8);
+    }
+
+    private void processPresenceTimeouts(GenericGameRuntime value) {
+        List<UUID> close = new ArrayList<>();
+        for (GenericSession session : value.sessions().values()) {
+            if (session.status() != GenericSession.Status.RUNNING || session.definition().systems().stream().noneMatch(spec -> spec.id().equals(PresenceSystem.ID))) continue;
+            PresenceAccess presence = session.services().require(PresenceAccess.ACCESS);
+            for (PresenceAccess.Event event : presence.drainTimeouts(64)) switch (event.policy()) {
+                case CLEANUP, FORFEIT -> close.add(session.id());
+                case RETAIN -> { }
+                case BOT_TAKEOVER -> LOG.log(System.Logger.Level.WARNING, "SVArcade bot takeover requested but no takeover coordinator is configured for session {0}", session.id());
+            }
+        }
+        close.stream().distinct().forEach(value::close);
     }
 
     CompletableFuture<DefinitionRegistry.ReloadResult> reload() {
