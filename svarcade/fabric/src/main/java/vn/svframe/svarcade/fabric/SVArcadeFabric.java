@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.MinecraftServer;
 import vn.svframe.svarcade.bot.BotRuntime;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
@@ -26,19 +27,20 @@ public final class SVArcadeFabric implements ModInitializer {
     private volatile GenericGameRuntime runtime;
     private volatile BotRuntime bots;
     private volatile ThreadGuard thread;
+    private volatile PlatformIntegrations platform;
     private volatile long tick;
     private volatile Set<String> integrations = Set.of();
     private volatile Path configRoot;
     private volatile Path definitionsPath;
 
     @Override public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> start());
+        ServerLifecycleEvents.SERVER_STARTED.register(this::start);
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> stop());
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> SVArcadeCommands.register(dispatcher, this));
     }
 
-    private void start() {
+    private void start(MinecraftServer server) {
         if (!starting.compareAndSet(false, true)) throw new IllegalStateException("SVArcade already starting");
         thread = new ThreadGuard();
         io = new ThreadPoolExecutor(1, 2, 30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(32), runnable -> {
@@ -47,9 +49,10 @@ public final class SVArcadeFabric implements ModInitializer {
         bots = new BotRuntime(thread, new Registry<>(Map.of()), 2, 128);
         SystemCatalog catalog = StandardRuntimeCatalog.create(bots,
                 session -> (actor, currentTick) -> new IntentGate.Facts(actor, currentTick, 0, true));
+        platform = PlatformIntegrations.discover(server); integrations = platform.capabilities();
         definitions = new DefinitionRegistry(); loader = new DefinitionLoader(catalog.schemas());
-        runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128);
-        integrations = IntegrationDetector.available();
+        runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128, platform::initializeSession);
+        if (!platform.unavailable().isEmpty()) LOG.log(System.Logger.Level.INFO, "SVArcade optional adapters unavailable: {0}", platform.unavailable());
         configRoot = FabricLoader.getInstance().getConfigDir().resolve("svarcade");
         definitionsPath = configRoot.resolve("minigames");
         CompletableFuture.supplyAsync(() -> DefaultInstaller.install(configRoot), io)
@@ -75,6 +78,7 @@ public final class SVArcadeFabric implements ModInitializer {
     GenericGameRuntime runtime() { return runtime; }
     DefinitionRegistry definitions() { return definitions; }
     BotRuntime bots() { return bots; }
+    PlatformIntegrations platform() { return platform; }
     long currentTick() { return tick; }
 
     private void stop() {
@@ -82,6 +86,6 @@ public final class SVArcadeFabric implements ModInitializer {
         GenericGameRuntime sessions = runtime; if (sessions != null) sessions.closeAll();
         BotRuntime workers = bots; if (workers != null) workers.close();
         ExecutorService executor = io; if (executor != null) executor.shutdownNow();
-        runtime = null; bots = null; loader = null; definitions = null; io = null; configRoot = null; definitionsPath = null; integrations = Set.of(); thread = null; tick = 0; starting.set(false);
+        runtime = null; bots = null; loader = null; definitions = null; io = null; platform = null; configRoot = null; definitionsPath = null; integrations = Set.of(); thread = null; tick = 0; starting.set(false);
     }
 }
