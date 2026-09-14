@@ -25,12 +25,15 @@ public record PlayerStateSnapshot(int schema, EnumSet<Field> fields, Position po
     }
 
     public PlayerStateSnapshot {
+        Objects.requireNonNull(fields); Objects.requireNonNull(inventory); Objects.requireNonNull(effects);
         if (schema != 1) throw new IllegalArgumentException("Player state schema"); fields = fields.clone(); inventory = List.copyOf(inventory); effects = List.copyOf(effects);
-        if (fields.contains(Field.POSITION) != (position != null) || fields.contains(Field.MODE) != (mode != null)
-                || fields.contains(Field.INVENTORY) != !inventory.isEmpty() && fields.contains(Field.INVENTORY) != (selectedSlot >= 0)
-                || !fields.contains(Field.INVENTORY) && (!inventory.isEmpty() || selectedSlot >= 0)
-                || fields.contains(Field.EFFECTS) != !effects.isEmpty()) throw new IllegalArgumentException("Player state field mismatch");
-        if (selectedSlot > 1024) throw new IllegalArgumentException("Selected slot");
+        if (fields.contains(Field.POSITION) != (position != null) || fields.contains(Field.MODE) != (mode != null))
+            throw new IllegalArgumentException("Player state field mismatch");
+        if (fields.contains(Field.INVENTORY)) {
+            if (selectedSlot < 0 || selectedSlot > 1024) throw new IllegalArgumentException("Selected slot");
+            Set<Integer> unique = new HashSet<>(); for (Slot slot : inventory) if (!unique.add(slot.slot())) throw new IllegalArgumentException("Duplicate inventory slot");
+        } else if (!inventory.isEmpty() || selectedSlot >= 0) throw new IllegalArgumentException("Unexpected inventory state");
+        if (!fields.contains(Field.EFFECTS) && !effects.isEmpty()) throw new IllegalArgumentException("Unexpected effect state");
     }
 
     public Map<String,Object> toMap() {
