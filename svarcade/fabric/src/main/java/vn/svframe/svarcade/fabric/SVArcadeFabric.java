@@ -51,7 +51,7 @@ public final class SVArcadeFabric implements ModInitializer {
         SystemCatalog catalog = StandardRuntimeCatalog.create(bots,
                 session -> (actor, currentTick) -> new IntentGate.Facts(actor, currentTick, 0, true), platform.rewardProviders());
         definitions = new DefinitionRegistry(); loader = new DefinitionLoader(catalog.schemas());
-        runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128, platform::initializeSession);
+        runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128, platform::initializeSession); platform.bindRuntime(runtime);
         if (!platform.unavailable().isEmpty()) LOG.log(System.Logger.Level.INFO, "SVArcade optional adapters unavailable: {0}", platform.unavailable());
         configRoot = FabricLoader.getInstance().getConfigDir().resolve("svarcade");
         definitionsPath = configRoot.resolve("minigames");
@@ -83,6 +83,7 @@ public final class SVArcadeFabric implements ModInitializer {
 
     private void stop() {
         ThreadGuard guard = thread; if (guard == null) return; guard.check();
+        PlatformIntegrations adapters = platform; if (adapters != null) adapters.close();
         GenericGameRuntime sessions = runtime; if (sessions != null) sessions.closeAll();
         BotRuntime workers = bots; if (workers != null) workers.close();
         ExecutorService executor = io; if (executor != null) executor.shutdownNow();
