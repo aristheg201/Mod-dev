@@ -1,6 +1,7 @@
 package vn.svframe.svarcade.systems.reward;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.reward.*;
 import vn.svframe.svarcade.runtime.*;
@@ -8,19 +9,21 @@ import vn.svframe.svarcade.runtime.*;
 /** Session-owned durable reward claims over an injected typed-provider registry. */
 public final class RewardSystem implements SessionSystem, RewardAccess {
     public static final Id ID = Id.of("svarcade:rewards");
-    public record Config(int capacity, Set<Id> allowedTypes, int maxCompletionsPerTick, int maxRetriesPerInterval, long retryIntervalTicks) {
+    public record Config(int capacity, Set<Id> allowedTypes, int maxCompletionsPerTick, int maxRetriesPerInterval,
+                         long retryIntervalTicks, long grantTimeoutMillis) {
         public Config {
             allowedTypes = Set.copyOf(allowedTypes);
             if (capacity < 1 || capacity > 1_000_000 || allowedTypes.isEmpty() || allowedTypes.size() > 64
                     || maxCompletionsPerTick < 1 || maxCompletionsPerTick > 4096 || maxRetriesPerInterval < 1 || maxRetriesPerInterval > 4096
-                    || retryIntervalTicks < 1 || retryIntervalTicks > 72_000) throw new ConfigException("Reward system limits");
+                    || retryIntervalTicks < 1 || retryIntervalTicks > 72_000 || grantTimeoutMillis < 100 || grantTimeoutMillis > 600_000)
+                throw new ConfigException("Reward system limits");
         }
         public static Config parse(Node n) {
-            n.only("capacity", "allowed_types", "max_completions_per_tick", "max_retries_per_interval", "retry_interval_ticks");
+            n.only("capacity", "allowed_types", "max_completions_per_tick", "max_retries_per_interval", "retry_interval_ticks", "grant_timeout_millis");
             Set<Id> types = new LinkedHashSet<>(); for (String raw : n.strings("allowed_types")) types.add(Id.of(raw));
             return new Config((int)n.integer("capacity", 1, 1_000_000), types,
                     (int)n.integer("max_completions_per_tick", 1, 4096), (int)n.integer("max_retries_per_interval", 1, 4096),
-                    n.integer("retry_interval_ticks", 1, 72_000));
+                    n.integer("retry_interval_ticks", 1, 72_000), n.integer("grant_timeout_millis", 100, 600_000));
         }
     }
     public static final class Plan implements SystemSchema, SystemFactory {
@@ -37,19 +40,22 @@ public final class RewardSystem implements SessionSystem, RewardAccess {
     private final GenericSession session;
     private final RewardManager manager;
     private final Config config;
+    private final long grantTimeoutNanos;
     private boolean active, closed;
     private long nextRetryTick;
     private RewardSystem(GenericSession session, Registry<RewardProvider> providers, Config config) {
         this.session = Objects.requireNonNull(session); this.config = config; manager = new RewardManager(session.thread(), providers, config.capacity());
+        grantTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(config.grantTimeoutMillis());
     }
     private void requireActive() { session.thread().check(); if (!active || closed) throw new IllegalStateException("Reward system inactive"); }
     private void requireType(Id type) { if (!config.allowedTypes().contains(type)) throw new IllegalArgumentException("Reward type not allowed: " + type); }
     @Override public void start() { session.thread().check(); if (active || closed) throw new IllegalStateException("Reward system already started/closed"); active = true; }
     @Override public void tick(long tick) {
-        requireActive(); long before = manager.revision(); manager.pollCompleted(config.maxCompletionsPerTick());
-        if (tick >= nextRetryTick) { manager.startPending(config.maxRetriesPerInterval()); nextRetryTick = Math.addExact(tick, config.retryIntervalTicks()); }
+        requireActive(); long before = manager.revision(); manager.pollCompleted(config.maxCompletionsPerTick(), grantTimeoutNanos);
+        if (tick >= nextRetryTick) { manager.startPending(config.maxRetriesPerInterval()); nextRetryTick = saturatingAdd(tick, config.retryIntervalTicks()); }
         publishChange(before);
     }
+    private static long saturatingAdd(long a, long b) { return a > Long.MAX_VALUE - b ? Long.MAX_VALUE : a + b; }
     @Override public RewardManager.Claim claim(UUID claimId, UUID recipient, Id type, Node configNode) {
         requireActive(); requireType(type); long before = manager.revision();
         try { return manager.claim(claimId, recipient, type, configNode); }
