@@ -12,7 +12,7 @@ final class IntegrationDetector {
             "svquest", List.of("svquest"),
             "svframe", List.of("svframe", "svframelib"),
             "luckperms", List.of("luckperms"),
-            "economy", List.of("economy", "beconomy"),
+            "economy", List.of("blanketeconomy", "beconomy", "economy"),
             "placeholder", List.of("placeholder-api", "placeholderapi")
     );
     private static final int COBBLEMON_MAJOR = 1, COBBLEMON_MINOR = 8, COBBLEMON_PATCH = 1;
@@ -27,7 +27,7 @@ final class IntegrationDetector {
     static boolean supportedCobblemon(Optional<ModContainer> container) {
         if (container.isEmpty()) return false;
         Version raw = container.get().getMetadata().getVersion();
-        if (!(raw instanceof SemanticVersion version)) return false;
+        if (!(raw instanceof SemanticVersion version) || version.getVersionComponentCount() < 3) return false;
         int major = version.getVersionComponent(0), minor = version.getVersionComponent(1), patch = version.getVersionComponent(2);
         return major > COBBLEMON_MAJOR
                 || major == COBBLEMON_MAJOR && minor > COBBLEMON_MINOR
