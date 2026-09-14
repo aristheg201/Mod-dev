@@ -39,7 +39,7 @@ public final class GenericGameRuntime {
     private GenericSession initialize(UUID id, Definition definition, String arena, List<Participant> participants, SessionSnapshot saved) {
         thread.check(); if (iterating) throw new IllegalStateException("Cannot open sessions during runtime iteration");
         if (sessions.size() >= capacity || sessions.containsKey(id)) throw new IllegalStateException("Session capacity or duplicate identity");
-        for (Participant p : participants) if (membership.containsKey(p.id())) throw new IllegalStateException("Participant already owns a session");
+        for (Participant p : participants) if (sessionFor(p.id()).isPresent()) throw new IllegalStateException("Participant already owns a session");
         GenericSession session = new GenericSession(id, definition, arena, participants, arenas, thread);
         sessions.put(id, session); participants.forEach(p -> membership.put(p.id(), id));
         try {
@@ -89,8 +89,22 @@ public final class GenericGameRuntime {
         if (failures.size() == 128) failures.removeFirst();
         failures.addLast(new Failure(id, operation, detail.length() <= 2048 ? detail : detail.substring(0, 2048)));
     }
+    /** Dynamic spectator membership is reconciled lazily against authoritative session rosters. */
     public Optional<GenericSession> sessionFor(UUID participant) {
-        thread.check(); UUID session = membership.get(Objects.requireNonNull(participant)); return session == null ? Optional.empty() : Optional.ofNullable(sessions.get(session));
+        thread.check(); Objects.requireNonNull(participant);
+        UUID known = membership.get(participant);
+        if (known != null) {
+            GenericSession session = sessions.get(known);
+            if (session != null && session.participants().containsKey(participant)) return Optional.of(session);
+            membership.remove(participant, known);
+        }
+        GenericSession found = null;
+        for (GenericSession session : sessions.values()) if (session.participants().containsKey(participant)) {
+            if (found != null) throw new IllegalStateException("Participant belongs to multiple sessions: " + participant);
+            found = session;
+        }
+        if (found != null) membership.put(participant, found.id());
+        return Optional.ofNullable(found);
     }
     public Map<UUID, GenericSession> sessions() { thread.check(); return Map.copyOf(sessions); }
     public List<Failure> failures() { thread.check(); return List.copyOf(failures); }
