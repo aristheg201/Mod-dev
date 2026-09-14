@@ -1,0 +1,13 @@
+config.yml
+messages/en_us.yml
+messages/vi_vn.yml
+integrations/cobblemon.yml
+integrations/svquest.yml
+integrations/svframe.yml
+integrations/luckperms.yml
+integrations/economy.yml
+integrations/placeholder.yml
+shared/effects.yml
+shared/status-effects.yml
+shared/reward-types.yml
+shared/bot-strategies.yml
