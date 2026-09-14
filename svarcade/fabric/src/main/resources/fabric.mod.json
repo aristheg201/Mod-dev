@@ -16,6 +16,11 @@
     "fabric-api": "*"
   },
   "suggests": {
-    "cobblemon": ">=1.8.1"
+    "cobblemon": ">=1.8.1",
+    "luckperms": "*",
+    "placeholder-api": ">=2.4.2",
+    "beconomy": "*",
+    "svquest": "*",
+    "svframelib": "*"
   }
 }
