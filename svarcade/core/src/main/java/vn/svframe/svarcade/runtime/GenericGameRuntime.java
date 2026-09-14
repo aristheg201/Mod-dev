@@ -89,6 +89,9 @@ public final class GenericGameRuntime {
         if (failures.size() == 128) failures.removeFirst();
         failures.addLast(new Failure(id, operation, detail.length() <= 2048 ? detail : detail.substring(0, 2048)));
     }
+    public Optional<GenericSession> sessionFor(UUID participant) {
+        thread.check(); UUID session = membership.get(Objects.requireNonNull(participant)); return session == null ? Optional.empty() : Optional.ofNullable(sessions.get(session));
+    }
     public Map<UUID, GenericSession> sessions() { thread.check(); return Map.copyOf(sessions); }
     public List<Failure> failures() { thread.check(); return List.copyOf(failures); }
     public ArenaRuntime arenas() { return arenas; }
