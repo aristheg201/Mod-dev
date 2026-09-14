@@ -1,0 +1,4 @@
+enabled: true
+player_state_bridge: auto
+stats_bridge: auto
+missing_behavior: disable_adapter
