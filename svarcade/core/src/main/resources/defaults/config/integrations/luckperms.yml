@@ -1,0 +1,3 @@
+enabled: true
+permission_reward_provider: svarcade:permission
+missing_behavior: disable_provider
