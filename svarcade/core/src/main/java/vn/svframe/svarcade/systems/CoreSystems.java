@@ -3,6 +3,7 @@ package vn.svframe.svarcade.systems;
 import java.util.Map;
 import vn.svframe.svarcade.bot.*;
 import vn.svframe.svarcade.config.Registry;
+import vn.svframe.svarcade.reward.RewardProvider;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.security.*;
 import vn.svframe.svarcade.systems.board.*;
@@ -16,6 +17,7 @@ import vn.svframe.svarcade.systems.objective.ObjectiveSystem;
 import vn.svframe.svarcade.systems.path.PathSystem;
 import vn.svframe.svarcade.systems.presence.PresenceSystem;
 import vn.svframe.svarcade.systems.render.RendererSystem;
+import vn.svframe.svarcade.systems.reward.RewardSystem;
 import vn.svframe.svarcade.systems.shop.ShopSystem;
 import vn.svframe.svarcade.systems.spectator.SpectatorSystem;
 import vn.svframe.svarcade.systems.targeting.TargetingSystem;
@@ -48,6 +50,12 @@ public final class CoreSystems {
     public static SystemCatalog.Builder builder(Registry<ActionHandlerFactory> actionHandlers,
                                                 Registry<StateMachineRuntime.Action> stateActions,
                                                 Registry<StateMachineRuntime.Condition> stateConditions) {
+        return builder(actionHandlers, stateActions, stateConditions, new Registry<>(Map.of()));
+    }
+    public static SystemCatalog.Builder builder(Registry<ActionHandlerFactory> actionHandlers,
+                                                Registry<StateMachineRuntime.Action> stateActions,
+                                                Registry<StateMachineRuntime.Condition> stateConditions,
+                                                Registry<RewardProvider> rewardProviders) {
         return SystemCatalog.builder()
                 .add(MovementSystem.ID, new MovementSystem.Plan())
                 .add(TurnSystem.ID, new TurnSystem.Plan())
@@ -65,6 +73,7 @@ public final class CoreSystems {
                 .add(TowerSystem.ID, new TowerSystem.Plan())
                 .add(OutcomeCoordinatorSystem.ID, new OutcomeCoordinatorSystem.Plan())
                 .add(WaveLoopSystem.ID, new WaveLoopSystem.Plan())
+                .add(RewardSystem.ID, new RewardSystem.Plan(rewardProviders))
                 .add(SpectatorSystem.ID, new SpectatorSystem.Plan())
                 .add(PresenceSystem.ID, new PresenceSystem.Plan())
                 .add(RendererSystem.ID, new RendererSystem.Plan())
