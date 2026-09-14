@@ -15,6 +15,7 @@ import vn.svframe.svarcade.systems.loadout.*;
 final class PlatformIntegrations implements AutoCloseable {
     static final String ENTRYPOINT = "svarcade:integration";
     private final MinecraftServer server;
+    private final IntegrationSettings settings;
     private final CobblemonPartyBridge cobblemon;
     private final PlaceholderBridge placeholders;
     private final List<GenericGameRuntime.SessionInitializer> sessionInitializers;
@@ -22,33 +23,35 @@ final class PlatformIntegrations implements AutoCloseable {
     private final Set<String> capabilities;
     private final Map<String,String> unavailable;
 
-    private PlatformIntegrations(MinecraftServer server, CobblemonPartyBridge cobblemon, PlaceholderBridge placeholders,
+    private PlatformIntegrations(MinecraftServer server, IntegrationSettings settings, CobblemonPartyBridge cobblemon, PlaceholderBridge placeholders,
                                  List<GenericGameRuntime.SessionInitializer> sessionInitializers, Registry<RewardProvider> rewardProviders,
                                  Set<String> capabilities, Map<String,String> unavailable) {
-        this.server = Objects.requireNonNull(server); this.cobblemon = cobblemon; this.placeholders = placeholders;
+        this.server = Objects.requireNonNull(server); this.settings = Objects.requireNonNull(settings); this.cobblemon = cobblemon; this.placeholders = placeholders;
         this.sessionInitializers = List.copyOf(sessionInitializers); this.rewardProviders = Objects.requireNonNull(rewardProviders);
         this.capabilities = Set.copyOf(capabilities); this.unavailable = Map.copyOf(unavailable);
     }
 
-    static PlatformIntegrations discover(MinecraftServer server) {
+    static PlatformIntegrations discover(MinecraftServer server, IntegrationSettings settings) {
+        Objects.requireNonNull(settings);
         FabricLoader loader = FabricLoader.getInstance(); Set<String> capabilities = new LinkedHashSet<>(); Map<String,String> unavailable = new LinkedHashMap<>();
         Map<Id,RewardProvider> rewards = new LinkedHashMap<>(); List<GenericGameRuntime.SessionInitializer> initializers = new ArrayList<>();
         CobblemonPartyBridge cobblemon = null; PlaceholderBridge placeholders = null;
-        if (loader.isModLoaded("cobblemon")) {
-            if (!IntegrationDetector.supportedCobblemon(loader.getModContainer("cobblemon"))) unavailable.put("cobblemon", "requires >=1.8.1");
+
+        if (settings.cobblemonEnabled() && loader.isModLoaded("cobblemon")) {
+            if (!IntegrationDetector.supportedCobblemon(loader.getModContainer("cobblemon"))) unavailable.put("cobblemon", "requires >=1.8.1 <1.9.0");
             else {
                 Optional<CobblemonPartyBridge> bridge = CobblemonPartyBridge.discover();
                 if (bridge.isPresent()) { cobblemon = bridge.get(); capabilities.add("cobblemon"); }
                 else unavailable.put("cobblemon", "1.8.1 API boundary unresolved");
             }
         }
-        if (IntegrationDetector.installed("luckperms")) {
+        if (settings.luckPermsEnabled() && IntegrationDetector.installed("luckperms")) {
             Optional<LuckPermsRewardProvider> provider = LuckPermsRewardProvider.discover();
-            if (provider.isPresent()) { rewards.put(Id.of("svarcade:permission"), provider.get()); capabilities.add("luckperms"); }
+            if (provider.isPresent()) { rewards.put(settings.permissionRewardProvider(), provider.get()); capabilities.add("luckperms"); }
             else unavailable.put("luckperms", "LuckPerms API 5.x unavailable");
         }
-        if (IntegrationDetector.installed("placeholder")) {
-            Optional<PlaceholderBridge> bridge = PlaceholderBridge.discover();
+        if (settings.placeholderEnabled() && IntegrationDetector.installed("placeholder")) {
+            Optional<PlaceholderBridge> bridge = PlaceholderBridge.discover(settings.placeholderNamespace());
             if (bridge.isPresent()) { placeholders = bridge.get(); capabilities.add("placeholder"); }
             else unavailable.put("placeholder", "Text Placeholder API 2.4.x unavailable");
         }
@@ -57,6 +60,9 @@ final class PlatformIntegrations implements AutoCloseable {
             String provider = container.getProvider().getMetadata().getId();
             try {
                 SVArcadeIntegration integration = container.getEntrypoint(); Set<String> advertised = validateCapabilities(integration.capabilities());
+                Set<String> accepted = new LinkedHashSet<>();
+                for (String capability : advertised) if (enabled(settings, capability)) accepted.add(capability);
+                if (accepted.isEmpty()) continue;
                 Map<Id,RewardProvider> stagedRewards = new LinkedHashMap<>(); List<GenericGameRuntime.SessionInitializer> stagedInitializers = new ArrayList<>();
                 integration.register(new SVArcadeIntegration.Context() {
                     @Override public void rewardProvider(Id id, RewardProvider rewardProvider) {
@@ -67,18 +73,35 @@ final class PlatformIntegrations implements AutoCloseable {
                         if (stagedInitializers.size() >= 32) throw new IllegalStateException("Integration initializer limit"); stagedInitializers.add(Objects.requireNonNull(initializer));
                     }
                 });
-                for (String capability : advertised) if (capabilities.contains(capability)) throw new IllegalStateException("Duplicate integration capability: " + capability);
-                rewards.putAll(stagedRewards); initializers.addAll(stagedInitializers); capabilities.addAll(advertised);
+                for (String capability : accepted) if (capabilities.contains(capability)) throw new IllegalStateException("Duplicate integration capability: " + capability);
+                if (accepted.contains("svquest") && !stagedRewards.containsKey(settings.svQuestRewardProvider()))
+                    throw new IllegalStateException("SVQuest integration did not register configured reward provider " + settings.svQuestRewardProvider());
+                rewards.putAll(stagedRewards); initializers.addAll(stagedInitializers); capabilities.addAll(accepted);
             } catch (RuntimeException | LinkageError failure) {
                 unavailable.put("entrypoint/" + provider, concise(failure));
             }
         }
 
-        if (IntegrationDetector.installed("economy") && !capabilities.contains("economy")) unavailable.put("economy", "provider lacks nonblocking exactly-once transaction API");
-        for (String capability : List.of("svquest", "svframe")) if (IntegrationDetector.installed(capability) && !capabilities.contains(capability)) unavailable.put(capability, "no SVArcade integration entrypoint");
-        return new PlatformIntegrations(server, cobblemon, placeholders, initializers, new Registry<>(rewards), capabilities, unavailable);
+        if (settings.economyEnabled() && IntegrationDetector.installed("economy") && !capabilities.contains("economy"))
+            unavailable.put("economy", "provider lacks nonblocking exactly-once transaction API");
+        if (settings.svQuestEnabled() && IntegrationDetector.installed("svquest") && !capabilities.contains("svquest"))
+            unavailable.put("svquest", "no valid SVArcade integration entrypoint");
+        if (settings.svFrameEnabled() && IntegrationDetector.installed("svframe") && !capabilities.contains("svframe"))
+            unavailable.put("svframe", "no valid SVArcade integration entrypoint");
+        return new PlatformIntegrations(server, settings, cobblemon, placeholders, initializers, new Registry<>(rewards), capabilities, unavailable);
     }
 
+    private static boolean enabled(IntegrationSettings settings, String capability) {
+        return switch (capability) {
+            case "cobblemon" -> settings.cobblemonEnabled();
+            case "luckperms" -> settings.luckPermsEnabled();
+            case "placeholder" -> settings.placeholderEnabled();
+            case "economy" -> settings.economyEnabled();
+            case "svquest" -> settings.svQuestEnabled();
+            case "svframe" -> settings.svFrameEnabled();
+            default -> true;
+        };
+    }
     private static Set<String> validateCapabilities(Set<String> raw) {
         Objects.requireNonNull(raw); if (raw.isEmpty() || raw.size() > 16) throw new IllegalStateException("Integration capability count"); Set<String> result = new LinkedHashSet<>();
         for (String capability : raw) {
@@ -101,7 +124,8 @@ final class PlatformIntegrations implements AutoCloseable {
                 if (participant.kind() != Participant.Kind.PLAYER) continue;
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(participant.id());
                 if (player == null) throw new IllegalStateException("Cobblemon loadout owner is offline: " + participant.id());
-                for (LoadoutAccess.Snapshot snapshot : cobblemon.snapshots(player, 64)) {
+                for (LoadoutAccess.Snapshot snapshot : cobblemon.snapshots(player, settings.cobblemonMaxParty(),
+                        settings.cobblemonHeldItem(), settings.cobblemonAspects(), settings.cobblemonMoves())) {
                     StateChange change = loadouts.prepareRegister(participant.id(), snapshot); change.apply(); applied.add(change);
                 }
             }
