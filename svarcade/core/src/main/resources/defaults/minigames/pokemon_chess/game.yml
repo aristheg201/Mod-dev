@@ -18,6 +18,8 @@ systems:
     config: board.yml
   - id: svarcade:board_adjudication
     config: rules.yml
+  - id: svarcade:presence
+    config: presence.yml
   - id: svarcade:state_machine
     config: states.yml
   - id: svarcade:actions
