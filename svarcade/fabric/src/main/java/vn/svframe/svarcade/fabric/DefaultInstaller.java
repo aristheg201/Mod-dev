@@ -11,16 +11,16 @@ final class DefaultInstaller {
     private DefaultInstaller() { }
 
     static int install(Path target) {
-        Objects.requireNonNull(target);
+        Objects.requireNonNull(target); Path root = target.toAbsolutePath().normalize();
         List<String> entries = manifest(); int created = 0;
         for (String entry : entries) {
-            validate(entry); Path destination = target.resolve(entry).normalize();
-            if (!destination.startsWith(target.normalize())) throw new IllegalStateException("Default path escaped target");
+            validate(entry); Path destination = root.resolve(entry).normalize();
+            if (!destination.startsWith(root)) throw new IllegalStateException("Default path escaped target");
             try {
                 if (Files.exists(destination, LinkOption.NOFOLLOW_LINKS)) continue;
                 Files.createDirectories(destination.getParent());
                 try (InputStream in = resource(ROOT + entry)) {
-                    Files.copy(in, destination, StandardCopyOption.COPY_ATTRIBUTES); created++;
+                    Files.copy(in, destination); created++;
                 } catch (FileAlreadyExistsException race) { /* administrator or another bootstrap won the create race */ }
             } catch (IOException e) { throw new UncheckedIOException("Cannot install default " + entry, e); }
         }
