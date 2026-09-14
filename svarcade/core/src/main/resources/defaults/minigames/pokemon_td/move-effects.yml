@@ -11,12 +11,12 @@ move_effects:
     modifiers:
       svarcade_td:damage_add: 2.0
       svarcade_td:range_add: 2.0
-  cobblemon:ice_beam:
+  cobblemon:icebeam:
     tags:
       - svarcade_td:move_ice_control
     modifiers:
       svarcade_td:cooldown_multiplier_delta: -0.08
-  cobblemon:quick_attack:
+  cobblemon:quickattack:
     tags:
       - svarcade_td:move_fast
     modifiers:
