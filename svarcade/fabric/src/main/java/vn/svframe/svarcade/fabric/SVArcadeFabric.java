@@ -91,28 +91,12 @@ public final class SVArcadeFabric implements ModInitializer {
                     for (UUID sessionId : applied.recovered()) {
                         GenericSession session = runtime.sessions().get(sessionId); if (session != null) platform.bindRecoveredState(session, applied.protectedOwners());
                     }
-                    restoreUnownedOnline(applied.protectedOwners());
                     if (!applied.aborted().isEmpty()) LOG.log(System.Logger.Level.WARNING, "SVArcade recovery aborted states: {0}", applied.aborted());
                     LOG.log(System.Logger.Level.INFO, "SVArcade loaded definitions; defaults created={0}, applied={1}, generation={2}, recovered={3}",
                             bootstrap.defaultsCreated(), result.applied(), result.generation(), applied.recovered().size());
                 }
             }));
         });
-    }
-
-    private void restoreUnownedOnline(Map<UUID,UUID> owners) {
-        PlayerStateProtection protection = playerState; GenericGameRuntime sessions = runtime; if (protection == null || sessions == null) return;
-        Set<UUID> liveSessions = sessions.sessions().keySet();
-        for (UUID player : new ArrayList<>(protection.snapshots().keySet())) {
-            UUID owner = owners.get(player); if ((owner == null || !liveSessions.contains(owner)) && serverPlayerOnline(player)) protection.restore(player);
-        }
-    }
-
-    private boolean serverPlayerOnline(UUID player) {
-        PlatformIntegrations adapters = platform; if (adapters == null) return false;
-        GenericGameRuntime value = runtime; if (value == null) return false;
-        return value.sessions().values().stream().flatMap(session -> session.participants().keySet().stream()).anyMatch(player::equals)
-                || playerState != null && playerState.protectedPlayer(player); // JOIN handler performs actual online test through bridge
     }
 
     private void restorePending(UUID player) {
