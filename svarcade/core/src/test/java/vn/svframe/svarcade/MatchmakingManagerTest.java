@@ -26,7 +26,7 @@ class MatchmakingManagerTest {
         GenericSession second = fixture.matcher.challenge(fixture.queue,
                 new QueueParty(UUID.randomUUID(), List.of(new Participant(UUID.randomUUID(), Participant.Kind.PLAYER, "left"))),
                 new QueueParty(UUID.randomUUID(), List.of(new Participant(UUID.randomUUID(), Participant.Kind.PLAYER, "right"))));
-        assertNotEquals(first.lease().key().arena(), second.lease().key().arena()); fixture.runtime.closeAll();
+        assertNotEquals(first.lease().arena().arena(), second.lease().arena().arena()); fixture.runtime.closeAll();
     }
 
     private static Fixture fixture(boolean botFill) {
