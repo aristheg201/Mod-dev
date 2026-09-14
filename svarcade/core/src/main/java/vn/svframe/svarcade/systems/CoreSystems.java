@@ -18,7 +18,7 @@ import vn.svframe.svarcade.systems.targeting.TargetingSystem;
 import vn.svframe.svarcade.systems.tower.TowerSystem;
 import vn.svframe.svarcade.systems.turn.TurnSystem;
 import vn.svframe.svarcade.systems.upgrade.UpgradeSystem;
-import vn.svframe.svarcade.systems.wave.WaveSystem;
+import vn.svframe.svarcade.systems.wave.*;
 
 /** Canonical registry of production generic systems currently implemented by core. */
 public final class CoreSystems {
@@ -41,7 +41,6 @@ public final class CoreSystems {
                                        BotRuntime botRuntime) {
         return builder(actionHandlers, stateActions, stateConditions).add(BotSystem.ID, new BotSystem.Plan(botRuntime)).build();
     }
-    /** Extension point for platform-owned or optional-integration systems without duplicating core registration. */
     public static SystemCatalog.Builder builder(Registry<ActionHandlerFactory> actionHandlers,
                                                 Registry<StateMachineRuntime.Action> stateActions,
                                                 Registry<StateMachineRuntime.Condition> stateConditions) {
@@ -60,6 +59,7 @@ public final class CoreSystems {
                 .add(WaveSystem.ID, new WaveSystem.Plan())
                 .add(EnemySystem.ID, new EnemySystem.Plan())
                 .add(TowerSystem.ID, new TowerSystem.Plan())
+                .add(WaveLoopSystem.ID, new WaveLoopSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
