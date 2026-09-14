@@ -13,7 +13,7 @@ public final class WaveChecks {
         Node config = new Node(Map.of("repeat_from", -1, "max_spawns_per_tick", 4, "max_pending_spawns", 8,
                 "waves", List.of(Map.of("id", waveId.toString(), "groups", List.of(Map.of("enemy", enemy.toString(), "count", 2,
                         "interval_ticks", 2, "lane", lane.toString(), "modifiers", List.of("test:fast"), "tags", List.of("test:elite"))),
-                        "clear_reward", Map.of("currency", "test:coins", "amount", 50), "shop", Map.of("open", true))))), "waves");
+                        "clear_reward", Map.of("currency", "test:coins", "amount", 50), "shop", Map.of("open", true)))), "waves");
         WaveSystem.Plan plan = new WaveSystem.Plan(); plan.validate(config); SystemCatalog catalog = SystemCatalog.builder().add(WaveSystem.ID, plan).build();
         Definition definition = new Definition(1, Id.of("test:wave_game"), "fingerprint", true, 1, 1, Set.of(),
                 List.of(new Definition.SystemSpec(WaveSystem.ID, config)), Map.of("arena", new Node(Map.of("id", "arena"), "arena")));
