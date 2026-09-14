@@ -1,5 +1,5 @@
 enabled: true
-required_version: '>=1.8.0 <1.9.0'
+required_version: '>=1.8.1 <1.9.0'
 party_snapshot:
   max_party_size: 6
   include_held_item: true
