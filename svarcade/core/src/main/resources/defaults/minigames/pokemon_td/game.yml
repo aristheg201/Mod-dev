@@ -22,6 +22,8 @@ systems:
     config: deployables.yml
   - id: svarcade:upgrades
     config: upgrades.yml
+  - id: svarcade:presence
+    config: presence.yml
   - id: svarcade:state_machine
     config: states.yml
   - id: svarcade:shop
