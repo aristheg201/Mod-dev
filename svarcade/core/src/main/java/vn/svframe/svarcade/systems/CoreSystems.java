@@ -9,6 +9,7 @@ import vn.svframe.svarcade.systems.board.*;
 import vn.svframe.svarcade.systems.combat.CombatSystem;
 import vn.svframe.svarcade.systems.currency.CurrencySystem;
 import vn.svframe.svarcade.systems.deployable.DeployableSystem;
+import vn.svframe.svarcade.systems.enemy.EnemySystem;
 import vn.svframe.svarcade.systems.objective.ObjectiveSystem;
 import vn.svframe.svarcade.systems.path.PathSystem;
 import vn.svframe.svarcade.systems.shop.ShopSystem;
@@ -54,6 +55,7 @@ public final class CoreSystems {
                 .add(UpgradeSystem.ID, new UpgradeSystem.Plan())
                 .add(ShopSystem.ID, new ShopSystem.Plan())
                 .add(WaveSystem.ID, new WaveSystem.Plan())
+                .add(EnemySystem.ID, new EnemySystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
