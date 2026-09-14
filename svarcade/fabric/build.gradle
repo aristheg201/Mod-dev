@@ -6,6 +6,7 @@ base { archivesName = project.archives_base_name }
 
 repositories {
     maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://maven.nucleoid.xyz/' }
     mavenCentral()
 }
 
@@ -15,6 +16,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     compileOnly 'net.luckperms:api:5.5'
+    modCompileOnly 'eu.pb4:placeholder-api:2.4.2+1.21'
     implementation project(':core')
     include project(':core')
     implementation 'org.snakeyaml:snakeyaml-engine:2.9'
