@@ -30,16 +30,27 @@ class RewardManagerTest {
 
     @Test void asynchronousGrantRemainsPendingUntilOwnerThreadPollsCompletion() {
         ThreadGuard thread = new ThreadGuard(); Id type = Id.of("test:permission"); CompletableFuture<Void> gate = new CompletableFuture<>();
-        RewardProvider provider = new RewardProvider() {
-            @Override public void validate(Node config) { config.only("node"); config.string("node"); }
-            @Override public CompletionStage<Void> grant(UUID claimId, UUID recipient, Node config) { return gate; }
-        };
-        Registry<RewardProvider> providers = new Registry.Builder<RewardProvider>().add(type, provider).build(); RewardManager manager = new RewardManager(thread, providers, 8);
-        UUID claim = UUID.randomUUID(); manager.claim(claim, UUID.randomUUID(), type, new Node(Map.of("node", "svarcade.test"), "reward"));
+        RewardProvider provider = pendingProvider(gate); Registry<RewardProvider> providers = new Registry.Builder<RewardProvider>().add(type, provider).build();
+        RewardManager manager = new RewardManager(thread, providers, 8); UUID claim = UUID.randomUUID();
+        manager.claim(claim, UUID.randomUUID(), type, new Node(Map.of("node", "svarcade.test"), "reward"));
         assertEquals(RewardManager.Status.PENDING, manager.get(claim).orElseThrow().status()); assertEquals(1, manager.inFlight());
         gate.complete(null); assertEquals(1, manager.pollCompleted(8)); assertEquals(RewardManager.Status.APPLIED, manager.get(claim).orElseThrow().status());
     }
 
+    @Test void hungGrantExpiresWithoutLosingDurablePendingClaim() {
+        ThreadGuard thread = new ThreadGuard(); Id type = Id.of("test:permission"); CompletableFuture<Void> gate = new CompletableFuture<>();
+        Registry<RewardProvider> providers = new Registry.Builder<RewardProvider>().add(type, pendingProvider(gate)).build(); RewardManager manager = new RewardManager(thread, providers, 8);
+        UUID claim = UUID.randomUUID(); manager.claim(claim, UUID.randomUUID(), type, new Node(Map.of("node", "svarcade.test"), "reward"));
+        assertEquals(0, manager.pollCompleted(8, 1)); assertEquals(0, manager.inFlight()); assertEquals(1, manager.providerTimeouts());
+        assertEquals(RewardManager.Status.PENDING, manager.get(claim).orElseThrow().status());
+    }
+
+    private static RewardProvider pendingProvider(CompletableFuture<Void> gate) {
+        return new RewardProvider() {
+            @Override public void validate(Node config) { config.only("node"); config.string("node"); }
+            @Override public CompletionStage<Void> grant(UUID claimId, UUID recipient, Node config) { return gate; }
+        };
+    }
     private static RewardProvider provider(Set<UUID> granted, int[] calls) {
         return new RewardProvider() {
             @Override public void validate(Node config) { config.only("amount"); config.integer("amount", 1, 64); }
