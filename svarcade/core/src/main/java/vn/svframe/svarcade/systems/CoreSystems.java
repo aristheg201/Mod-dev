@@ -80,6 +80,7 @@ public final class CoreSystems {
                 .add(InteractionSystem.ID, new InteractionSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
+                .add(BoardInputSystem.ID, new BoardInputSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
                 .add(StateMachineSystem.ID, new StateMachineSystem.Plan(stateActions, stateConditions));
     }
