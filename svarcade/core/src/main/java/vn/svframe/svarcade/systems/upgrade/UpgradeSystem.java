@@ -5,12 +5,13 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.systems.currency.*;
 import vn.svframe.svarcade.systems.deployable.*;
+import vn.svframe.svarcade.systems.loadout.*;
 import vn.svframe.svarcade.systems.upgrade.UpgradeAccess.*;
 
-/** Data-defined upgrade graph with atomic match-currency purchases. */
+/** Data-defined upgrade graph with atomic match-currency purchases and optional immutable loadout modifiers. */
 public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
     public static final Id ID = Id.of("svarcade:upgrades");
-    public record Config(Id currency, Map<Id, Definition> upgrades) {
+    public record Config(Id currency, boolean includeLoadoutModifiers, Map<Id, Definition> upgrades) {
         public Config {
             Objects.requireNonNull(currency); upgrades = Map.copyOf(upgrades);
             if (upgrades.isEmpty() || upgrades.size() > 4096) throw new ConfigException("Upgrade definition limits");
@@ -23,7 +24,7 @@ public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
             detectCycles(upgrades);
         }
         public static Config parse(Node n) {
-            n.only("currency", "upgrades"); Map<Id, Definition> result = new LinkedHashMap<>(); Node values = n.node("upgrades");
+            n.only("currency", "include_loadout_modifiers", "upgrades"); Map<Id, Definition> result = new LinkedHashMap<>(); Node values = n.node("upgrades");
             for (String raw : values.values().keySet()) {
                 Id id = Id.of(raw); Node u = values.node(raw);
                 u.only("max_level", "costs", "profiles", "required_tags", "forbidden_tags", "prerequisites", "modifiers");
@@ -47,7 +48,7 @@ public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
                 if (modifiers.isEmpty() || modifiers.size() > 256) throw u.error("modifiers", "Expected 1..256 modifiers");
                 if (result.putIfAbsent(id, new Definition(id, max, costs, profiles, required, forbidden, prerequisites, modifiers)) != null) throw new ConfigException("Duplicate upgrade: " + id);
             }
-            return new Config(Id.of(n.string("currency")), result);
+            return new Config(Id.of(n.string("currency")), n.bool("include_loadout_modifiers", false), result);
         }
         private static Set<Id> ids(Node n, String field) {
             if (!n.has(field)) return Set.of(); Set<Id> result = new LinkedHashSet<>(); n.strings(field).forEach(raw -> result.add(Id.of(raw))); return Set.copyOf(result);
@@ -64,31 +65,43 @@ public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
     }
     public static final class Plan implements SystemSchema, SystemFactory {
         @Override public void validate(Node config) { Config.parse(config); }
-        @Override public Set<Id> dependencies() { return Set.of(CurrencySystem.ID, DeployableSystem.ID); }
-        @Override public Set<SessionServices.Key<?>> requires() { return Set.of(CurrencySystem.ACCESS, DeployableAccess.ACCESS); }
+        @Override public Set<Id> dependencies(Node config) {
+            Config parsed = Config.parse(config); Set<Id> result = new LinkedHashSet<>(Set.of(CurrencySystem.ID, DeployableSystem.ID));
+            if (parsed.includeLoadoutModifiers()) result.add(LoadoutSystem.ID); return Set.copyOf(result);
+        }
+        @Override public Set<SessionServices.Key<?>> requires(Node config) {
+            Config parsed = Config.parse(config); Set<SessionServices.Key<?>> result = new LinkedHashSet<>(Set.of(CurrencySystem.ACCESS, DeployableAccess.ACCESS));
+            if (parsed.includeLoadoutModifiers()) result.add(LoadoutAccess.ACCESS); return Set.copyOf(result);
+        }
         @Override public Set<SessionServices.Key<?>> provides() { return Set.of(ACCESS); }
         @Override public SessionSystem create(GenericSession session, Node config) {
-            UpgradeSystem system = new UpgradeSystem(Config.parse(config), session.services().require(CurrencySystem.ACCESS), session.services().require(DeployableAccess.ACCESS), session);
+            Config parsed = Config.parse(config); LoadoutAccess loadouts = parsed.includeLoadoutModifiers() ? session.services().require(LoadoutAccess.ACCESS) : null;
+            UpgradeSystem system = new UpgradeSystem(parsed, session.services().require(CurrencySystem.ACCESS), session.services().require(DeployableAccess.ACCESS), loadouts, session);
             session.services().provide(ACCESS, system); return system;
         }
     }
     private final Config config;
     private final CurrencyAccess currency;
     private final DeployableAccess deployables;
+    private final LoadoutAccess loadouts;
     private final GenericSession session;
     private final ThreadGuard thread;
     private final Map<Long, NavigableMap<Id, Integer>> purchased = new HashMap<>();
     private long revision;
     private boolean active, closed;
-    private UpgradeSystem(Config config, CurrencyAccess currency, DeployableAccess deployables, GenericSession session) {
-        this.config = config; this.currency = currency; this.deployables = deployables; this.session = session; thread = session.thread();
+    private UpgradeSystem(Config config, CurrencyAccess currency, DeployableAccess deployables, LoadoutAccess loadouts, GenericSession session) {
+        this.config = config; this.currency = currency; this.deployables = deployables; this.loadouts = loadouts; this.session = session; thread = session.thread();
     }
     private void requireActive() { thread.check(); if (!active || closed) throw new IllegalStateException("Upgrades inactive"); }
     @Override public void start() { thread.check(); if (active || closed) throw new IllegalStateException("Upgrades already initialized"); active = true; }
     @Override public int level(long deployment, Id upgrade) { requireActive(); requireDeployment(deployment); requireDefinition(upgrade); return levelUnsafe(deployment, upgrade); }
     @Override public Map<Id, Integer> levels(long deployment) { requireActive(); requireDeployment(deployment); return Map.copyOf(purchased.getOrDefault(deployment, new TreeMap<>())); }
     @Override public Map<Id, Double> modifiers(long deployment) {
-        requireActive(); requireDeployment(deployment); Map<Id, Double> result = new TreeMap<>();
+        requireActive(); DeployableAccess.Deployment deployed = requireDeployment(deployment); Map<Id, Double> result = new TreeMap<>();
+        if (loadouts != null) {
+            LoadoutAccess.Derived derived = loadouts.derived(deployed.sourceId()).orElseThrow(() -> new IllegalStateException("Deployment source lacks loadout snapshot"));
+            derived.modifiers().forEach((modifier, value) -> result.merge(modifier, value, Double::sum));
+        }
         purchased.getOrDefault(deployment, new TreeMap<>()).forEach((id, level) -> config.upgrades().get(id).modifiers().forEach((modifier, value) ->
                 result.merge(modifier, value * level, Double::sum)));
         return Map.copyOf(result);
@@ -98,8 +111,8 @@ public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
     @Override public StateChange preparePurchase(UUID actor, long deploymentId, Id upgradeId) {
         requireActive(); DeployableAccess.Deployment deployment = requireDeployment(deploymentId);
         if (!deployment.owner().equals(actor)) throw new IllegalArgumentException("Upgrade ownership");
-        Definition definition = requireDefinition(upgradeId); DeployableAccess.Profile profile = deployables.profiles().get(deployment.profile());
-        if (profile == null || !applicable(definition, profile)) throw new IllegalArgumentException("Upgrade does not apply");
+        Definition definition = requireDefinition(upgradeId); DeployableAccess.Profile profile = deployables.profiles().get(deployment.profile()); Set<Id> tags = effectiveTags(deployment, profile);
+        if (profile == null || !applicable(definition, profile, tags)) throw new IllegalArgumentException("Upgrade does not apply");
         NavigableMap<Id, Integer> current = purchased.getOrDefault(deploymentId, new TreeMap<>()); int oldLevel = current.getOrDefault(upgradeId, 0);
         if (oldLevel >= definition.maxLevel() || revision == Long.MAX_VALUE) throw new IllegalStateException("Upgrade level unavailable");
         for (Requirement requirement : definition.prerequisites()) if (current.getOrDefault(requirement.upgrade(), 0) < requirement.level()) throw new IllegalStateException("Upgrade prerequisite missing");
@@ -120,9 +133,14 @@ public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
         };
         return new CompositeChange(thread, List.of(payment, local));
     }
-    private boolean applicable(Definition definition, DeployableAccess.Profile profile) {
+    private Set<Id> effectiveTags(DeployableAccess.Deployment deployment, DeployableAccess.Profile profile) {
+        if (profile == null) return Set.of(); Set<Id> tags = new LinkedHashSet<>(profile.tags());
+        if (loadouts != null) tags.addAll(loadouts.derived(deployment.sourceId()).orElseThrow(() -> new IllegalStateException("Deployment source lacks loadout snapshot")).tags());
+        return Set.copyOf(tags);
+    }
+    private boolean applicable(Definition definition, DeployableAccess.Profile profile, Set<Id> tags) {
         return (definition.profiles().isEmpty() || definition.profiles().contains(profile.id()))
-                && profile.tags().containsAll(definition.requiredTags()) && Collections.disjoint(profile.tags(), definition.forbiddenTags());
+                && tags.containsAll(definition.requiredTags()) && Collections.disjoint(tags, definition.forbiddenTags());
     }
     private int levelUnsafe(long deployment, Id upgrade) { return purchased.getOrDefault(deployment, new TreeMap<>()).getOrDefault(upgrade, 0); }
     private DeployableAccess.Deployment requireDeployment(long id) { return deployables.deployment(id).orElseThrow(() -> new IllegalArgumentException("Unknown deployment")); }
@@ -147,8 +165,8 @@ public final class UpgradeSystem implements SessionSystem, UpgradeAccess {
             DeployableAccess.Deployment deployed = requireDeployment(deployment); Node levels = rows.node(key); NavigableMap<Id, Integer> values = new TreeMap<>();
             for (String raw : levels.values().keySet()) {
                 Id id = Id.of(raw); Definition definition = requireDefinition(id); int level = (int) levels.integer(raw, 1, definition.maxLevel());
-                DeployableAccess.Profile profile = deployables.profiles().get(deployed.profile());
-                if (profile == null || !applicable(definition, profile)) throw new ConfigException("Restored inapplicable upgrade"); values.put(id, level);
+                DeployableAccess.Profile profile = deployables.profiles().get(deployed.profile()); Set<Id> tags = effectiveTags(deployed, profile);
+                if (profile == null || !applicable(definition, profile, tags)) throw new ConfigException("Restored inapplicable upgrade"); values.put(id, level);
             }
             for (var entry : values.entrySet()) for (Requirement requirement : config.upgrades().get(entry.getKey()).prerequisites())
                 if (values.getOrDefault(requirement.upgrade(), 0) < requirement.level()) throw new ConfigException("Restored upgrade prerequisite missing");
