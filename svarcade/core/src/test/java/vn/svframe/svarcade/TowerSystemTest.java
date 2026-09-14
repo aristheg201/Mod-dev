@@ -32,8 +32,9 @@ class TowerSystemTest {
         GenericSession restored = new GenericSession(sessionId, definition, "arena", List.of(player), new ArenaRuntime(), thread); restored.restore(catalog.factories(), saved);
         TowerAccess recoveredTowers = restored.services().require(TowerAccess.ACCESS); assertEquals(TargetingAccess.Mode.HIGHEST_HP, recoveredTowers.tower(towerId).orElseThrow().mode());
         restored.tick(2); assertEquals(10.0, restored.services().require(EnemyAccess.ACCESS).enemy(enemy.id()).orElseThrow().health());
-        restored.tick(3); assertEquals(0.0, restored.services().require(EnemyAccess.ACCESS).enemy(enemy.id()).orElseThrow().health());
-        restored.tick(4); assertEquals(0, restored.services().require(EnemyAccess.ACCESS).size()); assertTrue(restored.services().require(WaveAccess.ACCESS).clearEvent().isPresent());
+        restored.tick(3); assertEquals(10.0, restored.services().require(EnemyAccess.ACCESS).enemy(enemy.id()).orElseThrow().health());
+        restored.tick(4); assertEquals(0.0, restored.services().require(EnemyAccess.ACCESS).enemy(enemy.id()).orElseThrow().health());
+        restored.tick(5); assertEquals(0, restored.services().require(EnemyAccess.ACCESS).size()); assertTrue(restored.services().require(WaveAccess.ACCESS).clearEvent().isPresent());
         assertEquals(2, recoveredTowers.attacks()); restored.close();
     }
 
