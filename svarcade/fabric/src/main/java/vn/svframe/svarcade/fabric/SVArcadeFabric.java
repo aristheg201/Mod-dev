@@ -33,6 +33,8 @@ public final class SVArcadeFabric implements ModInitializer {
     private volatile Path configRoot;
     private volatile Path definitionsPath;
 
+    private record Bootstrap(int defaultsCreated, IntegrationSettings settings) { }
+
     @Override public void onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register(this::start);
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
@@ -43,25 +45,40 @@ public final class SVArcadeFabric implements ModInitializer {
     private void start(MinecraftServer server) {
         if (!starting.compareAndSet(false, true)) throw new IllegalStateException("SVArcade already starting");
         thread = new ThreadGuard();
+        configRoot = FabricLoader.getInstance().getConfigDir().resolve("svarcade"); definitionsPath = configRoot.resolve("minigames");
         io = new ThreadPoolExecutor(1, 2, 30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(32), runnable -> {
             Thread worker = new Thread(runnable, "svarcade-io"); worker.setDaemon(true); return worker;
         }, new ThreadPoolExecutor.AbortPolicy());
-        platform = PlatformIntegrations.discover(server); integrations = platform.capabilities();
-        bots = new BotRuntime(thread, new Registry<>(Map.of()), 2, 128);
+        ExecutorService executor = io; Path root = configRoot;
+        CompletableFuture.supplyAsync(() -> {
+            int created = DefaultInstaller.install(root);
+            IntegrationSettings settings = IntegrationSettings.load(root.resolve("integrations"));
+            return new Bootstrap(created, settings);
+        }, executor).whenComplete((bootstrap, failure) -> server.execute(() -> {
+            if (!starting.get() || io != executor) return;
+            if (failure != null) {
+                LOG.log(System.Logger.Level.ERROR, "SVArcade configuration bootstrap failed", failure);
+                return;
+            }
+            finishStart(server, bootstrap);
+        }));
+    }
+
+    private void finishStart(MinecraftServer server, Bootstrap bootstrap) {
+        ThreadGuard guard = thread; if (guard == null) return; guard.check();
+        platform = PlatformIntegrations.discover(server, bootstrap.settings()); integrations = platform.capabilities();
+        bots = new BotRuntime(guard, new Registry<>(Map.of()), 2, 128);
         SystemCatalog catalog = StandardRuntimeCatalog.create(bots,
                 session -> (actor, currentTick) -> new IntentGate.Facts(actor, currentTick, 0, true), platform.rewardProviders());
         definitions = new DefinitionRegistry(); loader = new DefinitionLoader(catalog.schemas());
-        runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128, platform::initializeSession); platform.bindRuntime(runtime);
+        runtime = new GenericGameRuntime(guard, definitions, catalog.factories(), 128, platform::initializeSession); platform.bindRuntime(runtime);
         if (!platform.unavailable().isEmpty()) LOG.log(System.Logger.Level.INFO, "SVArcade optional adapters unavailable: {0}", platform.unavailable());
-        configRoot = FabricLoader.getInstance().getConfigDir().resolve("svarcade");
-        definitionsPath = configRoot.resolve("minigames");
-        CompletableFuture.supplyAsync(() -> DefaultInstaller.install(configRoot), io)
-                .thenCompose(created -> definitions.reload(() -> loader.loadAll(definitionsPath), integrations, io).thenApply(result -> Map.entry(created, result)))
-                .whenComplete((entry, failure) -> {
-                    if (failure != null) LOG.log(System.Logger.Level.ERROR, "SVArcade definition bootstrap failed", failure);
-                    else LOG.log(System.Logger.Level.INFO, "SVArcade loaded definitions; defaults created={0}, applied={1}, generation={2}",
-                            entry.getKey(), entry.getValue().applied(), entry.getValue().generation());
-                });
+        ExecutorService executor = io; DefinitionRegistry registry = definitions; DefinitionLoader currentLoader = loader; Path path = definitionsPath;
+        registry.reload(() -> currentLoader.loadAll(path), integrations, executor).whenComplete((result, failure) -> {
+            if (failure != null) LOG.log(System.Logger.Level.ERROR, "SVArcade definition bootstrap failed", failure);
+            else LOG.log(System.Logger.Level.INFO, "SVArcade loaded definitions; defaults created={0}, applied={1}, generation={2}",
+                    bootstrap.defaultsCreated(), result.applied(), result.generation());
+        });
     }
 
     private void tick() {
@@ -82,11 +99,11 @@ public final class SVArcadeFabric implements ModInitializer {
     long currentTick() { return tick; }
 
     private void stop() {
-        ThreadGuard guard = thread; if (guard == null) return; guard.check();
-        PlatformIntegrations adapters = platform; if (adapters != null) adapters.close();
+        ThreadGuard guard = thread; if (guard == null) return; guard.check(); starting.set(false);
         GenericGameRuntime sessions = runtime; if (sessions != null) sessions.closeAll();
+        PlatformIntegrations adapters = platform; if (adapters != null) adapters.close();
         BotRuntime workers = bots; if (workers != null) workers.close();
         ExecutorService executor = io; if (executor != null) executor.shutdownNow();
-        runtime = null; bots = null; loader = null; definitions = null; io = null; platform = null; configRoot = null; definitionsPath = null; integrations = Set.of(); thread = null; tick = 0; starting.set(false);
+        runtime = null; bots = null; loader = null; definitions = null; io = null; platform = null; configRoot = null; definitionsPath = null; integrations = Set.of(); thread = null; tick = 0;
     }
 }
