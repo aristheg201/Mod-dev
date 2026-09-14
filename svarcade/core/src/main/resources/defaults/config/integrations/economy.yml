@@ -1,0 +1,4 @@
+enabled: true
+allow_match_purchases: false
+external_rewards_only: true
+missing_behavior: disable_provider
