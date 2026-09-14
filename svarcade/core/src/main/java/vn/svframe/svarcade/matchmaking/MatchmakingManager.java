@@ -34,15 +34,31 @@ public final class MatchmakingManager {
     }
 
     public void enqueue(Id queueId, QueueParty party) {
-        thread.check(); QueueDefinition queue = queue(queueId); Objects.requireNonNull(party);
+        thread.check(); QueueDefinition queue = queue(queueId); Objects.requireNonNull(party); ensureFresh(party);
         if (party.members().size() > queue.targetPlayers() || partyQueue.containsKey(party.id())) throw new IllegalStateException("Party cannot enter queue");
-        for (Participant member : party.members()) if (playerParty.containsKey(member.id())) throw new IllegalStateException("Player already queued");
         waiting.get(queueId).addLast(party); partyQueue.put(party.id(), queueId); party.members().forEach(p -> playerParty.put(p.id(), party.id()));
     }
     public boolean cancel(UUID partyId) {
         thread.check(); Id queueId = partyQueue.remove(partyId); if (queueId == null) return false; QueueParty found = null;
         for (QueueParty party : waiting.get(queueId)) if (party.id().equals(partyId)) { found = party; break; }
         if (found == null) throw new IllegalStateException("Queue index corruption"); waiting.get(queueId).remove(found); found.members().forEach(p -> playerParty.remove(p.id(), partyId)); return true;
+    }
+    /** Direct challenge uses the same definition limits, bot-fill policy and arena allocator as queued matching. */
+    public GenericSession challenge(Id queueId, QueueParty left, QueueParty right) {
+        thread.check(); QueueDefinition queue = queue(queueId); Objects.requireNonNull(left); Objects.requireNonNull(right); ensureFresh(left); ensureFresh(right);
+        Set<UUID> unique = new HashSet<>(); List<Participant> participants = new ArrayList<>(); List<UUID> parties = new ArrayList<>();
+        for (QueueParty party : List.of(left, right)) {
+            if (!parties.add(party.id())) throw new IllegalArgumentException("Challenge party duplicated");
+            for (Participant participant : party.members()) {
+                if (!unique.add(participant.id())) throw new IllegalArgumentException("Challenge participant duplicated"); participants.add(participant);
+            }
+        }
+        if (participants.size() > queue.targetPlayers()) throw new IllegalArgumentException("Challenge exceeds target players");
+        fillBots(queue, participants); if (participants.size() != queue.targetPlayers()) throw new IllegalStateException("Challenge cannot satisfy player target");
+        GenericSession session = runtime.open(queue.definition(), freeArena(queue.definition()), participants);
+        append(new Match(queue.id(), session.id(), List.copyOf(parties),
+                (int)participants.stream().filter(p -> p.kind() == Participant.Kind.PLAYER).count(), (int)participants.stream().filter(p -> p.kind() == Participant.Kind.BOT).count()));
+        return session;
     }
     public int tick(int maxMatches) {
         thread.check(); if (maxMatches < 1 || maxMatches > 1024) throw new IllegalArgumentException("Matchmaking work limit"); int made = 0;
@@ -57,6 +73,10 @@ public final class MatchmakingManager {
                     (int)participants.stream().filter(p -> p.kind() == Participant.Kind.PLAYER).count(), (int)participants.stream().filter(p -> p.kind() == Participant.Kind.BOT).count())); made++;
         }
         return made;
+    }
+    private void ensureFresh(QueueParty party) {
+        if (partyQueue.containsKey(party.id())) throw new IllegalStateException("Party already queued");
+        for (Participant member : party.members()) if (playerParty.containsKey(member.id())) throw new IllegalStateException("Player already queued");
     }
     private List<QueueParty> select(QueueDefinition queue) {
         int total = 0; List<QueueParty> selected = new ArrayList<>();
