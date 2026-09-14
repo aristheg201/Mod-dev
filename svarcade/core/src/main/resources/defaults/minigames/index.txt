@@ -8,6 +8,7 @@ pokemon_chess/clock.yml
 pokemon_chess/editor.yml
 pokemon_chess/objectives.yml
 pokemon_chess/pieces.yml
+pokemon_chess/presence.yml
 pokemon_chess/rewards.yml
 pokemon_chess/rules.yml
 pokemon_chess/states.yml
@@ -27,6 +28,7 @@ pokemon_td/objectives.yml
 pokemon_td/outcome.yml
 pokemon_td/paths.yml
 pokemon_td/pokemon-profiles.yml
+pokemon_td/presence.yml
 pokemon_td/rewards.yml
 pokemon_td/shop.yml
 pokemon_td/states.yml
