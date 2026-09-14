@@ -11,7 +11,9 @@ public final class GenericSession {
     }
     private final UUID id;
     private final Definition definition;
-    private final Map<UUID, Participant> participants;
+    private final LinkedHashMap<UUID, Participant> participants = new LinkedHashMap<>();
+    private final Map<UUID, Participant> participantView = Collections.unmodifiableMap(participants);
+    private final Set<UUID> fixedParticipants = new HashSet<>();
     private final ThreadGuard thread;
     private final ResourceTracker resources;
     private final SessionServices services;
@@ -29,11 +31,12 @@ public final class GenericSession {
         this.id = Objects.requireNonNull(id); this.definition = Objects.requireNonNull(definition);
         this.thread = Objects.requireNonNull(thread); thread.check(); this.arenas = Objects.requireNonNull(arenas);
         if (!definition.arenas().containsKey(arena)) throw new IllegalArgumentException("Unknown arena");
-        Map<UUID, Participant> copy = new LinkedHashMap<>();
-        for (Participant p : participants) if (copy.putIfAbsent(p.id(), p) != null) throw new IllegalArgumentException("Duplicate participant");
-        long players = copy.values().stream().filter(p -> p.kind() != Participant.Kind.SPECTATOR).count();
+        for (Participant p : participants) {
+            if (this.participants.putIfAbsent(p.id(), p) != null) throw new IllegalArgumentException("Duplicate participant");
+            fixedParticipants.add(p.id());
+        }
+        long players = this.participants.values().stream().filter(p -> p.kind() != Participant.Kind.SPECTATOR).count();
         if (players < definition.minPlayers() || players > definition.maxPlayers()) throw new IllegalArgumentException("Participant limits");
-        this.participants = Map.copyOf(copy);
         resources = new ResourceTracker(thread);
         services = new SessionServices(thread);
         lease = arenas.acquire(new ArenaRuntime.Key(definition.id(), arena), id);
@@ -106,10 +109,26 @@ public final class GenericSession {
         thread.check(); if (status == Status.CLOSING || status == Status.CLOSED) throw new IllegalStateException("Session is closing");
         dirtyVersion = Math.incrementExact(dirtyVersion);
     }
+    /** Adds a runtime spectator without changing the fixed player/bot roster or player-limit accounting. */
+    public void addSpectator(UUID player, String team) {
+        thread.check(); Objects.requireNonNull(player); Objects.requireNonNull(team);
+        if (status == Status.CLOSING || status == Status.CLOSED || fixedParticipants.contains(player) || participants.containsKey(player))
+            throw new IllegalStateException("Spectator membership unavailable");
+        participants.put(player, new Participant(player, Participant.Kind.SPECTATOR, team));
+    }
+    /** Removes only runtime-added spectators. Fixed constructor participants can never be removed. */
+    public void removeSpectator(UUID player) {
+        thread.check(); Objects.requireNonNull(player);
+        Participant participant = participants.get(player);
+        if (participant == null || participant.kind() != Participant.Kind.SPECTATOR || fixedParticipants.contains(player))
+            throw new IllegalStateException("Runtime spectator unavailable");
+        participants.remove(player);
+    }
+    public boolean fixedParticipant(UUID player) { thread.check(); return fixedParticipants.contains(Objects.requireNonNull(player)); }
     public long dirtyVersion() { thread.check(); return dirtyVersion; }
     public UUID id() { return id; }
     public Definition definition() { return definition; }
-    public Map<UUID, Participant> participants() { return participants; }
+    public Map<UUID, Participant> participants() { return participantView; }
     public ResourceTracker resources() { return resources; }
     public SessionServices services() { return services; }
     public ArenaRuntime.Lease lease() { return lease; }
