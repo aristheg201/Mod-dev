@@ -30,7 +30,9 @@ final class SVArcadeCommands {
     private static int sessions(ServerCommandSource source, SVArcadeFabric mod) {
         GenericGameRuntime runtime = mod.runtime(); if (runtime == null) return unavailable(source);
         long running = runtime.sessions().values().stream().filter(s -> s.status() == GenericSession.Status.RUNNING).count();
-        source.sendFeedback(() -> Text.literal("SVArcade sessions=" + runtime.sessions().size() + " running=" + running + " failures=" + runtime.failures().size() + " tickNanos=" + runtime.lastTickNanos()), false); return 1;
+        PlatformIntegrations platform = mod.platform(); String adapters = platform == null ? "unbound" : "active=" + platform.capabilities() + " disabled=" + platform.unavailable();
+        source.sendFeedback(() -> Text.literal("SVArcade sessions=" + runtime.sessions().size() + " running=" + running + " failures=" + runtime.failures().size()
+                + " tickNanos=" + runtime.lastTickNanos() + " integrations={" + concise(adapters) + "}"), false); return 1;
     }
     private static int arenas(ServerCommandSource source, SVArcadeFabric mod) {
         GenericGameRuntime runtime = mod.runtime(); if (runtime == null) return unavailable(source);
