@@ -1,6 +1,7 @@
 pokemon_chess/game.yml
 pokemon_chess/actions.yml
 pokemon_chess/board.yml
+pokemon_chess/board-input.yml
 pokemon_chess/bot-source.yml
 pokemon_chess/bots.yml
 pokemon_chess/clock.yml
