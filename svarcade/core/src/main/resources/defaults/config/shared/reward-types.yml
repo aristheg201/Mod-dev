@@ -1,0 +1,11 @@
+schema: 1
+providers:
+  - svarcade:item
+  - svarcade:xp
+  - svarcade:currency
+  - svarcade:stats
+  - svarcade:svquest
+  - svarcade:permission
+  - svarcade:custom
+idempotency:
+  required: true
