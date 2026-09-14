@@ -23,21 +23,15 @@ public final class AtomicStore implements AutoCloseable {
                 }, new ThreadPoolExecutor.AbortPolicy());
     }
     public CompletableFuture<Void> write(String key, Map<String, Object> state) {
-        Path destination = destination(key);
-        Map<String, Object> frozen = Values.map(state);
+        Path destination = destination(key); Map<String, Object> frozen = Values.map(state);
         return submit(() -> {
-            byte[] encoded = StateCodec.encode(frozen);
-            Path temporary = Files.createTempFile(root, ".pending-", ".state");
+            byte[] encoded = StateCodec.encode(frozen); Path temporary = Files.createTempFile(root, ".pending-", ".state");
             try {
                 try (FileChannel file = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
-                    ByteBuffer bytes = ByteBuffer.wrap(encoded);
-                    while (bytes.hasRemaining()) file.write(bytes);
-                    file.force(true);
+                    ByteBuffer bytes = ByteBuffer.wrap(encoded); while (bytes.hasRemaining()) file.write(bytes); file.force(true);
                 }
-                // Do not silently degrade to truncate/copy when atomic move is unsupported.
                 Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                try (FileChannel directory = FileChannel.open(root, StandardOpenOption.READ)) { directory.force(true); }
-                return null;
+                forceDirectory(); return null;
             } finally { Files.deleteIfExists(temporary); }
         });
     }
@@ -45,22 +39,38 @@ public final class AtomicStore implements AutoCloseable {
         Path path = destination(key);
         return submit(() -> {
             if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return Optional.empty();
-            if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) throw new IOException("Invalid state file");
-            byte[] bytes;
-            try (InputStream in = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS)) { bytes = in.readNBytes(MAX_ENCODED + 1); }
+            if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(path)) throw new IOException("Invalid state file");
+            byte[] bytes; try (InputStream in = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS)) { bytes = in.readNBytes(MAX_ENCODED + 1); }
             return Optional.of(StateCodec.decode(bytes));
         });
     }
-    private Path destination(String key) {
-        if (!key.matches("[a-zA-Z0-9_-]{1,128}")) throw new IllegalArgumentException("Invalid state key");
-        return root.resolve(key + ".state");
+    public CompletableFuture<Void> delete(String key) {
+        Path path = destination(key);
+        return submit(() -> { if (Files.deleteIfExists(path)) forceDirectory(); return null; });
     }
+    public CompletableFuture<List<String>> keys() {
+        return submit(() -> {
+            List<String> result = new ArrayList<>();
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(root, "*.state")) {
+                for (Path path : stream) {
+                    if (Files.isSymbolicLink(path) || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) throw new IOException("Invalid state entry");
+                    String name = path.getFileName().toString(); String key = name.substring(0, name.length() - ".state".length());
+                    if (!key.matches("[a-zA-Z0-9_-]{1,128}")) throw new IOException("Invalid state filename"); result.add(key);
+                    if (result.size() > 100_000) throw new IOException("State key capacity exceeded");
+                }
+            }
+            Collections.sort(result); return List.copyOf(result);
+        });
+    }
+    private Path destination(String key) {
+        if (!key.matches("[a-zA-Z0-9_-]{1,128}")) throw new IllegalArgumentException("Invalid state key"); return root.resolve(key + ".state");
+    }
+    private void forceDirectory() throws IOException { try (FileChannel directory = FileChannel.open(root, StandardOpenOption.READ)) { directory.force(true); } }
     @FunctionalInterface private interface Operation<T> { T run() throws IOException; }
     private <T> CompletableFuture<T> submit(Operation<T> operation) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        try {
-            io.execute(() -> { try { future.complete(operation.run()); } catch (Exception e) { future.completeExceptionally(e); } });
-        } catch (RejectedExecutionException e) { future.completeExceptionally(e); }
+        try { io.execute(() -> { try { future.complete(operation.run()); } catch (Exception e) { future.completeExceptionally(e); } }); }
+        catch (RejectedExecutionException e) { future.completeExceptionally(e); }
         return future;
     }
     /** Starts draining; does not block the server thread. Await termination only off-thread. */
