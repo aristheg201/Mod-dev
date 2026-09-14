@@ -1,0 +1,7 @@
+player:
+  grace_ticks: 1200
+  timeout_policy: CLEANUP
+bot:
+  grace_ticks: 0
+  timeout_policy: RETAIN
+event_capacity: 32
