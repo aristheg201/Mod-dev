@@ -43,7 +43,8 @@ final class CobblemonPartyBridge {
         } catch (ReflectiveOperationException | LinkageError failure) { return Optional.empty(); }
     }
 
-    List<LoadoutAccess.Snapshot> snapshots(ServerPlayerEntity player, int maximum) {
+    List<LoadoutAccess.Snapshot> snapshots(ServerPlayerEntity player, int maximum, boolean includeHeldItem,
+                                           boolean includeAspects, boolean includeMoves) {
         Objects.requireNonNull(player); if (maximum < 1 || maximum > 64) throw new IllegalArgumentException("Party snapshot limit");
         try {
             Object manager = storageGetter.invoke(cobblemon); Object party = partyGetter.invoke(manager, player);
@@ -51,20 +52,26 @@ final class CobblemonPartyBridge {
             List<LoadoutAccess.Snapshot> result = new ArrayList<>();
             for (Object pokemon : iterable) {
                 if (result.size() >= maximum) throw new IllegalStateException("Cobblemon party exceeded configured snapshot limit");
-                result.add(snapshot(pokemon));
+                result.add(snapshot(pokemon, includeHeldItem, includeAspects, includeMoves));
             }
             return List.copyOf(result);
         } catch (InvocationTargetException e) { throw new IllegalStateException("Cobblemon party snapshot failed", e.getCause()); }
         catch (ReflectiveOperationException e) { throw new IllegalStateException("Cobblemon party API changed", e); }
     }
 
-    private LoadoutAccess.Snapshot snapshot(Object pokemon) throws ReflectiveOperationException {
+    private LoadoutAccess.Snapshot snapshot(Object pokemon, boolean includeHeldItem, boolean includeAspects, boolean includeMoves) throws ReflectiveOperationException {
         UUID uuid = (UUID) uuidGetter.invoke(pokemon); Object species = speciesGetter.invoke(pokemon), form = formGetter.invoke(pokemon);
         Id speciesId = Id.of(speciesIdentifierGetter.invoke(species).toString()); String formId = normalizeRaw(String.valueOf(formIdGetter.invoke(form)));
-        Set<Id> aspects = ids((Iterable<?>) aspectsGetter.invoke(pokemon), "aspect/"); Set<Id> types = objectIds((Iterable<?>) typesGetter.invoke(pokemon), typeNameGetter, "");
-        int level = ((Number) levelGetter.invoke(pokemon)).intValue(); Object moveSet = moveSetGetter.invoke(pokemon);
-        Set<Id> moves = objectIds((Iterable<?>) moveSetMovesGetter.invoke(moveSet), moveNameGetter, ""); Object ability = abilityGetter.invoke(pokemon);
-        Id abilityId = externalId("", String.valueOf(abilityNameGetter.invoke(ability))); String heldItem = heldItem(heldItemGetter.invoke(pokemon));
+        Set<Id> aspects = includeAspects ? ids((Iterable<?>) aspectsGetter.invoke(pokemon), "aspect/") : Set.of();
+        Set<Id> types = objectIds((Iterable<?>) typesGetter.invoke(pokemon), typeNameGetter, "");
+        int level = ((Number) levelGetter.invoke(pokemon)).intValue();
+        Set<Id> moves = Set.of();
+        if (includeMoves) {
+            Object moveSet = moveSetGetter.invoke(pokemon);
+            moves = objectIds((Iterable<?>) moveSetMovesGetter.invoke(moveSet), moveNameGetter, "");
+        }
+        Object ability = abilityGetter.invoke(pokemon); Id abilityId = externalId("", String.valueOf(abilityNameGetter.invoke(ability)));
+        String heldItem = includeHeldItem ? heldItem(heldItemGetter.invoke(pokemon)) : "";
         return new LoadoutAccess.Snapshot("cobblemon:" + uuid, speciesId, formId, aspects, types, level, moves, abilityId, heldItem);
     }
 
