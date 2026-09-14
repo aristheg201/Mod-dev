@@ -7,31 +7,32 @@ import vn.svframe.svarcade.runtime.*;
 
 /** Read-only Text Placeholder API bridge over authoritative runtime state. */
 final class PlaceholderBridge implements AutoCloseable {
-    private static final List<Identifier> IDS = List.of(
-            Identifier.of("svarcade", "session"),
-            Identifier.of("svarcade", "game"),
-            Identifier.of("svarcade", "arena"),
-            Identifier.of("svarcade", "team"),
-            Identifier.of("svarcade", "role")
-    );
+    private final List<Identifier> ids;
     private GenericGameRuntime runtime;
     private boolean registered;
 
-    static Optional<PlaceholderBridge> discover() {
+    private PlaceholderBridge(String namespace) {
+        ids = List.of(
+                Identifier.of(namespace, "session"), Identifier.of(namespace, "game"), Identifier.of(namespace, "arena"),
+                Identifier.of(namespace, "team"), Identifier.of(namespace, "role"));
+    }
+
+    static Optional<PlaceholderBridge> discover(String namespace) {
+        Objects.requireNonNull(namespace);
         try {
             Class.forName("eu.pb4.placeholders.api.Placeholders", false, PlaceholderBridge.class.getClassLoader());
-            return Optional.of(new PlaceholderBridge());
+            return Optional.of(new PlaceholderBridge(namespace));
         } catch (ClassNotFoundException | LinkageError unavailable) { return Optional.empty(); }
     }
 
     void register(GenericGameRuntime runtime) {
         if (registered) throw new IllegalStateException("SVArcade placeholders already registered");
         this.runtime = Objects.requireNonNull(runtime);
-        Placeholders.register(IDS.get(0), (ctx, arg) -> value(ctx, Value.SESSION));
-        Placeholders.register(IDS.get(1), (ctx, arg) -> value(ctx, Value.GAME));
-        Placeholders.register(IDS.get(2), (ctx, arg) -> value(ctx, Value.ARENA));
-        Placeholders.register(IDS.get(3), (ctx, arg) -> value(ctx, Value.TEAM));
-        Placeholders.register(IDS.get(4), (ctx, arg) -> value(ctx, Value.ROLE));
+        Placeholders.register(ids.get(0), (ctx, arg) -> value(ctx, Value.SESSION));
+        Placeholders.register(ids.get(1), (ctx, arg) -> value(ctx, Value.GAME));
+        Placeholders.register(ids.get(2), (ctx, arg) -> value(ctx, Value.ARENA));
+        Placeholders.register(ids.get(3), (ctx, arg) -> value(ctx, Value.TEAM));
+        Placeholders.register(ids.get(4), (ctx, arg) -> value(ctx, Value.ROLE));
         registered = true;
     }
 
@@ -53,7 +54,7 @@ final class PlaceholderBridge implements AutoCloseable {
 
     @Override public void close() {
         if (!registered) { runtime = null; return; }
-        for (Identifier id : IDS) Placeholders.remove(id);
+        for (Identifier id : ids) Placeholders.remove(id);
         registered = false; runtime = null;
     }
     private enum Value { SESSION, GAME, ARENA, TEAM, ROLE }
