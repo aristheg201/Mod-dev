@@ -39,7 +39,6 @@ public final class GenericGameRuntime {
             else { session.restoreRevision(saved.revision()); session.restore(systems, saved.systems()); }
             return session;
         } catch (RuntimeException e) {
-            // initialize() has already attempted cleanup. Keep failed owners visible.
             failure(id, "initialize", e.toString()); reap(session); throw e;
         }
     }
@@ -63,6 +62,15 @@ public final class GenericGameRuntime {
         thread.check(); GenericSession session = sessions.get(id); if (session == null) return List.of();
         var result = session.close(); for (var f : result) failure(id, "cleanup", f.resource() + ": " + f.cause());
         if (!iterating) reap(session); return result;
+    }
+    /** Server shutdown path. Cleanup remains retryable for resources that report failures. */
+    public List<ResourceTracker.Failure> closeAll() {
+        thread.check(); if (iterating) throw new IllegalStateException("Cannot close all during runtime iteration");
+        List<ResourceTracker.Failure> result = new ArrayList<>();
+        for (GenericSession session : new ArrayList<>(sessions.values())) result.addAll(close(session.id()));
+        // One retry pass handles cleanup resources intentionally designed to fail once and remain owned.
+        for (GenericSession session : new ArrayList<>(sessions.values())) if (session.status() == GenericSession.Status.CLOSING) result.addAll(close(session.id()));
+        return List.copyOf(result);
     }
     private void reap(GenericSession session) {
         if (session.status() == GenericSession.Status.CLOSED) { sessions.remove(session.id()); releaseMembership(session); }
