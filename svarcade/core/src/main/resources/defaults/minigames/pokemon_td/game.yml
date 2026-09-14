@@ -36,6 +36,8 @@ systems:
     config: objectives.yml
   - id: svarcade:actions
     config: actions.yml
+  - id: svarcade:outcome_coordinator
+    config: outcome.yml
   - id: svarcade:wave_loop
     config: wave-loop.yml
   - id: svarcade:td_bot_source

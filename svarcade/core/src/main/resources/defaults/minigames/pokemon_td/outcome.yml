@@ -1,0 +1,9 @@
+currency: svarcade_td:coins
+lives_counter: svarcade_td:lives
+kills_counter: svarcade_td:kills
+leak_lives: 1
+victory_reason: svarcade_td:victory
+defeat_reason: svarcade_td:defeat
+reward_distribution: EACH
+max_outcomes_per_tick: 512
+history_capacity: 100000

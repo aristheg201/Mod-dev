@@ -59,6 +59,7 @@ public final class CoreSystems {
                 .add(WaveSystem.ID, new WaveSystem.Plan())
                 .add(EnemySystem.ID, new EnemySystem.Plan())
                 .add(TowerSystem.ID, new TowerSystem.Plan())
+                .add(OutcomeCoordinatorSystem.ID, new OutcomeCoordinatorSystem.Plan())
                 .add(WaveLoopSystem.ID, new WaveLoopSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
