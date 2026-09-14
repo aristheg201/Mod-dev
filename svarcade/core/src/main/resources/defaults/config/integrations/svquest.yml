@@ -1,0 +1,3 @@
+enabled: true
+reward_provider: svarcade:svquest
+missing_behavior: disable_provider
