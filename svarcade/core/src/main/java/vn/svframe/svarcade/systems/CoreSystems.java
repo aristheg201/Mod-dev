@@ -13,6 +13,7 @@ import vn.svframe.svarcade.systems.enemy.EnemySystem;
 import vn.svframe.svarcade.systems.loadout.LoadoutSystem;
 import vn.svframe.svarcade.systems.objective.ObjectiveSystem;
 import vn.svframe.svarcade.systems.path.PathSystem;
+import vn.svframe.svarcade.systems.presence.PresenceSystem;
 import vn.svframe.svarcade.systems.shop.ShopSystem;
 import vn.svframe.svarcade.systems.spectator.SpectatorSystem;
 import vn.svframe.svarcade.systems.targeting.TargetingSystem;
@@ -63,6 +64,7 @@ public final class CoreSystems {
                 .add(OutcomeCoordinatorSystem.ID, new OutcomeCoordinatorSystem.Plan())
                 .add(WaveLoopSystem.ID, new WaveLoopSystem.Plan())
                 .add(SpectatorSystem.ID, new SpectatorSystem.Plan())
+                .add(PresenceSystem.ID, new PresenceSystem.Plan())
                 .add(BoardSystem.ID, new BoardSystem.Plan())
                 .add(BoardAdjudicationSystem.ID, new BoardAdjudicationSystem.Plan())
                 .add(ActionSystem.ID, new ActionSystem.Plan(actionHandlers))
