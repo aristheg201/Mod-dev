@@ -32,6 +32,19 @@ class BotAndRuntimeTest {
         var restored = runtime.recover(saved); assertEquals(saved.id(), restored.id()); assertTrue(restored.revision() > saved.revision()); assertEquals(10, stub.value);
         runtime.close(restored.id()); assertTrue(runtime.sessions().isEmpty());
     }
+    @Test void platformInitializerRunsOnlyForFreshSessionsAndFailureReleasesOwnership() {
+        ThreadGuard thread = new ThreadGuard(); DefinitionRegistry registry = new DefinitionRegistry();
+        registry.reload(() -> List.of(RuntimeTest.definition()), Set.of(), Runnable::run).join(); RuntimeTest.Stub stub = new RuntimeTest.Stub();
+        Registry<SystemFactory> systems = new Registry<>(Map.of(RuntimeTest.SYSTEM, (s, c) -> stub)); AtomicInteger initialized = new AtomicInteger();
+        GenericGameRuntime runtime = new GenericGameRuntime(thread, registry, systems, 8, session -> initialized.incrementAndGet()); UUID person = UUID.randomUUID();
+        GenericSession first = runtime.open(RuntimeTest.definition().id(), "one", people(person)); assertEquals(1, initialized.get());
+        SessionSnapshot saved = SessionSnapshot.capture(first); runtime.close(first.id()); GenericSession recovered = runtime.recover(saved);
+        assertEquals(1, initialized.get()); runtime.close(recovered.id());
+
+        GenericGameRuntime failing = new GenericGameRuntime(thread, registry, systems, 8, session -> { throw new IllegalStateException("adapter failed"); });
+        assertThrows(IllegalStateException.class, () -> failing.open(RuntimeTest.definition().id(), "one", people(UUID.randomUUID())));
+        assertTrue(failing.sessions().isEmpty()); assertTrue(failing.arenas().snapshot().isEmpty());
+    }
     @Test void operationBudgetIsExactAndRejectsInvalidTuning() {
         ThinkBudget budget = new ThinkBudget(10_000_000_000L, 2); budget.visit(); budget.visit();
         assertThrows(CancellationException.class, budget::visit); assertEquals(2, budget.operations());
