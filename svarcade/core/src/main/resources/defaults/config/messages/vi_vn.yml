@@ -1,0 +1,30 @@
+schema: 1
+prefix: '<gray>[<aqua>SVArcade</aqua>]</gray> '
+commands:
+  reload_submitted: '<yellow>Đã gửi yêu cầu reload.</yellow>'
+  reload_result: '<green>Reload: <reason> (generation <generation>).</green>'
+  reload_failed: '<red>Reload thất bại: <reason></red>'
+  runtime_unavailable: '<red>Runtime chưa khởi động.</red>'
+  no_permission: '<red>Bạn không có quyền.</red>'
+match:
+  queued: '<green>Đã vào hàng chờ <queue>.</green>'
+  queue_cancelled: '<yellow>Đã rời hàng chờ.</yellow>'
+  started: '<green>Trận đấu bắt đầu.</green>'
+  reconnect_grace: '<yellow>Hãy kết nối lại trong <seconds> giây.</yellow>'
+  forfeit_disconnect: '<red>Trận đấu bị xử thua do quá thời gian mất kết nối.</red>'
+spectator:
+  joined: '<gray>Bạn đang theo dõi trận đấu.</gray>'
+  left: '<gray>Đã rời chế độ theo dõi.</gray>'
+editor:
+  step: '<aqua>Editor <index>/<total>: <key> — <tool></aqua>'
+  saved: '<green>Đã lưu arena.</green>'
+  cancelled: '<yellow>Đã hủy editor.</yellow>'
+  invalid: '<red>Editor không hợp lệ: <reason></red>'
+td:
+  wave: '<gold>Đợt <wave></gold>'
+  coins: '<yellow>Coin: <coins></yellow>'
+  lives: '<red>Mạng: <lives></red>'
+chess:
+  turn: '<aqua>Lượt của <team>.</aqua>'
+  check: '<red>Chiếu.</red>'
+  result: '<gold><result></gold>'
