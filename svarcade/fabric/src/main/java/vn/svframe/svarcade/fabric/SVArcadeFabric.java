@@ -46,10 +46,10 @@ public final class SVArcadeFabric implements ModInitializer {
         io = new ThreadPoolExecutor(1, 2, 30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(32), runnable -> {
             Thread worker = new Thread(runnable, "svarcade-io"); worker.setDaemon(true); return worker;
         }, new ThreadPoolExecutor.AbortPolicy());
+        platform = PlatformIntegrations.discover(server); integrations = platform.capabilities();
         bots = new BotRuntime(thread, new Registry<>(Map.of()), 2, 128);
         SystemCatalog catalog = StandardRuntimeCatalog.create(bots,
-                session -> (actor, currentTick) -> new IntentGate.Facts(actor, currentTick, 0, true));
-        platform = PlatformIntegrations.discover(server); integrations = platform.capabilities();
+                session -> (actor, currentTick) -> new IntentGate.Facts(actor, currentTick, 0, true), platform.rewardProviders());
         definitions = new DefinitionRegistry(); loader = new DefinitionLoader(catalog.schemas());
         runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128, platform::initializeSession);
         if (!platform.unavailable().isEmpty()) LOG.log(System.Logger.Level.INFO, "SVArcade optional adapters unavailable: {0}", platform.unavailable());
