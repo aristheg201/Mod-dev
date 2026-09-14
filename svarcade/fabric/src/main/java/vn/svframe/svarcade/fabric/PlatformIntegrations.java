@@ -14,8 +14,10 @@ import vn.svframe.svarcade.systems.loadout.*;
 /** Runtime-validated optional mod adapters. A loaded mod is not a capability until its adapter resolves. */
 final class PlatformIntegrations implements AutoCloseable {
     static final String ENTRYPOINT = "svarcade:integration";
+    private static final EnumSet<PlayerStateSnapshot.Field> PROTECTED_FIELDS = EnumSet.allOf(PlayerStateSnapshot.Field.class);
     private final MinecraftServer server;
     private final IntegrationSettings settings;
+    private final PlayerStateProtection playerState;
     private final CobblemonPartyBridge cobblemon;
     private final PlaceholderBridge placeholders;
     private final List<GenericGameRuntime.SessionInitializer> sessionInitializers;
@@ -23,16 +25,17 @@ final class PlatformIntegrations implements AutoCloseable {
     private final Set<String> capabilities;
     private final Map<String,String> unavailable;
 
-    private PlatformIntegrations(MinecraftServer server, IntegrationSettings settings, CobblemonPartyBridge cobblemon, PlaceholderBridge placeholders,
+    private PlatformIntegrations(MinecraftServer server, IntegrationSettings settings, PlayerStateProtection playerState,
+                                 CobblemonPartyBridge cobblemon, PlaceholderBridge placeholders,
                                  List<GenericGameRuntime.SessionInitializer> sessionInitializers, Registry<RewardProvider> rewardProviders,
                                  Set<String> capabilities, Map<String,String> unavailable) {
-        this.server = Objects.requireNonNull(server); this.settings = Objects.requireNonNull(settings); this.cobblemon = cobblemon; this.placeholders = placeholders;
-        this.sessionInitializers = List.copyOf(sessionInitializers); this.rewardProviders = Objects.requireNonNull(rewardProviders);
-        this.capabilities = Set.copyOf(capabilities); this.unavailable = Map.copyOf(unavailable);
+        this.server = Objects.requireNonNull(server); this.settings = Objects.requireNonNull(settings); this.playerState = Objects.requireNonNull(playerState);
+        this.cobblemon = cobblemon; this.placeholders = placeholders; this.sessionInitializers = List.copyOf(sessionInitializers);
+        this.rewardProviders = Objects.requireNonNull(rewardProviders); this.capabilities = Set.copyOf(capabilities); this.unavailable = Map.copyOf(unavailable);
     }
 
-    static PlatformIntegrations discover(MinecraftServer server, IntegrationSettings settings) {
-        Objects.requireNonNull(settings);
+    static PlatformIntegrations discover(MinecraftServer server, IntegrationSettings settings, PlayerStateProtection playerState) {
+        Objects.requireNonNull(settings); Objects.requireNonNull(playerState);
         FabricLoader loader = FabricLoader.getInstance(); Set<String> capabilities = new LinkedHashSet<>(); Map<String,String> unavailable = new LinkedHashMap<>();
         Map<Id,RewardProvider> rewards = new LinkedHashMap<>(); List<GenericGameRuntime.SessionInitializer> initializers = new ArrayList<>();
         CobblemonPartyBridge cobblemon = null; PlaceholderBridge placeholders = null;
@@ -60,8 +63,7 @@ final class PlatformIntegrations implements AutoCloseable {
             String provider = container.getProvider().getMetadata().getId();
             try {
                 SVArcadeIntegration integration = container.getEntrypoint(); Set<String> advertised = validateCapabilities(integration.capabilities());
-                Set<String> accepted = new LinkedHashSet<>();
-                for (String capability : advertised) if (enabled(settings, capability)) accepted.add(capability);
+                Set<String> accepted = new LinkedHashSet<>(); for (String capability : advertised) if (enabled(settings, capability)) accepted.add(capability);
                 if (accepted.isEmpty()) continue;
                 Map<Id,RewardProvider> stagedRewards = new LinkedHashMap<>(); List<GenericGameRuntime.SessionInitializer> stagedInitializers = new ArrayList<>();
                 integration.register(new SVArcadeIntegration.Context() {
@@ -77,18 +79,13 @@ final class PlatformIntegrations implements AutoCloseable {
                 if (accepted.contains("svquest") && !stagedRewards.containsKey(settings.svQuestRewardProvider()))
                     throw new IllegalStateException("SVQuest integration did not register configured reward provider " + settings.svQuestRewardProvider());
                 rewards.putAll(stagedRewards); initializers.addAll(stagedInitializers); capabilities.addAll(accepted);
-            } catch (RuntimeException | LinkageError failure) {
-                unavailable.put("entrypoint/" + provider, concise(failure));
-            }
+            } catch (RuntimeException | LinkageError failure) { unavailable.put("entrypoint/" + provider, concise(failure)); }
         }
 
-        if (settings.economyEnabled() && IntegrationDetector.installed("economy") && !capabilities.contains("economy"))
-            unavailable.put("economy", "provider lacks nonblocking exactly-once transaction API");
-        if (settings.svQuestEnabled() && IntegrationDetector.installed("svquest") && !capabilities.contains("svquest"))
-            unavailable.put("svquest", "no valid SVArcade integration entrypoint");
-        if (settings.svFrameEnabled() && IntegrationDetector.installed("svframe") && !capabilities.contains("svframe"))
-            unavailable.put("svframe", "no valid SVArcade integration entrypoint");
-        return new PlatformIntegrations(server, settings, cobblemon, placeholders, initializers, new Registry<>(rewards), capabilities, unavailable);
+        if (settings.economyEnabled() && IntegrationDetector.installed("economy") && !capabilities.contains("economy")) unavailable.put("economy", "provider lacks nonblocking exactly-once transaction API");
+        if (settings.svQuestEnabled() && IntegrationDetector.installed("svquest") && !capabilities.contains("svquest")) unavailable.put("svquest", "no valid SVArcade integration entrypoint");
+        if (settings.svFrameEnabled() && IntegrationDetector.installed("svframe") && !capabilities.contains("svframe")) unavailable.put("svframe", "no valid SVArcade integration entrypoint");
+        return new PlatformIntegrations(server, settings, playerState, cobblemon, placeholders, initializers, new Registry<>(rewards), capabilities, unavailable);
     }
 
     private static boolean enabled(IntegrationSettings settings, String capability) {
@@ -113,10 +110,35 @@ final class PlatformIntegrations implements AutoCloseable {
 
     void bindRuntime(GenericGameRuntime runtime) { if (placeholders != null) placeholders.register(runtime); }
 
+    /** Fresh-session hook. Player state is captured before any platform integration can mutate it. */
     void initializeSession(GenericSession session) {
-        if (cobblemon != null && session.definition().systems().stream().anyMatch(spec -> spec.id().equals(LoadoutSystem.ID))) importCobblemon(session);
-        for (GenericGameRuntime.SessionInitializer initializer : sessionInitializers) initializer.initialize(session);
+        List<UUID> captured = new ArrayList<>();
+        try {
+            for (Participant participant : session.participants().values()) if (participant.kind() == Participant.Kind.PLAYER) {
+                playerState.capture(participant.id(), PROTECTED_FIELDS); captured.add(participant.id()); bindPlayerCleanup(session, participant.id());
+            }
+            if (cobblemon != null && session.definition().systems().stream().anyMatch(spec -> spec.id().equals(LoadoutSystem.ID))) importCobblemon(session);
+            for (GenericGameRuntime.SessionInitializer initializer : sessionInitializers) initializer.initialize(session);
+        } catch (RuntimeException failure) {
+            for (int i = captured.size() - 1; i >= 0; i--) if (server.getPlayerManager().getPlayer(captured.get(i)) != null) playerState.restore(captured.get(i));
+            throw failure;
+        }
     }
+
+    /** Recovery hook: ownership is reattached without recapturing already-mutated live state. */
+    void bindRecoveredState(GenericSession session, Map<UUID,UUID> owners) {
+        for (Participant participant : session.participants().values()) if (participant.kind() == Participant.Kind.PLAYER
+                && session.id().equals(owners.get(participant.id())) && playerState.protectedPlayer(participant.id())) bindPlayerCleanup(session, participant.id());
+    }
+
+    private void bindPlayerCleanup(GenericSession session, UUID player) {
+        session.resources().own("player-state/" + player, () -> {
+            if (!playerState.protectedPlayer(player)) return;
+            if (server.getPlayerManager().getPlayer(player) == null) return; // durable global snapshot survives until JOIN
+            if (!playerState.restore(player)) throw new IllegalStateException("Player state restore failed: " + player);
+        });
+    }
+
     private void importCobblemon(GenericSession session) {
         LoadoutAccess loadouts = session.services().require(LoadoutAccess.ACCESS); List<StateChange> applied = new ArrayList<>();
         try {
@@ -124,8 +146,7 @@ final class PlatformIntegrations implements AutoCloseable {
                 if (participant.kind() != Participant.Kind.PLAYER) continue;
                 ServerPlayerEntity player = server.getPlayerManager().getPlayer(participant.id());
                 if (player == null) throw new IllegalStateException("Cobblemon loadout owner is offline: " + participant.id());
-                for (LoadoutAccess.Snapshot snapshot : cobblemon.snapshots(player, settings.cobblemonMaxParty(),
-                        settings.cobblemonHeldItem(), settings.cobblemonAspects(), settings.cobblemonMoves())) {
+                for (LoadoutAccess.Snapshot snapshot : cobblemon.snapshots(player, settings.cobblemonMaxParty(), settings.cobblemonHeldItem(), settings.cobblemonAspects(), settings.cobblemonMoves())) {
                     StateChange change = loadouts.prepareRegister(participant.id(), snapshot); change.apply(); applied.add(change);
                 }
             }
