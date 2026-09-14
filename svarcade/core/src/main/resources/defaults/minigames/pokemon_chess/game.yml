@@ -22,6 +22,8 @@ systems:
     config: states.yml
   - id: svarcade:actions
     config: actions.yml
+  - id: svarcade:board_input
+    config: board-input.yml
   - id: svarcade:board_bot_source
     config: bot-source.yml
   - id: svarcade:bot
