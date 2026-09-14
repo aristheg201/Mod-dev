@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -33,6 +34,7 @@ public final class SVArcadeFabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> start());
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> stop());
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> SVArcadeCommands.register(dispatcher, this));
     }
 
     private void start() {
@@ -49,12 +51,11 @@ public final class SVArcadeFabric implements ModInitializer {
         integrations = IntegrationDetector.available();
         definitionsPath = FabricLoader.getInstance().getConfigDir().resolve("svarcade").resolve("minigames");
         CompletableFuture.supplyAsync(() -> DefaultInstaller.install(definitionsPath), io)
-                .thenCompose(created -> definitions.reload(() -> loader.loadAll(definitionsPath), integrations, io)
-                        .thenApply(result -> Map.entry(created, result)))
+                .thenCompose(created -> definitions.reload(() -> loader.loadAll(definitionsPath), integrations, io).thenApply(result -> Map.entry(created, result)))
                 .whenComplete((entry, failure) -> {
                     if (failure != null) LOG.log(System.Logger.Level.ERROR, "SVArcade definition bootstrap failed", failure);
-                    else LOG.log(System.Logger.Level.INFO, "SVArcade loaded definitions; defaults created={0}, applied={1}, version={2}",
-                            entry.getKey(), entry.getValue().applied(), entry.getValue().version());
+                    else LOG.log(System.Logger.Level.INFO, "SVArcade loaded definitions; defaults created={0}, applied={1}, generation={2}",
+                            entry.getKey(), entry.getValue().applied(), entry.getValue().generation());
                 });
     }
 
@@ -64,11 +65,15 @@ public final class SVArcadeFabric implements ModInitializer {
     }
 
     /** Transactional reload: invalid candidates leave the previous registry live. */
-    public CompletableFuture<DefinitionRegistry.ReloadResult> reload() {
+    CompletableFuture<DefinitionRegistry.ReloadResult> reload() {
         ExecutorService executor = io; DefinitionRegistry registry = definitions; DefinitionLoader currentLoader = loader; Path path = definitionsPath;
         if (executor == null || registry == null || currentLoader == null || path == null) return CompletableFuture.failedFuture(new IllegalStateException("SVArcade not started"));
         return registry.reload(() -> currentLoader.loadAll(path), integrations, executor);
     }
+    GenericGameRuntime runtime() { return runtime; }
+    DefinitionRegistry definitions() { return definitions; }
+    BotRuntime bots() { return bots; }
+    long currentTick() { return tick; }
 
     private void stop() {
         ThreadGuard guard = thread; if (guard == null) return; guard.check();
