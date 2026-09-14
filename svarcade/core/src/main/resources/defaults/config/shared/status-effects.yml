@@ -1,0 +1,17 @@
+schema: 1
+status_effects:
+  svarcade:slow:
+    kind: SLOW
+    stacking: REFRESH
+  svarcade:stun:
+    kind: STUN
+    stacking: REFRESH
+  svarcade:burn:
+    kind: DOT
+    stacking: STACK
+  svarcade:buff:
+    kind: BUFF
+    stacking: STACK
+  svarcade:debuff:
+    kind: DEBUFF
+    stacking: STACK
