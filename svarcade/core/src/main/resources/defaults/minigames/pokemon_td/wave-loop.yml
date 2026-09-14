@@ -1,0 +1,5 @@
+wave_state: WAVE
+clear_state: WAVE_CLEAR
+acknowledge_state: SHOP
+cleared_event: wave_cleared
+complete_event: waves_complete

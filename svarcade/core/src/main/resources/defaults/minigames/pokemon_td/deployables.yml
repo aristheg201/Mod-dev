@@ -1,0 +1,11 @@
+currency: svarcade_td:coins
+max_total: 256
+coordinate_limit: 1024.0
+profiles:
+  svarcade_td:pokemon_tower:
+    deploy_cost: 50
+    move_cost: 10
+    recall_refund: 30
+    max_per_actor: 12
+    tags:
+      - svarcade_td:pokemon

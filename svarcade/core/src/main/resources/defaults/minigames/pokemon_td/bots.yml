@@ -1,0 +1,30 @@
+profiles:
+  EASY:
+    think_delay_ticks: 30
+    reserve_currency: 40
+    placement_samples: 6
+    upgrade_horizon_waves: 0
+    retarget_interval_ticks: 100
+    mistake_chance: 0.30
+  NORMAL:
+    think_delay_ticks: 15
+    reserve_currency: 80
+    placement_samples: 18
+    upgrade_horizon_waves: 2
+    retarget_interval_ticks: 60
+    mistake_chance: 0.08
+  HARD:
+    think_delay_ticks: 8
+    reserve_currency: 120
+    placement_samples: 48
+    upgrade_horizon_waves: 4
+    retarget_interval_ticks: 30
+    mistake_chance: 0.0
+policy:
+  actions:
+    deploy: svarcade_td:deploy
+    move: svarcade_td:move
+    recall: svarcade_td:recall
+    upgrade: svarcade_td:upgrade
+    target: svarcade_td:target_mode
+  no_cheat: true

@@ -1,0 +1,48 @@
+currency: svarcade_td:coins
+include_loadout_modifiers: true
+upgrades:
+  svarcade_td:power:
+    max_level: 3
+    costs: [75, 125, 200]
+    profiles:
+      - svarcade_td:pokemon_tower
+    required_tags: []
+    forbidden_tags: []
+    prerequisites: []
+    modifiers:
+      svarcade_td:damage_add: 2.5
+  svarcade_td:range:
+    max_level: 2
+    costs: [80, 140]
+    profiles:
+      - svarcade_td:pokemon_tower
+    required_tags: []
+    forbidden_tags: []
+    prerequisites: []
+    modifiers:
+      svarcade_td:range_add: 1.5
+  svarcade_td:haste:
+    max_level: 2
+    costs: [100, 180]
+    profiles:
+      - svarcade_td:pokemon_tower
+    required_tags: []
+    forbidden_tags: []
+    prerequisites:
+      - upgrade: svarcade_td:power
+        level: 1
+    modifiers:
+      svarcade_td:cooldown_multiplier_delta: -0.08
+  svarcade_td:electric_mastery:
+    max_level: 2
+    costs: [120, 220]
+    profiles:
+      - svarcade_td:pokemon_tower
+    required_tags:
+      - svarcade_td:electric
+    forbidden_tags: []
+    prerequisites:
+      - upgrade: svarcade_td:power
+        level: 1
+    modifiers:
+      svarcade_td:crit_chance_add: 0.05

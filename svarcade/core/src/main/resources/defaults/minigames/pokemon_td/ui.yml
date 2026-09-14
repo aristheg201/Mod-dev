@@ -1,0 +1,13 @@
+hud:
+  actionbar: svarcade_td.hud.actionbar
+  bossbar: svarcade_td.hud.wave
+  title_prepare: svarcade_td.title.prepare
+  title_wave: svarcade_td.title.wave
+  title_shop: svarcade_td.title.shop
+feedback:
+  deploy_sound: minecraft:block.amethyst_block.place
+  upgrade_sound: minecraft:entity.player.levelup
+  invalid_sound: minecraft:block.note_block.bass
+particles:
+  target: minecraft:crit
+  path: minecraft:end_rod

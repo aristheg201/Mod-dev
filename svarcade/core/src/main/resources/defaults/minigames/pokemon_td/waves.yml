@@ -1,0 +1,52 @@
+repeat_from: -1
+max_spawns_per_tick: 128
+max_pending_spawns: 1024
+waves:
+  - id: svarcade_td:wave_1
+    groups:
+      - enemy: svarcade_td:rattata
+        count: 12
+        interval_ticks: 12
+        lane: svarcade_td:main_lane
+        modifiers: []
+        tags: []
+    clear_reward:
+      currency: svarcade_td:coins
+      amount: 50
+    shop:
+      open: true
+  - id: svarcade_td:wave_2
+    groups:
+      - enemy: svarcade_td:rattata
+        count: 16
+        interval_ticks: 10
+        lane: svarcade_td:main_lane
+        modifiers:
+          - svarcade_td:elite
+        tags: []
+      - enemy: svarcade_td:golbat
+        count: 8
+        interval_ticks: 18
+        lane: svarcade_td:main_lane
+        modifiers: []
+        tags: []
+    clear_reward:
+      currency: svarcade_td:coins
+      amount: 100
+    shop:
+      open: true
+  - id: svarcade_td:boss_wave
+    groups:
+      - enemy: svarcade_td:tyranitar_boss
+        count: 1
+        interval_ticks: 1
+        lane: svarcade_td:main_lane
+        modifiers:
+          - svarcade_td:boss
+        tags:
+          - svarcade_td:boss
+    clear_reward:
+      currency: svarcade_td:coins
+      amount: 300
+    shop:
+      open: false

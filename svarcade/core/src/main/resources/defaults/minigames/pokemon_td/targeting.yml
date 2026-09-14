@@ -1,0 +1,15 @@
+cell_size: 8.0
+max_range: 96.0
+capacity: 8192
+cache_capacity: 4096
+max_query_cells: 4096
+max_candidates: 512
+modes:
+  - FIRST
+  - LAST
+  - CLOSEST
+  - FARTHEST
+  - STRONGEST
+  - WEAKEST
+  - LOWEST_HP
+  - HIGHEST_HP

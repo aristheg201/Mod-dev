@@ -1,0 +1,23 @@
+move_effects:
+  cobblemon:thunderbolt:
+    tags:
+      - svarcade_td:move_electric_damage
+    modifiers:
+      svarcade_td:damage_add: 4.0
+      svarcade_td:crit_chance_add: 0.05
+  cobblemon:surf:
+    tags:
+      - svarcade_td:move_water_aoe
+    modifiers:
+      svarcade_td:damage_add: 2.0
+      svarcade_td:range_add: 2.0
+  cobblemon:ice_beam:
+    tags:
+      - svarcade_td:move_ice_control
+    modifiers:
+      svarcade_td:cooldown_multiplier_delta: -0.08
+  cobblemon:quick_attack:
+    tags:
+      - svarcade_td:move_fast
+    modifiers:
+      svarcade_td:cooldown_multiplier_delta: -0.10

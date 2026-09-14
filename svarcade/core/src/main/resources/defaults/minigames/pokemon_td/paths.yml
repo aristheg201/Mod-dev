@@ -1,0 +1,11 @@
+capacity: 4096
+max_speed: 4.0
+max_advance_ticks: 1200
+paths:
+  svarcade_td:main_lane:
+    points:
+      - [0, 64, 0]
+      - [24, 64, 0]
+      - [48, 64, 12]
+      - [72, 64, 12]
+      - [96, 64, 0]

@@ -1,0 +1,18 @@
+profiles:
+  victory:
+    - type: svarcade:item
+      payload:
+        item: minecraft:diamond
+        count: 2
+    - type: svarcade:xp
+      payload:
+        amount: 250
+    - type: svarcade:stats
+      payload:
+        metric: svarcade_td:wins
+        amount: 1
+  boss_clear:
+    - type: svarcade:stats
+      payload:
+        metric: svarcade_td:boss_kills
+        amount: 1

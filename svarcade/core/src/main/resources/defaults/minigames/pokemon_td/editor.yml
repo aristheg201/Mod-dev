@@ -1,0 +1,21 @@
+wizard:
+  - tool: point
+    key: spawn
+  - tool: point
+    key: goal
+  - tool: path
+    key: paths.main
+  - tool: multi-region
+    key: build_zones
+  - tool: point
+    key: player_stages
+  - tool: point
+    key: spectator.position
+preview:
+  spawn: particle
+  goal: particle
+  path: line
+  build_zones: box
+save:
+  explicit: true
+  atomic: true

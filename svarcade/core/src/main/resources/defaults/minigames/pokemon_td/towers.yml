@@ -1,0 +1,39 @@
+max_attacks_per_tick: 512
+idle_retry_ticks: 5
+modifier_bindings:
+  svarcade:level_multiplier_delta: DAMAGE_MULTIPLIER_DELTA
+  svarcade_td:damage_add: DAMAGE_ADD
+  svarcade_td:damage_multiplier_delta: DAMAGE_MULTIPLIER_DELTA
+  svarcade_td:range_add: RANGE_ADD
+  svarcade_td:range_multiplier_delta: RANGE_MULTIPLIER_DELTA
+  svarcade_td:cooldown_add_ticks: COOLDOWN_ADD_TICKS
+  svarcade_td:cooldown_multiplier_delta: COOLDOWN_MULTIPLIER_DELTA
+  svarcade_td:crit_chance_add: CRIT_CHANCE_ADD
+  svarcade_td:crit_multiplier_add: CRIT_MULTIPLIER_ADD
+profiles:
+  svarcade_td:pokemon_tower:
+    attack:
+      damage_type: svarcade_td:special
+      damage: 8.0
+      range: 16.0
+      cooldown_ticks: 20
+      crit_chance: 0.05
+      crit_multiplier: 1.5
+      delivery: INSTANT
+      aoe_cap: 0
+      chain_cap: 0
+      statuses: []
+    target_modes:
+      - FIRST
+      - LAST
+      - CLOSEST
+      - FARTHEST
+      - STRONGEST
+      - WEAKEST
+      - LOWEST_HP
+      - HIGHEST_HP
+    default_target_mode: FIRST
+    filter:
+      all: []
+      any: []
+      none: []

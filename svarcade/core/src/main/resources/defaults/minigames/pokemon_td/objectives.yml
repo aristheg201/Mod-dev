@@ -1,0 +1,15 @@
+counters:
+  svarcade_td:lives:
+    initial: 20
+    minimum: 0
+    maximum: 20
+    clamp: true
+  svarcade_td:kills:
+    initial: 0
+    minimum: 0
+    maximum: 1000000
+    clamp: true
+reasons:
+  - svarcade_td:victory
+  - svarcade_td:defeat
+  - svarcade_td:aborted

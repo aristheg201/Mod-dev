@@ -1,0 +1,42 @@
+schema: 1
+id: svarcade:pokemon_td
+enabled: true
+requires:
+  integrations:
+    - cobblemon
+players:
+  min: 1
+  max: 8
+systems:
+  - id: svarcade:currency
+    config: currency.yml
+  - id: svarcade:path
+    config: paths.yml
+  - id: svarcade:targeting
+    config: targeting.yml
+  - id: svarcade:combat
+    config: combat.yml
+  - id: svarcade:loadouts
+    config: pokemon-profiles.yml
+  - id: svarcade:deployables
+    config: deployables.yml
+  - id: svarcade:upgrades
+    config: upgrades.yml
+  - id: svarcade:state_machine
+    config: states.yml
+  - id: svarcade:shop
+    config: shop.yml
+  - id: svarcade:waves
+    config: waves.yml
+  - id: svarcade:enemies
+    config: enemies.yml
+  - id: svarcade:towers
+    config: towers.yml
+  - id: svarcade:objectives
+    config: objectives.yml
+  - id: svarcade:actions
+    config: actions.yml
+  - id: svarcade:wave_loop
+    config: wave-loop.yml
+arenas:
+  directory: arenas

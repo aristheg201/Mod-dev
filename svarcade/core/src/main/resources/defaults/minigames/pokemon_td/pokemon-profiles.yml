@@ -1,0 +1,47 @@
+max_snapshots: 128
+max_per_actor: 6
+level_curve:
+  minimum: 1
+  center: 50
+  maximum: 100
+  minimum_multiplier: 0.90
+  maximum_multiplier: 1.10
+base_modifiers: {}
+base_tags:
+  - svarcade_td:pokemon
+rules:
+  - species: []
+    forms: []
+    all_aspects: []
+    any_types:
+      - cobblemon:electric
+    all_moves: []
+    abilities: []
+    tags:
+      - svarcade_td:electric
+    modifiers:
+      svarcade_td:crit_chance_add: 0.03
+  - species: []
+    forms: []
+    all_aspects: []
+    any_types:
+      - cobblemon:water
+    all_moves: []
+    abilities: []
+    tags:
+      - svarcade_td:water
+    modifiers:
+      svarcade_td:range_add: 1.5
+  - species: []
+    forms: []
+    all_aspects: []
+    any_types:
+      - cobblemon:ice
+    all_moves: []
+    abilities: []
+    tags:
+      - svarcade_td:ice
+    modifiers:
+      svarcade_td:cooldown_multiplier_delta: -0.05
+move_effects:
+  $ref: "move-effects.yml#/move_effects"

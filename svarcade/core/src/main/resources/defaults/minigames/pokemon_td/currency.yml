@@ -1,0 +1,5 @@
+ownership: PARTICIPANT
+currencies:
+  svarcade_td:coins:
+    initial: 350
+    maximum: 1000000

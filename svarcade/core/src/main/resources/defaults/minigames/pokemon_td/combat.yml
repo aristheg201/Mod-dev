@@ -1,0 +1,47 @@
+damage_types:
+  - svarcade_td:physical
+  - svarcade_td:special
+armor_scale: 100.0
+statuses:
+  svarcade_td:burn:
+    kind: DOT
+    base_duration_ticks: 100
+    tick_interval: 20
+    magnitude: 2.0
+    stacking: STACK
+    max_stacks: 3
+    immunity_tags: []
+  svarcade_td:slow:
+    kind: SLOW
+    base_duration_ticks: 80
+    tick_interval: 20
+    magnitude: 0.20
+    stacking: STACK
+    max_stacks: 3
+    immunity_tags:
+      - svarcade_td:slow_immune
+  svarcade_td:stun:
+    kind: STUN
+    base_duration_ticks: 20
+    tick_interval: 20
+    magnitude: 1.0
+    stacking: IGNORE
+    max_stacks: 1
+    immunity_tags:
+      - svarcade_td:stun_immune
+  svarcade_td:buff:
+    kind: BUFF
+    base_duration_ticks: 100
+    tick_interval: 20
+    magnitude: 0.15
+    stacking: REFRESH
+    max_stacks: 1
+    immunity_tags: []
+  svarcade_td:debuff:
+    kind: DEBUFF
+    base_duration_ticks: 100
+    tick_interval: 20
+    magnitude: -0.15
+    stacking: REFRESH
+    max_stacks: 1
+    immunity_tags: []

@@ -1,0 +1,28 @@
+initial: PREPARE
+data:
+  cycle: 0
+states:
+  PREPARE:
+    terminal: false
+    transitions:
+      - target: WAVE
+        after_ticks: 100
+  WAVE:
+    terminal: false
+    transitions:
+      - target: WAVE_CLEAR
+        event: wave_cleared
+  WAVE_CLEAR:
+    terminal: false
+    transitions:
+      - target: SHOP
+        after_ticks: 40
+  SHOP:
+    terminal: false
+    transitions:
+      - target: COMPLETE
+        event: waves_complete
+      - target: PREPARE
+        after_ticks: 200
+  COMPLETE:
+    terminal: true

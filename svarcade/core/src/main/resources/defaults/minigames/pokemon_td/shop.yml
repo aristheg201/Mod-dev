@@ -1,0 +1,21 @@
+currency: svarcade_td:coins
+allowed_states:
+  - SHOP
+max_active_grants: 256
+items:
+  svarcade_td:rapid_training:
+    cost: 75
+    stock: 0
+    per_actor: 2
+    duration_ticks: 600
+    effect: svarcade_td:tower_haste
+    payload:
+      amount: 0.15
+  svarcade_td:power_training:
+    cost: 100
+    stock: 0
+    per_actor: 2
+    duration_ticks: 600
+    effect: svarcade_td:tower_power
+    payload:
+      amount: 0.15

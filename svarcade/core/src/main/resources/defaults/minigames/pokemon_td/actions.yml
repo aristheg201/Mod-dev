@@ -1,0 +1,38 @@
+rate_limit:
+  max_keys: 4096
+  capacity: 12.0
+  per_tick: 0.5
+max_distance: 8.0
+event_capacity: 4096
+actions:
+  svarcade_td:deploy:
+    handler: svarcade:deploy
+    config:
+      effect: svarcade_td:deployed
+      allowed_states: [PREPARE, WAVE, SHOP]
+      require_loadout: true
+  svarcade_td:move:
+    handler: svarcade:move_deployable
+    config:
+      effect: svarcade_td:moved
+      allowed_states: [PREPARE, WAVE, SHOP]
+  svarcade_td:recall:
+    handler: svarcade:recall
+    config:
+      effect: svarcade_td:recalled
+      allowed_states: [PREPARE, WAVE, SHOP]
+  svarcade_td:sell:
+    handler: svarcade:sell
+    config:
+      effect: svarcade_td:sold
+      allowed_states: [PREPARE, SHOP]
+  svarcade_td:upgrade:
+    handler: svarcade:upgrade
+    config:
+      effect: svarcade_td:upgraded
+      allowed_states: [PREPARE, SHOP]
+  svarcade_td:target_mode:
+    handler: svarcade:target_mode
+    config:
+      effect: svarcade_td:target_changed
+      allowed_states: [PREPARE, WAVE, SHOP]
