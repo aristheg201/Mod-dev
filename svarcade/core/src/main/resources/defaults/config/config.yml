@@ -1,0 +1,17 @@
+schema: 1
+locale: en_us
+persistence:
+  dirty_flush_ticks: 100
+  recovery_on_start: true
+security:
+  action_rate_capacity: 8
+  action_rate_per_tick: 0.5
+  controller_expiry_ticks: 1200
+performance:
+  bot_workers: 2
+  bot_queue_capacity: 128
+  persistence_queue_capacity: 256
+  diagnostics_failure_capacity: 128
+editor:
+  history_limit: 128
+  max_points: 4096
