@@ -37,7 +37,7 @@ final class FabricPlayerStateBridge implements PlayerStateProtection.Bridge {
                 NbtElement encoded = stack.encode(registries); String item = Registries.ITEM.getId(stack.getItem()).toString();
                 rows.add(new PlayerStateSnapshot.Slot(slot, item, stack.getCount(), encoded.toString()));
             }
-            inventory = List.copyOf(rows); selectedSlot = source.getSelectedSlot();
+            inventory = List.copyOf(rows); selectedSlot = source.selectedSlot;
         }
         if (fields.contains(PlayerStateSnapshot.Field.EFFECTS)) {
             List<PlayerStateSnapshot.Effect> rows = new ArrayList<>();
@@ -83,7 +83,8 @@ final class FabricPlayerStateBridge implements PlayerStateProtection.Bridge {
                 target.setStack(saved.slot(), stack);
             } catch (com.mojang.brigadier.exceptions.CommandSyntaxException failure) { throw new IllegalStateException("Invalid saved ItemStack NBT", failure); }
         }
-        target.setSelectedSlot(selectedSlot); target.markDirty(); player.currentScreenHandler.sendContentUpdates();
+        if (!PlayerInventory.isValidHotbarIndex(selectedSlot)) throw new IllegalStateException("Saved hotbar slot unavailable: " + selectedSlot);
+        target.selectedSlot = selectedSlot; target.markDirty(); player.currentScreenHandler.sendContentUpdates();
     }
     private void restoreEffects(ServerPlayerEntity player, List<PlayerStateSnapshot.Effect> effects) {
         player.clearStatusEffects();
