@@ -1,0 +1,15 @@
+schema: 1
+difficulties:
+  EASY:
+    think_budget_millis: 10
+    mistake_rate: 0.30
+  NORMAL:
+    think_budget_millis: 35
+    mistake_rate: 0.05
+  HARD:
+    think_budget_millis: 100
+    mistake_rate: 0.00
+constraints:
+  authoritative_actions: true
+  hidden_information: false
+  free_resources: false
