@@ -1,0 +1,30 @@
+schema: 1
+prefix: '<gray>[<aqua>SVArcade</aqua>]</gray> '
+commands:
+  reload_submitted: '<yellow>Reload submitted.</yellow>'
+  reload_result: '<green>Reload: <reason> (generation <generation>).</green>'
+  reload_failed: '<red>Reload failed: <reason></red>'
+  runtime_unavailable: '<red>Runtime is not started.</red>'
+  no_permission: '<red>You do not have permission.</red>'
+match:
+  queued: '<green>Joined queue <queue>.</green>'
+  queue_cancelled: '<yellow>Left queue.</yellow>'
+  started: '<green>Match started.</green>'
+  reconnect_grace: '<yellow>Reconnect within <seconds>s.</yellow>'
+  forfeit_disconnect: '<red>Match forfeited after disconnect timeout.</red>'
+spectator:
+  joined: '<gray>You are now spectating.</gray>'
+  left: '<gray>You stopped spectating.</gray>'
+editor:
+  step: '<aqua>Editor <index>/<total>: <key> — <tool></aqua>'
+  saved: '<green>Arena saved.</green>'
+  cancelled: '<yellow>Editor cancelled.</yellow>'
+  invalid: '<red>Editor validation failed: <reason></red>'
+td:
+  wave: '<gold>Wave <wave></gold>'
+  coins: '<yellow>Coins: <coins></yellow>'
+  lives: '<red>Lives: <lives></red>'
+chess:
+  turn: '<aqua><team> to move.</aqua>'
+  check: '<red>Check.</red>'
+  result: '<gold><result></gold>'
