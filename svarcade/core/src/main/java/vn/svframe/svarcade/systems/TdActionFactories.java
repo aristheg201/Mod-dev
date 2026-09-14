@@ -6,6 +6,7 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.security.*;
 import vn.svframe.svarcade.systems.deployable.*;
+import vn.svframe.svarcade.systems.loadout.*;
 import vn.svframe.svarcade.systems.targeting.*;
 import vn.svframe.svarcade.systems.tower.*;
 import vn.svframe.svarcade.systems.upgrade.*;
@@ -24,8 +25,8 @@ public final class TdActionFactories {
         return new Registry.Builder<ActionHandlerFactory>()
                 .add(DEPLOY, new DeployFactory())
                 .add(MOVE, new MoveFactory())
-                .add(RECALL, new RecallFactory(false))
-                .add(SELL, new RecallFactory(true))
+                .add(RECALL, new RecallFactory())
+                .add(SELL, new RecallFactory())
                 .add(UPGRADE, new UpgradeFactory())
                 .add(TARGET, new TargetFactory())
                 .build();
@@ -33,8 +34,8 @@ public final class TdActionFactories {
 
     private record Common(Id effect, Set<String> states) {
         Common { states = Set.copyOf(states); }
-        static Common parse(Node n) {
-            n.only("effect", "allowed_states");
+        static Common parse(Node n, String... extras) {
+            Set<String> allowed = new LinkedHashSet<>(List.of("effect", "allowed_states")); allowed.addAll(List.of(extras)); n.only(allowed.toArray(String[]::new));
             Set<String> states = n.has("allowed_states") ? n.strings("allowed_states") : Set.of();
             for (String state : states) if (!state.matches("[A-Za-z0-9_-]{1,80}")) throw n.error("allowed_states", "Invalid state identifier");
             return new Common(Id.of(n.string("effect")), states);
@@ -70,21 +71,30 @@ public final class TdActionFactories {
         };
     }
 
-    private static long deployment(Map<String,Object> payload) { return node(payload).integer("deployment", 1, Long.MAX_VALUE - 1); }
     private static Node node(Map<String,Object> payload) { return new Node(payload, "action-payload"); }
     private static DeployableAccess.Point point(Node n) {
         return new DeployableAccess.Point(Numbers.decimal(n, "x", -30_000_000, 30_000_000), Numbers.decimal(n, "y", -30_000_000, 30_000_000), Numbers.decimal(n, "z", -30_000_000, 30_000_000));
     }
 
     private static final class DeployFactory implements ActionHandlerFactory {
-        @Override public void validate(Node config) { Common.parse(config); }
-        @Override public Set<Id> dependencies(Node config) { return Common.parse(config).dependencies(DeployableSystem.ID); }
-        @Override public Set<SessionServices.Key<?>> requires(Node config) { return Common.parse(config).requires(DeployableAccess.ACCESS); }
+        private record Parsed(Common common, boolean requireLoadout) { }
+        private Parsed parse(Node config) { return new Parsed(Common.parse(config, "require_loadout"), config.bool("require_loadout", false)); }
+        @Override public void validate(Node config) { parse(config); }
+        @Override public Set<Id> dependencies(Node config) {
+            Parsed parsed=parse(config); Set<Id> result=new LinkedHashSet<>(parsed.common().dependencies(DeployableSystem.ID)); if(parsed.requireLoadout()) result.add(LoadoutSystem.ID); return Set.copyOf(result);
+        }
+        @Override public Set<SessionServices.Key<?>> requires(Node config) {
+            Parsed parsed=parse(config); Set<SessionServices.Key<?>> result=new LinkedHashSet<>(parsed.common().requires(DeployableAccess.ACCESS)); if(parsed.requireLoadout()) result.add(LoadoutAccess.ACCESS); return Set.copyOf(result);
+        }
         @Override public ActionDispatcher.Handler create(GenericSession session, Node config) {
-            Common common = Common.parse(config); DeployableAccess access = session.services().require(DeployableAccess.ACCESS);
-            Check check = (actor,payload) -> { Node n=node(payload); n.only("source","profile","x","y","z"); access.prepareDeploy(actor,n.string("source"),Id.of(n.string("profile")),point(n)); };
+            Parsed parsed=parse(config); DeployableAccess access=session.services().require(DeployableAccess.ACCESS); LoadoutAccess loadouts=parsed.requireLoadout()?session.services().require(LoadoutAccess.ACCESS):null;
+            Check check = (actor,payload) -> {
+                Node n=node(payload); n.only("source","profile","x","y","z"); String source=n.string("source");
+                if(loadouts!=null && loadouts.owned(actor).stream().noneMatch(snapshot -> snapshot.sourceId().equals(source))) throw new IllegalArgumentException("Source snapshot ownership");
+                access.prepareDeploy(actor,source,Id.of(n.string("profile")),point(n));
+            };
             Prepare prepare = (actor,payload) -> { Node n=node(payload); return access.prepareDeploy(actor,n.string("source"),Id.of(n.string("profile")),point(n)); };
-            return handler(session,common,check,prepare);
+            return handler(session,parsed.common(),check,prepare);
         }
     }
 
@@ -101,8 +111,6 @@ public final class TdActionFactories {
     }
 
     private static final class RecallFactory implements ActionHandlerFactory {
-        private final boolean sell;
-        private RecallFactory(boolean sell) { this.sell=sell; }
         @Override public void validate(Node config) { Common.parse(config); }
         @Override public Set<Id> dependencies(Node config) { return Common.parse(config).dependencies(DeployableSystem.ID); }
         @Override public Set<SessionServices.Key<?>> requires(Node config) { return Common.parse(config).requires(DeployableAccess.ACCESS); }
@@ -112,7 +120,6 @@ public final class TdActionFactories {
             Prepare prepare=(actor,payload)->{Node n=node(payload);return access.prepareRecall(actor,n.integer("deployment",1,Long.MAX_VALUE-1));};
             return handler(session,common,check,prepare);
         }
-        @Override public String toString() { return sell ? "sell" : "recall"; }
     }
 
     private static final class UpgradeFactory implements ActionHandlerFactory {
