@@ -16,7 +16,7 @@ public final class SystemCatalogChecks {
                 Id.of("svarcade:deployables"), Id.of("svarcade:upgrades"), Id.of("svarcade:shop"), Id.of("svarcade:waves"),
                 Id.of("svarcade:enemies"), Id.of("svarcade:towers"), Id.of("svarcade:outcome_coordinator"), Id.of("svarcade:wave_loop"),
                 Id.of("svarcade:rewards"), Id.of("svarcade:spectators"), Id.of("svarcade:presence"), Id.of("svarcade:renderer"), Id.of("svarcade:interactions"),
-                Id.of("svarcade:board"), Id.of("svarcade:board_adjudication"), Id.of("svarcade:actions"), Id.of("svarcade:state_machine"));
+                Id.of("svarcade:board"), Id.of("svarcade:board_adjudication"), Id.of("svarcade:board_input"), Id.of("svarcade:actions"), Id.of("svarcade:state_machine"));
         Checks.equal(expected, catalog.schemas().ids());
         Checks.equal(expected, catalog.factories().ids());
         for (Id id : expected) Checks.equal(catalog.schemas().require(id), catalog.factories().require(id));
