@@ -1,0 +1,14 @@
+schema: 1
+effects:
+  svarcade:damage_add:
+    kind: numeric
+    stacking: additive
+  svarcade:range_add:
+    kind: numeric
+    stacking: additive
+  svarcade:cooldown_multiplier:
+    kind: numeric
+    stacking: multiplicative
+  svarcade:projectile_speed:
+    kind: numeric
+    stacking: additive
