@@ -6,7 +6,7 @@ import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.SemanticVersion;
 
-/** Maps optional platform mod ids to definition integration capabilities and enforces minimum supported versions. */
+/** Lightweight install/version probes. Adapter usability is decided by PlatformIntegrations. */
 final class IntegrationDetector {
     private static final Map<String, List<String>> MOD_IDS = Map.of(
             "svquest", List.of("svquest"),
@@ -18,11 +18,10 @@ final class IntegrationDetector {
     private static final int COBBLEMON_MAJOR = 1, COBBLEMON_MINOR = 8, COBBLEMON_PATCH = 1;
     private IntegrationDetector() { }
 
-    static Set<String> available() {
-        FabricLoader loader = FabricLoader.getInstance(); Set<String> result = new LinkedHashSet<>();
-        if (supportedCobblemon(loader.getModContainer("cobblemon"))) result.add("cobblemon");
-        MOD_IDS.forEach((capability, ids) -> { if (ids.stream().anyMatch(loader::isModLoaded)) result.add(capability); });
-        return Set.copyOf(result);
+    static boolean installed(String capability) {
+        FabricLoader loader = FabricLoader.getInstance();
+        if (capability.equals("cobblemon")) return loader.isModLoaded("cobblemon");
+        List<String> ids = MOD_IDS.get(capability); return ids != null && ids.stream().anyMatch(loader::isModLoaded);
     }
 
     static boolean supportedCobblemon(Optional<ModContainer> container) {
