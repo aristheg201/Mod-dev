@@ -1,6 +1,7 @@
 package vn.svframe.svarcade;
 
 import java.util.*;
+import java.util.concurrent.*;
 import org.junit.jupiter.api.Test;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.reward.*;
@@ -27,10 +28,24 @@ class RewardManagerTest {
         restored.apply(claimId); assertEquals(1, calls[0]);
     }
 
+    @Test void asynchronousGrantRemainsPendingUntilOwnerThreadPollsCompletion() {
+        ThreadGuard thread = new ThreadGuard(); Id type = Id.of("test:permission"); CompletableFuture<Void> gate = new CompletableFuture<>();
+        RewardProvider provider = new RewardProvider() {
+            @Override public void validate(Node config) { config.only("node"); config.string("node"); }
+            @Override public CompletionStage<Void> grant(UUID claimId, UUID recipient, Node config) { return gate; }
+        };
+        Registry<RewardProvider> providers = new Registry.Builder<RewardProvider>().add(type, provider).build(); RewardManager manager = new RewardManager(thread, providers, 8);
+        UUID claim = UUID.randomUUID(); manager.claim(claim, UUID.randomUUID(), type, new Node(Map.of("node", "svarcade.test"), "reward"));
+        assertEquals(RewardManager.Status.PENDING, manager.get(claim).orElseThrow().status()); assertEquals(1, manager.inFlight());
+        gate.complete(null); assertEquals(1, manager.pollCompleted(8)); assertEquals(RewardManager.Status.APPLIED, manager.get(claim).orElseThrow().status());
+    }
+
     private static RewardProvider provider(Set<UUID> granted, int[] calls) {
         return new RewardProvider() {
             @Override public void validate(Node config) { config.only("amount"); config.integer("amount", 1, 64); }
-            @Override public void grant(UUID claimId, UUID recipient, Node config) { calls[0]++; granted.add(claimId); }
+            @Override public CompletionStage<Void> grant(UUID claimId, UUID recipient, Node config) {
+                calls[0]++; granted.add(claimId); return CompletableFuture.completedFuture(null);
+            }
         };
     }
 }
