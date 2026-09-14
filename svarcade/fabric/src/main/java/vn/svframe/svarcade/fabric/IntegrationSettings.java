@@ -3,7 +3,6 @@ package vn.svframe.svarcade.fabric;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.*;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 import org.snakeyaml.engine.v2.schema.JsonSchema;
@@ -29,11 +28,15 @@ record IntegrationSettings(boolean cobblemonEnabled, int cobblemonMaxParty,
         Node economy = read(directory, "economy.yml"); economy.only("enabled", "allow_match_purchases", "external_rewards_only", "missing_behavior");
         if (economy.bool("allow_match_purchases", false)) throw economy.error("allow_match_purchases", "External economy cannot back authoritative match currency");
         Node svquest = read(directory, "svquest.yml"); svquest.only("enabled", "reward_provider", "missing_behavior");
-        Node svframe = read(directory, "svframe.yml"); svframe.only("enabled", "missing_behavior");
+        Node svframe = read(directory, "svframe.yml"); svframe.only("enabled", "player_state_bridge", "stats_bridge", "missing_behavior");
+        validateAutoMode(svframe, "player_state_bridge"); validateAutoMode(svframe, "stats_bridge");
 
         return new IntegrationSettings(cobblemon.bool("enabled", true), maxParty,
                 luck.bool("enabled", true), Id.of(luck.string("permission_reward_provider")),
                 placeholder.bool("enabled", true), namespace, economy.bool("enabled", true), svquest.bool("enabled", true), svframe.bool("enabled", true));
+    }
+    private static void validateAutoMode(Node node, String key) {
+        String value = node.string(key); if (!value.equals("auto") && !value.equals("off")) throw node.error(key, "Expected auto or off");
     }
 
     private static Node read(Path directory, String name) {
