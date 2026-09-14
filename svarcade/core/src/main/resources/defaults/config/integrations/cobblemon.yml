@@ -1,0 +1,10 @@
+enabled: true
+required_version: '>=1.8.0 <1.9.0'
+party_snapshot:
+  max_party_size: 6
+  include_held_item: true
+  include_aspects: true
+  include_moves: true
+renderer:
+  use_real_pokemon_entity: true
+  mutate_party_pokemon: false
