@@ -11,13 +11,16 @@ public final class RewardManager {
     public record Claim(UUID id, UUID recipient, Id type, Map<String,Object> config, Status status) {
         public Claim { config = Values.map(config); }
     }
+    private record InFlight(CompletableFuture<Void> future, long startedNanos) {
+        private InFlight { Objects.requireNonNull(future); }
+    }
 
     private final ThreadGuard thread;
     private final Registry<RewardProvider> providers;
     private final int capacity;
     private final LinkedHashMap<UUID, Claim> claims = new LinkedHashMap<>();
-    private final LinkedHashMap<UUID, CompletableFuture<Void>> inFlight = new LinkedHashMap<>();
-    private long revision, providerFailures;
+    private final LinkedHashMap<UUID, InFlight> inFlight = new LinkedHashMap<>();
+    private long revision, providerFailures, providerTimeouts;
 
     public RewardManager(ThreadGuard thread, Registry<RewardProvider> providers, int capacity) {
         this.thread = Objects.requireNonNull(thread); this.providers = Objects.requireNonNull(providers);
@@ -39,12 +42,12 @@ public final class RewardManager {
     private void start(Claim claim) {
         RewardProvider provider = providers.require(claim.type()); Node config = new Node(claim.config(), "reward-claim"); provider.validate(config);
         CompletionStage<Void> stage = Objects.requireNonNull(provider.grant(claim.id(), claim.recipient(), config), "Reward provider future");
-        inFlight.put(claim.id(), stage.toCompletableFuture());
+        inFlight.put(claim.id(), new InFlight(stage.toCompletableFuture(), System.nanoTime()));
     }
     private boolean settle(UUID id, boolean propagateFailure) {
-        CompletableFuture<Void> future = inFlight.get(id); if (future == null || !future.isDone()) return false;
+        InFlight running = inFlight.get(id); if (running == null || !running.future().isDone()) return false;
         try {
-            future.join(); Claim claim = requireClaim(id);
+            running.future().join(); Claim claim = requireClaim(id);
             if (claim.status() == Status.PENDING) {
                 claims.put(id, new Claim(claim.id(), claim.recipient(), claim.type(), claim.config(), Status.APPLIED)); revision = Math.incrementExact(revision);
             }
@@ -55,11 +58,18 @@ public final class RewardManager {
             return false;
         }
     }
-    /** Polls completed provider futures on the owner thread. */
-    public int pollCompleted(int maximum) {
-        thread.check(); if (maximum < 1 || maximum > 4096) throw new IllegalArgumentException("Reward completion limit"); int applied = 0, inspected = 0;
+    /** Polls completed provider futures on the owner thread without expiring unfinished grants. */
+    public int pollCompleted(int maximum) { return pollCompleted(maximum, Long.MAX_VALUE); }
+    /** Polls completed futures and expires hung futures after the supplied monotonic timeout. Expired claims remain PENDING for idempotent retry. */
+    public int pollCompleted(int maximum, long timeoutNanos) {
+        thread.check(); if (maximum < 1 || maximum > 4096 || timeoutNanos < 1) throw new IllegalArgumentException("Reward completion limits");
+        int applied = 0, inspected = 0; long now = System.nanoTime();
         for (UUID id : new ArrayList<>(inFlight.keySet())) {
-            if (inspected++ >= maximum) break; if (settle(id, false)) applied++;
+            if (inspected++ >= maximum) break; InFlight running = inFlight.get(id); if (running == null) continue;
+            if (running.future().isDone()) { if (settle(id, false)) applied++; continue; }
+            if (timeoutNanos != Long.MAX_VALUE && now - running.startedNanos() >= timeoutNanos) {
+                running.future().cancel(true); inFlight.remove(id); providerTimeouts = Math.incrementExact(providerTimeouts);
+            }
         }
         return applied;
     }
@@ -79,6 +89,7 @@ public final class RewardManager {
     public Optional<Claim> get(UUID id) { thread.check(); return Optional.ofNullable(claims.get(id)); }
     public int inFlight() { thread.check(); return inFlight.size(); }
     public long providerFailures() { thread.check(); return providerFailures; }
+    public long providerTimeouts() { thread.check(); return providerTimeouts; }
     public long revision() { thread.check(); return revision; }
     public Map<String,Object> snapshot() {
         thread.check(); List<Object> rows = new ArrayList<>();
