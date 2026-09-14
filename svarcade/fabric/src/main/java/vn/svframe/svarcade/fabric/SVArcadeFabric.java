@@ -28,6 +28,7 @@ public final class SVArcadeFabric implements ModInitializer {
     private volatile ThreadGuard thread;
     private volatile long tick;
     private volatile Set<String> integrations = Set.of();
+    private volatile Path configRoot;
     private volatile Path definitionsPath;
 
     @Override public void onInitialize() {
@@ -49,8 +50,9 @@ public final class SVArcadeFabric implements ModInitializer {
         definitions = new DefinitionRegistry(); loader = new DefinitionLoader(catalog.schemas());
         runtime = new GenericGameRuntime(thread, definitions, catalog.factories(), 128);
         integrations = IntegrationDetector.available();
-        definitionsPath = FabricLoader.getInstance().getConfigDir().resolve("svarcade").resolve("minigames");
-        CompletableFuture.supplyAsync(() -> DefaultInstaller.install(definitionsPath), io)
+        configRoot = FabricLoader.getInstance().getConfigDir().resolve("svarcade");
+        definitionsPath = configRoot.resolve("minigames");
+        CompletableFuture.supplyAsync(() -> DefaultInstaller.install(configRoot), io)
                 .thenCompose(created -> definitions.reload(() -> loader.loadAll(definitionsPath), integrations, io).thenApply(result -> Map.entry(created, result)))
                 .whenComplete((entry, failure) -> {
                     if (failure != null) LOG.log(System.Logger.Level.ERROR, "SVArcade definition bootstrap failed", failure);
@@ -80,6 +82,6 @@ public final class SVArcadeFabric implements ModInitializer {
         GenericGameRuntime sessions = runtime; if (sessions != null) sessions.closeAll();
         BotRuntime workers = bots; if (workers != null) workers.close();
         ExecutorService executor = io; if (executor != null) executor.shutdownNow();
-        runtime = null; bots = null; loader = null; definitions = null; io = null; definitionsPath = null; integrations = Set.of(); thread = null; tick = 0; starting.set(false);
+        runtime = null; bots = null; loader = null; definitions = null; io = null; configRoot = null; definitionsPath = null; integrations = Set.of(); thread = null; tick = 0; starting.set(false);
     }
 }
