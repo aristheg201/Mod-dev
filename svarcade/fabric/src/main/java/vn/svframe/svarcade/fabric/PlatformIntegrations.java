@@ -3,8 +3,12 @@ package vn.svframe.svarcade.fabric;
 import java.util.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import net.minecraft.registry.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.fabric.api.SVArcadeIntegration;
 import vn.svframe.svarcade.reward.RewardProvider;
@@ -117,12 +121,35 @@ final class PlatformIntegrations implements AutoCloseable {
             for (Participant participant : session.participants().values()) if (participant.kind() == Participant.Kind.PLAYER) {
                 playerState.capture(participant.id(), PROTECTED_FIELDS); captured.add(participant.id()); bindPlayerCleanup(session, participant.id());
             }
+            placeConfiguredStages(session);
             if (cobblemon != null && session.definition().systems().stream().anyMatch(spec -> spec.id().equals(LoadoutSystem.ID))) importCobblemon(session);
             for (GenericGameRuntime.SessionInitializer initializer : sessionInitializers) initializer.initialize(session);
         } catch (RuntimeException failure) {
             for (int i = captured.size() - 1; i >= 0; i--) if (server.getPlayerManager().getPlayer(captured.get(i)) != null) playerState.restore(captured.get(i));
             throw failure;
         }
+    }
+
+    private void placeConfiguredStages(GenericSession session) {
+        String arenaId = session.lease().arena().arena(); Node arena = session.definition().arenas().get(arenaId);
+        if (arena == null || !arena.has("player_stages")) return;
+        String worldId = arena.string("world"); ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.of(worldId)));
+        if (world == null) throw new IllegalStateException("Arena world unavailable: " + worldId);
+        Node stages = arena.node("player_stages");
+        for (Participant participant : session.participants().values()) {
+            if (participant.kind() != Participant.Kind.PLAYER || !stages.has(participant.team())) continue;
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(participant.id());
+            if (player == null) throw new IllegalStateException("Staged participant is offline: " + participant.id());
+            List<?> raw = stages.list(participant.team());
+            if (raw.size() != 5) throw stages.error(participant.team(), "Expected [x,y,z,yaw,pitch]");
+            double x = number(raw.get(0), "x"), y = number(raw.get(1), "y"), z = number(raw.get(2), "z");
+            float yaw = (float) number(raw.get(3), "yaw"), pitch = (float) number(raw.get(4), "pitch");
+            if (!player.teleport(world, x, y, z, Set.of(), yaw, pitch)) throw new IllegalStateException("Stage teleport rejected: " + participant.id());
+        }
+    }
+    private static double number(Object value, String field) {
+        if (!(value instanceof Number number)) throw new IllegalArgumentException("Stage " + field + " must be numeric");
+        double result = number.doubleValue(); if (!Double.isFinite(result) || Math.abs(result) > 30_000_000) throw new IllegalArgumentException("Stage " + field + " outside world bounds"); return result;
     }
 
     /** Recovery hook: ownership is reattached without recapturing already-mutated live state. */
@@ -134,7 +161,7 @@ final class PlatformIntegrations implements AutoCloseable {
     private void bindPlayerCleanup(GenericSession session, UUID player) {
         session.resources().own("player-state/" + player, () -> {
             if (!playerState.protectedPlayer(player)) return;
-            if (server.getPlayerManager().getPlayer(player) == null) return; // durable global snapshot survives until JOIN
+            if (server.getPlayerManager().getPlayer(player) == null) return;
             if (!playerState.restore(player)) throw new IllegalStateException("Player state restore failed: " + player);
         });
     }
