@@ -7,6 +7,7 @@ import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.*;
 import vn.svframe.svarcade.security.*;
 import vn.svframe.svarcade.systems.board.*;
+import vn.svframe.svarcade.systems.tower.TdDecisionSource;
 
 /** Default implemented generic-system catalog. Platform facts remain injected server authority. */
 public final class StandardRuntimeCatalog {
@@ -17,6 +18,7 @@ public final class StandardRuntimeCatalog {
         Objects.requireNonNull(bots); Objects.requireNonNull(facts);
         return CoreSystems.builder(actionHandlers(), ValuePrimitives.actions(), ValuePrimitives.conditions())
                 .add(BoardDecisionSource.ID, new BoardDecisionSource.Plan(BoardBotStrategy.builtins(), facts))
+                .add(TdDecisionSource.ID, new TdDecisionSource.Plan(facts))
                 .add(BotSystem.ID, new BotSystem.Plan(bots))
                 .build();
     }

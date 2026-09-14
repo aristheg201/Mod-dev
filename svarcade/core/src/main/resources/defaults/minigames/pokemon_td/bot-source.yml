@@ -1,0 +1,12 @@
+actions:
+  deploy: svarcade_td:deploy
+  move: svarcade_td:move
+  recall: svarcade_td:recall
+  upgrade: svarcade_td:upgrade
+  target: svarcade_td:target_mode
+currency: svarcade_td:coins
+profile: svarcade_td:pokemon_tower
+allowed_states:
+  - PREPARE
+  - WAVE
+  - SHOP

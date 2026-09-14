@@ -1,30 +1,85 @@
+source_system: svarcade:td_bot_source
 profiles:
   EASY:
-    think_delay_ticks: 30
-    reserve_currency: 40
-    placement_samples: 6
-    upgrade_horizon_waves: 0
-    retarget_interval_ticks: 100
-    mistake_chance: 0.30
+    strategy: svarcade:td_policy
+    parameters:
+      reserve_currency: 40
+      max_towers: 4
+      max_candidates: 64
+      mistake_chance: 0.30
+      placements:
+        - [12.0, 64.0, 5.0]
+        - [28.0, 64.0, -5.0]
+        - [44.0, 64.0, 18.0]
+        - [64.0, 64.0, 6.0]
+      upgrade_priority:
+        - svarcade_td:power
+        - svarcade_td:range
+      target_modes: [FIRST, CLOSEST]
+      priority: [DEPLOY, UPGRADE, TARGET, MOVE, RECALL]
+    think_nanos: 10000000
+    operations: 10000
+    delay_ticks: 30
+    retry_ticks: 10
+    pending_timeout_ticks: 80
+    controller_ttl_ticks: 100
   NORMAL:
-    think_delay_ticks: 15
-    reserve_currency: 80
-    placement_samples: 18
-    upgrade_horizon_waves: 2
-    retarget_interval_ticks: 60
-    mistake_chance: 0.08
+    strategy: svarcade:td_policy
+    parameters:
+      reserve_currency: 80
+      max_towers: 6
+      max_candidates: 128
+      mistake_chance: 0.08
+      placements:
+        - [12.0, 64.0, 5.0]
+        - [20.0, 64.0, -6.0]
+        - [36.0, 64.0, 7.0]
+        - [44.0, 64.0, 18.0]
+        - [60.0, 64.0, 5.0]
+        - [78.0, 64.0, 17.0]
+      upgrade_priority:
+        - svarcade_td:power
+        - svarcade_td:haste
+        - svarcade_td:range
+        - svarcade_td:electric_mastery
+      target_modes: [FIRST, STRONGEST, CLOSEST, LOWEST_HP]
+      priority: [UPGRADE, DEPLOY, TARGET, MOVE, RECALL]
+    think_nanos: 20000000
+    operations: 30000
+    delay_ticks: 15
+    retry_ticks: 8
+    pending_timeout_ticks: 80
+    controller_ttl_ticks: 100
   HARD:
-    think_delay_ticks: 8
-    reserve_currency: 120
-    placement_samples: 48
-    upgrade_horizon_waves: 4
-    retarget_interval_ticks: 30
-    mistake_chance: 0.0
-policy:
-  actions:
-    deploy: svarcade_td:deploy
-    move: svarcade_td:move
-    recall: svarcade_td:recall
-    upgrade: svarcade_td:upgrade
-    target: svarcade_td:target_mode
-  no_cheat: true
+    strategy: svarcade:td_policy
+    parameters:
+      reserve_currency: 120
+      max_towers: 8
+      max_candidates: 256
+      mistake_chance: 0.0
+      placements:
+        - [8.0, 64.0, 6.0]
+        - [16.0, 64.0, -6.0]
+        - [28.0, 64.0, 6.0]
+        - [36.0, 64.0, 18.0]
+        - [48.0, 64.0, 4.0]
+        - [58.0, 64.0, 20.0]
+        - [72.0, 64.0, 4.0]
+        - [84.0, 64.0, -5.0]
+      upgrade_priority:
+        - svarcade_td:electric_mastery
+        - svarcade_td:haste
+        - svarcade_td:power
+        - svarcade_td:range
+      target_modes: [FIRST, LAST, STRONGEST, HIGHEST_HP, LOWEST_HP, CLOSEST]
+      priority: [UPGRADE, TARGET, DEPLOY, MOVE, RECALL]
+    think_nanos: 40000000
+    operations: 80000
+    delay_ticks: 8
+    retry_ticks: 5
+    pending_timeout_ticks: 60
+    controller_ttl_ticks: 80
+default_difficulty: NORMAL
+team_difficulties: {}
+max_bots_per_tick: 16
+seed: 6840227782638526189

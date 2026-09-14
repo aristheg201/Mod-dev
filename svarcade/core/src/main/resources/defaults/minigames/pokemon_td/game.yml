@@ -38,5 +38,9 @@ systems:
     config: actions.yml
   - id: svarcade:wave_loop
     config: wave-loop.yml
+  - id: svarcade:td_bot_source
+    config: bot-source.yml
+  - id: svarcade:bot
+    config: bots.yml
 arenas:
   directory: arenas
