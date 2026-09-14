@@ -6,10 +6,12 @@ import vn.svframe.svarcade.persistence.SessionSnapshot;
 
 /** Authoritative session directory. Failed cleanup remains reachable for retries. */
 public final class GenericGameRuntime {
+    @FunctionalInterface public interface SessionInitializer { void initialize(GenericSession session); }
     public record Failure(UUID session, String operation, String detail) { }
     private final ThreadGuard thread;
     private final DefinitionRegistry definitions;
     private final Registry<SystemFactory> systems;
+    private final SessionInitializer initializer;
     private final ArenaRuntime arenas = new ArenaRuntime();
     private final Map<UUID, GenericSession> sessions = new LinkedHashMap<>();
     private final Map<UUID, UUID> membership = new HashMap<>();
@@ -17,9 +19,15 @@ public final class GenericGameRuntime {
     private final int capacity;
     private boolean iterating;
     private long lastTickNanos;
+
     public GenericGameRuntime(ThreadGuard thread, DefinitionRegistry definitions, Registry<SystemFactory> systems, int capacity) {
+        this(thread, definitions, systems, capacity, session -> { });
+    }
+    public GenericGameRuntime(ThreadGuard thread, DefinitionRegistry definitions, Registry<SystemFactory> systems,
+                              int capacity, SessionInitializer initializer) {
         if (capacity < 1) throw new IllegalArgumentException("Session capacity");
-        this.thread = thread; this.definitions = definitions; this.systems = systems; this.capacity = capacity;
+        this.thread = Objects.requireNonNull(thread); this.definitions = Objects.requireNonNull(definitions);
+        this.systems = Objects.requireNonNull(systems); this.initializer = Objects.requireNonNull(initializer); this.capacity = capacity;
     }
     public GenericSession open(Id definition, String arena, List<Participant> participants) {
         return initialize(UUID.randomUUID(), definitions.snapshot().requireAvailable(definition), arena, participants, null);
@@ -35,11 +43,13 @@ public final class GenericGameRuntime {
         GenericSession session = new GenericSession(id, definition, arena, participants, arenas, thread);
         sessions.put(id, session); participants.forEach(p -> membership.put(p.id(), id));
         try {
-            if (saved == null) session.start(systems);
+            if (saved == null) { session.start(systems); initializer.initialize(session); }
             else { session.restoreRevision(saved.revision()); session.restore(systems, saved.systems()); }
             return session;
         } catch (RuntimeException e) {
-            failure(id, "initialize", e.toString()); reap(session); throw e;
+            failure(id, "initialize", e.toString());
+            for (ResourceTracker.Failure problem : session.close()) failure(id, "cleanup", problem.resource() + ": " + problem.cause());
+            reap(session); throw e;
         }
     }
     public void tick(long tick) {
@@ -68,7 +78,6 @@ public final class GenericGameRuntime {
         thread.check(); if (iterating) throw new IllegalStateException("Cannot close all during runtime iteration");
         List<ResourceTracker.Failure> result = new ArrayList<>();
         for (GenericSession session : new ArrayList<>(sessions.values())) result.addAll(close(session.id()));
-        // One retry pass handles cleanup resources intentionally designed to fail once and remain owned.
         for (GenericSession session : new ArrayList<>(sessions.values())) if (session.status() == GenericSession.Status.CLOSING) result.addAll(close(session.id()));
         return List.copyOf(result);
     }
