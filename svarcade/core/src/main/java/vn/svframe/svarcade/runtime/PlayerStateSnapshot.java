@@ -27,8 +27,7 @@ public record PlayerStateSnapshot(int schema, EnumSet<Field> fields, Position po
     public PlayerStateSnapshot {
         Objects.requireNonNull(fields); Objects.requireNonNull(inventory); Objects.requireNonNull(effects);
         if (schema != 1) throw new IllegalArgumentException("Player state schema"); fields = fields.clone(); inventory = List.copyOf(inventory); effects = List.copyOf(effects);
-        if (fields.contains(Field.POSITION) != (position != null) || fields.contains(Field.MODE) != (mode != null))
-            throw new IllegalArgumentException("Player state field mismatch");
+        if (fields.contains(Field.POSITION) != (position != null) || fields.contains(Field.MODE) != (mode != null)) throw new IllegalArgumentException("Player state field mismatch");
         if (fields.contains(Field.INVENTORY)) {
             if (selectedSlot < 0 || selectedSlot > 1024) throw new IllegalArgumentException("Selected slot");
             Set<Integer> unique = new HashSet<>(); for (Slot slot : inventory) if (!unique.add(slot.slot())) throw new IllegalArgumentException("Duplicate inventory slot");
@@ -45,5 +44,35 @@ public record PlayerStateSnapshot(int schema, EnumSet<Field> fields, Position po
         }
         if (fields.contains(Field.EFFECTS)) out.put("effects", effects.stream().map(e -> Map.of("id", e.id(), "amplifier", e.amplifier(), "remaining_ticks", e.remainingTicks(), "ambient", e.ambient(), "particles", e.particles(), "icon", e.icon())).toList());
         return Values.map(out);
+    }
+
+    public static PlayerStateSnapshot fromMap(Map<String,Object> value) {
+        Node root = new Node(value, "player-state"); root.only("schema", "fields", "position", "mode", "inventory", "selected_slot", "effects");
+        int schema = (int)root.integer("schema", 1, 1); EnumSet<Field> fields = EnumSet.noneOf(Field.class);
+        for (String raw : root.strings("fields")) {
+            try { fields.add(Field.valueOf(raw)); } catch (IllegalArgumentException e) { throw root.error("fields", "Unknown player-state field: " + raw); }
+        }
+        Position position = null; Mode mode = null; List<Slot> inventory = List.of(); int selectedSlot = -1; List<Effect> effects = List.of();
+        if (fields.contains(Field.POSITION)) {
+            Node n = root.node("position"); n.only("world", "x", "y", "z", "yaw", "pitch");
+            position = new Position(n.string("world"), Numbers.decimal(n, "x", -30_000_000, 30_000_000), Numbers.decimal(n, "y", -30_000_000, 30_000_000),
+                    Numbers.decimal(n, "z", -30_000_000, 30_000_000), (float)Numbers.decimal(n, "yaw", -360, 360), (float)Numbers.decimal(n, "pitch", -360, 360));
+        } else if (root.has("position")) throw root.error("position", "Position present without POSITION field");
+        if (fields.contains(Field.MODE)) {
+            Node n = root.node("mode"); n.only("game_mode", "allow_flight", "flying", "walk_speed", "fly_speed");
+            mode = new Mode(n.string("game_mode"), n.bool("allow_flight", false), n.bool("flying", false),
+                    (float)Numbers.decimal(n, "walk_speed", 0, 1), (float)Numbers.decimal(n, "fly_speed", 0, 1));
+        } else if (root.has("mode")) throw root.error("mode", "Mode present without MODE field");
+        if (fields.contains(Field.INVENTORY)) {
+            selectedSlot = (int)root.integer("selected_slot", 0, 1024); List<Slot> rows = new ArrayList<>();
+            for (Node n : root.nodes("inventory")) { n.only("slot", "item", "count", "components"); rows.add(new Slot((int)n.integer("slot", 0, 1024), n.string("item"), (int)n.integer("count", 1, 9999), n.string("components", ""))); }
+            inventory = List.copyOf(rows);
+        } else if (root.has("inventory") || root.has("selected_slot")) throw root.error("inventory", "Inventory present without INVENTORY field");
+        if (fields.contains(Field.EFFECTS)) {
+            List<Effect> rows = new ArrayList<>();
+            for (Node n : root.nodes("effects")) { n.only("id", "amplifier", "remaining_ticks", "ambient", "particles", "icon"); rows.add(new Effect(n.string("id"), (int)n.integer("amplifier", 0, 255), n.integer("remaining_ticks", 0, Long.MAX_VALUE), n.bool("ambient", false), n.bool("particles", true), n.bool("icon", true))); }
+            effects = List.copyOf(rows);
+        } else if (root.has("effects")) throw root.error("effects", "Effects present without EFFECTS field");
+        return new PlayerStateSnapshot(schema, fields, position, mode, inventory, selectedSlot, effects);
     }
 }
