@@ -1,10 +1,11 @@
 package vn.svframe.svarcade.reward;
 
 import java.util.*;
+import java.util.concurrent.*;
 import vn.svframe.svarcade.config.*;
 import vn.svframe.svarcade.runtime.ThreadGuard;
 
-/** Durable idempotent reward claims over typed providers. */
+/** Durable idempotent reward claims over typed asynchronous providers. */
 public final class RewardManager {
     public enum Status { PENDING, APPLIED }
     public record Claim(UUID id, UUID recipient, Id type, Map<String,Object> config, Status status) {
@@ -15,7 +16,8 @@ public final class RewardManager {
     private final Registry<RewardProvider> providers;
     private final int capacity;
     private final LinkedHashMap<UUID, Claim> claims = new LinkedHashMap<>();
-    private long revision;
+    private final LinkedHashMap<UUID, CompletableFuture<Void>> inFlight = new LinkedHashMap<>();
+    private long revision, providerFailures;
 
     public RewardManager(ThreadGuard thread, Registry<RewardProvider> providers, int capacity) {
         this.thread = Objects.requireNonNull(thread); this.providers = Objects.requireNonNull(providers);
@@ -28,21 +30,55 @@ public final class RewardManager {
         Claim pending = new Claim(id, recipient, type, config.values(), Status.PENDING); claims.put(id, pending); revision = Math.incrementExact(revision);
         return apply(id);
     }
+    /** Starts a pending grant if needed and settles immediately only when the provider already completed. Never blocks. */
     public Claim apply(UUID id) {
-        thread.check(); Claim claim = claims.get(id); if (claim == null) throw new IllegalArgumentException("Unknown reward claim");
-        if (claim.status() == Status.APPLIED) return claim;
-        RewardProvider provider = providers.require(claim.type()); Node config = new Node(claim.config(), "reward-claim"); provider.validate(config);
-        provider.grant(claim.id(), claim.recipient(), config);
-        Claim applied = new Claim(claim.id(), claim.recipient(), claim.type(), claim.config(), Status.APPLIED); claims.put(id, applied); revision = Math.incrementExact(revision); return applied;
+        thread.check(); Claim claim = requireClaim(id); if (claim.status() == Status.APPLIED) return claim;
+        if (!inFlight.containsKey(id)) start(claim);
+        settle(id, true); return claims.get(id);
     }
-    public int retryPending(int maximum) {
-        thread.check(); if (maximum < 1 || maximum > 4096) throw new IllegalArgumentException("Reward retry limit"); int applied = 0;
-        for (UUID id : new ArrayList<>(claims.keySet())) {
-            if (applied >= maximum) break; if (claims.get(id).status() == Status.PENDING) { apply(id); applied++; }
+    private void start(Claim claim) {
+        RewardProvider provider = providers.require(claim.type()); Node config = new Node(claim.config(), "reward-claim"); provider.validate(config);
+        CompletionStage<Void> stage = Objects.requireNonNull(provider.grant(claim.id(), claim.recipient(), config), "Reward provider future");
+        inFlight.put(claim.id(), stage.toCompletableFuture());
+    }
+    private boolean settle(UUID id, boolean propagateFailure) {
+        CompletableFuture<Void> future = inFlight.get(id); if (future == null || !future.isDone()) return false;
+        try {
+            future.join(); Claim claim = requireClaim(id);
+            if (claim.status() == Status.PENDING) {
+                claims.put(id, new Claim(claim.id(), claim.recipient(), claim.type(), claim.config(), Status.APPLIED)); revision = Math.incrementExact(revision);
+            }
+            inFlight.remove(id); return true;
+        } catch (CompletionException | CancellationException failure) {
+            inFlight.remove(id); providerFailures = Math.incrementExact(providerFailures);
+            if (propagateFailure) throw new IllegalStateException("Reward provider failed for claim " + id, failure.getCause() == null ? failure : failure.getCause());
+            return false;
+        }
+    }
+    /** Polls completed provider futures on the owner thread. */
+    public int pollCompleted(int maximum) {
+        thread.check(); if (maximum < 1 || maximum > 4096) throw new IllegalArgumentException("Reward completion limit"); int applied = 0, inspected = 0;
+        for (UUID id : new ArrayList<>(inFlight.keySet())) {
+            if (inspected++ >= maximum) break; if (settle(id, false)) applied++;
         }
         return applied;
     }
+    /** Restarts bounded pending claims that are not already in flight. Provider startup failures leave claims pending. */
+    public int startPending(int maximum) {
+        thread.check(); if (maximum < 1 || maximum > 4096) throw new IllegalArgumentException("Reward retry limit"); int started = 0;
+        for (Claim claim : new ArrayList<>(claims.values())) {
+            if (started >= maximum) break;
+            if (claim.status() != Status.PENDING || inFlight.containsKey(claim.id())) continue;
+            try { start(claim); started++; } catch (RuntimeException failure) { providerFailures = Math.incrementExact(providerFailures); }
+        }
+        return started;
+    }
+    /** Compatibility helper: schedules pending claims then polls already-completed futures without blocking. */
+    public int retryPending(int maximum) { thread.check(); startPending(maximum); return pollCompleted(maximum); }
+    private Claim requireClaim(UUID id) { Claim claim = claims.get(id); if (claim == null) throw new IllegalArgumentException("Unknown reward claim"); return claim; }
     public Optional<Claim> get(UUID id) { thread.check(); return Optional.ofNullable(claims.get(id)); }
+    public int inFlight() { thread.check(); return inFlight.size(); }
+    public long providerFailures() { thread.check(); return providerFailures; }
     public long revision() { thread.check(); return revision; }
     public Map<String,Object> snapshot() {
         thread.check(); List<Object> rows = new ArrayList<>();
@@ -50,7 +86,7 @@ public final class RewardManager {
         return Values.map(Map.of("schema", 1, "revision", revision, "claims", rows));
     }
     public void restore(Map<String,Object> state) {
-        thread.check(); if (!claims.isEmpty() || revision != 0) throw new IllegalStateException("Rewards already initialized"); Node n = new Node(state, "reward-state");
+        thread.check(); if (!claims.isEmpty() || !inFlight.isEmpty() || revision != 0) throw new IllegalStateException("Rewards already initialized"); Node n = new Node(state, "reward-state");
         n.only("schema", "revision", "claims"); if (n.integer("schema", 1, 1) != 1) throw new ConfigException("Reward schema"); long restoredRevision = n.integer("revision", 0, Long.MAX_VALUE - 1);
         List<Node> rows = n.nodes("claims"); if (rows.size() > capacity) throw new ConfigException("Reward claim capacity");
         for (Node row : rows) {
