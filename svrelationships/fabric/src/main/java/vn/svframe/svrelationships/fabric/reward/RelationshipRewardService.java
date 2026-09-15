@@ -11,6 +11,7 @@ import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.config.RewardPolicyService;
 import vn.svframe.svrelationships.fabric.persistence.RewardClaimRepository;
 import vn.svframe.svrelationships.fabric.relationship.RelationshipService;
+import vn.svframe.svrelationships.gameplay.PersonalityDefinition;
 import vn.svframe.svrelationships.gameplay.RewardProfileDefinition;
 import vn.svframe.svrelationships.integration.EconomyProvider;
 import vn.svframe.svrelationships.integration.ProviderHub;
@@ -22,6 +23,7 @@ import vn.svframe.svrelationships.reward.WeightedRewardSelector;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,13 +68,19 @@ public final class RelationshipRewardService {
         if (resolution == null) {
             long seed = key.relationshipId().getMostSignificantBits() ^ key.relationshipId().getLeastSignificantBits()
                     ^ profile.id().hashCode() ^ key.periodId().hashCode();
-            resolution = selector.select(profile, seed);
+            resolution = selector.select(profile, seed, personalityRewardMultipliers(relationship));
             claim = claims.resolve(key, resolution);
         }
         if (claim.status() == RewardClaimStatus.DELIVERED) return ClaimResult.ALREADY_CLAIMED;
         if (!deliver(player, pokemonId, resolution, policy)) return ClaimResult.DELIVERY_FAILED;
         claims.delivered(key);
         return ClaimResult.DELIVERED;
+    }
+
+    private Map<String, Double> personalityRewardMultipliers(RelationshipState relationship) {
+        if (relationship.personalityId() == null || relationship.personalityId().isBlank()) return Map.of();
+        PersonalityDefinition personality = definitions.snapshot().personalities().get(relationship.personalityId());
+        return personality == null ? Map.of() : personality.rewardWeightMultipliers();
     }
 
     private RewardClaimKey nextClaimKey(UUID scopeId, RewardProfileDefinition profile, RelationshipState relationship,
@@ -113,14 +121,8 @@ public final class RelationshipRewardService {
         while (remaining > 0) {
             int count = (int) Math.min(remaining, item.getMaxCount());
             ItemStack stack = new ItemStack(item, count);
-            boolean inserted = player.getInventory().insertStack(stack);
-            if ((!inserted || !stack.isEmpty()) && !stack.isEmpty()) {
-                if ("deny".equals(overflowPolicy)) {
-                    player.dropItem(stack, false);
-                } else {
-                    player.dropItem(stack, false);
-                }
-            }
+            player.getInventory().insertStack(stack);
+            if (!stack.isEmpty()) player.dropItem(stack, false);
             remaining -= count;
         }
         return true;
@@ -131,11 +133,8 @@ public final class RelationshipRewardService {
         long capacity = 0L;
         for (int slot = 0; slot < PlayerInventory.MAIN_SIZE; slot++) {
             ItemStack existing = player.getInventory().getStack(slot);
-            if (existing.isEmpty()) {
-                capacity += template.getMaxCount();
-            } else if (ItemStack.areItemsAndComponentsEqual(existing, template) && existing.isStackable()) {
-                capacity += Math.max(0, existing.getMaxCount() - existing.getCount());
-            }
+            if (existing.isEmpty()) capacity += template.getMaxCount();
+            else if (ItemStack.areItemsAndComponentsEqual(existing, template) && existing.isStackable()) capacity += Math.max(0, existing.getMaxCount() - existing.getCount());
             if (capacity >= amount) return true;
         }
         return false;
@@ -144,9 +143,7 @@ public final class RelationshipRewardService {
     private boolean deliverEconomy(ServerPlayerEntity player, String requestedProvider, long amount) {
         if (amount < 0) return false;
         EconomyProvider provider = null;
-        if (!"default".equalsIgnoreCase(requestedProvider) && !requestedProvider.isBlank()) {
-            provider = providers.economy(requestedProvider).orElse(null);
-        }
+        if (!"default".equalsIgnoreCase(requestedProvider) && !requestedProvider.isBlank()) provider = providers.economy(requestedProvider).orElse(null);
         if (provider == null) {
             for (String id : config.snapshot().economyPriority()) {
                 Optional<EconomyProvider> candidate = providers.economy(id);
