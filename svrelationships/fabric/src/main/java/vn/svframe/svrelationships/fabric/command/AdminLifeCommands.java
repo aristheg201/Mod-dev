@@ -72,7 +72,7 @@ public final class AdminLifeCommands {
         var state = households.get(target.getUuid()).orElse(null);
         if (state == null) { c.getSource().sendError(messages.text("command.admin.household.none", Map.of("player", target.getGameProfile().getName()))); return 0; }
         var a = state.anchor();
-        c.getSource().sendFeedback(() -> messages.text("command.admin.household.inspect", Map.of("player", target.getGameProfile().getName(), "profile", state.profileId(), "dimension", a.dimension(), "x", a.x(), "y", a.y(), "z", a.z(), "radius", households.activeRadius(state), "capacity", households.maxMaterializedPartners(state))), false);
+        c.getSource().sendFeedback(() -> messages.text("command.admin.household.inspect", Map.of("player", target.getGameProfile().getName(), "profile", state.profileId(), "dimension", a.dimensionId(), "x", a.x(), "y", a.y(), "z", a.z(), "radius", households.activeRadius(state), "capacity", households.maxMaterializedPartners(state))), false);
         return 1;
     }
 
