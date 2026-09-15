@@ -9,7 +9,9 @@ import vn.svframe.svrelationships.integration.ProviderHub;
 import vn.svframe.svrelationships.relationship.RelationshipKey;
 import vn.svframe.svrelationships.relationship.RelationshipState;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class RelationshipService {
@@ -25,6 +27,7 @@ public final class RelationshipService {
     }
 
     public RelationshipState state(UUID playerId, UUID pokemonId) { return repository.getOrCreate(new RelationshipKey(playerId, pokemonId)); }
+    public Optional<RelationshipState> existing(UUID playerId, UUID pokemonId) { return repository.get(new RelationshipKey(playerId, pokemonId)); }
     public List<RelationshipState> states(UUID playerId) { return repository.byPlayer(playerId); }
     public List<RelationshipState> partners(UUID playerId) { return repository.partners(playerId); }
     public long progression(UUID playerId, UUID pokemonId, String trackId) { return state(playerId, pokemonId).progression(trackId); }
@@ -36,6 +39,10 @@ public final class RelationshipService {
     public long addProgression(UUID playerId, UUID pokemonId, String trackId, long delta) {
         long result = new ProgressionEngine(definitions.snapshot().progressionTracks()).add(state(playerId, pokemonId), trackId, delta);
         repository.markDirty(); return result;
+    }
+    public Optional<String> rank(UUID playerId, UUID pokemonId, String trackId) {
+        var engine = new ProgressionEngine(definitions.snapshot().progressionTracks());
+        return engine.rank(trackId, progression(playerId, pokemonId, trackId)).map(rank -> rank.id());
     }
     public String currentRoute(UUID playerId, UUID pokemonId, String routeId) {
         String result = new RouteEngine(definitions.snapshot().routes()).currentState(state(playerId, pokemonId), routeId);
@@ -60,5 +67,19 @@ public final class RelationshipService {
     }
     public void assignHousehold(UUID playerId, UUID pokemonId, UUID householdId) {
         state(playerId, pokemonId).setHouseholdId(householdId); repository.markDirty();
+    }
+    public void setPersonality(UUID playerId, UUID pokemonId, String personalityId) {
+        if (personalityId != null && !personalityId.isBlank() && !definitions.snapshot().personalities().containsKey(personalityId)) {
+            throw new IllegalArgumentException("Unknown personality: " + personalityId);
+        }
+        state(playerId, pokemonId).setPersonalityId(personalityId); repository.markDirty();
+    }
+    public void setCooldown(UUID playerId, UUID pokemonId, String id, long untilMillis) {
+        state(playerId, pokemonId).setCooldownUntil(id, untilMillis); repository.markDirty();
+    }
+    public long cooldown(UUID playerId, UUID pokemonId, String id) { return state(playerId, pokemonId).cooldownUntil(id); }
+    public void touch() { repository.markDirty(); }
+    public List<RelationshipState> ordered(UUID playerId) {
+        return states(playerId).stream().sorted(Comparator.comparing(s -> s.key().pokemonId().toString())).toList();
     }
 }
