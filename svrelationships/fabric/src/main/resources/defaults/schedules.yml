@@ -1,0 +1,38 @@
+default_profile: partner_home
+personality_profiles:
+  independent: partner_independent
+profiles:
+  partner_home:
+    entries:
+      - id: morning_home
+        start_tick: 0
+        end_tick: 6000
+        activity: home_morning
+        materialize: true
+        message_key: schedule.activity.home_morning
+      - id: day_out
+        start_tick: 6000
+        end_tick: 12000
+        activity: away_day
+        materialize: false
+        message_key: schedule.activity.away_day
+      - id: evening_home
+        start_tick: 12000
+        end_tick: 0
+        activity: home_evening
+        materialize: true
+        message_key: schedule.activity.home_evening
+  partner_independent:
+    entries:
+      - id: morning_out
+        start_tick: 0
+        end_tick: 9000
+        activity: away_personal
+        materialize: false
+        message_key: schedule.activity.away_personal
+      - id: home
+        start_tick: 9000
+        end_tick: 0
+        activity: home
+        materialize: true
+        message_key: schedule.activity.home

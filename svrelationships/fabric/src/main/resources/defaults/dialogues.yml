@@ -1,0 +1,16 @@
+dialogues:
+  partner_chat:
+    required_route: romance
+    required_state: married
+    required_personality_tags: []
+    cooldown: 6h
+    entries:
+      - id: home
+        weight: 45
+        message_key: dialogue.partner.home
+      - id: journey
+        weight: 35
+        message_key: dialogue.partner.journey
+      - id: quiet
+        weight: 20
+        message_key: dialogue.partner.quiet
