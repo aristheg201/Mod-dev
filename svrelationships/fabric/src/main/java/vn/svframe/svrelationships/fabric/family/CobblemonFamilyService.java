@@ -2,6 +2,8 @@ package vn.svframe.svrelationships.fabric.family;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
+import com.cobblemon.mod.common.api.pokemon.stats.Stat;
+import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -15,6 +17,15 @@ import java.util.SplittableRandom;
 import java.util.UUID;
 
 public final class CobblemonFamilyService {
+    private static final List<Stat> BREEDABLE_STATS = List.of(
+            Stats.HP,
+            Stats.ATTACK,
+            Stats.DEFENCE,
+            Stats.SPECIAL_ATTACK,
+            Stats.SPECIAL_DEFENCE,
+            Stats.SPEED
+    );
+
     private final MinecraftServer server;
 
     public CobblemonFamilyService(MinecraftServer server) {
@@ -50,25 +61,50 @@ public final class CobblemonFamilyService {
         SplittableRandom random = new SplittableRandom(seed);
 
         if (random.nextDouble() < inheritance.natureChance()) {
-            properties.setNature(primary.getNature().getName().toString());
+            Pokemon natureParent = parents.get(random.nextInt(parents.size()));
+            properties.setNature(natureParent.getNature().getName().toString());
         }
         if (random.nextDouble() < inheritance.abilityChance()) {
-            properties.setAbility(primary.getAbility().getName());
+            Pokemon abilityParent = parents.get(random.nextInt(parents.size()));
+            properties.setAbility(abilityParent.getAbility().getName());
         }
         if (inheritance.inheritMoves()) {
+            Pokemon moveParent = parents.get(random.nextInt(parents.size()));
             List<String> moves = new ArrayList<>();
-            primary.getMoveSet().forEach(move -> moves.add(move.getName()));
+            moveParent.getMoveSet().forEach(move -> moves.add(move.getName()));
             properties.setMoves(moves);
         }
-        if ("parent".equalsIgnoreCase(inheritance.aspectMode()) && !primary.getAspects().isEmpty()) {
-            properties.setAspects(new HashSet<>(primary.getAspects()));
+        if ("parent".equalsIgnoreCase(inheritance.aspectMode())) {
+            Pokemon aspectParent = parents.get(random.nextInt(parents.size()));
+            if (!aspectParent.getAspects().isEmpty()) properties.setAspects(new HashSet<>(aspectParent.getAspects()));
         }
 
         Pokemon offspring = properties.create();
+        inheritIvs(offspring, parents, inheritance.guaranteedIvCount(), random);
         offspring.setOriginalTrainer(player.getUuid());
         offspring.setLevel(1);
         offspring.heal();
         boolean stored = Cobblemon.INSTANCE.getStorage().getParty(player).add(offspring);
         return stored ? Optional.of(offspring) : Optional.empty();
+    }
+
+    private static void inheritIvs(Pokemon offspring, List<Pokemon> parents, int guaranteedIvCount, SplittableRandom random) {
+        int count = Math.min(Math.max(0, guaranteedIvCount), BREEDABLE_STATS.size());
+        if (count == 0) return;
+
+        List<Stat> stats = new ArrayList<>(BREEDABLE_STATS);
+        for (int i = stats.size() - 1; i > 0; i--) {
+            int swap = random.nextInt(i + 1);
+            Stat current = stats.get(i);
+            stats.set(i, stats.get(swap));
+            stats.set(swap, current);
+        }
+
+        for (int i = 0; i < count; i++) {
+            Stat stat = stats.get(i);
+            Pokemon parent = parents.get(random.nextInt(parents.size()));
+            Integer value = parent.getIvs().get(stat);
+            if (value != null) offspring.setIV(stat, value);
+        }
     }
 }
