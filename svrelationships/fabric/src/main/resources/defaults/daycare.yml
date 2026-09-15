@@ -1,0 +1,19 @@
+daycare:
+  partner_family:
+    mode: partner_family
+    participant_roles: [partner]
+    duration: 3d
+    inheritance_profile: family_default
+    reward_profile: ""
+    economy_provider: ""
+    currency: ""
+    cost: 0
+  traditional:
+    mode: two_parent
+    participant_roles: [parent_a, parent_b]
+    duration: 2d
+    inheritance_profile: family_default
+    reward_profile: ""
+    economy_provider: ""
+    currency: ""
+    cost: 0

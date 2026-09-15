@@ -1,0 +1,17 @@
+gifts:
+  flower:
+    item: minecraft:poppy
+    consume_amount: 1
+    cooldown: 1d
+    progression:
+      bond: 15
+      romance: 10
+    message_key: gift.flower.success
+  rare_gift:
+    item: minecraft:diamond
+    consume_amount: 1
+    cooldown: 1d
+    progression:
+      bond: 40
+      romance: 25
+    message_key: gift.rare.success

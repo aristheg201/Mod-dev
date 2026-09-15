@@ -1,0 +1,16 @@
+interactions:
+  daily_talk:
+    cooldown: 1d
+    progression:
+      bond: 10
+    required_route: ""
+    required_state: ""
+    message_key: interaction.daily_talk.success
+  date:
+    cooldown: 1d
+    progression:
+      bond: 10
+      romance: 20
+    required_route: romance
+    required_state: dating
+    message_key: interaction.date.success

@@ -1,0 +1,13 @@
+personalities:
+  gentle:
+    tags: [affectionate, calm]
+    progression_multipliers:
+      bond: 1.0
+      romance: 1.0
+    reward_weight_multipliers: {}
+  independent:
+    tags: [independent]
+    progression_multipliers:
+      bond: 0.9
+      romance: 0.9
+    reward_weight_multipliers: {}

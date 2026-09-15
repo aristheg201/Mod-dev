@@ -1,0 +1,8 @@
+inheritance:
+  family_default:
+    guaranteed_iv_count: 2
+    nature_chance: 0.5
+    ability_chance: 0.5
+    inherit_moves: true
+    aspect_mode: parent
+    personality_mode: parent_or_random

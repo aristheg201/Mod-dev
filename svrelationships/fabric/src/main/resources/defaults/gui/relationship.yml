@@ -1,0 +1,22 @@
+id: relationship
+screen: generic_9x6
+title_key: gui.relationship.title
+components:
+  bond:
+    slot: 20
+    item: minecraft:heart_of_the_sea
+    name_key: gui.relationship.bond
+    lore_keys: [gui.relationship.bond.value]
+    action: none
+  romance:
+    slot: 22
+    item: minecraft:pink_dye
+    name_key: gui.relationship.romance
+    lore_keys: [gui.relationship.romance.value]
+    action: none
+  reward:
+    slot: 24
+    item: minecraft:chest
+    name_key: gui.relationship.reward
+    lore_keys: [gui.relationship.reward.lore]
+    action: claim_reward
