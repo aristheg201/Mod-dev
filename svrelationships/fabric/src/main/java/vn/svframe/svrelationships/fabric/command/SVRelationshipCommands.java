@@ -4,8 +4,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
+import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.household.HouseholdService;
 import vn.svframe.svrelationships.fabric.localization.MessageService;
+import vn.svframe.svrelationships.gameplay.PartnerCapacityResolver;
 import vn.svframe.svrelationships.integration.IntegrationRegistry;
 import vn.svframe.svrelationships.integration.ProviderHub;
 
@@ -20,6 +22,7 @@ public final class SVRelationshipCommands {
 
     public static void register(
             ConfigService config,
+            GameplayDefinitionService gameplay,
             MessageService messages,
             HouseholdService households,
             IntegrationRegistry integrations,
@@ -35,6 +38,17 @@ public final class SVRelationshipCommands {
                         context.getSource().sendFeedback(() -> messages.text("command.status.summary", Map.of(
                                 "active", active,
                                 "available", available
+                        )), false);
+                        return 1;
+                    }))
+                    .then(literal("gameplay").executes(context -> {
+                        var snapshot = gameplay.snapshot();
+                        int capacity = resolveCapacity(context.getSource(), gameplay, providers);
+                        context.getSource().sendFeedback(() -> messages.text("command.gameplay.summary", Map.of(
+                                "tracks", snapshot.progressionTracks().size(),
+                                "routes", snapshot.routes().size(),
+                                "rewards", snapshot.rewardProfiles().size(),
+                                "capacity", capacity
                         )), false);
                         return 1;
                     }))
@@ -63,6 +77,11 @@ public final class SVRelationshipCommands {
                     .then(literal("config")
                             .requires(source -> canAdmin(source, config, providers))
                             .then(literal("reload").executes(context -> {
+                                var gameplayResult = gameplay.reload();
+                                if (!gameplayResult.success()) {
+                                    context.getSource().sendError(messages.text("config.reload.failure", Map.of("detail", gameplayResult.detail())));
+                                    return 0;
+                                }
                                 var result = config.reload();
                                 if (result.success()) {
                                     context.getSource().sendFeedback(() -> messages.text("config.reload.success"), false);
@@ -111,6 +130,16 @@ public final class SVRelationshipCommands {
                         return 1;
                     })));
         });
+    }
+
+    private static int resolveCapacity(ServerCommandSource source, GameplayDefinitionService gameplay, ProviderHub providers) {
+        var definition = gameplay.snapshot().partnerCapacity();
+        var player = source.getPlayer();
+        if (player == null || providers.permissionProvider().isEmpty()) {
+            return definition.fallback();
+        }
+        return new PartnerCapacityResolver().resolve(definition,
+                permission -> providers.permissionProvider().get().hasPermission(player.getUuid(), permission));
     }
 
     private static boolean canAdmin(ServerCommandSource source, ConfigService config, ProviderHub providers) {
