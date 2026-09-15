@@ -267,10 +267,10 @@ public final class SVRelationshipCommands {
     }
 
     private static RequiredArgumentBuilder<ServerCommandSource,String> pokemonArgument(String name, PokemonReferenceResolver refs) {
-        return argument(name, StringArgumentType.word()).suggests((c,b) -> { ServerPlayerEntity p = c.getSource().getPlayer(); if (p != null) addPokemonSuggestions(p, refs, b); return b.buildFuture(); });
+        return argument(name, PokemonReferenceArgumentType.reference()).suggests((c,b) -> { ServerPlayerEntity p = c.getSource().getPlayer(); if (p != null) addPokemonSuggestions(p, refs, b); return b.buildFuture(); });
     }
     private static RequiredArgumentBuilder<ServerCommandSource,String> adminPokemonArgument(String name, String playerArg, PokemonReferenceResolver refs) {
-        return argument(name, StringArgumentType.word()).suggests((c,b) -> { ServerPlayerEntity p = target(c.getSource(), StringArgumentType.getString(c,playerArg)); if (p != null) addPokemonSuggestions(p,refs,b); return b.buildFuture(); });
+        return argument(name, PokemonReferenceArgumentType.reference()).suggests((c,b) -> { ServerPlayerEntity p = target(c.getSource(), StringArgumentType.getString(c,playerArg)); if (p != null) addPokemonSuggestions(p,refs,b); return b.buildFuture(); });
     }
     private static void addPokemonSuggestions(ServerPlayerEntity p, PokemonReferenceResolver refs, SuggestionsBuilder b) { refs.suggestions(p).forEach(s -> b.suggest(s.value(), Text.literal(s.label()))); }
     private static RequiredArgumentBuilder<ServerCommandSource,String> playerArgument(String name) { return argument(name,StringArgumentType.word()).suggests((c,b) -> { c.getSource().getServer().getPlayerManager().getPlayerList().forEach(p -> b.suggest(p.getGameProfile().getName())); return b.buildFuture(); }); }
