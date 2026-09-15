@@ -1,0 +1,9 @@
+anniversaries:
+  yearly:
+    period: 365d
+    minimum_cycles: 1
+    reward_profile: anniversary_yearly
+    progression:
+      bond: 5
+      romance: 5
+    message_key: command.reward.delivered
