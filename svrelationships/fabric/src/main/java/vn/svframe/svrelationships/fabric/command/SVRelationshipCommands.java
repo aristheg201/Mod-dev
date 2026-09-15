@@ -4,11 +4,14 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
 import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.household.HouseholdService;
@@ -57,34 +60,34 @@ public final class SVRelationshipCommands {
 
     private static LiteralArgumentBuilder<ServerCommandSource> playerPokemonGui(PokemonReferenceResolver refs, RuntimeCoordinator rt, MessageService msg) {
         return literal("pokemon").then(pokemonArgument("pokemon", refs).executes(c ->
-                openPokemon(c.getSource(), refs, rt, msg, StringArgumentType.getString(c, "pokemon"))));
+                openPokemon(c.getSource(), refs, rt, msg, pokemonReference(c, "pokemon"))));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> playerInteraction(GameplayDefinitionService gameplay, PokemonReferenceResolver refs, RuntimeCoordinator rt, MessageService msg) {
         var id = argument("interaction", StringArgumentType.word())
                 .suggests((c,b) -> { gameplay.snapshot().interactions().keySet().stream().sorted().forEach(b::suggest); return b.buildFuture(); })
-                .executes(c -> interaction(c.getSource(), refs, rt, msg, StringArgumentType.getString(c,"pokemon"), StringArgumentType.getString(c,"interaction")));
+                .executes(c -> interaction(c.getSource(), refs, rt, msg, pokemonReference(c,"pokemon"), StringArgumentType.getString(c,"interaction")));
         return literal("interact").then(pokemonArgument("pokemon", refs).then(id));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> playerGift(GameplayDefinitionService gameplay, PokemonReferenceResolver refs, RuntimeCoordinator rt, MessageService msg) {
         var id = argument("gift", StringArgumentType.word())
                 .suggests((c,b) -> { gameplay.snapshot().gifts().keySet().stream().sorted().forEach(b::suggest); return b.buildFuture(); })
-                .executes(c -> gift(c.getSource(), refs, rt, msg, StringArgumentType.getString(c,"pokemon"), StringArgumentType.getString(c,"gift")));
+                .executes(c -> gift(c.getSource(), refs, rt, msg, pokemonReference(c,"pokemon"), StringArgumentType.getString(c,"gift")));
         return literal("gift").then(pokemonArgument("pokemon", refs).then(id));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> playerRomance(PokemonReferenceResolver refs, RuntimeCoordinator rt, MessageService msg) {
         var milestone = argument("milestone", StringArgumentType.word())
                 .suggests((c,b) -> { rt.rules().snapshot().partnership().milestones().keySet().stream().sorted().forEach(b::suggest); return b.buildFuture(); })
-                .executes(c -> advancePartnership(c.getSource(), refs, rt, msg, StringArgumentType.getString(c,"pokemon"), StringArgumentType.getString(c,"milestone")));
+                .executes(c -> advancePartnership(c.getSource(), refs, rt, msg, pokemonReference(c,"pokemon"), StringArgumentType.getString(c,"milestone")));
         return literal("romance").then(pokemonArgument("pokemon", refs).then(milestone));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> playerReward(GameplayDefinitionService gameplay, PokemonReferenceResolver refs, RuntimeCoordinator rt, MessageService msg) {
         var profile = argument("profile", StringArgumentType.word())
                 .suggests((c,b) -> { gameplay.snapshot().rewardProfiles().keySet().stream().sorted().forEach(b::suggest); return b.buildFuture(); })
-                .executes(c -> claimReward(c.getSource(), refs, rt, msg, StringArgumentType.getString(c,"pokemon"), StringArgumentType.getString(c,"profile")));
+                .executes(c -> claimReward(c.getSource(), refs, rt, msg, pokemonReference(c,"pokemon"), StringArgumentType.getString(c,"profile")));
         return literal("reward").then(pokemonArgument("pokemon", refs).then(profile));
     }
 
@@ -94,9 +97,9 @@ public final class SVRelationshipCommands {
         var definition = argument("definition", StringArgumentType.word())
                 .suggests((c,b) -> { gameplay.snapshot().daycareDefinitions().keySet().stream().sorted().forEach(b::suggest); return b.buildFuture(); });
         var first = pokemonArgument("pokemon1", refs).executes(c -> daycareStart(c.getSource(), refs, rt, msg,
-                StringArgumentType.getString(c,"definition"), List.of(StringArgumentType.getString(c,"pokemon1"))));
+                StringArgumentType.getString(c,"definition"), List.of(pokemonReference(c,"pokemon1"))));
         first.then(pokemonArgument("pokemon2", refs).executes(c -> daycareStart(c.getSource(), refs, rt, msg,
-                StringArgumentType.getString(c,"definition"), List.of(StringArgumentType.getString(c,"pokemon1"), StringArgumentType.getString(c,"pokemon2")))));
+                StringArgumentType.getString(c,"definition"), List.of(pokemonReference(c,"pokemon1"), pokemonReference(c,"pokemon2")))));
         definition.then(first);
         root.then(literal("start").then(definition));
         return root;
@@ -104,7 +107,7 @@ public final class SVRelationshipCommands {
 
     private static LiteralArgumentBuilder<ServerCommandSource> playerLineage(PokemonReferenceResolver refs, RuntimeCoordinator rt, MessageService msg) {
         return literal("lineage").then(pokemonArgument("pokemon", refs).executes(c ->
-                lineage(c.getSource(), refs, rt, msg, StringArgumentType.getString(c,"pokemon"))));
+                lineage(c.getSource(), refs, rt, msg, pokemonReference(c,"pokemon"))));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> integrationCommand(ConfigService config, MessageService msg, IntegrationRegistry integrations) {
@@ -137,7 +140,7 @@ public final class SVRelationshipCommands {
         pokemon.then(trackArgument(gameplay).executes(c -> {
             ServerPlayerEntity target = target(c.getSource(), StringArgumentType.getString(c,"player"));
             if (target == null) return playerMissing(c.getSource(), msg);
-            UUID id = resolve(target, refs, StringArgumentType.getString(c,"pokemon"));
+            UUID id = resolve(target, refs, pokemonReference(c,"pokemon"));
             if (id == null) return pokemonMissing(c.getSource(), msg);
             String track = StringArgumentType.getString(c,"track");
             long value = rt.relationships().progression(target.getUuid(), id, track);
@@ -158,7 +161,7 @@ public final class SVRelationshipCommands {
         var pokemon = adminPokemonArgument("pokemon", "player", refs);
         var track = trackArgument(gameplay);
         track.then(argument("value", LongArgumentType.longArg()).executes(c -> mutateProgression(c.getSource(), rt, msg, refs,
-                StringArgumentType.getString(c,"player"), StringArgumentType.getString(c,"pokemon"), StringArgumentType.getString(c,"track"),
+                StringArgumentType.getString(c,"player"), pokemonReference(c,"pokemon"), StringArgumentType.getString(c,"track"),
                 LongArgumentType.getLong(c,"value"), add)));
         pokemon.then(track); p.then(pokemon);
         return literal(name).then(p);
@@ -172,7 +175,7 @@ public final class SVRelationshipCommands {
         getPokemon.then(routeArgument(gameplay).executes(c -> {
             ServerPlayerEntity target = target(c.getSource(), StringArgumentType.getString(c,"player"));
             if (target == null) return playerMissing(c.getSource(), msg);
-            UUID id = resolve(target, refs, StringArgumentType.getString(c,"pokemon"));
+            UUID id = resolve(target, refs, pokemonReference(c,"pokemon"));
             if (id == null) return pokemonMissing(c.getSource(), msg);
             String route = StringArgumentType.getString(c,"route");
             String state = rt.relationships().currentRoute(target.getUuid(), id, route);
@@ -189,7 +192,7 @@ public final class SVRelationshipCommands {
                 .executes(c -> {
                     ServerPlayerEntity target = target(c.getSource(), StringArgumentType.getString(c,"player"));
                     if (target == null) return playerMissing(c.getSource(), msg);
-                    UUID id = resolve(target, refs, StringArgumentType.getString(c,"pokemon"));
+                    UUID id = resolve(target, refs, pokemonReference(c,"pokemon"));
                     if (id == null) return pokemonMissing(c.getSource(), msg);
                     String route = StringArgumentType.getString(c,"route"); String state = StringArgumentType.getString(c,"state");
                     rt.relationships().forceRoute(target.getUuid(), id, route, state);
@@ -211,7 +214,7 @@ public final class SVRelationshipCommands {
     private static LiteralArgumentBuilder<ServerCommandSource> partnerMutation(String name, boolean add, RuntimeCoordinator rt, MessageService msg, PokemonReferenceResolver refs) {
         var p = playerArgument("player");
         p.then(adminPokemonArgument("pokemon", "player", refs).executes(c -> adminPartnerMutate(c.getSource(), rt, msg, refs,
-                StringArgumentType.getString(c,"player"), StringArgumentType.getString(c,"pokemon"), add)));
+                StringArgumentType.getString(c,"player"), pokemonReference(c,"pokemon"), add)));
         return literal(name).then(p);
     }
 
@@ -223,7 +226,7 @@ public final class SVRelationshipCommands {
                 .executes(c -> {
                     ServerPlayerEntity target = target(c.getSource(), StringArgumentType.getString(c,"player"));
                     if (target == null) return playerMissing(c.getSource(), msg);
-                    UUID id = resolve(target, refs, StringArgumentType.getString(c,"pokemon"));
+                    UUID id = resolve(target, refs, pokemonReference(c,"pokemon"));
                     if (id == null) return pokemonMissing(c.getSource(), msg);
                     String personality = StringArgumentType.getString(c,"personality");
                     rt.relationships().setPersonality(target.getUuid(), id, personality);
@@ -252,7 +255,7 @@ public final class SVRelationshipCommands {
         var root = literal("debug");
         var p = playerArgument("player");
         p.then(adminPokemonArgument("pokemon", "player", refs).executes(c -> debugTrace(c.getSource(), rt, msg,
-                StringArgumentType.getString(c,"player"), StringArgumentType.getString(c,"pokemon"))));
+                StringArgumentType.getString(c,"player"), pokemonReference(c,"pokemon"))));
         root.then(literal("trace").then(p));
         root.then(literal("metrics").executes(c -> debugMetrics(c.getSource(), rt, msg)));
         return root;
@@ -266,12 +269,18 @@ public final class SVRelationshipCommands {
         return root;
     }
 
-    private static RequiredArgumentBuilder<ServerCommandSource,String> pokemonArgument(String name, PokemonReferenceResolver refs) {
-        return argument(name, PokemonReferenceArgumentType.reference()).suggests((c,b) -> { ServerPlayerEntity p = c.getSource().getPlayer(); if (p != null) addPokemonSuggestions(p, refs, b); return b.buildFuture(); });
+    private static RequiredArgumentBuilder<ServerCommandSource, Identifier> pokemonArgument(String name, PokemonReferenceResolver refs) {
+        return argument(name, IdentifierArgumentType.identifier()).suggests((c,b) -> { ServerPlayerEntity p = c.getSource().getPlayer(); if (p != null) addPokemonSuggestions(p, refs, b); return b.buildFuture(); });
     }
-    private static RequiredArgumentBuilder<ServerCommandSource,String> adminPokemonArgument(String name, String playerArg, PokemonReferenceResolver refs) {
-        return argument(name, PokemonReferenceArgumentType.reference()).suggests((c,b) -> { ServerPlayerEntity p = target(c.getSource(), StringArgumentType.getString(c,playerArg)); if (p != null) addPokemonSuggestions(p,refs,b); return b.buildFuture(); });
+
+    private static RequiredArgumentBuilder<ServerCommandSource, Identifier> adminPokemonArgument(String name, String playerArg, PokemonReferenceResolver refs) {
+        return argument(name, IdentifierArgumentType.identifier()).suggests((c,b) -> { ServerPlayerEntity p = target(c.getSource(), StringArgumentType.getString(c,playerArg)); if (p != null) addPokemonSuggestions(p,refs,b); return b.buildFuture(); });
     }
+
+    private static String pokemonReference(CommandContext<ServerCommandSource> context, String name) {
+        return IdentifierArgumentType.getIdentifier(context, name).toString();
+    }
+
     private static void addPokemonSuggestions(ServerPlayerEntity p, PokemonReferenceResolver refs, SuggestionsBuilder b) { refs.suggestions(p).forEach(s -> b.suggest(s.value(), Text.literal(s.label()))); }
     private static RequiredArgumentBuilder<ServerCommandSource,String> playerArgument(String name) { return argument(name,StringArgumentType.word()).suggests((c,b) -> { c.getSource().getServer().getPlayerManager().getPlayerList().forEach(p -> b.suggest(p.getGameProfile().getName())); return b.buildFuture(); }); }
     private static RequiredArgumentBuilder<ServerCommandSource,String> trackArgument(GameplayDefinitionService gameplay) { return argument("track",StringArgumentType.word()).suggests((c,b) -> { gameplay.snapshot().progressionTracks().keySet().stream().sorted().forEach(b::suggest); return b.buildFuture(); }); }
