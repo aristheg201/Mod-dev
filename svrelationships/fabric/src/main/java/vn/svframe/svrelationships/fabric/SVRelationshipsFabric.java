@@ -18,11 +18,20 @@ import vn.svframe.svrelationships.fabric.runtime.RuntimeCoordinator;
 import vn.svframe.svrelationships.integration.IntegrationRegistry;
 import vn.svframe.svrelationships.integration.ProviderHub;
 
+import java.io.IOException;
+
 public final class SVRelationshipsFabric implements ModInitializer {
     public static final String MOD_ID="svrelationships";
     public static final Logger LOGGER=LoggerFactory.getLogger(MOD_ID);
+
     @Override public void onInitialize(){
         var root=FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
+        try {
+            BundledDefaults.installAll(root);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to install SVRelationships bundled defaults", exception);
+        }
+
         var config=new ConfigService(root);config.initialize();
         var gameplay=new GameplayDefinitionService(root);gameplay.initialize();
         var rules=new RelationshipRuleService(root);rules.initialize();
