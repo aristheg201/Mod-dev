@@ -1,0 +1,15 @@
+allprojects {
+    group = 'vn.svframe.svrelationships'
+    version = '0.1.0-dev.1'
+
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.nucleoid.xyz/' }
+        maven { url = 'https://repo.lucko.me/' }
+        maven {
+            url = 'https://api.modrinth.com/maven'
+            content { includeGroup 'maven.modrinth' }
+        }
+    }
+}
