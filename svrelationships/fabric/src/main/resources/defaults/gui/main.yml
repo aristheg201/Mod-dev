@@ -7,16 +7,19 @@ components:
     item: minecraft:heart_of_the_sea
     name_key: gui.main.relationships
     lore_keys: [gui.main.relationships.lore]
-    action: open_relationship
+    action: open_gui
+    args: {id: owned}
   partners:
     slot: 22
     item: minecraft:rose_bush
     name_key: gui.main.partners
     lore_keys: [gui.main.partners.lore]
-    action: list_partners
+    action: open_gui
+    args: {id: partners}
   daycare:
     slot: 24
     item: minecraft:egg
     name_key: gui.main.daycare
     lore_keys: [gui.main.daycare.lore]
-    action: open_daycare
+    action: open_gui
+    args: {id: daycare}

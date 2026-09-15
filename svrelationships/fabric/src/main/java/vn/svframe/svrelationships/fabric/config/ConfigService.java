@@ -10,12 +10,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 public final class ConfigService {
     private final Path root;
@@ -30,6 +32,8 @@ public final class ConfigService {
             installDefault("/defaults/households.yml", root.resolve("households.yml"));
             installDefault("/defaults/lang/en_us.yml", root.resolve("lang/en_us.yml"));
             installDefault("/defaults/lang/vi_vn.yml", root.resolve("lang/vi_vn.yml"));
+            installDefault("/defaults/lang/en_us_gui.yml", root.resolve("lang/en_us_gui.yml"));
+            installDefault("/defaults/lang/vi_vn_gui.yml", root.resolve("lang/vi_vn_gui.yml"));
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to install SVRelationships defaults", exception);
         }
@@ -52,7 +56,7 @@ public final class ConfigService {
             List<String> economyPriority = stringList(economy, "priority");
             Map<String, ConfigSnapshot.HouseholdProfile> profiles = parseHouseholds(households);
             if (!profiles.containsKey(defaultProfile)) throw new IllegalArgumentException("Unknown default household profile: " + defaultProfile);
-            Map<String, String> messages = loadMessages(root.resolve("lang").resolve(locale + ".yml"));
+            Map<String, String> messages = loadMessages(locale);
             snapshot.set(new ConfigSnapshot(generation.incrementAndGet(), locale, adminPermission, defaultProfile, profiles, economyPriority, messages));
             return new ReloadResult(true, "");
         } catch (Exception exception) {
@@ -69,17 +73,30 @@ public final class ConfigService {
             int maxMaterialized = integer(values, "max_materialized_partners");
             String boundary = string(values, "boundary");
             int interval = optionalInteger(values, "evaluation_interval_ticks", 20);
-            if (active < 0 || deactivate < active || maxMaterialized < 0 || interval < 1) {
-                throw new IllegalArgumentException("Invalid household spatial limits: " + entry.getKey());
-            }
+            if (active < 0 || deactivate < active || maxMaterialized < 0 || interval < 1) throw new IllegalArgumentException("Invalid household spatial limits: " + entry.getKey());
             result.put(entry.getKey(), new ConfigSnapshot.HouseholdProfile(active, deactivate, maxMaterialized, boundary, interval));
         }
         return result;
     }
 
-    private Map<String, String> loadMessages(Path path) throws IOException {
+    private Map<String, String> loadMessages(String locale) throws IOException {
+        Path directory = root.resolve("lang");
+        if (!Files.isDirectory(directory)) throw new IllegalArgumentException("Language directory does not exist: " + directory);
         Map<String, String> result = new LinkedHashMap<>();
-        load(path).forEach((key, value) -> result.put(key, String.valueOf(value)));
+        String prefix = locale + ".";
+        String modulePrefix = locale + "_";
+        try (Stream<Path> stream = Files.list(directory)) {
+            List<Path> files = stream.filter(Files::isRegularFile)
+                    .filter(path -> { String name = path.getFileName().toString(); return name.equals(prefix + "yml") || (name.startsWith(modulePrefix) && name.endsWith(".yml")); })
+                    .sorted(Comparator.comparing(path -> path.getFileName().toString())).toList();
+            if (files.isEmpty()) throw new IllegalArgumentException("No language files found for locale: " + locale);
+            for (Path file : files) {
+                for (var entry : load(file).entrySet()) {
+                    String previous = result.putIfAbsent(entry.getKey(), String.valueOf(entry.getValue()));
+                    if (previous != null) throw new IllegalArgumentException("Duplicate localization key " + entry.getKey() + " in " + file.getFileName());
+                }
+            }
+        }
         return result;
     }
 
@@ -87,35 +104,12 @@ public final class ConfigService {
         Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
         try (InputStream input = Files.newInputStream(path)) { return mapValue(yaml.load(input), path.getFileName().toString()); }
     }
-
-    private void installDefault(String resource, Path target) throws IOException {
-        if (Files.exists(target)) return;
-        Files.createDirectories(target.getParent());
-        try (InputStream input = ConfigService.class.getResourceAsStream(resource)) {
-            if (input == null) throw new IOException("Missing bundled resource: " + resource);
-            Files.copy(input, target, StandardCopyOption.COPY_ATTRIBUTES);
-        }
-    }
-
+    private void installDefault(String resource, Path target) throws IOException { if (Files.exists(target)) return; Files.createDirectories(target.getParent()); try (InputStream input = ConfigService.class.getResourceAsStream(resource)) { if (input == null) throw new IOException("Missing bundled resource: " + resource); Files.copy(input, target, StandardCopyOption.COPY_ATTRIBUTES); } }
     private static Map<String, Object> map(Map<String, Object> source, String key) { return mapValue(source.get(key), key); }
-    private static Map<String, Object> mapValue(Object value, String label) {
-        if (!(value instanceof Map<?, ?> raw)) throw new IllegalArgumentException("Expected map at " + label);
-        Map<String, Object> result = new LinkedHashMap<>();
-        raw.forEach((key, item) -> result.put(String.valueOf(key), item));
-        return result;
-    }
-    private static String string(Map<String, Object> source, String key) {
-        Object value = source.get(key); if (value == null) throw new IllegalArgumentException("Missing key: " + key); return String.valueOf(value);
-    }
-    private static int integer(Map<String, Object> source, String key) {
-        Object value = source.get(key); return value instanceof Number number ? number.intValue() : Integer.parseInt(string(source, key));
-    }
-    private static int optionalInteger(Map<String, Object> source, String key, int fallback) {
-        Object value = source.get(key); return value == null ? fallback : value instanceof Number number ? number.intValue() : Integer.parseInt(String.valueOf(value));
-    }
-    private static List<String> stringList(Map<String, Object> source, String key) {
-        Object value = source.get(key); if (!(value instanceof List<?> raw)) throw new IllegalArgumentException("Expected list at " + key);
-        List<String> result = new ArrayList<>(raw.size()); raw.forEach(item -> result.add(String.valueOf(item))); return result;
-    }
+    private static Map<String, Object> mapValue(Object value, String label) { if (!(value instanceof Map<?, ?> raw)) throw new IllegalArgumentException("Expected map at " + label); Map<String, Object> result = new LinkedHashMap<>(); raw.forEach((key, item) -> result.put(String.valueOf(key), item)); return result; }
+    private static String string(Map<String, Object> source, String key) { Object value = source.get(key); if (value == null) throw new IllegalArgumentException("Missing key: " + key); return String.valueOf(value); }
+    private static int integer(Map<String, Object> source, String key) { Object value = source.get(key); return value instanceof Number number ? number.intValue() : Integer.parseInt(string(source, key)); }
+    private static int optionalInteger(Map<String, Object> source, String key, int fallback) { Object value = source.get(key); return value == null ? fallback : value instanceof Number number ? number.intValue() : Integer.parseInt(String.valueOf(value)); }
+    private static List<String> stringList(Map<String, Object> source, String key) { Object value = source.get(key); if (!(value instanceof List<?> raw)) throw new IllegalArgumentException("Expected list at " + key); List<String> result = new ArrayList<>(raw.size()); raw.forEach(item -> result.add(String.valueOf(item))); return result; }
     public record ReloadResult(boolean success, String detail) {}
 }

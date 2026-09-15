@@ -1,0 +1,16 @@
+id: daycare
+screen: generic_9x6
+title_key: gui.daycare.title
+components:
+  previous: {slot: 45, item: minecraft:arrow, name_key: gui.navigation.previous, lore_keys: [], action: page_previous}
+  family: {slot: 48, item: minecraft:book, name_key: gui.daycare.family, lore_keys: [gui.daycare.family.lore], action: open_gui, args: {id: family}}
+  back: {slot: 49, item: minecraft:barrier, name_key: gui.navigation.back, lore_keys: [], action: open_gui, args: {id: main}}
+  next: {slot: 53, item: minecraft:arrow, name_key: gui.navigation.next, lore_keys: [], action: page_next}
+repeaters:
+  sessions:
+    source: daycare_sessions
+    slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+    item: minecraft:egg
+    name_key: gui.daycare.entry
+    lore_keys: [gui.daycare.entry.status, gui.daycare.entry.definition, gui.daycare.entry.participants]
+    action: none

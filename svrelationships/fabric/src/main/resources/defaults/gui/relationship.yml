@@ -2,63 +2,55 @@ id: relationship
 screen: generic_9x6
 title_key: gui.relationship.title
 components:
-  bond:
-    slot: 10
-    item: minecraft:heart_of_the_sea
-    name_key: gui.relationship.bond
-    lore_keys: [gui.relationship.bond.value]
-    action: none
-  romance:
-    slot: 12
-    item: minecraft:pink_dye
-    name_key: gui.relationship.romance
-    lore_keys: [gui.relationship.romance.value]
-    action: none
+  bond: {slot: 10, item: minecraft:heart_of_the_sea, name_key: gui.relationship.bond, lore_keys: [gui.relationship.bond.value], action: none}
+  romance: {slot: 12, item: minecraft:pink_dye, name_key: gui.relationship.romance, lore_keys: [gui.relationship.romance.value], action: none}
   talk:
     slot: 19
     item: minecraft:book
     name_key: gui.relationship.talk
     lore_keys: [gui.relationship.talk.lore]
     action: interaction
-    args:
-      id: daily_talk
+    args: {id: daily_talk}
   gift:
     slot: 21
     item: minecraft:poppy
     name_key: gui.relationship.gift
     lore_keys: [gui.relationship.gift.lore]
     action: gift
-    args:
-      id: flower
+    args: {id: flower}
   dating:
     slot: 28
     item: minecraft:allium
     name_key: gui.relationship.dating
     lore_keys: [gui.relationship.dating.lore]
     action: advance_partnership
-    args:
-      milestone: dating
+    args: {milestone: dating}
   engaged:
     slot: 30
     item: minecraft:diamond
     name_key: gui.relationship.engaged
     lore_keys: [gui.relationship.engaged.lore]
     action: advance_partnership
-    args:
-      milestone: engaged
+    args: {milestone: engaged}
   married:
     slot: 32
     item: minecraft:golden_apple
     name_key: gui.relationship.married
     lore_keys: [gui.relationship.married.lore]
-    action: advance_partnership
-    args:
-      milestone: married
+    action: ceremony
+    args: {id: wedding}
   reward:
     slot: 34
     item: minecraft:chest
     name_key: gui.relationship.reward
     lore_keys: [gui.relationship.reward.lore]
     action: claim_reward
-    args:
-      profile: partner_daily
+    args: {profile: partner_daily}
+  back:
+    slot: 49
+    item: minecraft:barrier
+    name_key: gui.navigation.back
+    lore_keys: []
+    action: open_gui
+    args: {id: owned}
+repeaters: {}

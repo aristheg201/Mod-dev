@@ -1,0 +1,31 @@
+id: owned
+screen: generic_9x6
+title_key: gui.owned.title
+components:
+  previous:
+    slot: 45
+    item: minecraft:arrow
+    name_key: gui.navigation.previous
+    lore_keys: []
+    action: page_previous
+  back:
+    slot: 49
+    item: minecraft:barrier
+    name_key: gui.navigation.back
+    lore_keys: []
+    action: open_gui
+    args: {id: main}
+  next:
+    slot: 53
+    item: minecraft:arrow
+    name_key: gui.navigation.next
+    lore_keys: []
+    action: page_next
+repeaters:
+  pokemon:
+    source: owned_pokemon
+    slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+    item: minecraft:player_head
+    name_key: gui.owned.entry
+    lore_keys: [gui.owned.entry.lore]
+    action: open_relationship
