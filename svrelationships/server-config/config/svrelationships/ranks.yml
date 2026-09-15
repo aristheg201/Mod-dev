@@ -1,0 +1,4 @@
+partner_capacity:
+  fallback: 9999
+  downgrade_policy: grandfather_existing
+  rules: []

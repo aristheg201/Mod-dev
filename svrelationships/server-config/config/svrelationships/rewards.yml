@@ -1,6 +1,5 @@
 profiles:
   partner_daily:
-    # Profile này chỉ được phát tự động bởi automatic-rewards.yml.
     trigger_type: automatic_minecraft_time
     period: 1d
     scope: per_partner
@@ -26,9 +25,4 @@ profiles:
     period: 365d
     scope: per_partner
     entries:
-      - id: anniversary_currency
-        weight: 100
-        reward_type: economy
-        value: default
-        minimum_amount: 500
-        maximum_amount: 1000
+      - {id: anniversary_currency, weight: 100, reward_type: economy, value: default, minimum_amount: 500, maximum_amount: 1000}

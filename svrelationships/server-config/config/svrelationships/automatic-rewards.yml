@@ -1,0 +1,9 @@
+automatic_rewards:
+  morning_partner_gift:
+    reward_profile: partner_daily
+    require_partner: true
+    clock_dimension: minecraft:overworld
+    start_tick: 0
+    end_tick: 3000
+    evaluation_interval_ticks: 20
+    message_key: reward.automatic.morning_summary

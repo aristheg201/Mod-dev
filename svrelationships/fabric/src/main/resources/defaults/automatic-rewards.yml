@@ -1,0 +1,10 @@
+automatic_rewards:
+  morning_partner_gift:
+    reward_profile: partner_daily
+    require_partner: true
+    clock_dimension: minecraft:overworld
+    # Minecraft day bắt đầu ở tick 0; 0..3000 là buổi sáng sớm.
+    start_tick: 0
+    end_tick: 3000
+    evaluation_interval_ticks: 20
+    message_key: reward.automatic.morning_summary

@@ -7,5 +7,4 @@ profiles:
   partner_daily:
     offline_policy: current_only
     max_pending_periods: 1
-    # Nếu inventory đầy, món quà được thả cạnh người chơi thay vì mất.
     overflow_policy: drop

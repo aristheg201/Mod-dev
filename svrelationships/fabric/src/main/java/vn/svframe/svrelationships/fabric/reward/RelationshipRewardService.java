@@ -44,6 +44,7 @@ public final class RelationshipRewardService {
     public ClaimResult claim(ServerPlayerEntity player, UUID pokemonId, String profileId, long nowMillis) {
         RewardProfileDefinition profile = definitions.snapshot().rewardProfiles().get(profileId);
         if (profile == null) return ClaimResult.UNKNOWN_PROFILE;
+        if ("automatic_minecraft_time".equals(profile.triggerType())) return ClaimResult.NOT_ELIGIBLE;
         RelationshipState relationship = relationships.state(player.getUuid(), pokemonId);
         if (!relationship.partner()) return ClaimResult.NOT_ELIGIBLE;
         long duration = GameplayDefinitionService.durationMillis(profile.period());
