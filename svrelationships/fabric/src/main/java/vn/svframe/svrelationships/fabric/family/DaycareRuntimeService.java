@@ -8,15 +8,18 @@ import vn.svframe.svrelationships.fabric.persistence.LineageRepository;
 import vn.svframe.svrelationships.fabric.relationship.RelationshipService;
 import vn.svframe.svrelationships.family.DaycareEngine;
 import vn.svframe.svrelationships.family.DaycareSession;
+import vn.svframe.svrelationships.family.InheritanceDefinition;
 import vn.svframe.svrelationships.family.LineageRecord;
 import vn.svframe.svrelationships.integration.EconomyProvider;
 import vn.svframe.svrelationships.integration.ProviderHub;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.PriorityQueue;
+import java.util.SplittableRandom;
 import java.util.UUID;
 
 public final class DaycareRuntimeService {
@@ -102,7 +105,7 @@ public final class DaycareRuntimeService {
             repository.put(session.withStatus("INVALID_DEFINITION"));
             return false;
         }
-        var inheritance = definitions.snapshot().inheritanceDefinitions().get(definition.inheritanceProfile());
+        InheritanceDefinition inheritance = definitions.snapshot().inheritanceDefinitions().get(definition.inheritanceProfile());
         if (inheritance == null) {
             repository.put(session.withStatus("INVALID_INHERITANCE"));
             return false;
@@ -137,8 +140,36 @@ public final class DaycareRuntimeService {
         ));
         repository.put(session.completed(pokemonId));
         relationships.state(session.ownerId(), pokemonId);
+        inheritPersonality(session.ownerId(), pokemonId, session.participantPokemonIds(), inheritance, seed);
         if (householdId != null) relationships.assignHousehold(session.ownerId(), pokemonId, householdId);
         return true;
+    }
+
+    private void inheritPersonality(UUID ownerId, UUID offspringId, List<UUID> parents,
+                                    InheritanceDefinition inheritance, long seed) {
+        String mode = inheritance.personalityMode() == null ? "none" : inheritance.personalityMode().toLowerCase(java.util.Locale.ROOT);
+        if ("none".equals(mode)) return;
+
+        List<String> inherited = new ArrayList<>();
+        for (UUID parentId : parents) {
+            relationships.existing(ownerId, parentId)
+                    .map(state -> state.personalityId())
+                    .filter(java.util.Objects::nonNull)
+                    .filter(value -> !value.isBlank())
+                    .ifPresent(inherited::add);
+        }
+        inherited.sort(String::compareTo);
+
+        SplittableRandom random = new SplittableRandom(seed ^ 0x535652504552534fL);
+        String selected = null;
+        if (("parent".equals(mode) || "parent_or_random".equals(mode)) && !inherited.isEmpty()) {
+            selected = inherited.get(random.nextInt(inherited.size()));
+        }
+        if (selected == null && ("random".equals(mode) || "parent_or_random".equals(mode))) {
+            List<String> available = definitions.snapshot().personalities().keySet().stream().sorted().toList();
+            if (!available.isEmpty()) selected = available.get(random.nextInt(available.size()));
+        }
+        if (selected != null) relationships.setPersonality(ownerId, offspringId, selected);
     }
 
     public List<DaycareSession> sessions(UUID ownerId) { return repository.byOwner(ownerId); }
