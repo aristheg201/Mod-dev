@@ -27,7 +27,7 @@ public final class MessageService {
     }
 
     public Text text(String key, Map<String, ?> placeholders) {
-        String template = config.snapshot().messages().getOrDefault(key, "<red><missing:" + key + "></red>");
+        String template = config.snapshot().messages().getOrDefault(key, "<red>Missing localization: " + key + "</red>");
         TagResolver.Builder resolver = TagResolver.builder();
         for (Map.Entry<String, ?> entry : placeholders.entrySet()) {
             String name = entry.getKey();
