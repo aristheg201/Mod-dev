@@ -8,6 +8,7 @@ public record CeremonyDefinition(
         String requiredRoute,
         String requiredState,
         String partnershipMilestone,
+        boolean exclusiveMilestone,
         boolean requireHousehold,
         boolean repeatable,
         long cooldownMillis,

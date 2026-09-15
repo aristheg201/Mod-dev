@@ -1,63 +1,10 @@
 package vn.svframe.svrelationships.fabric.command;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import vn.svframe.svrelationships.fabric.config.CeremonyDefinitionService;
-import vn.svframe.svrelationships.fabric.localization.MessageService;
-import vn.svframe.svrelationships.fabric.runtime.RuntimeCoordinator;
-import vn.svframe.svrelationships.fabric.relationship.PartnershipService;
-
-import java.util.Map;
-import java.util.UUID;
-
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import com.mojang.brigadier.arguments.StringArgumentType;import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;import net.minecraft.server.command.ServerCommandSource;import net.minecraft.server.network.ServerPlayerEntity;import vn.svframe.svrelationships.fabric.config.CeremonyDefinitionService;import vn.svframe.svrelationships.fabric.localization.MessageService;import vn.svframe.svrelationships.fabric.runtime.RuntimeCoordinator;import vn.svframe.svrelationships.fabric.relationship.PartnershipService;import java.util.Map;import java.util.UUID;import static net.minecraft.server.command.CommandManager.argument;import static net.minecraft.server.command.CommandManager.literal;
 
 public final class LifeEventCommands {
-    private LifeEventCommands() {}
-
-    public static void register(CeremonyDefinitionService ceremonies, RuntimeCoordinator runtime, MessageService messages) {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            PokemonReferenceResolver references = new PokemonReferenceResolver(runtime.relationships());
-            dispatcher.register(literal("svrel").then(literal("ceremony")
-                    .then(argument("pokemon", StringArgumentType.word()).suggests((context,builder)->{
-                        ServerPlayerEntity player=context.getSource().getPlayer(); if(player!=null) references.suggestions(player).forEach(s->builder.suggest(s.value())); return builder.buildFuture();
-                    }).then(argument("ceremony", StringArgumentType.word()).suggests((context,builder)->{
-                        ceremonies.snapshot().definitions().keySet().stream().sorted().forEach(builder::suggest); return builder.buildFuture();
-                    }).executes(context -> execute(context.getSource(), references, runtime, messages,
-                            StringArgumentType.getString(context,"pokemon"), StringArgumentType.getString(context,"ceremony")))))));
-        });
-    }
-
-    private static int execute(ServerCommandSource source, PokemonReferenceResolver references, RuntimeCoordinator runtime, MessageService messages, String pokemonReference, String ceremonyId) {
-        ServerPlayerEntity player=source.getPlayer(); if(player==null){source.sendError(messages.text("command.player.required"));return 0;}
-        UUID pokemon=references.resolve(player,pokemonReference).orElse(null); if(pokemon==null){source.sendError(messages.text("command.pokemon.unknown"));return 0;}
-        var result=runtime.ceremonies().perform(player.getUuid(),pokemon,ceremonyId,System.currentTimeMillis());
-        if(result.status()==vn.svframe.svrelationships.fabric.relationship.CeremonyService.Status.SUCCESS){source.sendFeedback(()->messages.text(result.messageKey(), Map.of("pokemon",pokemon)),false);return 1;}
-        String key=switch(result.status()){
-            case UNKNOWN_DEFINITION -> "command.argument.invalid";
-            case ALREADY_COMPLETED, COOLDOWN, ROUTE_REQUIRED -> "command.partnership.invalid_route_transition";
-            case HOUSEHOLD_REQUIRED -> "command.partnership.household_required";
-            case PARTNERSHIP_FAILED -> partnershipKey(result.partnershipResult());
-            default -> "command.argument.invalid";
-        };
-        source.sendError(messages.text(key)); return 0;
-    }
-
-    private static String partnershipKey(PartnershipService.Result result){
-        if(result==null)return "command.argument.invalid";
-        return switch(result){
-            case UNKNOWN_MILESTONE -> "command.partnership.unknown_milestone";
-            case POKEMON_PROVIDER_UNAVAILABLE -> "command.partnership.pokemon_provider_unavailable";
-            case NOT_OWNED -> "command.partnership.not_owned";
-            case SELECTOR_REJECTED -> "command.partnership.selector_rejected";
-            case HOUSEHOLD_REQUIRED -> "command.partnership.household_required";
-            case PROGRESSION_REQUIRED -> "command.partnership.progression_required";
-            case CAPACITY_FULL -> "command.partnership.capacity_full";
-            case INVALID_ROUTE_TRANSITION -> "command.partnership.invalid_route_transition";
-            case SUCCESS -> "command.partnership.success";
-        };
-    }
+    private LifeEventCommands(){}
+    public static void register(CeremonyDefinitionService ceremonies,RuntimeCoordinator runtime,MessageService messages){CommandRegistrationCallback.EVENT.register((dispatcher,registryAccess,environment)->{PokemonReferenceResolver references=new PokemonReferenceResolver(runtime.relationships());dispatcher.register(literal("svrel").then(literal("ceremony").then(argument("pokemon",StringArgumentType.word()).suggests((context,builder)->{ServerPlayerEntity player=context.getSource().getPlayer();if(player!=null)references.suggestions(player).forEach(s->builder.suggest(s.value()));return builder.buildFuture();}).then(argument("ceremony",StringArgumentType.word()).suggests((context,builder)->{ceremonies.snapshot().definitions().keySet().stream().sorted().forEach(builder::suggest);return builder.buildFuture();}).executes(context->execute(context.getSource(),references,runtime,messages,StringArgumentType.getString(context,"pokemon"),StringArgumentType.getString(context,"ceremony")))))));});}
+    private static int execute(ServerCommandSource source,PokemonReferenceResolver references,RuntimeCoordinator runtime,MessageService messages,String pokemonReference,String ceremonyId){ServerPlayerEntity player=source.getPlayer();if(player==null){source.sendError(messages.text("command.player.required"));return 0;}UUID pokemon=references.resolve(player,pokemonReference).orElse(null);if(pokemon==null){source.sendError(messages.text("command.pokemon.unknown"));return 0;}var result=runtime.ceremonies().perform(player.getUuid(),pokemon,ceremonyId,System.currentTimeMillis());if(result.status()==vn.svframe.svrelationships.fabric.relationship.CeremonyService.Status.SUCCESS){source.sendFeedback(()->messages.text(result.messageKey(),Map.of("pokemon",pokemon)),false);return 1;}String key=switch(result.status()){case UNKNOWN_DEFINITION->"command.argument.invalid";case ALREADY_COMPLETED,COOLDOWN,ROUTE_REQUIRED->"command.partnership.invalid_route_transition";case HOUSEHOLD_REQUIRED->"command.partnership.household_required";case PARTNERSHIP_FAILED->partnershipKey(result.partnershipResult());default->"command.argument.invalid";};source.sendError(messages.text(key));return 0;}
+    private static String partnershipKey(PartnershipService.Result result){if(result==null)return "command.argument.invalid";return switch(result){case UNKNOWN_MILESTONE->"command.partnership.unknown_milestone";case POKEMON_PROVIDER_UNAVAILABLE->"command.partnership.pokemon_provider_unavailable";case NOT_OWNED->"command.partnership.not_owned";case SELECTOR_REJECTED->"command.partnership.selector_rejected";case HOUSEHOLD_REQUIRED->"command.partnership.household_required";case PROGRESSION_REQUIRED->"command.partnership.progression_required";case CAPACITY_FULL->"command.partnership.capacity_full";case INVALID_ROUTE_TRANSITION->"command.partnership.invalid_route_transition";case SUCCESS->"command.partnership.success";};}
 }
