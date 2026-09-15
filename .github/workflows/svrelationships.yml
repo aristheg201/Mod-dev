@@ -35,9 +35,24 @@ jobs:
       - name: Compile and test
         run: gradle --no-daemon clean test :fabric:remapJar
 
-      - name: Upload artifact
+      - name: Prepare full server config pack
+        run: |
+          rm -rf dist
+          mkdir -p dist/config/svrelationships
+          cp -R fabric/src/main/resources/defaults/. dist/config/svrelationships/
+          cp -R server-config/config/svrelationships/. dist/config/svrelationships/
+          cp server-config/README.md dist/README-CONFIG.md
+
+      - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SVRelationships-${{ github.sha }}
+          name: SVRelationships-JAR-${{ github.sha }}
           path: svrelationships/fabric/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Upload config artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SVRelationships-CONFIG-${{ github.sha }}
+          path: svrelationships/dist/**
           if-no-files-found: error
