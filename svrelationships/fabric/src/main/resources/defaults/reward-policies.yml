@@ -1,0 +1,10 @@
+default:
+  offline_policy: current_only
+  max_pending_periods: 1
+  overflow_policy: drop
+
+profiles:
+  partner_daily:
+    offline_policy: accumulate
+    max_pending_periods: 7
+    overflow_policy: deny

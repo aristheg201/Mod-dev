@@ -4,6 +4,7 @@ import net.minecraft.server.MinecraftServer;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
 import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.config.RelationshipRuleService;
+import vn.svframe.svrelationships.fabric.config.RewardPolicyService;
 import vn.svframe.svrelationships.fabric.diagnostics.RuntimeMetrics;
 import vn.svframe.svrelationships.fabric.family.DaycareRuntimeService;
 import vn.svframe.svrelationships.fabric.gui.GuiDefinitionService;
@@ -29,6 +30,7 @@ public final class RuntimeCoordinator implements AutoCloseable {
     private final ConfigService config;
     private final GameplayDefinitionService gameplay;
     private final RelationshipRuleService rules;
+    private final RewardPolicyService rewardPolicies;
     private final GuiDefinitionService guiDefinitions;
     private final MessageService messages;
     private final HouseholdService households;
@@ -47,13 +49,14 @@ public final class RuntimeCoordinator implements AutoCloseable {
     private final AtomicReference<HouseholdMaterializationService> materialization = new AtomicReference<>();
 
     public RuntimeCoordinator(ConfigService config, GameplayDefinitionService gameplay, RelationshipRuleService rules,
-                              GuiDefinitionService guiDefinitions, MessageService messages, HouseholdService households,
-                              ProviderHub providers, RelationshipRepository relationshipsRepository,
-                              DaycareRepository daycareRepository, LineageRepository lineageRepository,
-                              RewardClaimRepository rewardClaims) {
+                              RewardPolicyService rewardPolicies, GuiDefinitionService guiDefinitions,
+                              MessageService messages, HouseholdService households, ProviderHub providers,
+                              RelationshipRepository relationshipsRepository, DaycareRepository daycareRepository,
+                              LineageRepository lineageRepository, RewardClaimRepository rewardClaims) {
         this.config = config;
         this.gameplay = gameplay;
         this.rules = rules;
+        this.rewardPolicies = rewardPolicies;
         this.guiDefinitions = guiDefinitions;
         this.messages = messages;
         this.households = households;
@@ -65,7 +68,7 @@ public final class RuntimeCoordinator implements AutoCloseable {
         this.relationships = new RelationshipService(relationshipsRepository, gameplay, providers);
         this.interactions = new LifeInteractionService(gameplay, relationships);
         this.partnerships = new PartnershipService(gameplay, rules, relationships, households, providers);
-        this.rewards = new RelationshipRewardService(config, gameplay, relationships, providers, rewardClaims);
+        this.rewards = new RelationshipRewardService(config, gameplay, relationships, providers, rewardClaims, rewardPolicies);
     }
 
     public void start(MinecraftServer server) {
@@ -83,7 +86,8 @@ public final class RuntimeCoordinator implements AutoCloseable {
         if (householdService != null) householdService.tick();
         metrics.add("runtime.tick_nanos", System.nanoTime() - started);
         metrics.increment("runtime.tick_count");
-        metrics.gauge("relationship.total", relationshipsRepository.snapshot().size());
+        metrics.gauge("relationship.total", relationshipsRepository.size());
+        metrics.gauge("reward.claims", rewardClaims.size());
     }
 
     public ReloadResult reloadAll() {
@@ -91,6 +95,8 @@ public final class RuntimeCoordinator implements AutoCloseable {
         if (!gameplayResult.success()) return new ReloadResult(false, gameplayResult.detail());
         var rulesResult = rules.reload();
         if (!rulesResult.success()) return new ReloadResult(false, rulesResult.detail());
+        var rewardPolicyResult = rewardPolicies.reload();
+        if (!rewardPolicyResult.success()) return new ReloadResult(false, rewardPolicyResult.detail());
         var guiResult = guiDefinitions.reload();
         if (!guiResult.success()) return new ReloadResult(false, guiResult.detail());
         var configResult = config.reload();
@@ -112,6 +118,7 @@ public final class RuntimeCoordinator implements AutoCloseable {
 
     @Override
     public void close() {
+        rewardClaims.close();
         relationshipsRepository.close();
         daycareRepository.close();
     }

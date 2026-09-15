@@ -10,6 +10,7 @@ import vn.svframe.svrelationships.fabric.command.SVRelationshipCommands;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
 import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.config.RelationshipRuleService;
+import vn.svframe.svrelationships.fabric.config.RewardPolicyService;
 import vn.svframe.svrelationships.fabric.gui.GuiDefinitionService;
 import vn.svframe.svrelationships.fabric.household.HouseholdRepository;
 import vn.svframe.svrelationships.fabric.household.HouseholdService;
@@ -37,6 +38,8 @@ public final class SVRelationshipsFabric implements ModInitializer {
         gameplay.initialize();
         var rules = new RelationshipRuleService(root);
         rules.initialize();
+        var rewardPolicies = new RewardPolicyService(root);
+        rewardPolicies.initialize();
         var guiDefinitions = new GuiDefinitionService(root);
         var guiReload = guiDefinitions.reload();
         if (!guiReload.success()) throw new IllegalStateException("Unable to load GUI definitions: " + guiReload.detail());
@@ -58,7 +61,7 @@ public final class SVRelationshipsFabric implements ModInitializer {
         var integrations = new IntegrationRegistry();
         var providers = new ProviderHub();
         var runtime = new RuntimeCoordinator(
-                config, gameplay, rules, guiDefinitions, messages, households, providers,
+                config, gameplay, rules, rewardPolicies, guiDefinitions, messages, households, providers,
                 relationshipRepository, daycareRepository, lineageRepository, rewardClaims
         );
 

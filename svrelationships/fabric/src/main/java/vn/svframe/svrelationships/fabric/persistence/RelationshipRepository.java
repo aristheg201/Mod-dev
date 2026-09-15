@@ -65,6 +65,7 @@ public final class RelationshipRepository implements AutoCloseable {
     public List<RelationshipState> byPlayer(UUID playerId) { return states.values().stream().filter(s -> s.key().playerId().equals(playerId)).toList(); }
     public List<RelationshipState> partners(UUID playerId) { return states.values().stream().filter(s -> s.key().playerId().equals(playerId) && s.partner()).toList(); }
     public List<RelationshipState> snapshot() { return List.copyOf(states.values()); }
+    public int size() { return states.size(); }
 
     public void markDirty() {
         dirty.set(true);
