@@ -1,6 +1,11 @@
 name: SVRelationships build
 
 on:
+  push:
+    branches:
+      - feature/svrelationships-production-20260915
+    paths:
+      - '.final-svrelationships-build'
   workflow_dispatch:
 
 permissions:
