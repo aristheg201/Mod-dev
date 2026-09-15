@@ -10,6 +10,7 @@ repositories {
     mavenCentral()
     maven { url = 'https://maven.nucleoid.xyz/' }
     maven { url = 'https://repo.lucko.me/' }
+    maven { url = 'https://maven.impactdev.net/repository/development/' }
     maven {
         url = 'https://api.modrinth.com/maven'
         content { includeGroup 'maven.modrinth' }
@@ -24,7 +25,7 @@ dependencies {
 
     implementation project(':core')
 
-    modCompileOnly "maven.modrinth:cobblemon:${project.cobblemon_version}"
+    modCompileOnly "com.cobblemon:fabric:${project.cobblemon_version}"
     modCompileOnly "eu.pb4:placeholder-api:${project.placeholder_api_version}"
     compileOnly "net.luckperms:api:${project.luckperms_api_version}"
 

@@ -1,0 +1,6 @@
+profiles:
+  standard:
+    active_radius: 64
+    deactivation_radius: 72
+    max_materialized_partners: 4
+    boundary: spherical

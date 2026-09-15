@@ -1,0 +1,12 @@
+locale: en_us
+
+commands:
+  admin_permission: svrelationships.command.admin
+
+household:
+  default_profile: standard
+
+economy:
+  priority:
+    - beconomy
+    - cobbledollars
