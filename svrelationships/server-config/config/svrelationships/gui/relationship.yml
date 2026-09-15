@@ -1,0 +1,125 @@
+# ============================================================
+# SVRelationships — Relationship Profile
+# Buttons are condition-driven so only the next logical action
+# is shown for the current romance route.
+# ============================================================
+
+id: relationship
+screen: generic_9x6
+title_key: ui.relationship.title
+
+components:
+  profile:
+    slot: 4
+    item: minecraft:name_tag
+    name_key: ui.relationship.profile
+    lore_keys:
+      - ui.relationship.profile.species
+      - ui.relationship.profile.level
+      - ui.relationship.profile.form
+      - ui.relationship.profile.partner
+    action: none
+
+  bond:
+    slot: 11
+    item: minecraft:heart_of_the_sea
+    name_key: ui.relationship.bond
+    lore_keys:
+      - ui.relationship.bond.value
+      - ui.relationship.bond.rank
+    action: none
+
+  romance:
+    slot: 15
+    item: minecraft:pink_dye
+    name_key: ui.relationship.romance
+    lore_keys:
+      - ui.relationship.romance.value
+      - ui.relationship.romance.rank
+    action: none
+
+  talk:
+    slot: 29
+    item: minecraft:book
+    name_key: ui.relationship.talk
+    lore_keys:
+      - ui.relationship.talk.lore1
+      - ui.relationship.talk.lore2
+    action: interaction
+    args:
+      id: daily_talk
+
+  gift:
+    slot: 31
+    item: minecraft:poppy
+    name_key: ui.relationship.gift
+    lore_keys:
+      - ui.relationship.gift.lore1
+      - ui.relationship.gift.lore2
+    action: gift
+    args:
+      id: flower
+
+  dating:
+    slot: 33
+    item: minecraft:allium
+    name_key: ui.relationship.dating
+    lore_keys:
+      - ui.relationship.dating.lore1
+      - ui.relationship.dating.lore2
+    action: advance_partnership
+    args:
+      milestone: dating
+    conditions:
+      route.romance: friends
+
+  engaged:
+    slot: 35
+    item: minecraft:diamond
+    name_key: ui.relationship.engaged
+    lore_keys:
+      - ui.relationship.engaged.lore1
+      - ui.relationship.engaged.lore2
+    action: advance_partnership
+    args:
+      milestone: engaged
+    conditions:
+      route.romance: dating
+
+  married:
+    slot: 37
+    item: minecraft:golden_apple
+    name_key: ui.relationship.married
+    lore_keys:
+      - ui.relationship.married.lore1
+      - ui.relationship.married.lore2
+    action: ceremony
+    args:
+      id: wedding
+    conditions:
+      route.romance: engaged
+
+  reward:
+    slot: 40
+    item: minecraft:chest
+    name_key: ui.relationship.reward
+    lore_keys:
+      - ui.relationship.reward.lore1
+      - ui.relationship.reward.lore2
+    action: claim_reward
+    args:
+      profile: partner_daily
+    conditions:
+      partner: true
+
+  back:
+    slot: 49
+    item: minecraft:barrier
+    name_key: ui.navigation.back
+    lore_keys:
+      - ui.navigation.back.relationships
+    action: open_gui
+    args:
+      id: owned
+
+repeaters: {}
