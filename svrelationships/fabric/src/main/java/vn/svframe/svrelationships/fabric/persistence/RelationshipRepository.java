@@ -57,10 +57,7 @@ public final class RelationshipRepository implements AutoCloseable {
         states.put(state.key(), state);
     }
 
-    public RelationshipState getOrCreate(RelationshipKey key) {
-        return states.computeIfAbsent(key, RelationshipState::new);
-    }
-
+    public RelationshipState getOrCreate(RelationshipKey key) { return states.computeIfAbsent(key, RelationshipState::new); }
     public Optional<RelationshipState> get(RelationshipKey key) { return Optional.ofNullable(states.get(key)); }
     public List<RelationshipState> byPlayer(UUID playerId) { return states.values().stream().filter(s -> s.key().playerId().equals(playerId)).toList(); }
     public List<RelationshipState> partners(UUID playerId) { return states.values().stream().filter(s -> s.key().playerId().equals(playerId) && s.partner()).toList(); }
@@ -70,14 +67,16 @@ public final class RelationshipRepository implements AutoCloseable {
     public void markDirty() {
         dirty.set(true);
         if (!queued.compareAndSet(false, true)) return;
-        writer.execute(() -> {
-            try {
-                while (dirty.getAndSet(false)) writeSnapshot();
-            } finally {
-                queued.set(false);
-                if (dirty.get()) markDirty();
-            }
-        });
+        writer.execute(this::drain);
+    }
+
+    private void drain() {
+        try {
+            while (dirty.getAndSet(false)) writeSnapshot();
+        } finally {
+            queued.set(false);
+            if (dirty.get()) markDirty();
+        }
     }
 
     private List<StoredRelationship> storedSnapshot() {
@@ -100,8 +99,11 @@ public final class RelationshipRepository implements AutoCloseable {
         }
     }
 
-    public synchronized void flushNow() { if (dirty.getAndSet(false) || !Files.exists(file)) writeSnapshot(); }
-    @Override public void close() { flushNow(); writer.shutdown(); }
+    @Override
+    public void close() {
+        if (dirty.get()) markDirty();
+        AsyncRepositoryClose.shutdownAndAwait(writer);
+    }
 
     private record StoredRelationship(UUID playerId, UUID pokemonId, Map<String, Long> progression,
                                       Map<String, String> routes, Map<String, Long> cooldowns,

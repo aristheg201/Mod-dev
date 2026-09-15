@@ -11,6 +11,7 @@ import vn.svframe.svrelationships.relationship.RelationshipState;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,6 +41,19 @@ public final class RelationshipService {
         long result = new ProgressionEngine(definitions.snapshot().progressionTracks()).add(state(playerId, pokemonId), trackId, delta);
         repository.markDirty(); return result;
     }
+
+    public boolean applyProgressionOnce(UUID playerId, UUID pokemonId, String markerId, Map<String, Long> deltas) {
+        RelationshipState state = state(playerId, pokemonId);
+        synchronized (state) {
+            if (state.flag(markerId) != null) return false;
+            ProgressionEngine engine = new ProgressionEngine(definitions.snapshot().progressionTracks());
+            for (var delta : deltas.entrySet()) engine.add(state, delta.getKey(), delta.getValue());
+            state.setFlag(markerId, "true");
+            repository.markDirty();
+            return true;
+        }
+    }
+
     public Optional<String> rank(UUID playerId, UUID pokemonId, String trackId) {
         var engine = new ProgressionEngine(definitions.snapshot().progressionTracks());
         return engine.rank(trackId, progression(playerId, pokemonId, trackId)).map(rank -> rank.id());
