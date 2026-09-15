@@ -2,7 +2,6 @@ package vn.svframe.svrelationships.fabric.household;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
-import vn.svframe.svrelationships.fabric.config.ConfigSnapshot;
 import vn.svframe.svrelationships.household.HouseholdAnchor;
 import vn.svframe.svrelationships.household.HouseholdState;
 
@@ -21,25 +20,17 @@ public final class HouseholdService {
     public HouseholdState setAtPlayer(ServerPlayerEntity player) {
         var pos = player.getBlockPos();
         String dimension = player.getServerWorld().getRegistryKey().getValue().toString();
-        HouseholdState state = new HouseholdState(
-                repository.get(player.getUuid()).map(HouseholdState::householdId).orElseGet(UUID::randomUUID),
-                player.getUuid(),
-                new HouseholdAnchor(dimension, pos.getX(), pos.getY(), pos.getZ()),
-                config.snapshot().defaultHouseholdProfile()
-        );
+        HouseholdState state = new HouseholdState(repository.get(player.getUuid()).map(HouseholdState::householdId).orElseGet(UUID::randomUUID), player.getUuid(), new HouseholdAnchor(dimension, pos.getX(), pos.getY(), pos.getZ()), config.snapshot().defaultHouseholdProfile());
         repository.put(state);
         return state;
     }
 
     public Optional<HouseholdState> get(UUID ownerId) { return repository.get(ownerId); }
     public boolean clear(UUID ownerId) { return repository.remove(ownerId).isPresent(); }
-
-    public Optional<ConfigSnapshot.HouseholdProfile> profile(HouseholdState state) {
-        return Optional.ofNullable(config.snapshot().householdProfiles().get(state.profileId()));
-    }
-
-    public int activeRadius(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::activeRadius).orElse(0); }
-    public int deactivationRadius(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::deactivationRadius).orElse(0); }
-    public int maxMaterializedPartners(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::maxMaterializedPartners).orElse(0); }
-    public String boundary(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::boundary).orElse("spherical"); }
+    private vn.svframe.svrelationships.fabric.config.ConfigSnapshot.HouseholdProfile profile(HouseholdState state) { return config.snapshot().householdProfiles().get(state.profileId()); }
+    public int activeRadius(HouseholdState state) { var p = profile(state); return p == null ? 0 : p.activeRadius(); }
+    public int deactivationRadius(HouseholdState state) { var p = profile(state); return p == null ? 0 : p.deactivationRadius(); }
+    public int maxMaterializedPartners(HouseholdState state) { var p = profile(state); return p == null ? 0 : p.maxMaterializedPartners(); }
+    public String boundary(HouseholdState state) { var p = profile(state); return p == null ? "spherical" : p.boundary(); }
+    public int evaluationIntervalTicks(HouseholdState state) { var p = profile(state); return p == null ? 20 : p.evaluationIntervalTicks(); }
 }

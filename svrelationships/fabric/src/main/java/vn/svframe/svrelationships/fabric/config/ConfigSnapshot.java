@@ -26,7 +26,8 @@ public record ConfigSnapshot(
             int activeRadius,
             int deactivationRadius,
             int maxMaterializedPartners,
-            String boundary
+            String boundary,
+            int evaluationIntervalTicks
     ) {
     }
 }

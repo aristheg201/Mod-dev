@@ -28,53 +28,26 @@ public final class SVRelationshipsFabric implements ModInitializer {
     public static final String MOD_ID = "svrelationships";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    @Override
-    public void onInitialize() {
+    @Override public void onInitialize() {
         var root = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
-
-        var config = new ConfigService(root);
-        config.initialize();
-        var gameplay = new GameplayDefinitionService(root);
-        gameplay.initialize();
-        var rules = new RelationshipRuleService(root);
-        rules.initialize();
-        var rewardPolicies = new RewardPolicyService(root);
-        rewardPolicies.initialize();
+        var config = new ConfigService(root); config.initialize();
+        var gameplay = new GameplayDefinitionService(root); gameplay.initialize();
+        var rules = new RelationshipRuleService(root); rules.initialize();
+        var rewardPolicies = new RewardPolicyService(root); rewardPolicies.initialize();
         var guiDefinitions = new GuiDefinitionService(root);
-        var guiReload = guiDefinitions.reload();
-        if (!guiReload.success()) throw new IllegalStateException("Unable to load GUI definitions: " + guiReload.detail());
+        var guiReload = guiDefinitions.reload(); if (!guiReload.success()) throw new IllegalStateException("Unable to load GUI definitions: " + guiReload.detail());
         var messages = new MessageService(config);
-
-        var householdRepository = new HouseholdRepository(root.resolve("state/households.json"));
-        householdRepository.load();
+        var householdRepository = new HouseholdRepository(root.resolve("state/households.json")); householdRepository.load();
         var households = new HouseholdService(householdRepository, config);
-
-        var relationshipRepository = new RelationshipRepository(root.resolve("state/relationships.json"));
-        relationshipRepository.load();
-        var daycareRepository = new DaycareRepository(root.resolve("state/daycare.json"));
-        daycareRepository.load();
-        var lineageRepository = new LineageRepository(root.resolve("state/lineage.json"));
-        lineageRepository.load();
-        var rewardClaims = new RewardClaimRepository(root.resolve("state/reward_claims.json"));
-        rewardClaims.load();
-
-        var integrations = new IntegrationRegistry();
-        var providers = new ProviderHub();
-        var runtime = new RuntimeCoordinator(
-                config, gameplay, rules, rewardPolicies, guiDefinitions, messages, households, providers,
-                relationshipRepository, daycareRepository, lineageRepository, rewardClaims
-        );
-
+        var relationshipRepository = new RelationshipRepository(root.resolve("state/relationships.json")); relationshipRepository.load();
+        var daycareRepository = new DaycareRepository(root.resolve("state/daycare.json")); daycareRepository.load();
+        var lineageRepository = new LineageRepository(root.resolve("state/lineage.json")); lineageRepository.load();
+        var rewardClaims = new RewardClaimRepository(root.resolve("state/reward_claims.json")); rewardClaims.load();
+        var integrations = new IntegrationRegistry(); var providers = new ProviderHub();
+        var runtime = new RuntimeCoordinator(config, gameplay, rules, rewardPolicies, guiDefinitions, messages, households, providers, relationshipRepository, daycareRepository, lineageRepository, rewardClaims);
         SVRelationshipCommands.register(config, gameplay, messages, households, integrations, providers, runtime);
-
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            new FabricIntegrationBootstrap(server, households, integrations, providers).start();
-            runtime.start(server);
-        });
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> { new FabricIntegrationBootstrap(server, households, runtime.relationships(), integrations, providers).start(); runtime.start(server); });
         ServerTickEvents.END_SERVER_TICK.register(server -> runtime.tick(System.currentTimeMillis()));
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            runtime.close();
-            householdRepository.close();
-        });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> { runtime.close(); householdRepository.close(); });
     }
 }

@@ -22,9 +22,7 @@ public final class ConfigService {
     private final AtomicReference<ConfigSnapshot> snapshot = new AtomicReference<>();
     private final AtomicLong generation = new AtomicLong();
 
-    public ConfigService(Path root) {
-        this.root = Objects.requireNonNull(root, "root");
-    }
+    public ConfigService(Path root) { this.root = Objects.requireNonNull(root, "root"); }
 
     public void initialize() {
         try {
@@ -36,46 +34,26 @@ public final class ConfigService {
             throw new IllegalStateException("Unable to install SVRelationships defaults", exception);
         }
         ReloadResult result = reload();
-        if (!result.success()) {
-            throw new IllegalStateException("Unable to load SVRelationships configuration: " + result.detail());
-        }
+        if (!result.success()) throw new IllegalStateException("Unable to load SVRelationships configuration: " + result.detail());
     }
 
-    public ConfigSnapshot snapshot() {
-        return Objects.requireNonNull(snapshot.get(), "configuration not initialized");
-    }
+    public ConfigSnapshot snapshot() { return Objects.requireNonNull(snapshot.get(), "configuration not initialized"); }
 
     public ReloadResult reload() {
         try {
             Map<String, Object> main = load(root.resolve("main.yml"));
             Map<String, Object> households = load(root.resolve("households.yml"));
-
             String locale = string(main, "locale");
             Map<String, Object> commands = map(main, "commands");
             Map<String, Object> householdRoot = map(main, "household");
             Map<String, Object> economy = map(main, "economy");
-
             String adminPermission = string(commands, "admin_permission");
             String defaultProfile = string(householdRoot, "default_profile");
             List<String> economyPriority = stringList(economy, "priority");
-
             Map<String, ConfigSnapshot.HouseholdProfile> profiles = parseHouseholds(households);
-            ConfigSnapshot.HouseholdProfile defaultHousehold = profiles.get(defaultProfile);
-            if (defaultHousehold == null) {
-                throw new IllegalArgumentException("Unknown default household profile: " + defaultProfile);
-            }
-
+            if (!profiles.containsKey(defaultProfile)) throw new IllegalArgumentException("Unknown default household profile: " + defaultProfile);
             Map<String, String> messages = loadMessages(root.resolve("lang").resolve(locale + ".yml"));
-            ConfigSnapshot next = new ConfigSnapshot(
-                    generation.incrementAndGet(),
-                    locale,
-                    adminPermission,
-                    defaultProfile,
-                    profiles,
-                    economyPriority,
-                    messages
-            );
-            snapshot.set(next);
+            snapshot.set(new ConfigSnapshot(generation.incrementAndGet(), locale, adminPermission, defaultProfile, profiles, economyPriority, messages));
             return new ReloadResult(true, "");
         } catch (Exception exception) {
             return new ReloadResult(false, exception.getClass().getSimpleName() + ": " + exception.getMessage());
@@ -83,100 +61,61 @@ public final class ConfigService {
     }
 
     private Map<String, ConfigSnapshot.HouseholdProfile> parseHouseholds(Map<String, Object> rootMap) {
-        Map<String, Object> profilesMap = map(rootMap, "profiles");
         Map<String, ConfigSnapshot.HouseholdProfile> result = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> entry : profilesMap.entrySet()) {
-            if (!(entry.getValue() instanceof Map<?, ?> raw)) {
-                throw new IllegalArgumentException("Household profile must be a map: " + entry.getKey());
-            }
-            Map<String, Object> values = castMap(raw);
+        for (Map.Entry<String, Object> entry : map(rootMap, "profiles").entrySet()) {
+            Map<String, Object> values = mapValue(entry.getValue(), "household profile " + entry.getKey());
             int active = integer(values, "active_radius");
             int deactivate = integer(values, "deactivation_radius");
             int maxMaterialized = integer(values, "max_materialized_partners");
             String boundary = string(values, "boundary");
-            if (active < 0 || deactivate < active || maxMaterialized < 0) {
+            int interval = optionalInteger(values, "evaluation_interval_ticks", 20);
+            if (active < 0 || deactivate < active || maxMaterialized < 0 || interval < 1) {
                 throw new IllegalArgumentException("Invalid household spatial limits: " + entry.getKey());
             }
-            result.put(entry.getKey(), new ConfigSnapshot.HouseholdProfile(active, deactivate, maxMaterialized, boundary));
+            result.put(entry.getKey(), new ConfigSnapshot.HouseholdProfile(active, deactivate, maxMaterialized, boundary, interval));
         }
         return result;
     }
 
     private Map<String, String> loadMessages(Path path) throws IOException {
-        Map<String, Object> values = load(path);
         Map<String, String> result = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> entry : values.entrySet()) {
-            result.put(entry.getKey(), String.valueOf(entry.getValue()));
-        }
+        load(path).forEach((key, value) -> result.put(key, String.valueOf(value)));
         return result;
     }
 
     private Map<String, Object> load(Path path) throws IOException {
         Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
-        try (InputStream input = Files.newInputStream(path)) {
-            Object value = yaml.load(input);
-            if (!(value instanceof Map<?, ?> raw)) {
-                throw new IllegalArgumentException("Expected YAML object: " + path.getFileName());
-            }
-            return castMap(raw);
-        }
+        try (InputStream input = Files.newInputStream(path)) { return mapValue(yaml.load(input), path.getFileName().toString()); }
     }
 
     private void installDefault(String resource, Path target) throws IOException {
-        if (Files.exists(target)) {
-            return;
-        }
+        if (Files.exists(target)) return;
         Files.createDirectories(target.getParent());
         try (InputStream input = ConfigService.class.getResourceAsStream(resource)) {
-            if (input == null) {
-                throw new IOException("Missing bundled resource: " + resource);
-            }
+            if (input == null) throw new IOException("Missing bundled resource: " + resource);
             Files.copy(input, target, StandardCopyOption.COPY_ATTRIBUTES);
         }
     }
 
-    private static Map<String, Object> map(Map<String, Object> source, String key) {
-        Object value = source.get(key);
-        if (!(value instanceof Map<?, ?> raw)) {
-            throw new IllegalArgumentException("Expected map at " + key);
-        }
-        return castMap(raw);
-    }
-
-    private static Map<String, Object> castMap(Map<?, ?> raw) {
+    private static Map<String, Object> map(Map<String, Object> source, String key) { return mapValue(source.get(key), key); }
+    private static Map<String, Object> mapValue(Object value, String label) {
+        if (!(value instanceof Map<?, ?> raw)) throw new IllegalArgumentException("Expected map at " + label);
         Map<String, Object> result = new LinkedHashMap<>();
-        raw.forEach((key, value) -> result.put(String.valueOf(key), value));
+        raw.forEach((key, item) -> result.put(String.valueOf(key), item));
         return result;
     }
-
     private static String string(Map<String, Object> source, String key) {
-        Object value = source.get(key);
-        if (value == null) {
-            throw new IllegalArgumentException("Missing key: " + key);
-        }
-        return String.valueOf(value);
+        Object value = source.get(key); if (value == null) throw new IllegalArgumentException("Missing key: " + key); return String.valueOf(value);
     }
-
     private static int integer(Map<String, Object> source, String key) {
-        Object value = source.get(key);
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        return Integer.parseInt(string(source, key));
+        Object value = source.get(key); return value instanceof Number number ? number.intValue() : Integer.parseInt(string(source, key));
     }
-
+    private static int optionalInteger(Map<String, Object> source, String key, int fallback) {
+        Object value = source.get(key); return value == null ? fallback : value instanceof Number number ? number.intValue() : Integer.parseInt(String.valueOf(value));
+    }
     private static List<String> stringList(Map<String, Object> source, String key) {
-        Object value = source.get(key);
-        if (!(value instanceof List<?> raw)) {
-            throw new IllegalArgumentException("Expected list at " + key);
-        }
-        List<String> result = new ArrayList<>(raw.size());
-        for (Object item : raw) {
-            result.add(String.valueOf(item));
-        }
-        return result;
+        Object value = source.get(key); if (!(value instanceof List<?> raw)) throw new IllegalArgumentException("Expected list at " + key);
+        List<String> result = new ArrayList<>(raw.size()); raw.forEach(item -> result.add(String.valueOf(item))); return result;
     }
-
-    public record ReloadResult(boolean success, String detail) {
-    }
+    public record ReloadResult(boolean success, String detail) {}
 }

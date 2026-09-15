@@ -4,3 +4,4 @@ profiles:
     deactivation_radius: 72
     max_materialized_partners: 4
     boundary: spherical
+    evaluation_interval_ticks: 20
