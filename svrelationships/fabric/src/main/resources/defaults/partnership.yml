@@ -1,0 +1,28 @@
+partnership:
+  route: romance
+  milestones:
+    dating:
+      target_state: dating
+      selector: all_owned
+      required_ranks:
+        bond: close
+      require_household: false
+      creates_partnership: false
+      message_key: partnership.dating.success
+    engaged:
+      target_state: engaged
+      selector: all_owned
+      required_ranks:
+        bond: soulmate
+        romance: devoted
+      require_household: false
+      creates_partnership: false
+      message_key: partnership.engaged.success
+    married:
+      target_state: married
+      selector: all_owned
+      required_ranks:
+        romance: marriage_ready
+      require_household: false
+      creates_partnership: true
+      message_key: partnership.married.success

@@ -1,0 +1,8 @@
+selectors:
+  all_owned:
+    species: []
+    forms: []
+    required_aspects: []
+    genders: []
+    minimum_level: 0
+    maximum_level: 2147483647
