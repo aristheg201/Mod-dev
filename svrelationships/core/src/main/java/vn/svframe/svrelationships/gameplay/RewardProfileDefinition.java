@@ -8,9 +8,6 @@ public record RewardProfileDefinition(
         String triggerType,
         String period,
         String scope,
-        String offlinePolicy,
-        int maxPendingPeriods,
-        String overflowPolicy,
         List<Entry> entries
 ) {
     public RewardProfileDefinition {
@@ -18,9 +15,6 @@ public record RewardProfileDefinition(
         Objects.requireNonNull(triggerType, "triggerType");
         Objects.requireNonNull(period, "period");
         Objects.requireNonNull(scope, "scope");
-        Objects.requireNonNull(offlinePolicy, "offlinePolicy");
-        Objects.requireNonNull(overflowPolicy, "overflowPolicy");
-        if (maxPendingPeriods < 1) throw new IllegalArgumentException("maxPendingPeriods");
         entries = List.copyOf(entries);
     }
 
