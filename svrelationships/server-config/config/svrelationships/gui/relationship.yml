@@ -62,8 +62,8 @@ components:
   reward:
     slot: 40
     item: minecraft:chest
-    name_key: ui.relationship.reward
-    lore_keys: [ui.relationship.reward.lore1, ui.relationship.reward.lore2]
+    name_key: ui.relationship.morning_reward
+    lore_keys: [ui.relationship.morning_reward.lore1, ui.relationship.morning_reward.lore2]
     action: none
     conditions: {partner: true}
   back:

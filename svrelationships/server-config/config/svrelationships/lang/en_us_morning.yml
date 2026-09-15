@@ -1,1 +1,4 @@
 reward.automatic.morning_summary: "<italic:false><gradient:#ffd166:#ff8fab><bold>✦ Morning gifts</bold></gradient> <gray>• <white>Your partner Pokémon gave you <yellow><count></yellow> random gift(s)."
+ui.relationship.morning_reward: "<italic:false><gradient:#ffd166:#ff8fab><bold>✦ Automatic morning gift</bold></gradient>"
+ui.relationship.morning_reward.lore1: "<italic:false><gray>Each partner Pokémon gives exactly <yellow>1 random item</yellow> every morning."
+ui.relationship.morning_reward.lore2: "<italic:false><dark_gray>• <white>Automatically delivered from Minecraft day tick <yellow>0</yellow> to <yellow>3000</yellow>."

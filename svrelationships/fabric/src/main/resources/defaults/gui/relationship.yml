@@ -42,10 +42,9 @@ components:
   reward:
     slot: 34
     item: minecraft:chest
-    name_key: gui.relationship.reward
-    lore_keys: [gui.relationship.reward.lore]
-    action: claim_reward
-    args: {profile: partner_daily}
+    name_key: ui.relationship.morning_reward
+    lore_keys: [ui.relationship.morning_reward.lore1, ui.relationship.morning_reward.lore2]
+    action: none
   back:
     slot: 49
     item: minecraft:barrier

@@ -1,1 +1,4 @@
 reward.automatic.morning_summary: "<italic:false><gradient:#ffd166:#ff8fab><bold>✦ Quà buổi sáng</bold></gradient> <gray>• <white>Các Pokémon bạn đời đã tặng bạn <yellow><count></yellow> món quà ngẫu nhiên."
+ui.relationship.morning_reward: "<italic:false><gradient:#ffd166:#ff8fab><bold>✦ Quà buổi sáng tự động</bold></gradient>"
+ui.relationship.morning_reward.lore1: "<italic:false><gray>Mỗi Pokémon bạn đời tặng đúng <yellow>1 món đồ ngẫu nhiên</yellow> vào mỗi buổi sáng."
+ui.relationship.morning_reward.lore2: "<italic:false><dark_gray>• <white>Tự động phát từ tick <yellow>0</yellow> đến <yellow>3000</yellow> của ngày Minecraft."
