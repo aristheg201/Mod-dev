@@ -2,6 +2,7 @@ package vn.svframe.svrelationships.fabric.household;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
+import vn.svframe.svrelationships.fabric.config.ConfigSnapshot;
 import vn.svframe.svrelationships.household.HouseholdAnchor;
 import vn.svframe.svrelationships.household.HouseholdState;
 
@@ -30,21 +31,15 @@ public final class HouseholdService {
         return state;
     }
 
-    public Optional<HouseholdState> get(UUID ownerId) {
-        return repository.get(ownerId);
+    public Optional<HouseholdState> get(UUID ownerId) { return repository.get(ownerId); }
+    public boolean clear(UUID ownerId) { return repository.remove(ownerId).isPresent(); }
+
+    public Optional<ConfigSnapshot.HouseholdProfile> profile(HouseholdState state) {
+        return Optional.ofNullable(config.snapshot().householdProfiles().get(state.profileId()));
     }
 
-    public boolean clear(UUID ownerId) {
-        return repository.remove(ownerId).isPresent();
-    }
-
-    public int activeRadius(HouseholdState state) {
-        var profile = config.snapshot().householdProfiles().get(state.profileId());
-        return profile == null ? 0 : profile.activeRadius();
-    }
-
-    public int deactivationRadius(HouseholdState state) {
-        var profile = config.snapshot().householdProfiles().get(state.profileId());
-        return profile == null ? 0 : profile.deactivationRadius();
-    }
+    public int activeRadius(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::activeRadius).orElse(0); }
+    public int deactivationRadius(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::deactivationRadius).orElse(0); }
+    public int maxMaterializedPartners(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::maxMaterializedPartners).orElse(0); }
+    public String boundary(HouseholdState state) { return profile(state).map(ConfigSnapshot.HouseholdProfile::boundary).orElse("spherical"); }
 }
