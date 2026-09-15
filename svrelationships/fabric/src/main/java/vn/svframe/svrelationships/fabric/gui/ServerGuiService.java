@@ -177,7 +177,8 @@ public final class ServerGuiService {
         }
 
         try {
-            ItemStack stack = PokemonItem.from(species, visual.aspects());
+            String[] aspects = visual.aspects().toArray(String[]::new);
+            ItemStack stack = PokemonItem.from(species, aspects);
             GuiElementBuilder builder = new GuiElementBuilder(stack)
                     .setName(messages.text(nameKey, values));
             for (String lore : loreKeys) {
