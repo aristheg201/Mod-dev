@@ -1,0 +1,8 @@
+command.admin.household.set: "Set <player>'s household anchor at their current position using profile <profile>."
+command.admin.household.cleared: "Cleared <player>'s household anchor."
+command.admin.household.none: "<player> does not currently have a household anchor."
+command.admin.household.profile: "Set <player>'s household profile to <profile>."
+command.admin.household.inspect: "<player> household: profile=<profile>, <dimension> <x> <y> <z>, active radius=<radius>, materialized capacity=<capacity>."
+command.admin.schedule.set: "Set <player> / <pokemon> schedule profile to <profile>."
+command.admin.schedule.cleared: "Cleared the schedule override for <player> / <pokemon>; automatic profile resolution is active."
+command.admin.schedule.inspect: "<player> / <pokemon>: profile=<profile>, activity=<activity>, materialize=<materialize>."

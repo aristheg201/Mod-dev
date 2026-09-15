@@ -34,6 +34,8 @@ public final class ConfigService {
             installDefault("/defaults/lang/vi_vn.yml", root.resolve("lang/vi_vn.yml"));
             installDefault("/defaults/lang/en_us_gui.yml", root.resolve("lang/en_us_gui.yml"));
             installDefault("/defaults/lang/vi_vn_gui.yml", root.resolve("lang/vi_vn_gui.yml"));
+            installDefault("/defaults/lang/en_us_admin.yml", root.resolve("lang/en_us_admin.yml"));
+            installDefault("/defaults/lang/vi_vn_admin.yml", root.resolve("lang/vi_vn_admin.yml"));
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to install SVRelationships defaults", exception);
         }
@@ -100,10 +102,7 @@ public final class ConfigService {
         return result;
     }
 
-    private Map<String, Object> load(Path path) throws IOException {
-        Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
-        try (InputStream input = Files.newInputStream(path)) { return mapValue(yaml.load(input), path.getFileName().toString()); }
-    }
+    private Map<String, Object> load(Path path) throws IOException { Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions())); try (InputStream input = Files.newInputStream(path)) { return mapValue(yaml.load(input), path.getFileName().toString()); } }
     private void installDefault(String resource, Path target) throws IOException { if (Files.exists(target)) return; Files.createDirectories(target.getParent()); try (InputStream input = ConfigService.class.getResourceAsStream(resource)) { if (input == null) throw new IOException("Missing bundled resource: " + resource); Files.copy(input, target, StandardCopyOption.COPY_ATTRIBUTES); } }
     private static Map<String, Object> map(Map<String, Object> source, String key) { return mapValue(source.get(key), key); }
     private static Map<String, Object> mapValue(Object value, String label) { if (!(value instanceof Map<?, ?> raw)) throw new IllegalArgumentException("Expected map at " + label); Map<String, Object> result = new LinkedHashMap<>(); raw.forEach((key, item) -> result.put(String.valueOf(key), item)); return result; }

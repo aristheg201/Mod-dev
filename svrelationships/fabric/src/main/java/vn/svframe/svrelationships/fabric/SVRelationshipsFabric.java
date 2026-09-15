@@ -41,7 +41,11 @@ public final class SVRelationshipsFabric implements ModInitializer {
         var rewardClaims=new RewardClaimRepository(root.resolve("state/reward_claims.json"));rewardClaims.load();
         var integrations=new IntegrationRegistry();var providers=new ProviderHub();
         var runtime=new RuntimeCoordinator(root,config,gameplay,rules,rewardPolicies,daycarePolicies,ceremonyDefinitions,anniversaryDefinitions,scheduleDefinitions,dialogueDefinitions,guiDefinitions,messages,households,providers,relationshipRepository,daycareRepository,lineageRepository,rewardClaims);
-        SVRelationshipCommands.register(config,gameplay,messages,households,integrations,providers,runtime);LifeEventCommands.register(ceremonyDefinitions,runtime,messages);AnniversaryCommands.register(anniversaryDefinitions,runtime,messages);LifeSimulationCommands.register(dialogueDefinitions,runtime,messages);
+        SVRelationshipCommands.register(config,gameplay,messages,households,integrations,providers,runtime);
+        LifeEventCommands.register(ceremonyDefinitions,runtime,messages);
+        AnniversaryCommands.register(anniversaryDefinitions,runtime,messages);
+        LifeSimulationCommands.register(dialogueDefinitions,runtime,messages);
+        AdminLifeCommands.register(config,scheduleDefinitions,messages,households,providers,runtime);
         ServerLifecycleEvents.SERVER_STARTED.register(server->{new FabricIntegrationBootstrap(server,households,runtime.relationships(),integrations,providers).start();runtime.start(server);});
         ServerTickEvents.END_SERVER_TICK.register(server->runtime.tick(System.currentTimeMillis()));
         ServerLifecycleEvents.SERVER_STOPPING.register(server->{runtime.close();householdRepository.close();});

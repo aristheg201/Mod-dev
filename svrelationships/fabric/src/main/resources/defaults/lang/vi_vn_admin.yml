@@ -1,0 +1,8 @@
+command.admin.household.set: "Đã đặt household của <player> tại vị trí hiện tại với profile <profile>."
+command.admin.household.cleared: "Đã xóa household anchor của <player>."
+command.admin.household.none: "<player> hiện chưa có household anchor."
+command.admin.household.profile: "Đã đặt household profile của <player> thành <profile>."
+command.admin.household.inspect: "Household của <player>: profile=<profile>, <dimension> <x> <y> <z>, bán kính active=<radius>, giới hạn materialized=<capacity>."
+command.admin.schedule.set: "Đã đặt schedule profile của <player> / <pokemon> thành <profile>."
+command.admin.schedule.cleared: "Đã xóa schedule override của <player> / <pokemon>; hệ thống quay lại tự chọn profile."
+command.admin.schedule.inspect: "<player> / <pokemon>: profile=<profile>, hoạt động=<activity>, materialize=<materialize>."

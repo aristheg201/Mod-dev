@@ -2,9 +2,7 @@ plugins {
     id 'fabric-loom' version "${loom_version}"
 }
 
-base {
-    archivesName = project.archives_base_name
-}
+base { archivesName = project.archives_base_name }
 
 repositories {
     mavenCentral()
@@ -12,10 +10,7 @@ repositories {
     maven { url = 'https://repo.lucko.me/' }
     maven { url = 'https://maven.impactdev.net/repository/development/' }
     maven { url = 'https://maven.pokeskies.com/releases/' }
-    maven {
-        url = 'https://api.modrinth.com/maven'
-        content { includeGroup 'maven.modrinth' }
-    }
+    maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
 }
 
 dependencies {
@@ -23,35 +18,28 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-
     implementation project(':core')
-
     modCompileOnly "com.cobblemon:fabric:${project.cobblemon_version}"
     modCompileOnly "eu.pb4:placeholder-api:${project.placeholder_api_version}"
     compileOnly "net.luckperms:api:${project.luckperms_api_version}"
-
     modImplementation "eu.pb4:sgui:1.6.1+1.21.1"
     include "eu.pb4:sgui:1.6.1+1.21.1"
-
     implementation "org.yaml:snakeyaml:${project.snakeyaml_version}"
     include "org.yaml:snakeyaml:${project.snakeyaml_version}"
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
 }
+
+test { useJUnitPlatform() }
 
 processResources {
     inputs.property 'version', project.mod_version
-    filesMatching('fabric.mod.json') {
-        expand(version: project.mod_version)
-    }
+    filesMatching('fabric.mod.json') { expand(version: project.mod_version) }
 }
 
-jar {
-    from project(':core').sourceSets.main.output
-}
+jar { from project(':core').sourceSets.main.output }
 
-tasks.withType(JavaCompile).configureEach {
-    options.release = 21
-    options.encoding = 'UTF-8'
-}
+tasks.withType(JavaCompile).configureEach { options.release = 21; options.encoding = 'UTF-8' }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

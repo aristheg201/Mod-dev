@@ -12,10 +12,7 @@ public final class HouseholdService {
     private final HouseholdRepository repository;
     private final ConfigService config;
 
-    public HouseholdService(HouseholdRepository repository, ConfigService config) {
-        this.repository = repository;
-        this.config = config;
-    }
+    public HouseholdService(HouseholdRepository repository, ConfigService config) { this.repository = repository; this.config = config; }
 
     public HouseholdState setAtPlayer(ServerPlayerEntity player) {
         var pos = player.getBlockPos();
@@ -23,6 +20,14 @@ public final class HouseholdService {
         HouseholdState state = new HouseholdState(repository.get(player.getUuid()).map(HouseholdState::householdId).orElseGet(UUID::randomUUID), player.getUuid(), new HouseholdAnchor(dimension, pos.getX(), pos.getY(), pos.getZ()), config.snapshot().defaultHouseholdProfile());
         repository.put(state);
         return state;
+    }
+
+    public boolean setProfile(UUID ownerId, String profileId) {
+        if (!config.snapshot().householdProfiles().containsKey(profileId)) throw new IllegalArgumentException("Unknown household profile: " + profileId);
+        HouseholdState current = repository.get(ownerId).orElse(null);
+        if (current == null) return false;
+        repository.put(new HouseholdState(current.householdId(), current.ownerId(), current.anchor(), profileId));
+        return true;
     }
 
     public Optional<HouseholdState> get(UUID ownerId) { return repository.get(ownerId); }
