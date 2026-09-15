@@ -1,0 +1,16 @@
+routes:
+  romance:
+    initial_state: friends
+    states:
+      friends:
+        display_key: route.romance.friends
+        transitions: [dating]
+      dating:
+        display_key: route.romance.dating
+        transitions: [engaged]
+      engaged:
+        display_key: route.romance.engaged
+        transitions: [married]
+      married:
+        display_key: route.romance.married
+        transitions: []

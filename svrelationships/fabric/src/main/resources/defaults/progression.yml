@@ -1,0 +1,33 @@
+tracks:
+  bond:
+    minimum: 0
+    maximum: 1000
+    ranks:
+      acquaintance:
+        minimum: 0
+        display_key: progression.bond.rank.acquaintance
+      friend:
+        minimum: 200
+        display_key: progression.bond.rank.friend
+      close:
+        minimum: 500
+        display_key: progression.bond.rank.close
+      soulmate:
+        minimum: 850
+        display_key: progression.bond.rank.soulmate
+  romance:
+    minimum: 0
+    maximum: 1000
+    ranks:
+      interested:
+        minimum: 0
+        display_key: progression.romance.rank.interested
+      dating:
+        minimum: 250
+        display_key: progression.romance.rank.dating
+      devoted:
+        minimum: 650
+        display_key: progression.romance.rank.devoted
+      marriage_ready:
+        minimum: 900
+        display_key: progression.romance.rank.marriage_ready

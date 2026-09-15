@@ -1,0 +1,18 @@
+profiles:
+  partner_daily:
+    trigger_type: periodic
+    period: 1d
+    scope: per_partner
+    entries:
+      - id: berry
+        weight: 70
+        reward_type: item
+        value: cobblemon:oran_berry
+        minimum_amount: 1
+        maximum_amount: 3
+      - id: currency
+        weight: 30
+        reward_type: economy
+        value: default
+        minimum_amount: 50
+        maximum_amount: 150

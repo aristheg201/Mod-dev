@@ -1,0 +1,10 @@
+partner_capacity:
+  fallback: 1
+  downgrade_policy: grandfather_existing
+  rules:
+    - permission: svrelationships.capacity.2
+      capacity: 2
+    - permission: svrelationships.capacity.3
+      capacity: 3
+    - permission: svrelationships.capacity.5
+      capacity: 5
