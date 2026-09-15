@@ -1,0 +1,65 @@
+# ============================================================
+# SVRelationships — Main Menu
+# Drop-in server config. No Java/JAR changes required.
+# ============================================================
+
+id: main
+screen: generic_9x6
+title_key: ui.main.title
+
+components:
+  overview:
+    slot: 13
+    item: minecraft:nether_star
+    name_key: ui.main.overview
+    lore_keys:
+      - ui.main.overview.player
+      - ui.main.overview.capacity
+      - ui.main.overview.tip
+    action: none
+
+  relationships:
+    slot: 29
+    item: minecraft:heart_of_the_sea
+    name_key: ui.main.relationships
+    lore_keys:
+      - ui.main.relationships.lore1
+      - ui.main.relationships.lore2
+    action: open_gui
+    args:
+      id: owned
+
+  partners:
+    slot: 31
+    item: minecraft:rose_bush
+    name_key: ui.main.partners
+    lore_keys:
+      - ui.main.partners.lore1
+      - ui.main.partners.lore2
+    action: open_gui
+    args:
+      id: partners
+
+  daycare:
+    slot: 33
+    item: minecraft:egg
+    name_key: ui.main.daycare
+    lore_keys:
+      - ui.main.daycare.lore1
+      - ui.main.daycare.lore2
+    action: open_gui
+    args:
+      id: daycare
+
+  family:
+    slot: 35
+    item: minecraft:knowledge_book
+    name_key: ui.main.family
+    lore_keys:
+      - ui.main.family.lore1
+      - ui.main.family.lore2
+    action: open_gui
+    args:
+      id: family
+
+repeaters: {}
