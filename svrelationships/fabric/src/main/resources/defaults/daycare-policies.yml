@@ -1,0 +1,17 @@
+default:
+  offspring_species_source: participant:first
+  max_active_sessions: 1
+  retry_delay: 1m
+  offline_completion_policy: pause_until_online
+
+profiles:
+  partner_family:
+    offspring_species_source: participant:partner
+    max_active_sessions: 1
+    retry_delay: 1m
+    offline_completion_policy: pause_until_online
+  traditional:
+    offspring_species_source: participant:parent_a
+    max_active_sessions: 1
+    retry_delay: 1m
+    offline_completion_policy: pause_until_online

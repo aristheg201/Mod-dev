@@ -38,12 +38,7 @@ public final class RelationshipRewardService {
 
     public RelationshipRewardService(ConfigService config, GameplayDefinitionService definitions, RelationshipService relationships,
                                      ProviderHub providers, RewardClaimRepository claims, RewardPolicyService policies) {
-        this.config = config;
-        this.definitions = definitions;
-        this.relationships = relationships;
-        this.providers = providers;
-        this.claims = claims;
-        this.policies = policies;
+        this.config = config; this.definitions = definitions; this.relationships = relationships; this.providers = providers; this.claims = claims; this.policies = policies;
     }
 
     public ClaimResult claim(ServerPlayerEntity player, UUID pokemonId, String profileId, long nowMillis) {
@@ -53,26 +48,35 @@ public final class RelationshipRewardService {
         if (!relationship.partner()) return ClaimResult.NOT_ELIGIBLE;
         long duration = GameplayDefinitionService.durationMillis(profile.period());
         if (duration <= 0) return ClaimResult.NOT_ELIGIBLE;
-
         UUID scopeId = switch (profile.scope()) {
             case "per_player" -> UUID.nameUUIDFromBytes((player.getUuid() + ":" + profile.id()).getBytes(StandardCharsets.UTF_8));
             case "per_household" -> relationship.householdId() == null ? relationship.relationshipId() : relationship.householdId();
             default -> relationship.relationshipId();
         };
-        RewardPolicyService.Policy policy = policies.snapshot().policy(profile.id());
-        RewardClaimKey key = nextClaimKey(scopeId, profile, relationship, duration, nowMillis, policy);
+        RewardClaimKey key = nextClaimKey(scopeId, profile, relationship, duration, nowMillis, policies.snapshot().policy(profile.id()));
         if (key == null) return ClaimResult.ALREADY_CLAIMED;
+        return resolveAndDeliver(player, pokemonId, relationship, profile, key);
+    }
 
+    public ClaimResult grantOnce(ServerPlayerEntity player, UUID pokemonId, String profileId, UUID scopeId, String claimId) {
+        RewardProfileDefinition profile = definitions.snapshot().rewardProfiles().get(profileId);
+        if (profile == null) return ClaimResult.UNKNOWN_PROFILE;
+        RelationshipState relationship = relationships.state(player.getUuid(), pokemonId);
+        return resolveAndDeliver(player, pokemonId, relationship, profile, new RewardClaimKey(scopeId, profileId, claimId));
+    }
+
+    private ClaimResult resolveAndDeliver(ServerPlayerEntity player, UUID pokemonId, RelationshipState relationship,
+                                          RewardProfileDefinition profile, RewardClaimKey key) {
         RewardClaimRepository.Claim claim = claims.reserve(key);
+        if (claim.status() == RewardClaimStatus.DELIVERED) return ClaimResult.ALREADY_CLAIMED;
         RewardResolution resolution = claim.resolution();
         if (resolution == null) {
-            long seed = key.relationshipId().getMostSignificantBits() ^ key.relationshipId().getLeastSignificantBits()
-                    ^ profile.id().hashCode() ^ key.periodId().hashCode();
+            long seed = key.relationshipId().getMostSignificantBits() ^ key.relationshipId().getLeastSignificantBits() ^ profile.id().hashCode() ^ key.periodId().hashCode();
             resolution = selector.select(profile, seed, personalityRewardMultipliers(relationship));
             claim = claims.resolve(key, resolution);
         }
         if (claim.status() == RewardClaimStatus.DELIVERED) return ClaimResult.ALREADY_CLAIMED;
-        if (!deliver(player, pokemonId, resolution, policy)) return ClaimResult.DELIVERY_FAILED;
+        if (!deliver(player, pokemonId, resolution, policies.snapshot().policy(profile.id()))) return ClaimResult.DELIVERY_FAILED;
         claims.delivered(key);
         return ClaimResult.DELIVERED;
     }
@@ -83,10 +87,8 @@ public final class RelationshipRewardService {
         return personality == null ? Map.of() : personality.rewardWeightMultipliers();
     }
 
-    private RewardClaimKey nextClaimKey(UUID scopeId, RewardProfileDefinition profile, RelationshipState relationship,
-                                        long duration, long nowMillis, RewardPolicyService.Policy policy) {
-        long currentPeriod = Math.floorDiv(nowMillis, duration);
-        long firstPeriod = currentPeriod;
+    private RewardClaimKey nextClaimKey(UUID scopeId, RewardProfileDefinition profile, RelationshipState relationship, long duration, long nowMillis, RewardPolicyService.Policy policy) {
+        long currentPeriod = Math.floorDiv(nowMillis, duration), firstPeriod = currentPeriod;
         if ("accumulate".equals(policy.offlinePolicy())) {
             long partnerPeriod = Math.floorDiv(Math.max(0L, relationship.partnerSinceMillis()), duration);
             long boundedWindow = currentPeriod - Math.max(0, policy.maxPendingPeriods() - 1L);
@@ -101,8 +103,7 @@ public final class RelationshipRewardService {
         return null;
     }
 
-    private boolean deliver(ServerPlayerEntity player, UUID pokemonId, RewardResolution resolution,
-                            RewardPolicyService.Policy policy) {
+    private boolean deliver(ServerPlayerEntity player, UUID pokemonId, RewardResolution resolution, RewardPolicyService.Policy policy) {
         return switch (resolution.rewardType()) {
             case "item" -> deliverItem(player, resolution.value(), resolution.amount(), policy.overflowPolicy());
             case "economy" -> deliverEconomy(player, resolution.value(), resolution.amount());
@@ -112,25 +113,17 @@ public final class RelationshipRewardService {
     }
 
     private boolean deliverItem(ServerPlayerEntity player, String rawId, long amount, String overflowPolicy) {
-        Identifier id = Identifier.tryParse(rawId);
-        if (id == null || !Registries.ITEM.containsId(id) || amount <= 0) return false;
-        Item item = Registries.ITEM.get(id);
-        if ("deny".equals(overflowPolicy) && !canFit(player, item, amount)) return false;
-
+        Identifier id = Identifier.tryParse(rawId); if (id == null || !Registries.ITEM.containsId(id) || amount <= 0) return false;
+        Item item = Registries.ITEM.get(id); if ("deny".equals(overflowPolicy) && !canFit(player, item, amount)) return false;
         long remaining = amount;
         while (remaining > 0) {
-            int count = (int) Math.min(remaining, item.getMaxCount());
-            ItemStack stack = new ItemStack(item, count);
-            player.getInventory().insertStack(stack);
-            if (!stack.isEmpty()) player.dropItem(stack, false);
-            remaining -= count;
+            int count = (int) Math.min(remaining, item.getMaxCount()); ItemStack stack = new ItemStack(item, count); player.getInventory().insertStack(stack); if (!stack.isEmpty()) player.dropItem(stack, false); remaining -= count;
         }
         return true;
     }
 
     private boolean canFit(ServerPlayerEntity player, Item item, long amount) {
-        ItemStack template = new ItemStack(item);
-        long capacity = 0L;
+        ItemStack template = new ItemStack(item); long capacity = 0L;
         for (int slot = 0; slot < PlayerInventory.MAIN_SIZE; slot++) {
             ItemStack existing = player.getInventory().getStack(slot);
             if (existing.isEmpty()) capacity += template.getMaxCount();
@@ -141,22 +134,14 @@ public final class RelationshipRewardService {
     }
 
     private boolean deliverEconomy(ServerPlayerEntity player, String requestedProvider, long amount) {
-        if (amount < 0) return false;
-        EconomyProvider provider = null;
+        if (amount < 0) return false; EconomyProvider provider = null;
         if (!"default".equalsIgnoreCase(requestedProvider) && !requestedProvider.isBlank()) provider = providers.economy(requestedProvider).orElse(null);
-        if (provider == null) {
-            for (String id : config.snapshot().economyPriority()) {
-                Optional<EconomyProvider> candidate = providers.economy(id);
-                if (candidate.isPresent() && candidate.get().available()) { provider = candidate.get(); break; }
-            }
-        }
+        if (provider == null) for (String id : config.snapshot().economyPriority()) { Optional<EconomyProvider> candidate = providers.economy(id); if (candidate.isPresent() && candidate.get().available()) { provider = candidate.get(); break; } }
         return provider != null && provider.deposit(player.getUuid(), "default", BigDecimal.valueOf(amount));
     }
 
     private boolean deliverProgression(ServerPlayerEntity player, UUID pokemonId, String trackId, long amount) {
-        if (!definitions.snapshot().progressionTracks().containsKey(trackId)) return false;
-        relationships.addProgression(player.getUuid(), pokemonId, trackId, amount);
-        return true;
+        if (!definitions.snapshot().progressionTracks().containsKey(trackId)) return false; relationships.addProgression(player.getUuid(), pokemonId, trackId, amount); return true;
     }
 
     public enum ClaimResult { DELIVERED, ALREADY_CLAIMED, NOT_ELIGIBLE, UNKNOWN_PROFILE, DELIVERY_FAILED }

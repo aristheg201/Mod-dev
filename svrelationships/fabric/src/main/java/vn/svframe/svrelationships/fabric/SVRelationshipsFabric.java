@@ -12,6 +12,7 @@ import vn.svframe.svrelationships.fabric.command.SVRelationshipCommands;
 import vn.svframe.svrelationships.fabric.config.AnniversaryDefinitionService;
 import vn.svframe.svrelationships.fabric.config.CeremonyDefinitionService;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
+import vn.svframe.svrelationships.fabric.config.DaycarePolicyService;
 import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.config.RelationshipRuleService;
 import vn.svframe.svrelationships.fabric.config.RewardPolicyService;
@@ -38,6 +39,7 @@ public final class SVRelationshipsFabric implements ModInitializer {
         var gameplay = new GameplayDefinitionService(root); gameplay.initialize();
         var rules = new RelationshipRuleService(root); rules.initialize();
         var rewardPolicies = new RewardPolicyService(root); rewardPolicies.initialize();
+        var daycarePolicies = new DaycarePolicyService(root); daycarePolicies.initialize();
         var ceremonyDefinitions = new CeremonyDefinitionService(root); ceremonyDefinitions.initialize();
         var anniversaryDefinitions = new AnniversaryDefinitionService(root); anniversaryDefinitions.initialize();
         var guiDefinitions = new GuiDefinitionService(root);
@@ -50,7 +52,7 @@ public final class SVRelationshipsFabric implements ModInitializer {
         var lineageRepository = new LineageRepository(root.resolve("state/lineage.json")); lineageRepository.load();
         var rewardClaims = new RewardClaimRepository(root.resolve("state/reward_claims.json")); rewardClaims.load();
         var integrations = new IntegrationRegistry(); var providers = new ProviderHub();
-        var runtime = new RuntimeCoordinator(config, gameplay, rules, rewardPolicies, ceremonyDefinitions, anniversaryDefinitions, guiDefinitions, messages, households, providers, relationshipRepository, daycareRepository, lineageRepository, rewardClaims);
+        var runtime = new RuntimeCoordinator(config, gameplay, rules, rewardPolicies, daycarePolicies, ceremonyDefinitions, anniversaryDefinitions, guiDefinitions, messages, households, providers, relationshipRepository, daycareRepository, lineageRepository, rewardClaims);
         SVRelationshipCommands.register(config, gameplay, messages, households, integrations, providers, runtime);
         LifeEventCommands.register(ceremonyDefinitions, runtime, messages);
         AnniversaryCommands.register(anniversaryDefinitions, runtime, messages);

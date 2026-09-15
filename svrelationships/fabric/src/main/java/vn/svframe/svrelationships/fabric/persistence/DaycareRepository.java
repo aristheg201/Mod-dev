@@ -19,36 +19,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DaycareRepository implements AutoCloseable {
-    private final Path file;
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    private final ConcurrentHashMap<UUID, DaycareSession> sessions = new ConcurrentHashMap<>();
+    private final Path file; private final Gson gson = new GsonBuilder().setPrettyPrinting().create(); private final ConcurrentHashMap<UUID, DaycareSession> sessions = new ConcurrentHashMap<>();
     private final ExecutorService writer = Executors.newSingleThreadExecutor(r -> { var t = new Thread(r, "svrelationships-daycare-writer"); t.setDaemon(true); return t; });
-    private final AtomicBoolean dirty = new AtomicBoolean();
-    private final AtomicBoolean queued = new AtomicBoolean();
-
+    private final AtomicBoolean dirty = new AtomicBoolean(); private final AtomicBoolean queued = new AtomicBoolean();
     public DaycareRepository(Path file) { this.file = file; }
-    public void load() {
-        if (!Files.exists(file)) return;
-        try {
-            DaycareSession[] data = gson.fromJson(Files.readString(file, StandardCharsets.UTF_8), DaycareSession[].class);
-            if (data != null) Arrays.stream(data).forEach(s -> sessions.put(s.sessionId(), s));
-        } catch (IOException e) { throw new IllegalStateException("Unable to load daycare state", e); }
-    }
+    public void load() { if (!Files.exists(file)) return; try { DaycareSession[] data = gson.fromJson(Files.readString(file, StandardCharsets.UTF_8), DaycareSession[].class); if (data != null) Arrays.stream(data).forEach(s -> sessions.put(s.sessionId(), s)); } catch (IOException e) { throw new IllegalStateException("Unable to load daycare state", e); } }
     public Optional<DaycareSession> get(UUID id) { return Optional.ofNullable(sessions.get(id)); }
     public List<DaycareSession> byOwner(UUID ownerId) { return sessions.values().stream().filter(s -> s.ownerId().equals(ownerId)).toList(); }
-    public List<DaycareSession> active() { return sessions.values().stream().filter(s -> "ACTIVE".equals(s.status())).toList(); }
+    public List<DaycareSession> active() { return sessions.values().stream().filter(s -> "ACTIVE".equals(s.status()) || "REWARD_PENDING".equals(s.status())).toList(); }
     public void put(DaycareSession session) { sessions.put(session.sessionId(), session); markDirty(); }
     public void remove(UUID id) { if (sessions.remove(id) != null) markDirty(); }
     private void markDirty() { dirty.set(true); if (queued.compareAndSet(false, true)) writer.execute(this::drain); }
     private void drain() { try { while (dirty.getAndSet(false)) write(); } finally { queued.set(false); if (dirty.get()) markDirty(); } }
-    private synchronized void write() {
-        try {
-            Files.createDirectories(file.getParent());
-            Path temp = file.resolveSibling(file.getFileName() + ".tmp");
-            Files.writeString(temp, gson.toJson(List.copyOf(sessions.values())), StandardCharsets.UTF_8);
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) { dirty.set(true); throw new IllegalStateException("Unable to persist daycare state", e); }
-    }
+    private synchronized void write() { try { Files.createDirectories(file.getParent()); Path temp = file.resolveSibling(file.getFileName() + ".tmp"); Files.writeString(temp, gson.toJson(List.copyOf(sessions.values())), StandardCharsets.UTF_8); Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING); } catch (IOException e) { dirty.set(true); throw new IllegalStateException("Unable to persist daycare state", e); } }
     public synchronized void flushNow() { if (dirty.getAndSet(false) || !Files.exists(file)) write(); }
     @Override public void close() { flushNow(); writer.shutdown(); }
 }
