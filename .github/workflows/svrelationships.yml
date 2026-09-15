@@ -1,12 +1,6 @@
 name: SVRelationships build
 
 on:
-  push:
-    branches:
-      - feature/svrelationships-production-20260915
-    paths:
-      - 'svrelationships/**'
-      - '.github/workflows/svrelationships.yml'
   workflow_dispatch:
 
 permissions:
