@@ -24,6 +24,13 @@ dependencies {
     compileOnly "net.luckperms:api:${project.luckperms_api_version}"
     modImplementation "eu.pb4:sgui:1.6.1+1.21.1"
     include "eu.pb4:sgui:1.6.1+1.21.1"
+
+    // Native MiniMessage support for Minecraft 1.21-1.21.1. This platform
+    // provides Adventure 4.17.0 + MiniMessage and a safe bridge back to
+    // Minecraft's native Text components.
+    modImplementation "net.kyori:adventure-platform-fabric:5.14.2"
+    include "net.kyori:adventure-platform-fabric:5.14.2"
+
     implementation "org.yaml:snakeyaml:${project.snakeyaml_version}"
     include "org.yaml:snakeyaml:${project.snakeyaml_version}"
     testImplementation platform('org.junit:junit-bom:5.11.4')
