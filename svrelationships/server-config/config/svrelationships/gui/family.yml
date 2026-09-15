@@ -1,0 +1,87 @@
+# ============================================================
+# SVRelationships — Family & Lineage
+# Descendants use the same Cobblemon 3D Pokémon model visual.
+# ============================================================
+
+id: family
+screen: generic_9x6
+title_key: ui.family.title
+
+components:
+  guide:
+    slot: 4
+    item: minecraft:enchanted_book
+    name_key: ui.family.guide
+    lore_keys:
+      - ui.family.guide.lore1
+      - ui.family.guide.lore2
+      - ui.family.guide.lore3
+    action: none
+
+  previous:
+    slot: 45
+    item: minecraft:arrow
+    name_key: ui.navigation.previous
+    lore_keys:
+      - ui.navigation.previous.lore
+    action: page_previous
+
+  back:
+    slot: 49
+    item: minecraft:barrier
+    name_key: ui.navigation.back
+    lore_keys:
+      - ui.navigation.back.daycare
+    action: open_gui
+    args:
+      id: daycare
+
+  next:
+    slot: 53
+    item: minecraft:arrow
+    name_key: ui.navigation.next
+    lore_keys:
+      - ui.navigation.next.lore
+    action: page_next
+
+repeaters:
+  lineage:
+    source: lineage
+    visual: pokemon_model
+    slots:
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+      - 19
+      - 20
+      - 21
+      - 22
+      - 23
+      - 24
+      - 25
+      - 28
+      - 29
+      - 30
+      - 31
+      - 32
+      - 33
+      - 34
+      - 37
+      - 38
+      - 39
+      - 40
+      - 41
+      - 42
+      - 43
+    item: minecraft:knowledge_book
+    name_key: ui.family.entry
+    lore_keys:
+      - ui.family.entry.generation
+      - ui.family.entry.parents
+      - ui.family.entry.profile
+      - ui.family.entry.action
+    action: open_relationship
