@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.svframe.svrelationships.fabric.command.SVRelationshipCommands;
 import vn.svframe.svrelationships.fabric.config.ConfigService;
+import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.household.HouseholdRepository;
 import vn.svframe.svrelationships.fabric.household.HouseholdService;
 import vn.svframe.svrelationships.fabric.integration.FabricIntegrationBootstrap;
@@ -21,8 +22,13 @@ public final class SVRelationshipsFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         var root = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
+
         var config = new ConfigService(root);
         config.initialize();
+
+        var gameplay = new GameplayDefinitionService(root);
+        gameplay.initialize();
+
         var messages = new MessageService(config);
 
         var householdRepository = new HouseholdRepository(root.resolve("state/households.json"));
@@ -32,7 +38,7 @@ public final class SVRelationshipsFabric implements ModInitializer {
         var integrations = new IntegrationRegistry();
         var providers = new ProviderHub();
 
-        SVRelationshipCommands.register(config, messages, households, integrations, providers);
+        SVRelationshipCommands.register(config, gameplay, messages, households, integrations, providers);
 
         ServerLifecycleEvents.SERVER_STARTED.register(server ->
                 new FabricIntegrationBootstrap(server, households, integrations, providers).start());
