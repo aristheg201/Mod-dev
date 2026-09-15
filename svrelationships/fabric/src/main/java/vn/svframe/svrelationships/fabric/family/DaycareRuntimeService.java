@@ -20,6 +20,8 @@ import java.util.PriorityQueue;
 import java.util.UUID;
 
 public final class DaycareRuntimeService {
+    private static final long DELIVERY_RETRY_MILLIS = 60_000L;
+
     private final MinecraftServer server;
     private final ConfigService config;
     private final GameplayDefinitionService definitions;
@@ -54,8 +56,11 @@ public final class DaycareRuntimeService {
         }
         if (definition.cost() > 0 && !charge(ownerId, definition.economyProvider(), definition.currency(), definition.cost())) return StartResult.COST_FAILED;
         DaycareSession session;
-        try { session = new DaycareEngine(definitions.snapshot().daycareDefinitions()).start(ownerId, definitionId, participants, nowMillis); }
-        catch (RuntimeException exception) { return StartResult.INVALID_PARTICIPANTS; }
+        try {
+            session = new DaycareEngine(definitions.snapshot().daycareDefinitions()).start(ownerId, definitionId, participants, nowMillis);
+        } catch (RuntimeException exception) {
+            return StartResult.INVALID_PARTICIPANTS;
+        }
         repository.put(session);
         deadlines.add(new Deadline(session.completeAtMillis(), session.sessionId()));
         return StartResult.STARTED;
@@ -67,7 +72,10 @@ public final class DaycareRuntimeService {
         if (provider == null) {
             for (String id : config.snapshot().economyPriority()) {
                 var candidate = providers.economy(id);
-                if (candidate.isPresent() && candidate.get().available()) { provider = candidate.get(); break; }
+                if (candidate.isPresent() && candidate.get().available()) {
+                    provider = candidate.get();
+                    break;
+                }
             }
         }
         return provider != null && provider.withdraw(ownerId, currency == null || currency.isBlank() ? "default" : currency, BigDecimal.valueOf(amount));
@@ -76,7 +84,9 @@ public final class DaycareRuntimeService {
     public void tick(long nowMillis) {
         while (!deadlines.isEmpty() && deadlines.peek().dueAt() <= nowMillis) {
             Deadline deadline = deadlines.poll();
-            repository.get(deadline.sessionId()).filter(DaycareSession::due).ifPresent(session -> complete(session, nowMillis));
+            repository.get(deadline.sessionId())
+                    .filter(session -> session.due(nowMillis))
+                    .ifPresent(session -> complete(session, nowMillis));
         }
     }
 
@@ -88,24 +98,43 @@ public final class DaycareRuntimeService {
     private boolean complete(DaycareSession session, long nowMillis) {
         if (!"ACTIVE".equals(session.status())) return false;
         var definition = definitions.snapshot().daycareDefinitions().get(session.definitionId());
-        if (definition == null) { repository.put(session.withStatus("INVALID_DEFINITION")); return false; }
+        if (definition == null) {
+            repository.put(session.withStatus("INVALID_DEFINITION"));
+            return false;
+        }
         var inheritance = definitions.snapshot().inheritanceDefinitions().get(definition.inheritanceProfile());
-        if (inheritance == null) { repository.put(session.withStatus("INVALID_INHERITANCE")); return false; }
+        if (inheritance == null) {
+            repository.put(session.withStatus("INVALID_INHERITANCE"));
+            return false;
+        }
         long seed = session.sessionId().getMostSignificantBits() ^ session.sessionId().getLeastSignificantBits();
         var offspring = family.createOffspring(session.ownerId(), session.participantPokemonIds(), inheritance, seed);
         if (offspring.isEmpty()) {
-            repository.put(session.withStatus("PENDING_DELIVERY"));
-            deadlines.add(new Deadline(Math.addExact(nowMillis, 60_000L), session.sessionId()));
+            deadlines.add(new Deadline(Math.addExact(nowMillis, DELIVERY_RETRY_MILLIS), session.sessionId()));
             return false;
         }
         UUID pokemonId = offspring.get().getUuid();
         int generation = session.participantPokemonIds().stream()
-                .map(lineage::get).flatMap(Optional::stream).map(LineageRecord::generation).max(Integer::compareTo).orElse(0) + 1;
+                .map(lineage::get)
+                .flatMap(Optional::stream)
+                .map(LineageRecord::generation)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
         UUID householdId = session.participantPokemonIds().stream()
                 .map(parent -> relationships.existing(session.ownerId(), parent).map(state -> state.householdId()).orElse(null))
-                .filter(java.util.Objects::nonNull).findFirst().orElse(null);
-        lineage.put(new LineageRecord(pokemonId, session.ownerId(), session.participantPokemonIds(), householdId,
-                generation, nowMillis, definition.inheritanceProfile(), session.sessionId()));
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        lineage.put(new LineageRecord(
+                pokemonId,
+                session.ownerId(),
+                session.participantPokemonIds(),
+                householdId,
+                generation,
+                nowMillis,
+                definition.inheritanceProfile(),
+                session.sessionId()
+        ));
         repository.put(session.completed(pokemonId));
         relationships.state(session.ownerId(), pokemonId);
         if (householdId != null) relationships.assignHousehold(session.ownerId(), pokemonId, householdId);
