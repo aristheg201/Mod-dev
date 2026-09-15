@@ -1,0 +1,45 @@
+package vn.svframe.svrelationships.fabric.relationship;
+
+import vn.svframe.svrelationships.fabric.config.CeremonyDefinitionService;
+import vn.svframe.svrelationships.fabric.household.HouseholdService;
+import vn.svframe.svrelationships.gameplay.CeremonyDefinition;
+
+import java.util.UUID;
+
+public final class CeremonyService {
+    private final CeremonyDefinitionService definitions;
+    private final RelationshipService relationships;
+    private final PartnershipService partnerships;
+    private final HouseholdService households;
+
+    public CeremonyService(CeremonyDefinitionService definitions, RelationshipService relationships,
+                           PartnershipService partnerships, HouseholdService households) {
+        this.definitions = definitions; this.relationships = relationships; this.partnerships = partnerships; this.households = households;
+    }
+
+    public Result perform(UUID playerId, UUID pokemonId, String ceremonyId, long nowMillis) {
+        CeremonyDefinition definition = definitions.snapshot().definitions().get(ceremonyId);
+        if (definition == null) return new Result(Status.UNKNOWN_DEFINITION, null, null);
+        var state = relationships.state(playerId, pokemonId);
+        String completionFlag = "ceremony." + ceremonyId + ".completed_at";
+        if (!definition.repeatable() && state.flag(completionFlag) != null) return new Result(Status.ALREADY_COMPLETED, definition.messageKey(), null);
+        long cooldownUntil = state.cooldownUntil("ceremony." + ceremonyId);
+        if (cooldownUntil > nowMillis) return new Result(Status.COOLDOWN, definition.messageKey(), null);
+        if (definition.requireHousehold() && households.get(playerId).isEmpty()) return new Result(Status.HOUSEHOLD_REQUIRED, definition.messageKey(), null);
+        String routeState;
+        try { routeState = relationships.currentRoute(playerId, pokemonId, definition.requiredRoute()); }
+        catch (RuntimeException exception) { return new Result(Status.ROUTE_REQUIRED, definition.messageKey(), null); }
+        if (!definition.requiredState().isBlank() && !definition.requiredState().equals(routeState)) return new Result(Status.ROUTE_REQUIRED, definition.messageKey(), null);
+
+        PartnershipService.Result partnership = partnerships.advance(playerId, pokemonId, definition.partnershipMilestone());
+        if (partnership != PartnershipService.Result.SUCCESS) return new Result(Status.PARTNERSHIP_FAILED, definition.messageKey(), partnership);
+        for (var delta : definition.progressionDeltas().entrySet()) relationships.addProgression(playerId, pokemonId, delta.getKey(), delta.getValue());
+        state.setFlag(completionFlag, Long.toString(nowMillis));
+        if (definition.cooldownMillis() > 0) state.setCooldownUntil("ceremony." + ceremonyId, Math.addExact(nowMillis, definition.cooldownMillis()));
+        relationships.touch();
+        return new Result(Status.SUCCESS, definition.messageKey(), partnership);
+    }
+
+    public enum Status { SUCCESS, UNKNOWN_DEFINITION, ALREADY_COMPLETED, COOLDOWN, HOUSEHOLD_REQUIRED, ROUTE_REQUIRED, PARTNERSHIP_FAILED }
+    public record Result(Status status, String messageKey, PartnershipService.Result partnershipResult) {}
+}

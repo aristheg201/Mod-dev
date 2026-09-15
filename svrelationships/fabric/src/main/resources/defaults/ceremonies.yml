@@ -1,0 +1,10 @@
+ceremonies:
+  wedding:
+    required_route: romance
+    required_state: engaged
+    partnership_milestone: married
+    require_household: false
+    repeatable: false
+    cooldown: 0s
+    progression: {}
+    message_key: partnership.married.success
