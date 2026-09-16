@@ -14,6 +14,7 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
+import org.lwjgl.glfw.GLFW
 import java.util.concurrent.ThreadLocalRandom
 
 class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
@@ -40,17 +41,26 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
         addRenderableWidget(Button.builder(Component.literal("↓")) { moveSelected(1) }.bounds(202, 8, 24, 20).build())
         undoButton = addRenderableWidget(Button.builder(Component.literal("Undo")) { undo() }.bounds(230, 8, 44, 20).build())
         redoButton = addRenderableWidget(Button.builder(Component.literal("Redo")) { redo() }.bounds(278, 8, 44, 20).build())
-        addRenderableWidget(Button.builder(Component.literal("Assets")) { Minecraft.getInstance().setScreen(AssetStudioScreen(this, draft, pageIndex)) }.bounds(326, 8, 50, 20).build())
-        addRenderableWidget(Button.builder(Component.literal("Fakemon")) { Minecraft.getInstance().setScreen(FakemonEditorScreen(this, draft)) }.bounds(380, 8, 58, 20).build())
+        addRenderableWidget(Button.builder(Component.literal("Assets")) { history.breakCoalescing(); Minecraft.getInstance().setScreen(AssetStudioScreen(this, draft, pageIndex)) }.bounds(326, 8, 50, 20).build())
+        addRenderableWidget(Button.builder(Component.literal("Fakemon")) { history.breakCoalescing(); Minecraft.getInstance().setScreen(FakemonEditorScreen(this, draft)) }.bounds(380, 8, 58, 20).build())
         addRenderableWidget(Button.builder(Component.literal("Preview")) {
+            history.breakCoalescing()
             Minecraft.getInstance().setScreen(HubScreen(draft.pages.getOrNull(pageIndex)?.route ?: "home", clone(draft), this))
         }.bounds(442, 8, 58, 20).build())
         addRenderableWidget(Button.builder(Component.literal("Publish")) { publish() }.bounds(504, 8, 62, 20).build())
 
-        titleBox = field(44, "Tiêu đề") { value -> mutatePage { it.copy(title = LocalizedText(it.title.values + ("vi_vn" to value))) } }
-        routeBox = field(70, "Route") { value -> mutatePage { it.copy(route = value.trim()) } }
-        categoryBox = field(96, "Category") { value -> mutatePage { it.copy(category = value.trim()) } }
-        primaryBox = field(150, "Nội dung component") { value -> mutateComponentProps { props -> props.addProperty("text", value) } }
+        titleBox = field(44, "Tiêu đề") { value ->
+            mutatePage(pageFieldKey("title")) { it.copy(title = LocalizedText(it.title.values + ("vi_vn" to value))) }
+        }
+        routeBox = field(70, "Route") { value ->
+            mutatePage(pageFieldKey("route")) { it.copy(route = value.trim()) }
+        }
+        categoryBox = field(96, "Category") { value ->
+            mutatePage(pageFieldKey("category")) { it.copy(category = value.trim()) }
+        }
+        primaryBox = field(150, "Nội dung component") { value ->
+            mutateComponentProps(componentFieldKey("text")) { props -> props.addProperty("text", value) }
+        }
         syncFields()
     }
 
@@ -99,29 +109,35 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
             }
         }
 
+        if (componentIndex >= 0) {
+            gui.drawString(font, "Enter / chuột phải: chỉnh đầy đủ block", mid + 12, 124, theme.palette.accent2, false)
+        }
         if (publishing) gui.drawString(font, "ĐANG PUBLISH...", mid + 12, height - 38, theme.palette.accent, true)
         ClientHubState.lastEditorMessage?.let { gui.drawString(font, it.take(70), mid + 12, height - 24, theme.palette.accent, false) }
         super.render(gui, mouseX, mouseY, partialTick)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (button == 0 && mouseY >= 58) {
+        if (mouseY >= 58) {
             val left = (width * .25).toInt()
             val mid = (width * .65).toInt()
-            if (mouseX < left) {
+            if (mouseX < left && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 val index = ((mouseY - 58) / 24).toInt()
                 if (index in draft.pages.indices) {
+                    history.breakCoalescing()
                     pageIndex = index
                     componentIndex = -1
                     syncFields()
                     return true
                 }
-            } else if (mouseX < mid) {
+            } else if (mouseX < mid && button in setOf(GLFW.GLFW_MOUSE_BUTTON_LEFT, GLFW.GLFW_MOUSE_BUTTON_RIGHT)) {
                 val indices = draft.pages.getOrNull(pageIndex)?.components?.indices ?: IntRange.EMPTY
                 val index = ((mouseY - 58) / 26).toInt()
                 if (index in indices) {
+                    history.breakCoalescing()
                     componentIndex = index
                     syncFields()
+                    if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) openInspector()
                     return true
                 }
             }
@@ -130,18 +146,21 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        val control = modifiers and 2 != 0
-        if (control && keyCode == 90) {
-            if (modifiers and 1 != 0) redo() else undo()
+        val control = modifiers and GLFW.GLFW_MOD_CONTROL != 0
+        if (control && keyCode == GLFW.GLFW_KEY_Z) {
+            if (modifiers and GLFW.GLFW_MOD_SHIFT != 0) redo() else undo()
             return true
         }
-        if (control && keyCode == 89) {
+        if (control && keyCode == GLFW.GLFW_KEY_Y) {
             redo()
             return true
         }
-        if (keyCode == 261) {
+        if (keyCode == GLFW.GLFW_KEY_DELETE) {
             deleteSelected()
             return true
+        }
+        if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) && componentIndex >= 0 && !isAnyEditorFocused()) {
+            return openInspector()
         }
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
@@ -192,6 +211,7 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
 
     private fun deleteSelected() {
         if (publishing) return
+        history.breakCoalescing()
         val page = draft.pages.getOrNull(pageIndex) ?: return
         if (componentIndex in page.components.indices) {
             val components = page.components.toMutableList().also { it.removeAt(componentIndex) }
@@ -213,6 +233,7 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
 
     private fun moveSelected(delta: Int) {
         if (publishing || delta == 0) return
+        history.breakCoalescing()
         val page = draft.pages.getOrNull(pageIndex) ?: return
         if (componentIndex in page.components.indices) {
             val target = componentIndex + delta
@@ -235,14 +256,14 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
         syncFields()
     }
 
-    private fun mutatePage(transform: (HubPage) -> HubPage) {
+    private fun mutatePage(coalesceKey: String, transform: (HubPage) -> HubPage) {
         if (syncing || publishing) return
         val page = draft.pages.getOrNull(pageIndex) ?: return
         val pages = draft.pages.toMutableList().also { it[pageIndex] = transform(page) }
-        replaceDraft(draft.copy(pages = pages), sync = false)
+        draft = history.replace(draft.copy(pages = pages), coalesceKey)
     }
 
-    private fun mutateComponentProps(transform: (JsonObject) -> Unit) {
+    private fun mutateComponentProps(coalesceKey: String, transform: (JsonObject) -> Unit) {
         if (syncing || publishing) return
         val page = draft.pages.getOrNull(pageIndex) ?: return
         val components = page.components.toMutableList()
@@ -251,13 +272,32 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
         transform(props)
         components[componentIndex] = component.copy(props = props)
         val pages = draft.pages.toMutableList().also { it[pageIndex] = page.copy(components = components) }
-        replaceDraft(draft.copy(pages = pages), sync = false)
+        draft = history.replace(draft.copy(pages = pages), coalesceKey)
     }
 
     private fun replaceDraft(value: HubContent, sync: Boolean = true) {
         draft = history.replace(value)
         if (sync) syncFields()
     }
+
+    private fun pageFieldKey(field: String): String = "page:${draft.pages.getOrNull(pageIndex)?.id ?: pageIndex}:$field"
+
+    private fun componentFieldKey(field: String): String =
+        "component:${draft.pages.getOrNull(pageIndex)?.components?.getOrNull(componentIndex)?.id ?: componentIndex}:$field"
+
+    private fun openInspector(): Boolean {
+        if (publishing) return false
+        val component = draft.pages.getOrNull(pageIndex)?.components?.getOrNull(componentIndex) ?: return false
+        history.breakCoalescing()
+        Minecraft.getInstance().setScreen(ComponentInspectorScreen(this, component))
+        return true
+    }
+
+    private fun isAnyEditorFocused(): Boolean =
+        (::titleBox.isInitialized && titleBox.isFocused) ||
+            (::routeBox.isInitialized && routeBox.isFocused) ||
+            (::categoryBox.isInitialized && categoryBox.isFocused) ||
+            (::primaryBox.isInitialized && primaryBox.isFocused)
 
     private fun undo() {
         if (publishing || !history.canUndo()) return
@@ -293,6 +333,7 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
 
     private fun publish() {
         if (publishing) return
+        history.breakCoalescing()
         val validation = HubValidator.validate(draft)
         if (!validation.ok) {
             ClientHubState.lastEditorMessage = validation.errors.take(3).joinToString(" | ")
