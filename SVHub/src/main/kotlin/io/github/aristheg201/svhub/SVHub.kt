@@ -24,11 +24,22 @@ object SVHub : ModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             SVHubRuntime.server = server
-            runCatching { SVHubRuntime.store.load() }
-                .onSuccess { LOGGER.info("SVHub loaded revision {} with {} pages", it.revision, it.content.pages.size) }
-                .onFailure { LOGGER.error("Unable to load SVHub content; keeping safe defaults", it) }
+            SVHubRuntime.store.initializeAsync().whenComplete { snapshot, error ->
+                server.execute {
+                    if (error != null) {
+                        LOGGER.error("Unable to load SVHub content; keeping safe defaults", error)
+                    } else {
+                        LOGGER.info("SVHub loaded revision {} with {} pages", snapshot.revision, snapshot.content.pages.size)
+                        SVHubNetwork.broadcastHello()
+                    }
+                }
+            }
         }
-        ServerLifecycleEvents.SERVER_STOPPING.register { SVHubRuntime.server = null }
+
+        ServerLifecycleEvents.SERVER_STOPPING.register {
+            SVHubRuntime.server = null
+            SVHubRuntime.store.close()
+        }
 
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> SVHubNetwork.onJoin(handler.player) }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> SVHubNetwork.onDisconnect(handler.player) }
