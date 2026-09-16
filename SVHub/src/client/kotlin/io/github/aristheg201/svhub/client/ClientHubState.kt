@@ -3,7 +3,6 @@ package io.github.aristheg201.svhub.client
 import io.github.aristheg201.svhub.client.api.SVHubClientApi
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
-import io.github.aristheg201.svhub.client.cobblemon.PokemonPortraitCache
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
 import io.github.aristheg201.svhub.content.HubContent
 import io.github.aristheg201.svhub.content.HubContentCodec
@@ -98,7 +97,6 @@ object ClientHubState {
         editorAssembler.clear()
         CobblemonWikiProvider.clearCaches()
         PokemonModelRenderer.clear()
-        PokemonPortraitCache.clear()
         GeneratedBackgroundRenderer.clear()
     }
 }
