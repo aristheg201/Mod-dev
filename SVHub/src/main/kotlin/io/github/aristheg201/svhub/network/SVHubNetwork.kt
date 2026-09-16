@@ -17,9 +17,11 @@ import java.util.concurrent.ThreadLocalRandom
 
 object SVHubNetwork {
     private data class ClientState(val protocol: Int, val modIds: Set<String>)
+    private data class SnapshotRateKey(val playerId: UUID, val editor: Boolean)
 
     private val clients = ConcurrentHashMap<UUID, ClientState>()
     private val assemblers = ConcurrentHashMap<UUID, ChunkAssembler>()
+    private val snapshotRequests = ConcurrentHashMap<SnapshotRateKey, Long>()
 
     fun registerCommon() {
         PayloadTypeRegistry.playS2C().register(HubHelloS2C.TYPE, HubHelloS2C.CODEC)
@@ -35,7 +37,12 @@ object SVHubNetwork {
             context.server().execute {
                 val player = context.player()
                 clients[player.uuid] = ClientState(payload.protocol, EnvironmentManifest.modIds(payload.clientManifest))
-                if (payload.protocol == HUB_PROTOCOL_VERSION && SVHubRuntime.store.isReady() && payload.cachedRevision != SVHubRuntime.store.snapshot().revision) {
+                if (
+                    payload.protocol == HUB_PROTOCOL_VERSION &&
+                    SVHubRuntime.store.isReady() &&
+                    payload.cachedRevision != SVHubRuntime.store.snapshot().revision &&
+                    allowSnapshotRequest(player, false)
+                ) {
                     sendSnapshot(player, false)
                 }
             }
@@ -52,8 +59,9 @@ object SVHubNetwork {
                     sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, "SVHub đang tải dữ liệu, hãy thử lại ngay sau đó.")
                     return@execute
                 }
-                if (SVHubPermissions.has(player, SVHubPermissions.OPEN, 0)) {
-                    sendSnapshot(player, payload.editor && SVHubPermissions.has(player, SVHubPermissions.EDITOR, 2))
+                val editor = payload.editor && SVHubPermissions.has(player, SVHubPermissions.EDITOR, 2)
+                if (SVHubPermissions.has(player, SVHubPermissions.OPEN, 0) && allowSnapshotRequest(player, editor)) {
+                    sendSnapshot(player, editor)
                 }
             }
         }
@@ -91,6 +99,7 @@ object SVHubNetwork {
     fun onDisconnect(player: ServerPlayer) {
         clients.remove(player.uuid)
         assemblers.remove(player.uuid)?.clear()
+        snapshotRequests.keys.removeIf { it.playerId == player.uuid }
         ServerActionDispatcher.clear(player)
     }
 
@@ -100,6 +109,7 @@ object SVHubNetwork {
         ServerPlayNetworking.send(player, HubOpenS2C(page, editor && SVHubPermissions.has(player, SVHubPermissions.EDITOR, 2)))
     }
 
+    /** Server-initiated send; caller has already decided the delivery is needed. */
     fun sendSnapshot(player: ServerPlayer, editor: Boolean) {
         if (!SVHubRuntime.store.isReady()) return
         val clientMods = clients[player.uuid]?.modIds.orEmpty()
@@ -117,6 +127,13 @@ object SVHubNetwork {
         SVHubRuntime.server?.playerList?.players?.forEach { player ->
             if (SVHubPermissions.has(player, SVHubPermissions.OPEN, 0)) sendSnapshot(player, false)
         }
+    }
+
+    private fun allowSnapshotRequest(player: ServerPlayer, editor: Boolean): Boolean {
+        val now = System.currentTimeMillis()
+        val key = SnapshotRateKey(player.uuid, editor)
+        val previous = snapshotRequests.put(key, now)
+        return previous == null || now - previous >= SNAPSHOT_REQUEST_COOLDOWN_MS
     }
 
     private fun receiveEditorChunk(player: ServerPlayer, payload: HubEditorChunkC2S) {
@@ -161,4 +178,6 @@ object SVHubNetwork {
     private fun sendEditorResult(player: ServerPlayer, ok: Boolean, revision: Long, message: String) {
         ServerPlayNetworking.send(player, HubEditorResultS2C(ok, revision, message.take(512)))
     }
+
+    private const val SNAPSHOT_REQUEST_COOLDOWN_MS = 750L
 }
