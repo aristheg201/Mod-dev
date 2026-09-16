@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -32,11 +32,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: '8.14.3'
 
       - name: Validate project structure
         shell: bash
         run: |
+          set -euo pipefail
           test -f build.gradle.kts
           test -f gradle.properties
           test -f src/main/resources/fabric.mod.json
