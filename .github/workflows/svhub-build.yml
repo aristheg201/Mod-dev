@@ -51,20 +51,24 @@ jobs:
       - name: Compile, test and remap
         run: gradle --no-daemon --stacktrace clean test remapJar sourcesJar
 
-      - name: Verify Fabric entrypoints are instantiable
+      - name: Verify final Fabric entrypoints
         shell: bash
         run: |
           set -euo pipefail
-          DEV_JAR="$(find build/libs -maxdepth 1 -type f -name 'SVHub-*-dev.jar' ! -name '*sources*' | head -n1)"
           REMAPPED_JAR="$(find build/libs -maxdepth 1 -type f -name 'SVHub-fabric-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
-          test -n "$DEV_JAR"
           test -n "$REMAPPED_JAR"
 
           MAIN_CLASS='io.github.aristheg201.svhub.SVHubEntrypoint'
           CLIENT_CLASS='io.github.aristheg201.svhub.client.SVHubClientEntrypoint'
+          MAIN_PATH='io/github/aristheg201/svhub/SVHubEntrypoint.class'
+          CLIENT_PATH='io/github/aristheg201/svhub/client/SVHubClientEntrypoint.class'
 
-          javap -classpath "$DEV_JAR" -public "$MAIN_CLASS" | tee /tmp/svhub-main-entrypoint.txt
-          javap -classpath "$DEV_JAR" -public "$CLIENT_CLASS" | tee /tmp/svhub-client-entrypoint.txt
+          jar tf "$REMAPPED_JAR" > /tmp/svhub-final-jar.txt
+          grep -Fx "$MAIN_PATH" /tmp/svhub-final-jar.txt
+          grep -Fx "$CLIENT_PATH" /tmp/svhub-final-jar.txt
+
+          javap -classpath "$REMAPPED_JAR" -public "$MAIN_CLASS" | tee /tmp/svhub-main-entrypoint.txt
+          javap -classpath "$REMAPPED_JAR" -public "$CLIENT_CLASS" | tee /tmp/svhub-client-entrypoint.txt
           grep -F "public ${MAIN_CLASS}();" /tmp/svhub-main-entrypoint.txt
           grep -F "public ${CLIENT_CLASS}();" /tmp/svhub-client-entrypoint.txt
 
@@ -76,8 +80,24 @@ jobs:
           data = json.loads(Path('/tmp/svhub-fabric.mod.json').read_text())
           assert data['entrypoints']['main'] == ['io.github.aristheg201.svhub.SVHubEntrypoint'], data['entrypoints']['main']
           assert data['entrypoints']['client'] == ['io.github.aristheg201.svhub.client.SVHubClientEntrypoint'], data['entrypoints']['client']
-          print('Fabric entrypoint manifest + public constructor checks passed')
+          print('Final Fabric entrypoint manifest + class + public constructor checks passed')
           PY
+
+      - name: Verify bundled Placeholder API and MiniMessage runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(find build/libs -maxdepth 1 -type f -name 'SVHub-fabric-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          test -n "$JAR"
+          jar tf "$JAR" > /tmp/svhub-runtime-contents.txt
+
+          grep -E '^META-INF/jars/placeholder-api-.*\.jar$' /tmp/svhub-runtime-contents.txt
+          grep -E '^META-INF/jars/adventure-text-minimessage-.*\.jar$' /tmp/svhub-runtime-contents.txt
+          grep -E '^META-INF/jars/adventure-api-.*\.jar$' /tmp/svhub-runtime-contents.txt
+          grep -E '^META-INF/jars/adventure-key-.*\.jar$' /tmp/svhub-runtime-contents.txt
+          grep -E '^META-INF/jars/examination-api-.*\.jar$' /tmp/svhub-runtime-contents.txt
+          grep -E '^META-INF/jars/examination-string-.*\.jar$' /tmp/svhub-runtime-contents.txt
+          echo 'Bundled Placeholder API + MiniMessage runtime jars verified'
 
       - name: Inspect resolved Cobblemon model API
         shell: bash
