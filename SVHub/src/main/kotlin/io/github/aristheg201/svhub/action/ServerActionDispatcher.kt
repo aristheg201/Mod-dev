@@ -1,5 +1,6 @@
 package io.github.aristheg201.svhub.action
 
+import io.github.aristheg201.svhub.SVHub
 import io.github.aristheg201.svhub.SVHubRuntime
 import io.github.aristheg201.svhub.api.SVHubApi
 import io.github.aristheg201.svhub.permission.SVHubPermissions
@@ -39,10 +40,30 @@ object ServerActionDispatcher {
             "run_command" -> {
                 val command = action.value.trim().removePrefix("/")
                 if (command.isBlank() || command.length > 256 || command.any { it == '\n' || it == '\r' || it == ';' }) return
+                SVHub.LOGGER.info(
+                    "Hub action: player={} uuid={} action={} page={} component={} type=run_command command=/{}",
+                    player.gameProfile.name,
+                    player.uuid,
+                    action.id,
+                    page.id,
+                    component.id,
+                    command
+                )
                 player.server.commands.performPrefixedCommand(player.createCommandSourceStack(), command)
             }
             "open_page", "copy_text", "open_url", "close", "back" -> Unit // client presentation actions
-            else -> SVHubApi.dispatchCustomAction(player, action)
+            else -> {
+                SVHub.LOGGER.info(
+                    "Hub action: player={} uuid={} action={} page={} component={} type={}",
+                    player.gameProfile.name,
+                    player.uuid,
+                    action.id,
+                    page.id,
+                    component.id,
+                    action.type
+                )
+                SVHubApi.dispatchCustomAction(player, action)
+            }
         }
     }
 }
