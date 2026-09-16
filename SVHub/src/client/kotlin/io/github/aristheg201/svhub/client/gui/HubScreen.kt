@@ -2,6 +2,7 @@ package io.github.aristheg201.svhub.client.gui
 
 import io.github.aristheg201.svhub.client.ClientHubState
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
+import io.github.aristheg201.svhub.client.render.MiniMessageText
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.DefaultContent
 import io.github.aristheg201.svhub.content.HubComponent
@@ -26,6 +27,8 @@ class HubScreen(
 ) : SVHubScreen(Component.literal("SVHub")) {
     private var route = initialRoute
     private lateinit var search: EditBox
+    private var searchX = 0
+    private var searchWidth = 0
     private var tickCounter = 0L
     private var scrollOffset = 0
     private var contentHeight = 0
@@ -44,10 +47,12 @@ class HubScreen(
         get() = overrideContent ?: ClientHubState.playerContent ?: DefaultContent.create()
 
     override fun init() {
-        val searchWidth = minOf(340, width - 180).coerceAtLeast(140)
-        search = EditBox(font, width / 2 - searchWidth / 2, 9, searchWidth, 22, Component.literal("Tìm kiếm"))
+        searchWidth = minOf(360, width - 220).coerceAtLeast(130)
+        searchX = width / 2 - searchWidth / 2
+        search = EditBox(font, searchX + 7, 10, searchWidth - 14, 22, Component.literal("Tìm kiếm"))
         search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, shop, hướng dẫn..."))
         search.setMaxLength(160)
+        search.setBordered(false)
         search.setResponder { scrollOffset = 0 }
         addRenderableWidget(search)
     }
@@ -69,7 +74,7 @@ class HubScreen(
         renderChrome(gui, theme, mouseX, mouseY)
 
         if (search.value.isNotBlank()) {
-            HubSearchOverlay.render(gui, font, theme, search.value, width, 44, 12, ::navigate, hitTargets)
+            HubSearchOverlay.render(gui, font, theme, search.value, width, CHROME_HEIGHT + 7, 12, ::navigate, hitTargets)
             super.render(gui, mouseX, mouseY, partialTick)
             return
         }
@@ -95,46 +100,67 @@ class HubScreen(
     }
 
     private fun renderChrome(gui: GuiGraphics, theme: HubTheme, mouseX: Int, mouseY: Int) {
-        gui.fill(0, 0, width, 39, 0xF00B0F14.toInt())
+        val p = theme.palette
+        gui.fill(0, 0, width, CHROME_HEIGHT, PixelUi.withAlpha(p.panel, 248))
+        gui.fill(0, CHROME_HEIGHT - 3, width, CHROME_HEIGHT, p.accent)
+        gui.fill(0, CHROME_HEIGHT - 1, width, CHROME_HEIGHT, p.accent2)
+
         val canBack = historyIndex > 0
         if (canBack) {
-            val hovered = mouseX in 8 until 36 && mouseY in 7 until 33
-            PixelUi.button(gui, 8, 7, 28, 26, hovered, theme)
-            gui.drawCenteredString(font, "←", 22, 16, theme.palette.text)
-            hitTargets += HubHitTarget(8, 7, 36, 33) { goBack() }
+            val hovered = mouseX in 8 until 36 && mouseY in 8 until 34
+            PixelUi.button(gui, 8, 8, 28, 26, hovered, theme)
+            gui.drawCenteredString(font, "←", 22, 17, p.text)
+            hitTargets += HubHitTarget(8, 8, 36, 34) { goBack() }
         }
-        gui.drawString(font, "SV HUB", if (canBack) 44 else 12, 15, theme.palette.accent, true)
-        if (ClientHubState.canEdit && overrideContent == null && width >= 520) {
-            val x = width - 78
-            val hovered = mouseX in x until x + 68 && mouseY in 8 until 31
-            PixelUi.button(gui, x, 8, 68, 23, hovered, theme)
-            gui.drawCenteredString(font, "Editor", x + 34, 16, theme.palette.text)
-            hitTargets += HubHitTarget(x, 8, x + 68, 31) { io.github.aristheg201.svhub.client.SVHubClient.requestEditor() }
+        MiniMessageText.draw(
+            gui,
+            font,
+            "<bold><color:#2E7168>SV</color> <color:#C58A35>HUB</color></bold>",
+            if (canBack) 45 else 13,
+            17,
+            p.accent
+        )
+
+        // Light search field backing; the EditBox itself has no dark vanilla border.
+        PixelUi.panel(gui, searchX, 7, searchWidth, 28, p.panelAlt, if (search.isFocused) p.accent else PixelUi.withAlpha(p.accent, 95))
+        search.setTextColor(p.text)
+        search.setTextColorUneditable(p.mutedText)
+
+        if (ClientHubState.canEdit && overrideContent == null && width >= 560) {
+            val x = width - 82
+            val hovered = mouseX in x until x + 72 && mouseY in 8 until 34
+            PixelUi.button(gui, x, 8, 72, 26, hovered, theme)
+            gui.drawCenteredString(font, "Editor", x + 36, 17, p.text)
+            hitTargets += HubHitTarget(x, 8, x + 72, 34) { io.github.aristheg201.svhub.client.SVHubClient.requestEditor() }
         }
     }
 
     private fun renderStaticPage(gui: GuiGraphics, page: HubPage?, theme: HubTheme, mouseX: Int, mouseY: Int) {
         val resolved = page ?: return renderNotFound(gui, theme, route)
-        val sidebarWidth = if (width >= 760) 170 else 0
+        val sidebarWidth = if (width >= 760) 184 else 0
         if (sidebarWidth > 0) renderSidebar(gui, theme, sidebarWidth, mouseX, mouseY)
         val left = sidebarWidth + 24
         val right = width - 24
-        val top = 48
+        val top = CHROME_HEIGHT + 10
         val bottom = height - 18
         val availableWidth = (right - left).coerceAtLeast(120)
 
         gui.enableScissor(left - 4, top, right + 4, bottom)
-        var y = top + 4 - scrollOffset
-        gui.drawString(font, resolved.title.resolve(content.defaultLocale), left, y, theme.palette.accent, true)
-        y += 17
+        var y = top + 2 - scrollOffset
+
+        val title = resolved.title.resolve(content.defaultLocale)
         val subtitle = resolved.subtitle.resolve(content.defaultLocale)
-        if (subtitle.isNotBlank()) {
-            font.split(Component.literal(subtitle), availableWidth).take(3).forEach { line ->
-                gui.drawString(font, line, left, y, theme.palette.mutedText, false)
-                y += 11
-            }
-            y += 5
+        val subtitleLines = if (subtitle.isBlank()) emptyList() else MiniMessageText.split(font, subtitle, availableWidth - 28).take(4)
+        val heroHeight = 35 + subtitleLines.size * 12
+        PixelUi.panel(gui, left, y, availableWidth, heroHeight, theme.palette.panel, theme.palette.accent)
+        gui.fill(left, y, left + 6, y + heroHeight, theme.palette.accent)
+        MiniMessageText.draw(gui, font, title, left + 16, y + 10, theme.palette.accent, true)
+        var heroY = y + 25
+        subtitleLines.forEach { line ->
+            gui.drawString(font, line, left + 16, heroY, theme.palette.mutedText, false)
+            heroY += 12
         }
+        y += heroHeight + 12
 
         val state = HubComponentRenderer.RenderState(
             content = content,
@@ -154,8 +180,7 @@ class HubScreen(
         )
 
         resolved.components.forEach { component ->
-            val consumed = HubComponentRenderer.render(gui, component, left, y, availableWidth, state)
-            y += consumed
+            y += HubComponentRenderer.render(gui, component, left, y, availableWidth, state)
         }
         contentHeight = (y + scrollOffset - top + 18).coerceAtLeast(0)
         gui.disableScissor()
@@ -166,33 +191,39 @@ class HubScreen(
         if (maxScroll > 0) {
             val barHeight = ((viewport.toFloat() / contentHeight) * viewport).roundToInt().coerceAtLeast(24)
             val track = viewport - barHeight
-            val barY = top + if (maxScroll == 0) 0 else ((scrollOffset.toFloat() / maxScroll) * track).roundToInt()
-            gui.fill(width - 8, top, width - 5, bottom, 0x44343D46)
-            gui.fill(width - 8, barY, width - 5, barY + barHeight, theme.palette.accent2)
+            val barY = top + ((scrollOffset.toFloat() / maxScroll) * track).roundToInt()
+            gui.fill(width - 8, top, width - 5, bottom, PixelUi.withAlpha(theme.palette.mutedText, 55))
+            gui.fill(width - 8, barY, width - 5, barY + barHeight, theme.palette.accent)
         }
     }
 
     private fun renderSidebar(gui: GuiGraphics, theme: HubTheme, sidebarWidth: Int, mouseX: Int, mouseY: Int) {
-        gui.fill(0, 39, sidebarWidth, height, 0xE00C1117.toInt())
-        var y = 52
+        val p = theme.palette
+        gui.fill(0, CHROME_HEIGHT, sidebarWidth, height, PixelUi.withAlpha(p.panel, 242))
+        gui.fill(sidebarWidth - 2, CHROME_HEIGHT, sidebarWidth, height, PixelUi.withAlpha(p.accent, 65))
+        MiniMessageText.draw(gui, font, "<bold>MỤC LỤC</bold>", 16, CHROME_HEIGHT + 13, p.mutedText)
+        var y = CHROME_HEIGHT + 32
         content.pages.filter { it.showInNavigation }.take(18).forEach { page ->
             val active = page.route == route || page.id == route
-            val hovered = mouseX in 8 until sidebarWidth - 8 && mouseY in y until y + 28
+            val hovered = mouseX in 8 until sidebarWidth - 8 && mouseY in y until y + 29
             if (active || hovered) {
-                gui.fill(8, y, sidebarWidth - 8, y + 28, if (active) 0x99304046.toInt() else 0x55303A42)
+                gui.fill(8, y, sidebarWidth - 8, y + 29, if (active) p.panelAlt else PixelUi.withAlpha(p.panelAlt, 175))
+                gui.fill(8, y, 12, y + 29, if (active) p.accent else p.accent2)
             }
-            gui.drawString(font, font.plainSubstrByWidth(page.title.resolve(content.defaultLocale), sidebarWidth - 28), 16, y + 10, if (active) theme.palette.accent else theme.palette.text, active)
-            hitTargets += HubHitTarget(8, y, sidebarWidth - 8, y + 28) { navigate(page.route) }
-            y += 31
+            val parsed = MiniMessageText.component(page.title.resolve(content.defaultLocale))
+            val line = font.split(parsed, sidebarWidth - 34).firstOrNull() ?: Component.empty()
+            gui.drawString(font, line, 18, y + 10, if (active) p.accent else p.text, active)
+            hitTargets += HubHitTarget(8, y, sidebarWidth - 8, y + 29) { navigate(page.route) }
+            y += 32
         }
     }
 
     private fun renderNotFound(gui: GuiGraphics, theme: HubTheme, missing: String) {
         val panelWidth = minOf(480, width - 48)
         val left = (width - panelWidth) / 2
-        val top = maxOf(64, height / 3)
+        val top = maxOf(CHROME_HEIGHT + 24, height / 3)
         PixelUi.panel(gui, left, top, panelWidth, 92, theme.palette.panel, theme.palette.danger)
-        gui.drawCenteredString(font, "Không tìm thấy nội dung", width / 2, top + 24, theme.palette.danger)
+        MiniMessageText.drawCentered(gui, font, "<bold>Không tìm thấy nội dung</bold>", width / 2, top + 24, theme.palette.danger)
         gui.drawCenteredString(font, font.plainSubstrByWidth(missing, panelWidth - 24), width / 2, top + 48, theme.palette.mutedText)
     }
 
@@ -295,5 +326,9 @@ class HubScreen(
             return true
         }
         return super.keyPressed(keyCode, scanCode, modifiers)
+    }
+
+    companion object {
+        private const val CHROME_HEIGHT = 42
     }
 }
