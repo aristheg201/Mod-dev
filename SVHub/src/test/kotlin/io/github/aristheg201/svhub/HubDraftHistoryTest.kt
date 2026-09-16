@@ -1,0 +1,50 @@
+package io.github.aristheg201.svhub
+
+import io.github.aristheg201.svhub.content.DefaultContent
+import io.github.aristheg201.svhub.content.HubDraftHistory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class HubDraftHistoryTest {
+    @Test
+    fun `undo redo preserve independent deep snapshots`() {
+        val initial = DefaultContent.create()
+        val history = HubDraftHistory(initial, 8)
+
+        history.mutate { content ->
+            val pages = content.pages.toMutableList()
+            val page = pages.first()
+            val components = page.components.toMutableList()
+            val component = components.first()
+            val props = component.props.deepCopy().apply { addProperty("text", "Edited") }
+            components[0] = component.copy(props = props)
+            pages[0] = page.copy(components = components)
+            content.copy(pages = pages)
+        }
+
+        assertTrue(history.canUndo())
+        assertEquals("Edited", history.current().pages.first().components.first().props.get("text").asString)
+
+        val undo = history.undo()
+        assertFalse(undo.pages.first().components.first().props.get("text")?.asString == "Edited")
+        assertTrue(history.canRedo())
+
+        val redo = history.redo()
+        assertEquals("Edited", redo.pages.first().components.first().props.get("text").asString)
+    }
+
+    @Test
+    fun `new mutation clears redo branch`() {
+        val initial = DefaultContent.create()
+        val history = HubDraftHistory(initial, 4)
+        history.mutate { it.copy(defaultLocale = "en_us") }
+        history.undo()
+        assertTrue(history.canRedo())
+        history.mutate { it.copy(defaultTheme = it.defaultTheme) }
+        assertTrue(history.canRedo(), "No-op mutation must not clear redo")
+        history.mutate { it.copy(defaultLocale = "fr_fr") }
+        assertFalse(history.canRedo())
+    }
+}
