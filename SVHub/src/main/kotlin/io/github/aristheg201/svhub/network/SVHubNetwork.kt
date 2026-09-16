@@ -7,6 +7,7 @@ import io.github.aristheg201.svhub.content.*
 import io.github.aristheg201.svhub.permission.EditAuthorization
 import io.github.aristheg201.svhub.permission.SVHubPermissions
 import io.github.aristheg201.svhub.server.EnvironmentManifest
+import io.github.aristheg201.svhub.server.HubPlaceholderResolver
 import io.github.aristheg201.svhub.server.SnapshotProjector
 import io.github.aristheg201.svhub.util.Compression
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
@@ -116,14 +117,17 @@ object SVHubNetwork {
     private fun sendHello(player: ServerPlayer) {
         val open = SVHubPermissions.has(player, SVHubPermissions.OPEN, 0)
         val edit = open && SVHubPermissions.has(player, SVHubPermissions.EDITOR, 2)
+        val snapshot = SVHubRuntime.store.snapshot()
+        val cacheable = !HubPlaceholderResolver.hasDynamicPlaceholders(snapshot.content)
         ServerPlayNetworking.send(
             player,
             HubHelloS2C(
                 HUB_PROTOCOL_VERSION,
-                SVHubRuntime.store.snapshot().revision,
+                snapshot.revision,
                 open && SVHubRuntime.store.isReady(),
                 edit && SVHubRuntime.store.isReady(),
-                EnvironmentManifest.publicAdvertisement(setOf("player-hub")).toJson()
+                cacheable,
+                EnvironmentManifest.publicAdvertisement(setOf("player-hub", "minimessage", "placeholder-api")).toJson()
             )
         )
     }
@@ -145,8 +149,9 @@ object SVHubNetwork {
     }
 
     /**
-     * Projects permissions on the server thread, then performs JSON/gzip/chunk work
-     * on a bounded codec pool. Packet sends return to the server thread.
+     * Projects permissions and placeholders on the server thread, then performs
+     * JSON/gzip/chunk work on a bounded codec pool. Packet sends return to the
+     * server thread.
      */
     fun sendSnapshot(player: ServerPlayer, editor: Boolean) {
         if (!SVHubRuntime.store.isReady()) return
