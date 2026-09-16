@@ -61,6 +61,26 @@ jobs:
             jar tf "$jar" 2>/dev/null | grep -E 'ModelWidget|RenderablePokemon|PokemonModelRepository|PokemonPoseableModel|PokemonRenderer|render.*pokemon|pokemon.*render' | head -n 160 || true
           done
 
+      - name: Inspect Minecraft 1.21.1 portrait render API
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLASS_NAMES='com.mojang.blaze3d.pipeline.RenderTarget com.mojang.blaze3d.pipeline.TextureTarget com.mojang.blaze3d.platform.NativeImage net.minecraft.client.Screenshot net.minecraft.client.renderer.GameRenderer'
+          JARS="$(find ~/.gradle/caches -type f -name '*.jar' 2>/dev/null | grep -E 'minecraft.*1\.21\.1|minecraft-merged|minecraft-client|client-extra' | head -n 30 || true)"
+          if [ -z "$JARS" ]; then
+            echo 'No resolved Minecraft cache jar found for API probe'
+            exit 0
+          fi
+          printf '%s\n' "$JARS" | while IFS= read -r jar; do
+            echo "=== MINECRAFT JAR: $jar ==="
+            for cls in $CLASS_NAMES; do
+              if jar tf "$jar" 2>/dev/null | grep -q "$(printf '%s' "$cls" | tr '.' '/')\.class$"; then
+                echo "--- $cls ---"
+                javap -classpath "$jar" -public "$cls" 2>/dev/null | grep -E '(^public|TextureTarget|RenderTarget|NativeImage|Screenshot|bind|clear|resize|TextureId|grab|download|upload|blit|getMainRenderTarget)' | head -n 120 || true
+              fi
+            done
+          done
+
       - name: Verify remapped artifact
         shell: bash
         run: |
