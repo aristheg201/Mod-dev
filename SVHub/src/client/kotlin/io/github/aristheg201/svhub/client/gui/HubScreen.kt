@@ -14,7 +14,9 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
 import kotlin.math.roundToInt
 
 class HubScreen(
@@ -192,6 +194,12 @@ class HubScreen(
             "open_page" -> navigate(action.value)
             "back" -> goBack()
             "close" -> onClose()
+            "copy_text" -> handleComponentClicked(
+                Style.EMPTY.withClickEvent(ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, action.value))
+            )
+            "open_url" -> handleComponentClicked(
+                Style.EMPTY.withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, action.value))
+            )
             else -> ClientPlayNetworking.send(HubActionC2S(action.id))
         }
     }
