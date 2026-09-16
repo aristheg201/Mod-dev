@@ -28,8 +28,15 @@ data class EnvironmentManifest(
     }.toString()
 
     companion object {
-        /** Full local environment, intended for server-side discovery/admin display. */
+        /** Full local environment. Never send this manifest to ordinary players. */
         fun local(extraCapabilities: Set<String> = emptySet()): EnvironmentManifest = build(null, extraCapabilities)
+
+        /**
+         * Public server advertisement: SVHub version/capabilities only. The server's
+         * installed mod inventory is deliberately omitted from player-facing packets.
+         */
+        fun publicAdvertisement(extraCapabilities: Set<String> = emptySet()): EnvironmentManifest =
+            EnvironmentManifest(hubVersion(), emptyList(), extraCapabilities + SVHubApi.advertisedCapabilities())
 
         /**
          * Privacy-preserving client advertisement. Only mods explicitly required by
@@ -44,15 +51,19 @@ data class EnvironmentManifest(
             return build(allowed, extraCapabilities)
         }
 
+        private fun hubVersion(): String = FabricLoader.getInstance()
+            .getModContainer("svhub")
+            .map { it.metadata.version.friendlyString }
+            .orElse("unknown")
+
         private fun build(modFilter: Set<String>?, extraCapabilities: Set<String>): EnvironmentManifest {
             val loader = FabricLoader.getInstance()
-            val version = loader.getModContainer("svhub").map { it.metadata.version.friendlyString }.orElse("unknown")
             val mods = loader.allMods.asSequence()
                 .filter { modFilter == null || it.metadata.id in modFilter }
                 .map { ModInfo(it.metadata.id, it.metadata.name, it.metadata.version.friendlyString) }
                 .sortedBy { it.id }
                 .toList()
-            return EnvironmentManifest(version, mods, extraCapabilities + SVHubApi.advertisedCapabilities())
+            return EnvironmentManifest(hubVersion(), mods, extraCapabilities + SVHubApi.advertisedCapabilities())
         }
 
         fun modIds(json: String): Set<String> = runCatching {
