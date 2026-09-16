@@ -19,6 +19,7 @@ import kotlin.math.PI
  */
 object PokemonModelRenderer {
     private data class ModelKey(val species: String, val aspects: List<String>)
+
     private class LiveModel(val pokemon: RenderablePokemon) {
         val state = FloatingState()
         var lastRenderNanos: Long = System.nanoTime()
@@ -65,7 +66,7 @@ object PokemonModelRenderer {
             0f
         )
 
-        runCatching {
+        val rendered = runCatching {
             drawProfilePokemon(
                 renderablePokemon = live.pokemon,
                 matrixStack = pose,
@@ -74,25 +75,26 @@ object PokemonModelRenderer {
                 partialTicks = deltaTicks,
                 blockLight = 15
             )
-        }.onFailure {
-            pose.popPose()
-            gui.disableScissor()
-            models.remove(key(view), live)
-            return false
-        }
+        }.isSuccess
 
         pose.popPose()
         gui.disableScissor()
+
+        if (!rendered) {
+            models.remove(key(view), live)
+            return false
+        }
         return true
     }
 
     private fun model(view: PokemonView): LiveModel? {
         val key = key(view)
-        return models.computeIfAbsent(key) {
-            val id = ResourceLocation.tryParse(view.speciesId) ?: return@computeIfAbsent null
-            val species = PokemonSpecies.getByIdentifier(id) ?: return@computeIfAbsent null
-            LiveModel(RenderablePokemon(species, view.aspects.toSet()))
-        }
+        models[key]?.let { return it }
+
+        val id = ResourceLocation.tryParse(view.speciesId) ?: return null
+        val species = PokemonSpecies.getByIdentifier(id) ?: return null
+        val created = LiveModel(RenderablePokemon(species, view.aspects.toSet()))
+        return models.putIfAbsent(key, created) ?: created
     }
 
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
