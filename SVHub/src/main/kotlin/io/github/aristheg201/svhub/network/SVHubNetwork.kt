@@ -123,7 +123,7 @@ object SVHubNetwork {
                 SVHubRuntime.store.snapshot().revision,
                 open && SVHubRuntime.store.isReady(),
                 edit && SVHubRuntime.store.isReady(),
-                EnvironmentManifest.local().toJson()
+                EnvironmentManifest.publicAdvertisement(setOf("player-hub")).toJson()
             )
         )
     }
@@ -170,7 +170,6 @@ object SVHubNetwork {
                     pendingSnapshotJobs.remove(key)
                     val livePlayer = server.playerList.getPlayer(playerId) ?: return@execute
                     result.onSuccess { chunks ->
-                        // Never deliver a snapshot that became stale while it was being encoded.
                         if (SVHubRuntime.store.snapshot().revision != projected.revision) {
                             if (editor) editorSessions.remove(playerId)
                             sendSnapshot(livePlayer, editor)
@@ -257,7 +256,6 @@ object SVHubNetwork {
         }
     }
 
-    /** Must run on the Minecraft server thread. */
     private fun processEditorCandidate(player: ServerPlayer, baseRevision: Long, candidate: HubContent) {
         val current = SVHubRuntime.store.snapshot().content
         val publishCandidate = if (SVHubPermissions.has(player, SVHubPermissions.EDITOR_ALL, 2)) {
