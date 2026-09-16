@@ -3,7 +3,6 @@ package io.github.aristheg201.svhub.client
 import com.mojang.blaze3d.platform.InputConstants
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
-import io.github.aristheg201.svhub.client.cobblemon.PokemonPortraitCache
 import io.github.aristheg201.svhub.client.editor.HubEditorScreen
 import io.github.aristheg201.svhub.client.gui.HubScreen
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
@@ -45,7 +44,6 @@ object SVHubClient : ClientModInitializer {
 
                 override fun onResourceManagerReload(resourceManager: ResourceManager) {
                     PokemonModelRenderer.clear()
-                    PokemonPortraitCache.clear()
                     CobblemonWikiProvider.clearCaches()
                     GeneratedBackgroundRenderer.clear()
                 }
