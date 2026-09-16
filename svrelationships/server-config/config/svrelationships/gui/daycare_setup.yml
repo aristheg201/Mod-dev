@@ -1,0 +1,40 @@
+# ============================================================
+# SVRelationships — Daycare Setup Wizard
+# CONFIG ONLY. Select participants for the chosen breeding profile.
+# ============================================================
+
+id: daycare_setup
+screen: generic_9x6
+title_key: ui.daycare.setup.title
+
+components:
+  status:
+    slot: 4
+    item: minecraft:writable_book
+    name_key: ui.daycare.setup.status
+    lore_keys:
+      - ui.daycare.setup.definition
+      - ui.daycare.setup.progress
+      - ui.daycare.setup.role
+    action: none
+
+  cancel:
+    slot: 49
+    item: minecraft:barrier
+    name_key: ui.daycare.setup.cancel
+    lore_keys: [ui.daycare.setup.cancel.lore]
+    action: daycare_cancel
+
+repeaters:
+  pokemon:
+    source: owned_pokemon
+    visual: pokemon_model
+    slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+    item: minecraft:player_head
+    name_key: ui.daycare.setup.pokemon
+    lore_keys:
+      - ui.daycare.setup.pokemon.level
+      - ui.daycare.setup.pokemon.bond
+      - ui.daycare.setup.pokemon.romance
+      - ui.daycare.setup.pokemon.action
+    action: daycare_select
