@@ -29,6 +29,8 @@ class HubScreen(
     private var tickCounter = 0L
     private var scrollOffset = 0
     private var contentHeight = 0
+    private var detailScroll = 0
+    private var detailMaxScroll = 0
     private val hitTargets = mutableListOf<HubHitTarget>()
     private val gridPages = mutableMapOf<String, Int>()
     private val expanded = mutableSetOf<String>()
@@ -44,7 +46,7 @@ class HubScreen(
     override fun init() {
         val searchWidth = minOf(340, width - 180).coerceAtLeast(140)
         search = EditBox(font, width / 2 - searchWidth / 2, 9, searchWidth, 22, Component.literal("Tìm kiếm"))
-        search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, hướng dẫn..."))
+        search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, shop, hướng dẫn..."))
         search.setMaxLength(160)
         search.setResponder { scrollOffset = 0 }
         addRenderableWidget(search)
@@ -75,11 +77,17 @@ class HubScreen(
         when {
             route.startsWith("pokemon/") || route.startsWith("fakemon/") -> {
                 val view = CobblemonWikiProvider.resolveRoute(route, content)
-                if (view != null) PokemonDetailView.render(gui, font, view, theme, width, height, modelYaw, modelZoom)
-                else renderNotFound(gui, theme, route)
+                if (view != null) {
+                    detailMaxScroll = PokemonDetailView.render(
+                        gui, font, view, theme, width, height, modelYaw, modelZoom, detailScroll
+                    )
+                    detailScroll = detailScroll.coerceIn(0, detailMaxScroll)
+                } else {
+                    detailMaxScroll = 0
+                    renderNotFound(gui, theme, route)
+                }
             }
             route.startsWith("command/") -> if (!CommandDetailView.render(gui, font, route, theme, width, height)) renderNotFound(gui, theme, route)
-            route.startsWith("mod/") -> if (!ModDetailView.render(gui, font, route, theme, width, height)) renderNotFound(gui, theme, route)
             else -> renderStaticPage(gui, page ?: content.page("home"), theme, mouseX, mouseY)
         }
 
@@ -87,7 +95,7 @@ class HubScreen(
     }
 
     private fun renderChrome(gui: GuiGraphics, theme: HubTheme, mouseX: Int, mouseY: Int) {
-        gui.fill(0, 0, width, 39, 0xE80B0F18.toInt())
+        gui.fill(0, 0, width, 39, 0xF00B0F14.toInt())
         val canBack = historyIndex > 0
         if (canBack) {
             val hovered = mouseX in 8 until 36 && mouseY in 7 until 33
@@ -159,19 +167,19 @@ class HubScreen(
             val barHeight = ((viewport.toFloat() / contentHeight) * viewport).roundToInt().coerceAtLeast(24)
             val track = viewport - barHeight
             val barY = top + if (maxScroll == 0) 0 else ((scrollOffset.toFloat() / maxScroll) * track).roundToInt()
-            gui.fill(width - 8, top, width - 5, bottom, 0x442B3448)
+            gui.fill(width - 8, top, width - 5, bottom, 0x44343D46)
             gui.fill(width - 8, barY, width - 5, barY + barHeight, theme.palette.accent2)
         }
     }
 
     private fun renderSidebar(gui: GuiGraphics, theme: HubTheme, sidebarWidth: Int, mouseX: Int, mouseY: Int) {
-        gui.fill(0, 39, sidebarWidth, height, 0xB80C111C.toInt())
+        gui.fill(0, 39, sidebarWidth, height, 0xE00C1117.toInt())
         var y = 52
         content.pages.filter { it.showInNavigation }.take(18).forEach { page ->
             val active = page.route == route || page.id == route
             val hovered = mouseX in 8 until sidebarWidth - 8 && mouseY in y until y + 28
             if (active || hovered) {
-                gui.fill(8, y, sidebarWidth - 8, y + 28, if (active) 0xAA314A68.toInt() else 0x66314158)
+                gui.fill(8, y, sidebarWidth - 8, y + 28, if (active) 0x99304046.toInt() else 0x55303A42)
             }
             gui.drawString(font, font.plainSubstrByWidth(page.title.resolve(content.defaultLocale), sidebarWidth - 28), 16, y + 10, if (active) theme.palette.accent else theme.palette.text, active)
             hitTargets += HubHitTarget(8, y, sidebarWidth - 8, y + 28) { navigate(page.route) }
@@ -211,21 +219,25 @@ class HubScreen(
         history += normalized
         historyIndex = history.lastIndex
         route = normalized
-        scrollOffset = 0
-        gridPages.clear()
-        search.value = ""
-        modelYaw = 0f
-        modelZoom = 1f
+        resetViewState()
     }
 
     private fun goBack() {
         if (historyIndex <= 0) return
         historyIndex--
         route = history[historyIndex]
+        resetViewState()
+    }
+
+    private fun resetViewState() {
         scrollOffset = 0
+        detailScroll = 0
+        detailMaxScroll = 0
+        gridPages.clear()
         search.value = ""
         modelYaw = 0f
         modelZoom = 1f
+        draggingModel = false
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
@@ -234,7 +246,8 @@ class HubScreen(
                 target.action()
                 return true
             }
-            if ((route.startsWith("pokemon/") || route.startsWith("fakemon/")) && mouseY >= 54) {
+            if ((route.startsWith("pokemon/") || route.startsWith("fakemon/")) &&
+                PokemonDetailView.isModelArea(width, mouseX, mouseY, height)) {
                 draggingModel = true
             }
         }
@@ -260,7 +273,11 @@ class HubScreen(
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         if (route.startsWith("pokemon/") || route.startsWith("fakemon/")) {
-            modelZoom = (modelZoom + verticalAmount.toFloat() * 0.08f).coerceIn(0.55f, 2.2f)
+            if (PokemonDetailView.isModelArea(width, mouseX, mouseY, height)) {
+                modelZoom = (modelZoom + verticalAmount.toFloat() * 0.08f).coerceIn(0.55f, 2.2f)
+            } else {
+                detailScroll = (detailScroll - (verticalAmount * 28.0).roundToInt()).coerceIn(0, detailMaxScroll)
+            }
             return true
         }
         scrollOffset = (scrollOffset - (verticalAmount * 28.0).roundToInt()).coerceAtLeast(0)
