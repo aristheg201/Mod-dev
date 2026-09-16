@@ -18,10 +18,16 @@ import java.util.concurrent.ThreadLocalRandom
 object SVHubNetwork {
     private data class ClientState(val protocol: Int, val modIds: Set<String>)
     private data class SnapshotRateKey(val playerId: UUID, val editor: Boolean)
+    private data class EditorSession(
+        val baseRevision: Long,
+        val baseline: HubContent,
+        val createdAtEpochMs: Long
+    )
 
     private val clients = ConcurrentHashMap<UUID, ClientState>()
     private val assemblers = ConcurrentHashMap<UUID, ChunkAssembler>()
     private val snapshotRequests = ConcurrentHashMap<SnapshotRateKey, Long>()
+    private val editorSessions = ConcurrentHashMap<UUID, EditorSession>()
 
     fun registerCommon() {
         PayloadTypeRegistry.playS2C().register(HubHelloS2C.TYPE, HubHelloS2C.CODEC)
@@ -78,6 +84,8 @@ object SVHubNetwork {
     }
 
     fun broadcastHello() {
+        // Reloads/incompatible content changes invalidate every outstanding edit baseline.
+        editorSessions.clear()
         SVHubRuntime.server?.playerList?.players?.forEach(::sendHello)
     }
 
@@ -99,6 +107,7 @@ object SVHubNetwork {
     fun onDisconnect(player: ServerPlayer) {
         clients.remove(player.uuid)
         assemblers.remove(player.uuid)?.clear()
+        editorSessions.remove(player.uuid)
         snapshotRequests.keys.removeIf { it.playerId == player.uuid }
         ServerActionDispatcher.clear(player)
     }
@@ -114,6 +123,9 @@ object SVHubNetwork {
         if (!SVHubRuntime.store.isReady()) return
         val clientMods = clients[player.uuid]?.modIds.orEmpty()
         val projected = SnapshotProjector.forPlayer(SVHubRuntime.store.snapshot().content, player, editor, clientMods)
+        if (editor) {
+            editorSessions[player.uuid] = EditorSession(projected.revision, projected, System.currentTimeMillis())
+        }
         val encoded = Compression.encodeUtf8(HubContentCodec.encode(projected))
         val chunks = Compression.chunks(encoded)
         val transfer = ThreadLocalRandom.current().nextLong()
@@ -141,7 +153,8 @@ object SVHubNetwork {
             sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, "SVHub chưa sẵn sàng.")
             return
         }
-        if (!SVHubPermissions.has(player, SVHubPermissions.EDITOR_PUBLISH, 2)) return
+        if (!SVHubPermissions.has(player, SVHubPermissions.EDITOR, 2) ||
+            !SVHubPermissions.has(player, SVHubPermissions.EDITOR_PUBLISH, 2)) return
 
         val joined = runCatching {
             assemblers.computeIfAbsent(player.uuid) { ChunkAssembler() }
@@ -157,20 +170,55 @@ object SVHubNetwork {
         }
 
         val current = SVHubRuntime.store.snapshot().content
-        val reason = EditAuthorization.rejectReason(player, current, candidate)
+        val publishCandidate = if (SVHubPermissions.has(player, SVHubPermissions.EDITOR_ALL, 2)) {
+            candidate
+        } else {
+            val session = editorSessions[player.uuid]
+            if (session == null || session.baseRevision != payload.baseRevision) {
+                sendEditorResult(player, false, current.revision, "Editor session không còn hợp lệ; hãy tải lại editor.")
+                return
+            }
+            if (System.currentTimeMillis() - session.createdAtEpochMs > EDITOR_SESSION_TTL_MS) {
+                editorSessions.remove(player.uuid, session)
+                sendEditorResult(player, false, current.revision, "Editor session đã hết hạn; hãy tải lại editor.")
+                return
+            }
+
+            val merge = ScopedEditMerge.merge(
+                current = current,
+                baseline = session.baseline,
+                candidate = candidate,
+                permissions = ScopedEditPermissions(
+                    editSettings = SVHubPermissions.has(player, SVHubPermissions.EDITOR_SETTINGS, 2),
+                    editAssets = SVHubPermissions.has(player, SVHubPermissions.EDITOR_ASSETS, 2),
+                    createPages = SVHubPermissions.has(player, SVHubPermissions.EDITOR_CREATE, 2),
+                    editPage = { id -> SVHubPermissions.has(player, SVHubPermissions.pageEditor(id), 2) }
+                )
+            )
+            if (!merge.ok) {
+                sendEditorResult(player, false, current.revision, merge.error ?: "Scoped editor merge failed")
+                return
+            }
+            requireNotNull(merge.content)
+        }
+
+        val reason = EditAuthorization.rejectReason(player, current, publishCandidate)
         if (reason != null) {
             sendEditorResult(player, false, current.revision, reason)
             return
         }
 
-        SVHubRuntime.store.commitAsync(payload.baseRevision, candidate).whenComplete { result, error ->
+        SVHubRuntime.store.commitAsync(payload.baseRevision, publishCandidate).whenComplete { result, error ->
             SVHubRuntime.server?.execute {
                 if (error != null) {
                     sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, error.message ?: "Publish failed")
                     return@execute
                 }
                 sendEditorResult(player, result.ok, result.revision, result.message)
-                if (result.ok) broadcastPlayerSnapshots()
+                if (result.ok) {
+                    editorSessions.remove(player.uuid)
+                    broadcastPlayerSnapshots()
+                }
             }
         }
     }
@@ -180,4 +228,5 @@ object SVHubNetwork {
     }
 
     private const val SNAPSHOT_REQUEST_COOLDOWN_MS = 750L
+    private const val EDITOR_SESSION_TTL_MS = 15 * 60 * 1000L
 }
