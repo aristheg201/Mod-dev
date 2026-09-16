@@ -16,6 +16,7 @@ base.archivesName.set(providers.gradleProperty("mod_name").get())
 repositories {
     mavenCentral()
     maven("https://api.modrinth.com/maven")
+    maven("https://maven.impactdev.net/repository/development/")
     maven("https://repo.lucko.me")
     maven("https://maven.pokeskies.com/releases/")
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
