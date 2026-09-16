@@ -37,7 +37,7 @@ object SVHubClient : ClientModInitializer {
                 ClientHubState.canEdit = payload.canEdit
                 ClientHubState.serverManifest = payload.serverManifest
                 val cachedRevision = if (payload.protocol == HUB_PROTOCOL_VERSION) ClientHubState.loadCachedIfRevision(payload.revision) else -1L
-                val manifest = EnvironmentManifest.local(setOf("gui", "pixel-renderer", "cobblemon-model", "asset-cache", "editor"))
+                val manifest = EnvironmentManifest.clientAdvertisement(setOf("gui", "pixel-renderer", "cobblemon-model", "asset-cache", "editor"))
                 ClientPlayNetworking.send(HubClientManifestC2S(HUB_PROTOCOL_VERSION, cachedRevision, manifest.toJson()))
                 if (payload.protocol != HUB_PROTOCOL_VERSION) {
                     context.player().sendSystemMessage(Component.literal("SVHub protocol không tương thích: client=$HUB_PROTOCOL_VERSION, server=${payload.protocol}"))
