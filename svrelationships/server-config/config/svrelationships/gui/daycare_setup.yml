@@ -1,6 +1,6 @@
 # ============================================================
-# SVRelationships — Daycare Setup Wizard
-# CONFIG ONLY. Select participants for the chosen breeding profile.
+# SVRelationships — Breeding Participant Wizard
+# CONFIG ONLY. Focused selection board with framed grid.
 # ============================================================
 
 id: daycare_setup
@@ -8,6 +8,11 @@ screen: generic_9x6
 title_key: ui.daycare.setup.title
 
 components:
+  # Header / current step
+  top_0: {slot: 0, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_1: {slot: 1, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_2: {slot: 2, item: minecraft:yellow_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_3: {slot: 3, item: minecraft:orange_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   status:
     slot: 4
     item: minecraft:writable_book
@@ -16,14 +21,38 @@ components:
       - ui.daycare.setup.definition
       - ui.daycare.setup.progress
       - ui.daycare.setup.role
+      - ui.daycare.setup.hint
     action: none
+  top_5: {slot: 5, item: minecraft:orange_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_6: {slot: 6, item: minecraft:yellow_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_7: {slot: 7, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_8: {slot: 8, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
+  # Side frame around selectable Pokémon
+  frame_9: {slot: 9, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_17: {slot: 17, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_18: {slot: 18, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_26: {slot: 26, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_27: {slot: 27, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_35: {slot: 35, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_36: {slot: 36, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_44: {slot: 44, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+
+  # Footer / cancel
+  footer_45: {slot: 45, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_46: {slot: 46, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_47: {slot: 47, item: minecraft:red_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_48: {slot: 48, item: minecraft:red_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   cancel:
     slot: 49
     item: minecraft:barrier
     name_key: ui.daycare.setup.cancel
     lore_keys: [ui.daycare.setup.cancel.lore]
     action: daycare_cancel
+  footer_50: {slot: 50, item: minecraft:red_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_51: {slot: 51, item: minecraft:red_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_52: {slot: 52, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_53: {slot: 53, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
 repeaters:
   pokemon:
