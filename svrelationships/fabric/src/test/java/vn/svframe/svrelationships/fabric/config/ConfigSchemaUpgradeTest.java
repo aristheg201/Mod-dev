@@ -31,7 +31,7 @@ final class ConfigSchemaUpgradeTest {
 
         String installedMainGui = Files.readString(mainGui);
         assertTrue(installedMainGui.contains("title_key: gui.main.title"));
-        assertFalse(installedMainGui.contains("ui.main.title"));
+        assertFalse(installedMainGui.contains("title_key: ui.main.title"));
     }
 
     @Test
@@ -54,7 +54,6 @@ final class ConfigSchemaUpgradeTest {
         assertTrue(Files.exists(root.resolve("gui/main.yml.schema-v3.bak")));
         assertTrue(Files.readString(mainGui).contains("title_key: gui.main.title"));
 
-        // Once schema v4 is reached, later boots preserve admin GUI edits.
         Files.writeString(mainGui, Files.readString(mainGui) + "\n# admin-edit\n");
         BundledDefaults.installAll(root);
         assertTrue(Files.readString(mainGui).contains("# admin-edit"));
