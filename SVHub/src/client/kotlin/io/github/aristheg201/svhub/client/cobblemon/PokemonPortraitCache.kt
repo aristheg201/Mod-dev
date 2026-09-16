@@ -47,7 +47,7 @@ object PokemonPortraitCache {
     fun pump(budgetBucket: Long) {
         if (budgetBucket == lastPumpBucket) return
         lastPumpBucket = budgetBucket
-        val next = queue.removeFirstOrNull() ?: return
+        val next = queue.pollFirst() ?: return
         queued.remove(next.first)
         val location = runCatching { generate(next.second) }.getOrNull()
         if (location == null) {
