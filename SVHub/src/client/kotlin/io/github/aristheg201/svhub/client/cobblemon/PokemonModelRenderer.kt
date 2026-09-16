@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
+import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.resources.ResourceLocation
 import org.joml.Quaternionf
@@ -13,9 +14,9 @@ import kotlin.math.PI
 /**
  * Live Cobblemon model renderer for SVHub.
  *
- * This deliberately uses Cobblemon's profile-model pipeline instead of rendering
- * PokemonItem stacks. VaryingModelRepository, poser, texture/layers, PROFILE pose
- * and animation application are all driven by Cobblemon through drawProfilePokemon.
+ * Uses Cobblemon's actual profile-model pipeline, including current resource-pack
+ * poser, texture, layers and profile transforms. The renderer never snapshots the
+ * model through an auxiliary framebuffer, so it cannot poison the main GUI target.
  */
 object PokemonModelRenderer {
     private data class ModelKey(val species: String, val aspects: List<String>)
@@ -54,8 +55,6 @@ object PokemonModelRenderer {
             centerY + safeSize / 2
         )
 
-        // Mirrors Cobblemon's own Pokédex portrait transform: the profile renderer
-        // normalizes each species using its model profileScale/profileTranslation.
         pose.translate(centerX.toDouble(), centerY - safeSize * 0.43, 1000.0)
         val guiScale = 2.0f * (safeSize / 140.0f) * safeZoom
         pose.scale(guiScale, guiScale, guiScale)
@@ -66,7 +65,8 @@ object PokemonModelRenderer {
             0f
         )
 
-        val rendered = runCatching {
+        var rendered = false
+        try {
             drawProfilePokemon(
                 renderablePokemon = live.pokemon,
                 matrixStack = pose,
@@ -75,16 +75,18 @@ object PokemonModelRenderer {
                 partialTicks = deltaTicks,
                 blockLight = 15
             )
-        }.isSuccess
-
-        pose.popPose()
-        gui.disableScissor()
-
-        if (!rendered) {
+            rendered = true
+        } catch (_: Throwable) {
             models.remove(key(view), live)
-            return false
+        } finally {
+            // Cobblemon's profile renderer changes global shader lighting/camera state.
+            // Restore the GUI tint explicitly so subsequent panels/text cannot inherit
+            // a stale colour from a model layer or resource-pack renderer.
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+            pose.popPose()
+            gui.disableScissor()
         }
-        return true
+        return rendered
     }
 
     private fun model(view: PokemonView): LiveModel? {
