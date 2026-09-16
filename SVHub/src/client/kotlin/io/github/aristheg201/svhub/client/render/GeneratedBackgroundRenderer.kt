@@ -89,8 +89,8 @@ object GeneratedBackgroundRenderer {
         if (neon) {
             val block = max(4, step / 4)
             repeat(8 * key.density) { i ->
-                val px = ((i * 73L + key.seed) floorMod max(1, key.width - block)).toInt()
-                val py = ((i * 41L + key.seed / 7L) floorMod max(1, key.height - block)).toInt()
+                val px = (i * 73L + key.seed).floorMod(max(1, key.width - block)).toInt()
+                val py = (i * 41L + key.seed / 7L).floorMod(max(1, key.height - block)).toInt()
                 out += Rect(px, py, block, block, withAlpha(key.accentColor, 34 + (i % 3) * 14))
             }
         }
@@ -176,7 +176,7 @@ object GeneratedBackgroundRenderer {
         return hash
     }
 
-    private infix fun Long.floorMod(divisor: Int): Long {
+    private fun Long.floorMod(divisor: Int): Long {
         if (divisor <= 0) return 0L
         val remainder = this % divisor
         return if (remainder < 0) remainder + divisor else remainder
