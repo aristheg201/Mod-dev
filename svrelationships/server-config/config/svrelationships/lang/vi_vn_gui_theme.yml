@@ -1,0 +1,21 @@
+# SVRelationships polished GUI theme additions — CONFIG ONLY
+ui.decor.blank: "<italic:false><dark_gray> "
+ui.tab.active: "<italic:false><green>● Mục hiện tại"
+ui.tab.click: "<italic:false><yellow>→ Bấm để mở mục này"
+ui.navigation.home: "<italic:false><gold><bold>⌂ Trung tâm quan hệ</bold>"
+
+ui.main.guide: "<italic:false><gradient:#ff8fab:#c77dff><bold>Cách chơi</bold></gradient>"
+ui.main.guide.lore1: "<italic:false><gray>Tăng Bond → Romance → Hẹn hò → Kết hôn."
+ui.main.guide.lore2: "<italic:false><dark_gray>Dùng Daycare để phát triển gia đình và dòng dõi."
+
+ui.daycare.section.start: "<italic:false><gold><bold>① Bắt đầu Breeding</bold>"
+ui.daycare.section.start.lore: "<italic:false><gray>Chọn breeding profile đã cấu hình ở hàng này."
+ui.daycare.section.sessions: "<italic:false><aqua><bold>② Phiên đang chạy</bold>"
+ui.daycare.section.sessions.lore: "<italic:false><gray>Các phiên đang chạy hoặc hoàn tất hiển thị bên phải."
+
+ui.relationship.path.arrow: "<italic:false><light_purple><bold>→</bold>"
+ui.relationship.family: "<italic:false><green><bold>✦ Gia đình & Dòng dõi</bold>"
+ui.relationship.family.lore1: "<italic:false><gray>Mở danh sách con cháu và lịch sử thế hệ."
+ui.relationship.family.lore2: "<italic:false><yellow>→ Xem tiến trình gia đình của household này."
+
+ui.daycare.setup.hint: "<italic:false><yellow>→ Bấm model Pokémon bên dưới để điền vai trò hiện tại."
