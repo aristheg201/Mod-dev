@@ -87,6 +87,11 @@ object HubDynamicGridRenderer {
             if (nextEnabled) hits += HubHitTarget(nextX, navY, nextX + 74, navY + 24) { onPage(normalizedPage + 1) }
             totalHeight += 32
         }
+
+        if (pokemonGrid && visible.any { it.pokemon != null }) {
+            // One portrait at most per 50 ms bucket, even if several grids render.
+            PokemonPortraitCache.pump(System.currentTimeMillis() / 50L)
+        }
         return Result(totalHeight, pageCount, normalizedPage)
     }
 
