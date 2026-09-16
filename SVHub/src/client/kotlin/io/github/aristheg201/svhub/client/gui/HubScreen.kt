@@ -121,7 +121,6 @@ class HubScreen(
             p.accent
         )
 
-        // Light search field backing; the EditBox itself has no dark vanilla border.
         PixelUi.panel(gui, searchX, 7, searchWidth, 28, p.panelAlt, if (search.isFocused) p.accent else PixelUi.withAlpha(p.accent, 95))
         search.setTextColor(p.text)
         search.setTextColorUneditable(p.mutedText)
@@ -211,8 +210,10 @@ class HubScreen(
                 gui.fill(8, y, 12, y + 29, if (active) p.accent else p.accent2)
             }
             val parsed = MiniMessageText.component(page.title.resolve(content.defaultLocale))
-            val line = font.split(parsed, sidebarWidth - 34).firstOrNull() ?: Component.empty()
-            gui.drawString(font, line, 18, y + 10, if (active) p.accent else p.text, active)
+            val line = font.split(parsed, sidebarWidth - 34).firstOrNull()
+            if (line != null) {
+                gui.drawString(font, line, 18, y + 10, if (active) p.accent else p.text, active)
+            }
             hitTargets += HubHitTarget(8, y, sidebarWidth - 8, y + 29) { navigate(page.route) }
             y += 32
         }
