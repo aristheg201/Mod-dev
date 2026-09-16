@@ -20,8 +20,8 @@ import java.util.LinkedHashMap
  * Bounded client-only portrait cache for Pokémon/Fakemon list cards.
  *
  * Missing portraits are queued by visible cards. [pump] materializes at most one
- * model-derived portrait per rendered frame, so grids never render dozens of live
- * Cobblemon models at once. All GL work stays on the client render thread.
+ * model-derived portrait per supplied render budget bucket, so grids never render
+ * dozens of live Cobblemon models at once. All GL work stays on the render thread.
  */
 object PokemonPortraitCache {
     private data class Key(val species: String, val aspects: List<String>)
@@ -32,7 +32,7 @@ object PokemonPortraitCache {
     private val queue = ArrayDeque<Pair<Key, PokemonView>>()
     private val failedUntil = HashMap<Key, Long>()
     private var target: TextureTarget? = null
-    private var lastPumpFrame = Long.MIN_VALUE
+    private var lastPumpBucket = Long.MIN_VALUE
 
     /** Returns a cached texture or queues this visible Pokémon for generation. */
     fun request(view: PokemonView): ResourceLocation? {
@@ -44,10 +44,9 @@ object PokemonPortraitCache {
         return null
     }
 
-    /** Call once from screen rendering; hard-budgeted to one generation per frame. */
-    fun pump(frameId: Long) {
-        if (frameId == lastPumpFrame) return
-        lastPumpFrame = frameId
+    fun pump(budgetBucket: Long) {
+        if (budgetBucket == lastPumpBucket) return
+        lastPumpBucket = budgetBucket
         val next = queue.removeFirstOrNull() ?: return
         queued.remove(next.first)
         val location = runCatching { generate(next.second) }.getOrNull()
@@ -68,7 +67,7 @@ object PokemonPortraitCache {
         failedUntil.clear()
         target?.let { runCatching { it.destroyBuffers() } }
         target = null
-        lastPumpFrame = Long.MIN_VALUE
+        lastPumpBucket = Long.MIN_VALUE
     }
 
     fun cachedCount(): Int = cache.size
@@ -88,8 +87,10 @@ object PokemonPortraitCache {
 
         RenderSystem.backupProjectionMatrix()
         return try {
+            // Wide symmetric depth volume prevents Cobblemon profile translations/layers
+            // from clipping at the GUI near plane while keeping a fixed 96x96 viewport.
             RenderSystem.setProjectionMatrix(
-                Matrix4f().setOrtho(0f, PORTRAIT_SIZE.toFloat(), PORTRAIT_SIZE.toFloat(), 0f, 1000f, 3000f),
+                Matrix4f().setOrtho(0f, PORTRAIT_SIZE.toFloat(), PORTRAIT_SIZE.toFloat(), 0f, -3000f, 3000f),
                 RenderSystem.getVertexSorting()
             )
 
