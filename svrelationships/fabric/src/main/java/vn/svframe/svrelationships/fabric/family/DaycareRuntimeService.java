@@ -9,6 +9,7 @@ import vn.svframe.svrelationships.fabric.persistence.DaycareRepository;
 import vn.svframe.svrelationships.fabric.persistence.LineageRepository;
 import vn.svframe.svrelationships.fabric.relationship.RelationshipService;
 import vn.svframe.svrelationships.fabric.reward.RelationshipRewardService;
+import vn.svframe.svrelationships.family.DaycareDefinition;
 import vn.svframe.svrelationships.family.DaycareEngine;
 import vn.svframe.svrelationships.family.DaycareSession;
 import vn.svframe.svrelationships.family.InheritanceDefinition;
@@ -37,13 +38,25 @@ public final class DaycareRuntimeService {
         repository.active().forEach(session -> deadlines.add(new Deadline(session.completeAtMillis(), session.sessionId())));
     }
 
+    public List<DaycareDefinition> definitions() {
+        return definitions.snapshot().daycareDefinitions().values().stream().sorted(Comparator.comparing(DaycareDefinition::id)).toList();
+    }
+
+    public Optional<DaycareDefinition> definition(String id) {
+        return Optional.ofNullable(definitions.snapshot().daycareDefinitions().get(id));
+    }
+
     public StartResult start(UUID ownerId, String definitionId, List<UUID> participants, long nowMillis) {
         var definition=definitions.snapshot().daycareDefinitions().get(definitionId); if(definition==null)return StartResult.UNKNOWN_DEFINITION;
+        if(participants.size()!=definition.participantRoles().size())return StartResult.INVALID_PARTICIPANTS;
         var policy=policies.snapshot().policy(definitionId);
         long active=repository.byOwner(ownerId).stream().filter(s->s.definitionId().equals(definitionId)).filter(s->"ACTIVE".equals(s.status())||"REWARD_PENDING".equals(s.status())).count();
         if(active>=policy.maxActiveSessions())return StartResult.ALREADY_ACTIVE;
         for(UUID participant:participants)if(family.findOwned(ownerId,participant).isEmpty())return StartResult.NOT_OWNED;
-        if("partner_family".equals(definition.mode())&&(participants.isEmpty()||!relationships.state(ownerId,participants.getFirst()).partner()))return StartResult.NOT_PARTNER;
+        for(int i=0;i<definition.participantRoles().size();i++){
+            String role=definition.participantRoles().get(i);
+            if(policy.requiredPartnerRoles().contains(role)&&!relationships.state(ownerId,participants.get(i)).partner())return StartResult.NOT_PARTNER;
+        }
         if(definition.cost()>0&&!charge(ownerId,definition.economyProvider(),definition.currency(),definition.cost()))return StartResult.COST_FAILED;
         DaycareSession session; try{session=new DaycareEngine(definitions.snapshot().daycareDefinitions()).start(ownerId,definitionId,participants,nowMillis);}catch(RuntimeException exception){return StartResult.INVALID_PARTICIPANTS;}
         repository.put(session); deadlines.add(new Deadline(session.completeAtMillis(),session.sessionId())); return StartResult.STARTED;
