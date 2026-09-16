@@ -1,7 +1,7 @@
 package io.github.aristheg201.svhub.client.gui
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import io.github.aristheg201.svhub.client.CommandViewProvider
-import io.github.aristheg201.svhub.client.EnvironmentViewProvider
 import io.github.aristheg201.svhub.client.api.SVHubClientApi
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
@@ -12,6 +12,7 @@ import io.github.aristheg201.svhub.content.HubContent
 import io.github.aristheg201.svhub.content.HubTheme
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.resources.ResourceLocation
 
 object HubDynamicGridRenderer {
     data class Result(val height: Int, val pageCount: Int, val normalizedPage: Int)
@@ -36,8 +37,6 @@ object HubDynamicGridRenderer {
         val provider = component.props.get("provider")?.asString.orEmpty()
         val pokemonGrid = provider == "cobblemon:pokemon" || provider == "cobblemon:fakemon"
         val requestedPageSize = component.props.get("pageSize")?.let { runCatching { it.asInt }.getOrNull() } ?: 24
-        // Live Cobblemon models are intentionally capped more aggressively than text grids.
-        // This keeps weak clients responsive while still showing the actual model in every visible card.
         val pageSize = requestedPageSize.coerceIn(6, if (pokemonGrid) 20 else 30)
         val entries = entries(provider, content)
         val pageCount = maxOf(1, (entries.size + pageSize - 1) / pageSize)
@@ -60,11 +59,6 @@ object HubDynamicGridRenderer {
             PixelUi.panel(gui, cx, cy, cellWidth, cellHeight, if (hover) theme.palette.panelAlt else theme.palette.panel, if (hover) theme.palette.accent else theme.palette.accent2)
 
             val textX = if (entry.pokemon != null) {
-                // Do not use an off-screen framebuffer portrait cache here. Cobblemon's
-                // profile renderer mutates render state and the old capture path could
-                // leave the main GUI blurred/tinted while also producing black textures.
-                // Render the actual current resource-pack model directly, but only for
-                // cards intersecting the current GUI viewport.
                 if (cy + cellHeight >= 42 && cy <= viewportBottom) {
                     renderPokemonModel(gui, entry.pokemon, cx + 5, cy + 5, 54, theme)
                 } else {
@@ -104,8 +98,6 @@ object HubDynamicGridRenderer {
     }
 
     private fun renderPokemonModel(gui: GuiGraphics, view: PokemonView, x: Int, y: Int, size: Int, theme: HubTheme) {
-        // Opaque neutral backing makes transparent model layers readable and avoids
-        // the previous all-black cache box looking like a missing model.
         gui.fill(x, y, x + size, y + size, theme.palette.panelAlt)
         val rendered = PokemonModelRenderer.render(
             gui = gui,
@@ -129,10 +121,17 @@ object HubDynamicGridRenderer {
     }
 
     private fun entries(provider: String, content: HubContent): List<Entry> = when (provider) {
-        "cobblemon:pokemon" -> CobblemonWikiProvider.pokemon(content).map { Entry(it.displayName, "#${it.dexNumber} • ${it.speciesId}", it.route, it) }
-        "cobblemon:fakemon" -> CobblemonWikiProvider.fakemon(content).map { Entry(it.displayName, it.speciesId, it.route, it) }
+        "cobblemon:pokemon" -> CobblemonWikiProvider.pokemon(content).map { Entry(it.displayName, pokemonSubtitle(it), it.route, it) }
+        "cobblemon:fakemon" -> CobblemonWikiProvider.fakemon(content).map { Entry(it.displayName, pokemonSubtitle(it), it.route, it) }
         "svhub:commands", "environment:commands" -> CommandViewProvider.all().map { Entry("/${it.name}", it.syntaxes.firstOrNull().orEmpty(), it.route) }
-        "environment:mods" -> EnvironmentViewProvider.all().map { Entry(it.name, "${it.id} • ${it.sideLabel}", it.route) }
         else -> SVHubClientApi.grid(provider, content)?.map { Entry(it.title, it.subtitle, it.route) }.orEmpty()
+    }
+
+    private fun pokemonSubtitle(view: PokemonView): String {
+        val species = ResourceLocation.tryParse(view.speciesId)?.let(PokemonSpecies::getByIdentifier)
+        val form = species?.getForm(view.aspects)
+        val type = form?.types?.joinToString("/") { it.name.replaceFirstChar(Char::uppercase) }.orEmpty()
+        val dex = if (view.dexNumber > 0) "#${view.dexNumber}" else "Custom"
+        return if (type.isBlank()) dex else "$dex · $type"
     }
 }
