@@ -1,14 +1,14 @@
 package io.github.aristheg201.svhub.client.editor
 
+import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.HubTheme
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-class ComponentPickerScreen(private val parent: HubEditorScreen) : Screen(Component.literal("SVHub Components")) {
+class ComponentPickerScreen(private val parent: HubEditorScreen) : SVHubScreen(Component.literal("SVHub Components")) {
     private val entries = listOf(
         "text" to "Text", "markdown" to "Markdown", "heading" to "Heading",
         "animated_text" to "Animated Text", "notice" to "Notice", "button" to "Button",
