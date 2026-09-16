@@ -1,5 +1,6 @@
 # ============================================================
-# SVRelationships — Daycare Sessions
+# SVRelationships — Daycare & Breeding
+# CONFIG ONLY. Definitions launch the existing daycare wizard.
 # ============================================================
 
 id: daycare
@@ -7,86 +8,82 @@ screen: generic_9x6
 title_key: ui.daycare.title
 
 components:
-  guide:
-    slot: 4
-    item: minecraft:written_book
-    name_key: ui.daycare.guide
-    lore_keys:
-      - ui.daycare.guide.lore1
-      - ui.daycare.guide.lore2
-      - ui.daycare.guide.lore3
+  tab_relationships:
+    slot: 1
+    item: minecraft:heart_of_the_sea
+    name_key: ui.main.relationships
+    lore_keys: [ui.main.relationships.lore1, ui.main.relationships.lore2]
+    action: open_gui
+    args: {id: owned}
+
+  tab_partners:
+    slot: 3
+    item: minecraft:rose_bush
+    name_key: ui.main.partners
+    lore_keys: [ui.main.partners.lore1, ui.main.partners.lore2]
+    action: open_gui
+    args: {id: partners}
+
+  tab_daycare:
+    slot: 5
+    item: minecraft:turtle_egg
+    name_key: ui.main.daycare
+    lore_keys: [ui.main.daycare.lore1, ui.main.daycare.lore2]
     action: none
+
+  tab_family:
+    slot: 7
+    item: minecraft:knowledge_book
+    name_key: ui.main.family
+    lore_keys: [ui.main.family.lore1, ui.main.family.lore2]
+    action: open_gui
+    args: {id: family}
 
   previous:
     slot: 45
     item: minecraft:arrow
     name_key: ui.navigation.previous
-    lore_keys:
-      - ui.navigation.previous.lore
+    lore_keys: [ui.navigation.previous.lore]
     action: page_previous
+    conditions: {has_previous_page: "true"}
 
-  family:
-    slot: 48
-    item: minecraft:knowledge_book
-    name_key: ui.daycare.family
-    lore_keys:
-      - ui.daycare.family.lore1
-      - ui.daycare.family.lore2
-    action: open_gui
-    args:
-      id: family
-
-  back:
+  home:
     slot: 49
-    item: minecraft:barrier
+    item: minecraft:compass
     name_key: ui.navigation.back
-    lore_keys:
-      - ui.navigation.back.main
+    lore_keys: [ui.navigation.back.main]
     action: open_gui
-    args:
-      id: main
+    args: {id: main}
 
   next:
     slot: 53
     item: minecraft:arrow
     name_key: ui.navigation.next
-    lore_keys:
-      - ui.navigation.next.lore
+    lore_keys: [ui.navigation.next.lore]
     action: page_next
+    conditions: {has_next_page: "true"}
 
 repeaters:
+  definitions:
+    source: daycare_definitions
+    slots: [10,11,12,13,14,15,16]
+    visual: item
+    item: minecraft:egg
+    name_key: ui.daycare.definition
+    lore_keys:
+      - ui.daycare.definition.mode
+      - ui.daycare.definition.participants
+      - ui.daycare.definition.duration
+      - ui.daycare.definition.cost
+      - ui.daycare.definition.action
+    action: daycare_begin
+    args: {definition: "<definition>"}
+
   sessions:
     source: daycare_sessions
-    slots:
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-      - 25
-      - 28
-      - 29
-      - 30
-      - 31
-      - 32
-      - 33
-      - 34
-      - 37
-      - 38
-      - 39
-      - 40
-      - 41
-      - 42
-      - 43
-    item: minecraft:egg
+    slots: [19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+    visual: item
+    item: minecraft:turtle_egg
     name_key: ui.daycare.entry
     lore_keys:
       - ui.daycare.entry.status
