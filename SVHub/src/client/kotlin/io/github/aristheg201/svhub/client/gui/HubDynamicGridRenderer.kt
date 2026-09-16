@@ -4,6 +4,8 @@ import io.github.aristheg201.svhub.client.CommandViewProvider
 import io.github.aristheg201.svhub.client.EnvironmentViewProvider
 import io.github.aristheg201.svhub.client.api.SVHubClientApi
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
+import io.github.aristheg201.svhub.client.cobblemon.PokemonPortraitCache
+import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.HubComponent
 import io.github.aristheg201.svhub.content.HubContent
@@ -13,7 +15,7 @@ import net.minecraft.client.gui.GuiGraphics
 
 object HubDynamicGridRenderer {
     data class Result(val height: Int, val pageCount: Int, val normalizedPage: Int)
-    private data class Entry(val title: String, val subtitle: String, val route: String)
+    private data class Entry(val title: String, val subtitle: String, val route: String, val pokemon: PokemonView? = null)
 
     fun render(
         gui: GuiGraphics,
@@ -38,12 +40,13 @@ object HubDynamicGridRenderer {
         val pageCount = maxOf(1, (entries.size + pageSize - 1) / pageSize)
         val normalizedPage = page.coerceIn(0, pageCount - 1)
         val visible = entries.drop(normalizedPage * pageSize).take(pageSize)
+        val pokemonGrid = provider == "cobblemon:pokemon" || provider == "cobblemon:fakemon"
 
         val requestedColumns = component.props.get("columns")?.let { runCatching { it.asInt }.getOrNull() } ?: 3
-        val columns = requestedColumns.coerceIn(1, 6).coerceAtMost(maxOf(1, width / 120))
+        val columns = requestedColumns.coerceIn(1, 6).coerceAtMost(maxOf(1, width / if (pokemonGrid) 164 else 120))
         val gap = 8
-        val cellWidth = ((width - gap * (columns - 1)) / columns).coerceAtLeast(96)
-        val cellHeight = 44
+        val cellWidth = ((width - gap * (columns - 1)) / columns).coerceAtLeast(if (pokemonGrid) 144 else 96)
+        val cellHeight = if (pokemonGrid) 64 else 44
 
         visible.forEachIndexed { index, entry ->
             val col = index % columns
@@ -52,9 +55,17 @@ object HubDynamicGridRenderer {
             val cy = y + row * (cellHeight + gap)
             val hover = mouseX in cx until cx + cellWidth && mouseY in cy until cy + cellHeight
             PixelUi.panel(gui, cx, cy, cellWidth, cellHeight, if (hover) theme.palette.panelAlt else theme.palette.panel, if (hover) theme.palette.accent else theme.palette.accent2)
-            gui.drawString(font, font.plainSubstrByWidth(entry.title, cellWidth - 16), cx + 8, cy + 9, theme.palette.text, true)
+
+            val textX = if (entry.pokemon != null) {
+                renderPokemonPortrait(gui, entry.pokemon, cx + 5, cy + 5, 54, theme)
+                cx + 64
+            } else cx + 8
+            val textWidth = (cellWidth - (textX - cx) - 8).coerceAtLeast(32)
+            val titleY = if (pokemonGrid) cy + 16 else cy + 9
+            val subtitleY = if (pokemonGrid) cy + 35 else cy + 25
+            gui.drawString(font, font.plainSubstrByWidth(entry.title, textWidth), textX, titleY, theme.palette.text, true)
             if (entry.subtitle.isNotBlank()) {
-                gui.drawString(font, font.plainSubstrByWidth(entry.subtitle, cellWidth - 16), cx + 8, cy + 25, theme.palette.mutedText, false)
+                gui.drawString(font, font.plainSubstrByWidth(entry.subtitle, textWidth), textX, subtitleY, theme.palette.mutedText, false)
             }
             hits += HubHitTarget(cx, cy, cx + cellWidth, cy + cellHeight) { onRoute(entry.route) }
         }
@@ -79,9 +90,31 @@ object HubDynamicGridRenderer {
         return Result(totalHeight, pageCount, normalizedPage)
     }
 
+    private fun renderPokemonPortrait(gui: GuiGraphics, view: PokemonView, x: Int, y: Int, size: Int, theme: HubTheme) {
+        val location = PokemonPortraitCache.request(view)
+        if (location != null) {
+            runCatching {
+                gui.blit(location, x, y, size, size, 0f, 0f, 96, 96, 96, 96)
+            }.onFailure {
+                drawPortraitPlaceholder(gui, x, y, size, theme)
+            }
+        } else {
+            drawPortraitPlaceholder(gui, x, y, size, theme)
+        }
+    }
+
+    private fun drawPortraitPlaceholder(gui: GuiGraphics, x: Int, y: Int, size: Int, theme: HubTheme) {
+        gui.fill(x, y, x + size, y + size, theme.palette.panelAlt)
+        val cx = x + size / 2
+        val cy = y + size / 2
+        gui.fill(cx - 1, y + 9, cx + 1, y + size - 9, theme.palette.accent2)
+        gui.fill(x + 9, cy - 1, x + size - 9, cy + 1, theme.palette.accent2)
+        gui.fill(cx - 5, cy - 5, cx + 5, cy + 5, theme.palette.panel)
+    }
+
     private fun entries(provider: String, content: HubContent): List<Entry> = when (provider) {
-        "cobblemon:pokemon" -> CobblemonWikiProvider.pokemon(content).map { Entry(it.displayName, "#${it.dexNumber} • ${it.speciesId}", it.route) }
-        "cobblemon:fakemon" -> CobblemonWikiProvider.fakemon(content).map { Entry(it.displayName, it.speciesId, it.route) }
+        "cobblemon:pokemon" -> CobblemonWikiProvider.pokemon(content).map { Entry(it.displayName, "#${it.dexNumber} • ${it.speciesId}", it.route, it) }
+        "cobblemon:fakemon" -> CobblemonWikiProvider.fakemon(content).map { Entry(it.displayName, it.speciesId, it.route, it) }
         "svhub:commands", "environment:commands" -> CommandViewProvider.all().map { Entry("/${it.name}", it.syntaxes.firstOrNull().orEmpty(), it.route) }
         "environment:mods" -> EnvironmentViewProvider.all().map { Entry(it.name, "${it.id} • ${it.sideLabel}", it.route) }
         else -> SVHubClientApi.grid(provider, content)?.map { Entry(it.title, it.subtitle, it.route) }.orEmpty()
