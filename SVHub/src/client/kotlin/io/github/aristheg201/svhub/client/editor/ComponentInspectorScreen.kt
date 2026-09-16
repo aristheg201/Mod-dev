@@ -2,20 +2,20 @@ package io.github.aristheg201.svhub.client.editor
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.*
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /** Generic, schema-driven component editor. */
 class ComponentInspectorScreen(
     private val parent: HubEditorScreen,
     source: HubComponent
-) : Screen(Component.literal("SVHub Component Inspector")) {
+) : SVHubScreen(Component.literal("SVHub Component Inspector")) {
     private data class BoundField(val spec: InspectorFieldSpec, val box: EditBox)
 
     private val original = source
