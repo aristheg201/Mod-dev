@@ -14,6 +14,7 @@ import vn.svframe.svrelationships.relationship.RelationshipState;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class LifeInteractionService {
@@ -23,6 +24,11 @@ public final class LifeInteractionService {
     public LifeInteractionService(GameplayDefinitionService definitions, RelationshipService relationships) {
         this.definitions = Objects.requireNonNull(definitions, "definitions");
         this.relationships = Objects.requireNonNull(relationships, "relationships");
+    }
+
+    public Optional<String> messageKey(String interactionId) {
+        InteractionDefinition definition = definitions.snapshot().interactions().get(interactionId);
+        return definition == null ? Optional.empty() : Optional.of(definition.messageKey());
     }
 
     public Result interact(UUID playerId, UUID pokemonId, String interactionId, long nowMillis) {
