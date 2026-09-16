@@ -1,11 +1,20 @@
 package io.github.aristheg201.svhub.network
 
+import io.github.aristheg201.svhub.util.Compression
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
 private fun id(path: String) = ResourceLocation.fromNamespaceAndPath("svhub", path)
+
+private object PayloadLimits {
+    const val SERVER_MANIFEST_CHARS = 128 * 1024
+    const val CLIENT_MANIFEST_CHARS = 32 * 1024
+    const val OPEN_PAGE_CHARS = 256
+    const val EDITOR_MESSAGE_CHARS = 1024
+    const val ACTION_ID_CHARS = 192
+}
 
 data class HubHelloS2C(
     val protocol: Int,
@@ -18,8 +27,22 @@ data class HubHelloS2C(
     companion object {
         val TYPE = CustomPacketPayload.Type<HubHelloS2C>(id("hello_s2c"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubHelloS2C> = StreamCodec.of(
-            { buf, p -> buf.writeVarInt(p.protocol); buf.writeLong(p.revision); buf.writeBoolean(p.canOpen); buf.writeBoolean(p.canEdit); buf.writeUtf(p.serverManifest, 1_000_000) },
-            { buf -> HubHelloS2C(buf.readVarInt(), buf.readLong(), buf.readBoolean(), buf.readBoolean(), buf.readUtf(1_000_000)) }
+            { buf, p ->
+                buf.writeVarInt(p.protocol)
+                buf.writeLong(p.revision)
+                buf.writeBoolean(p.canOpen)
+                buf.writeBoolean(p.canEdit)
+                buf.writeUtf(p.serverManifest, PayloadLimits.SERVER_MANIFEST_CHARS)
+            },
+            { buf ->
+                HubHelloS2C(
+                    buf.readVarInt(),
+                    buf.readLong(),
+                    buf.readBoolean(),
+                    buf.readBoolean(),
+                    buf.readUtf(PayloadLimits.SERVER_MANIFEST_CHARS)
+                )
+            }
         )
     }
 }
@@ -37,10 +60,23 @@ data class HubSnapshotChunkS2C(
         val TYPE = CustomPacketPayload.Type<HubSnapshotChunkS2C>(id("snapshot_chunk_s2c"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubSnapshotChunkS2C> = StreamCodec.of(
             { buf, p ->
-                buf.writeLong(p.transferId); buf.writeLong(p.revision); buf.writeBoolean(p.editor)
-                buf.writeVarInt(p.index); buf.writeVarInt(p.total); buf.writeUtf(p.chunk, 25_000)
+                buf.writeLong(p.transferId)
+                buf.writeLong(p.revision)
+                buf.writeBoolean(p.editor)
+                buf.writeVarInt(p.index)
+                buf.writeVarInt(p.total)
+                buf.writeUtf(p.chunk, Compression.CHUNK_CHARS)
             },
-            { buf -> HubSnapshotChunkS2C(buf.readLong(), buf.readLong(), buf.readBoolean(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(25_000)) }
+            { buf ->
+                HubSnapshotChunkS2C(
+                    buf.readLong(),
+                    buf.readLong(),
+                    buf.readBoolean(),
+                    buf.readVarInt(),
+                    buf.readVarInt(),
+                    buf.readUtf(Compression.CHUNK_CHARS)
+                )
+            }
         )
     }
 }
@@ -50,8 +86,8 @@ data class HubOpenS2C(val page: String, val editor: Boolean) : CustomPacketPaylo
     companion object {
         val TYPE = CustomPacketPayload.Type<HubOpenS2C>(id("open_s2c"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubOpenS2C> = StreamCodec.of(
-            { buf, p -> buf.writeUtf(p.page, 256); buf.writeBoolean(p.editor) },
-            { buf -> HubOpenS2C(buf.readUtf(256), buf.readBoolean()) }
+            { buf, p -> buf.writeUtf(p.page, PayloadLimits.OPEN_PAGE_CHARS); buf.writeBoolean(p.editor) },
+            { buf -> HubOpenS2C(buf.readUtf(PayloadLimits.OPEN_PAGE_CHARS), buf.readBoolean()) }
         )
     }
 }
@@ -61,8 +97,8 @@ data class HubEditorResultS2C(val ok: Boolean, val revision: Long, val message: 
     companion object {
         val TYPE = CustomPacketPayload.Type<HubEditorResultS2C>(id("editor_result_s2c"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubEditorResultS2C> = StreamCodec.of(
-            { buf, p -> buf.writeBoolean(p.ok); buf.writeLong(p.revision); buf.writeUtf(p.message, 4096) },
-            { buf -> HubEditorResultS2C(buf.readBoolean(), buf.readLong(), buf.readUtf(4096)) }
+            { buf, p -> buf.writeBoolean(p.ok); buf.writeLong(p.revision); buf.writeUtf(p.message, PayloadLimits.EDITOR_MESSAGE_CHARS) },
+            { buf -> HubEditorResultS2C(buf.readBoolean(), buf.readLong(), buf.readUtf(PayloadLimits.EDITOR_MESSAGE_CHARS)) }
         )
     }
 }
@@ -72,8 +108,8 @@ data class HubClientManifestC2S(val protocol: Int, val cachedRevision: Long, val
     companion object {
         val TYPE = CustomPacketPayload.Type<HubClientManifestC2S>(id("manifest_c2s"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubClientManifestC2S> = StreamCodec.of(
-            { buf, p -> buf.writeVarInt(p.protocol); buf.writeLong(p.cachedRevision); buf.writeUtf(p.clientManifest, 1_000_000) },
-            { buf -> HubClientManifestC2S(buf.readVarInt(), buf.readLong(), buf.readUtf(1_000_000)) }
+            { buf, p -> buf.writeVarInt(p.protocol); buf.writeLong(p.cachedRevision); buf.writeUtf(p.clientManifest, PayloadLimits.CLIENT_MANIFEST_CHARS) },
+            { buf -> HubClientManifestC2S(buf.readVarInt(), buf.readLong(), buf.readUtf(PayloadLimits.CLIENT_MANIFEST_CHARS)) }
         )
     }
 }
@@ -83,8 +119,8 @@ data class HubActionC2S(val actionId: String) : CustomPacketPayload {
     companion object {
         val TYPE = CustomPacketPayload.Type<HubActionC2S>(id("action_c2s"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubActionC2S> = StreamCodec.of(
-            { buf, p -> buf.writeUtf(p.actionId, 192) },
-            { buf -> HubActionC2S(buf.readUtf(192)) }
+            { buf, p -> buf.writeUtf(p.actionId, PayloadLimits.ACTION_ID_CHARS) },
+            { buf -> HubActionC2S(buf.readUtf(PayloadLimits.ACTION_ID_CHARS)) }
         )
     }
 }
@@ -112,9 +148,21 @@ data class HubEditorChunkC2S(
         val TYPE = CustomPacketPayload.Type<HubEditorChunkC2S>(id("editor_chunk_c2s"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, HubEditorChunkC2S> = StreamCodec.of(
             { buf, p ->
-                buf.writeLong(p.transferId); buf.writeLong(p.baseRevision); buf.writeVarInt(p.index); buf.writeVarInt(p.total); buf.writeUtf(p.chunk, 25_000)
+                buf.writeLong(p.transferId)
+                buf.writeLong(p.baseRevision)
+                buf.writeVarInt(p.index)
+                buf.writeVarInt(p.total)
+                buf.writeUtf(p.chunk, Compression.CHUNK_CHARS)
             },
-            { buf -> HubEditorChunkC2S(buf.readLong(), buf.readLong(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(25_000)) }
+            { buf ->
+                HubEditorChunkC2S(
+                    buf.readLong(),
+                    buf.readLong(),
+                    buf.readVarInt(),
+                    buf.readVarInt(),
+                    buf.readUtf(Compression.CHUNK_CHARS)
+                )
+            }
         )
     }
 }
