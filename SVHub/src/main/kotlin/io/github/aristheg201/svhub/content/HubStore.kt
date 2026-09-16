@@ -52,7 +52,7 @@ class HubStore(private val root: Path) : AutoCloseable {
             if (!Files.exists(contentFile)) {
                 AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(current.get().content))
             }
-            val content = readValidatedContent(contentFile)
+            val content = readCurrentContentWithBundledMigration()
             val history = scanHistory()
             historyIndex.set(history)
             HubSnapshot(content).also(current::set)
@@ -61,7 +61,7 @@ class HubStore(private val root: Path) : AutoCloseable {
 
     fun reloadAsync(): CompletableFuture<CommitResult> = supplyIo {
         runCatching {
-            val content = readValidatedContent(contentFile)
+            val content = readCurrentContentWithBundledMigration()
             val history = scanHistory()
             current.set(HubSnapshot(content))
             historyIndex.set(history)
@@ -128,6 +128,19 @@ class HubStore(private val root: Path) : AutoCloseable {
         pruneHistoryFiles()
     }
 
+    /**
+     * Upgrade only SVHub's known legacy bundled seed. The old file is archived first,
+     * and the revision is incremented so clients cannot reuse a revision-0 cache.
+     */
+    private fun readCurrentContentWithBundledMigration(): HubContent {
+        val loaded = readValidatedContent(contentFile)
+        val migrated = BundledContentMigration.migrate(loaded) ?: return loaded
+        HubValidator.validate(migrated).requireValid()
+        saveHistory(loaded)
+        AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(migrated))
+        return migrated
+    }
+
     private fun readValidatedContent(path: Path): HubContent {
         require(Files.exists(path)) { "Missing SVHub content file: ${path.fileName}" }
         val content = HubContentCodec.decode(Files.readString(path))
@@ -183,8 +196,6 @@ class HubStore(private val root: Path) : AutoCloseable {
         ready.set(false)
         if (!closed.compareAndSet(false, true)) return
 
-        // shutdown() accepts no new work but drains already queued atomic writes.
-        // Bound the wait so a broken filesystem cannot hang Minecraft shutdown forever.
         io.shutdown()
         try {
             if (!io.awaitTermination(SHUTDOWN_DRAIN_SECONDS, TimeUnit.SECONDS)) {
