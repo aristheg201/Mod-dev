@@ -24,12 +24,20 @@ object ClientHubState {
     @Volatile var canEdit: Boolean = false
     @Volatile var serverManifest: String = "{}"
     @Volatile var lastEditorMessage: String? = null
+    @Volatile var cacheAllowed: Boolean = true
+        private set
 
     private val playerAssembler = ChunkAssembler()
     private val editorAssembler = ChunkAssembler()
     private var searchIndex: SearchIndex? = null
 
+    fun setCachePolicy(allowed: Boolean) {
+        cacheAllowed = allowed
+        if (!allowed) ClientCache.clear()
+    }
+
     fun loadCachedIfRevision(revision: Long): Long {
+        if (!cacheAllowed) return -1L
         val cached = ClientCache.load() ?: return -1L
         if (cached.revision != revision) return -1L
         applyPlayer(cached)
@@ -67,7 +75,7 @@ object ClientHubState {
         })
         playerContent = filtered
         searchIndex = SearchIndex.build(filtered)
-        ClientCache.save(filtered)
+        if (cacheAllowed) ClientCache.save(filtered)
     }
 
     /**
@@ -92,6 +100,7 @@ object ClientHubState {
         serverRevision = -1L
         canOpen = false
         canEdit = false
+        cacheAllowed = true
         serverManifest = "{}"
         lastEditorMessage = null
         searchIndex = null
