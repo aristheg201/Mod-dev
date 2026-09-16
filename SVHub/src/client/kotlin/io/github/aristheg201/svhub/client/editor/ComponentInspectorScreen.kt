@@ -137,7 +137,12 @@ class ComponentInspectorScreen(
             )
         } else original.action
 
-        parent.acceptComponentDraft(original.copy(props = props, action = action))
+        val replacement = original.copy(props = props, action = action)
+        val content = parent.draftForChild()
+        val pages = content.pages.map { page ->
+            page.copy(components = page.components.map { component -> if (component.id == original.id) replacement else component })
+        }
+        parent.acceptAssetDraft(content.copy(pages = pages))
         Minecraft.getInstance().setScreen(parent)
     }
 
