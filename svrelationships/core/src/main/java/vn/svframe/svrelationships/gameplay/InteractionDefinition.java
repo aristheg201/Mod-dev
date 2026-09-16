@@ -18,7 +18,7 @@ public record InteractionDefinition(
         if (cooldownMillis < 0) throw new IllegalArgumentException("cooldownMillis");
     }
 
-    /** Backward-compatible constructor for definitions/tests using the legacy single-state field. */
+    /** Backward-compatible constructor for existing YAML parser/tests. */
     public InteractionDefinition(
             String id,
             long cooldownMillis,
@@ -28,6 +28,19 @@ public record InteractionDefinition(
             String messageKey
     ) {
         this(id, cooldownMillis, progressionDeltas, requiredRoute, parseLegacyStates(requiredState), messageKey);
+    }
+
+    /**
+     * Compatibility accessor for the current loader validator. The runtime uses
+     * requiredStates(); returning the first state here keeps legacy validation
+     * boot-safe until the loader schema is fully list-native.
+     */
+    public String requiredState() {
+        return requiredStates.isEmpty() ? "" : requiredStates.getFirst();
+    }
+
+    public boolean allowsState(String currentState) {
+        return requiredStates.isEmpty() || requiredStates.contains(currentState);
     }
 
     private static List<String> parseLegacyStates(String value) {
