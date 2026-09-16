@@ -23,7 +23,7 @@ class HubScreen(
     initialRoute: String = "home",
     private val overrideContent: HubContent? = null,
     private val returnTo: Screen? = null
-) : Screen(Component.literal("SVHub")) {
+) : SVHubScreen(Component.literal("SVHub")) {
     private var route = initialRoute
     private lateinit var search: EditBox
     private var tickCounter = 0L
