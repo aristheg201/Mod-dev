@@ -1,5 +1,6 @@
 package io.github.aristheg201.svhub.network
 
+import io.github.aristheg201.svhub.SVHub
 import io.github.aristheg201.svhub.SVHubRuntime
 import io.github.aristheg201.svhub.action.ServerActionDispatcher
 import io.github.aristheg201.svhub.content.*
@@ -211,13 +212,39 @@ object SVHubNetwork {
         SVHubRuntime.store.commitAsync(payload.baseRevision, publishCandidate).whenComplete { result, error ->
             SVHubRuntime.server?.execute {
                 if (error != null) {
+                    SVHub.LOGGER.warn(
+                        "Hub publish failed: player={} uuid={} baseRevision={} currentRevision={}",
+                        player.gameProfile.name,
+                        player.uuid,
+                        payload.baseRevision,
+                        SVHubRuntime.store.snapshot().revision,
+                        error
+                    )
                     sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, error.message ?: "Publish failed")
                     return@execute
                 }
                 sendEditorResult(player, result.ok, result.revision, result.message)
                 if (result.ok) {
+                    SVHub.LOGGER.info(
+                        "Hub publish: player={} uuid={} baseRevision={} newRevision={} pages={} assets={}",
+                        player.gameProfile.name,
+                        player.uuid,
+                        payload.baseRevision,
+                        result.revision,
+                        publishCandidate.pages.size,
+                        publishCandidate.assets.size
+                    )
                     editorSessions.remove(player.uuid)
                     broadcastPlayerSnapshots()
+                } else {
+                    SVHub.LOGGER.warn(
+                        "Hub publish rejected: player={} uuid={} baseRevision={} currentRevision={} reason={}",
+                        player.gameProfile.name,
+                        player.uuid,
+                        payload.baseRevision,
+                        result.revision,
+                        result.message
+                    )
                 }
             }
         }
