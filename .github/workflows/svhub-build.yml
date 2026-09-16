@@ -47,6 +47,20 @@ jobs:
       - name: Compile, test and remap
         run: gradle --no-daemon --stacktrace clean test remapJar sourcesJar
 
+      - name: Inspect resolved Cobblemon model API
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANDIDATES="$(find ~/.gradle/caches -type f -name '*.jar' 2>/dev/null | grep -E '/(com\.cobblemon|cobblemon)/|cobblemon.*1\.8\.0' || true)"
+          if [ -z "$CANDIDATES" ]; then
+            echo 'No Cobblemon cache jar found'
+            exit 0
+          fi
+          printf '%s\n' "$CANDIDATES" | while IFS= read -r jar; do
+            echo "=== $jar ==="
+            jar tf "$jar" 2>/dev/null | grep -E 'ModelWidget|RenderablePokemon|PokemonModelRepository|PokemonPoseableModel|PokemonRenderer|render.*pokemon|pokemon.*render' | head -n 160 || true
+          done
+
       - name: Verify remapped artifact
         shell: bash
         run: |
