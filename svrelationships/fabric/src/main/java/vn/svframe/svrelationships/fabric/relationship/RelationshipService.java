@@ -4,6 +4,7 @@ import vn.svframe.svrelationships.fabric.config.GameplayDefinitionService;
 import vn.svframe.svrelationships.fabric.persistence.RelationshipRepository;
 import vn.svframe.svrelationships.gameplay.PartnerCapacityResolver;
 import vn.svframe.svrelationships.gameplay.ProgressionEngine;
+import vn.svframe.svrelationships.gameplay.ProgressionTrackDefinition;
 import vn.svframe.svrelationships.gameplay.RouteEngine;
 import vn.svframe.svrelationships.integration.ProviderHub;
 import vn.svframe.svrelationships.relationship.RelationshipKey;
@@ -32,6 +33,7 @@ public final class RelationshipService {
     public List<RelationshipState> states(UUID playerId) { return repository.byPlayer(playerId); }
     public List<RelationshipState> partners(UUID playerId) { return repository.partners(playerId); }
     public long progression(UUID playerId, UUID pokemonId, String trackId) { return state(playerId, pokemonId).progression(trackId); }
+    public Optional<ProgressionTrackDefinition> track(String trackId) { return Optional.ofNullable(definitions.snapshot().progressionTracks().get(trackId)); }
 
     public long setProgression(UUID playerId, UUID pokemonId, String trackId, long value) {
         long result = new ProgressionEngine(definitions.snapshot().progressionTracks()).set(state(playerId, pokemonId), trackId, value);
