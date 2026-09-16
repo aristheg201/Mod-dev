@@ -52,16 +52,19 @@ class HubStore(private val root: Path) : AutoCloseable {
                 AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(current.get().content))
             }
             val content = readValidatedContent(contentFile)
-            historyIndex.set(scanHistory())
+            val history = scanHistory()
+            historyIndex.set(history)
             HubSnapshot(content).also(current::set)
-        }.whenComplete { _, _ -> ready.set(true) }
+        }.whenComplete { _, error -> ready.set(error == null) }
     }
 
     fun reloadAsync(): CompletableFuture<CommitResult> = supplyIo {
         runCatching {
             val content = readValidatedContent(contentFile)
+            val history = scanHistory()
             current.set(HubSnapshot(content))
-            historyIndex.set(scanHistory())
+            historyIndex.set(history)
+            ready.set(true)
             CommitResult(true, content.revision, "Reloaded SVHub revision ${content.revision}")
         }.getOrElse { error ->
             CommitResult(false, snapshot().revision, error.message ?: "Reload failed")
@@ -176,6 +179,7 @@ class HubStore(private val root: Path) : AutoCloseable {
     }
 
     override fun close() {
+        ready.set(false)
         if (closed.compareAndSet(false, true)) io.shutdown()
     }
 
