@@ -7,6 +7,7 @@ import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.editor.HubEditorScreen
 import io.github.aristheg201.svhub.client.gui.HubScreen
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
+import io.github.aristheg201.svhub.client.render.MiniMessageText
 import io.github.aristheg201.svhub.content.HUB_PROTOCOL_VERSION
 import io.github.aristheg201.svhub.network.*
 import io.github.aristheg201.svhub.server.EnvironmentManifest
@@ -48,6 +49,7 @@ object SVHubClient : ClientModInitializer {
                     PokemonInfoProvider.clear()
                     CobblemonWikiProvider.clearCaches()
                     GeneratedBackgroundRenderer.clear()
+                    MiniMessageText.clear()
                 }
             }
         )
@@ -147,6 +149,11 @@ object SVHubClient : ClientModInitializer {
         if (ClientHubState.playerContent != null) {
             pendingRoute = null
             client.setScreen(HubScreen(route))
+            // Dynamic Placeholder API snapshots are player/time dependent. Show the
+            // last materialized copy immediately, then refresh once per Hub open.
+            if (!ClientHubState.cacheAllowed) {
+                ClientPlayNetworking.send(HubRequestSnapshotC2S(false))
+            }
         } else {
             pendingRoute = route
             ClientPlayNetworking.send(HubRequestSnapshotC2S(false))
