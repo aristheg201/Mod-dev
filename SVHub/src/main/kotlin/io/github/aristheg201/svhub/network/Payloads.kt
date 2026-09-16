@@ -21,6 +21,7 @@ data class HubHelloS2C(
     val revision: Long,
     val canOpen: Boolean,
     val canEdit: Boolean,
+    val cacheable: Boolean,
     val serverManifest: String
 ) : CustomPacketPayload {
     override fun type() = TYPE
@@ -32,12 +33,14 @@ data class HubHelloS2C(
                 buf.writeLong(p.revision)
                 buf.writeBoolean(p.canOpen)
                 buf.writeBoolean(p.canEdit)
+                buf.writeBoolean(p.cacheable)
                 buf.writeUtf(p.serverManifest, PayloadLimits.SERVER_MANIFEST_CHARS)
             },
             { buf ->
                 HubHelloS2C(
                     buf.readVarInt(),
                     buf.readLong(),
+                    buf.readBoolean(),
                     buf.readBoolean(),
                     buf.readBoolean(),
                     buf.readUtf(PayloadLimits.SERVER_MANIFEST_CHARS)
