@@ -1,61 +1,78 @@
 # ============================================================
-# SVRelationships — Main Menu
-# CONFIG ONLY. Layout, icons, text keys and actions live here.
+# SVRelationships — Main Hub
+# CONFIG ONLY. Polished framed layout; no JAR change required.
 # ============================================================
 
 id: main
-screen: generic_9x2
+screen: generic_9x3
 title_key: ui.main.title
 
 components:
+  # Header frame
+  top_0: {slot: 0, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_1: {slot: 1, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_2: {slot: 2, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_3: {slot: 3, item: minecraft:magenta_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   overview:
     slot: 4
     item: minecraft:nether_star
     name_key: ui.main.overview
-    lore_keys:
-      - ui.main.overview.player
-      - ui.main.overview.capacity
-      - ui.main.overview.tip
+    lore_keys: [ui.main.overview.player, ui.main.overview.capacity, ui.main.overview.tip]
     action: none
+  top_5: {slot: 5, item: minecraft:magenta_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_6: {slot: 6, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_7: {slot: 7, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_8: {slot: 8, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
+  # Primary navigation cards
+  left_frame: {slot: 9, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   relationships:
     slot: 10
     item: minecraft:heart_of_the_sea
     name_key: ui.main.relationships
-    lore_keys:
-      - ui.main.relationships.lore1
-      - ui.main.relationships.lore2
+    lore_keys: [ui.main.relationships.lore1, ui.main.relationships.lore2]
     action: open_gui
     args: {id: owned}
-
+  sep_11: {slot: 11, item: minecraft:pink_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   partners:
     slot: 12
     item: minecraft:rose_bush
     name_key: ui.main.partners
-    lore_keys:
-      - ui.main.partners.lore1
-      - ui.main.partners.lore2
+    lore_keys: [ui.main.partners.lore1, ui.main.partners.lore2]
     action: open_gui
     args: {id: partners}
-
+  sep_13: {slot: 13, item: minecraft:purple_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   daycare:
     slot: 14
     item: minecraft:turtle_egg
     name_key: ui.main.daycare
-    lore_keys:
-      - ui.main.daycare.lore1
-      - ui.main.daycare.lore2
+    lore_keys: [ui.main.daycare.lore1, ui.main.daycare.lore2]
     action: open_gui
     args: {id: daycare}
-
+  sep_15: {slot: 15, item: minecraft:yellow_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   family:
     slot: 16
     item: minecraft:knowledge_book
     name_key: ui.main.family
-    lore_keys:
-      - ui.main.family.lore1
-      - ui.main.family.lore2
+    lore_keys: [ui.main.family.lore1, ui.main.family.lore2]
     action: open_gui
     args: {id: family}
+  right_frame: {slot: 17, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+
+  # Footer frame
+  bot_18: {slot: 18, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  bot_19: {slot: 19, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  bot_20: {slot: 20, item: minecraft:pink_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  bot_21: {slot: 21, item: minecraft:purple_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  guide:
+    slot: 22
+    item: minecraft:book
+    name_key: ui.main.guide
+    lore_keys: [ui.main.guide.lore1, ui.main.guide.lore2]
+    action: none
+  bot_23: {slot: 23, item: minecraft:purple_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  bot_24: {slot: 24, item: minecraft:yellow_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  bot_25: {slot: 25, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  bot_26: {slot: 26, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
 repeaters: {}
