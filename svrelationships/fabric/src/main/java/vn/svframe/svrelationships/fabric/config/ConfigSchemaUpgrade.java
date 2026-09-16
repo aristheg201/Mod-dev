@@ -10,12 +10,17 @@ import java.util.List;
 
 /** One-time migration for shipped gameplay/GUI schema changes. */
 final class ConfigSchemaUpgrade {
-    private static final int CURRENT = 3;
+    private static final int CURRENT = 4;
     private static final List<String> REPLACE_FROM_DEFAULT = List.of(
             "interactions.yml",
             "daycare-policies.yml",
+            "gui/main.yml",
+            "gui/owned.yml",
             "gui/relationship.yml",
+            "gui/partners.yml",
             "gui/daycare.yml",
+            "gui/daycare_setup.yml",
+            "gui/family.yml",
             "lang/en_us.yml",
             "lang/vi_vn.yml",
             "lang/en_us_gui.yml",
