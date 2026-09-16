@@ -12,5 +12,5 @@ interactions:
       bond: 10
       romance: 20
     required_route: romance
-    required_state: dating
+    required_state: "dating|engaged|married"
     message_key: interaction.date.success
