@@ -13,6 +13,19 @@ version = providers.gradleProperty("mod_version").get()
 group = providers.gradleProperty("maven_group").get()
 base.archivesName.set(providers.gradleProperty("mod_name").get())
 
+// Keep client-only Minecraft classes compile-isolated, but explicitly declare both
+// source sets as one Fabric mod. Loom then packages common + client output into the
+// same deployable JAR instead of compiling client classes and dropping them.
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        create(modId) {
+            sourceSet(sourceSets.main.get())
+            sourceSet(sourceSets.named("client").get())
+        }
+    }
+}
+
 repositories {
     mavenCentral()
     maven("https://api.modrinth.com/maven")
