@@ -3,6 +3,7 @@ package io.github.aristheg201.svhub.client.editor
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.ClientHubState
 import io.github.aristheg201.svhub.client.gui.HubScreen
+import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.*
 import io.github.aristheg201.svhub.network.HubEditorChunkC2S
@@ -12,12 +13,11 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 import java.util.concurrent.ThreadLocalRandom
 
-class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
+class HubEditorScreen : SVHubScreen(Component.literal("SVHub Editor")) {
     private val initial = ClientHubState.editorContent ?: ClientHubState.playerContent ?: DefaultContent.create()
     private val history = HubDraftHistory(initial)
     private var draft = history.current()
