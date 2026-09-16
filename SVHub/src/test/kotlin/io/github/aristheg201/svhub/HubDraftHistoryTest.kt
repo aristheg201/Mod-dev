@@ -47,4 +47,32 @@ class HubDraftHistoryTest {
         history.mutate { it.copy(defaultLocale = "fr_fr") }
         assertFalse(history.canRedo())
     }
+
+    @Test
+    fun `consecutive typing with same key is one undo step`() {
+        val initial = DefaultContent.create()
+        val history = HubDraftHistory(initial, 8)
+        val original = initial.defaultLocale
+
+        history.mutate("field:locale") { it.copy(defaultLocale = "e") }
+        history.mutate("field:locale") { it.copy(defaultLocale = "en") }
+        history.mutate("field:locale") { it.copy(defaultLocale = "en_us") }
+
+        assertEquals("en_us", history.current().defaultLocale)
+        assertEquals(original, history.undo().defaultLocale)
+        assertFalse(history.canUndo(), "One typing burst must create exactly one undo boundary")
+    }
+
+    @Test
+    fun `breaking coalescing starts a fresh undo boundary`() {
+        val initial = DefaultContent.create()
+        val history = HubDraftHistory(initial, 8)
+
+        history.mutate("field:locale") { it.copy(defaultLocale = "en") }
+        history.breakCoalescing()
+        history.mutate("field:locale") { it.copy(defaultLocale = "en_us") }
+
+        assertEquals("en", history.undo().defaultLocale)
+        assertEquals(initial.defaultLocale, history.undo().defaultLocale)
+    }
 }
