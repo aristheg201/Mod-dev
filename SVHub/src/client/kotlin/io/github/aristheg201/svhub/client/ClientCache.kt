@@ -37,6 +37,12 @@ object ClientCache {
         }
     }
 
+    /** Dynamic Placeholder API snapshots must never be reused by revision alone. */
+    fun clear() {
+        val path = runCatching { pathForCurrentServer() }.getOrNull() ?: return
+        ioExecutor.execute { runCatching { Files.deleteIfExists(path) } }
+    }
+
     private fun pathForCurrentServer(): java.nio.file.Path {
         Files.createDirectories(dir)
         val client = Minecraft.getInstance()
