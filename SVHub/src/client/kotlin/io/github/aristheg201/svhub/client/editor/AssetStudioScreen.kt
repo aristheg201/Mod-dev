@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.client.editor
 
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.HubAsset
@@ -10,7 +11,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /**
@@ -25,7 +25,7 @@ class AssetStudioScreen(
     private val parent: HubEditorScreen,
     initial: HubContent,
     private val pageIndex: Int
-) : Screen(Component.literal("SVHub Asset Studio")) {
+) : SVHubScreen(Component.literal("SVHub Asset Studio")) {
     private var draft = HubEditorScreen.clone(initial)
     private val presets = listOf("pixel_sky", "pixel_forest", "pixel_grid", "pixel_neon", "pixel_cave", "pixel_volcano")
     private var selected = currentTheme().backgroundPreset
