@@ -1,0 +1,68 @@
+name: SVHub Loom build
+
+on:
+  push:
+    branches:
+      - feature/svhub-production-20260916
+    paths:
+      - 'SVHub/**'
+      - '.github/workflows/svhub-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SVHub
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Validate project structure
+        shell: bash
+        run: |
+          test -f build.gradle.kts
+          test -f gradle.properties
+          test -f src/main/resources/fabric.mod.json
+          test -d src/main/kotlin
+          test -d src/client/kotlin
+
+      - name: Compile, test and remap
+        run: gradle --no-daemon --stacktrace clean test remapJar sourcesJar
+
+      - name: Verify remapped artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lh build/libs
+          JAR="$(find build/libs -maxdepth 1 -type f -name 'SVHub-fabric-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
+          test -n "$JAR"
+          unzip -t "$JAR"
+          unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
+          sha256sum "$JAR" | tee build/libs/SHA256.txt
+
+      - name: Upload SVHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SVHub-Loom-remapped
+          path: |
+            SVHub/build/libs/*.jar
+            SVHub/build/libs/SHA256.txt
+            SVHub/build/libs/fabric.mod.built.json
+          if-no-files-found: error
