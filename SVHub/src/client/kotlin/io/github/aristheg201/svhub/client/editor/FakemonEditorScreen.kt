@@ -53,7 +53,7 @@ class FakemonEditorScreen(
     private fun field(index: Int, hint: String, responder: (String) -> Unit): EditBox {
         val left = (width * 0.43).toInt()
         val box = EditBox(font, left, 78 + index * 43, width - left - 18, 20, Component.literal(hint))
-        box.hint = Component.literal(hint)
+        box.setHint(Component.literal(hint))
         box.setMaxLength(512)
         box.setResponder { if (!syncing) responder(it) }
         addRenderableWidget(box)
@@ -170,7 +170,11 @@ class FakemonEditorScreen(
         nameBox.value = entry?.displayName?.resolve("vi_vn").orEmpty()
         wikiPageBox.value = entry?.wikiPage.orEmpty()
         val enabled = entry != null
-        idBox.isEditable = enabled; speciesBox.isEditable = enabled; aspectsBox.isEditable = enabled; nameBox.isEditable = enabled; wikiPageBox.isEditable = enabled
+        idBox.setEditable(enabled)
+        speciesBox.setEditable(enabled)
+        aspectsBox.setEditable(enabled)
+        nameBox.setEditable(enabled)
+        wikiPageBox.setEditable(enabled)
         syncing = false
     }
 
