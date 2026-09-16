@@ -148,12 +148,13 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
 
     internal fun draftForChild(): HubContent = clone(draft)
 
-    internal fun acceptAssetDraft(value: HubContent) {
-        replaceDraft(value)
-    }
+    internal fun acceptAssetDraft(value: HubContent) = replaceDraft(value)
+    internal fun acceptFakemonDraft(value: HubContent) = replaceDraft(value)
 
-    internal fun acceptFakemonDraft(value: HubContent) {
-        replaceDraft(value)
+    internal fun onPublishResult(ok: Boolean, message: String) {
+        publishing = false
+        ClientHubState.lastEditorMessage = message
+        if (!ok) syncFields()
     }
 
     internal fun addPickedComponent(type: String) {
@@ -286,8 +287,7 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
         routeBox.value = page?.route.orEmpty()
         categoryBox.value = page?.category.orEmpty()
         primaryBox.value = page?.components?.getOrNull(componentIndex)?.props?.get("text")?.let { runCatching { it.asString }.getOrDefault("") }.orEmpty()
-        val hasComponent = page?.components?.getOrNull(componentIndex) != null
-        primaryBox.setEditable(hasComponent)
+        primaryBox.setEditable(page?.components?.getOrNull(componentIndex) != null)
         syncing = false
     }
 
@@ -306,7 +306,6 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
         chunks.forEachIndexed { index, chunk ->
             ClientPlayNetworking.send(HubEditorChunkC2S(transfer, ClientHubState.serverRevision, index, chunks.size, chunk))
         }
-        // Result packet refreshes the editor snapshot. This flag prevents accidental duplicate publish clicks in the meantime.
     }
 
     companion object {
