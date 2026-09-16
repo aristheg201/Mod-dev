@@ -1,6 +1,8 @@
 package io.github.aristheg201.svhub.client
 
 import com.mojang.blaze3d.platform.InputConstants
+import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
+import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.editor.HubEditorScreen
 import io.github.aristheg201.svhub.client.gui.HubScreen
 import io.github.aristheg201.svhub.content.HUB_PROTOCOL_VERSION
@@ -11,9 +13,14 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.PackType
+import net.minecraft.server.packs.resources.ResourceManager
 import org.lwjgl.glfw.GLFW
 import java.util.concurrent.Executors
 
@@ -28,6 +35,17 @@ object SVHubClient : ClientModInitializer {
     override fun onInitializeClient() {
         openHubKey = KeyBindingHelper.registerKeyBinding(
             KeyMapping("key.svhub.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, "key.categories.svhub")
+        )
+
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+            object : SimpleSynchronousResourceReloadListener {
+                override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath("svhub", "cobblemon_model_cache")
+
+                override fun onResourceManagerReload(resourceManager: ResourceManager) {
+                    PokemonModelRenderer.clear()
+                    CobblemonWikiProvider.clearCaches()
+                }
+            }
         )
 
         ClientPlayNetworking.registerGlobalReceiver(HubHelloS2C.TYPE) { payload, context ->
@@ -109,6 +127,8 @@ object SVHubClient : ClientModInitializer {
             pendingRoute = null
             pendingEditor = false
             ClientHubState.reset()
+            PokemonModelRenderer.clear()
+            CobblemonWikiProvider.clearCaches()
         }
     }
 
