@@ -40,7 +40,15 @@ object ClientCache {
     private fun pathForCurrentServer(): java.nio.file.Path {
         Files.createDirectories(dir)
         val client = Minecraft.getInstance()
-        val identity = client.currentServer?.ip ?: if (client.hasSingleplayerServer()) "singleplayer" else "unknown"
+        val identity = when {
+            client.currentServer != null -> "remote:${client.currentServer!!.ip.lowercase()}"
+            client.hasSingleplayerServer() -> {
+                val worldName = client.singleplayerServer?.worldData?.levelName?.takeIf { it.isNotBlank() }
+                    ?: "unknown-world"
+                "singleplayer:$worldName"
+            }
+            else -> "unknown-session"
+        }
         val digest = MessageDigest.getInstance("SHA-256").digest(identity.toByteArray(StandardCharsets.UTF_8))
         val key = digest.take(10).joinToString("") { "%02x".format(it) }
         return dir.resolve("$key.json")
