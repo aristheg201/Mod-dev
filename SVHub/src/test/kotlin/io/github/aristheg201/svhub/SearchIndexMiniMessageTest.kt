@@ -13,7 +13,7 @@ class SearchIndexMiniMessageTest {
             "sv hub",
             SearchIndex.normalize("<gradient:#2E7168:#C58A35><bold>SV HUB</bold></gradient>")
         )
-        assertEquals("tpa ten", SearchIndex.normalize("/tpa <tên>"))
+        assertEquals("/tpa ten", SearchIndex.normalize("/tpa <tên>"))
     }
 
     @Test
