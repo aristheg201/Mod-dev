@@ -193,8 +193,8 @@ class ComponentInspectorScreen(
         if (schema.supportsAction) {
             val cooldownRaw = actionCooldown?.value?.trim().orEmpty()
             val cooldown = cooldownRaw.toLongOrNull()
-            if (cooldown == null || cooldown !in 0L..3_600_000L) {
-                return "Cooldown phải nằm trong khoảng 0–3,600,000 ms."
+            if (cooldown == null || cooldown !in 0L..300_000L) {
+                return "Cooldown phải nằm trong khoảng 0–300,000 ms (5 phút)."
             }
             val type = actionType?.value?.trim().orEmpty()
             val value = actionValue?.value?.trim().orEmpty()
