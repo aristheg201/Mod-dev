@@ -1,11 +1,13 @@
 package io.github.aristheg201.svhub.client.gui
 
-import io.github.aristheg201.svhub.client.*
+import io.github.aristheg201.svhub.client.ClientHubState
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
-import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
-import io.github.aristheg201.svhub.client.render.AnimatedTextRenderer
 import io.github.aristheg201.svhub.client.render.PixelUi
-import io.github.aristheg201.svhub.content.*
+import io.github.aristheg201.svhub.content.DefaultContent
+import io.github.aristheg201.svhub.content.HubComponent
+import io.github.aristheg201.svhub.content.HubContent
+import io.github.aristheg201.svhub.content.HubPage
+import io.github.aristheg201.svhub.content.HubTheme
 import io.github.aristheg201.svhub.network.HubActionC2S
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
@@ -13,19 +15,260 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
+import kotlin.math.roundToInt
 
-class HubScreen(private var route:String="home",private val overrideContent:HubContent?=null,private val returnTo:Screen?=null):Screen(Component.literal("SVHub")){
-    private lateinit var search:EditBox;private var tick=0L
-    private val content:HubContent get()=overrideContent?:ClientHubState.playerContent?:DefaultContent.create()
-    override fun init(){search=EditBox(font,width/2-130,10,260,20,Component.literal("Tìm kiếm"));search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, hướng dẫn..."));search.setResponder{};addRenderableWidget(search)}
-    override fun tick(){tick++}
-    override fun onClose(){Minecraft.getInstance().setScreen(returnTo)}
-    override fun render(gui:GuiGraphics,mx:Int,my:Int,partial:Float){val page=content.page(route);val theme=content.themeFor(page)?:HubTheme("pixel");PixelUi.background(gui,width,height,content,theme,tick);gui.fill(0,0,width,38,0xD80B0F18.toInt());gui.drawString(font,"SV HUB",12,15,theme.palette.accent,true);if(search.value.isNotBlank())renderSearch(gui,theme)else if(route.startsWith("pokemon/")||route.startsWith("fakemon/"))renderPokemon(gui,theme)else renderPage(gui,page,theme,mx,my);super.render(gui,mx,my,partial)}
-    private fun renderPage(gui:GuiGraphics,page:HubPage?,theme:HubTheme,mx:Int,my:Int){val p=page?:content.page("home")?:return;gui.drawCenteredString(font,p.title.resolve(content.defaultLocale),width/2,48,theme.palette.accent);var y=68;p.components.forEach{c->when(c.type){"heading"->{val t=c.props.get("text")?.asString.orEmpty();AnimatedTextRenderer.render(gui,t,width/2,y,theme.palette.text,"pixel_pop",1.15f,true,tick);y+=28};"animated_text"->{AnimatedTextRenderer.render(gui,c.props.get("text")?.asString.orEmpty(),width/2,y,theme.palette.accent,c.props.get("animation")?.asString?:"glow_pulse",1.2f,true,tick);y+=30};"text","markdown","notice"->{val t=c.props.get("text")?.asString.orEmpty();font.split(Component.literal(t),width-80).take(6).forEach{line->gui.drawString(font,line,40,y,theme.palette.text,false);y+=12};y+=8};"grid"->{renderGrid(gui,c,theme,y);y+=140};"button"->{PixelUi.button(gui,width/2-90,y,180,28,mx in width/2-90..width/2+90&&my in y..y+28,theme);gui.drawCenteredString(font,c.props.get("label")?.asString?:"Mở",width/2,y+10,theme.palette.text);y+=34};"pokemon_model"->{val species=c.props.get("species")?.asString?:"cobblemon:pikachu";CobblemonWikiProvider.resolveRoute("pokemon/${java.net.URLEncoder.encode(species,java.nio.charset.StandardCharsets.UTF_8)}",content)?.let{PokemonModelRenderer.render(gui,it,width/2,y+60,96)};y+=130}}}}
-    private fun renderGrid(gui:GuiGraphics,c:HubComponent,theme:HubTheme,startY:Int){val provider=c.props.get("provider")?.asString.orEmpty();val entries=when(provider){"cobblemon:pokemon"->CobblemonWikiProvider.pokemon(content).take(18).map{it.displayName to it.route};"cobblemon:fakemon"->CobblemonWikiProvider.fakemon(content).take(18).map{it.displayName to it.route};"svhub:commands"->CommandViewProvider.all().take(18).map{"/${it.name}" to it.route};else->emptyList()};var x=28;var y=startY;entries.forEach{(label,_)->PixelUi.panel(gui,x,y,120,30,theme.palette.panel,theme.palette.accent2);gui.drawCenteredString(font,font.plainSubstrByWidth(label,110),x+60,y+11,theme.palette.text);x+=128;if(x+120>width){x=28;y+=36}}}
-    private fun renderSearch(gui:GuiGraphics,theme:HubTheme){var y=48;ClientHubState.search(search.value,12).forEach{hit->PixelUi.panel(gui,width/2-190,y,380,28,theme.palette.panel,theme.palette.accent2);gui.drawString(font,hit.title,width/2-178,y+6,theme.palette.text,true);gui.drawString(font,font.plainSubstrByWidth(hit.subtitle,180),width/2,y+6,theme.palette.mutedText,false);y+=32}}
-    private fun renderPokemon(gui:GuiGraphics,theme:HubTheme){val view=CobblemonWikiProvider.resolveRoute(route,content)?:return;PokemonModelRenderer.render(gui,view,width/3,height/2,120,(tick%360).toFloat(),1f);gui.drawString(font,view.displayName,width/2,70,theme.palette.accent,true);gui.drawString(font,view.speciesId,width/2,88,theme.palette.mutedText,false);view.wikiPage?.let{gui.drawString(font,"Wiki: $it",width/2,106,theme.palette.text,false)}}
-    override fun mouseClicked(mx:Double,my:Double,button:Int):Boolean{if(button==0&&search.value.isBlank()){val page=content.page(route);var y=68;page?.components?.forEach{c->val h=when(c.type){"heading"->28;"animated_text"->30;"text","markdown","notice"->56;"grid"->140;"button"->34;"pokemon_model"->130;else->0};if(c.type=="button"&&mx in (width/2-90).toDouble()..(width/2+90).toDouble()&&my in y.toDouble()..(y+28).toDouble()){c.action?.let{a->if(a.type=="open_page"){route=a.value;search.value=""}else ClientPlayNetworking.send(HubActionC2S(a.id))};return true};y+=h}}
-        if(button==1&&returnTo!=null){Minecraft.getInstance().setScreen(returnTo);return true};return super.mouseClicked(mx,my,button)}
-    override fun keyPressed(key:Int,scan:Int,mods:Int):Boolean{if((mods and 2)!=0&&key==70){setFocused(search);search.isFocused=true;return true};return super.keyPressed(key,scan,mods)}
+class HubScreen(
+    initialRoute: String = "home",
+    private val overrideContent: HubContent? = null,
+    private val returnTo: Screen? = null
+) : Screen(Component.literal("SVHub")) {
+    private var route = initialRoute
+    private lateinit var search: EditBox
+    private var tickCounter = 0L
+    private var scrollOffset = 0
+    private var contentHeight = 0
+    private val hitTargets = mutableListOf<HubHitTarget>()
+    private val gridPages = mutableMapOf<String, Int>()
+    private val expanded = mutableSetOf<String>()
+    private val history = mutableListOf(initialRoute)
+    private var historyIndex = 0
+    private var modelYaw = 0f
+    private var modelZoom = 1f
+    private var draggingModel = false
+
+    private val content: HubContent
+        get() = overrideContent ?: ClientHubState.playerContent ?: DefaultContent.create()
+
+    override fun init() {
+        val searchWidth = minOf(340, width - 180).coerceAtLeast(140)
+        search = EditBox(font, width / 2 - searchWidth / 2, 9, searchWidth, 22, Component.literal("Tìm kiếm"))
+        search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, hướng dẫn..."))
+        search.setMaxLength(160)
+        search.setResponder { scrollOffset = 0 }
+        addRenderableWidget(search)
+    }
+
+    override fun tick() {
+        tickCounter++
+    }
+
+    override fun onClose() {
+        Minecraft.getInstance().setScreen(returnTo)
+    }
+
+    override fun render(gui: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        val page = content.page(route)
+        val theme = content.themeFor(page) ?: content.themes[content.defaultTheme] ?: HubTheme("fallback")
+        PixelUi.background(gui, width, height, content, theme, tickCounter)
+        hitTargets.clear()
+
+        renderChrome(gui, theme, mouseX, mouseY)
+
+        if (search.value.isNotBlank()) {
+            HubSearchOverlay.render(gui, font, theme, search.value, width, 44, 12, ::navigate, hitTargets)
+            super.render(gui, mouseX, mouseY, partialTick)
+            return
+        }
+
+        when {
+            route.startsWith("pokemon/") || route.startsWith("fakemon/") -> {
+                val view = CobblemonWikiProvider.resolveRoute(route, content)
+                if (view != null) PokemonDetailView.render(gui, font, view, theme, width, height, modelYaw, modelZoom)
+                else renderNotFound(gui, theme, route)
+            }
+            route.startsWith("command/") -> if (!CommandDetailView.render(gui, font, route, theme, width, height)) renderNotFound(gui, theme, route)
+            route.startsWith("mod/") -> if (!ModDetailView.render(gui, font, route, theme, width, height)) renderNotFound(gui, theme, route)
+            else -> renderStaticPage(gui, page ?: content.page("home"), theme, mouseX, mouseY)
+        }
+
+        super.render(gui, mouseX, mouseY, partialTick)
+    }
+
+    private fun renderChrome(gui: GuiGraphics, theme: HubTheme, mouseX: Int, mouseY: Int) {
+        gui.fill(0, 0, width, 39, 0xE80B0F18.toInt())
+        val canBack = historyIndex > 0
+        if (canBack) {
+            val hovered = mouseX in 8 until 36 && mouseY in 7 until 33
+            PixelUi.button(gui, 8, 7, 28, 26, hovered, theme)
+            gui.drawCenteredString(font, "←", 22, 16, theme.palette.text)
+            hitTargets += HubHitTarget(8, 7, 36, 33) { goBack() }
+        }
+        gui.drawString(font, "SV HUB", if (canBack) 44 else 12, 15, theme.palette.accent, true)
+        if (ClientHubState.canEdit && overrideContent == null && width >= 520) {
+            val x = width - 78
+            val hovered = mouseX in x until x + 68 && mouseY in 8 until 31
+            PixelUi.button(gui, x, 8, 68, 23, hovered, theme)
+            gui.drawCenteredString(font, "Editor", x + 34, 16, theme.palette.text)
+            hitTargets += HubHitTarget(x, 8, x + 68, 31) { io.github.aristheg201.svhub.client.SVHubClient.requestEditor() }
+        }
+    }
+
+    private fun renderStaticPage(gui: GuiGraphics, page: HubPage?, theme: HubTheme, mouseX: Int, mouseY: Int) {
+        val resolved = page ?: return renderNotFound(gui, theme, route)
+        val sidebarWidth = if (width >= 760) 170 else 0
+        if (sidebarWidth > 0) renderSidebar(gui, theme, sidebarWidth, mouseX, mouseY)
+        val left = sidebarWidth + 24
+        val right = width - 24
+        val top = 48
+        val bottom = height - 18
+        val availableWidth = (right - left).coerceAtLeast(120)
+
+        gui.enableScissor(left - 4, top, right + 4, bottom)
+        var y = top + 4 - scrollOffset
+        gui.drawString(font, resolved.title.resolve(content.defaultLocale), left, y, theme.palette.accent, true)
+        y += 17
+        val subtitle = resolved.subtitle.resolve(content.defaultLocale)
+        if (subtitle.isNotBlank()) {
+            font.split(Component.literal(subtitle), availableWidth).take(3).forEach { line ->
+                gui.drawString(font, line, left, y, theme.palette.mutedText, false)
+                y += 11
+            }
+            y += 5
+        }
+
+        val state = HubComponentRenderer.RenderState(
+            content = content,
+            theme = theme,
+            font = font,
+            width = width,
+            mouseX = mouseX,
+            mouseY = mouseY,
+            tick = tickCounter,
+            hits = hitTargets,
+            gridPage = { id -> gridPages[id] ?: 0 },
+            setGridPage = { id, value -> gridPages[id] = value; scrollOffset = scrollOffset.coerceAtLeast(0) },
+            isExpanded = { id -> id in expanded },
+            toggleExpanded = { id -> if (!expanded.add(id)) expanded.remove(id) },
+            navigate = ::navigate,
+            execute = ::executeComponent
+        )
+
+        resolved.components.forEach { component ->
+            val consumed = HubComponentRenderer.render(gui, component, left, y, availableWidth, state)
+            y += consumed
+        }
+        contentHeight = (y + scrollOffset - top + 18).coerceAtLeast(0)
+        gui.disableScissor()
+
+        val viewport = bottom - top
+        val maxScroll = (contentHeight - viewport).coerceAtLeast(0)
+        scrollOffset = scrollOffset.coerceIn(0, maxScroll)
+        if (maxScroll > 0) {
+            val barHeight = ((viewport.toFloat() / contentHeight) * viewport).roundToInt().coerceAtLeast(24)
+            val track = viewport - barHeight
+            val barY = top + if (maxScroll == 0) 0 else ((scrollOffset.toFloat() / maxScroll) * track).roundToInt()
+            gui.fill(width - 8, top, width - 5, bottom, 0x442B3448)
+            gui.fill(width - 8, barY, width - 5, barY + barHeight, theme.palette.accent2)
+        }
+    }
+
+    private fun renderSidebar(gui: GuiGraphics, theme: HubTheme, sidebarWidth: Int, mouseX: Int, mouseY: Int) {
+        gui.fill(0, 39, sidebarWidth, height, 0xB80C111C.toInt())
+        var y = 52
+        content.pages.filter { it.showInNavigation }.take(18).forEach { page ->
+            val active = page.route == route || page.id == route
+            val hovered = mouseX in 8 until sidebarWidth - 8 && mouseY in y until y + 28
+            if (active || hovered) {
+                gui.fill(8, y, sidebarWidth - 8, y + 28, if (active) 0xAA314A68.toInt() else 0x66314158)
+            }
+            gui.drawString(font, font.plainSubstrByWidth(page.title.resolve(content.defaultLocale), sidebarWidth - 28), 16, y + 10, if (active) theme.palette.accent else theme.palette.text, active)
+            hitTargets += HubHitTarget(8, y, sidebarWidth - 8, y + 28) { navigate(page.route) }
+            y += 31
+        }
+    }
+
+    private fun renderNotFound(gui: GuiGraphics, theme: HubTheme, missing: String) {
+        val panelWidth = minOf(480, width - 48)
+        val left = (width - panelWidth) / 2
+        val top = maxOf(64, height / 3)
+        PixelUi.panel(gui, left, top, panelWidth, 92, theme.palette.panel, theme.palette.danger)
+        gui.drawCenteredString(font, "Không tìm thấy nội dung", width / 2, top + 24, theme.palette.danger)
+        gui.drawCenteredString(font, font.plainSubstrByWidth(missing, panelWidth - 24), width / 2, top + 48, theme.palette.mutedText)
+    }
+
+    private fun executeComponent(component: HubComponent) {
+        val action = component.action ?: return
+        when (action.type) {
+            "open_page" -> navigate(action.value)
+            "back" -> goBack()
+            "close" -> onClose()
+            else -> ClientPlayNetworking.send(HubActionC2S(action.id))
+        }
+    }
+
+    private fun navigate(target: String) {
+        val normalized = content.page(target)?.route ?: target
+        if (normalized == route) return
+        while (history.size > historyIndex + 1) history.removeAt(history.lastIndex)
+        history += normalized
+        historyIndex = history.lastIndex
+        route = normalized
+        scrollOffset = 0
+        gridPages.clear()
+        search.value = ""
+        modelYaw = 0f
+        modelZoom = 1f
+    }
+
+    private fun goBack() {
+        if (historyIndex <= 0) return
+        historyIndex--
+        route = history[historyIndex]
+        scrollOffset = 0
+        search.value = ""
+        modelYaw = 0f
+        modelZoom = 1f
+    }
+
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (button == 0) {
+            hitTargets.asReversed().firstOrNull { it.contains(mouseX, mouseY) }?.let { target ->
+                target.action()
+                return true
+            }
+            if ((route.startsWith("pokemon/") || route.startsWith("fakemon/")) && mouseY >= 54) {
+                draggingModel = true
+            }
+        }
+        if (button == 1 && historyIndex > 0) {
+            goBack()
+            return true
+        }
+        return super.mouseClicked(mouseX, mouseY, button)
+    }
+
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (button == 0) draggingModel = false
+        return super.mouseReleased(mouseX, mouseY, button)
+    }
+
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dragX: Double, dragY: Double): Boolean {
+        if (draggingModel && button == 0 && (route.startsWith("pokemon/") || route.startsWith("fakemon/"))) {
+            modelYaw = (modelYaw + dragX.toFloat() * 1.3f) % 360f
+            return true
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY)
+    }
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        if (route.startsWith("pokemon/") || route.startsWith("fakemon/")) {
+            modelZoom = (modelZoom + verticalAmount.toFloat() * 0.08f).coerceIn(0.55f, 2.2f)
+            return true
+        }
+        scrollOffset = (scrollOffset - (verticalAmount * 28.0).roundToInt()).coerceAtLeast(0)
+        return true
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if ((modifiers and 2) != 0 && keyCode == 70) {
+            setFocused(search)
+            search.isFocused = true
+            return true
+        }
+        if (keyCode == 259 && historyIndex > 0 && !search.isFocused) {
+            goBack()
+            return true
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers)
+    }
 }
