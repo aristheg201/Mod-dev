@@ -2,7 +2,6 @@ package io.github.aristheg201.svhub.client.render
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.network.chat.Component
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -22,7 +21,10 @@ object AnimatedTextRenderer {
         if (text.isEmpty()) return
         val font = Minecraft.getInstance().font
         val preset = normalize(animation)
-        val visible = visibleText(text, preset, tick)
+        val rich = text.indexOf('<') >= 0
+        // Character slicing can break MiniMessage tag structure. Rich text keeps its
+        // complete component and still receives scale/position animation.
+        val visible = if (rich && preset in CHARACTER_ANIMATIONS) text else visibleText(text, preset, tick)
         if (visible.isEmpty()) return
 
         val pose = gui.pose()
@@ -45,7 +47,8 @@ object AnimatedTextRenderer {
         }
         pose.scale(scale * animatedScale, scale * animatedScale, 1f)
 
-        val width = font.width(visible)
+        val component = MiniMessageText.component(visible)
+        val width = font.width(component)
         val drawX = if (centered) -width / 2 else 0
         val drawColor = when (preset) {
             "shimmer" -> shimmerColor(color, tick)
@@ -53,7 +56,7 @@ object AnimatedTextRenderer {
             else -> color
         }
 
-        if (preset == "wave") {
+        if (preset == "wave" && !rich) {
             var cursor = drawX
             visible.forEachIndexed { index, char ->
                 val dy = (sin((tick + index * 3) / 5.5) * 1.8).roundToInt()
@@ -62,14 +65,7 @@ object AnimatedTextRenderer {
                 cursor += font.width(glyph)
             }
         } else {
-            gui.drawString(
-                font,
-                Component.literal(visible),
-                drawX,
-                0,
-                drawColor,
-                preset !in setOf("shimmer", "glow", "glow_pulse")
-            )
+            gui.drawString(font, component, drawX, 0, drawColor, preset !in setOf("shimmer", "glow", "glow_pulse"))
         }
         pose.popPose()
     }
@@ -116,4 +112,6 @@ object AnimatedTextRenderer {
         }
         return (a shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
+
+    private val CHARACTER_ANIMATIONS = setOf("typewriter", "left_reveal", "wave")
 }
