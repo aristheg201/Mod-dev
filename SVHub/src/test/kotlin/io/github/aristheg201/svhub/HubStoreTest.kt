@@ -7,6 +7,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class HubStoreTest {
@@ -66,6 +67,27 @@ class HubStoreTest {
             assertTrue(rollback.ok)
             assertEquals(second.revision + 1, rollback.revision)
             assertEquals(initial.defaultLocale, store.snapshot().content.defaultLocale)
+        }
+    }
+
+    @Test
+    fun `closed store rejects new work and persisted revision reopens cleanly`() {
+        val root = createTempDirectory("svhub-store-close")
+        val store = HubStore(root)
+        val initial = store.initializeAsync().join().content
+        val committed = store.commitAsync(initial.revision, initial.copy(defaultLocale = "en_us")).join()
+        assertTrue(committed.ok)
+        store.close()
+
+        assertFalse(store.isReady())
+        assertFailsWith<Exception> {
+            store.commitAsync(committed.revision, store.snapshot().content.copy(defaultLocale = "vi_vn")).join()
+        }
+
+        HubStore(root).use { reopened ->
+            val loaded = reopened.initializeAsync().join().content
+            assertEquals(committed.revision, loaded.revision)
+            assertEquals("en_us", loaded.defaultLocale)
         }
     }
 }
