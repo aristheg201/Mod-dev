@@ -1,6 +1,6 @@
 # ============================================================
 # SVRelationships — Partners Browser
-# CONFIG ONLY. Consistent top tabs + content grid + bottom nav.
+# CONFIG ONLY. Framed content grid + persistent tab strip.
 # ============================================================
 
 id: partners
@@ -8,36 +8,47 @@ screen: generic_9x6
 title_key: ui.partners.title
 
 components:
+  tab_edge_l: {slot: 0, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   tab_relationships:
     slot: 1
     item: minecraft:heart_of_the_sea
     name_key: ui.main.relationships
-    lore_keys: [ui.main.relationships.lore1, ui.main.relationships.lore2]
+    lore_keys: [ui.tab.click, ui.main.relationships.lore2]
     action: open_gui
     args: {id: owned}
-
+  tab_sep_2: {slot: 2, item: minecraft:pink_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   tab_partners:
     slot: 3
     item: minecraft:rose_bush
     name_key: ui.main.partners
-    lore_keys: [ui.main.partners.lore1, ui.main.partners.lore2]
+    lore_keys: [ui.tab.active, ui.main.partners.lore2]
     action: none
-
+  tab_sep_4: {slot: 4, item: minecraft:purple_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   tab_daycare:
     slot: 5
     item: minecraft:turtle_egg
     name_key: ui.main.daycare
-    lore_keys: [ui.main.daycare.lore1, ui.main.daycare.lore2]
+    lore_keys: [ui.tab.click, ui.main.daycare.lore2]
     action: open_gui
     args: {id: daycare}
-
+  tab_sep_6: {slot: 6, item: minecraft:yellow_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   tab_family:
     slot: 7
     item: minecraft:knowledge_book
     name_key: ui.main.family
-    lore_keys: [ui.main.family.lore1, ui.main.family.lore2]
+    lore_keys: [ui.tab.click, ui.main.family.lore2]
     action: open_gui
     args: {id: family}
+  tab_edge_r: {slot: 8, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+
+  frame_9: {slot: 9, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_17: {slot: 17, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_18: {slot: 18, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_26: {slot: 26, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_27: {slot: 27, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_35: {slot: 35, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_36: {slot: 36, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  frame_44: {slot: 44, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
   previous:
     slot: 45
@@ -46,15 +57,19 @@ components:
     lore_keys: [ui.navigation.previous.lore]
     action: page_previous
     conditions: {has_previous_page: "true"}
-
+  footer_46: {slot: 46, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_47: {slot: 47, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_48: {slot: 48, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   home:
     slot: 49
     item: minecraft:compass
-    name_key: ui.navigation.back
+    name_key: ui.navigation.home
     lore_keys: [ui.navigation.back.main]
     action: open_gui
     args: {id: main}
-
+  footer_50: {slot: 50, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_51: {slot: 51, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  footer_52: {slot: 52, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   next:
     slot: 53
     item: minecraft:arrow
