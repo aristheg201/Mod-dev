@@ -8,15 +8,17 @@ import net.minecraft.server.level.ServerPlayer
 
 object SnapshotProjector {
     fun forPlayer(content: HubContent, player: ServerPlayer, editor: Boolean, clientMods: Set<String> = emptySet()): HubContent {
-        // Full editors need the complete base snapshot because publish is an optimistic
-        // whole-document transaction. Server-side EditAuthorization still enforces scope.
+        // Full editors need the complete canonical snapshot because publish is an
+        // optimistic whole-document transaction. Never materialize placeholders in
+        // an editor snapshot or an admin could accidentally publish resolved values.
         if (editor && SVHubPermissions.has(player, SVHubPermissions.EDITOR_ALL, 2)) return content
 
         val pages = content.pages.mapNotNull { page ->
             if (!visible(page.visibility, player, editor, clientMods)) return@mapNotNull null
             page.copy(components = page.components.filter { visible(it.visibility, player, editor, clientMods) })
         }
-        return SnapshotPruner.prune(content, pages)
+        val projected = SnapshotPruner.prune(content, pages)
+        return if (editor) projected else HubPlaceholderResolver.forPlayer(projected, player)
     }
 
     private fun visible(spec: VisibilitySpec, player: ServerPlayer, editor: Boolean, clientMods: Set<String>): Boolean {
