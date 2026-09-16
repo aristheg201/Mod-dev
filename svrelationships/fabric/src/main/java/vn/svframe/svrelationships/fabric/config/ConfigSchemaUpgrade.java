@@ -8,9 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 
-/** One-time migration for the pre-playable relationship/daycare GUI schema. */
+/** One-time migration for shipped gameplay/GUI schema changes. */
 final class ConfigSchemaUpgrade {
-    private static final int CURRENT = 2;
+    private static final int CURRENT = 3;
     private static final List<String> REPLACE_FROM_DEFAULT = List.of(
             "interactions.yml",
             "daycare-policies.yml",
@@ -32,7 +32,7 @@ final class ConfigSchemaUpgrade {
         for (String relative : REPLACE_FROM_DEFAULT) {
             Path target = root.resolve(relative);
             if (Files.exists(target)) {
-                Path backup = target.resolveSibling(target.getFileName() + ".schema-v1.bak");
+                Path backup = target.resolveSibling(target.getFileName() + ".schema-v" + version + ".bak");
                 if (!Files.exists(backup)) Files.copy(target, backup);
             }
             installDefault(relative, target);
