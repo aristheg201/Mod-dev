@@ -54,6 +54,37 @@ class ValidationTest {
     }
 
     @Test
+    fun `generated background recipe validates with bounded fields`() {
+        val recipe = JsonObject().apply {
+            addProperty("version", 1)
+            addProperty("preset", "pixel_forest")
+            addProperty("seed", 42L)
+            addProperty("density", 3)
+        }
+        val asset = HubAsset("generated_bg_home", "background", "generated", generator = recipe)
+        val content = DefaultContent.create().copy(assets = DefaultContent.create().assets + (asset.id to asset))
+        assertTrue(HubValidator.validate(content).ok)
+    }
+
+    @Test
+    fun `invalid generated background recipe is rejected`() {
+        val recipe = JsonObject().apply {
+            addProperty("version", 999)
+            addProperty("preset", "pixel_unbounded")
+            addProperty("seed", "not-a-number")
+            addProperty("density", 99)
+        }
+        val asset = HubAsset("bad_generated", "background", "generated", generator = recipe)
+        val content = DefaultContent.create().copy(assets = DefaultContent.create().assets + (asset.id to asset))
+        val result = HubValidator.validate(content)
+        assertFalse(result.ok)
+        assertTrue(result.errors.any { "preset" in it.lowercase() })
+        assertTrue(result.errors.any { "density" in it.lowercase() })
+        assertTrue(result.errors.any { "seed" in it.lowercase() })
+        assertTrue(result.errors.any { "version" in it.lowercase() })
+    }
+
+    @Test
     fun `unknown extension component is warning not fatal`() {
         val page = HubPage(
             "home", "home", "test", LocalizedText.of("Home"),
