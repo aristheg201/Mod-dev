@@ -17,7 +17,7 @@ import net.minecraft.network.chat.Component
 class HubScreen(private var route:String="home",private val overrideContent:HubContent?=null,private val returnTo:Screen?=null):Screen(Component.literal("SVHub")){
     private lateinit var search:EditBox;private var tick=0L
     private val content:HubContent get()=overrideContent?:ClientHubState.playerContent?:DefaultContent.create()
-    override fun init(){search=EditBox(font,width/2-130,10,260,20,Component.literal("Tìm kiếm"));search.hint=Component.literal("Tìm Pokémon, Fakemon, lệnh, hướng dẫn...");search.setResponder{};addRenderableWidget(search)}
+    override fun init(){search=EditBox(font,width/2-130,10,260,20,Component.literal("Tìm kiếm"));search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, hướng dẫn..."));search.setResponder{};addRenderableWidget(search)}
     override fun tick(){tick++}
     override fun onClose(){Minecraft.getInstance().setScreen(returnTo)}
     override fun render(gui:GuiGraphics,mx:Int,my:Int,partial:Float){val page=content.page(route);val theme=content.themeFor(page)?:HubTheme("pixel");PixelUi.background(gui,width,height,content,theme,tick);gui.fill(0,0,width,38,0xD80B0F18.toInt());gui.drawString(font,"SV HUB",12,15,theme.palette.accent,true);if(search.value.isNotBlank())renderSearch(gui,theme)else if(route.startsWith("pokemon/")||route.startsWith("fakemon/"))renderPokemon(gui,theme)else renderPage(gui,page,theme,mx,my);super.render(gui,mx,my,partial)}
