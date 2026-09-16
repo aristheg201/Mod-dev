@@ -3,58 +3,184 @@ package io.github.aristheg201.svhub.content
 import io.github.aristheg201.svhub.util.AtomicFiles
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
-data class CommitResult(val ok: Boolean, val revision: Long, val message: String, val validation: ValidationResult? = null)
-data class HistoryEntry(val revision: Long, val savedAtEpochMs: Long, val fileName: String)
+data class CommitResult(
+    val ok: Boolean,
+    val revision: Long,
+    val message: String,
+    val validation: ValidationResult? = null
+)
 
-class HubStore(private val root: Path) {
-    private val lock = ReentrantLock()
+data class HistoryEntry(
+    val revision: Long,
+    val savedAtEpochMs: Long,
+    val fileName: String
+)
+
+/**
+ * Server-authoritative content store.
+ * All filesystem work is serialized through a dedicated IO executor.
+ */
+class HubStore(private val root: Path) : AutoCloseable {
     private val current = AtomicReference(HubSnapshot(DefaultContent.create()))
+    private val historyIndex = AtomicReference<List<HistoryEntry>>(emptyList())
+    private val ready = AtomicBoolean(false)
+    private val closed = AtomicBoolean(false)
+    private val io = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "SVHub-Persistence").apply {
+            isDaemon = true
+            priority = Thread.NORM_PRIORITY - 1
+        }
+    }
+
     private val contentFile = root.resolve("content.json")
     private val historyDir = root.resolve("history")
 
     fun snapshot(): HubSnapshot = current.get()
+    fun isReady(): Boolean = ready.get()
 
-    fun load(): HubSnapshot = lock.withLock {
-        Files.createDirectories(root); Files.createDirectories(historyDir)
-        if (!Files.exists(contentFile)) AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(current.get().content))
-        val content = HubContentCodec.decode(Files.readString(contentFile)); HubValidator.validate(content).requireValid()
-        HubSnapshot(content).also(current::set)
+    fun initializeAsync(): CompletableFuture<HubSnapshot> {
+        ready.set(false)
+        return supplyIo {
+            Files.createDirectories(root)
+            Files.createDirectories(historyDir)
+            if (!Files.exists(contentFile)) {
+                AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(current.get().content))
+            }
+            val content = readValidatedContent(contentFile)
+            historyIndex.set(scanHistory())
+            HubSnapshot(content).also(current::set)
+        }.whenComplete { _, _ -> ready.set(true) }
     }
 
-    fun reload(): CommitResult = runCatching { load(); CommitResult(true, snapshot().revision, "Reloaded SVHub") }
-        .getOrElse { CommitResult(false, snapshot().revision, it.message ?: "Reload failed") }
+    fun reloadAsync(): CompletableFuture<CommitResult> = supplyIo {
+        runCatching {
+            val content = readValidatedContent(contentFile)
+            current.set(HubSnapshot(content))
+            historyIndex.set(scanHistory())
+            CommitResult(true, content.revision, "Reloaded SVHub revision ${content.revision}")
+        }.getOrElse { error ->
+            CommitResult(false, snapshot().revision, error.message ?: "Reload failed")
+        }
+    }
 
-    fun commit(baseRevision: Long, candidate: HubContent): CommitResult = lock.withLock {
+    fun commitAsync(baseRevision: Long, candidate: HubContent): CompletableFuture<CommitResult> = supplyIo {
         val now = current.get().content
-        if (baseRevision != now.revision) return CommitResult(false, now.revision, "Revision conflict: expected ${now.revision}, got $baseRevision")
-        val validation = HubValidator.validate(candidate); if (!validation.ok) return CommitResult(false, now.revision, "Validation failed", validation)
-        saveHistory(now)
-        val next = candidate.copy(revision = now.revision + 1)
-        AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(next)); current.set(HubSnapshot(next))
-        CommitResult(true, next.revision, "Published revision ${next.revision}", validation)
+        if (baseRevision != now.revision) {
+            return@supplyIo CommitResult(false, now.revision, "Revision conflict: expected ${now.revision}, got $baseRevision")
+        }
+
+        val validation = HubValidator.validate(candidate)
+        if (!validation.ok) {
+            return@supplyIo CommitResult(false, now.revision, "Validation failed", validation)
+        }
+
+        runCatching {
+            val next = candidate.copy(revision = now.revision + 1)
+            persistTransition(now, next)
+            CommitResult(true, next.revision, "Published revision ${next.revision}", validation)
+        }.getOrElse { error ->
+            CommitResult(false, now.revision, error.message ?: "Publish failed", validation)
+        }
     }
 
-    fun history(limit: Int = 20): List<HistoryEntry> = if (!Files.exists(historyDir)) emptyList() else Files.list(historyDir).use { s ->
-        s.filter { it.fileName.toString().endsWith(".json") }.map { p ->
-            val name = p.fileName.toString(); val rev = name.substringBefore('-').removePrefix("rev-").toLongOrNull() ?: -1L
-            HistoryEntry(rev, Files.getLastModifiedTime(p).toMillis(), name)
-        }.filter { it.revision >= 0 }.sorted(compareByDescending<HistoryEntry> { it.revision }).limit(limit.toLong()).toList()
+    /** In-memory only; safe for command suggestions on the server thread. */
+    fun history(limit: Int = 20): List<HistoryEntry> =
+        historyIndex.get().take(limit.coerceIn(0, MAX_HISTORY_ENTRIES))
+
+    fun rollbackAsync(revision: Long): CompletableFuture<CommitResult> = supplyIo {
+        val entry = historyIndex.get().firstOrNull { it.revision == revision }
+            ?: return@supplyIo CommitResult(false, snapshot().revision, "Revision $revision not found")
+        val now = current.get().content
+
+        runCatching {
+            val archived = readValidatedContent(historyDir.resolve(entry.fileName))
+            val next = archived.copy(revision = now.revision + 1)
+            val validation = HubValidator.validate(next)
+            if (!validation.ok) {
+                return@runCatching CommitResult(false, now.revision, "Rollback validation failed", validation)
+            }
+            persistTransition(now, next)
+            CommitResult(true, next.revision, "Rolled back content from revision $revision as revision ${next.revision}", validation)
+        }.getOrElse { error ->
+            CommitResult(false, now.revision, error.message ?: "Rollback failed")
+        }
     }
 
-    fun rollback(revision: Long): CommitResult = lock.withLock {
-        val file = history(revision.toInt().coerceAtLeast(20)).firstOrNull { it.revision == revision }?.let { historyDir.resolve(it.fileName) }
-            ?: return CommitResult(false, snapshot().revision, "Revision $revision not found")
-        val candidate = HubContentCodec.decode(Files.readString(file)).copy(revision = snapshot().revision)
-        commit(snapshot().revision, candidate)
+    private fun persistTransition(previous: HubContent, next: HubContent) {
+        val historyEntry = saveHistory(previous)
+        AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(next))
+        current.set(HubSnapshot(next))
+        historyIndex.updateAndGet { existing ->
+            (listOf(historyEntry) + existing)
+                .distinctBy { it.fileName }
+                .sortedWith(compareByDescending<HistoryEntry> { it.revision }.thenByDescending { it.savedAtEpochMs })
+                .take(MAX_HISTORY_ENTRIES)
+        }
+        pruneHistoryFiles()
     }
 
-    private fun saveHistory(content: HubContent) {
+    private fun readValidatedContent(path: Path): HubContent {
+        require(Files.exists(path)) { "Missing SVHub content file: ${path.fileName}" }
+        val content = HubContentCodec.decode(Files.readString(path))
+        HubValidator.validate(content).requireValid()
+        return content
+    }
+
+    private fun saveHistory(content: HubContent): HistoryEntry {
         Files.createDirectories(historyDir)
-        val path = historyDir.resolve("rev-${content.revision}-${System.currentTimeMillis()}.json")
-        AtomicFiles.writeUtf8(path, HubContentCodec.encode(content))
+        val savedAt = System.currentTimeMillis()
+        val fileName = "rev-${content.revision}-$savedAt.json"
+        AtomicFiles.writeUtf8(historyDir.resolve(fileName), HubContentCodec.encode(content))
+        return HistoryEntry(content.revision, savedAt, fileName)
+    }
+
+    private fun scanHistory(): List<HistoryEntry> {
+        if (!Files.exists(historyDir)) return emptyList()
+        return Files.list(historyDir).use { stream ->
+            stream
+                .filter { Files.isRegularFile(it) }
+                .map { path -> parseHistory(path.fileName.toString()) }
+                .filter { it != null }
+                .map { it!! }
+                .sorted(compareByDescending<HistoryEntry> { it.revision }.thenByDescending { it.savedAtEpochMs })
+                .limit(MAX_HISTORY_ENTRIES.toLong())
+                .toList()
+        }
+    }
+
+    private fun parseHistory(fileName: String): HistoryEntry? {
+        val match = HISTORY_FILE.matchEntire(fileName) ?: return null
+        val revision = match.groupValues[1].toLongOrNull() ?: return null
+        val savedAt = match.groupValues[2].toLongOrNull() ?: return null
+        return HistoryEntry(revision, savedAt, fileName)
+    }
+
+    private fun pruneHistoryFiles() {
+        if (!Files.exists(historyDir)) return
+        val keep = historyIndex.get().mapTo(HashSet()) { it.fileName }
+        Files.list(historyDir).use { stream ->
+            stream.filter {
+                Files.isRegularFile(it) && HISTORY_FILE.matches(it.fileName.toString()) && it.fileName.toString() !in keep
+            }.forEach { runCatching { Files.deleteIfExists(it) } }
+        }
+    }
+
+    private fun <T> supplyIo(block: () -> T): CompletableFuture<T> {
+        if (closed.get()) return CompletableFuture.failedFuture(IllegalStateException("SVHub store is closed"))
+        return CompletableFuture.supplyAsync(block, io)
+    }
+
+    override fun close() {
+        if (closed.compareAndSet(false, true)) io.shutdown()
+    }
+
+    companion object {
+        private const val MAX_HISTORY_ENTRIES = 256
+        private val HISTORY_FILE = Regex("^rev-(\\d+)-(\\d+)\\.json$")
     }
 }
