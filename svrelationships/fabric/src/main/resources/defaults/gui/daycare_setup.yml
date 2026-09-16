@@ -1,0 +1,25 @@
+id: daycare_setup
+screen: generic_9x6
+title_key: gui.daycare.setup.title
+components:
+  status:
+    slot: 4
+    item: minecraft:writable_book
+    name_key: gui.daycare.setup.status
+    lore_keys: [gui.daycare.setup.definition, gui.daycare.setup.progress, gui.daycare.setup.role]
+    action: none
+  cancel:
+    slot: 49
+    item: minecraft:barrier
+    name_key: gui.daycare.setup.cancel
+    lore_keys: []
+    action: daycare_cancel
+repeaters:
+  pokemon:
+    source: owned_pokemon
+    slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+    visual: pokemon_model
+    item: minecraft:player_head
+    name_key: gui.daycare.setup.pokemon
+    lore_keys: [gui.daycare.setup.pokemon.lore]
+    action: daycare_select
