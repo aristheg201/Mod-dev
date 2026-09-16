@@ -34,7 +34,6 @@ public final class BundledDefaults {
             "gui/relationship.yml",
             "gui/partners.yml",
             "gui/daycare.yml",
-            "gui/daycare_setup.yml",
             "gui/family.yml",
             "lang/en_us.yml",
             "lang/en_us_gui.yml",
