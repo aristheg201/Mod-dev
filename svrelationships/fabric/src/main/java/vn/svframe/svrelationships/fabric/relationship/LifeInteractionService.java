@@ -11,7 +11,6 @@ import vn.svframe.svrelationships.gameplay.InteractionDefinition;
 import vn.svframe.svrelationships.gameplay.PersonalityDefinition;
 import vn.svframe.svrelationships.relationship.RelationshipState;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,19 +38,11 @@ public final class LifeInteractionService {
         if (state.cooldownUntil(cooldownId) > nowMillis) return Result.COOLDOWN;
         if (!definition.requiredRoute().isBlank()) {
             String current = relationships.currentRoute(playerId, pokemonId, definition.requiredRoute());
-            if (!matchesStateExpression(current, definition.requiredState())) return Result.REQUIREMENTS;
+            if (!definition.allowsState(current)) return Result.REQUIREMENTS;
         }
         applyProgression(playerId, pokemonId, state, definition.progressionDeltas());
         relationships.setCooldown(playerId, pokemonId, cooldownId, Math.addExact(nowMillis, definition.cooldownMillis()));
         return Result.SUCCESS;
-    }
-
-    private static boolean matchesStateExpression(String current, String expression) {
-        if (expression == null || expression.isBlank() || "*".equals(expression)) return true;
-        return Arrays.stream(expression.split("\\|"))
-                .map(String::trim)
-                .filter(value -> !value.isEmpty())
-                .anyMatch(current::equals);
     }
 
     public Result gift(ServerPlayerEntity player, UUID pokemonId, String giftId, long nowMillis) {
