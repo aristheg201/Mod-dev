@@ -34,6 +34,7 @@ public final class BundledDefaults {
             "gui/relationship.yml",
             "gui/partners.yml",
             "gui/daycare.yml",
+            "gui/daycare_setup.yml",
             "gui/family.yml",
             "lang/en_us.yml",
             "lang/en_us_gui.yml",
@@ -50,6 +51,7 @@ public final class BundledDefaults {
     public static void installAll(Path root) throws IOException {
         Objects.requireNonNull(root, "root");
         for (String relativePath : RELATIVE_PATHS) installOne(root, relativePath);
+        ConfigSchemaUpgrade.upgrade(root);
     }
 
     static List<String> relativePaths() { return RELATIVE_PATHS; }
