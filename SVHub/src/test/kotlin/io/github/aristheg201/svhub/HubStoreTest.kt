@@ -1,6 +1,5 @@
 package io.github.aristheg201.svhub
 
-import io.github.aristheg201.svhub.content.DefaultContent
 import io.github.aristheg201.svhub.content.HubStore
 import io.github.aristheg201.svhub.content.LocalizedText
 import kotlin.io.path.createTempDirectory
@@ -14,22 +13,26 @@ class HubStoreTest {
     @Test
     fun `history entries survive reload and parse revision correctly`() {
         val root = createTempDirectory("svhub-store-history")
+        var expectedHistory = emptyList<Pair<Long, String>>()
+
         HubStore(root).use { store ->
             val initial = store.initializeAsync().join().content
+            val historyBeforeCommit = store.history(10)
             val changed = initial.copy(defaultLocale = "en_us")
             val result = store.commitAsync(initial.revision, changed).join()
             assertTrue(result.ok)
+
             val history = store.history(10)
-            assertEquals(1, history.size)
-            assertEquals(initial.revision, history.single().revision)
-            assertTrue(history.single().fileName.startsWith("rev-${initial.revision}-"))
+            assertEquals(historyBeforeCommit.size + 1, history.size)
+            assertTrue(history.any { it.revision == initial.revision })
+            assertTrue(history.any { it.fileName.startsWith("rev-${initial.revision}-") })
+            expectedHistory = history.map { it.revision to it.fileName }
         }
 
         HubStore(root).use { reloaded ->
             reloaded.initializeAsync().join()
             val history = reloaded.history(10)
-            assertEquals(1, history.size)
-            assertEquals(DefaultContent.create().revision, history.single().revision)
+            assertEquals(expectedHistory, history.map { it.revision to it.fileName })
         }
     }
 
