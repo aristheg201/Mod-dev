@@ -1,5 +1,6 @@
 package io.github.aristheg201.svhub.content
 
+import com.google.gson.JsonElement
 import io.github.aristheg201.svhub.api.SVHubApi
 
 private val ID_PATTERN = Regex("^[a-z0-9_.:/-]{1,128}$")
@@ -9,6 +10,9 @@ private val COMPONENT_TYPES = setOf(
     "command_card", "link_card", "list", "collapse", "badge", "tooltip", "table", "widget", "spacer"
 )
 private val ACTION_TYPES get() = SVHubApi.CORE_ACTION_TYPES + SVHubApi.actionTypes()
+private val GENERATED_BACKGROUND_PRESETS = setOf(
+    "pixel_sky", "pixel_forest", "pixel_grid", "pixel_neon", "pixel_cave", "pixel_volcano"
+)
 
 data class ValidationIssue(val path: String, val message: String, val fatal: Boolean = true)
 
@@ -28,6 +32,9 @@ object HubValidator {
     private const val MAX_ASSETS = 4096
     private const val MAX_ASSET_DIMENSION = 16384
     private const val MAX_EXPLICIT_FAKEMON = 10_000
+    private const val MAX_GENERATOR_JSON_CHARS = 8192
+    private const val MAX_GENERATOR_DEPTH = 8
+    private const val MAX_GENERATOR_NODES = 128
 
     fun validate(content: HubContent): ValidationResult {
         val issues = mutableListOf<ValidationIssue>()
@@ -61,6 +68,7 @@ object HubValidator {
                 issues += ValidationIssue("$path.size", "Asset dimensions must be between 0 and $MAX_ASSET_DIMENSION")
             }
             if (asset.resource != null && asset.resource.length > 512) issues += ValidationIssue("$path.resource", "Resource id is too long")
+            validateGenerator(asset, path, issues)
         }
 
         val pageIds = hashSetOf<String>()
@@ -106,5 +114,69 @@ object HubValidator {
             if (entry.wikiPage != null && content.page(entry.wikiPage) == null) issues += ValidationIssue("$path.wikiPage", "Unknown Wiki page '${entry.wikiPage}'", fatal = false)
         }
         return ValidationResult(issues)
+    }
+
+    private fun validateGenerator(asset: HubAsset, path: String, issues: MutableList<ValidationIssue>) {
+        val generator = asset.generator
+        val json = generator.toString()
+        if (json.length > MAX_GENERATOR_JSON_CHARS) {
+            issues += ValidationIssue("$path.generator", "Generator recipe is too large")
+            return
+        }
+        val stats = jsonStats(generator)
+        if (stats.first > MAX_GENERATOR_DEPTH) {
+            issues += ValidationIssue("$path.generator", "Generator recipe nesting exceeds $MAX_GENERATOR_DEPTH")
+        }
+        if (stats.second > MAX_GENERATOR_NODES) {
+            issues += ValidationIssue("$path.generator", "Generator recipe has too many nodes (${stats.second})")
+        }
+
+        if (asset.source == "generated" && asset.type == "background") {
+            val preset = runCatching { generator.get("preset")?.asString }.getOrNull()
+            if (preset == null || preset !in GENERATED_BACKGROUND_PRESETS) {
+                issues += ValidationIssue("$path.generator.preset", "Unknown generated background preset '$preset'")
+            }
+            val density = runCatching { generator.get("density")?.asInt }.getOrNull()
+            if (density == null || density !in 1..4) {
+                issues += ValidationIssue("$path.generator.density", "Generated background density must be between 1 and 4")
+            }
+            if (runCatching { generator.get("seed")?.asLong }.getOrNull() == null) {
+                issues += ValidationIssue("$path.generator.seed", "Generated background seed must be a 64-bit integer")
+            }
+            val version = runCatching { generator.get("version")?.asInt }.getOrNull()
+            if (version != 1) {
+                issues += ValidationIssue("$path.generator.version", "Unsupported generated background recipe version '$version'")
+            }
+        }
+    }
+
+    /** Returns max depth and total node count without allocating recursive copies. */
+    private fun jsonStats(element: JsonElement, depth: Int = 1): Pair<Int, Int> {
+        if (depth > MAX_GENERATOR_DEPTH + 1) return depth to (MAX_GENERATOR_NODES + 1)
+        return when {
+            element.isJsonObject -> {
+                var maxDepth = depth
+                var nodes = 1
+                for ((_, child) in element.asJsonObject.entrySet()) {
+                    val childStats = jsonStats(child, depth + 1)
+                    maxDepth = maxOf(maxDepth, childStats.first)
+                    nodes += childStats.second
+                    if (nodes > MAX_GENERATOR_NODES) break
+                }
+                maxDepth to nodes
+            }
+            element.isJsonArray -> {
+                var maxDepth = depth
+                var nodes = 1
+                for (child in element.asJsonArray) {
+                    val childStats = jsonStats(child, depth + 1)
+                    maxDepth = maxOf(maxDepth, childStats.first)
+                    nodes += childStats.second
+                    if (nodes > MAX_GENERATOR_NODES) break
+                }
+                maxDepth to nodes
+            }
+            else -> depth to 1
+        }
     }
 }
