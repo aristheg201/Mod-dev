@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "svhub",
+  "version": "${version}",
+  "name": "SVHub",
+  "description": "Server-authoritative visual wiki, guide, command hub and Cobblemon encyclopedia with a pixel editor.",
+  "authors": ["Aris"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["io.github.aristheg201.svhub.SVHub"],
+    "client": ["io.github.aristheg201.svhub.client.SVHubClient"]
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": "~1.21.1",
+    "fabricloader": ">=0.18.4",
+    "fabric-api": "*",
+    "fabric-language-kotlin": "*",
+    "cobblemon": ">=1.8.0"
+  },
+  "suggests": {
+    "fabric-permissions-api-v0": "*"
+  },
+  "icon": "assets/svhub/icon.png"
+}
