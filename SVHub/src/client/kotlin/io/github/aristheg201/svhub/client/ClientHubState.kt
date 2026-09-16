@@ -1,9 +1,12 @@
 package io.github.aristheg201.svhub.client
 
-import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
 import io.github.aristheg201.svhub.client.api.SVHubClientApi
+import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
+import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
+import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
 import io.github.aristheg201.svhub.content.HubContent
 import io.github.aristheg201.svhub.content.HubContentCodec
+import io.github.aristheg201.svhub.content.HubValidator
 import io.github.aristheg201.svhub.network.ChunkAssembler
 import io.github.aristheg201.svhub.search.SearchHit
 import io.github.aristheg201.svhub.search.SearchIndex
@@ -37,7 +40,11 @@ object ClientHubState {
         return assembler.accept(transferId, index, total, chunk)
     }
 
-    fun decodeSnapshot(encoded: String): HubContent = HubContentCodec.decode(Compression.decodeUtf8(encoded))
+    fun decodeSnapshot(encoded: String): HubContent {
+        val decoded = HubContentCodec.decode(Compression.decodeUtf8(encoded))
+        HubValidator.validate(decoded).requireValid()
+        return decoded
+    }
 
     /** Must be called on the Minecraft client thread. */
     fun applySnapshot(content: HubContent, revision: Long, editor: Boolean): Boolean {
@@ -48,6 +55,7 @@ object ClientHubState {
     }
 
     fun applyEditor(content: HubContent) {
+        HubValidator.validate(content).requireValid()
         editorContent = content
     }
 
@@ -71,7 +79,9 @@ object ClientHubState {
         val mods = EnvironmentViewProvider.search(query, limit)
         val commands = CommandViewProvider.search(query, limit)
         val extensions = SVHubClientApi.search(query, content, limit)
-        return (hub + pokemon + mods + commands + extensions).sortedWith(compareByDescending<SearchHit> { it.score }.thenBy { it.title }).take(limit)
+        return (hub + pokemon + mods + commands + extensions)
+            .sortedWith(compareByDescending<SearchHit> { it.score }.thenBy { it.title })
+            .take(limit)
     }
 
     fun reset() {
@@ -86,6 +96,7 @@ object ClientHubState {
         playerAssembler.clear()
         editorAssembler.clear()
         CobblemonWikiProvider.clearCaches()
-        io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer.clear()
+        PokemonModelRenderer.clear()
+        GeneratedBackgroundRenderer.clear()
     }
 }
