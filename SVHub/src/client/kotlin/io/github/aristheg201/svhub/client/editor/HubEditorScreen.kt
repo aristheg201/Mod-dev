@@ -39,7 +39,7 @@ class HubEditorScreen : Screen(Component.literal("SVHub Editor")) {
         syncFields()
     }
 
-    private fun field(y:Int,hint:String,onChange:(String)->Unit):EditBox{val x=(width*.68).toInt();val b=EditBox(font,x,y,width-x-12,20,Component.literal(hint));b.hint=Component.literal(hint);b.setMaxLength(4096);b.setResponder{if(!syncing)onChange(it)};addRenderableWidget(b);return b}
+    private fun field(y:Int,hint:String,onChange:(String)->Unit):EditBox{val x=(width*.68).toInt();val b=EditBox(font,x,y,width-x-12,20,Component.literal(hint));b.setHint(Component.literal(hint));b.setMaxLength(4096);b.setResponder{if(!syncing)onChange(it)};addRenderableWidget(b);return b}
 
     override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float){
         val theme=draft.themes[draft.defaultTheme]?:HubTheme("editor");io.github.aristheg201.svhub.client.render.PixelUi.background(gui,width,height,draft,theme,System.currentTimeMillis()/50)
