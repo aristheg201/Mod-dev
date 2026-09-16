@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.client.editor
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.FakemonEntry
 import io.github.aristheg201.svhub.content.HubContent
@@ -10,7 +11,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
@@ -18,7 +18,7 @@ import net.minecraft.resources.ResourceLocation
 class FakemonEditorScreen(
     private val parent: HubEditorScreen,
     initial: HubContent
-) : Screen(Component.literal("SVHub Fakemon Editor")) {
+) : SVHubScreen(Component.literal("SVHub Fakemon Editor")) {
     private data class Hit(val x1: Int, val y1: Int, val x2: Int, val y2: Int, val run: () -> Unit) {
         fun contains(x: Double, y: Double) = x >= x1 && x < x2 && y >= y1 && y < y2
     }
