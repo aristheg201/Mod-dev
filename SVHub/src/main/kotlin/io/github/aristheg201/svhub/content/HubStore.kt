@@ -27,7 +27,7 @@ data class HistoryEntry(
  * All filesystem work is serialized through a dedicated IO executor.
  */
 class HubStore(private val root: Path) : AutoCloseable {
-    private val current = AtomicReference(HubSnapshot(DefaultContent.create()))
+    private val current = AtomicReference(HubSnapshot(FieldGuideContent.create()))
     private val historyIndex = AtomicReference<List<HistoryEntry>>(emptyList())
     private val ready = AtomicBoolean(false)
     private val closed = AtomicBoolean(false)
@@ -129,18 +129,18 @@ class HubStore(private val root: Path) : AutoCloseable {
     }
 
     /**
-     * Upgrades only SVHub-owned bundled content. The exact legacy showcase may be
-     * replaced with the player handbook, then the one-time handbook completion may
-     * add commands that were missing from the first clean seed. The original file is
-     * archived once before any automatic write; administrator-authored revisions are
-     * never loosely matched or rewritten.
+     * Upgrades only exact SVHub-owned bundled revisions. The old showcase can move
+     * to the player handbook, the first handbook can receive its missing command
+     * cards, and the exact bundled dark handbook can move to the light field-guide
+     * presentation. One original snapshot is archived before the automatic write.
      */
     private fun readCurrentContentWithBundledMigration(): HubContent {
         val loaded = readValidatedContent(contentFile)
         val migrated = BundledContentMigration.migrate(loaded)
         val afterMigration = migrated ?: loaded
-        val patched = BundledHandbookPatch.apply(afterMigration)
-        val finalContent = patched ?: afterMigration
+        val handbook = BundledHandbookPatch.apply(afterMigration) ?: afterMigration
+        val visual = BundledVisualRefreshPatch.apply(handbook) ?: handbook
+        val finalContent = visual
 
         if (finalContent == loaded) return loaded
 
