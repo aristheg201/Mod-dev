@@ -12,7 +12,7 @@ final class ConfigSchemaUpgradeTest {
     @TempDir Path root;
 
     @Test
-    void bundledInstallRunsSchemaUpgradeAndBacksUpLegacyGameplayAndGuiFiles() throws Exception {
+    void bundledInstallMigratesLegacyGuiKeysAndBacksThemUp() throws Exception {
         Files.createDirectories(root.resolve("gui"));
         Path interactions = root.resolve("interactions.yml");
         Path mainGui = root.resolve("gui/main.yml");
@@ -23,7 +23,7 @@ final class ConfigSchemaUpgradeTest {
 
         assertEquals("4", Files.readString(root.resolve(".schema-version")).trim());
         assertTrue(Files.exists(root.resolve("interactions.yml.schema-v1.bak")));
-        assertTrue(Files.exists(root.resolve("gui/main.yml.schema-v1.bak")));
+        assertTrue(Files.exists(root.resolve("gui/main.yml.schema-v3.bak")));
 
         String installedInteractions = Files.readString(interactions);
         assertTrue(installedInteractions.contains("daily_talk:"));
@@ -32,9 +32,30 @@ final class ConfigSchemaUpgradeTest {
         String installedMainGui = Files.readString(mainGui);
         assertTrue(installedMainGui.contains("title_key: gui.main.title"));
         assertFalse(installedMainGui.contains("ui.main.title"));
+    }
 
-        // A second boot must be idempotent and must not replace admin-edited files again.
-        Files.writeString(mainGui, installedMainGui + "\n# admin-edit\n");
+    @Test
+    void v4GuiMigrationDoesNotOverwriteSchemaV3GameplayConfig() throws Exception {
+        Files.createDirectories(root.resolve("gui"));
+        Files.writeString(root.resolve(".schema-version"), "3");
+
+        Path interactions = root.resolve("interactions.yml");
+        String adminGameplay = "interactions:\n  admin_custom:\n    cooldown: 2d\n";
+        Files.writeString(interactions, adminGameplay);
+
+        Path mainGui = root.resolve("gui/main.yml");
+        Files.writeString(mainGui, "id: main\nscreen: generic_9x6\ntitle_key: ui.main.title\ncomponents: {}\n");
+
+        BundledDefaults.installAll(root);
+
+        assertEquals("4", Files.readString(root.resolve(".schema-version")).trim());
+        assertEquals(adminGameplay, Files.readString(interactions));
+        assertFalse(Files.exists(root.resolve("interactions.yml.schema-v3.bak")));
+        assertTrue(Files.exists(root.resolve("gui/main.yml.schema-v3.bak")));
+        assertTrue(Files.readString(mainGui).contains("title_key: gui.main.title"));
+
+        // Once schema v4 is reached, later boots preserve admin GUI edits.
+        Files.writeString(mainGui, Files.readString(mainGui) + "\n# admin-edit\n");
         BundledDefaults.installAll(root);
         assertTrue(Files.readString(mainGui).contains("# admin-edit"));
     }
