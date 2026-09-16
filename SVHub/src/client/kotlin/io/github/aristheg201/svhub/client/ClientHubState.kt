@@ -46,7 +46,6 @@ object ClientHubState {
         return decoded
     }
 
-    /** Must be called on the Minecraft client thread. */
     fun applySnapshot(content: HubContent, revision: Long, editor: Boolean): Boolean {
         if (content.revision != revision || revision < serverRevision) return false
         if (editor) editorContent = content else applyPlayer(content)
@@ -70,16 +69,18 @@ object ClientHubState {
         ClientCache.save(filtered)
     }
 
+    /**
+     * Public search intentionally contains curated Hub content and Pokémon/Fakemon.
+     * It never exposes server mod inventory or dumps the complete Brigadier tree.
+     */
     fun search(query: String, limit: Int = 30): List<SearchHit> {
         val content = playerContent ?: return emptyList()
         val hub = searchIndex?.search(query, limit) ?: emptyList()
         val pokemon = CobblemonWikiProvider.search(query, content, limit).map {
             SearchHit(it.key, it.route, it.displayName, it.speciesId, if (it.fakemon) "fakemon" else "pokemon", it.score, "cobblemon")
         }
-        val mods = EnvironmentViewProvider.search(query, limit)
-        val commands = CommandViewProvider.search(query, limit)
         val extensions = SVHubClientApi.search(query, content, limit)
-        return (hub + pokemon + mods + commands + extensions)
+        return (hub + pokemon + extensions)
             .sortedWith(compareByDescending<SearchHit> { it.score }.thenBy { it.title })
             .take(limit)
     }
