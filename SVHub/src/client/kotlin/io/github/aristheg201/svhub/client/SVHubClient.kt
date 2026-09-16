@@ -5,6 +5,7 @@ import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.editor.HubEditorScreen
 import io.github.aristheg201.svhub.client.gui.HubScreen
+import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
 import io.github.aristheg201.svhub.content.HUB_PROTOCOL_VERSION
 import io.github.aristheg201.svhub.network.*
 import io.github.aristheg201.svhub.server.EnvironmentManifest
@@ -39,11 +40,12 @@ object SVHubClient : ClientModInitializer {
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
             object : SimpleSynchronousResourceReloadListener {
-                override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath("svhub", "cobblemon_model_cache")
+                override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath("svhub", "client_render_caches")
 
                 override fun onResourceManagerReload(resourceManager: ResourceManager) {
                     PokemonModelRenderer.clear()
                     CobblemonWikiProvider.clearCaches()
+                    GeneratedBackgroundRenderer.clear()
                 }
             }
         )
@@ -129,6 +131,7 @@ object SVHubClient : ClientModInitializer {
             ClientHubState.reset()
             PokemonModelRenderer.clear()
             CobblemonWikiProvider.clearCaches()
+            GeneratedBackgroundRenderer.clear()
         }
     }
 
