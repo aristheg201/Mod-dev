@@ -102,7 +102,8 @@ object SVHubNetwork {
 
     fun sendSnapshot(player: ServerPlayer, editor: Boolean) {
         if (!SVHubRuntime.store.isReady()) return
-        val projected = SnapshotProjector.forPlayer(SVHubRuntime.store.snapshot().content, player, editor)
+        val clientMods = clients[player.uuid]?.modIds.orEmpty()
+        val projected = SnapshotProjector.forPlayer(SVHubRuntime.store.snapshot().content, player, editor, clientMods)
         val encoded = Compression.encodeUtf8(HubContentCodec.encode(projected))
         val chunks = Compression.chunks(encoded)
         val transfer = ThreadLocalRandom.current().nextLong()
@@ -152,9 +153,7 @@ object SVHubNetwork {
                     return@execute
                 }
                 sendEditorResult(player, result.ok, result.revision, result.message)
-                if (result.ok) {
-                    broadcastPlayerSnapshots()
-                }
+                if (result.ok) broadcastPlayerSnapshots()
             }
         }
     }
