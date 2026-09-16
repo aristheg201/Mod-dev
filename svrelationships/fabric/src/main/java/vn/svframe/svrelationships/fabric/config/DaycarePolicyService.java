@@ -8,10 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -20,9 +21,7 @@ public final class DaycarePolicyService {
     private final AtomicLong generation = new AtomicLong();
     private final AtomicReference<Snapshot> current = new AtomicReference<>();
 
-    public DaycarePolicyService(Path root) {
-        this.root = Objects.requireNonNull(root, "root");
-    }
+    public DaycarePolicyService(Path root) { this.root = Objects.requireNonNull(root, "root"); }
 
     public void initialize() {
         try {
@@ -31,7 +30,7 @@ public final class DaycarePolicyService {
                 Files.createDirectories(target.getParent());
                 try (InputStream input = DaycarePolicyService.class.getResourceAsStream("/defaults/daycare-policies.yml")) {
                     if (input == null) throw new IOException("Missing bundled resource: /defaults/daycare-policies.yml");
-                    Files.copy(input, target, StandardCopyOption.COPY_ATTRIBUTES);
+                    Files.copy(input, target);
                 }
             }
         } catch (IOException exception) {
@@ -41,9 +40,7 @@ public final class DaycarePolicyService {
         if (!result.success()) throw new IllegalStateException("Unable to load daycare policies: " + result.detail());
     }
 
-    public Snapshot snapshot() {
-        return Objects.requireNonNull(current.get(), "daycare policies not initialized");
-    }
+    public Snapshot snapshot() { return Objects.requireNonNull(current.get(), "daycare policies not initialized"); }
 
     public ReloadResult reload() {
         try {
@@ -55,7 +52,9 @@ public final class DaycarePolicyService {
             Map<String, Policy> profiles = new LinkedHashMap<>();
             Object raw = rootMap.get("profiles");
             if (raw != null) {
-                for (var entry : mapValue(raw, "profiles").entrySet()) profiles.put(entry.getKey(), parse(mapValue(entry.getValue(), "profile " + entry.getKey())));
+                for (var entry : mapValue(raw, "profiles").entrySet()) {
+                    profiles.put(entry.getKey(), parse(mapValue(entry.getValue(), "profile " + entry.getKey())));
+                }
             }
             current.set(new Snapshot(generation.incrementAndGet(), defaultPolicy, profiles));
             return new ReloadResult(true, "");
@@ -75,7 +74,8 @@ public final class DaycarePolicyService {
         if (retry < 1_000L) throw new IllegalArgumentException("retry_delay must be at least 1s");
         String offline = string(value, "offline_completion_policy").toLowerCase(java.util.Locale.ROOT);
         if (!offline.equals("pause_until_online")) throw new IllegalArgumentException("Unsupported offline_completion_policy: " + offline);
-        return new Policy(source, maximum, retry, offline);
+        Set<String> requiredPartnerRoles = stringSet(value, "required_partner_roles");
+        return new Policy(source, maximum, retry, offline, requiredPartnerRoles);
     }
 
     private static Map<String, Object> map(Map<String, Object> source, String key) { return mapValue(source.get(key), key); }
@@ -85,11 +85,22 @@ public final class DaycarePolicyService {
     }
     private static String string(Map<String, Object> source, String key) { Object value = source.get(key); if (value == null) throw new IllegalArgumentException("Missing key: " + key); return String.valueOf(value); }
     private static int integer(Map<String, Object> source, String key) { Object value = source.get(key); return value instanceof Number number ? number.intValue() : Integer.parseInt(string(source, key)); }
+    private static Set<String> stringSet(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (value == null) return Set.of();
+        if (!(value instanceof Iterable<?> iterable)) throw new IllegalArgumentException("Expected list at " + key);
+        Set<String> result = new LinkedHashSet<>();
+        iterable.forEach(item -> result.add(String.valueOf(item)));
+        return Set.copyOf(result);
+    }
 
     public record Snapshot(long generation, Policy defaultPolicy, Map<String, Policy> profiles) {
         public Snapshot { profiles = Map.copyOf(profiles); }
         public Policy policy(String daycareId) { return profiles.getOrDefault(daycareId, defaultPolicy); }
     }
-    public record Policy(String offspringSpeciesSource, int maxActiveSessions, long retryDelayMillis, String offlineCompletionPolicy) {}
+    public record Policy(String offspringSpeciesSource, int maxActiveSessions, long retryDelayMillis,
+                         String offlineCompletionPolicy, Set<String> requiredPartnerRoles) {
+        public Policy { requiredPartnerRoles = Set.copyOf(requiredPartnerRoles); }
+    }
     public record ReloadResult(boolean success, String detail) {}
 }
