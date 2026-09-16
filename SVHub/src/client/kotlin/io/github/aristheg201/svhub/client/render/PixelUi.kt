@@ -7,9 +7,13 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.resources.ResourceLocation
 import kotlin.math.abs
 
+/**
+ * Crisp Minecraft-native UI primitives. The default field-guide theme is light,
+ * warm and static: no purple/black wash, no blur and no neon particles.
+ */
 object PixelUi {
     fun background(gui: GuiGraphics, width: Int, height: Int, content: HubContent, theme: HubTheme?, tick: Long) {
-        val palette = theme?.palette ?: return gui.fill(0, 0, width, height, 0xFF10131A.toInt())
+        val palette = theme?.palette ?: return gui.fill(0, 0, width, height, 0xFFF1E7D2.toInt())
         gui.fill(0, 0, width, height, palette.background)
 
         val asset = theme.backgroundAsset?.let { content.assets[it] }
@@ -35,13 +39,8 @@ object PixelUi {
         }
 
         if (!rendered) procedural(gui, width, height, theme.backgroundPreset, palette.panelAlt, tick, theme.motionStrength)
-        if (theme.backgroundPreset != "clean") {
+        if (theme.backgroundPreset != "clean" && theme.backgroundPreset != "field_guide") {
             proceduralOverlay(gui, width, height, theme.backgroundPreset, palette.accent2, tick, theme.motionStrength)
-            gui.fill(0, 0, width, height, 0x25000000)
-        } else {
-            // The player handbook uses a deliberately quiet background: no particles,
-            // neon pass, moving stars or strong tint over the content.
-            gui.fill(0, 0, width, height, 0x10000000)
         }
     }
 
@@ -56,22 +55,35 @@ object PixelUi {
     }
 
     fun panel(gui: GuiGraphics, x: Int, y: Int, width: Int, height: Int, color: Int, border: Int) {
+        if (width <= 0 || height <= 0) return
+        // One-pixel offset shadow gives depth without blur.
+        gui.fill(x + 2, y + 2, x + width + 2, y + height + 2, 0x26000000)
         gui.fill(x, y, x + width, y + height, color)
-        gui.fill(x, y, x + width, y + 1, border)
-        gui.fill(x, y + height - 1, x + width, y + height, darken(border, .55f))
-        gui.fill(x, y, x + 1, y + height, border)
-        gui.fill(x + width - 1, y, x + width, y + height, darken(border, .55f))
+        gui.fill(x, y, x + width, y + 1, withAlpha(border, 150))
+        gui.fill(x, y + height - 1, x + width, y + height, withAlpha(darken(border, .72f), 125))
+        gui.fill(x, y, x + 1, y + height, withAlpha(border, 120))
+        gui.fill(x + width - 1, y, x + width, y + height, withAlpha(darken(border, .72f), 100))
     }
 
     fun button(gui: GuiGraphics, x: Int, y: Int, width: Int, height: Int, hovered: Boolean, theme: HubTheme) {
         val p = theme.palette
-        panel(gui, x, y, width, height, if (hovered) p.panelAlt else p.panel, if (hovered) p.accent else p.accent2)
-        if (hovered) gui.fill(x + 2, y + height - 3, x + width - 2, y + height - 1, p.accent)
+        val fill = if (hovered) blend(p.panel, p.panelAlt, .72f) else p.panel
+        val border = if (hovered) p.accent else withAlpha(p.accent, 115)
+        panel(gui, x, y, width, height, fill, border)
+        gui.fill(x, y, x + 3, y + height, if (hovered) p.accent2 else p.accent)
+        if (hovered) gui.fill(x + 6, y + height - 3, x + width - 6, y + height - 2, withAlpha(p.accent2, 150))
+    }
+
+    fun sectionBand(gui: GuiGraphics, x: Int, y: Int, width: Int, height: Int, theme: HubTheme) {
+        val p = theme.palette
+        gui.fill(x, y, x + width, y + height, withAlpha(p.panelAlt, 235))
+        gui.fill(x, y, x + 4, y + height, p.accent)
+        gui.fill(x + 4, y + height - 1, x + width, y + height, withAlpha(p.accent2, 100))
     }
 
     private fun procedural(gui: GuiGraphics, w: Int, h: Int, preset: String, color: Int, tick: Long, motion: Float) {
         when (preset) {
-            "clean" -> drawClean(gui, w, h, color)
+            "clean", "field_guide" -> drawFieldGuide(gui, w, h, color)
             "pixel_grid", "pixel_neon" -> drawGrid(gui, w, h, color, tick, motion, preset == "pixel_neon")
             "pixel_forest" -> drawForest(gui, w, h, color)
             "pixel_cave" -> drawCave(gui, w, h, color)
@@ -80,20 +92,21 @@ object PixelUi {
         }
     }
 
-    private fun drawClean(gui: GuiGraphics, w: Int, h: Int, color: Int) {
-        // Static low-contrast structure. It should read as a game UI backdrop, not artwork.
-        val line = withAlpha(color, 18)
+    private fun drawFieldGuide(gui: GuiGraphics, w: Int, h: Int, color: Int) {
+        // Subtle paper/grid structure, static and low contrast.
+        val fine = withAlpha(color, 34)
+        val major = withAlpha(color, 62)
         var x = 0
         while (x < w) {
-            gui.fill(x, 0, x + 1, h, line)
-            x += 48
+            gui.fill(x, 0, x + 1, h, if (x % 96 == 0) major else fine)
+            x += 24
         }
         var y = 0
         while (y < h) {
-            gui.fill(0, y, w, y + 1, line)
-            y += 48
+            gui.fill(0, y, w, y + 1, if (y % 96 == 0) major else fine)
+            y += 24
         }
-        gui.fill(0, 0, w, 2, withAlpha(color, 28))
+        gui.fill(0, 0, w, 3, major)
     }
 
     private fun proceduralOverlay(gui: GuiGraphics, w: Int, h: Int, preset: String, color: Int, tick: Long, motion: Float) {
@@ -167,7 +180,7 @@ object PixelUi {
         }
     }
 
-    private fun withAlpha(color: Int, alpha: Int) = (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
+    fun withAlpha(color: Int, alpha: Int) = (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
 
     private fun darken(color: Int, factor: Float): Int {
         val a = color ushr 24 and 0xFF
@@ -175,5 +188,15 @@ object PixelUi {
         val g = ((color ushr 8 and 0xFF) * factor).toInt()
         val b = ((color and 0xFF) * factor).toInt()
         return (a shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
+    private fun blend(a: Int, b: Int, amount: Float): Int {
+        val t = amount.coerceIn(0f, 1f)
+        fun channel(shift: Int): Int {
+            val ca = a ushr shift and 0xFF
+            val cb = b ushr shift and 0xFF
+            return (ca + (cb - ca) * t).toInt().coerceIn(0, 255)
+        }
+        return (channel(24) shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 }
