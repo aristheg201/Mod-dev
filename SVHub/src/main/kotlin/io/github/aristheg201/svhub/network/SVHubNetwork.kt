@@ -13,8 +13,13 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 object SVHubNetwork {
     private data class ClientState(val protocol: Int, val modIds: Set<String>)
@@ -29,6 +34,25 @@ object SVHubNetwork {
     private val assemblers = ConcurrentHashMap<UUID, ChunkAssembler>()
     private val snapshotRequests = ConcurrentHashMap<SnapshotRateKey, Long>()
     private val editorSessions = ConcurrentHashMap<UUID, EditorSession>()
+    private val pendingSnapshotJobs = ConcurrentHashMap.newKeySet<SnapshotRateKey>()
+    private val pendingEditorDecodes = ConcurrentHashMap.newKeySet<UUID>()
+    private val codecThreadCounter = AtomicInteger()
+    private val codecExecutor = ThreadPoolExecutor(
+        1,
+        2,
+        30L,
+        TimeUnit.SECONDS,
+        ArrayBlockingQueue(CODEC_QUEUE_CAPACITY),
+        { task ->
+            Thread(task, "SVHub-Codec-${codecThreadCounter.incrementAndGet()}").apply {
+                isDaemon = true
+                priority = Thread.NORM_PRIORITY - 1
+            }
+        },
+        ThreadPoolExecutor.AbortPolicy()
+    ).apply {
+        allowCoreThreadTimeOut(true)
+    }
 
     fun registerCommon() {
         PayloadTypeRegistry.playS2C().register(HubHelloS2C.TYPE, HubHelloS2C.CODEC)
@@ -85,7 +109,6 @@ object SVHubNetwork {
     }
 
     fun broadcastHello() {
-        // Reloads/incompatible content changes invalidate every outstanding edit baseline.
         editorSessions.clear()
         SVHubRuntime.server?.playerList?.players?.forEach(::sendHello)
     }
@@ -110,6 +133,8 @@ object SVHubNetwork {
         assemblers.remove(player.uuid)?.clear()
         editorSessions.remove(player.uuid)
         snapshotRequests.keys.removeIf { it.playerId == player.uuid }
+        pendingSnapshotJobs.removeIf { it.playerId == player.uuid }
+        pendingEditorDecodes.remove(player.uuid)
         ServerActionDispatcher.clear(player)
     }
 
@@ -119,19 +144,56 @@ object SVHubNetwork {
         ServerPlayNetworking.send(player, HubOpenS2C(page, editor && SVHubPermissions.has(player, SVHubPermissions.EDITOR, 2)))
     }
 
-    /** Server-initiated send; caller has already decided the delivery is needed. */
+    /**
+     * Projects permissions on the server thread, then performs JSON/gzip/chunk work
+     * on a bounded codec pool. Packet sends return to the server thread.
+     */
     fun sendSnapshot(player: ServerPlayer, editor: Boolean) {
         if (!SVHubRuntime.store.isReady()) return
+        val server = SVHubRuntime.server ?: return
+        val key = SnapshotRateKey(player.uuid, editor)
+        if (!pendingSnapshotJobs.add(key)) return
+
         val clientMods = clients[player.uuid]?.modIds.orEmpty()
         val projected = SnapshotProjector.forPlayer(SVHubRuntime.store.snapshot().content, player, editor, clientMods)
         if (editor) {
             editorSessions[player.uuid] = EditorSession(projected.revision, projected, System.currentTimeMillis())
         }
-        val encoded = Compression.encodeUtf8(HubContentCodec.encode(projected))
-        val chunks = Compression.chunks(encoded)
-        val transfer = ThreadLocalRandom.current().nextLong()
-        chunks.forEachIndexed { index, chunk ->
-            ServerPlayNetworking.send(player, HubSnapshotChunkS2C(transfer, projected.revision, editor, index, chunks.size, chunk))
+        val playerId = player.uuid
+
+        try {
+            codecExecutor.execute {
+                val result = runCatching {
+                    Compression.chunks(Compression.encodeUtf8(HubContentCodec.encode(projected)))
+                }
+                server.execute {
+                    pendingSnapshotJobs.remove(key)
+                    val livePlayer = server.playerList.getPlayer(playerId) ?: return@execute
+                    result.onSuccess { chunks ->
+                        // Never deliver a snapshot that became stale while it was being encoded.
+                        if (SVHubRuntime.store.snapshot().revision != projected.revision) {
+                            if (editor) editorSessions.remove(playerId)
+                            sendSnapshot(livePlayer, editor)
+                            return@onSuccess
+                        }
+                        val transfer = ThreadLocalRandom.current().nextLong()
+                        chunks.forEachIndexed { index, chunk ->
+                            ServerPlayNetworking.send(livePlayer, HubSnapshotChunkS2C(transfer, projected.revision, editor, index, chunks.size, chunk))
+                        }
+                    }.onFailure { error ->
+                        if (editor) editorSessions.remove(playerId)
+                        SVHub.LOGGER.warn("Failed to encode SVHub snapshot for {}", playerId, error)
+                        if (editor) {
+                            sendEditorResult(livePlayer, false, SVHubRuntime.store.snapshot().revision, "Không thể chuẩn bị editor snapshot.")
+                        }
+                    }
+                }
+            }
+        } catch (rejected: RejectedExecutionException) {
+            pendingSnapshotJobs.remove(key)
+            if (editor) editorSessions.remove(player.uuid)
+            SVHub.LOGGER.warn("SVHub codec queue full while preparing snapshot for {}", player.uuid)
+            if (editor) sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, "SVHub đang bận xử lý dữ liệu; hãy thử lại.")
         }
     }
 
@@ -165,17 +227,44 @@ object SVHubNetwork {
             return
         } ?: return
 
-        val candidate = runCatching { HubContentCodec.decode(Compression.decodeUtf8(joined)) }.getOrElse {
-            sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, it.message ?: "Decode failed")
+        val playerId = player.uuid
+        if (!pendingEditorDecodes.add(playerId)) {
+            sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, "Một publish khác đang được xử lý.")
             return
         }
+        val server = SVHubRuntime.server ?: run {
+            pendingEditorDecodes.remove(playerId)
+            return
+        }
+        val baseRevision = payload.baseRevision
 
+        try {
+            codecExecutor.execute {
+                val decoded = runCatching { HubContentCodec.decode(Compression.decodeUtf8(joined)) }
+                server.execute {
+                    pendingEditorDecodes.remove(playerId)
+                    val livePlayer = server.playerList.getPlayer(playerId) ?: return@execute
+                    decoded.onSuccess { candidate ->
+                        processEditorCandidate(livePlayer, baseRevision, candidate)
+                    }.onFailure { error ->
+                        sendEditorResult(livePlayer, false, SVHubRuntime.store.snapshot().revision, error.message ?: "Decode failed")
+                    }
+                }
+            }
+        } catch (rejected: RejectedExecutionException) {
+            pendingEditorDecodes.remove(playerId)
+            sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, "SVHub đang bận xử lý dữ liệu; hãy thử lại.")
+        }
+    }
+
+    /** Must run on the Minecraft server thread. */
+    private fun processEditorCandidate(player: ServerPlayer, baseRevision: Long, candidate: HubContent) {
         val current = SVHubRuntime.store.snapshot().content
         val publishCandidate = if (SVHubPermissions.has(player, SVHubPermissions.EDITOR_ALL, 2)) {
             candidate
         } else {
             val session = editorSessions[player.uuid]
-            if (session == null || session.baseRevision != payload.baseRevision) {
+            if (session == null || session.baseRevision != baseRevision) {
                 sendEditorResult(player, false, current.revision, "Editor session không còn hợp lệ; hãy tải lại editor.")
                 return
             }
@@ -209,39 +298,42 @@ object SVHubNetwork {
             return
         }
 
-        SVHubRuntime.store.commitAsync(payload.baseRevision, publishCandidate).whenComplete { result, error ->
+        val playerId = player.uuid
+        val playerName = player.gameProfile.name
+        SVHubRuntime.store.commitAsync(baseRevision, publishCandidate).whenComplete { result, error ->
             SVHubRuntime.server?.execute {
+                val livePlayer = SVHubRuntime.server?.playerList?.getPlayer(playerId) ?: return@execute
                 if (error != null) {
                     SVHub.LOGGER.warn(
                         "Hub publish failed: player={} uuid={} baseRevision={} currentRevision={}",
-                        player.gameProfile.name,
-                        player.uuid,
-                        payload.baseRevision,
+                        playerName,
+                        playerId,
+                        baseRevision,
                         SVHubRuntime.store.snapshot().revision,
                         error
                     )
-                    sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, error.message ?: "Publish failed")
+                    sendEditorResult(livePlayer, false, SVHubRuntime.store.snapshot().revision, error.message ?: "Publish failed")
                     return@execute
                 }
-                sendEditorResult(player, result.ok, result.revision, result.message)
+                sendEditorResult(livePlayer, result.ok, result.revision, result.message)
                 if (result.ok) {
                     SVHub.LOGGER.info(
                         "Hub publish: player={} uuid={} baseRevision={} newRevision={} pages={} assets={}",
-                        player.gameProfile.name,
-                        player.uuid,
-                        payload.baseRevision,
+                        playerName,
+                        playerId,
+                        baseRevision,
                         result.revision,
                         publishCandidate.pages.size,
                         publishCandidate.assets.size
                     )
-                    editorSessions.remove(player.uuid)
+                    editorSessions.remove(playerId)
                     broadcastPlayerSnapshots()
                 } else {
                     SVHub.LOGGER.warn(
                         "Hub publish rejected: player={} uuid={} baseRevision={} currentRevision={} reason={}",
-                        player.gameProfile.name,
-                        player.uuid,
-                        payload.baseRevision,
+                        playerName,
+                        playerId,
+                        baseRevision,
                         result.revision,
                         result.message
                     )
@@ -256,4 +348,5 @@ object SVHubNetwork {
 
     private const val SNAPSHOT_REQUEST_COOLDOWN_MS = 750L
     private const val EDITOR_SESSION_TTL_MS = 15 * 60 * 1000L
+    private const val CODEC_QUEUE_CAPACITY = 32
 }
