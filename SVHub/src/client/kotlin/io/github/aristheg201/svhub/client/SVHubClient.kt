@@ -8,7 +8,7 @@ import io.github.aristheg201.svhub.network.*
 import io.github.aristheg201.svhub.server.EnvironmentManifest
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.KeyMapping
@@ -26,7 +26,7 @@ object SVHubClient : ClientModInitializer {
     }
 
     override fun onInitializeClient() {
-        openHubKey = KeyMappingHelper.registerKeyMapping(
+        openHubKey = KeyBindingHelper.registerKeyBinding(
             KeyMapping("key.svhub.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, "key.categories.svhub")
         )
 
