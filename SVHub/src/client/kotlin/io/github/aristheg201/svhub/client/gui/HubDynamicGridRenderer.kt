@@ -4,7 +4,7 @@ import io.github.aristheg201.svhub.client.CommandViewProvider
 import io.github.aristheg201.svhub.client.EnvironmentViewProvider
 import io.github.aristheg201.svhub.client.api.SVHubClientApi
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonWikiProvider
-import io.github.aristheg201.svhub.client.cobblemon.PokemonPortraitCache
+import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.client.render.PixelUi
 import io.github.aristheg201.svhub.content.HubComponent
@@ -34,19 +34,22 @@ object HubDynamicGridRenderer {
         hits: MutableList<HubHitTarget>
     ): Result {
         val provider = component.props.get("provider")?.asString.orEmpty()
+        val pokemonGrid = provider == "cobblemon:pokemon" || provider == "cobblemon:fakemon"
         val requestedPageSize = component.props.get("pageSize")?.let { runCatching { it.asInt }.getOrNull() } ?: 24
-        val pageSize = requestedPageSize.coerceIn(6, 30)
+        // Live Cobblemon models are intentionally capped more aggressively than text grids.
+        // This keeps weak clients responsive while still showing the actual model in every visible card.
+        val pageSize = requestedPageSize.coerceIn(6, if (pokemonGrid) 20 else 30)
         val entries = entries(provider, content)
         val pageCount = maxOf(1, (entries.size + pageSize - 1) / pageSize)
         val normalizedPage = page.coerceIn(0, pageCount - 1)
         val visible = entries.drop(normalizedPage * pageSize).take(pageSize)
-        val pokemonGrid = provider == "cobblemon:pokemon" || provider == "cobblemon:fakemon"
 
         val requestedColumns = component.props.get("columns")?.let { runCatching { it.asInt }.getOrNull() } ?: 3
         val columns = requestedColumns.coerceIn(1, 6).coerceAtMost(maxOf(1, width / if (pokemonGrid) 164 else 120))
         val gap = 8
         val cellWidth = ((width - gap * (columns - 1)) / columns).coerceAtLeast(if (pokemonGrid) 144 else 96)
         val cellHeight = if (pokemonGrid) 64 else 44
+        val viewportBottom = gui.guiHeight()
 
         visible.forEachIndexed { index, entry ->
             val col = index % columns
@@ -57,7 +60,16 @@ object HubDynamicGridRenderer {
             PixelUi.panel(gui, cx, cy, cellWidth, cellHeight, if (hover) theme.palette.panelAlt else theme.palette.panel, if (hover) theme.palette.accent else theme.palette.accent2)
 
             val textX = if (entry.pokemon != null) {
-                renderPokemonPortrait(gui, entry.pokemon, cx + 5, cy + 5, 54, theme)
+                // Do not use an off-screen framebuffer portrait cache here. Cobblemon's
+                // profile renderer mutates render state and the old capture path could
+                // leave the main GUI blurred/tinted while also producing black textures.
+                // Render the actual current resource-pack model directly, but only for
+                // cards intersecting the current GUI viewport.
+                if (cy + cellHeight >= 42 && cy <= viewportBottom) {
+                    renderPokemonModel(gui, entry.pokemon, cx + 5, cy + 5, 54, theme)
+                } else {
+                    drawPortraitPlaceholder(gui, cx + 5, cy + 5, 54, theme)
+                }
                 cx + 64
             } else cx + 8
             val textWidth = (cellWidth - (textX - cx) - 8).coerceAtLeast(32)
@@ -88,24 +100,23 @@ object HubDynamicGridRenderer {
             totalHeight += 32
         }
 
-        if (pokemonGrid && visible.any { it.pokemon != null }) {
-            // One portrait at most per 50 ms bucket, even if several grids render.
-            PokemonPortraitCache.pump(System.currentTimeMillis() / 50L)
-        }
         return Result(totalHeight, pageCount, normalizedPage)
     }
 
-    private fun renderPokemonPortrait(gui: GuiGraphics, view: PokemonView, x: Int, y: Int, size: Int, theme: HubTheme) {
-        val location = PokemonPortraitCache.request(view)
-        if (location != null) {
-            runCatching {
-                gui.blit(location, x, y, size, size, 0f, 0f, 96, 96, 96, 96)
-            }.onFailure {
-                drawPortraitPlaceholder(gui, x, y, size, theme)
-            }
-        } else {
-            drawPortraitPlaceholder(gui, x, y, size, theme)
-        }
+    private fun renderPokemonModel(gui: GuiGraphics, view: PokemonView, x: Int, y: Int, size: Int, theme: HubTheme) {
+        // Opaque neutral backing makes transparent model layers readable and avoids
+        // the previous all-black cache box looking like a missing model.
+        gui.fill(x, y, x + size, y + size, theme.palette.panelAlt)
+        val rendered = PokemonModelRenderer.render(
+            gui = gui,
+            view = view,
+            centerX = x + size / 2,
+            centerY = y + size / 2,
+            size = size,
+            yaw = 0f,
+            zoom = 0.92f
+        )
+        if (!rendered) drawPortraitPlaceholder(gui, x, y, size, theme)
     }
 
     private fun drawPortraitPlaceholder(gui: GuiGraphics, x: Int, y: Int, size: Int, theme: HubTheme) {
