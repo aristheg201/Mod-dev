@@ -88,9 +88,13 @@ object SVHubClient : ClientModInitializer {
             context.client().execute {
                 ClientHubState.lastEditorMessage = payload.message
                 ClientHubState.serverRevision = payload.revision
-                if (payload.ok && Minecraft.getInstance().screen is HubEditorScreen) {
-                    pendingEditor = true
-                    ClientPlayNetworking.send(HubRequestSnapshotC2S(true))
+                val screen = Minecraft.getInstance().screen
+                if (screen is HubEditorScreen) {
+                    screen.onPublishResult(payload.ok, payload.message)
+                    if (payload.ok) {
+                        pendingEditor = true
+                        ClientPlayNetworking.send(HubRequestSnapshotC2S(true))
+                    }
                 }
             }
         }
