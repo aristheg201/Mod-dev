@@ -26,6 +26,7 @@ class ComponentInspectorScreen(
     private var actionPermission: EditBox? = null
     private var actionCooldown: EditBox? = null
     private var speciesSuggestionHits = mutableListOf<Pair<IntRange, String>>()
+    private var validationMessage: String? = null
 
     override fun init() {
         addRenderableWidget(Button.builder(Component.literal("Hủy")) { Minecraft.getInstance().setScreen(parent) }.bounds(width - 142, 10, 58, 22).build())
@@ -39,6 +40,7 @@ class ComponentInspectorScreen(
             box.setHint(Component.literal(spec.placeholder.ifBlank { spec.label }))
             box.setMaxLength(spec.maxLength)
             box.value = original.props.get(spec.key)?.let { runCatching { it.asString }.getOrDefault("") }.orEmpty()
+            box.setResponder { validationMessage = null }
             addRenderableWidget(box)
             fields += BoundField(spec, box)
         }
@@ -57,6 +59,7 @@ class ComponentInspectorScreen(
         box.setHint(Component.literal(hint))
         box.setMaxLength(1024)
         box.value = value
+        box.setResponder { validationMessage = null }
         addRenderableWidget(box)
         return box
     }
@@ -80,6 +83,17 @@ class ComponentInspectorScreen(
             actionValue?.let { gui.drawString(font, "Action value", 18, it.y + 6, theme.palette.mutedText, false) }
             actionPermission?.let { gui.drawString(font, "Permission", 18, it.y + 6, theme.palette.mutedText, false) }
             actionCooldown?.let { gui.drawString(font, "Cooldown", 18, it.y + 6, theme.palette.mutedText, false) }
+        }
+
+        validationMessage?.let { message ->
+            gui.drawString(
+                font,
+                font.plainSubstrByWidth(message, width - 36),
+                18,
+                height - 24,
+                theme.palette.danger,
+                false
+            )
         }
 
         super.render(gui, mouseX, mouseY, partialTick)
@@ -116,6 +130,7 @@ class ComponentInspectorScreen(
                 val hit = speciesSuggestionHits.firstOrNull { mouseY.toInt() in it.first }
                 if (hit != null) {
                     speciesField.box.value = hit.second
+                    validationMessage = null
                     return true
                 }
             }
@@ -124,6 +139,9 @@ class ComponentInspectorScreen(
     }
 
     private fun saveAndReturn() {
+        validationMessage = validateInputs()
+        if (validationMessage != null) return
+
         val props = original.props.deepCopy()
         fields.forEach { bound -> writeProperty(props, bound.spec, bound.box.value) }
         val action = if (schema.supportsAction) {
@@ -133,7 +151,7 @@ class ComponentInspectorScreen(
                 type = type,
                 value = actionValue?.value?.trim().orEmpty(),
                 permission = actionPermission?.value?.trim()?.ifBlank { null },
-                cooldownMs = actionCooldown?.value?.trim()?.toLongOrNull()?.coerceIn(0L, 3_600_000L) ?: 500L
+                cooldownMs = actionCooldown?.value?.trim()?.toLongOrNull() ?: 500L
             )
         } else original.action
 
@@ -146,6 +164,45 @@ class ComponentInspectorScreen(
         Minecraft.getInstance().setScreen(parent)
     }
 
+    private fun validateInputs(): String? {
+        for (bound in fields) {
+            val raw = bound.box.value.trim()
+            if (raw.isBlank()) continue
+            when (bound.spec.type) {
+                InspectorValueType.INTEGER -> if (raw.toIntOrNull() == null) {
+                    return "${bound.spec.label}: phải là số nguyên hợp lệ."
+                }
+                InspectorValueType.FLOAT -> if (raw.toFloatOrNull()?.isFinite() != true) {
+                    return "${bound.spec.label}: phải là số thực hữu hạn hợp lệ."
+                }
+                InspectorValueType.BOOLEAN -> if (!raw.equals("true", true) && !raw.equals("false", true)) {
+                    return "${bound.spec.label}: chỉ chấp nhận true hoặc false."
+                }
+                else -> Unit
+            }
+        }
+
+        if (fields.any { it.spec.key == "species" }) {
+            val raw = fields.first { it.spec.key == "species" }.box.value.trim()
+            if (raw.isNotBlank()) {
+                val found = PokemonSpecies.implemented.any { it.resourceIdentifier.toString() == raw }
+                if (!found) return "Species '$raw' không tồn tại trong Cobblemon registry hiện tại."
+            }
+        }
+
+        if (schema.supportsAction) {
+            val cooldownRaw = actionCooldown?.value?.trim().orEmpty()
+            val cooldown = cooldownRaw.toLongOrNull()
+            if (cooldown == null || cooldown !in 0L..3_600_000L) {
+                return "Cooldown phải nằm trong khoảng 0–3,600,000 ms."
+            }
+            val type = actionType?.value?.trim().orEmpty()
+            val value = actionValue?.value?.trim().orEmpty()
+            if (type.isNotBlank() && value.length > 2048) return "Action value quá dài."
+        }
+        return null
+    }
+
     private fun writeProperty(props: JsonObject, spec: InspectorFieldSpec, raw: String) {
         val value = raw.trim()
         if (value.isEmpty()) {
@@ -153,8 +210,8 @@ class ComponentInspectorScreen(
             return
         }
         when (spec.type) {
-            InspectorValueType.INTEGER -> value.toIntOrNull()?.let { props.addProperty(spec.key, it) }
-            InspectorValueType.FLOAT -> value.toFloatOrNull()?.let { props.addProperty(spec.key, it) }
+            InspectorValueType.INTEGER -> props.addProperty(spec.key, value.toInt())
+            InspectorValueType.FLOAT -> props.addProperty(spec.key, value.toFloat())
             InspectorValueType.BOOLEAN -> props.addProperty(spec.key, value.equals("true", true))
             else -> props.addProperty(spec.key, raw)
         }
