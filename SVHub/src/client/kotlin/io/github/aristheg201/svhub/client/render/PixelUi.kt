@@ -35,8 +35,14 @@ object PixelUi {
         }
 
         if (!rendered) procedural(gui, width, height, theme.backgroundPreset, palette.panelAlt, tick, theme.motionStrength)
-        proceduralOverlay(gui, width, height, theme.backgroundPreset, palette.accent2, tick, theme.motionStrength)
-        gui.fill(0, 0, width, height, 0x25000000)
+        if (theme.backgroundPreset != "clean") {
+            proceduralOverlay(gui, width, height, theme.backgroundPreset, palette.accent2, tick, theme.motionStrength)
+            gui.fill(0, 0, width, height, 0x25000000)
+        } else {
+            // The player handbook uses a deliberately quiet background: no particles,
+            // neon pass, moving stars or strong tint over the content.
+            gui.fill(0, 0, width, height, 0x10000000)
+        }
     }
 
     fun image(gui: GuiGraphics, asset: HubAsset, x: Int, y: Int, width: Int, height: Int): Boolean {
@@ -51,27 +57,43 @@ object PixelUi {
 
     fun panel(gui: GuiGraphics, x: Int, y: Int, width: Int, height: Int, color: Int, border: Int) {
         gui.fill(x, y, x + width, y + height, color)
-        gui.fill(x, y, x + width, y + 2, border)
-        gui.fill(x, y + height - 2, x + width, y + height, darken(border, .55f))
-        gui.fill(x, y, x + 2, y + height, border)
-        gui.fill(x + width - 2, y, x + width, y + height, darken(border, .55f))
-        gui.fill(x + 3, y + 3, x + width - 3, y + 4, withAlpha(border, 45))
+        gui.fill(x, y, x + width, y + 1, border)
+        gui.fill(x, y + height - 1, x + width, y + height, darken(border, .55f))
+        gui.fill(x, y, x + 1, y + height, border)
+        gui.fill(x + width - 1, y, x + width, y + height, darken(border, .55f))
     }
 
     fun button(gui: GuiGraphics, x: Int, y: Int, width: Int, height: Int, hovered: Boolean, theme: HubTheme) {
         val p = theme.palette
         panel(gui, x, y, width, height, if (hovered) p.panelAlt else p.panel, if (hovered) p.accent else p.accent2)
-        if (hovered) gui.fill(x + 3, y + height - 4, x + width - 3, y + height - 2, p.accent)
+        if (hovered) gui.fill(x + 2, y + height - 3, x + width - 2, y + height - 1, p.accent)
     }
 
     private fun procedural(gui: GuiGraphics, w: Int, h: Int, preset: String, color: Int, tick: Long, motion: Float) {
         when (preset) {
+            "clean" -> drawClean(gui, w, h, color)
             "pixel_grid", "pixel_neon" -> drawGrid(gui, w, h, color, tick, motion, preset == "pixel_neon")
             "pixel_forest" -> drawForest(gui, w, h, color)
             "pixel_cave" -> drawCave(gui, w, h, color)
             "pixel_volcano" -> drawVolcano(gui, w, h, color, tick)
             else -> drawSky(gui, w, h, color, tick, motion)
         }
+    }
+
+    private fun drawClean(gui: GuiGraphics, w: Int, h: Int, color: Int) {
+        // Static low-contrast structure. It should read as a game UI backdrop, not artwork.
+        val line = withAlpha(color, 18)
+        var x = 0
+        while (x < w) {
+            gui.fill(x, 0, x + 1, h, line)
+            x += 48
+        }
+        var y = 0
+        while (y < h) {
+            gui.fill(0, y, w, y + 1, line)
+            y += 48
+        }
+        gui.fill(0, 0, w, 2, withAlpha(color, 28))
     }
 
     private fun proceduralOverlay(gui: GuiGraphics, w: Int, h: Int, preset: String, color: Int, tick: Long, motion: Float) {
