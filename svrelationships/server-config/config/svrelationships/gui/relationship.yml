@@ -1,23 +1,23 @@
 # ============================================================
-# SVRelationships — Relationship Profile
-# CONFIG ONLY. Profile/progress -> interactions -> milestones -> nav.
+# SVRelationships — Relationship Dashboard
+# CONFIG ONLY. Clear sections: progress / actions / milestones / utility.
 # ============================================================
 
 id: relationship
-screen: generic_9x4
+screen: generic_9x5
 title_key: ui.relationship.title
 
 components:
+  # Progress dashboard
+  top_0: {slot: 0, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   bond:
     slot: 1
     item: minecraft:heart_of_the_sea
     name_key: ui.relationship.bond
-    lore_keys:
-      - ui.relationship.bond.value
-      - ui.relationship.bond.bar
-      - ui.relationship.bond.rank
+    lore_keys: [ui.relationship.bond.value, ui.relationship.bond.bar, ui.relationship.bond.rank]
     action: none
-
+  top_2: {slot: 2, item: minecraft:cyan_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_3: {slot: 3, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   profile:
     slot: 4
     item: minecraft:name_tag
@@ -29,17 +29,18 @@ components:
       - ui.relationship.profile.route
       - ui.relationship.profile.partner
     action: none
-
+  top_5: {slot: 5, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  top_6: {slot: 6, item: minecraft:pink_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   romance:
     slot: 7
     item: minecraft:pink_dye
     name_key: ui.relationship.romance
-    lore_keys:
-      - ui.relationship.romance.value
-      - ui.relationship.romance.bar
-      - ui.relationship.romance.rank
+    lore_keys: [ui.relationship.romance.value, ui.relationship.romance.bar, ui.relationship.romance.rank]
     action: none
+  top_8: {slot: 8, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
+  # Daily interactions
+  act_9: {slot: 9, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   talk:
     slot: 10
     item: minecraft:book
@@ -47,7 +48,7 @@ components:
     lore_keys: [ui.relationship.talk.lore1, ui.relationship.talk.lore2]
     action: interaction
     args: {id: daily_talk}
-
+  act_11: {slot: 11, item: minecraft:cyan_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   gift:
     slot: 12
     item: minecraft:poppy
@@ -55,7 +56,7 @@ components:
     lore_keys: [ui.relationship.gift.lore1, ui.relationship.gift.lore2]
     action: gift
     args: {id: flower}
-
+  act_13: {slot: 13, item: minecraft:pink_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   date:
     slot: 14
     item: minecraft:cake
@@ -64,7 +65,7 @@ components:
     action: interaction
     args: {id: date}
     conditions: {route.romance.in: "dating|engaged|married"}
-
+  act_15: {slot: 15, item: minecraft:purple_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   daycare:
     slot: 16
     item: minecraft:turtle_egg
@@ -72,7 +73,11 @@ components:
     lore_keys: [ui.relationship.daycare.lore1, ui.relationship.daycare.lore2]
     action: open_gui
     args: {id: daycare}
+  act_17: {slot: 17, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
+  # Relationship milestone path
+  ms_18: {slot: 18, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  ms_19: {slot: 19, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   dating:
     slot: 20
     item: minecraft:allium
@@ -81,7 +86,7 @@ components:
     action: advance_partnership
     args: {milestone: dating}
     conditions: {route.romance: friends}
-
+  ms_arrow_21: {slot: 21, item: minecraft:pink_stained_glass_pane, name_key: ui.relationship.path.arrow, lore_keys: [], action: none}
   engaged:
     slot: 22
     item: minecraft:diamond
@@ -90,7 +95,7 @@ components:
     action: advance_partnership
     args: {milestone: engaged}
     conditions: {route.romance: dating}
-
+  ms_arrow_23: {slot: 23, item: minecraft:purple_stained_glass_pane, name_key: ui.relationship.path.arrow, lore_keys: [], action: none}
   married:
     slot: 24
     item: minecraft:golden_apple
@@ -99,7 +104,12 @@ components:
     action: ceremony
     args: {id: wedding}
     conditions: {route.romance: engaged}
+  ms_25: {slot: 25, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  ms_26: {slot: 26, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
+  # Partner utilities
+  util_27: {slot: 27, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  util_28: {slot: 28, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
   reward:
     slot: 30
     item: minecraft:chest
@@ -108,13 +118,32 @@ components:
     action: claim_reward
     args: {profile: partner_daily}
     conditions: {partner: "true"}
-
-  back:
+  util_31: {slot: 31, item: minecraft:lime_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  family:
     slot: 32
+    item: minecraft:knowledge_book
+    name_key: ui.relationship.family
+    lore_keys: [ui.relationship.family.lore1, ui.relationship.family.lore2]
+    action: open_gui
+    args: {id: family}
+  util_34: {slot: 34, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  util_35: {slot: 35, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+
+  # Bottom navigation bar
+  nav_36: {slot: 36, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  nav_37: {slot: 37, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  nav_38: {slot: 38, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  nav_39: {slot: 39, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  back:
+    slot: 40
     item: minecraft:compass
     name_key: ui.navigation.back
     lore_keys: [ui.navigation.back.relationships]
     action: open_gui
     args: {id: owned}
+  nav_41: {slot: 41, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  nav_42: {slot: 42, item: minecraft:gray_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  nav_43: {slot: 43, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
+  nav_44: {slot: 44, item: minecraft:black_stained_glass_pane, name_key: ui.decor.blank, lore_keys: [], action: none}
 
 repeaters: {}
