@@ -8,8 +8,8 @@
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "main": ["io.github.aristheg201.svhub.SVHub"],
-    "client": ["io.github.aristheg201.svhub.client.SVHubClient"]
+    "main": ["io.github.aristheg201.svhub.SVHubEntrypoint"],
+    "client": ["io.github.aristheg201.svhub.client.SVHubClientEntrypoint"]
   },
   "depends": {
     "java": ">=21",
