@@ -5,6 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -180,11 +181,26 @@ class HubStore(private val root: Path) : AutoCloseable {
 
     override fun close() {
         ready.set(false)
-        if (closed.compareAndSet(false, true)) io.shutdown()
+        if (!closed.compareAndSet(false, true)) return
+
+        // shutdown() accepts no new work but drains already queued atomic writes.
+        // Bound the wait so a broken filesystem cannot hang Minecraft shutdown forever.
+        io.shutdown()
+        try {
+            if (!io.awaitTermination(SHUTDOWN_DRAIN_SECONDS, TimeUnit.SECONDS)) {
+                io.shutdownNow()
+                io.awaitTermination(SHUTDOWN_FORCE_SECONDS, TimeUnit.SECONDS)
+            }
+        } catch (_: InterruptedException) {
+            io.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     companion object {
         private const val MAX_HISTORY_ENTRIES = 256
+        private const val SHUTDOWN_DRAIN_SECONDS = 5L
+        private const val SHUTDOWN_FORCE_SECONDS = 1L
         private val HISTORY_FILE = Regex("^rev-(\\d+)-(\\d+)\\.json$")
     }
 }
