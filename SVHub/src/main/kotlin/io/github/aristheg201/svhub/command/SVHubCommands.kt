@@ -66,7 +66,7 @@ object SVHubCommands {
                         .requires { SVHubPermissions.check(it, SVHubPermissions.ADMIN_ROLLBACK, 3) }
                         .then(Commands.argument("revision", LongArgumentType.longArg(1L))
                             .suggests { _, builder ->
-                                SVHubRuntime.store.history(30).forEach { builder.suggest(it.revision) }
+                                SVHubRuntime.store.history(30).forEach { builder.suggest(it.revision.toString()) }
                                 builder.buildFuture()
                             }
                             .executes { ctx ->
