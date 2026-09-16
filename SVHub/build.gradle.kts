@@ -19,18 +19,9 @@ repositories {
     maven("https://maven.impactdev.net/repository/development/")
     maven("https://repo.lucko.me")
     maven("https://maven.pokeskies.com/releases/")
+    maven("https://maven.nucleoid.xyz/") { name = "Nucleoid" }
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
-}
-
-loom {
-    splitEnvironmentSourceSets()
-    mods {
-        create(modId) {
-            sourceSet(sourceSets.main.get())
-            sourceSet(sourceSets.named("client").get())
-        }
-    }
 }
 
 dependencies {
@@ -41,6 +32,21 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${providers.gradleProperty("fabric_kotlin_version").get()}")
     modImplementation("com.cobblemon:fabric:${providers.gradleProperty("cobblemon_version").get()}")
     modCompileOnly("me.lucko:fabric-permissions-api:0.3.1")
+
+    // Fabric-native Placeholder API. JIJ it so SVHub formatting works without
+    // forcing a separate dependency download on clients or servers.
+    modImplementation(include("eu.pb4:placeholder-api:${providers.gradleProperty("placeholder_api_version").get()}")!!)
+
+    // MiniMessage is used only for safe presentation formatting. SVHub deliberately
+    // exposes color/decoration/gradient/rainbow/reset/newline tags, not MiniMessage
+    // click/run-command tags; gameplay actions still travel through authoritative IDs.
+    val adventureVersion = providers.gradleProperty("adventure_version").get()
+    val examinationVersion = providers.gradleProperty("examination_version").get()
+    implementation(include("net.kyori:adventure-text-minimessage:$adventureVersion")!!)
+    implementation(include("net.kyori:adventure-api:$adventureVersion")!!)
+    implementation(include("net.kyori:adventure-key:$adventureVersion")!!)
+    implementation(include("net.kyori:examination-api:$examinationVersion")!!)
+    implementation(include("net.kyori:examination-string:$examinationVersion")!!)
 
     testImplementation(kotlin("test"))
 }
