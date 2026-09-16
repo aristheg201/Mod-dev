@@ -1,0 +1,21 @@
+# SVRelationships polished GUI theme additions — CONFIG ONLY
+ui.decor.blank: "<italic:false><dark_gray> "
+ui.tab.active: "<italic:false><green>● Current section"
+ui.tab.click: "<italic:false><yellow>→ Click to open this section"
+ui.navigation.home: "<italic:false><gold><bold>⌂ Relationship Hub</bold>"
+
+ui.main.guide: "<italic:false><gradient:#ff8fab:#c77dff><bold>How to play</bold></gradient>"
+ui.main.guide.lore1: "<italic:false><gray>Build Bond → Romance → Dating → Marriage."
+ui.main.guide.lore2: "<italic:false><dark_gray>Use Daycare for family and lineage progression."
+
+ui.daycare.section.start: "<italic:false><gold><bold>① Start Breeding</bold>"
+ui.daycare.section.start.lore: "<italic:false><gray>Pick a configured breeding profile on this row."
+ui.daycare.section.sessions: "<italic:false><aqua><bold>② Active Sessions</bold>"
+ui.daycare.section.sessions.lore: "<italic:false><gray>Running and completed sessions appear to the right."
+
+ui.relationship.path.arrow: "<italic:false><light_purple><bold>→</bold>"
+ui.relationship.family: "<italic:false><green><bold>✦ Family & Lineage</bold>"
+ui.relationship.family.lore1: "<italic:false><gray>Open descendants and generation history."
+ui.relationship.family.lore2: "<italic:false><yellow>→ View this household's family progression."
+
+ui.daycare.setup.hint: "<italic:false><yellow>→ Click a Pokémon model below to fill the current role."
