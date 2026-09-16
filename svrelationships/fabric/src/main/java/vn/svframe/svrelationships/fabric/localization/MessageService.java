@@ -27,7 +27,7 @@ public final class MessageService {
     }
 
     public Text text(String key, Map<String, ?> placeholders) {
-        String template = config.snapshot().messages().getOrDefault(key, "<red>Missing localization: " + key + "</red>");
+        String template = resolveTemplate(config.snapshot().messages(), key);
         TagResolver.Builder resolver = TagResolver.builder();
         for (Map.Entry<String, ?> entry : placeholders.entrySet()) {
             String name = entry.getKey();
@@ -41,13 +41,29 @@ public final class MessageService {
             Component component = MINI_MESSAGE.deserialize(template, resolver.build());
             return FabricAudiences.nonWrappingSerializer().serialize(component);
         } catch (RuntimeException malformedMiniMessage) {
-            // A bad admin-edited line must never crash a GUI/command path. Fall
-            // back to literal text while still resolving known placeholders.
             String fallback = template;
             for (Map.Entry<String, ?> entry : placeholders.entrySet()) {
                 fallback = fallback.replace("<" + entry.getKey() + ">", String.valueOf(entry.getValue()));
             }
             return Text.literal(fallback);
         }
+    }
+
+    static String resolveTemplate(Map<String, String> messages, String key) {
+        String direct = messages.get(key);
+        if (direct != null) return direct;
+
+        // Compatibility for pre-v4 GUI configs which used ui.* while the
+        // canonical localization namespace is gui.*. Keep both directions so
+        // custom packs can be migrated without producing red missing-key UI.
+        if (key.startsWith("ui.")) {
+            String canonical = messages.get("gui." + key.substring(3));
+            if (canonical != null) return canonical;
+        } else if (key.startsWith("gui.")) {
+            String legacy = messages.get("ui." + key.substring(4));
+            if (legacy != null) return legacy;
+        }
+
+        return "<red>Missing localization: " + key + "</red>";
     }
 }
