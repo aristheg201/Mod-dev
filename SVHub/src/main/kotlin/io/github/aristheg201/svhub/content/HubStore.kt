@@ -129,16 +129,25 @@ class HubStore(private val root: Path) : AutoCloseable {
     }
 
     /**
-     * Upgrade only SVHub's known legacy bundled seed. The old file is archived first,
-     * and the revision is incremented so clients cannot reuse a revision-0 cache.
+     * Upgrades only SVHub-owned bundled content. The exact legacy showcase may be
+     * replaced with the player handbook, then the one-time handbook completion may
+     * add commands that were missing from the first clean seed. The original file is
+     * archived once before any automatic write; administrator-authored revisions are
+     * never loosely matched or rewritten.
      */
     private fun readCurrentContentWithBundledMigration(): HubContent {
         val loaded = readValidatedContent(contentFile)
-        val migrated = BundledContentMigration.migrate(loaded) ?: return loaded
-        HubValidator.validate(migrated).requireValid()
+        val migrated = BundledContentMigration.migrate(loaded)
+        val afterMigration = migrated ?: loaded
+        val patched = BundledHandbookPatch.apply(afterMigration)
+        val finalContent = patched ?: afterMigration
+
+        if (finalContent == loaded) return loaded
+
+        HubValidator.validate(finalContent).requireValid()
         saveHistory(loaded)
-        AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(migrated))
-        return migrated
+        AtomicFiles.writeUtf8(contentFile, HubContentCodec.encode(finalContent))
+        return finalContent
     }
 
     private fun readValidatedContent(path: Path): HubContent {
