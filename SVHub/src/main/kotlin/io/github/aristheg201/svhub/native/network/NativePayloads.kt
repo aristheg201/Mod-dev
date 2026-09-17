@@ -1,0 +1,10 @@
+package io.github.aristheg201.svhub.native.network
+import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload
+import net.minecraft.resources.ResourceLocation
+private fun id(path:String)=ResourceLocation.fromNamespaceAndPath("svhub",path)
+private const val MODULE_MAX=32;private const val ACTION_MAX=48;private const val STATE_MAX=96*1024;private const val INTENT_MAX=8*1024;private const val MESSAGE_MAX=512
+data class NativeOpenS2C(val module:String,val state:String):CustomPacketPayload{override fun type()=TYPE;companion object{val TYPE=CustomPacketPayload.Type<NativeOpenS2C>(id("native_open_s2c"));val CODEC:StreamCodec<RegistryFriendlyByteBuf, NativeOpenS2C> = StreamCodec.of({b,p->b.writeUtf(p.module,MODULE_MAX);b.writeUtf(p.state,STATE_MAX)},{b->NativeOpenS2C(b.readUtf(MODULE_MAX),b.readUtf(STATE_MAX))})}}
+data class NativeStateS2C(val module:String,val state:String,val message:String):CustomPacketPayload{override fun type()=TYPE;companion object{val TYPE=CustomPacketPayload.Type<NativeStateS2C>(id("native_state_s2c"));val CODEC:StreamCodec<RegistryFriendlyByteBuf, NativeStateS2C> = StreamCodec.of({b,p->b.writeUtf(p.module,MODULE_MAX);b.writeUtf(p.state,STATE_MAX);b.writeUtf(p.message,MESSAGE_MAX)},{b->NativeStateS2C(b.readUtf(MODULE_MAX),b.readUtf(STATE_MAX),b.readUtf(MESSAGE_MAX))})}}
+data class NativeIntentC2S(val module:String,val action:String,val data:String):CustomPacketPayload{override fun type()=TYPE;companion object{val TYPE=CustomPacketPayload.Type<NativeIntentC2S>(id("native_intent_c2s"));val CODEC:StreamCodec<RegistryFriendlyByteBuf, NativeIntentC2S> = StreamCodec.of({b,p->b.writeUtf(p.module,MODULE_MAX);b.writeUtf(p.action,ACTION_MAX);b.writeUtf(p.data,INTENT_MAX)},{b->NativeIntentC2S(b.readUtf(MODULE_MAX),b.readUtf(ACTION_MAX),b.readUtf(INTENT_MAX))})}}

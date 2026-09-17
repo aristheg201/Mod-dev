@@ -3,13 +3,16 @@
   "id": "svhub",
   "version": "${version}",
   "name": "SVHub",
-  "description": "Server-authoritative visual wiki, guide, command hub and Cobblemon encyclopedia with a pixel editor.",
+  "description": "Client/server Pokémon hub with native gacha and arcade; SkiesSkins remains authoritative for cosmetic ownership and application.",
   "authors": ["Aris"],
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
     "main": ["io.github.aristheg201.svhub.SVHubEntrypoint"],
-    "client": ["io.github.aristheg201.svhub.client.SVHubClientEntrypoint"]
+    "client": [
+      "io.github.aristheg201.svhub.client.SVHubClientEntrypoint",
+      "io.github.aristheg201.svhub.client.nativeui.NativePlatformClientEntrypoint"
+    ]
   },
   "depends": {
     "java": ">=21",
@@ -20,7 +23,8 @@
     "cobblemon": ">=1.8.0"
   },
   "suggests": {
-    "fabric-permissions-api-v0": "*"
+    "fabric-permissions-api-v0": "*",
+    "skiesskins": ">=1.1.0"
   },
   "icon": "assets/svhub/icon.png"
 }
