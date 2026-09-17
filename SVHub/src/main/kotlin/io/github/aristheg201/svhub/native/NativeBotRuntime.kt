@@ -6,6 +6,7 @@ import io.github.aristheg201.svhub.native.game.NativeBotDifficulty
 import io.github.aristheg201.svhub.native.game.NativeBotPlanner
 import io.github.aristheg201.svhub.native.game.NativeGameView
 import io.github.aristheg201.svhub.native.game.NativeSeat
+import io.github.aristheg201.svhub.native.game.TftBotPlanner
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.RejectedExecutionException
@@ -13,11 +14,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Pure AI planner pool. It only receives immutable NativeGameView snapshots and never touches a
- * live game session, Minecraft, Cobblemon, networking or persistence. Candidate intents are handed
- * back to the session actor, which re-validates them against authoritative state.
- */
 object NativeBotRuntime {
     private data class Key(val sessionId: String, val seatId: String)
     private val pending = ConcurrentHashMap.newKeySet<Key>()
@@ -52,22 +48,22 @@ object NativeBotRuntime {
             val due = nextThinkAt[key] ?: 0L
             if (nowMillis < due || key in pending) continue
             val view = views[seat.id] ?: continue
-            // Keep managed bots invisible to the legacy in-session bot code while allowing the
-            // pure planner to use its existing "bot" predicate on a detached snapshot-only copy.
-            val planningSeat = if (seat.bot) seat else seat.copy(bot = true)
-            if (!NativeBotPlanner.shouldThink(view, planningSeat)) continue
+            val shouldThink = if (view.gameId == "tft") TftBotPlanner.shouldThink(view) else {
+                val planningSeat = if (seat.bot) seat else seat.copy(bot = true)
+                NativeBotPlanner.shouldThink(view, planningSeat)
+            }
+            if (!shouldThink) continue
 
             pending += key
             nextThinkAt[key] = nowMillis + thinkDelayMillis(difficulty)
             try {
                 pool.execute {
-                    val plan = runCatching { NativeBotPlanner.plan(view, difficulty) }
-                    pending.remove(key)
-                    plan.onSuccess { result ->
-                        if (result.candidates.isNotEmpty()) apply(sessionId, seat.id, result.candidates)
-                    }.onFailure { error ->
-                        SVHub.LOGGER.warn("Native bot planner failed for {} / {}", view.gameId, sessionId, error)
+                    val plan = runCatching {
+                        if (view.gameId == "tft") TftBotPlanner.plan(view, difficulty) else NativeBotPlanner.plan(view, difficulty)
                     }
+                    pending.remove(key)
+                    plan.onSuccess { result -> if (result.candidates.isNotEmpty()) apply(sessionId, seat.id, result.candidates) }
+                        .onFailure { error -> SVHub.LOGGER.warn("Native bot planner failed for {} / {}", view.gameId, sessionId, error) }
                 }
             } catch (_: RejectedExecutionException) {
                 pending.remove(key)

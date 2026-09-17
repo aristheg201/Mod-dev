@@ -3,6 +3,7 @@ name: SVHub Loom build
 on:
   push:
     branches:
+      - main
       - feature/svhub-production-20260916
     paths:
       - 'SVHub/**'
@@ -47,6 +48,9 @@ jobs:
           test -f src/main/resources/fabric.mod.json
           test -d src/main/kotlin
           test -d src/client/kotlin
+
+      - name: Run static UI and localization QA
+        run: node tools/static-qa.mjs
 
       - name: Compile, test and remap
         run: gradle --no-daemon --stacktrace clean test remapJar sourcesJar

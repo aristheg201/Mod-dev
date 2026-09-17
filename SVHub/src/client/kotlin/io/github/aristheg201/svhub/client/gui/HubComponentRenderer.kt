@@ -6,6 +6,7 @@ import io.github.aristheg201.svhub.client.render.AnimatedAssetRenderer
 import io.github.aristheg201.svhub.client.render.AnimatedTextRenderer
 import io.github.aristheg201.svhub.client.render.MiniMessageText
 import io.github.aristheg201.svhub.client.render.PixelUi
+import io.github.aristheg201.svhub.client.nativeui.NativePixelArt
 import io.github.aristheg201.svhub.content.HubComponent
 import io.github.aristheg201.svhub.content.HubContent
 import io.github.aristheg201.svhub.content.HubTheme
@@ -96,11 +97,7 @@ object HubComponentRenderer {
     private fun renderHeading(gui: GuiGraphics, text: String, x: Int, y: Int, width: Int, state: RenderState): Int {
         val height = 27
         PixelUi.sectionBand(gui, x, y, width, height, state.theme)
-        val markup = if (text.contains("<bold>", ignoreCase = true) || text.contains("<b>", ignoreCase = true)) {
-            text
-        } else {
-            "<bold>$text</bold>"
-        }
+        val markup = if (text.contains("<bold>", ignoreCase = true) || text.contains("<b>", ignoreCase = true)) text else "<bold>$text</bold>"
         MiniMessageText.draw(gui, state.font, markup, x + 12, y + 9, state.theme.palette.text)
         return height + 8
     }
@@ -109,8 +106,7 @@ object HubComponentRenderer {
         if (text.isBlank()) return 8
         var cy = y
         MiniMessageText.split(state.font, text, width).take(MAX_PARAGRAPH_LINES).forEach { line ->
-            gui.drawString(state.font, line, x, cy, state.theme.palette.text, false)
-            cy += 12
+            gui.drawString(state.font, line, x, cy, state.theme.palette.text, false); cy += 12
         }
         return (cy - y) + bottom
     }
@@ -121,10 +117,7 @@ object HubComponentRenderer {
         PixelUi.panel(gui, x, y, width, height, state.theme.palette.panelAlt, state.theme.palette.accent)
         gui.fill(x, y, x + 5, y + height, state.theme.palette.accent2)
         var cy = y + 10
-        lines.forEach { line ->
-            gui.drawString(state.font, line, x + 16, cy, state.theme.palette.text, false)
-            cy += 12
-        }
+        lines.forEach { line -> gui.drawString(state.font, line, x + 16, cy, state.theme.palette.text, false); cy += 12 }
         return height + 9
     }
 
@@ -152,9 +145,7 @@ object HubComponentRenderer {
         val drawWidth = component.props.int("width", width).coerceIn(16, width)
         val frames = component.props.int("frames", 1)
         val fps = component.props.int("fps", 8)
-        if (!AnimatedAssetRenderer.render(gui, asset, x, y, drawWidth, height, frames, fps, state.tick)) {
-            return renderMissingAsset(gui, assetId, x, y, width, state)
-        }
+        if (!AnimatedAssetRenderer.render(gui, asset, x, y, drawWidth, height, frames, fps, state.tick)) return renderMissingAsset(gui, assetId, x, y, width, state)
         return height + 8
     }
 
@@ -170,75 +161,58 @@ object HubComponentRenderer {
         val command = props.string("command")
         val label = props.string("label", if (isCommand) command else props.string("title", "Mở"))
         val description = props.string("description")
-        val descriptionLines = if (description.isBlank()) emptyList() else MiniMessageText.split(state.font, description, width - 28).take(2)
+        val icon = props.string("icon")
+        val textInset = if (icon.isBlank()) 12 else 42
+        val descriptionLines = if (description.isBlank()) emptyList() else MiniMessageText.split(state.font, description, width - textInset - 14).take(2)
         val height = if (descriptionLines.isEmpty()) 34 else 38 + descriptionLines.size * 11
         val hovered = state.mouseX in x until x + width && state.mouseY in y until y + height
-
         PixelUi.button(gui, x, y, width, height, hovered, state.theme)
         if (isCommand) {
             gui.drawString(state.font, Component.literal(command), x + 12, y + 9, state.theme.palette.accent2, true)
-            val marker = "COMMAND"
-            val markerWidth = state.font.width(marker)
+            val marker = "COMMAND"; val markerWidth = state.font.width(marker)
             gui.drawString(state.font, marker, x + width - markerWidth - 10, y + 9, state.theme.palette.mutedText, false)
         } else {
-            MiniMessageText.draw(gui, state.font, label, x + 12, y + 9, if (hovered) state.theme.palette.accent else state.theme.palette.text, true)
+            if (icon.isNotBlank()) NativePixelArt.icon(gui, icon, x + 11, y + 10, 22, if (hovered) state.theme.palette.accent2 else state.theme.palette.accent)
+            MiniMessageText.draw(gui, state.font, label, x + textInset, y + 9, if (hovered) state.theme.palette.accent else state.theme.palette.text, true)
         }
-
         var cy = y + 25
-        descriptionLines.forEach { line ->
-            gui.drawString(state.font, line, x + 12, cy, state.theme.palette.mutedText, false)
-            cy += 11
-        }
+        descriptionLines.forEach { line -> gui.drawString(state.font, line, x + textInset, cy, state.theme.palette.mutedText, false); cy += 11 }
         state.hits += HubHitTarget(x, y, x + width, y + height) { state.execute(component) }
         return height + 8
     }
 
     private fun renderList(gui: GuiGraphics, component: HubComponent, x: Int, y: Int, width: Int, state: RenderState): Int {
-        val items = component.props.getAsJsonArray("items")?.mapNotNull { runCatching { it.asString }.getOrNull() }
-            ?: component.props.string("text").lines().filter(String::isNotBlank)
+        val items = component.props.getAsJsonArray("items")?.mapNotNull { runCatching { it.asString }.getOrNull() } ?: component.props.string("text").lines().filter(String::isNotBlank)
         var cy = y
         items.take(32).forEach { item ->
             gui.fill(x + 1, cy + 3, x + 5, cy + 7, state.theme.palette.accent2)
-            MiniMessageText.split(state.font, item, width - 20).take(3).forEach { line ->
-                gui.drawString(state.font, line, x + 15, cy, state.theme.palette.text, false)
-                cy += 12
-            }
+            MiniMessageText.split(state.font, item, width - 20).take(3).forEach { line -> gui.drawString(state.font, line, x + 15, cy, state.theme.palette.text, false); cy += 12 }
             cy += 4
         }
         return (cy - y).coerceAtLeast(14) + 4
     }
 
     private fun renderCollapse(gui: GuiGraphics, component: HubComponent, x: Int, y: Int, width: Int, state: RenderState): Int {
-        val expanded = state.isExpanded(component.id)
-        val title = component.props.string("title", "Chi tiết")
-        val headerHeight = 30
+        val expanded = state.isExpanded(component.id); val title = component.props.string("title", "Chi tiết"); val headerHeight = 30
         val hovered = state.mouseX in x until x + width && state.mouseY in y until y + headerHeight
         PixelUi.button(gui, x, y, width, headerHeight, hovered, state.theme)
-        val marker = if (expanded) "−" else "+"
-        gui.drawString(state.font, marker, x + 11, y + 10, state.theme.palette.accent2, true)
+        gui.drawString(state.font, if (expanded) "−" else "+", x + 11, y + 10, state.theme.palette.accent2, true)
         MiniMessageText.draw(gui, state.font, title, x + 27, y + 10, state.theme.palette.text, true)
         state.hits += HubHitTarget(x, y, x + width, y + headerHeight) { state.toggleExpanded(component.id) }
         if (!expanded) return headerHeight + 7
-        val body = component.props.string("text")
-        val bodyHeight = renderParagraph(gui, body, x + 12, y + headerHeight + 8, width - 24, state, 8)
+        val bodyHeight = renderParagraph(gui, component.props.string("text"), x + 12, y + headerHeight + 8, width - 24, state, 8)
         return headerHeight + bodyHeight + 12
     }
 
     private fun renderTable(gui: GuiGraphics, component: HubComponent, x: Int, y: Int, width: Int, state: RenderState): Int {
-        val rows = component.props.getAsJsonArray("rows") ?: return 20
-        var cy = y
+        val rows = component.props.getAsJsonArray("rows") ?: return 20; var cy = y
         rows.take(20).forEachIndexed { index, element ->
-            val cells = if (element.isJsonArray) {
-                element.asJsonArray.map { runCatching { it.asString }.getOrDefault("") }
-            } else {
-                listOf(runCatching { element.asString }.getOrDefault(""))
-            }
+            val cells = if (element.isJsonArray) element.asJsonArray.map { runCatching { it.asString }.getOrDefault("") } else listOf(runCatching { element.asString }.getOrDefault(""))
             val rowHeight = if (index == 0) 25 else 23
             val fill = if (index == 0) state.theme.palette.panelAlt else if (index % 2 == 0) state.theme.palette.panel else PixelUi.withAlpha(state.theme.palette.panelAlt, 205)
             gui.fill(x, cy, x + width, cy + rowHeight, fill)
             if (index == 0) gui.fill(x, cy, x + 4, cy + rowHeight, state.theme.palette.accent)
-            val cols = cells.size.coerceAtLeast(1)
-            val colWidth = width / cols
+            val cols = cells.size.coerceAtLeast(1); val colWidth = width / cols
             cells.forEachIndexed { col, value ->
                 val parsed = MiniMessageText.component(value)
                 val line = state.font.split(parsed, (colWidth - 12).coerceAtLeast(16)).firstOrNull() ?: return@forEachIndexed
@@ -266,14 +240,8 @@ object HubComponentRenderer {
         return size + 20
     }
 
-    private fun com.google.gson.JsonObject.string(key: String, fallback: String = ""): String =
-        runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
-
-    private fun com.google.gson.JsonObject.int(key: String, fallback: Int): Int =
-        runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
-
-    private fun com.google.gson.JsonObject.float(key: String, fallback: Float): Float =
-        runCatching { get(key)?.asFloat ?: fallback }.getOrDefault(fallback)
-
+    private fun com.google.gson.JsonObject.string(key: String, fallback: String = ""): String = runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
+    private fun com.google.gson.JsonObject.int(key: String, fallback: Int): Int = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
+    private fun com.google.gson.JsonObject.float(key: String, fallback: Float): Float = runCatching { get(key)?.asFloat ?: fallback }.getOrDefault(fallback)
     private const val MAX_PARAGRAPH_LINES = 36
 }

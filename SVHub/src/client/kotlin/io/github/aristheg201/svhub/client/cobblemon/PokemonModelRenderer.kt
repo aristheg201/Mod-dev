@@ -35,7 +35,8 @@ object PokemonModelRenderer {
         centerY: Int,
         size: Int,
         yaw: Float = 0f,
-        zoom: Float = 1f
+        zoom: Float = 1f,
+        pitch: Float = 13f
     ): Boolean {
         val live = model(view) ?: return false
         val safeSize = size.coerceIn(40, 512)
@@ -60,7 +61,7 @@ object PokemonModelRenderer {
         pose.scale(guiScale, guiScale, guiScale)
 
         val rotation = Quaternionf().rotationXYZ(
-            degreesToRadians(13f),
+            degreesToRadians(pitch.coerceIn(-85f, 85f)),
             degreesToRadians(yaw),
             0f
         )
@@ -79,9 +80,6 @@ object PokemonModelRenderer {
         } catch (_: Throwable) {
             models.remove(key(view), live)
         } finally {
-            // Cobblemon's profile renderer changes global shader lighting/camera state.
-            // Restore the GUI tint explicitly so subsequent panels/text cannot inherit
-            // a stale colour from a model layer or resource-pack renderer.
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
             pose.popPose()
             gui.disableScissor()
@@ -92,7 +90,6 @@ object PokemonModelRenderer {
     private fun model(view: PokemonView): LiveModel? {
         val key = key(view)
         models[key]?.let { return it }
-
         val id = ResourceLocation.tryParse(view.speciesId) ?: return null
         val species = PokemonSpecies.getByIdentifier(id) ?: return null
         val created = LiveModel(RenderablePokemon(species, view.aspects.toSet()))
@@ -100,9 +97,6 @@ object PokemonModelRenderer {
     }
 
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
-
     private fun degreesToRadians(value: Float): Float = (value * PI / 180.0).toFloat()
-
-    /** Must be called when Cobblemon/resource-pack model resources are reloaded. */
     fun clear() = models.clear()
 }

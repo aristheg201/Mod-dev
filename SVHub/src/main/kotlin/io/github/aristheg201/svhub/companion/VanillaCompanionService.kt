@@ -3,12 +3,13 @@ package io.github.aristheg201.svhub.companion
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.github.aristheg201.svhub.SVHub
+import io.github.aristheg201.svhub.util.AtomicFiles
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -16,39 +17,17 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Server-authoritative lightweight vanilla companion controller.
- *
- * It deliberately exposes a fixed entity whitelist instead of accepting arbitrary
- * entity ids or commands from the client. Only one tagged entity may exist per owner.
- * Persistence writes are serialized off-thread; the bounded follow pass runs once
- * every two seconds and never creates per-tick pathfinding work.
- */
 object VanillaCompanionService {
-    private val allowed = linkedMapOf(
-        "allay" to "Allay",
-        "axolotl" to "Axolotl",
-        "bee" to "Bee",
-        "cat" to "Cat",
-        "fox" to "Fox",
-        "frog" to "Frog",
-        "parrot" to "Parrot",
-        "rabbit" to "Rabbit",
-        "wolf" to "Wolf",
-        "armadillo" to "Armadillo",
-        "sniffer" to "Sniffer"
-    )
+    val allowed = CompanionArena.roster.mapValues { it.value.name }
     private val selected = ConcurrentHashMap<UUID, String>()
     private val online = ConcurrentHashMap.newKeySet<UUID>()
+    private val active = ConcurrentHashMap<UUID, UUID>()
     private val tickCounter = AtomicInteger()
     private val started = AtomicBoolean(false)
     private val closed = AtomicBoolean(false)
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val io = Executors.newSingleThreadExecutor { task ->
-        Thread(task, "SVHub-Companion-Persistence").apply {
-            isDaemon = true
-            priority = Thread.NORM_PRIORITY - 1
-        }
+        Thread(task, "SVHub-Companion-Persistence").apply { isDaemon = true; priority = Thread.NORM_PRIORITY - 1 }
     }
     @Volatile private var file: Path? = null
 
@@ -71,100 +50,90 @@ object VanillaCompanionService {
     fun select(player: ServerPlayer, requested: String): Boolean {
         val entity = requested.trim().lowercase()
         if (entity != "none" && entity !in allowed) return false
-        val server = player.server
-        removeLoaded(server, player.uuid)
+        CompanionArena.clear(player.uuid)
+        removeLoaded(player.server, player.uuid)
         if (entity == "none") {
             selected.remove(player.uuid)
             persistAsync()
-            player.sendSystemMessage(Component.literal("Đã cất Linh Thú."))
             return true
         }
         selected[player.uuid] = entity
         online += player.uuid
-        spawn(server, player, entity)
+        spawn(player.server, player, entity)
         persistAsync()
-        player.sendSystemMessage(Component.literal("Linh Thú: ${allowed[entity] ?: entity}."))
         return true
     }
 
+    fun selectedFor(playerId: UUID): String? = selected[playerId]
+
     fun onJoin(player: ServerPlayer) {
         online += player.uuid
-        val entity = selected[player.uuid] ?: return
-        removeLoaded(player.server, player.uuid)
-        spawn(player.server, player, entity)
+        selected[player.uuid]?.let { entity -> removeLoaded(player.server, player.uuid); spawn(player.server, player, entity) }
     }
 
     fun onDisconnect(player: ServerPlayer) {
         online -= player.uuid
+        CompanionArena.clear(player.uuid)
         removeLoaded(player.server, player.uuid)
     }
 
-    fun tick(server: MinecraftServer) {
-        // Every 40 ticks (2 seconds): bounded, no custom AI/pathfinding and no disk I/O.
-        if (tickCounter.incrementAndGet() % FOLLOW_INTERVAL_TICKS != 0) return
-        online.toList().forEach { uuid ->
-            val player = server.playerList.getPlayer(uuid) ?: return@forEach
-            if (selected[uuid] == null) return@forEach
-            val tag = ownerTag(uuid)
-            // Distance is evaluated from the player's execution position. The selector
-            // only touches the single owner-tagged companion.
-            run(server, "execute at ${player.gameProfile.name} as @e[tag=$tag,limit=1,sort=nearest,distance=$FOLLOW_DISTANCE..] run tp @s ~1 ~ ~1")
-        }
-    }
-
-    fun shutdown(server: MinecraftServer?) {
-        if (closed.get()) return
-        if (server != null) online.toList().forEach { uuid -> removeLoaded(server, uuid) }
-        // Queue the final snapshot before closing the executor so shutdown cannot
-        // discard the last selection change.
-        persistAsync()
+    fun shutdown(server: MinecraftServer) {
         if (!closed.compareAndSet(false, true)) return
+        active.keys.toList().forEach { removeLoaded(server, it) }
+        saveNow()
         io.shutdown()
-        try {
-            if (!io.awaitTermination(3, TimeUnit.SECONDS)) io.shutdownNow()
-        } catch (_: InterruptedException) {
-            io.shutdownNow()
-            Thread.currentThread().interrupt()
+        runCatching { io.awaitTermination(2, TimeUnit.SECONDS) }
+    }
+
+    fun tick(server: MinecraftServer) {
+        if (tickCounter.incrementAndGet() % 40 != 0) return
+        server.playerList.players.forEach { player ->
+            val entityId = active[player.uuid] ?: return@forEach
+            val entity = findEntity(server, entityId) ?: run {
+                selected[player.uuid]?.let { spawn(server, player, it) }
+                return@forEach
+            }
+            if (entity.level() != player.level()) {
+                removeLoaded(server, player.uuid)
+                selected[player.uuid]?.let { spawn(server, player, it) }
+                return@forEach
+            }
+            if (entity.distanceToSqr(player) > 64.0) entity.teleportTo(player.x + 1.1, player.y, player.z + 1.1)
         }
     }
 
-    private fun spawn(server: MinecraftServer, player: ServerPlayer, entity: String) {
-        val tag = ownerTag(player.uuid)
-        // Entity id is from the fixed whitelist above. Player names are restricted by
-        // Minecraft account naming rules, so neither input can inject command syntax.
-        val nbt = "{Invulnerable:1b,PersistenceRequired:1b,Tags:[\"svhub_companion\",\"$tag\"]}"
-        run(server, "execute at ${player.gameProfile.name} run summon minecraft:$entity ~1 ~ ~1 $nbt")
+    private fun spawn(server: MinecraftServer, player: ServerPlayer, type: String) {
+        if (type !in allowed) return
+        val entityType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(net.minecraft.resources.ResourceLocation.withDefaultNamespace(type))
+        val entity = entityType.create(player.level()) ?: return
+        entity.moveTo(player.x + 1.1, player.y, player.z + 1.1, player.yRot, player.xRot)
+        entity.isInvulnerable = true
+        entity.addTag("svhub_companion")
+        entity.addTag("svhub_owner_${player.uuid}")
+        player.level().addFreshEntity(entity)
+        active[player.uuid] = entity.uuid
     }
 
-    private fun removeLoaded(server: MinecraftServer, uuid: UUID) {
-        run(server, "kill @e[tag=${ownerTag(uuid)}]")
+    private fun removeLoaded(server: MinecraftServer, playerId: UUID) {
+        val entityId = active.remove(playerId) ?: return
+        findEntity(server, entityId)?.discard()
     }
 
-    private fun ownerTag(uuid: UUID): String = "svhub_owner_${uuid.toString().replace("-", "")}"
-
-    private fun run(server: MinecraftServer, command: String) {
-        runCatching { server.commands.performPrefixedCommand(server.createCommandSourceStack(), command) }
-            .onFailure { SVHub.LOGGER.warn("Companion command failed: {}", command.substringBefore('{'), it) }
+    private fun findEntity(server: MinecraftServer, id: UUID): Entity? {
+        server.allLevels.forEach { level -> level.getEntity(id)?.let { return it } }
+        return null
     }
 
     private fun persistAsync() {
-        if (closed.get() || io.isShutdown) return
+        if (closed.get()) return
         val path = file ?: return
         val snapshot = selected.entries.associate { it.key.toString() to it.value }
-        io.execute {
-            runCatching {
-                Files.createDirectories(path.parent)
-                val tmp = path.resolveSibling(path.fileName.toString() + ".tmp")
-                Files.writeString(tmp, gson.toJson(snapshot))
-                try {
-                    Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-                } catch (_: Exception) {
-                    Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
-                }
-            }.onFailure { SVHub.LOGGER.warn("Unable to persist companion selections", it) }
-        }
+        io.execute { runCatching { AtomicFiles.writeUtf8(path, gson.toJson(snapshot)) }.onFailure { SVHub.LOGGER.warn("Unable to persist companion selections", it) } }
     }
 
-    private const val FOLLOW_INTERVAL_TICKS = 40
-    private const val FOLLOW_DISTANCE = 8
+    private fun saveNow() {
+        val path = file ?: return
+        val snapshot = selected.entries.associate { it.key.toString() to it.value }
+        runCatching { AtomicFiles.writeUtf8(path, gson.toJson(snapshot)) }.onFailure { SVHub.LOGGER.warn("Unable to persist companion selections", it) }
+    }
 }

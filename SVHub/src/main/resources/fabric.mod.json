@@ -3,7 +3,7 @@
   "id": "svhub",
   "version": "${version}",
   "name": "SVHub",
-  "description": "Client/server Pokémon hub with native gacha and arcade; SkiesSkins remains authoritative for cosmetic ownership and application.",
+  "description": "Responsive in-game hub with Arcade, Companion Arena, gacha, skins and Pokémon reference tools.",
   "authors": ["Aris"],
   "license": "MIT",
   "environment": "*",

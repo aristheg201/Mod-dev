@@ -3,6 +3,7 @@ package io.github.aristheg201.svhub.native
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.native.game.*
+import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.nio.file.Path
@@ -42,6 +43,7 @@ object NativeArcadeService {
     private val asyncMessages = ConcurrentHashMap<UUID, String>()
 
     fun start(root: Path) {
+        TftSetRegistry.start(root.resolve("tft"))
         NativeBotRuntime.start()
         NativeGameEngineRuntime.start()
         NativeRewardService.start(root.resolve("rewards.json"))
@@ -56,6 +58,8 @@ object NativeArcadeService {
                     addProperty("id", d.id); addProperty("title", d.title); addProperty("icon", d.icon)
                     add("modes", JsonArray().also { a -> d.modes.forEach(a::add) })
                     addProperty("queued", queues[d.id]?.contains(player.uuid) == true)
+                    addProperty("queueSize", queues[d.id]?.size ?: 0)
+                    addProperty("queueTarget", if (d.id == "tft") 8 else if ("pvp" in d.modes) 2 else 1)
                 })
             }
         })
@@ -94,6 +98,24 @@ object NativeArcadeService {
 
         if (mode == "pvp") {
             val q = queues.getValue(gameId)
+            if (gameId == "tft") {
+                if (!q.contains(player.uuid)) q.addLast(player.uuid)
+                val ready = mutableListOf<ServerPlayer>()
+                val retained = ArrayDeque<UUID>()
+                while (q.isNotEmpty()) {
+                    val id = q.removeFirst()
+                    val live = player.server.playerList.getPlayer(id)
+                    if (live == null || active.containsKey(id) || ready.any { it.uuid == id }) continue
+                    if (ready.size < 8) ready += live else retained += id
+                }
+                q.addAll(retained)
+                if (ready.size < 8) {
+                    ready.forEach { if (!q.contains(it.uuid)) q.addLast(it.uuid) }
+                    return Result(true, "Pokémon TFT PvP: ${ready.size}/8 trainers trong hàng chờ.", ready.map { it.uuid }.toSet())
+                }
+                val handle = register(player.server, create(gameId, ready.map(::realSeat)), mode)
+                return Result(true, "Pokémon TFT đã đủ 8 trainers.", realPlayers(handle))
+            }
             while (q.isNotEmpty()) {
                 val oid = q.removeFirst()
                 val op = player.server.playerList.getPlayer(oid) ?: continue
@@ -109,6 +131,10 @@ object NativeArcadeService {
         val seats = when (gameId) {
             "ludo" -> listOf(realSeat(player), botSeat("Blue", difficulty), botSeat("Green", difficulty), botSeat("Yellow", difficulty))
             "uno" -> listOf(realSeat(player), botSeat("UNO Bot A", difficulty), botSeat("UNO Bot B", difficulty), botSeat("UNO Bot C", difficulty))
+            "tft" -> buildList {
+                add(realSeat(player))
+                repeat(7) { index -> add(botSeat("TFT Bot ${index + 1}", difficulty)) }
+            }
             "tower_defense" -> if (mode == "solo") listOf(realSeat(player)) else listOf(realSeat(player), botSeat("Defense Assistant", difficulty))
             else -> listOf(realSeat(player), botSeat("SV Bot", difficulty))
         }
@@ -203,8 +229,10 @@ object NativeArcadeService {
         val m = meta[handle.sessionId] ?: SessionMeta("unknown", now)
         val players = realPlayers(handle)
         val participants = players.map { id ->
+            val placement = if (handle.gameId == "tft") handle.viewFor(id.toString())?.fields?.get("placement")?.toIntOrNull()?.takeIf { it in 1..8 } else null
             val outcome = when {
                 id in m.forfeited -> NativeRewardOutcome.FORFEIT
+                placement != null -> if (placement <= 4) NativeRewardOutcome.WIN else NativeRewardOutcome.LOSS
                 handle.winnerSeatId == null -> NativeRewardOutcome.DRAW
                 handle.winnerSeatId == id.toString() -> NativeRewardOutcome.WIN
                 else -> NativeRewardOutcome.LOSS
@@ -213,7 +241,7 @@ object NativeArcadeService {
                 val st = p.stats.getOrPut(handle.gameId) { NativeGameStats() }; st.played++
                 when (outcome) { NativeRewardOutcome.WIN -> st.wins++; NativeRewardOutcome.DRAW -> st.draws++; NativeRewardOutcome.LOSS, NativeRewardOutcome.FORFEIT -> st.losses++ }
             }
-            NativeRewardParticipant(id, outcome, m.humanActions[id] ?: 0, id in m.forfeited)
+            NativeRewardParticipant(id, outcome, m.humanActions[id] ?: 0, id in m.forfeited, placement)
         }
         NativeRewardService.enqueue(NativeRewardCompletion(handle.sessionId, handle.gameId, m.mode, (now - m.createdAtEpochMs).coerceAtLeast(0L), participants))
     }
