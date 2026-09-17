@@ -92,7 +92,7 @@ class HubScreen(
                     renderNotFound(gui, theme, route)
                 }
             }
-            route.startsWith("command/") -> if (!CommandDetailView.render(gui, font, route, theme, width, height)) renderNotFound(gui, theme, route)
+            route.startsWith("command/") -> if (!CommandDetailView.render(gui, font, route, theme, width, height, CHROME_HEIGHT + 10)) renderNotFound(gui, theme, route)
             else -> renderStaticPage(gui, page ?: content.page("home"), theme, mouseX, mouseY)
         }
 
