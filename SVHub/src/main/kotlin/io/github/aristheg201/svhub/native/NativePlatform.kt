@@ -10,10 +10,10 @@ import java.nio.file.Path
 
 object NativePlatform {
     private var tickCounter=0
-    fun start(root:Path){NativeProfileStore.start(root.resolve("profiles"))}
+    fun start(root:Path){NativeProfileStore.start(root.resolve("profiles"));NativeArcadeService.start(root.resolve("arcade"))}
     fun onJoin(player:ServerPlayer){SkiesSkinsBridge.invalidate();NativeProfileStore.onJoin(player){}}
     fun onDisconnect(player:ServerPlayer){NativeArcadeService.onDisconnect(player);NativeProfileStore.onDisconnect(player)}
-    fun tick(server:MinecraftServer){tickCounter++;NativeArcadeService.tick(server).forEach{id->server.playerList.getPlayer(id)?.let{NativePlatformNetwork.sendState(it,"game",gameState(it))}};if(tickCounter%20==0)server.playerList.players.forEach{p->if(NativePlatformNetwork.currentModule(p.uuid)=="game")NativePlatformNetwork.sendState(p,"game",gameState(p))}}
+    fun tick(server:MinecraftServer){tickCounter++;NativeArcadeService.tick(server).forEach{(id,message)->server.playerList.getPlayer(id)?.let{p->if(NativePlatformNetwork.currentModule(id)=="game")NativePlatformNetwork.sendState(p,"game",gameState(p),message)}};if(tickCounter%20==0)server.playerList.players.forEach{p->if(NativePlatformNetwork.currentModule(p.uuid)=="game")NativePlatformNetwork.sendState(p,"game",gameState(p))}}
     fun shutdown(){NativeArcadeService.shutdown();NativeProfileStore.shutdown()}
     fun open(player:ServerPlayer,requested:String):Boolean{if(!NativeProfileStore.isLoaded(player.uuid)){player.sendSystemMessage(net.minecraft.network.chat.Component.literal("SVHub đang tải profile."));return false};val module=requested.lowercase().trim().takeIf{it in MODULES}?:"dashboard";NativePlatformNetwork.sendOpen(player,module,state(player,module));return true}
     fun handleIntent(player:ServerPlayer,module:String,action:String,data:JsonObject):String{if(!NativeProfileStore.isLoaded(player.uuid))return "Profile chưa sẵn sàng.";return when(module){"gacha"->handleGacha(player,action,data);"skins"->handleSkins(player,action,data);"arcade"->handleArcade(player,action,data);"game"->handleGame(player,action,data);"companions"->handleCompanions(player,action,data);"wallet","dashboard"->when(action){"open"->{open(player,data.string("module","dashboard"));""};"close"->{NativePlatformNetwork.close(player.uuid);""};else->"Không có thao tác cho module này."};else->"Module không hợp lệ."}}

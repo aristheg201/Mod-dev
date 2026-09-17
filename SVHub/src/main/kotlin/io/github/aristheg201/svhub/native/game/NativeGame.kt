@@ -2,7 +2,19 @@ package io.github.aristheg201.svhub.native.game
 
 import java.util.UUID
 
-data class NativeSeat(val id:String,val name:String,val bot:Boolean=false)
+enum class NativeBotDifficulty { EASY, NORMAL, HARD }
+
+data class NativeSeat(
+    val id: String,
+    val name: String,
+    /** Legacy in-session bot switch. Managed bots intentionally leave this false. */
+    val bot: Boolean = false,
+    val managedBot: Boolean = false,
+    val botDifficulty: NativeBotDifficulty? = if (bot || managedBot) NativeBotDifficulty.NORMAL else null
+) {
+    val anyBot: Boolean get() = bot || managedBot
+}
+
 data class NativeActionView(val id:String,val label:String,val hint:String="",val enabled:Boolean=true,val payload:Map<String,String> = emptyMap())
 data class NativeCardView(val id:String,val label:String,val subtitle:String="",val accent:String="neutral",val value:Int=0,val meta:Map<String,String> = emptyMap())
 data class NativeGameView(val sessionId:String,val gameId:String,val title:String,val phase:String,val turn:String="",val status:String="",val boardWidth:Int=0,val boardHeight:Int=0,val board:List<String> = emptyList(),val cards:List<NativeCardView> = emptyList(),val actions:List<NativeActionView> = emptyList(),val fields:Map<String,String> = emptyMap(),val log:List<String> = emptyList(),val revision:Long=0L,val finished:Boolean=false,val winner:String?=null)
