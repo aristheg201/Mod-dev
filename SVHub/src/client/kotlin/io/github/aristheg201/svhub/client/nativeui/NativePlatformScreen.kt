@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.client.nativeui
 
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.native.network.NativeIntentC2S
@@ -13,37 +14,336 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import kotlin.math.min
 
-class NativePlatformScreen(val module:String, private var state:JsonObject, private var notice:String) : SVHubScreen(Component.literal("SVHub Native")) {
-    private val gson=Gson();private var selectedCell:Int?=null;private var selectedSkin:String?=null
-    private var boardX=0;private var boardY=0;private var cellSize=24;private var boardW=0;private var boardH=0
-    fun applyState(newState:JsonObject,message:String){state=newState;notice=message;Minecraft.getInstance().setScreen(NativePlatformScreen(module,state,notice))}
-    override fun init(){when(module){"dashboard"->dashboardButtons();"gacha"->gachaButtons();"skins"->skinButtons();"arcade"->arcadeButtons();"game"->gameButtons();"companions"->companionButtons();"wallet"->navButtons()};button(width-82,10,70,20,"Đóng"){onClose()}}
-    private fun navButtons(){button(12,42,92,22,"Dashboard"){open("dashboard")};button(108,42,72,22,"Gacha"){open("gacha")};button(184,42,72,22,"Skins"){open("skins")};button(260,42,72,22,"Arcade"){open("arcade")};button(336,42,92,22,"Linh Thú"){open("companions")}}
-    private fun dashboardButtons(){navButtons();val items=listOf("gacha" to "GACHA","skins" to "SKINS","arcade" to "ARCADE","companions" to "LINH THÚ","wallet" to "WALLET");var x=30;items.forEach{(m,l)->button(x,105,110,32,l){open(m)};x+=118}}
-    private fun gachaButtons(){navButtons();button(28,90,150,28,"Hunter Roll • 1 Ticket"){intent("roll",json("banner" to "hunter"))};button(188,90,150,28,"Dragon Roll • 1 Ticket"){intent("roll",json("banner" to "beast"))};button(348,90,120,28,"Skies Wardrobe"){open("skins")}}
-    private fun skinButtons(){navButtons();val source=state.str("source","all");val page=state.num("page",0);val pages=state.num("pages",1);var x=24;listOf("all" to "Tất cả","dbz" to "DBZ","naruto" to "Naruto","pokelegends" to "PokeLegends").forEach{(id,l)->button(x,78,88,20,l){intent("source",json("source" to id,"page" to 0))};x+=92};button(24,height-34,70,20,"< Trang"){intent("page",json("source" to source,"page" to (page-1).coerceAtLeast(0)))};button(98,height-34,70,20,"Trang >"){intent("page",json("source" to source,"page" to (page+1).coerceAtMost(pages-1)))};button(176,height-34,116,20,"Tủ SkiesSkins"){intent("inventory",JsonObject())};selectedSkin?.let{id->button(298,height-34,90,20,"Mở shop"){intent("shop",json("skin" to id))};for(slot in 1..6)button(394+(slot-1)*38,height-34,34,20,"$slot"){intent("equip",json("skin" to id,"slot" to slot))}}
-        val skins=state.getAsJsonArray("skins")?:return;skins.take(18).forEachIndexed{i,e->val o=e.asJsonObject;val id=o.str("id");val name=o.str("name",id);val row=i/3;val col=i%3;button(24+col*200,110+row*35,190,28,(if(o.bool("owned"))"✓ " else "")+name.take(22)){selectedSkin=id;Minecraft.getInstance().setScreen(NativePlatformScreen(module,state,"Đã chọn $name • chọn party slot 1-6 phía dưới"))}}
+class NativePlatformScreen(
+    val module: String,
+    private var state: JsonObject,
+    private var notice: String
+) : SVHubScreen(Component.literal("SVHub Native")) {
+    private val gson = Gson()
+    private var selectedCell: Int? = null
+    private var selectedSkin: String? = null
+    private var boardX = 0
+    private var boardY = 0
+    private var cellSize = 24
+    private var boardW = 0
+    private var boardH = 0
+
+    fun applyState(newState: JsonObject, message: String) {
+        state = newState
+        notice = message
+        Minecraft.getInstance().setScreen(NativePlatformScreen(module, state, notice))
     }
-    private fun arcadeButtons(){navButtons();val games=state.getAsJsonArray("games")?:return;games.forEachIndexed{i,e->val o=e.asJsonObject;val id=o.str("id");val title=o.str("title",id);val y=82+i*34;button(24,y,180,27,title){intent("start",json("game" to id,"mode" to if(id=="tower_defense")"solo" else "bot"))};if(id!="tower_defense")button(210,y,72,27,"PvP"){intent("start",json("game" to id,"mode" to "pvp"))}};button(width-130,82,105,25,"Resume"){intent("resume",JsonObject())}}
-    private fun companionButtons(){navButtons();val a=state.getAsJsonArray("companions")?:return;a.forEachIndexed{i,e->val o=e.asJsonObject;val id=o.str("id");button(28+(i%4)*130,82+(i/4)*34,120,27,o.str("name",id)){intent("select",json("entity" to id))}}
-    private fun gameButtons(){button(12,12,82,22,"← Arcade"){intent("leave",JsonObject())};val view=state.getAsJsonObject("view")?:return;val actions=view.getAsJsonArray("actions");actions?.take(6)?.forEachIndexed{i,e->val o=e.asJsonObject;if(o.bool("enabled",true))button(width-126,50+i*27,112,22,o.str("label",o.str("id"))){gameAct(o.str("id"),emptyMap())}};val cards=view.getAsJsonArray("cards");cards?.take(10)?.forEachIndexed{i,e->val o=e.asJsonObject;button(18+i%5*112,height-64+(i/5)*26,106,22,o.str("label",o.str("id")).take(16)){val game=view.str("gameId");when(game){"uno"->gameAct("play",mapOf("index" to o.str("id"),"color" to "red"));"tft"->gameAct("buy",mapOf("index" to o.str("id").substringAfter(':')));else->gameAct("play",mapOf("index" to o.str("id")))}}}}
-    override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float){gui.fill(0,0,width,height,0xFF07101E.toInt());gui.fill(0,0,width,36,0xFF111F34.toInt());gui.drawString(font,"SV HUB • ${module.uppercase()}",14,14,0xFFEFF8FF.toInt(),false);if(notice.isNotBlank())gui.drawCenteredString(font,notice.take(90),width/2,48,0xFFFFD166.toInt());when(module){"dashboard"->renderDashboard(gui);"gacha"->renderGacha(gui);"skins"->renderSkins(gui);"arcade"->renderArcade(gui);"game"->renderGame(gui);"wallet"->renderWallet(gui);"companions"->gui.drawString(font,"Vanilla companions • server authoritative",24,72,0xFF9DCBFF.toInt(),false)};super.render(gui,mouseX,mouseY,partialTick)}
-    private fun renderDashboard(g:GuiGraphics){val w=state.getAsJsonObject("wallet");g.drawCenteredString(font,"SkiesSkins: ${if(state.bool("skinBackendReady"))"ONLINE" else "OFFLINE"} • Owned ${state.num("ownedSkins")}/${state.num("skinTotal")}",width/2,75,0xFF78E6C8.toInt());g.drawCenteredString(font,"Arcade ${(w?.num("arcade")?:0)} • Gacha Tickets ${(w?.num("ticket")?:0)}",width/2,89,0xFFEFF8FF.toInt());renderIcons(g)}
-    private fun renderIcons(g:GuiGraphics){val icons=listOf(Items.CHEST,Items.ARMOR_STAND,Items.DIAMOND_SWORD,Items.LEAD,Items.EMERALD);icons.forEachIndexed{i,item->g.renderItem(ItemStack(item),77+i*118,118)}}
-    private fun renderGacha(g:GuiGraphics){val w=state.getAsJsonObject("wallet");g.drawString(font,"Tickets: ${w?.num("ticket")?:0} • Backend: ${state.str("backend","SkiesSkins")}",28,70,0xFFEFF8FF.toInt(),false);state.getAsJsonObject("lastRoll")?.let{o->g.drawCenteredString(font,"WIN: ${o.str("winnerName")} [${o.str("rarity")} ]",width/2,132,0xFFFFD166.toInt());g.drawCenteredString(font,"${o.str("species")} • ${o.str("aspect")}",width/2,147,0xFF9DCBFF.toInt())}}
-    private fun renderSkins(g:GuiGraphics){g.drawString(font,"Backend: SkiesSkins • Owned ${state.num("ownedCount")} • Page ${state.num("page")+1}/${state.num("pages",1)}",24,65,0xFF9DE6D0.toInt(),false)}
-    private fun renderArcade(g:GuiGraphics){g.drawString(font,"Native server-authoritative games • Bot/PvP",24,65,0xFF9DCBFF.toInt(),false)}
-    private fun renderWallet(g:GuiGraphics){val w=state.getAsJsonObject("wallet");g.drawCenteredString(font,"Arcade Token: ${w?.num("arcade")?:0}",width/2,110,0xFFFFD166.toInt());g.drawCenteredString(font,"Gacha Ticket: ${w?.num("ticket")?:0}",width/2,128,0xFFEFF8FF.toInt());g.drawCenteredString(font,"Skin economy/ownership: SkiesSkins + BECONOMY",width/2,150,0xFF78E6C8.toInt())}
-    private fun renderGame(g:GuiGraphics){val v=state.getAsJsonObject("view")?:return;g.drawString(font,v.str("title","Game"),110,14,0xFFEFF8FF.toInt(),false);g.drawString(font,v.str("status"),18,42,0xFFFFD166.toInt(),false);boardW=v.num("boardWidth");boardH=v.num("boardHeight");if(boardW<=0||boardH<=0)return;cellSize=min(30,((height-145)/boardH).coerceAtLeast(14));boardX=18;boardY=62;val board=v.getAsJsonArray("board")?:return;for(r in 0 until boardH)for(c in 0 until boardW){val i=r*boardW+c;val x=boardX+c*cellSize;val y=boardY+r*cellSize;val sel=selectedCell==i;g.fill(x,y,x+cellSize-1,y+cellSize-1,if(sel)0xFF375E87.toInt() else if((r+c)%2==0)0xFF213651.toInt() else 0xFF172A40.toInt());val text=board.getOrNull(i)?.asString.orEmpty();if(text.isNotBlank())g.drawCenteredString(font,text.take(4),x+cellSize/2,y+cellSize/2-4,0xFFF4F7FF.toInt())}}
-    override fun mouseClicked(mx:Double,my:Double,button:Int):Boolean{if(module=="game"&&button==0&&boardW>0&&boardH>0&&mx>=boardX&&my>=boardY){val c=((mx-boardX)/cellSize).toInt();val r=((my-boardY)/cellSize).toInt();if(c in 0 until boardW&&r in 0 until boardH){val idx=r*boardW+c;val v=state.getAsJsonObject("view");val game=v?.str("gameId").orEmpty();if(game=="chess"||game=="xiangqi"){val first=selectedCell;if(first==null)selectedCell=idx else{val from=coord(game,first);val to=coord(game,idx);selectedCell=null;gameAct("move",mapOf("from" to from,"to" to to))}}else selectedCell=idx;return true}};return super.mouseClicked(mx,my,button)}
-    private fun coord(game:String,i:Int):String{val w=if(game=="xiangqi")9 else 8;val r=i/w;val c=i%w;return if(game=="xiangqi")"${('a'.code+c).toChar()}$r" else "${('a'.code+c).toChar()}${8-r}"}
-    private fun gameAct(a:String,args:Map<String,String>){val data=JsonObject();data.addProperty("gameAction",a);val o=JsonObject();args.forEach{o.addProperty(it.key,it.value)};data.add("args",o);intent("act",data)}
-    private fun open(m:String)=intent("open",json("module" to m),"dashboard")
-    private fun intent(action:String,data:JsonObject,targetModule:String=module){ClientPlayNetworking.send(NativeIntentC2S(targetModule,action,gson.toJson(data)))}
-    private fun json(vararg p:Pair<String,Any>)=JsonObject().apply{p.forEach{(k,v)->when(v){is Number->addProperty(k,v);is Boolean->addProperty(k,v);else->addProperty(k,v.toString())}}}
-    private fun button(x:Int,y:Int,w:Int,h:Int,label:String,run:()->Unit){addRenderableWidget(Button.builder(Component.literal(label)){run()}.bounds(x,y,w,h).build())}
-    private fun JsonObject.str(k:String,d:String=""):String=runCatching{get(k)?.asString?:d}.getOrDefault(d)
-    private fun JsonObject.num(k:String,d:Int=0):Int=runCatching{get(k)?.asInt?:d}.getOrDefault(d)
-    private fun JsonObject.bool(k:String,d:Boolean=false):Boolean=runCatching{get(k)?.asBoolean?:d}.getOrDefault(d)
-    private fun com.google.gson.JsonArray.getOrNull(i:Int)=if(i in 0 until size())get(i)else null
+
+    override fun init() {
+        when (module) {
+            "dashboard" -> dashboardButtons()
+            "gacha" -> gachaButtons()
+            "skins" -> skinButtons()
+            "arcade" -> arcadeButtons()
+            "game" -> gameButtons()
+            "companions" -> companionButtons()
+            "wallet" -> navButtons()
+        }
+        addButton(width - 82, 10, 70, 20, "Đóng") { onClose() }
+    }
+
+    private fun navButtons() {
+        addButton(12, 42, 92, 22, "Dashboard") { open("dashboard") }
+        addButton(108, 42, 72, 22, "Gacha") { open("gacha") }
+        addButton(184, 42, 72, 22, "Skins") { open("skins") }
+        addButton(260, 42, 72, 22, "Arcade") { open("arcade") }
+        addButton(336, 42, 92, 22, "Linh Thú") { open("companions") }
+    }
+
+    private fun dashboardButtons() {
+        navButtons()
+        val items = listOf(
+            "gacha" to "GACHA",
+            "skins" to "SKINS",
+            "arcade" to "ARCADE",
+            "companions" to "LINH THÚ",
+            "wallet" to "WALLET"
+        )
+        var x = 30
+        for ((target, label) in items) {
+            addButton(x, 105, 110, 32, label) { open(target) }
+            x += 118
+        }
+    }
+
+    private fun gachaButtons() {
+        navButtons()
+        addButton(28, 90, 150, 28, "Hunter Roll • 1 Ticket") {
+            intent("roll", json("banner" to "hunter"))
+        }
+        addButton(188, 90, 150, 28, "Dragon Roll • 1 Ticket") {
+            intent("roll", json("banner" to "beast"))
+        }
+        addButton(348, 90, 120, 28, "Skies Wardrobe") { open("skins") }
+    }
+
+    private fun skinButtons() {
+        navButtons()
+        val source = state.str("source", "all")
+        val page = state.num("page", 0)
+        val pages = state.num("pages", 1)
+
+        var x = 24
+        val tabs = listOf(
+            "all" to "Tất cả",
+            "dbz" to "DBZ",
+            "naruto" to "Naruto",
+            "pokelegends" to "PokeLegends"
+        )
+        for ((id, label) in tabs) {
+            addButton(x, 78, 88, 20, label) {
+                intent("source", json("source" to id, "page" to 0))
+            }
+            x += 92
+        }
+
+        addButton(24, height - 34, 70, 20, "< Trang") {
+            intent("page", json("source" to source, "page" to (page - 1).coerceAtLeast(0)))
+        }
+        addButton(98, height - 34, 70, 20, "Trang >") {
+            intent("page", json("source" to source, "page" to (page + 1).coerceAtMost(pages - 1)))
+        }
+        addButton(176, height - 34, 116, 20, "Tủ SkiesSkins") {
+            intent("inventory", JsonObject())
+        }
+
+        val selected = selectedSkin
+        if (selected != null) {
+            addButton(298, height - 34, 90, 20, "Mở shop") {
+                intent("shop", json("skin" to selected))
+            }
+            for (slot in 1..6) {
+                addButton(394 + (slot - 1) * 38, height - 34, 34, 20, slot.toString()) {
+                    intent("equip", json("skin" to selected, "slot" to slot))
+                }
+            }
+        }
+
+        val skins = state.getAsJsonArray("skins") ?: return
+        val max = minOf(18, skins.size())
+        for (i in 0 until max) {
+            val entry = skins[i].asJsonObject
+            val id = entry.str("id")
+            val name = entry.str("name", id)
+            val row = i / 3
+            val col = i % 3
+            val label = (if (entry.bool("owned")) "✓ " else "") + name.take(22)
+            addButton(24 + col * 200, 110 + row * 35, 190, 28, label) {
+                selectedSkin = id
+                Minecraft.getInstance().setScreen(
+                    NativePlatformScreen(module, state, "Đã chọn $name • chọn party slot 1-6 phía dưới")
+                )
+            }
+        }
+    }
+
+    private fun arcadeButtons() {
+        navButtons()
+        val games = state.getAsJsonArray("games") ?: return
+        for (i in 0 until games.size()) {
+            val game = games[i].asJsonObject
+            val id = game.str("id")
+            val title = game.str("title", id)
+            val y = 82 + i * 34
+            addButton(24, y, 180, 27, title) {
+                intent("start", json("game" to id, "mode" to if (id == "tower_defense") "solo" else "bot"))
+            }
+            if (id != "tower_defense") {
+                addButton(210, y, 72, 27, "PvP") {
+                    intent("start", json("game" to id, "mode" to "pvp"))
+                }
+            }
+        }
+        addButton(width - 130, 82, 105, 25, "Resume") { intent("resume", JsonObject()) }
+    }
+
+    private fun companionButtons() {
+        navButtons()
+        val companions = state.getAsJsonArray("companions") ?: return
+        for (i in 0 until companions.size()) {
+            val entry = companions[i].asJsonObject
+            val id = entry.str("id")
+            addButton(28 + (i % 4) * 130, 82 + (i / 4) * 34, 120, 27, entry.str("name", id)) {
+                intent("select", json("entity" to id))
+            }
+        }
+    }
+
+    private fun gameButtons() {
+        addButton(12, 12, 82, 22, "← Arcade") { intent("leave", JsonObject()) }
+        val view = state.getAsJsonObject("view") ?: return
+
+        val actions = view.getAsJsonArray("actions")
+        if (actions != null) {
+            val maxActions = minOf(6, actions.size())
+            for (i in 0 until maxActions) {
+                val action = actions[i].asJsonObject
+                if (!action.bool("enabled", true)) continue
+                addButton(width - 126, 50 + i * 27, 112, 22, action.str("label", action.str("id"))) {
+                    gameAct(action.str("id"), emptyMap())
+                }
+            }
+        }
+
+        val cards = view.getAsJsonArray("cards")
+        if (cards != null) {
+            val maxCards = minOf(10, cards.size())
+            for (i in 0 until maxCards) {
+                val card = cards[i].asJsonObject
+                addButton(18 + (i % 5) * 112, height - 64 + (i / 5) * 26, 106, 22, card.str("label", card.str("id")).take(16)) {
+                    when (view.str("gameId")) {
+                        "uno" -> gameAct("play", mapOf("index" to card.str("id"), "color" to "red"))
+                        "tft" -> gameAct("buy", mapOf("index" to card.str("id").substringAfter(':')))
+                        else -> gameAct("play", mapOf("index" to card.str("id")))
+                    }
+                }
+            }
+        }
+    }
+
+    override fun render(gui: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        gui.fill(0, 0, width, height, 0xFF07101E.toInt())
+        gui.fill(0, 0, width, 36, 0xFF111F34.toInt())
+        gui.drawString(font, "SV HUB • ${module.uppercase()}", 14, 14, 0xFFEFF8FF.toInt(), false)
+        if (notice.isNotBlank()) gui.drawCenteredString(font, notice.take(90), width / 2, 48, 0xFFFFD166.toInt())
+
+        when (module) {
+            "dashboard" -> renderDashboard(gui)
+            "gacha" -> renderGacha(gui)
+            "skins" -> renderSkins(gui)
+            "arcade" -> renderArcade(gui)
+            "game" -> renderGame(gui)
+            "wallet" -> renderWallet(gui)
+            "companions" -> gui.drawString(font, "Vanilla companions • server authoritative", 24, 72, 0xFF9DCBFF.toInt(), false)
+        }
+        super.render(gui, mouseX, mouseY, partialTick)
+    }
+
+    private fun renderDashboard(gui: GuiGraphics) {
+        val wallet = state.getAsJsonObject("wallet")
+        gui.drawCenteredString(font, "SkiesSkins: ${if (state.bool("skinBackendReady")) "ONLINE" else "OFFLINE"} • Owned ${state.num("ownedSkins")}/${state.num("skinTotal")}", width / 2, 75, 0xFF78E6C8.toInt())
+        gui.drawCenteredString(font, "Arcade ${wallet?.num("arcade") ?: 0} • Gacha Tickets ${wallet?.num("ticket") ?: 0}", width / 2, 89, 0xFFEFF8FF.toInt())
+        renderIcons(gui)
+    }
+
+    private fun renderIcons(gui: GuiGraphics) {
+        val icons = listOf(Items.CHEST, Items.ARMOR_STAND, Items.DIAMOND_SWORD, Items.LEAD, Items.EMERALD)
+        for (i in icons.indices) gui.renderItem(ItemStack(icons[i]), 77 + i * 118, 118)
+    }
+
+    private fun renderGacha(gui: GuiGraphics) {
+        val wallet = state.getAsJsonObject("wallet")
+        gui.drawString(font, "Tickets: ${wallet?.num("ticket") ?: 0} • Backend: ${state.str("backend", "SkiesSkins")}", 28, 70, 0xFFEFF8FF.toInt(), false)
+        val roll = state.getAsJsonObject("lastRoll") ?: return
+        gui.drawCenteredString(font, "WIN: ${roll.str("winnerName")} [${roll.str("rarity")} ]", width / 2, 132, 0xFFFFD166.toInt())
+        gui.drawCenteredString(font, "${roll.str("species")} • ${roll.str("aspect")}", width / 2, 147, 0xFF9DCBFF.toInt())
+    }
+
+    private fun renderSkins(gui: GuiGraphics) {
+        gui.drawString(font, "Backend: SkiesSkins • Owned ${state.num("ownedCount")} • Page ${state.num("page") + 1}/${state.num("pages", 1)}", 24, 65, 0xFF9DE6D0.toInt(), false)
+    }
+
+    private fun renderArcade(gui: GuiGraphics) {
+        gui.drawString(font, "Native server-authoritative games • Bot/PvP", 24, 65, 0xFF9DCBFF.toInt(), false)
+    }
+
+    private fun renderWallet(gui: GuiGraphics) {
+        val wallet = state.getAsJsonObject("wallet")
+        gui.drawCenteredString(font, "Arcade Token: ${wallet?.num("arcade") ?: 0}", width / 2, 110, 0xFFFFD166.toInt())
+        gui.drawCenteredString(font, "Gacha Ticket: ${wallet?.num("ticket") ?: 0}", width / 2, 128, 0xFFEFF8FF.toInt())
+        gui.drawCenteredString(font, "Skin economy/ownership: SkiesSkins + BECONOMY", width / 2, 150, 0xFF78E6C8.toInt())
+    }
+
+    private fun renderGame(gui: GuiGraphics) {
+        val view = state.getAsJsonObject("view") ?: return
+        gui.drawString(font, view.str("title", "Game"), 110, 14, 0xFFEFF8FF.toInt(), false)
+        gui.drawString(font, view.str("status"), 18, 42, 0xFFFFD166.toInt(), false)
+        boardW = view.num("boardWidth")
+        boardH = view.num("boardHeight")
+        if (boardW <= 0 || boardH <= 0) return
+        cellSize = min(30, ((height - 145) / boardH).coerceAtLeast(14))
+        boardX = 18
+        boardY = 62
+        val board = view.getAsJsonArray("board") ?: return
+        for (r in 0 until boardH) {
+            for (c in 0 until boardW) {
+                val index = r * boardW + c
+                val x = boardX + c * cellSize
+                val y = boardY + r * cellSize
+                val selected = selectedCell == index
+                gui.fill(x, y, x + cellSize - 1, y + cellSize - 1, if (selected) 0xFF375E87.toInt() else if ((r + c) % 2 == 0) 0xFF213651.toInt() else 0xFF172A40.toInt())
+                val text = board.elementOrNull(index)?.asString.orEmpty()
+                if (text.isNotBlank()) gui.drawCenteredString(font, text.take(4), x + cellSize / 2, y + cellSize / 2 - 4, 0xFFF4F7FF.toInt())
+            }
+        }
+    }
+
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (module == "game" && button == 0 && boardW > 0 && boardH > 0 && mouseX >= boardX && mouseY >= boardY) {
+            val c = ((mouseX - boardX) / cellSize).toInt()
+            val r = ((mouseY - boardY) / cellSize).toInt()
+            if (c in 0 until boardW && r in 0 until boardH) {
+                val index = r * boardW + c
+                val game = state.getAsJsonObject("view")?.str("gameId").orEmpty()
+                if (game == "chess" || game == "xiangqi") {
+                    val first = selectedCell
+                    if (first == null) selectedCell = index
+                    else {
+                        val from = coord(game, first)
+                        val to = coord(game, index)
+                        selectedCell = null
+                        gameAct("move", mapOf("from" to from, "to" to to))
+                    }
+                } else selectedCell = index
+                return true
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button)
+    }
+
+    private fun coord(game: String, index: Int): String {
+        val w = if (game == "xiangqi") 9 else 8
+        val r = index / w
+        val c = index % w
+        return if (game == "xiangqi") "${('a'.code + c).toChar()}$r" else "${('a'.code + c).toChar()}${8 - r}"
+    }
+
+    private fun gameAct(action: String, args: Map<String, String>) {
+        val data = JsonObject()
+        data.addProperty("gameAction", action)
+        val obj = JsonObject()
+        for ((key, value) in args) obj.addProperty(key, value)
+        data.add("args", obj)
+        intent("act", data)
+    }
+
+    private fun open(target: String) = intent("open", json("module" to target), "dashboard")
+
+    private fun intent(action: String, data: JsonObject, targetModule: String = module) {
+        ClientPlayNetworking.send(NativeIntentC2S(targetModule, action, gson.toJson(data)))
+    }
+
+    private fun json(vararg pairs: Pair<String, Any>): JsonObject = JsonObject().apply {
+        for ((key, value) in pairs) {
+            when (value) {
+                is Number -> addProperty(key, value)
+                is Boolean -> addProperty(key, value)
+                else -> addProperty(key, value.toString())
+            }
+        }
+    }
+
+    private fun addButton(x: Int, y: Int, w: Int, h: Int, label: String, action: () -> Unit) {
+        addRenderableWidget(Button.builder(Component.literal(label)) { action() }.bounds(x, y, w, h).build())
+    }
+
+    private fun JsonObject.str(key: String, fallback: String = ""): String = runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.num(key: String, fallback: Int = 0): Int = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.bool(key: String, fallback: Boolean = false): Boolean = runCatching { get(key)?.asBoolean ?: fallback }.getOrDefault(fallback)
+    private fun JsonArray.elementOrNull(index: Int) = if (index in 0 until size()) get(index) else null
 }
