@@ -72,6 +72,7 @@ object SVHubNetwork {
                 if (
                     payload.protocol == HUB_PROTOCOL_VERSION &&
                     SVHubRuntime.store.isReady() &&
+                    SVHubPermissions.has(player, SVHubPermissions.OPEN, 0) &&
                     payload.cachedRevision != SVHubRuntime.store.snapshot().revision &&
                     allowSnapshotRequest(player, false)
                 ) {
@@ -87,6 +88,10 @@ object SVHubNetwork {
         ServerPlayNetworking.registerGlobalReceiver(HubRequestSnapshotC2S.TYPE) { payload, context ->
             context.server().execute {
                 val player = context.player()
+                // Resynchronize the client's cached readiness/permission state on every
+                // explicit snapshot request. This lets the H key recover if a prior
+                // Hello packet became stale instead of leaving open attempts silent.
+                sendHello(player)
                 if (!SVHubRuntime.store.isReady()) {
                     sendEditorResult(player, false, SVHubRuntime.store.snapshot().revision, "SVHub đang tải dữ liệu, hãy thử lại ngay sau đó.")
                     return@execute
@@ -211,8 +216,10 @@ object SVHubNetwork {
     private fun allowSnapshotRequest(player: ServerPlayer, editor: Boolean): Boolean {
         val now = System.currentTimeMillis()
         val key = SnapshotRateKey(player.uuid, editor)
-        val previous = snapshotRequests.put(key, now)
-        return previous == null || now - previous >= SNAPSHOT_REQUEST_COOLDOWN_MS
+        val previous = snapshotRequests[key]
+        if (previous != null && now - previous < SNAPSHOT_REQUEST_COOLDOWN_MS) return false
+        snapshotRequests[key] = now
+        return true
     }
 
     private fun receiveEditorChunk(player: ServerPlayer, payload: HubEditorChunkC2S) {
