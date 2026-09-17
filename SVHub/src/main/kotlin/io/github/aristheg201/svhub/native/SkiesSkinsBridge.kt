@@ -50,10 +50,10 @@ object SkiesSkinsBridge {
 
     fun openShop(player: ServerPlayer, source: String): Boolean {
         val shop = if (source == "dbz") "svhub-dbz-01" else "svhub-hunter-01"
-        val result = runCatching {
+        return runCatching {
             player.server.commands.performPrefixedCommand(player.server.createCommandSourceStack(), "skins shop $shop ${player.gameProfile.name}")
-        }.getOrDefault(0)
-        return result > 0
+            true
+        }.getOrDefault(false)
     }
 
     fun apply(player: ServerPlayer, skinId: String, slot: Int): ApplyResult {
