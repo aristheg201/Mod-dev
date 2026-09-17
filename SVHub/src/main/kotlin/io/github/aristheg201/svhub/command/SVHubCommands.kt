@@ -15,6 +15,10 @@ object SVHubCommands {
             dispatcher.register(
                 Commands.literal("svhub")
                     .requires { SVHubPermissions.check(it, SVHubPermissions.OPEN, 0) }
+                    .executes { ctx ->
+                        SVHubNetwork.open(ctx.source.playerOrException, "home", false)
+                        1
+                    }
                     .then(
                         Commands.literal("open")
                             .executes { ctx ->
