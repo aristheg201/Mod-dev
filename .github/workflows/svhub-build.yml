@@ -60,17 +60,22 @@ jobs:
 
           MAIN_CLASS='io.github.aristheg201.svhub.SVHubEntrypoint'
           CLIENT_CLASS='io.github.aristheg201.svhub.client.SVHubClientEntrypoint'
+          NATIVE_CLIENT_CLASS='io.github.aristheg201.svhub.client.nativeui.NativePlatformClientEntrypoint'
           MAIN_PATH='io/github/aristheg201/svhub/SVHubEntrypoint.class'
           CLIENT_PATH='io/github/aristheg201/svhub/client/SVHubClientEntrypoint.class'
+          NATIVE_CLIENT_PATH='io/github/aristheg201/svhub/client/nativeui/NativePlatformClientEntrypoint.class'
 
           jar tf "$REMAPPED_JAR" > /tmp/svhub-final-jar.txt
           grep -Fx "$MAIN_PATH" /tmp/svhub-final-jar.txt
           grep -Fx "$CLIENT_PATH" /tmp/svhub-final-jar.txt
+          grep -Fx "$NATIVE_CLIENT_PATH" /tmp/svhub-final-jar.txt
 
           javap -classpath "$REMAPPED_JAR" -public "$MAIN_CLASS" | tee /tmp/svhub-main-entrypoint.txt
           javap -classpath "$REMAPPED_JAR" -public "$CLIENT_CLASS" | tee /tmp/svhub-client-entrypoint.txt
+          javap -classpath "$REMAPPED_JAR" -public "$NATIVE_CLIENT_CLASS" | tee /tmp/svhub-native-client-entrypoint.txt
           grep -F "public ${MAIN_CLASS}();" /tmp/svhub-main-entrypoint.txt
           grep -F "public ${CLIENT_CLASS}();" /tmp/svhub-client-entrypoint.txt
+          grep -F "public ${NATIVE_CLIENT_CLASS}();" /tmp/svhub-native-client-entrypoint.txt
 
           unzip -p "$REMAPPED_JAR" fabric.mod.json > /tmp/svhub-fabric.mod.json
           python3 - <<'PY'
@@ -79,11 +84,14 @@ jobs:
 
           data = json.loads(Path('/tmp/svhub-fabric.mod.json').read_text())
           assert data['entrypoints']['main'] == ['io.github.aristheg201.svhub.SVHubEntrypoint'], data['entrypoints']['main']
-          assert data['entrypoints']['client'] == ['io.github.aristheg201.svhub.client.SVHubClientEntrypoint'], data['entrypoints']['client']
+          assert data['entrypoints']['client'] == [
+              'io.github.aristheg201.svhub.client.SVHubClientEntrypoint',
+              'io.github.aristheg201.svhub.client.nativeui.NativePlatformClientEntrypoint',
+          ], data['entrypoints']['client']
           print('Final Fabric entrypoint manifest + class + public constructor checks passed')
           PY
 
-      - name: Verify bundled Placeholder API and MiniMessage runtime
+      - name: Verify bundled Placeholder API and Kyori isolation
         shell: bash
         run: |
           set -euo pipefail
@@ -92,12 +100,17 @@ jobs:
           jar tf "$JAR" > /tmp/svhub-runtime-contents.txt
 
           grep -E '^META-INF/jars/placeholder-api-.*\.jar$' /tmp/svhub-runtime-contents.txt
-          grep -E '^META-INF/jars/adventure-text-minimessage-.*\.jar$' /tmp/svhub-runtime-contents.txt
-          grep -E '^META-INF/jars/adventure-api-.*\.jar$' /tmp/svhub-runtime-contents.txt
-          grep -E '^META-INF/jars/adventure-key-.*\.jar$' /tmp/svhub-runtime-contents.txt
-          grep -E '^META-INF/jars/examination-api-.*\.jar$' /tmp/svhub-runtime-contents.txt
-          grep -E '^META-INF/jars/examination-string-.*\.jar$' /tmp/svhub-runtime-contents.txt
-          echo 'Bundled Placeholder API + MiniMessage runtime jars verified'
+          if grep -Eq '^META-INF/jars/(adventure|examination)[^/]*\.jar$' /tmp/svhub-runtime-contents.txt; then
+            echo 'SVHub must not bundle Adventure/Examination runtime jars; this can poison the shared server classpath.' >&2
+            grep -E '^META-INF/jars/(adventure|examination)[^/]*\.jar$' /tmp/svhub-runtime-contents.txt >&2
+            exit 1
+          fi
+          if grep -q '^net/kyori/' /tmp/svhub-runtime-contents.txt; then
+            echo 'SVHub must not ship top-level net.kyori.* classes.' >&2
+            grep '^net/kyori/' /tmp/svhub-runtime-contents.txt | head -n 40 >&2
+            exit 1
+          fi
+          echo 'Placeholder API bundled; SVHub Kyori runtime isolation verified'
 
       - name: Inspect resolved Cobblemon model API
         shell: bash

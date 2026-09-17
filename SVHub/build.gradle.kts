@@ -50,16 +50,11 @@ dependencies {
     // forcing a separate dependency download on clients or servers.
     modImplementation(include("eu.pb4:placeholder-api:${providers.gradleProperty("placeholder_api_version").get()}")!!)
 
-    // MiniMessage is used only for safe presentation formatting. SVHub deliberately
-    // exposes color/decoration/gradient/rainbow/reset/newline tags, not MiniMessage
-    // click/run-command tags; gameplay actions still travel through authoritative IDs.
-    val adventureVersion = providers.gradleProperty("adventure_version").get()
-    val examinationVersion = providers.gradleProperty("examination_version").get()
-    implementation(include("net.kyori:adventure-text-minimessage:$adventureVersion")!!)
-    implementation(include("net.kyori:adventure-api:$adventureVersion")!!)
-    implementation(include("net.kyori:adventure-key:$adventureVersion")!!)
-    implementation(include("net.kyori:examination-api:$examinationVersion")!!)
-    implementation(include("net.kyori:examination-string:$examinationVersion")!!)
+    // Deliberately do NOT JIJ any net.kyori Adventure/Examination runtime.
+    // Multiple server mods commonly provide different Adventure platform versions;
+    // bundling another global net.kyori.* copy here can poison the shared classpath
+    // and break unrelated boss bars (for example NovaRaids). SVHub's rich client
+    // text is parsed directly into vanilla Minecraft Components instead.
 
     testImplementation(kotlin("test"))
 }
