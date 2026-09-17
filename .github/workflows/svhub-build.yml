@@ -50,10 +50,12 @@ jobs:
           test -d src/client/kotlin
 
       - name: Run static UI and localization QA
-        run: node tools/static-qa.mjs
+        run: |
+          node tools/static-qa.mjs
+          python3 tools/verify-tft-bundle.py
 
       - name: Compile, test and remap
-        run: gradle --no-daemon --stacktrace clean test remapJar sourcesJar
+        run: gradle --no-daemon --stacktrace clean test remapJar sourcesJar verifyPackagedTft
 
       - name: Verify final Fabric entrypoints
         shell: bash
@@ -157,6 +159,7 @@ jobs:
           ls -lh build/libs
           JAR="$(find build/libs -maxdepth 1 -type f -name 'SVHub-fabric-*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)"
           test -n "$JAR"
+          python3 tools/verify-tft-bundle.py "$JAR"
           unzip -t "$JAR"
           unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
           sha256sum "$JAR" | tee build/libs/SHA256.txt
@@ -166,7 +169,8 @@ jobs:
         with:
           name: SVHub-Loom-remapped
           path: |
-            SVHub/build/libs/*.jar
+            SVHub/build/libs/SVHub-fabric-*.jar
             SVHub/build/libs/SHA256.txt
             SVHub/build/libs/fabric.mod.built.json
+            SVHub/build/test-results/verifyPackagedTft/*.xml
           if-no-files-found: error

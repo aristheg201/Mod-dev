@@ -112,6 +112,10 @@ data class TftPveEnemyDefinition(
 
 object TftDefinitionValidator {
     fun validate(set: TftSetDefinition): TftSetDefinition {
+        require(set.schema == 1) { "Unsupported TFT schema ${set.schema}" }
+        require(set.name.isNotBlank()) { "TFT set name is empty" }
+        require(set.maxLevel in 2..10) { "TFT maxLevel must be between 2 and 10" }
+        require(set.planningSeconds in 1..600 && set.combatSeconds in 1..600 && set.postCombatSeconds in 1..60) { "Invalid TFT phase durations" }
         require(set.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid TFT set id ${set.id}" }
         require(set.units.size >= 20) { "TFT set ${set.id} requires at least 20 units" }
         require(set.units.map { it.id }.toSet().size == set.units.size) { "Duplicate TFT unit id" }
@@ -127,9 +131,14 @@ object TftDefinitionValidator {
             val unknown = unit.traits.filterNot(traitIds::contains)
             require(unknown.isEmpty()) { "TFT unit ${unit.id} references unknown traits $unknown" }
         }
+        require(set.shopOdds.map { it.level }.toSet().size == set.shopOdds.size) { "Duplicate TFT shop odds level" }
+        for (level in 2..set.maxLevel) {
+            require(set.shopOdds.any { it.level == level }) { "Missing TFT shop odds for level $level" }
+            if (level < set.maxLevel) require((set.xpToNextByLevel[level.toString()] ?: 0) > 0) { "Missing TFT XP requirement for level $level" }
+        }
         require(set.shopOdds.isNotEmpty()) { "TFT set has no shop odds" }
         set.shopOdds.forEach { row ->
-            require(row.odds.size == 5 && row.odds.sum() == 100) { "Shop odds for level ${row.level} must contain 5 entries summing to 100" }
+            require(row.odds.size == 5 && row.odds.all { it in 0..100 } && row.odds.sum() == 100) { "Shop odds for level ${row.level} must contain 5 entries summing to 100" }
         }
         for (cost in 1..5) require((set.poolSizeByCost[cost.toString()] ?: 0) > 0) { "Missing pool size for cost $cost" }
         set.traits.forEach { trait ->
@@ -144,6 +153,19 @@ object TftDefinitionValidator {
         set.fullItems.forEach { item ->
             require(item.components.size == 2) { "Full item ${item.id} must have exactly two components" }
             require(item.components.all(componentIds::contains)) { "Full item ${item.id} references unknown components" }
+        }
+        require(set.components.isNotEmpty()) { "TFT set has no item components" }
+        require(set.augments.map { it.id }.toSet().size == set.augments.size) { "Duplicate TFT augment id" }
+        require(set.pveRounds.map { it.round }.toSet().size == set.pveRounds.size) { "Duplicate TFT PvE round" }
+        val unitIds = set.units.map { it.id }.toSet()
+        set.pveRounds.forEach { round ->
+            require(round.enemies.isNotEmpty()) { "PvE round ${round.round} has no enemies" }
+            require(round.componentDrops >= 0) { "PvE round ${round.round} has negative drops" }
+            require(round.enemies.map { it.slot }.toSet().size == round.enemies.size) { "PvE round ${round.round} overlaps formation slots" }
+            round.enemies.forEach { enemy ->
+                require(enemy.unit in unitIds) { "PvE round ${round.round} references unknown unit ${enemy.unit}" }
+                require(enemy.star in 1..3 && enemy.slot in 0..27) { "PvE round ${round.round} has invalid star/slot" }
+            }
         }
         return set
     }

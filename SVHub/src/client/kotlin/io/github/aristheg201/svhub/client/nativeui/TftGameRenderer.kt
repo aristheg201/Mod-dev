@@ -1,15 +1,16 @@
 package io.github.aristheg201.svhub.client.nativeui
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
-import io.github.aristheg201.svhub.ui.TftLayoutResolver
 import io.github.aristheg201.svhub.ui.UiDensity
 import io.github.aristheg201.svhub.ui.UiRect
+import io.github.aristheg201.svhub.ui.TftLayoutResolver
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.resources.language.I18n
 import net.minecraft.resources.ResourceLocation
-import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import kotlin.math.max
 import kotlin.math.min
 
@@ -17,74 +18,454 @@ class TftUiState {
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
-    fun clearUnit(){ selectedOrigin=null; selectedIndex=null }
+    fun clearUnit() { selectedOrigin = null; selectedIndex = null }
 }
 
 object TftGameRenderer {
-    private data class UnitToken(val instanceId:String,val unitId:String,val species:String,val star:Int,val hp:Int,val maxHp:Int,val mana:Int,val maxMana:Int,val team:Int,val aspects:Set<String>,val items:List<String>)
-    private data class BenchToken(val index:Int,val instanceId:String,val unitId:String,val species:String,val star:Int,val aspects:Set<String>,val items:List<String>)
-    private val bg=0xFF091215.toInt();private val panel=0xFF101B1F.toInt();private val panel2=0xFF18272B.toInt();private val line=0xFF2A3B3F.toInt();private val text=0xFFF2F6F4.toInt();private val muted=0xFF91A6A1.toInt();private val accent=0xFF4CC7B2.toInt();private val gold=0xFFE2BE62.toInt();private val danger=0xFFE36C5C.toInt()
+    private data class UnitToken(
+        val instanceId: String,
+        val unitId: String,
+        val species: String,
+        val star: Int,
+        val hp: Int,
+        val maxHp: Int,
+        val mana: Int,
+        val maxMana: Int,
+        val team: Int,
+        val aspects: Set<String>,
+        val items: List<String>
+    )
+    private data class BenchToken(val index: Int, val instanceId: String, val unitId: String, val species: String, val star: Int, val aspects: Set<String>, val items: List<String>)
+    private data class PlayerLine(val id: String, val name: String, val hp: Int, val level: Int, val placement: Int, val eliminated: Boolean)
+    private data class TraitLine(val id: String, val name: String, val count: Int, val active: Int, val next: Int, val description: String)
+    private data class AugmentChoice(val id: String, val name: String, val description: String)
+    private data class DraftOffer(val index: Int, val unitId: String, val species: String, val item: String, val takenBy: String, val unlocked: Boolean, val cost: Int)
 
-    fun render(gui:GuiGraphics,font:Font,area:UiRect,density:UiDensity,view:JsonObject,mouseX:Int,mouseY:Int,ui:TftUiState,hit:(UiRect,String,()->Unit)->Unit,action:(String,Map<String,String>)->Unit){
-        gui.fill(area.x,area.y,area.right,area.bottom,bg)
-        val fields=view.getAsJsonObject("fields")?:JsonObject();val phase=view.str("phase");val canEdit=fields.str("canEditBoard")=="true"
-        val layout=TftLayoutResolver.resolve(area,density)
-        renderHud(gui,font,layout.hud,fields,phase)
-        layout.traits?.let{renderTraits(gui,font,it,fields.str("traits"))}
-        layout.players?.let{renderPlayers(gui,font,it,fields.str("players"))}
-        val board=view.getAsJsonArray("board");val units=if(board==null)emptyMap() else (0 until board.size()).mapNotNull{i->parseUnit(board[i].asString)?.let{i to it}}.toMap()
-        renderBoard(gui,font,layout.board,units,phase,canEdit,ui,hit,action)
-        renderFooter(gui,font,layout.footer,view,fields,canEdit,ui,hit,action)
-        if(density==UiDensity.COMPACT)renderCompactInfo(gui,font,area,fields)
-        renderAugments(gui,font,layout.board,fields.str("augmentChoices"),action,hit)
-        if(phase=="draft")renderDraft(gui,font,layout.board,fields.str("draft"),action,hit)
+    data class Hooks(
+        val control: (UiRect, String, Boolean, () -> Unit) -> Unit,
+        val hit: (UiRect, () -> Unit) -> Unit,
+        val action: (String, Map<String, String>) -> Unit,
+        val back: () -> Unit
+    )
+
+    private val bg = 0xFF091215.toInt()
+    private val panel = 0xFF101B1F.toInt()
+    private val panel2 = 0xFF18272B.toInt()
+    private val line = 0xFF2A3B3F.toInt()
+    private val text = 0xFFF2F6F4.toInt()
+    private val muted = 0xFF91A6A1.toInt()
+    private val accent = 0xFF4CC7B2.toInt()
+    private val gold = 0xFFE2BE62.toInt()
+    private val danger = 0xFFE36C5C.toInt()
+    private val enemy = 0xFFB95E67.toInt()
+
+    fun render(
+        gui: GuiGraphics,
+        font: Font,
+        area: UiRect,
+        density: UiDensity,
+        view: JsonObject,
+        ui: TftUiState,
+        mouseX: Int,
+        mouseY: Int,
+        hooks: Hooks
+    ) {
+        gui.fill(area.x, area.y, area.right, area.bottom, bg)
+        val fields = view.getAsJsonObject("fields") ?: JsonObject()
+        val phase = view.str("phase")
+        val canEdit = fields.str("canEditBoard") == "true"
+        val board = view.getAsJsonArray("board")
+        val boardTokens = if (board == null) emptyMap() else (0 until board.size()).mapNotNull { index ->
+            parseUnit(board[index].asString)?.let { index to it }
+        }.toMap()
+        val bench = parseBench(fields.str("bench"))
+        val players = parsePlayers(fields.str("players"))
+        val traits = parseTraits(fields.str("traits"))
+        val itemBench = fields.str("itemBench").split(',').filter(String::isNotBlank)
+        val augments = parseAugments(fields.str("augmentChoices"))
+        val draft = parseDraft(fields.str("draft"))
+
+        val resolved = TftLayoutResolver.resolve(area, density)
+
+        renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
+        resolved.traits?.let { renderTraits(gui, font, it, traits) }
+        resolved.players?.let { renderPlayers(gui, font, it, players) }
+        renderBoard(gui, font, resolved.board, boardTokens, phase, canEdit, ui, hooks)
+        renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks)
+
+        if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players)
+        if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
+        if (phase == "draft" && draft.isNotEmpty()) renderDraftOverlay(gui, font, resolved.board, draft, hooks)
     }
 
-    private fun renderHud(gui:GuiGraphics,font:Font,r:UiRect,f:JsonObject,phase:String){
-        gui.fill(r.x,r.y,r.right,r.bottom,panel);gui.fill(r.x,r.bottom-1,r.right,r.bottom,line)
-        val title="${f.str("round","1-1")}  •  Lv.${f.int("level",2)}  ${f.int("xp")}/${f.int("xpNext")} XP  •  ${f.int("gold")}g  •  HP ${f.int("hp",100)}"
-        gui.drawString(font,fit(font,title,r.width-120),r.x+8,r.y+7,text,true)
-        val timer=((f.long("phaseEndsAt")-System.currentTimeMillis()).coerceAtLeast(0L)+999)/1000
-        gui.drawString(font,"${phase.uppercase()} ${if(timer>0)"${timer}s" else ""}",r.right-104,r.y+7,if(phase=="combat")danger else gold,true)
-        if(r.height>24)gui.drawString(font,"Interest ${f.int("lastInterest")}  •  Streak ${f.int("streak")}",r.x+8,r.y+19,muted,false)
+    private fun renderHud(gui: GuiGraphics, font: Font, area: UiRect, fields: JsonObject, phase: String, status: String, density: UiDensity, hooks: Hooks, mouseX: Int, mouseY: Int) {
+        val h = area.height.coerceAtLeast(18)
+        gui.fill(area.x, area.y, area.right, area.bottom, panel)
+        hooks.control(UiRect(area.x + 4, area.y + 4, 48, h - 8), "‹", true, hooks.back)
+        val round = fields.str("round", "1-1")
+        val level = fields.int("level", 2)
+        val xp = fields.int("xp")
+        val xpNext = fields.int("xpNext")
+        val hp = fields.int("hp", 100)
+        val goldValue = fields.int("gold")
+        val streak = fields.int("streak")
+        val timer = ((fields.long("phaseEndsAt") - System.currentTimeMillis()).coerceAtLeast(0L) + 999L) / 1000L
+        val title = if (density == UiDensity.COMPACT) "$round • Lv.$level • ${goldValue}g • HP $hp" else "Pokémon TFT  •  $round  •  Lv.$level $xp/$xpNext XP  •  ${goldValue}g  •  HP $hp"
+        gui.drawString(font, fit(font, title, area.width - 118), area.x + 58, area.y + 7, text, true)
+        if (density != UiDensity.COMPACT) {
+            val economy = "${tr("gui.svhub.tft.interest")}: ${fields.int("lastInterest")}  •  ${tr("gui.svhub.tft.streak")}: ${if (streak >= 0) "+$streak" else streak}"
+            gui.drawString(font, fit(font, economy, area.width - 180), area.x + 58, area.y + 19, muted, false)
+        }
+        val phaseText = when (phase) { "planning" -> tr("gui.svhub.tft.planning"); "combat" -> tr("gui.svhub.tft.combat"); "draft" -> tr("gui.svhub.tft.draft"); "post" -> tr("gui.svhub.tft.results"); else -> phase }
+        gui.drawString(font, "$phaseText ${if (timer > 0) "${timer}s" else ""}", area.right - 58, area.y + 7, if (phase == "combat") danger else gold, true)
+        if (status.isNotBlank() && density == UiDensity.WIDE) gui.drawString(font, fit(font, status, 250), area.right - 305, area.y + 19, muted, false)
     }
 
-    private fun renderTraits(gui:GuiGraphics,font:Font,r:UiRect,raw:String){
-        gui.fill(r.x,r.y,r.right,r.bottom,panel);gui.drawString(font,"TRAITS",r.x+7,r.y+7,muted,true);var y=r.y+22
-        raw.split(';').filter(String::isNotBlank).take(10).forEach{v->val p=v.split('~');if(p.size>=5){val count=p[2].toIntOrNull()?:0;val active=p[3].toIntOrNull()?:0;val next=p[4].toIntOrNull()?:0;gui.fill(r.x+5,y,r.right-5,y+23,if(active>0)0xFF18312D.toInt() else panel2);gui.fill(r.x+5,y,r.x+8,y+23,if(active>0)accent else muted);gui.drawString(font,fit(font,p.getOrElse(1){p[0]},r.width-44),r.x+12,y+5,text,active>0);gui.drawString(font,count.toString(),r.right-21,y+5,if(active>0)accent else muted,true);gui.drawString(font,if(next>0)"$active/$next" else "$active+",r.x+12,y+14,muted,false);y+=27;if(y+23>r.bottom)return}}
+    private fun renderTraits(gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>) {
+        gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
+        gui.drawString(font, tr("gui.svhub.tft.traits"), rect.x + 7, rect.y + 7, muted, true)
+        var y = rect.y + 23
+        traits.take(10).forEach { trait ->
+            val active = trait.active > 0
+            val color = if (active) accent else muted
+            gui.fill(rect.x + 5, y, rect.right - 5, y + 25, if (active) 0xFF19312E.toInt() else panel2)
+            gui.fill(rect.x + 5, y, rect.x + 8, y + 25, color)
+            gui.drawString(font, fit(font, trait.name, rect.width - 43), rect.x + 12, y + 5, text, active)
+            gui.drawString(font, trait.count.toString(), rect.right - 22, y + 5, color, true)
+            val threshold = when { trait.next > 0 -> "${trait.active}/${trait.next}"; trait.active > 0 -> "${trait.active}+"; else -> "0" }
+            gui.drawString(font, threshold, rect.x + 12, y + 15, muted, false)
+            y += 29
+            if (y + 25 > rect.bottom) return
+        }
     }
 
-    private fun renderPlayers(gui:GuiGraphics,font:Font,r:UiRect,raw:String){
-        gui.fill(r.x,r.y,r.right,r.bottom,panel);gui.drawString(font,"PLAYERS",r.x+7,r.y+7,muted,true);var y=r.y+22
-        raw.split(';').filter(String::isNotBlank).take(8).forEachIndexed{i,v->val p=v.split('~');if(p.size>=6){val hp=p[2].toIntOrNull()?:0;val place=p[4].toIntOrNull()?:0;val dead=p[5]=="1";gui.fill(r.x+5,y,r.right-5,y+21,panel2);gui.drawString(font,if(place>0)"#$place" else "${i+1}",r.x+8,y+5,if(dead)muted else gold,true);gui.drawString(font,fit(font,p[1],r.width-55),r.x+30,y+5,if(dead)muted else text,false);gui.drawString(font,hp.coerceAtLeast(0).toString(),r.right-23,y+5,if(hp<30)danger else text,true);y+=24;if(y+20>r.bottom)return}}
+    private fun renderPlayers(gui: GuiGraphics, font: Font, rect: UiRect, players: List<PlayerLine>) {
+        gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
+        gui.drawString(font, tr("gui.svhub.tft.players"), rect.x + 7, rect.y + 7, muted, true)
+        var y = rect.y + 23
+        players.take(8).forEachIndexed { index, p ->
+            val color = if (p.eliminated) 0xFF586663.toInt() else if (p.hp <= 30) danger else text
+            gui.fill(rect.x + 5, y, rect.right - 5, y + 22, panel2)
+            gui.drawString(font, if (p.placement > 0) "#${p.placement}" else "${index + 1}", rect.x + 9, y + 5, if (p.eliminated) muted else gold, true)
+            gui.drawString(font, fit(font, p.name, rect.width - 55), rect.x + 30, y + 5, color, false)
+            gui.drawString(font, p.hp.coerceAtLeast(0).toString(), rect.right - 24, y + 5, color, true)
+            y += 25
+            if (y + 20 > rect.bottom) return
+        }
     }
 
-    private fun renderBoard(gui:GuiGraphics,font:Font,r:UiRect,units:Map<Int,UnitToken>,phase:String,canEdit:Boolean,ui:TftUiState,hit:(UiRect,String,()->Unit)->Unit,action:(String,Map<String,String>)->Unit){
-        gui.fill(r.x,r.y,r.right,r.bottom,0xFF0D171A.toInt())
-        val tileW=min(((r.width-8)*2/15).coerceAtLeast(10),(((r.height-8)*4/25).coerceAtLeast(8))*4/3).coerceAtLeast(10);val tileH=max(8,tileW*3/4);val stepY=max(6,tileH-tileH/4);val bw=tileW*7+tileW/2;val bh=tileH+stepY*7;val sx=r.x+(r.width-bw)/2;val sy=r.y+(r.height-bh)/2
-        for(row in 0 until 8)for(col in 0 until 7){val index=row*7+col;val x=sx+col*tileW+if(row and 1==1)tileW/2 else 0;val y=sy+row*stepY;val cell=UiRect(x,y,tileW-1,tileH-1);val own=row>=4;val selected=ui.selectedOrigin=="board"&&own&&ui.selectedIndex==index-28;drawHex(gui,cell,when{selected->0xFF2D7067.toInt();own->0xFF173530.toInt();else->0xFF302126.toInt()},if(own)0xFF356D63.toInt() else 0xFF6D3A42.toInt());val token=units[index];if(token!=null)renderUnit(gui,font,cell,token);if(canEdit&&phase=="planning"&&own)hit(cell,""){val slot=index-28;when{ui.selectedOrigin=="bench"&&ui.selectedIndex!=null->{action("deploy",mapOf("bench" to ui.selectedIndex.toString(),"slot" to slot.toString()));ui.clearUnit()};ui.selectedOrigin=="board"&&ui.selectedIndex!=null->{if(ui.selectedIndex==slot)ui.clearUnit() else{action("move",mapOf("from" to ui.selectedIndex.toString(),"to" to slot.toString()));ui.clearUnit()}};token!=null->{ui.selectedOrigin="board";ui.selectedIndex=slot}}}}
+    private fun renderBoard(gui: GuiGraphics, font: Font, rect: UiRect, units: Map<Int, UnitToken>, phase: String, canEdit: Boolean, ui: TftUiState, hooks: Hooks) {
+        gui.fill(rect.x, rect.y, rect.right, rect.bottom, 0xFF0D171A.toInt())
+        val maxTileW = ((rect.width - 8) * 2 / 15).coerceAtLeast(10)
+        val maxTileH = ((rect.height - 8) * 4 / 25).coerceAtLeast(8)
+        val tileW = min(maxTileW, maxTileH * 4 / 3).coerceAtLeast(10)
+        val tileH = max(8, tileW * 3 / 4)
+        val stepY = max(6, tileH - tileH / 4)
+        val boardW = tileW * 7 + tileW / 2
+        val boardH = tileH + stepY * 7
+        val startX = rect.x + (rect.width - boardW) / 2
+        val startY = rect.y + (rect.height - boardH) / 2
+
+        for (row in 0 until 8) for (col in 0 until 7) {
+            val index = row * 7 + col
+            val x = startX + col * tileW + if (row and 1 == 1) tileW / 2 else 0
+            val y = startY + row * stepY
+            val cell = UiRect(x, y, tileW - 1, tileH - 1)
+            val token = units[index]
+            val ownHalf = row >= 4
+            val selected = when (ui.selectedOrigin) {
+                "board" -> ownHalf && ui.selectedIndex == index - 28
+                else -> false
+            }
+            val base = when {
+                selected -> 0xFF2D7067.toInt()
+                ownHalf -> if ((row + col) and 1 == 0) 0xFF173530.toInt() else 0xFF132C29.toInt()
+                else -> if ((row + col) and 1 == 0) 0xFF302126.toInt() else 0xFF291B20.toInt()
+            }
+            drawHex(gui, cell, base, if (ownHalf) accent else enemy)
+            if (token != null) renderUnit(gui, font, cell, token, rect)
+            if (canEdit && ownHalf) {
+                hooks.hit(cell) {
+                    val local = index - 28
+                    if (ui.selectedItem != null && token != null && token.team == 0) {
+                        hooks.action("equip_item", mapOf("item" to ui.selectedItem.toString(), "origin" to "board", "index" to local.toString()))
+                        ui.selectedItem = null
+                    } else if (ui.selectedOrigin == "bench" && ui.selectedIndex != null) {
+                        hooks.action("deploy", mapOf("bench" to ui.selectedIndex.toString(), "slot" to local.toString()))
+                        ui.clearUnit()
+                    } else if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
+                        if (ui.selectedIndex == local) ui.clearUnit() else {
+                            hooks.action("move", mapOf("from" to ui.selectedIndex.toString(), "to" to local.toString()))
+                            ui.clearUnit()
+                        }
+                    } else if (token != null && token.team == 0) {
+                        ui.selectedOrigin = "board"; ui.selectedIndex = local
+                    }
+                }
+            }
+        }
+        gui.drawCenteredString(font, if (phase == "combat") tr("gui.svhub.tft.enemy_board") else tr("gui.svhub.tft.enemy_side"), rect.x + rect.width / 2, startY - 10, muted)
     }
 
-    private fun renderUnit(gui:GuiGraphics,font:Font,r:UiRect,u:UnitToken){
-        val modelSize=min(r.width,r.height*2).coerceAtLeast(12);if(r.width>=28&&r.height>=18){pokemonView(u.species,u.aspects,u.unitId)?.let{PokemonModelRenderer.render(gui,it,r.x+r.width/2,r.y+r.height/2+2,modelSize,yaw=if(u.team==0)0f else 180f,zoom=.8f,pitch=60f)}} else gui.drawCenteredString(font,shortUnit(u.unitId),r.x+r.width/2,r.y+r.height/2-4,text)
-        val stars="★".repeat(u.star.coerceIn(1,3));gui.drawCenteredString(font,stars,r.x+r.width/2,r.y+1,gold)
-        if(u.maxHp>0){val w=(r.width-4).coerceAtLeast(4);val hpw=(w*u.hp.coerceAtLeast(0)/u.maxHp).coerceIn(0,w);gui.fill(r.x+2,r.bottom-5,r.x+2+w,r.bottom-3,0xFF2A2020.toInt());gui.fill(r.x+2,r.bottom-5,r.x+2+hpw,r.bottom-3,if(u.team==0)accent else danger);if(u.maxMana>0){val mw=(w*u.mana.coerceAtLeast(0)/u.maxMana).coerceIn(0,w);gui.fill(r.x+2,r.bottom-2,r.x+2+mw,r.bottom,0xFF4D8BD8.toInt())}}
+    private fun renderUnit(gui: GuiGraphics, font: Font, cell: UiRect, unit: UnitToken, clip: UiRect) {
+        val border = if (unit.team == 0) accent else enemy
+        gui.fill(cell.x + 2, cell.y + 2, cell.x + 4, cell.bottom - 2, border)
+        val view = pokemonView(unit.species, unit.aspects, unit.unitId)
+        val modelSize = min(cell.width, cell.height + 10)
+        val rendered = if (view != null && cell.width >= 34 && cell.height >= 23) {
+            PokemonModelRenderer.render(gui, view, cell.x + cell.width / 2, cell.y + cell.height / 2 + 5, max(40, modelSize), 0f, 0.65f, 48f)
+        } else false
+        if (!rendered) gui.drawCenteredString(font, shortUnit(unit.unitId), cell.x + cell.width / 2, cell.y + cell.height / 2 - 4, text)
+        val stars = "★".repeat(unit.star.coerceIn(1, 3))
+        gui.drawCenteredString(font, stars, cell.x + cell.width / 2, cell.y + 2, gold)
+        if (cell.width >= 24 && unit.items.isNotEmpty()) {
+            val glyphs = unit.items.take(3).joinToString("") { itemGlyph(it) }
+            gui.drawCenteredString(font, glyphs, cell.x + cell.width / 2, cell.bottom - 16, 0xFFE7D98B.toInt())
+        }
+        if (unit.maxHp > 0) {
+            val barW = (cell.width - 8).coerceAtLeast(8)
+            val x = cell.x + (cell.width - barW) / 2
+            val y = cell.bottom - 7
+            gui.fill(x, y, x + barW, y + 3, 0xFF1A2225.toInt())
+            val hpW = (barW * unit.hp.coerceIn(0, unit.maxHp) / unit.maxHp).coerceAtLeast(if (unit.hp > 0) 1 else 0)
+            gui.fill(x, y, x + hpW, y + 2, if (unit.team == 0) 0xFF54C97A.toInt() else 0xFFD86668.toInt())
+            if (unit.maxMana > 0) {
+                val manaW = (barW * unit.mana.coerceIn(0, unit.maxMana) / unit.maxMana)
+                gui.fill(x, y + 3, x + manaW, y + 4, 0xFF55A9E8.toInt())
+            }
+        }
     }
 
-    private fun renderFooter(gui:GuiGraphics,font:Font,r:UiRect,view:JsonObject,f:JsonObject,canEdit:Boolean,ui:TftUiState,hit:(UiRect,String,()->Unit)->Unit,action:(String,Map<String,String>)->Unit){
-        gui.fill(r.x,r.y,r.right,r.bottom,panel);val compact=r.height<70;val benchRaw=f.str("bench");val bench=parseBench(benchRaw);val benchH=if(compact)16 else 25;val gap=2;val benchW=(r.width-gap*8)/9
-        repeat(9){i->val x=r.x+i*(benchW+gap);val cell=UiRect(x,r.y,benchW,benchH);gui.fill(cell.x,cell.y,cell.right,cell.bottom,if(ui.selectedOrigin=="bench"&&ui.selectedIndex==i)0xFF275248.toInt() else panel2);bench.firstOrNull{it.index==i}?.let{b->gui.drawCenteredString(font,shortUnit(b.unitId),cell.x+cell.width/2,cell.y+4,text);if(!compact)gui.drawCenteredString(font,"★".repeat(b.star),cell.x+cell.width/2,cell.y+14,gold);if(canEdit)hit(cell,""){ui.selectedOrigin="bench";ui.selectedIndex=i}}}
-        val cards=view.getAsJsonArray("cards");val shopY=r.y+benchH+4;if(cards!=null&&shopY<r.bottom){val n=min(5,cards.size());val shopW=(r.width-gap*(n-1))/n;repeat(n){i->val c=cards[i].asJsonObject;val cell=UiRect(r.x+i*(shopW+gap),shopY,shopW,(r.bottom-shopY).coerceAtLeast(14));gui.fill(cell.x,cell.y,cell.right,cell.bottom,panel2);val cost=c.get("value")?.asInt?:1;gui.fill(cell.x,cell.y,cell.x+3,cell.bottom,costColor(cost));gui.drawString(font,fit(font,c.get("label")?.asString?:"",cell.width-16),cell.x+6,cell.y+4,text,true);gui.drawString(font,"${cost}g",cell.right-18,cell.y+4,gold,true);if(cell.height>22)gui.drawString(font,fit(font,c.get("subtitle")?.asString?:"",cell.width-10),cell.x+6,cell.y+15,muted,false);hit(cell,""){action("buy",mapOf("index" to c.get("id").asString.substringAfter(':')))}}}
-        val items=f.str("itemBench").split(',').filter(String::isNotBlank);if(items.isNotEmpty()&&!compact){var x=r.x;val y=(r.y-16).coerceAtLeast(0);items.take(8).forEachIndexed{i,item->val cell=UiRect(x+i*18,y,16,14);gui.fill(cell.x,cell.y,cell.right,cell.bottom,if(ui.selectedItem==i)0xFF544B28.toInt() else panel2);gui.drawCenteredString(font,itemGlyph(item),cell.x+8,cell.y+3,gold);hit(cell,""){ui.selectedItem=if(ui.selectedItem==i)null else i}}}
+    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, ui: TftUiState, hooks: Hooks) {
+        gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
+        val benchH = if (density == UiDensity.COMPACT) (rect.height / 2).coerceIn(14, 22) else 34
+        val shopY = rect.y + benchH + if (density == UiDensity.COMPACT) 1 else 3
+        val shopH = (rect.bottom - shopY - 1).coerceAtLeast(12)
+        val slotGap = 2
+        val benchW = (rect.width * 2 / 3).coerceAtLeast(90)
+        val slotW = ((benchW - slotGap * 8) / 9).coerceAtLeast(12)
+        val byIndex = bench.associateBy { it.index }
+        repeat(9) { index ->
+            val x = rect.x + index * (slotW + slotGap)
+            val slot = UiRect(x, rect.y + 2, slotW, benchH - 4)
+            val unit = byIndex[index]
+            gui.fill(slot.x, slot.y, slot.right, slot.bottom, if (ui.selectedOrigin == "bench" && ui.selectedIndex == index) 0xFF294F48.toInt() else panel2)
+            if (unit != null) {
+                if (density == UiDensity.COMPACT) {
+                    gui.drawCenteredString(font, shortUnit(unit.unitId).take(3), slot.x + slot.width / 2, slot.y + 4, text)
+                    if (unit.star > 1) gui.drawString(font, unit.star.toString(), slot.right - 6, slot.y + 2, gold, true)
+                } else {
+                    gui.drawCenteredString(font, shortUnit(unit.unitId), slot.x + slot.width / 2, slot.y + 6, text)
+                    gui.drawCenteredString(font, "★".repeat(unit.star), slot.x + slot.width / 2, slot.bottom - 9, gold)
+                }
+            }
+            if (canEdit) hooks.hit(slot) {
+                if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
+                    hooks.action("bench", mapOf("slot" to ui.selectedIndex.toString())); ui.clearUnit()
+                } else if (unit != null && ui.selectedItem != null) {
+                    hooks.action("equip_item", mapOf("item" to ui.selectedItem.toString(), "origin" to "bench", "index" to index.toString())); ui.selectedItem = null
+                } else if (unit != null) {
+                    ui.selectedOrigin = if (ui.selectedOrigin == "bench" && ui.selectedIndex == index) null else "bench"
+                    ui.selectedIndex = if (ui.selectedOrigin == null) null else index
+                }
+            }
+        }
+
+        val buttonX = rect.x + benchW + 7
+        val buttonW = (rect.right - buttonX).coerceAtLeast(44)
+        hooks.control(UiRect(buttonX, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.reroll"), view.actionEnabled("refresh")) { hooks.action("refresh", emptyMap()) }
+        hooks.control(UiRect(buttonX + buttonW / 2 + 2, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.buy_xp"), view.actionEnabled("buy_xp")) { hooks.action("buy_xp", emptyMap()) }
+
+        val cards = view.getAsJsonArray("cards")
+        if (cards != null && cards.size() > 0) {
+            val gap = 3
+            val cardW = ((rect.width - gap * 4) / 5).coerceAtLeast(26)
+            repeat(min(5, cards.size())) { index ->
+                val card = cards[index].asJsonObject
+                val cardRect = UiRect(rect.x + index * (cardW + gap), shopY, cardW, shopH)
+                val cost = card.int("value", 1)
+                gui.fill(cardRect.x, cardRect.y, cardRect.right, cardRect.bottom, panel2)
+                gui.fill(cardRect.x, cardRect.y, cardRect.x + 3, cardRect.bottom, costColor(cost))
+                val species = card.getAsJsonObject("meta")?.str("species").orEmpty()
+                val unit = card.str("label", card.str("id"))
+                if (density == UiDensity.COMPACT) {
+                    gui.drawCenteredString(font, fit(font, "${shortUnit(unit)} ${cost}g", cardRect.width - 6), cardRect.x + cardRect.width / 2, cardRect.y + 4, if (cost >= 4) gold else text)
+                } else {
+                    val pv = pokemonView(species, card.getAsJsonObject("meta")?.str("aspects").orEmpty().split(',').filter(String::isNotBlank).toSet(), unit)
+                    if (pv != null && cardRect.width >= 42 && cardRect.height >= 42) {
+                        PokemonModelRenderer.render(gui, pv, cardRect.x + cardRect.width / 2, cardRect.y + cardRect.height / 2 + 6, min(54, cardRect.height), 0f, 0.6f, 35f)
+                    }
+                    gui.drawString(font, fit(font, unit, cardRect.width - 12), cardRect.x + 6, cardRect.y + 5, text, true)
+                    gui.drawString(font, "${cost}g", cardRect.x + 6, cardRect.bottom - 11, gold, true)
+                }
+                if (canEdit) hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'))) }
+            }
+        }
+
+        if (items.isNotEmpty()) {
+            val itemX = rect.right - min(160, rect.width / 2)
+            val itemY = rect.y - 18
+            items.take(8).forEachIndexed { index, item ->
+                val itemRect = UiRect(itemX + index * 18, itemY, 16, 15)
+                gui.fill(itemRect.x, itemRect.y, itemRect.right, itemRect.bottom, if (ui.selectedItem == index) 0xFF544B28.toInt() else panel2)
+                gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
+                hooks.hit(itemRect) { ui.selectedItem = if (ui.selectedItem == index) null else index }
+            }
+        }
+
+        if (canEdit && ui.selectedOrigin != null && ui.selectedIndex != null) {
+            val sellRect = UiRect(rect.right - 58, rect.y - 18, 56, 15)
+            hooks.control(sellRect, tr("gui.svhub.tft.sell"), true) {
+                hooks.action("sell", mapOf("origin" to ui.selectedOrigin!!, "index" to ui.selectedIndex.toString())); ui.clearUnit()
+            }
+        }
     }
 
-    private fun renderCompactInfo(gui:GuiGraphics,font:Font,area:UiRect,f:JsonObject){val label="${f.int("boardCount")}/${f.int("unitCap")} • ${f.str("opponent")}";gui.drawString(font,fit(font,label,area.width-12),area.x+6,area.y+26,muted,false)}
-    private fun renderAugments(gui:GuiGraphics,font:Font,b:UiRect,raw:String,action:(String,Map<String,String>)->Unit,hit:(UiRect,String,()->Unit)->Unit){val choices=raw.split(';').filter(String::isNotBlank);if(choices.isEmpty())return;val root=b.inset(10);gui.fill(root.x,root.y,root.right,root.bottom,0xF20C1518.toInt());gui.drawCenteredString(font,"CHOOSE AUGMENT",root.x+root.width/2,root.y+8,gold);val w=(root.width-16)/choices.size.coerceAtMost(3);choices.take(3).forEachIndexed{i,v->val p=v.split('~');val r=UiRect(root.x+5+i*w,root.y+24,w-5,(root.height-30).coerceAtLeast(22));gui.fill(r.x,r.y,r.right,r.bottom,panel2);gui.drawCenteredString(font,fit(font,p.getOrElse(1){p[0]},r.width-8),r.x+r.width/2,r.y+6,text);if(r.height>32)gui.drawString(font,fit(font,p.getOrElse(2){""},r.width-10),r.x+5,r.y+20,muted,false);hit(r,""){action("choose_augment",mapOf("id" to p[0]))}}}
-    private fun renderDraft(gui:GuiGraphics,font:Font,b:UiRect,raw:String,action:(String,Map<String,String>)->Unit,hit:(UiRect,String,()->Unit)->Unit){val offers=raw.split(';').filter(String::isNotBlank);if(offers.isEmpty())return;val root=b.inset(8);gui.fill(root.x,root.y,root.right,root.bottom,0xE80B1417.toInt());gui.drawCenteredString(font,"SHARED DRAFT",root.x+root.width/2,root.y+5,gold);val cols=if(root.width>=330)5 else 3;val gap=4;val w=(root.width-gap*(cols-1))/cols;offers.forEachIndexed{i,v->val p=v.split('~');if(p.size>=6){val rr=UiRect(root.x+(i%cols)*(w+gap),root.y+18+(i/cols)*32,w,28);val taken=p[4].isNotBlank();gui.fill(rr.x,rr.y,rr.right,rr.bottom,if(taken)0xFF172023.toInt() else panel2);gui.drawString(font,fit(font,p[1],rr.width-8),rr.x+5,rr.y+5,if(taken)muted else text,true);gui.drawString(font,itemGlyph(p[3]),rr.x+5,rr.y+16,gold,false);if(!taken&&p[5]=="1")hit(rr,""){action("draft_pick",mapOf("index" to p[0]))}}}}
-    private fun drawHex(gui:GuiGraphics,r:UiRect,fill:Int,border:Int){val cut=max(2,r.width/8);val q=max(2,r.height/4);gui.fill(r.x+cut,r.y,r.right-cut,r.bottom,border);gui.fill(r.x,r.y+q,r.right,r.bottom-q,border);gui.fill(r.x+cut+1,r.y+1,r.right-cut-1,r.bottom-1,fill);gui.fill(r.x+1,r.y+q+1,r.right-1,r.bottom-q-1,fill)}
-    private fun pokemonView(speciesId:String,aspects:Set<String>,fallback:String):PokemonView?{val species=ResourceLocation.tryParse(speciesId)?.let(PokemonSpecies::getByIdentifier)?:return null;return PokemonView("$speciesId|${aspects.sorted().joinToString(",")}","",speciesId,aspects,species.translatedName.string.ifBlank{fallback},species.nationalPokedexNumber,species.resourceIdentifier.namespace!="cobblemon")}
-    private fun parseUnit(raw:String):UnitToken?{if(raw.isBlank())return null;val p=raw.split('~');if(p.size<9)return null;return UnitToken(p[0],p[1],p[2],p[3].toIntOrNull()?:1,p[4].toIntOrNull()?:-1,p[5].toIntOrNull()?:-1,p[6].toIntOrNull()?:0,p[7].toIntOrNull()?:0,p[8].toIntOrNull()?:0,p.getOrNull(9).orEmpty().split(',').filter(String::isNotBlank).toSet(),p.getOrNull(10).orEmpty().split(',').filter(String::isNotBlank))}
-    private fun parseBench(raw:String)=raw.split(';').filter(String::isNotBlank).mapNotNull{v->val p=v.split('~');if(p.size<5)null else BenchToken(p[0].toIntOrNull()?:return@mapNotNull null,p[1],p[2],p[3],p[4].toIntOrNull()?:1,p.getOrNull(5).orEmpty().split(',').filter(String::isNotBlank).toSet(),p.getOrNull(6).orEmpty().split(',').filter(String::isNotBlank))}
-    private fun JsonObject.str(k:String,f:String="")=runCatching{get(k)?.asString?:f}.getOrDefault(f);private fun JsonObject.int(k:String,f:Int=0)=runCatching{get(k)?.asInt?:f}.getOrDefault(f);private fun JsonObject.long(k:String,f:Long=0L)=runCatching{get(k)?.asLong?:f}.getOrDefault(f)
-    private fun fit(font:Font,v:String,w:Int)=font.plainSubstrByWidth(v,w.coerceAtLeast(4));private fun shortUnit(id:String)=id.replace('_',' ').split(' ').joinToString(""){it.take(2)}.take(5).uppercase();private fun costColor(cost:Int)=when(cost){1->0xFF8EA09B.toInt();2->0xFF63BE7B.toInt();3->0xFF5B9BE5.toInt();4->0xFFA66DDB.toInt();else->0xFFE0B44E.toInt()};private fun itemGlyph(id:String)=when{ id.startsWith("full:")->"◆";id.startsWith("combo:")->"◇";id.contains("sword")->"⚔";id.contains("rod")->"✦";else->"•" }
+    private fun renderAugmentOverlay(gui: GuiGraphics, font: Font, board: UiRect, choices: List<AugmentChoice>, hooks: Hooks) {
+        val width = min(board.width - 16, 420)
+        val height = min(board.height - 12, 112)
+        val root = UiRect(board.x + (board.width - width) / 2, board.y + (board.height - height) / 2, width, height)
+        gui.fill(root.x, root.y, root.right, root.bottom, 0xF20C1518.toInt())
+        gui.fill(root.x, root.y, root.right, root.y + 3, gold)
+        gui.drawCenteredString(font, tr("gui.svhub.tft.choose_augment"), root.x + root.width / 2, root.y + 8, text)
+        val gap = 5
+        val cardW = (root.width - 12 - gap * (choices.size - 1)) / choices.size.coerceAtLeast(1)
+        choices.take(3).forEachIndexed { index, choice ->
+            val rect = UiRect(root.x + 6 + index * (cardW + gap), root.y + 24, cardW, root.height - 30)
+            gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel2)
+            gui.fill(rect.x, rect.y, rect.x + 3, rect.bottom, accent)
+            gui.drawCenteredString(font, fit(font, choice.name, rect.width - 8), rect.x + rect.width / 2, rect.y + 8, gold)
+            drawWrapped(gui, font, choice.description, rect.x + 6, rect.y + 23, rect.width - 12, 3, muted)
+            hooks.hit(rect) { hooks.action("choose_augment", mapOf("id" to choice.id)) }
+        }
+    }
+
+    private fun renderDraftOverlay(gui: GuiGraphics, font: Font, board: UiRect, offers: List<DraftOffer>, hooks: Hooks) {
+        val root = board.inset(8)
+        gui.fill(root.x, root.y, root.right, root.bottom, 0xE80B1417.toInt())
+        gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), root.x + root.width / 2, root.y + 5, gold)
+        val cols = if (root.width >= 330) 5 else 3
+        val gap = 4
+        val cellW = (root.width - gap * (cols - 1)) / cols
+        val rows = (offers.size + cols - 1) / cols
+        val cellH = ((root.height - 20 - gap * (rows - 1)) / rows.coerceAtLeast(1)).coerceAtLeast(28)
+        offers.forEachIndexed { i, offer ->
+            val rect = UiRect(root.x + (i % cols) * (cellW + gap), root.y + 18 + (i / cols) * (cellH + gap), cellW, cellH)
+            val taken = offer.takenBy.isNotBlank()
+            gui.fill(rect.x, rect.y, rect.right, rect.bottom, if (taken) 0xFF172023.toInt() else panel2)
+            gui.fill(rect.x, rect.y, rect.x + 3, rect.bottom, if (taken) muted else costColor(offer.cost))
+            gui.drawString(font, fit(font, offer.unitId, rect.width - 8), rect.x + 6, rect.y + 5, if (taken) muted else text, true)
+            gui.drawString(font, itemGlyph(offer.item), rect.x + 6, rect.bottom - 11, gold, false)
+            if (!taken && offer.unlocked) hooks.hit(rect) { hooks.action("draft_pick", mapOf("index" to offer.index.toString())) }
+        }
+    }
+
+    private fun renderCompactChips(gui: GuiGraphics, font: Font, area: UiRect, traits: List<TraitLine>, players: List<PlayerLine>) {
+        val y = area.y + 29
+        var x = area.x + 4
+        traits.filter { it.active > 0 }.take(3).forEach { trait ->
+            val value = "${trait.name} ${trait.count}"
+            val w = font.width(value) + 10
+            gui.fill(x, y, x + w, y + 14, 0xFF18302D.toInt())
+            gui.drawString(font, value, x + 5, y + 3, accent, false)
+            x += w + 3
+        }
+        val alive = players.count { !it.eliminated }
+        val label = "$alive/8"
+        gui.drawString(font, label, area.right - font.width(label) - 5, y + 3, muted, false)
+    }
+
+    private fun drawHex(gui: GuiGraphics, r: UiRect, fill: Int, border: Int) {
+        val cut = max(2, r.width / 8)
+        val quarter = max(2, r.height / 4)
+        gui.fill(r.x + cut, r.y, r.right - cut, r.bottom, border)
+        gui.fill(r.x, r.y + quarter, r.right, r.bottom - quarter, border)
+        gui.fill(r.x + cut + 1, r.y + 1, r.right - cut - 1, r.bottom - 1, fill)
+        gui.fill(r.x + 1, r.y + quarter + 1, r.right - 1, r.bottom - quarter - 1, fill)
+    }
+
+    private fun pokemonView(speciesId: String, aspects: Set<String>, fallback: String): PokemonView? {
+        if (speciesId.isBlank()) return null
+        val species = ResourceLocation.tryParse(speciesId)?.let(PokemonSpecies::getByIdentifier) ?: return null
+        return PokemonView(
+            key = "$speciesId|${aspects.sorted().joinToString(",")}",
+            route = "",
+            speciesId = speciesId,
+            aspects = aspects,
+            displayName = species.translatedName.string.ifBlank { fallback },
+            dexNumber = species.nationalPokedexNumber,
+            fakemon = species.resourceIdentifier.namespace != "cobblemon"
+        )
+    }
+
+    private fun parseUnit(raw: String): UnitToken? {
+        if (raw.isBlank()) return null
+        val p = raw.split('~')
+        if (p.size < 9) return null
+        return UnitToken(
+            p[0], p[1], p[2], p[3].toIntOrNull() ?: 1,
+            p[4].toIntOrNull() ?: -1, p[5].toIntOrNull() ?: -1,
+            p[6].toIntOrNull() ?: 0, p[7].toIntOrNull() ?: 0,
+            p[8].toIntOrNull() ?: 0,
+            p.getOrNull(9).orEmpty().split(',').filter(String::isNotBlank).toSet(),
+            p.getOrNull(10).orEmpty().split(',').filter(String::isNotBlank)
+        )
+    }
+
+    private fun parseBench(raw: String): List<BenchToken> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
+        val p = value.split('~'); if (p.size < 5) return@mapNotNull null
+        BenchToken(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4].toIntOrNull() ?: 1, p.getOrNull(5).orEmpty().split(',').filter(String::isNotBlank).toSet(), p.getOrNull(6).orEmpty().split(',').filter(String::isNotBlank))
+    }
+
+    private fun parsePlayers(raw: String): List<PlayerLine> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
+        val p = value.split('~'); if (p.size < 6) return@mapNotNull null
+        PlayerLine(p[0], p[1], p[2].toIntOrNull() ?: 0, p[3].toIntOrNull() ?: 1, p[4].toIntOrNull() ?: 0, p[5] == "1")
+    }
+
+    private fun parseTraits(raw: String): List<TraitLine> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
+        val p = value.split('~'); if (p.size < 5) return@mapNotNull null
+        TraitLine(p[0], p.getOrNull(1).orEmpty().ifBlank { p[0] }, p[2].toIntOrNull() ?: 0, p[3].toIntOrNull() ?: 0, p[4].toIntOrNull() ?: 0, p.getOrNull(5).orEmpty())
+    }
+
+    private fun parseAugments(raw: String): List<AugmentChoice> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
+        val p = value.split('~'); if (p.isEmpty()) return@mapNotNull null
+        AugmentChoice(p[0], p.getOrNull(1).orEmpty().ifBlank { p[0] }, p.getOrNull(2).orEmpty())
+    }
+
+    private fun parseDraft(raw: String): List<DraftOffer> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
+        val p = value.split('~'); if (p.size < 6) return@mapNotNull null
+        DraftOffer(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4], p[5] == "1", p.getOrNull(6)?.toIntOrNull() ?: 1)
+    }
+
+    private fun JsonObject.actionEnabled(id: String): Boolean = getAsJsonArray("actions")?.let { arr ->
+        (0 until arr.size()).map { arr[it].asJsonObject }.firstOrNull { it.str("id") == id }?.bool("enabled", true)
+    } ?: false
+
+    private fun JsonObject.str(key: String, fallback: String = ""): String = runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.int(key: String, fallback: Int = 0): Int = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.long(key: String, fallback: Long = 0L): Long = runCatching { get(key)?.asLong ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.bool(key: String, fallback: Boolean = false): Boolean = runCatching { get(key)?.asBoolean ?: fallback }.getOrDefault(fallback)
+    private fun fit(font: Font, value: String, width: Int) = font.plainSubstrByWidth(value, width.coerceAtLeast(4))
+    private fun tr(key: String) = I18n.get(key)
+    private fun shortUnit(id: String) = id.replace('_', ' ').split(' ').joinToString("") { it.take(2) }.take(5).uppercase()
+    private fun itemGlyph(id: String) = when {
+        id.startsWith("full:") -> "◆"
+        id.startsWith("combo:") -> "◇"
+        id.contains("sword") -> "⚔"
+        id.contains("bow") -> "»"
+        id.contains("rod") -> "✦"
+        id.contains("vest") -> "▣"
+        id.contains("cloak") -> "◇"
+        id.contains("belt") -> "▰"
+        id.contains("tear") -> "◆"
+        id.contains("gloves") -> "✧"
+        else -> "•"
+    }
+    private fun costColor(cost: Int) = when (cost) { 1 -> 0xFF8EA09B.toInt(); 2 -> 0xFF63BE7B.toInt(); 3 -> 0xFF5B9BE5.toInt(); 4 -> 0xFFA66DDB.toInt(); else -> 0xFFE0B44E.toInt() }
+
+    private fun drawWrapped(gui: GuiGraphics, font: Font, value: String, x: Int, y: Int, width: Int, maxLines: Int, color: Int) {
+        font.split(net.minecraft.network.chat.Component.literal(value), width).take(maxLines).forEachIndexed { index, seq ->
+            gui.drawString(font, seq, x, y + index * 10, color, false)
+        }
+    }
 }

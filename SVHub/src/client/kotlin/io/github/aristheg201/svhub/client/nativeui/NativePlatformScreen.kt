@@ -203,7 +203,16 @@ class NativePlatformScreen(
     private fun renderWallet(gui:GuiGraphics,layout:NativeLayout){val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet");drawBalance(gui,area.x,area.y,area.width,"wallet",tr("gui.svhub.token"),wallet?.num("arcade")?:0,accent);drawBalance(gui,area.x,area.y+44,area.width,"gacha",tr("gui.svhub.ticket"),wallet?.num("ticket")?:0,gold)}
 
     private fun renderGame(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val view=state.getAsJsonObject("view")?:return;val gameId=view.str("gameId");if(gameId=="tft"){boardRect=UiRect(0,0,0,0);boardW=0;boardH=0;TftGameRenderer.render(gui,font,layout.content,NativeLayout.resolve(width,height).density,view,mouseX,mouseY,tftUi,::addHit,::gameAct);return}
+        val view=state.getAsJsonObject("view")?:return;val gameId=view.str("gameId");if(gameId=="tft"){boardRect=UiRect(0,0,0,0);boardW=0;boardH=0;TftGameRenderer.render(
+            gui = gui, font = font, area = layout.content, density = layout.density,
+            view = view, ui = tftUi, mouseX = mouseX, mouseY = mouseY,
+            hooks = TftGameRenderer.Hooks(
+                control = { rect, label, enabled, action -> addControl(rect, label, mouseX, mouseY, enabled = enabled, action = action) },
+                hit = { rect, action -> addHit(rect, action = action) },
+                action = ::gameAct,
+                back = { intent("leave", JsonObject()) }
+            )
+        );return}
         val area=layout.content.inset(8);gui.drawString(font,view.str("title",tr("gui.svhub.game")),area.x,area.y,text,true);gui.drawString(font,fit(view.str("status"),area.width-8),area.x,area.y+13,gold,false)
         val actions=view.getAsJsonArray("actions");val cards=view.getAsJsonArray("cards");boardW=view.num("boardWidth");boardH=view.num("boardHeight");val actionWidth=if(area.width>=520)110 else 0;val sideActions=actionWidth>0;val availableBoardWidth=area.width-if(sideActions)actionWidth+8 else 0;val bottomReserve=if(cards!=null&&cards.size()>0)58 else 8;val boardTop=area.y+30;val boardAvailableHeight=(area.bottom-bottomReserve-boardTop).coerceAtLeast(30)
         if(boardW>0&&boardH>0){cellSize=min(30,min((availableBoardWidth/boardW).coerceAtLeast(12),(boardAvailableHeight/boardH).coerceAtLeast(12)));boardRect=UiRect(area.x,boardTop,cellSize*boardW,cellSize*boardH);val board=view.getAsJsonArray("board")?:JsonArray();repeat(boardH){r->repeat(boardW){c->val index=r*boardW+c;val x=boardRect.x+c*cellSize;val y=boardRect.y+r*cellSize;val cellColor=if((r+c)%2==0)0xFF1A2B2F.toInt() else 0xFF132226.toInt();gui.fill(x,y,x+cellSize-1,y+cellSize-1,cellColor);NativePixelArt.gamePiece(gui,board.elementOrNull(index)?.asString.orEmpty(),x,y,cellSize)}}}else boardRect=UiRect(0,0,0,0)

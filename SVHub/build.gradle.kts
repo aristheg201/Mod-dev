@@ -88,3 +88,15 @@ tasks.test {
 tasks.remapJar {
     archiveFileName.set("SVHub-fabric-${minecraftVersion}-${version}.jar")
 }
+
+// Re-run the startup/data contract tests with main classes and resources coming
+// from the remapped production JAR, never src/main/resources or build/classes.
+tasks.register<Test>("verifyPackagedTft") {
+    dependsOn(tasks.remapJar, tasks.testClasses)
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = files(tasks.remapJar.flatMap { it.archiveFile }) +
+        sourceSets.test.get().output + configurations.testRuntimeClasspath.get()
+    useJUnitPlatform()
+    filter { includeTestsMatching("io.github.aristheg201.svhub.native.game.tft.TftSetRegistryTest") }
+    systemProperty("svhub.test.packaged", "true")
+}
