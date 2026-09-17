@@ -61,6 +61,10 @@ object SVHubClient : ClientModInitializer {
                 ClientHubState.canEdit = payload.canEdit
                 ClientHubState.serverManifest = payload.serverManifest
                 ClientHubState.setCachePolicy(payload.cacheable)
+                if (!payload.canOpen) {
+                    pendingRoute = null
+                    pendingEditor = false
+                }
                 val cachedRevision = if (payload.protocol == HUB_PROTOCOL_VERSION && payload.cacheable) {
                     ClientHubState.loadCachedIfRevision(payload.revision)
                 } else {
@@ -110,7 +114,7 @@ object SVHubClient : ClientModInitializer {
                         ClientPlayNetworking.send(HubRequestSnapshotC2S(true))
                     }
                 } else {
-                    openHub(payload.page)
+                    openHub(payload.page, serverAuthorized = true)
                 }
             }
         }
@@ -144,8 +148,22 @@ object SVHubClient : ClientModInitializer {
     }
 
     fun openHub(route: String = "home") {
+        openHub(route, serverAuthorized = false)
+    }
+
+    private fun openHub(route: String, serverAuthorized: Boolean) {
         val client = Minecraft.getInstance()
-        if (client.player == null || !ClientHubState.canOpen) return
+        if (client.player == null) return
+
+        // HubOpenS2C is already authorized by the server. For a local keybind,
+        // canOpen is only a cached hint: if it is stale, request a fresh server
+        // snapshot instead of silently swallowing the user's open attempt.
+        if (!serverAuthorized && !ClientHubState.canOpen) {
+            pendingRoute = route
+            ClientPlayNetworking.send(HubRequestSnapshotC2S(false))
+            return
+        }
+
         if (ClientHubState.playerContent != null) {
             pendingRoute = null
             client.setScreen(HubScreen(route))
@@ -168,7 +186,7 @@ object SVHubClient : ClientModInitializer {
 
     private fun openPendingIfReady() {
         val route = pendingRoute ?: return
-        if (ClientHubState.playerContent == null) return
+        if (!ClientHubState.canOpen || ClientHubState.playerContent == null) return
         pendingRoute = null
         Minecraft.getInstance().setScreen(HubScreen(route))
     }
