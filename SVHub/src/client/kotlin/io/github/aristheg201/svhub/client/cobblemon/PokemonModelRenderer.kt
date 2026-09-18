@@ -1,6 +1,5 @@
 package io.github.aristheg201.svhub.client.cobblemon
 
-import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.api.moves.animations.ActionEffectTimeline
 import com.cobblemon.mod.common.api.moves.animations.ActionEffects
 import com.cobblemon.mod.common.api.moves.animations.keyframes.ActionEffectKeyframe
@@ -302,13 +301,22 @@ object PokemonModelRenderer {
     }
 
     private fun resolveMovePresentation(rawMoveId: String): MovePresentation {
-        val normalized = rawMoveId.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+        val parsed = ResourceLocation.tryParse(rawMoveId)
+        val namespace = parsed?.namespace ?: "cobblemon"
+        val rawPath = parsed?.path ?: rawMoveId.substringAfter(':')
+        val normalized = rawPath.lowercase().filter(Char::isLetterOrDigit)
         if (normalized.isBlank()) return MovePresentation()
-        return movePresentationCache.computeIfAbsent(normalized) {
-            val move = Moves.getByName(normalized) ?: return@computeIfAbsent MovePresentation()
+        val cacheKey = "$namespace:$normalized"
+        return movePresentationCache.computeIfAbsent(cacheKey) {
             val labels = linkedSetOf<String>()
             val particles = linkedSetOf<String>()
-            move.actionEffect?.let { timeline ->
+            val candidates = listOfNotNull(
+                ResourceLocation.tryParse("$namespace:moves/$normalized"),
+                ResourceLocation.tryParse("$namespace:$normalized"),
+                ResourceLocation.tryParse("cobblemon:moves/$normalized"),
+                ResourceLocation.tryParse("cobblemon:moves/generic_move")
+            ).distinct()
+            candidates.firstNotNullOfOrNull(ActionEffects.actionEffects::get)?.let { timeline ->
                 collectActionEffect(timeline, labels, particles, linkedSetOf(), 0)
             }
             MovePresentation(labels, particles.take(12))

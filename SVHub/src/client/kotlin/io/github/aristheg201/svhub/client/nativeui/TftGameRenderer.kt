@@ -167,7 +167,7 @@ class TftUiState {
     private fun JsonObject.int(key: String, fallback: Int = 0) = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
     private fun JsonObject.double(key: String, fallback: Double = 0.0) = runCatching { get(key)?.asDouble ?: fallback }.getOrDefault(fallback)
 
-    fun observeCombat(
+    internal fun observeCombat(
         instanceId:String,
         targetId:String?,
         casts:Int,
