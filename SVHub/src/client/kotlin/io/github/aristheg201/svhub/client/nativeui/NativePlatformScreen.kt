@@ -58,6 +58,7 @@ class NativePlatformScreen(
     private var moduleViewport = UiRect(0, 0, 0, 0)
     private var clip: UiRect? = null
     private var currentGui: GuiGraphics? = null
+    private var supersededByServer = false
 
     private val background = 0xFF0A1114.toInt()
     private val panel = 0xFF111C20.toInt()
@@ -91,9 +92,13 @@ class NativePlatformScreen(
 
     override fun init() { controls.clear() }
 
+    fun prepareForServerReplacement() { supersededByServer = true }
+
     override fun removed() {
-        NativePlatformClient.markClosed(viewId)
-        runCatching { ClientPlayNetworking.send(NativeCloseC2S(viewId)) }
+        if (!supersededByServer) {
+            NativePlatformClient.markClosed(viewId)
+            runCatching { ClientPlayNetworking.send(NativeCloseC2S(viewId)) }
+        }
         super.removed()
     }
 

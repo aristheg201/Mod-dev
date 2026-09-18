@@ -65,6 +65,7 @@ for (const [name, marker] of [
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const nativePayloads = read("src/main/kotlin/io/github/aristheg201/svhub/native/network/NativePayloads.kt");
 const nativeClient = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativePlatformClient.kt");
+const nativeNetwork = read("src/main/kotlin/io/github/aristheg201/svhub/native/network/NativePlatformNetwork.kt");
 const hubScreen = read("src/client/kotlin/io/github/aristheg201/svhub/client/gui/HubScreen.kt");
 const profileStore = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeProfileStore.kt");
 const rewardService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeRewardService.kt");
@@ -94,6 +95,15 @@ for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeClose
 }
 if (!nativeClient.includes("closedViews") || !nativeClient.includes("current.viewId == payload.viewId")) {
   failures.push("NativePlatformClient.kt: stale-view protection missing");
+}
+for (const marker of ["prepareForServerReplacement", "ClientPlayConnectionEvents.DISCONNECT", "closedViews.clear()"]) {
+  if (!nativeClient.includes(marker)) failures.push(`NativePlatformClient.kt: missing lifecycle reset marker ${marker}`);
+}
+for (const marker of ['module=="game"', "NativeArcadeService.leave(player)"]) {
+  if (!nativeNetwork.includes(marker)) failures.push(`NativePlatformNetwork.kt: missing game-close lifecycle marker ${marker}`);
+}
+for (const marker of ["supersededByServer", "prepareForServerReplacement", "if (!supersededByServer)"]) {
+  if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing server-replacement lifecycle marker ${marker}`);
 }
 if (hubScreen.includes("take(18)")) failures.push("HubScreen.kt: sidebar still truncates navigation with take(18)");
 for (const marker of ["draggingSidebarScrollbar", "enableScissor(0, viewportTop", "setSidebarScrollFromThumb"]) {

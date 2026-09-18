@@ -2,6 +2,7 @@ package io.github.aristheg201.svhub.native.network
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.SVHub
+import io.github.aristheg201.svhub.native.NativeArcadeService
 import io.github.aristheg201.svhub.native.NativePlatform
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
@@ -25,7 +26,10 @@ object NativePlatformNetwork{
    val data=runCatching{gson.fromJson(payload.data,JsonObject::class.java)?:JsonObject()}.getOrElse{JsonObject()}
    runCatching{NativePlatform.handleIntent(player,payload.module,payload.action,data)}.onFailure{SVHub.LOGGER.warn("Native intent failed: player={} module={} action={}",player.uuid,payload.module,payload.action,it)}
   }}
-  ServerPlayNetworking.registerGlobalReceiver(NativeCloseC2S.TYPE){payload,context->context.server().execute{close(context.player().uuid,payload.viewId)}}
+  ServerPlayNetworking.registerGlobalReceiver(NativeCloseC2S.TYPE){payload,context->context.server().execute{
+   val player=context.player();val module=currentModule(player.uuid)
+   if(close(player.uuid,payload.viewId)&&module=="game")NativeArcadeService.leave(player)
+  }}
  }
  fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();openViews[player.uuid]=Subscription(module,viewId);ServerPlayNetworking.send(player,NativeOpenS2C(module,gson.toJson(state),viewId,previous?.viewId.orEmpty()));return viewId}
  fun sendState(player:ServerPlayer,module:String,state:JsonObject,message:String=""){val sub=openViews[player.uuid]?:return;if(sub.module!=module)return;ServerPlayNetworking.send(player,NativeStateS2C(module,gson.toJson(state),message.take(512),sub.viewId))}
