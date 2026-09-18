@@ -31,6 +31,8 @@ object NativeGachaTransactionService {
         val source: String,
         val rarity: String,
         val perfectIvs: Int,
+        val bonusPokemonUuid: String? = null,
+        val bonusPokemonSpecies: String? = null,
         val ticketCost: Int,
         val newPity: Int,
         val beforeQuantity: Int,
@@ -74,7 +76,7 @@ object NativeGachaTransactionService {
     }
 
     fun activeRequest(playerId: UUID): String? =
-        pending.values.firstOrNull { it.playerId == playerId.toString() && !completed(it) }?.requestId
+        pending.values.firstOrNull { it.playerId == playerId.toString() && !refunded(it) }?.requestId
             ?: if (playerId in inFlight) "processing" else null
 
     fun request(player: ServerPlayer, bannerId: String, requestId: String): NativeGachaService.RollResult {
@@ -108,6 +110,11 @@ object NativeGachaTransactionService {
         val oldPity = profile.pity[banner.id] ?: 0
         val seed = java.util.concurrent.ThreadLocalRandom.current().nextLong()
         val winner = NativeGachaService.pickForRoll(pool, oldPity + 1 >= banner.pity, Random(seed))
+        val bonus = NativeSkinService.prepareBonusPokemon(requestId, seed, winner.perfectIvs)
+        if (winner.perfectIvs > 0 && bonus == null) {
+            inFlight.remove(player.uuid)
+            return fail(player, "gui.svhub.gacha.bonus_unavailable")
+        }
         val record = Journal(
             requestId = requestId,
             playerId = player.uuid.toString(),
@@ -119,6 +126,8 @@ object NativeGachaTransactionService {
             source = winner.source,
             rarity = winner.rarity,
             perfectIvs = winner.perfectIvs,
+            bonusPokemonUuid = bonus?.uuid,
+            bonusPokemonSpecies = bonus?.species,
             ticketCost = banner.costTickets,
             newPity = if (NativeGachaService.isPremium(winner.rarity)) 0 else oldPity + 1,
             beforeQuantity = SkiesSkinsBridge.ownedQuantity(player, winner.id),
@@ -148,15 +157,16 @@ object NativeGachaTransactionService {
         val records = pending.values
             .filter { it.playerId == player.uuid.toString() }
             .sortedBy { it.createdAtEpochMs }
-        records.filter(::completed).forEach(::cleanup)
-        val active = records.firstOrNull { !completed(it) } ?: return
+        records.filter(::refunded).forEach(::cleanup)
+        val active = records.firstOrNull { !refunded(it) } ?: return
         if (inFlight.add(player.uuid)) begin(active)
     }
 
     private fun begin(record: Journal) {
         val id = playerId(record) ?: return
-        if (completed(record)) { cleanup(record); inFlight.remove(id); return }
+        if (refunded(record)) { cleanup(record); inFlight.remove(id); return }
         val player = SVHubRuntime.server?.playerList?.getPlayer(id) ?: run { inFlight.remove(id); return }
+        if (finalized(record)) { completeSuccess(record, player); return }
         val accepted = NativeProfileStore.mutateDurableOnce(
             id, debitTx(record.requestId),
             mutation = { profile ->
@@ -217,7 +227,7 @@ object NativeGachaTransactionService {
         ) { result ->
             when (result) {
                 DurableMutationResult.APPLIED, DurableMutationResult.ALREADY_APPLIED ->
-                    completeSuccess(record, SVHubRuntime.server?.playerList?.getPlayer(id), result == DurableMutationResult.APPLIED)
+                    completeSuccess(record, SVHubRuntime.server?.playerList?.getPlayer(id))
                 DurableMutationResult.REJECTED -> release(record)
             }
         }
@@ -242,11 +252,30 @@ object NativeGachaTransactionService {
         if (!accepted) release(record)
     }
 
-    private fun completeSuccess(record: Journal, player: ServerPlayer?, newlyApplied: Boolean) {
+    private fun completeSuccess(record: Journal, player: ServerPlayer?) {
+        val id = playerId(record) ?: return
+        if (player == null) { inFlight.remove(id); return }
+
+        if (record.perfectIvs > 0) {
+            val bonus = bonusSpec(record)
+            if (bonus == null) {
+                inFlight.remove(id)
+                pushFailure(player, "gui.svhub.gacha.bonus_pending")
+                return
+            }
+            when (NativeSkinService.ensureBonusPokemon(player, bonus)) {
+                NativeSkinService.BonusDeliveryResult.RETRY -> {
+                    inFlight.remove(id)
+                    pushFailure(player, "gui.svhub.gacha.bonus_pending")
+                    return
+                }
+                NativeSkinService.BonusDeliveryResult.ALREADY_PRESENT,
+                NativeSkinService.BonusDeliveryResult.DELIVERED -> Unit
+            }
+        }
+
         deleteRecord(record)
-        playerId(record)?.let(inFlight::remove)
-        if (player == null) return
-        if (newlyApplied && record.perfectIvs > 0) NativeSkinService.grantBonusPokemon(player, record.perfectIvs)
+        inFlight.remove(id)
         val winner = NativeSkin(
             record.winnerId, record.winnerName, record.species, record.aspect, record.source,
             "", 0L, record.perfectIvs, record.rarity, true
@@ -315,7 +344,7 @@ object NativeGachaTransactionService {
     }
 
     private fun deleteRecord(record: Journal) {
-        pending.remove(record.requestId, record)
+        pending.remove(record.requestId)
         val pool = executor ?: return
         try {
             pool.execute {
@@ -327,10 +356,25 @@ object NativeGachaTransactionService {
 
     private fun cleanup(record: Journal) { deleteRecord(record); playerId(record)?.let(inFlight::remove) }
 
-    private fun completed(record: Journal): Boolean {
-        val id = playerId(record) ?: return true
-        return NativeProfileStore.isTransactionDurable(id, finalTx(record.requestId)) ||
-            NativeProfileStore.isTransactionDurable(id, refundTx(record.requestId))
+    private fun finalized(record: Journal): Boolean {
+        val id = playerId(record) ?: return false
+        return NativeProfileStore.isTransactionDurable(id, finalTx(record.requestId))
+    }
+
+    private fun refunded(record: Journal): Boolean {
+        val id = playerId(record) ?: return false
+        return NativeProfileStore.isTransactionDurable(id, refundTx(record.requestId))
+    }
+
+    private fun bonusSpec(record: Journal): NativeSkinService.BonusPokemonSpec? {
+        if (record.perfectIvs <= 0) return null
+        val uuid = record.bonusPokemonUuid?.takeIf { it.isNotBlank() }
+        val species = record.bonusPokemonSpecies?.takeIf { it.isNotBlank() }
+        return if (uuid != null && species != null) {
+            NativeSkinService.BonusPokemonSpec(uuid, species, record.perfectIvs.coerceIn(1, 6))
+        } else {
+            NativeSkinService.prepareBonusPokemon(record.requestId, record.seed, record.perfectIvs)
+        }
     }
 
     private fun loadPending() {

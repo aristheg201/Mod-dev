@@ -89,5 +89,7 @@
   "gui.svhub.uno.red": "Đỏ",
   "gui.svhub.uno.yellow": "Vàng",
   "gui.svhub.uno.green": "Xanh lá",
-  "gui.svhub.uno.blue": "Xanh dương"
+  "gui.svhub.uno.blue": "Xanh dương",
+  "gui.svhub.gacha.bonus_unavailable": "Kho Pokémon thưởng chưa sẵn sàng. Lượt quay chưa bị trừ vé.",
+  "gui.svhub.gacha.bonus_pending": "Skin đã được phát. Pokémon thưởng đang chờ; hãy trống chỗ trong party/PC rồi mở lại Gacha."
 }

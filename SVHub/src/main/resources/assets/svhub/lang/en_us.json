@@ -89,5 +89,7 @@
   "gui.svhub.uno.red": "Red",
   "gui.svhub.uno.yellow": "Yellow",
   "gui.svhub.uno.green": "Green",
-  "gui.svhub.uno.blue": "Blue"
+  "gui.svhub.uno.blue": "Blue",
+  "gui.svhub.gacha.bonus_unavailable": "Bonus Pokémon pool is unavailable. Roll was not charged.",
+  "gui.svhub.gacha.bonus_pending": "Skin granted. Bonus Pokémon is pending; free a party/PC slot and reopen Gacha."
 }

@@ -92,6 +92,7 @@ object NativePlatform {
             r.message
         }
         "select" -> {
+            NativeGachaService.recoverPlayer(player)
             NativePlatformNetwork.sendState(player, "gacha", NativeGachaService.state(player, data.string("banner", "hunter")))
             ""
         }

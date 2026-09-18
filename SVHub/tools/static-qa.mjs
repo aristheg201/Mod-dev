@@ -97,6 +97,16 @@ for (const marker of ["reward-journal", "JournalRecord", "isTransactionDurable"]
 for (const marker of ["GRANTING", "ownedQuantity", "debitTx", "finalTx", "refundTx", "mutateDurableOnce"]) {
   if (!gachaTxn.includes(marker)) failures.push(`NativeGachaTransactionService.kt: missing transaction marker ${marker}`);
 }
+for (const marker of ["bonusPokemonUuid", "bonusPokemonSpecies", "ensureBonusPokemon", "bonus_pending"]) {
+  if (!gachaTxn.includes(marker) && !read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeSkinService.kt").includes(marker)) {
+    failures.push(`Gacha bonus durability marker missing: ${marker}`);
+  }
+}
+const skinService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeSkinService.kt");
+for (const marker of ["Cobblemon.storage.getParty", "Cobblemon.storage.getPC", "bonusPokemonUuidForRequest", "party.add(pokemon)"]) {
+  if (!skinService.includes(marker)) failures.push(`NativeSkinService.kt: missing exactly-once bonus marker ${marker}`);
+}
+if (skinService.includes("givepokemonother")) failures.push("NativeSkinService.kt: bonus Pokémon still uses non-idempotent command delivery");
 for (const marker of ["lastRoll", "requestId", "DURATION_MS", "u * u * u * u * u"]) {
   if (!gachaRenderer.includes(marker)) failures.push(`GachaRouletteRenderer.kt: missing authoritative roulette marker ${marker}`);
 }
