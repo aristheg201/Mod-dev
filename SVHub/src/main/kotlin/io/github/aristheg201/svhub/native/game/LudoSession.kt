@@ -11,7 +11,7 @@ class LudoSession(
 ) : NativeGameSession {
     override val gameId = "ludo"
 
-    private val rng = Random(seed)
+    private val rng = NativeStatefulRandom(seed)
     private val pieces = seats.associate { it.id to IntArray(4) { HOME } }.toMutableMap()
     private val eliminated = linkedSetOf<String>()
     private var turn = 0
@@ -161,7 +161,7 @@ class LudoSession(
 
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(pieces.mapValues { (_, value) -> value.toList() }, eliminated.toList(), turn, rolled, sixChain,
-            revision, winner, result, log.toList())
+            revision, winner, result, log.toList(), rng.state)
     )
 
     private fun restoreSnapshot(state: JsonObject) {
@@ -179,6 +179,7 @@ class LudoSession(
         winner = s.winner?.takeIf { id -> seats.any { it.id == id } }
         result = s.result
         log.clear(); s.log.takeLast(32).forEach(log::add)
+        rng.restore(s.rngState)
         if (!finished && seats[turn].id in eliminated) nextTurn(true)
     }
 
@@ -346,7 +347,7 @@ class LudoSession(
         else -> progress.toString()
     }
 
-    private data class Snapshot(val pieces:Map<String,List<Int>>,val eliminated:List<String>,val turn:Int,val rolled:Int,val sixChain:Int,val revision:Long,val winner:String?,val result:String?,val log:List<String>)
+    private data class Snapshot(val pieces:Map<String,List<Int>>,val eliminated:List<String>,val turn:Int,val rolled:Int,val sixChain:Int,val revision:Long,val winner:String?,val result:String?,val log:List<String>,val rngState:Long)
 
     companion object {
         private const val HOME = -1

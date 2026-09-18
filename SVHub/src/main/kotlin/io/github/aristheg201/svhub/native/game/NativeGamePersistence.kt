@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.random.Random
 
 internal object NativeGamePersistence {
     val gson: Gson = GsonBuilder().disableHtmlEscaping().create()
@@ -20,13 +21,40 @@ object NativeGameRestorer {
     fun restore(gameId: String, seats: List<NativeSeat>, sessionId: String, state: JsonObject): NativeGameSession {
         val seed = NativeGamePersistence.recoverySeed(sessionId, state)
         return when (gameId) {
-            "chess" -> ChessSession(seats = seats, sessionId = sessionId, restoreState = state)
-            "xiangqi" -> XiangqiSession(seats = seats, sessionId = sessionId, restoreState = state)
+            "chess" -> ChessSession(seats = seats, sessionId = sessionId, restoreState = state, seed = seed)
+            "xiangqi" -> XiangqiSession(seats = seats, sessionId = sessionId, restoreState = state, seed = seed)
             "ludo" -> LudoSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
             "uno" -> UnoSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
             "pokecards" -> CardDuelSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
             "tower_defense" -> TowerDefenseSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
             else -> throw IllegalArgumentException("No recovery codec for game: $gameId")
         }
+    }
+}
+
+
+class NativeStatefulRandom(seed: Long) : Random() {
+    var state: Long = seed
+        private set
+
+    override fun nextBits(bitCount: Int): Int {
+        require(bitCount in 0..32)
+        if (bitCount == 0) return 0
+        var z = state + GOLDEN_GAMMA
+        state = z
+        z = (z xor (z ushr 30)) * MIX1
+        z = (z xor (z ushr 27)) * MIX2
+        z = z xor (z ushr 31)
+        return (z ushr (64 - bitCount)).toInt()
+    }
+
+    fun restore(checkpoint: Long) {
+        state = checkpoint
+    }
+
+    companion object {
+        private const val GOLDEN_GAMMA: Long = -7046029254386353131L
+        private const val MIX1: Long = -4658895280553007687L
+        private const val MIX2: Long = -7723592293110705685L
     }
 }

@@ -11,7 +11,7 @@ class UnoSession(
 ) : NativeGameSession {
     override val gameId = "uno"
 
-    private val rng = Random(seed)
+    private val rng = NativeStatefulRandom(seed)
     private val drawPile = ArrayDeque<Card>()
     private val discard = ArrayDeque<Card>()
     private val hands = seats.associate { it.id to mutableListOf<Card>() }.toMutableMap()
@@ -150,7 +150,7 @@ class UnoSession(
 
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(drawPile.toList(), discard.toList(), hands.mapValues { (_, value) -> value.toList() }, eliminated.toList(),
-            turnIndex, direction, activeColor, revision, winner, result, log.toList())
+            turnIndex, direction, activeColor, revision, winner, result, log.toList(), rng.state)
     )
 
     private fun restoreSnapshot(state: JsonObject) {
@@ -168,6 +168,7 @@ class UnoSession(
         winner = s.winner?.takeIf { id -> seats.any { it.id == id } }
         result = s.result
         log.clear(); s.log.takeLast(32).forEach(log::add)
+        rng.restore(s.rngState)
         if (!finished && seats[turnIndex].id in eliminated) advance()
     }
 
@@ -346,7 +347,7 @@ class UnoSession(
     private enum class Color { RED, YELLOW, GREEN, BLUE, WILD }
     private enum class Kind { NUMBER, SKIP, REVERSE, DRAW2, WILD, WILD4 }
 
-    private data class Snapshot(val drawPile:List<Card>,val discard:List<Card>,val hands:Map<String,List<Card>>,val eliminated:List<String>,val turnIndex:Int,val direction:Int,val activeColor:Color,val revision:Long,val winner:String?,val result:String?,val log:List<String>)
+    private data class Snapshot(val drawPile:List<Card>,val discard:List<Card>,val hands:Map<String,List<Card>>,val eliminated:List<String>,val turnIndex:Int,val direction:Int,val activeColor:Color,val revision:Long,val winner:String?,val result:String?,val log:List<String>,val rngState:Long)
 
     private data class Card(
         val color: Color,

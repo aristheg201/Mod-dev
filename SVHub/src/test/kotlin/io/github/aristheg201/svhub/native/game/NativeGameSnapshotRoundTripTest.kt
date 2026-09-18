@@ -5,6 +5,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class NativeGameSnapshotRoundTripTest {
+    @Test fun `stateful rng resumes exact sequence`() {
+        val first=NativeStatefulRandom(1234L)
+        repeat(11){first.nextInt()}
+        val checkpoint=first.state
+        val expected=List(16){first.nextInt()}
+        val resumed=NativeStatefulRandom(0L)
+        resumed.restore(checkpoint)
+        assertEquals(expected,List(16){resumed.nextInt()})
+    }
+
     private fun seat(id:String,name:String)=NativeSeat(id,name)
 
     private fun assertRoundTrip(game:NativeGameSession, viewers:List<String>) {

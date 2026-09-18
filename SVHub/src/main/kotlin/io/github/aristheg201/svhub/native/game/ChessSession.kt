@@ -9,9 +9,11 @@ class ChessSession(
     private val initialClockMillis: Long = 10 * 60 * 1000L,
     private val incrementMillis: Long = 5_000L,
     override val sessionId: String = NativeIds.session("chess"),
-    private val restoreState: JsonObject? = null
+    private val restoreState: JsonObject? = null,
+    seed: Long = Random.nextLong()
 ) : NativeGameSession {
     override val gameId: String = "chess"
+    private val rng = NativeStatefulRandom(seed)
     private var board = START.toCharArray()
     private var side = 'w'
     private var castling = "KQkq"
@@ -128,7 +130,7 @@ class ChessSession(
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(String(board), side.toString(), castling, epSquare, halfmove, fullmove, revision, log.toList(),
             repetitions.toMap(), result, winner, drawOfferedBy, whiteClock.coerceAtLeast(0L),
-            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, moveSerial)
+            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, moveSerial, rng.state)
     )
 
     private fun restoreSnapshot(state: JsonObject) {
@@ -153,6 +155,7 @@ class ChessSession(
         lastMoveFrom = s.lastMoveFrom.takeIf { it in -1..63 } ?: -1
         lastMoveTo = s.lastMoveTo.takeIf { it in -1..63 } ?: -1
         moveSerial = s.moveSerial.coerceAtLeast(0L)
+        rng.restore(s.rngState)
         lastClockAt = System.currentTimeMillis()
     }
 
@@ -161,7 +164,7 @@ class ChessSession(
         while (!finished && seatForSide(side).bot && g++ < 2) {
             val ms = legalMoves(side)
             if (ms.isEmpty()) { resolveNoMoves(); return }
-            applyMove(ms.maxBy { pieceValue(board[it.to]) * 20 + 7 - (abs(file(it.to) - 3) + abs(rank(it.to) - 3)) + Random.nextInt(0, 8) })
+            applyMove(ms.maxBy { pieceValue(board[it.to]) * 20 + 7 - (abs(file(it.to) - 3) + abs(rank(it.to) - 3)) + rng.nextInt(0, 8) })
         }
     }
 
@@ -357,7 +360,7 @@ class ChessSession(
     private data class Snapshot(
         val board:String,val side:String,val castling:String,val epSquare:Int,val halfmove:Int,val fullmove:Int,
         val revision:Long,val log:List<String>,val repetitions:Map<String,Int>,val result:String?,val winner:String?,
-        val drawOfferedBy:String?,val whiteClock:Long,val blackClock:Long,val lastMoveFrom:Int,val lastMoveTo:Int,val moveSerial:Long
+        val drawOfferedBy:String?,val whiteClock:Long,val blackClock:Long,val lastMoveFrom:Int,val lastMoveTo:Int,val moveSerial:Long,val rngState:Long
     )
 
     companion object {
