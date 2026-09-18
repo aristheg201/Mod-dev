@@ -1,6 +1,7 @@
 {
   "style": "bamboo_court",
-  "depth": 3,
+  "surface": "grid",
+  "depth": 6,
   "detailEvery": 0,
   "pathDetailEvery": 0,
   "floor": [
@@ -12,50 +13,52 @@
   "ally": [],
   "enemy": [],
   "path": [],
-  "floorColor": "#9a7548",
-  "floorAltColor": "#895b43",
-  "allyColor": "#9a7548",
-  "enemyColor": "#895b43",
-  "pathColor": "#66513d",
-  "pathAccentColor": "#c3a15d",
-  "gridColor": "#4a382a",
-  "depthColor": "#2b2018",
+  "floorColor": "#a47d4e",
+  "floorAltColor": "#8d6044",
+  "allyColor": "#a47d4e",
+  "enemyColor": "#8d6044",
+  "pathColor": "#6a4c34",
+  "pathAccentColor": "#d0a65d",
+  "gridColor": "#3f3024",
+  "borderColor": "#553a27",
+  "edgeColor": "#261a12",
+  "depthColor": "#261a12",
   "props": [
     {
       "item": "minecraft:red_candle",
-      "x": -0.75,
-      "y": 0,
-      "scale": 0.72
+      "x": -1,
+      "y": 0.2,
+      "scale": 0.82
     },
     {
       "item": "minecraft:red_candle",
-      "x": 8.75,
-      "y": 0,
-      "scale": 0.72
+      "x": 9,
+      "y": 0.2,
+      "scale": 0.82
     },
     {
       "item": "minecraft:lantern",
-      "x": -0.75,
-      "y": 9,
-      "scale": 0.78
+      "x": -1,
+      "y": 8.8,
+      "scale": 0.85
     },
     {
       "item": "minecraft:lantern",
-      "x": 8.75,
-      "y": 9,
-      "scale": 0.78
+      "x": 9,
+      "y": 8.8,
+      "scale": 0.85
     },
     {
       "item": "minecraft:bamboo",
       "x": 4,
-      "y": -0.9,
-      "scale": 0.75
+      "y": -1,
+      "scale": 0.85
     },
     {
       "item": "minecraft:decorated_pot",
       "x": 4,
-      "y": 9.9,
-      "scale": 0.72
+      "y": 10,
+      "scale": 0.82
     }
   ]
 }

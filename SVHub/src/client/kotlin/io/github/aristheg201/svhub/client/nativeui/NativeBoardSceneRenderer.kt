@@ -356,7 +356,8 @@ object NativeBoardSceneRenderer {
             nativeAnimations = nativeAnimations,
             arenaId = "tower_defense",
             arenaSeed = view.str("sessionId"),
-            pathCells = path.toSet()
+            pathCells = path.toSet(),
+            pathRoute = path
         )
         return NativeBoardSceneResult(frame, emptySet())
     }

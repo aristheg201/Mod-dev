@@ -1,7 +1,8 @@
 {
   "style": "split_battleground",
-  "depth": 4,
-  "detailEvery": 9,
+  "surface": "tactical",
+  "depth": 7,
+  "detailEvery": 12,
   "pathDetailEvery": 0,
   "floor": [
     "minecraft:moss_carpet",
@@ -19,50 +20,52 @@
     "minecraft:nether_sprouts"
   ],
   "path": [],
-  "floorColor": "#385b3b",
-  "floorAltColor": "#385b3b",
-  "allyColor": "#3f7049",
-  "enemyColor": "#733d42",
-  "pathColor": "#6f6a5e",
-  "pathAccentColor": "#918978",
-  "gridColor": "#27443a",
-  "depthColor": "#16221f",
+  "floorColor": "#314a36",
+  "floorAltColor": "#314a36",
+  "allyColor": "#315f42",
+  "enemyColor": "#673940",
+  "pathColor": "#756e5f",
+  "pathAccentColor": "#b2a887",
+  "gridColor": "#80a08e",
+  "borderColor": "#3f4b40",
+  "edgeColor": "#172019",
+  "depthColor": "#172019",
   "props": [
     {
       "item": "minecraft:campfire",
-      "x": -0.95,
+      "x": -1.05,
       "y": 3.5,
-      "scale": 0.9
+      "scale": 0.95
     },
     {
       "item": "minecraft:soul_campfire",
-      "x": 6.95,
+      "x": 7.05,
       "y": 3.5,
-      "scale": 0.9
+      "scale": 0.95
     },
     {
       "item": "minecraft:lantern",
-      "x": -0.75,
+      "x": -0.85,
       "y": 7.1,
-      "scale": 0.72
+      "scale": 0.78
     },
     {
       "item": "minecraft:soul_lantern",
-      "x": 6.75,
+      "x": 6.85,
       "y": -0.15,
-      "scale": 0.72
+      "scale": 0.78
     },
     {
       "item": "minecraft:bell",
       "x": 3,
-      "y": 7.75,
-      "scale": 0.78
+      "y": 7.8,
+      "scale": 0.82
     },
     {
       "item": "minecraft:respawn_anchor",
       "x": 3,
-      "y": -0.85,
-      "scale": 0.78
+      "y": -0.95,
+      "scale": 0.82
     }
   ]
 }

@@ -1,6 +1,7 @@
 {
   "style": "festival_board",
-  "depth": 3,
+  "surface": "track",
+  "depth": 6,
   "detailEvery": 0,
   "pathDetailEvery": 0,
   "floor": [
@@ -12,43 +13,51 @@
   "ally": [],
   "enemy": [],
   "path": [],
-  "floorColor": "#e5dfcf",
-  "floorAltColor": "#c9c2b0",
-  "allyColor": "#6aa8ca",
-  "enemyColor": "#c86c71",
-  "pathColor": "#918773",
-  "pathAccentColor": "#d5c895",
-  "gridColor": "#72766f",
-  "depthColor": "#313637",
+  "floorColor": "#403d35",
+  "floorAltColor": "#d4c7a2",
+  "allyColor": "#5f9dc5",
+  "enemyColor": "#bd5d65",
+  "pathColor": "#978a6b",
+  "pathAccentColor": "#e1d5ae",
+  "gridColor": "#645f52",
+  "borderColor": "#4e4333",
+  "edgeColor": "#211d18",
+  "depthColor": "#211d18",
   "props": [
     {
       "item": "minecraft:blue_banner",
-      "x": -0.75,
-      "y": 0,
-      "scale": 0.82
+      "x": -1,
+      "y": -0.2,
+      "scale": 0.95
     },
     {
       "item": "minecraft:red_banner",
-      "x": 12.75,
-      "y": 0,
-      "scale": 0.82
+      "x": 13,
+      "y": -0.2,
+      "scale": 0.95
     },
     {
       "item": "minecraft:lime_banner",
-      "x": -0.75,
-      "y": 3,
-      "scale": 0.82
+      "x": -1,
+      "y": 3.2,
+      "scale": 0.95
     },
     {
       "item": "minecraft:yellow_banner",
-      "x": 12.75,
-      "y": 3,
-      "scale": 0.82
+      "x": 13,
+      "y": 3.2,
+      "scale": 0.95
     },
     {
       "item": "minecraft:bell",
       "x": 6,
-      "y": -0.8,
+      "y": -1,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": 6,
+      "y": 4.1,
       "scale": 0.75
     }
   ]

@@ -52,7 +52,7 @@ for (const locale of ["en_us", "vi_vn"]) {
 }
 const properties = fs.readFileSync(path.join(root, "gradle.properties"), "utf8");
 const metadata = fs.readFileSync(path.join(root, "src/main/resources/fabric.mod.json"), "utf8");
-if (!/^mod_version=0\.4\.4\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.4");
+if (!/^mod_version=0\.4\.5\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.5");
 if (!metadata.includes('"version": "${version}"')) failures.push("fabric.mod.json: Gradle version expansion marker missing");
 for (const [name, marker] of [
   ["responsive layout", "NativeLayout.resolve(width, height)"],
@@ -159,7 +159,7 @@ if (skinService.includes("givepokemonother")) failures.push("NativeSkinService.k
 for (const marker of ["lastRoll", "requestId", "DURATION_MS", "u * u * u * u * u"]) {
   if (!gachaRenderer.includes(marker)) failures.push(`GachaRouletteRenderer.kt: missing authoritative roulette marker ${marker}`);
 }
-for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride", "arenaId", "MinecraftArenaRenderer.renderTile", "pathCells"]) {
+for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride", "arenaId", "MinecraftArenaRenderer.renderTile", "MinecraftArenaRenderer.renderFoundation", "pathRoute", "moving = moving"]) {
   if (!sceneRenderer.includes(marker)) failures.push(`PokemonScene3D.kt: missing shared scene marker ${marker}`);
 }
 for (const marker of ["MinecraftArenaRegistry", "BuiltInRegistries.ITEM.getOptional", "assets/svhub/arenas", "ArenaTileRole.PATH"]) {
@@ -176,9 +176,11 @@ for (const arena of ["chess", "xiangqi", "ludo", "tft", "tower_defense"]) {
   if (!("depth" in def)) failures.push(`${arena}.json: missing board depth`);
   if (!("detailEvery" in def)) failures.push(`${arena}.json: missing sparse-detail cadence`);
   if (["chess", "xiangqi", "ludo"].includes(arena) && def.detailEvery !== 0) failures.push(`${arena}.json: board must not spam block items per cell`);
+  if (!def.surface) failures.push(`${arena}.json: missing explicit surface composition mode`);
+  if (!def.borderColor || !def.edgeColor) failures.push(`${arena}.json: missing platform border/edge colors`);
 }
-for (const marker of ["detailCadence", "Sparse surface detail only", "sortedBy { it.third.y }"]) {
-  if (!arenaRenderer.includes(marker)) failures.push(`MinecraftArenaRenderer.kt: missing board cleanup marker ${marker}`);
+for (const marker of ["renderFoundation", "renderPathRoute", "ArenaSurfaceMode.CHECKER", "ArenaSurfaceMode.GRID", "ArenaSurfaceMode.TACTICAL", "fillQuad", "Sparse environmental detail only"]) {
+  if (!arenaRenderer.includes(marker)) failures.push(`MinecraftArenaRenderer.kt: missing arena-composition marker ${marker}`);
 }
 for (const marker of ["SceneCameraPreset", "SceneCameras", "SceneProjectionMetrics", "depthFor"]) {
   if (!sceneProjection.includes(marker)) failures.push(`SceneProjection.kt: missing camera/projection marker ${marker}`);
@@ -188,6 +190,9 @@ for (const marker of ["TOUCH_HIT_WIDTH = 14", "MIN_THUMB = 24", "scrollFromPoint
 }
 for (const marker of ["SceneModelKey", "renderScene(", "instanceId"]) {
   if (!pokemonRenderer.includes(marker)) failures.push(`PokemonModelRenderer.kt: missing per-entity scene renderer marker ${marker}`);
+}
+for (const marker of ["resolveScenePoseType", "PoseType.STAND", "PoseType.WALK", "pose.animations.isNotEmpty()", "VaryingModelRepository.getPoser"]) {
+  if (!pokemonRenderer.includes(marker)) failures.push(`PokemonModelRenderer.kt: missing native scene-pose marker ${marker}`);
 }
 for (const marker of ["BundledFakemonCatalog", "sourceForSpecies", "sourceForForm"]) {
   if (!fakemonCatalogProvider.includes(marker)) failures.push(`BundledFakemonCatalog.kt: missing ${marker}`);
@@ -413,4 +418,4 @@ for (const marker of ["message.svhub.profile_loading", "gui.svhub.error.invalid_
 }
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);
-console.log("SVHub 0.4.4 structural QA passed (runtime/gameplay/visual verification is separate)");
+console.log("SVHub 0.4.5 structural QA passed (runtime/gameplay/visual verification is separate)");

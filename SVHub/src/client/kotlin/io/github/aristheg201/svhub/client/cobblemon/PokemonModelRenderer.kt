@@ -16,6 +16,8 @@ import com.cobblemon.mod.common.client.render.models.blockbench.animation.Active
 import com.cobblemon.mod.common.client.render.models.blockbench.animation.PrimaryAnimation
 import com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation
 import com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockParticleKeyframe
+import com.cobblemon.mod.common.client.render.models.blockbench.repository.VaryingModelRepository
+import com.cobblemon.mod.common.entity.PoseType
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.gui.GuiGraphics
@@ -92,7 +94,9 @@ object PokemonModelRenderer {
             zoom = zoom,
             pitch = pitch,
             depth = 1000.0,
-            selfClip = true
+            selfClip = true,
+            scenePose = false,
+            moving = false
         )
     }
 
@@ -111,7 +115,8 @@ object PokemonModelRenderer {
         yaw: Float = 0f,
         zoom: Float = 1f,
         pitch: Float = 28f,
-        depth: Double = 1000.0
+        depth: Double = 1000.0,
+        moving: Boolean = false
     ): Boolean {
         val sceneKey = SceneModelKey(instanceId, view.speciesId, view.aspects.sorted())
         val live = sceneModel(sceneKey, view) ?: return false
@@ -126,7 +131,9 @@ object PokemonModelRenderer {
             zoom = zoom,
             pitch = pitch,
             depth = depth,
-            selfClip = false
+            selfClip = false,
+            scenePose = true,
+            moving = moving
         )
         if (rendered) flushSceneAnimations(instanceId, live)
         return rendered
@@ -189,7 +196,9 @@ object PokemonModelRenderer {
         zoom: Float,
         pitch: Float,
         depth: Double,
-        selfClip: Boolean
+        selfClip: Boolean,
+        scenePose: Boolean,
+        moving: Boolean
     ): Boolean {
         val safeSize = size.coerceIn(28, 512)
         val safeZoom = zoom.coerceIn(0.45f, 2.25f)
@@ -222,10 +231,12 @@ object PokemonModelRenderer {
 
         var rendered = false
         try {
+            val poseType = if (scenePose) resolveScenePoseType(live, moving) else PoseType.PROFILE
             drawProfilePokemon(
                 renderablePokemon = live.pokemon,
                 matrixStack = pose,
                 rotation = rotation,
+                poseType = poseType,
                 state = live.state,
                 partialTicks = deltaTicks,
                 blockLight = 15
@@ -239,6 +250,36 @@ object PokemonModelRenderer {
             if (selfClip) gui.disableScissor()
         }
         return rendered
+    }
+
+    /**
+     * Scene models must use world-style poses, not PROFILE. Many community/Fakemon
+     * posers intentionally leave PROFILE sparse or static, which looks like a T-pose
+     * when reused as a battlefield model. Prefer an authored moving/stationary pose
+     * that actually contains pose animation or transforms.
+     */
+    private fun resolveScenePoseType(live: LiveModel, moving: Boolean): PoseType {
+        live.state.currentAspects = live.pokemon.aspects
+        val model = runCatching {
+            VaryingModelRepository.getPoser(live.pokemon.species.resourceIdentifier, live.state)
+        }.getOrNull()
+        if (model != null) live.state.currentModel = model
+
+        val suitable = model?.poses?.values.orEmpty().filter { pose ->
+            runCatching { pose.isSuitable(live.state) }.getOrDefault(false)
+        }
+        val authored = suitable.filter { pose ->
+            pose.animations.isNotEmpty() || pose.transformedParts.isNotEmpty()
+        }
+        val pool = authored.ifEmpty { suitable }
+        val priorities = if (moving) {
+            listOf(PoseType.WALK, PoseType.FLY, PoseType.SWIM, PoseType.HOVER, PoseType.FLOAT, PoseType.STAND, PoseType.PROFILE, PoseType.PORTRAIT)
+        } else {
+            listOf(PoseType.STAND, PoseType.HOVER, PoseType.FLOAT, PoseType.FLY, PoseType.SWIM, PoseType.WALK, PoseType.PROFILE, PoseType.PORTRAIT)
+        }
+        return priorities.firstOrNull { type -> pool.any { type in it.poseTypes } }
+            ?: pool.firstOrNull()?.poseTypes?.firstOrNull()
+            ?: if (moving) PoseType.WALK else PoseType.STAND
     }
 
     private fun flushSceneAnimations(instanceId: String, live: LiveModel) {

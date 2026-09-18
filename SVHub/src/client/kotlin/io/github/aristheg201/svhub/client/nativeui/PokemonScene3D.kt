@@ -199,7 +199,8 @@ object PokemonScene3D {
         nativeAnimations: List<SceneNativeAnimationSignal> = emptyList(),
         arenaId: String? = null,
         arenaSeed: String = "",
-        pathCells: Set<Int> = emptySet()
+        pathCells: Set<Int> = emptySet(),
+        pathRoute: List<Int> = emptyList()
     ): PokemonSceneFrame {
         val metrics=SceneProjection.resolve(area,columns,rows,camera)
         val layout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight)
@@ -210,8 +211,13 @@ object PokemonScene3D {
         gui.enableScissor(area.x,area.y,area.right,area.bottom)
         val arena = arenaId?.let(MinecraftArenaRegistry::definition)
         val stableArenaSeed = if (arenaSeed.isNotBlank()) arenaSeed else arenaId.orEmpty()
+        if(arena!=null){
+            MinecraftArenaRenderer.renderFoundation(gui,layout,arena,teamSplitRow)
+            MinecraftArenaRenderer.renderPathRoute(gui,layout,arena,pathRoute)
+        }
         for(row in 0 until rows)for(col in 0 until columns){
-            val index=row*columns+col;val point=layout.project(col.toFloat(),row.toFloat())
+            val index=row*columns+col
+            val point=layout.project(col.toFloat(),row.toFloat())
             val alternate=((row+col) and 1)==1
             val role=when{
                 index in pathCells->ArenaTileRole.PATH
@@ -219,36 +225,26 @@ object PokemonScene3D {
                 teamSplitRow!=null->ArenaTileRole.ALLY
                 else->ArenaTileRole.FLOOR
             }
-            val baseFill=arena?.color(role,alternate)?:when{
-                role==ArenaTileRole.ENEMY->if(alternate)ENEMY_B else ENEMY_A
-                else->if(alternate)ALLY_B else ALLY_A
+
+            if(arena==null){
+                val baseFill=when{
+                    role==ArenaTileRole.ENEMY->if(alternate)ENEMY_B else ENEMY_A
+                    else->if(alternate)ALLY_B else ALLY_A
+                }
+                val fill=when{index in selectedCells->SELECTED;index in legalCells->LEGAL;else->baseFill}
+                drawDiamond(gui,point.x.roundToInt(),point.y.roundToInt(),layout.tileWidth,layout.tileHeight,fill,GRID_LINE)
+            }else{
+                when(arena.surfaceMode()){
+                    ArenaSurfaceMode.CHECKER->MinecraftArenaRenderer.renderCheckerCell(gui,layout,arena,index,alternate)
+                    ArenaSurfaceMode.TRACK->MinecraftArenaRenderer.renderTrackCell(gui,layout,arena,index,alternate)
+                    ArenaSurfaceMode.GRID,ArenaSurfaceMode.TACTICAL,ArenaSurfaceMode.TERRAIN->Unit
+                }
+                when{
+                    index in selectedCells->MinecraftArenaRenderer.renderCellHighlight(gui,layout,index,SELECTED,true)
+                    index in legalCells->MinecraftArenaRenderer.renderCellHighlight(gui,layout,index,LEGAL,false)
+                }
+                MinecraftArenaRenderer.renderTile(gui,layout,arena,index,role,alternate,stableArenaSeed)
             }
-            val fill=when{index in selectedCells->SELECTED;index in legalCells->LEGAL;else->baseFill}
-            val border=arena?.gridColor?:GRID_LINE
-            if(arena!=null&&arena.depth>0){
-                drawDiamond(
-                    gui,
-                    point.x.roundToInt(),
-                    point.y.roundToInt()+arena.depth,
-                    layout.tileWidth,
-                    layout.tileHeight,
-                    arena.depthColor,
-                    darken(arena.depthColor,0.72f)
-                )
-            }
-            drawDiamond(gui,point.x.roundToInt(),point.y.roundToInt(),layout.tileWidth,layout.tileHeight,fill,border)
-            if(arena!=null&&role==ArenaTileRole.PATH){
-                drawDiamond(
-                    gui,
-                    point.x.roundToInt(),
-                    point.y.roundToInt(),
-                    max(8,(layout.tileWidth*0.56f).roundToInt()),
-                    max(4,(layout.tileHeight*0.52f).roundToInt()),
-                    arena.pathAccentColor,
-                    arena.pathAccentColor
-                )
-            }
-            if(arena!=null)MinecraftArenaRenderer.renderTile(gui,layout,arena,index,role,alternate,stableArenaSeed)
         }
         if(arena!=null)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
 
@@ -282,11 +278,12 @@ object PokemonScene3D {
             Triple(entity,logical,layout.project(logical.x,logical.y))
         }.sortedWith(compareBy<Triple<PokemonSceneEntity,ScenePoint,ScenePoint>>{it.third.y}.thenBy{it.third.x}.thenBy{it.first.id})
         val centers=linkedMapOf<String,ScenePoint>()
-        positioned.forEachIndexed{order,(entity,_,point)->
+        positioned.forEachIndexed{order,(entity,logical,point)->
             centers[entity.id]=point
             val ring=if(entity.team==0)ALLY_RING else ENEMY_RING
-            drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(10,(layout.tileWidth*0.46f).roundToInt()),max(5,(layout.tileHeight*0.24f).roundToInt()),ring,ring)
+            drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(9,(layout.tileWidth*0.36f).roundToInt()),max(4,(layout.tileHeight*0.18f).roundToInt()),ring,ring)
             val modelSize=max(30,(layout.tileWidth*1.18f*entity.scale*camera.modelZoom).roundToInt()).coerceAtMost(108)
+            val moving=abs(logical.x-entity.boardX)>0.025f||abs(logical.y-entity.boardY)>0.025f
             val rendered=entity.view?.let{view->
                 PokemonModelRenderer.renderScene(
                     gui = gui,
@@ -298,7 +295,8 @@ object PokemonScene3D {
                     yaw = entity.yaw,
                     zoom = (entity.scale * camera.modelZoom).coerceIn(0.55f, 1.35f),
                     pitch = camera.pitch,
-                    depth = camera.depthBase + order * camera.depthStride
+                    depth = camera.depthBase + order * camera.depthStride,
+                    moving = moving
                 )
             }?:false
             if(!rendered){val label=font.plainSubstrByWidth(entity.label,max(16,layout.tileWidth-8));gui.drawCenteredString(font,label,point.x.roundToInt(),point.y.roundToInt()-4,TEXT)}
@@ -424,7 +422,7 @@ object PokemonScene3D {
     }
 
     private const val GRID_LINE=0xFF29403F.toInt();private const val ALLY_A=0xFF173530.toInt();private const val ALLY_B=0xFF132C29.toInt();private const val ENEMY_A=0xFF302126.toInt();private const val ENEMY_B=0xFF291B20.toInt()
-    private const val SELECTED=0xFF2F786E.toInt();private const val LEGAL=0xFF365D45.toInt();private const val ALLY_RING=0x994CC7B2.toInt();private const val ENEMY_RING=0x99B95E67.toInt()
+    private const val SELECTED=0xFF2F786E.toInt();private const val LEGAL=0xFF365D45.toInt();private const val ALLY_RING=0x664CC7B2;private const val ENEMY_RING=0x66B95E67
     private const val TEXT=0xFFF2F6F4.toInt();private const val GOLD=0xFFE2BE62.toInt();private const val BAR_BG=0xFF10191C.toInt();private const val HP_ALLY=0xFF54C97A.toInt();private const val HP_ENEMY=0xFFD86668.toInt();private const val MANA=0xFF55A9E8.toInt()
     private const val PROJECTILE=0xFFE2BE62.toInt();private const val CAST=0xFF9A7FE3.toInt();private const val HIT=0xFFE36C5C.toInt();private const val HEAL=0xFF67C989.toInt()
 }
