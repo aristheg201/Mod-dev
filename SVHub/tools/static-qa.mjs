@@ -71,6 +71,7 @@ const gachaTxn = read("src/main/kotlin/io/github/aristheg201/svhub/native/Native
 const gachaRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/GachaRouletteRenderer.kt");
 const sceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/PokemonScene3D.kt");
 const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/PokemonModelRenderer.kt");
+const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt");
 for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeCloseC2S"]) {
   if (!nativePayloads.includes(marker)) failures.push(`NativePayloads.kt: missing lifecycle marker ${marker}`);
 }
@@ -106,7 +107,7 @@ if (!screen.includes("UUID.randomUUID().toString()") || !screen.includes("GachaR
   failures.push("NativePlatformScreen.kt: gacha request id / roulette integration missing");
 }
 
-const tftRenderer = fs.readFileSync(path.join(root, "src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt"), "utf8");
+
 for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"']) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
 }
