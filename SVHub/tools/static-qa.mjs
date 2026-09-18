@@ -42,7 +42,7 @@ const translationKeys = translationSources.flatMap((file) => {
   const source = fs.readFileSync(file, "utf8");
   const direct = [...source.matchAll(/(?<![A-Za-z])tr\("([^"]+)"\)/g)].map((match) => match[1]);
   const semantic = [...source.matchAll(/"(gui\.svhub\.[a-z0-9_.-]+)"/g)].map((match) => match[1]);
-  return [...direct, ...semantic].filter((key) => !key.includes("$"));
+  return [...direct, ...semantic].filter((key) => !key.includes("$") && !key.endsWith("."));
 });
 for (const locale of ["en_us", "vi_vn"]) {
   const lang = JSON.parse(fs.readFileSync(path.join(root, `src/main/resources/assets/svhub/lang/${locale}.json`), "utf8"));
