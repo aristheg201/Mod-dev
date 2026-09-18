@@ -14,13 +14,59 @@ data class NativeBoardSceneResult(
     val legalCells: Set<Int>
 )
 
+data class NativeSceneGhost(val entity: PokemonSceneEntity, val serial: Long)
+
 class NativeBoardSceneUiState {
+    private data class TimedGhost(val entity: PokemonSceneEntity, val serial: Long, val expiresAt: Long)
     private val scenes = linkedMapOf<String, PokemonSceneState>()
+    private val captureGhosts = linkedMapOf<String, TimedGhost>()
+    private val previousEntities = linkedMapOf<String, Map<String, PokemonSceneEntity>>()
+    private val departureGhosts = linkedMapOf<String, MutableMap<String, TimedGhost>>()
+
     fun scene(gameId: String): PokemonSceneState = scenes.getOrPut(gameId) { PokemonSceneState() }
-    fun clear(gameId: String? = null) {
-        if (gameId == null) scenes.values.forEach(PokemonSceneState::clear)
-        else scenes.remove(gameId)?.clear()
+
+    fun captureGhost(gameId: String, serial: Long, entity: PokemonSceneEntity?, now: Long = System.currentTimeMillis()): NativeSceneGhost? {
+        val current = captureGhosts[gameId]
+        if (serial <= 0L || entity == null) {
+            if (current != null && current.serial != serial) captureGhosts.remove(gameId)
+            return current?.takeIf { it.serial == serial && now < it.expiresAt }?.let { NativeSceneGhost(it.entity, it.serial) }
+        }
+        if (current == null || current.serial != serial) {
+            captureGhosts[gameId] = TimedGhost(entity, serial, now + GHOST_MS)
+        }
+        val ghost = captureGhosts[gameId] ?: return null
+        if (now >= ghost.expiresAt) {
+            captureGhosts.remove(gameId)
+            return null
+        }
+        return NativeSceneGhost(ghost.entity, ghost.serial)
     }
+
+    fun departedGhosts(gameId: String, current: List<PokemonSceneEntity>, now: Long = System.currentTimeMillis()): List<NativeSceneGhost> {
+        val currentById = current.associateBy { it.id }
+        val previous = previousEntities.put(gameId, currentById).orEmpty()
+        val ghosts = departureGhosts.getOrPut(gameId) { linkedMapOf() }
+        previous.forEach { (id, entity) ->
+            if (id !in currentById && id !in ghosts) {
+                ghosts[id] = TimedGhost(entity, now, now + GHOST_MS)
+            }
+        }
+        currentById.keys.forEach(ghosts::remove)
+        ghosts.entries.removeIf { now >= it.value.expiresAt }
+        return ghosts.values.map { NativeSceneGhost(it.entity, it.serial) }
+    }
+
+    fun clear(gameId: String? = null) {
+        if (gameId == null) {
+            scenes.values.forEach(PokemonSceneState::clear)
+            scenes.clear(); captureGhosts.clear(); previousEntities.clear(); departureGhosts.clear()
+        } else {
+            scenes.remove(gameId)?.clear()
+            captureGhosts.remove(gameId); previousEntities.remove(gameId); departureGhosts.remove(gameId)
+        }
+    }
+
+    companion object { private const val GHOST_MS = 900L }
 }
 
 object NativeBoardSceneRenderer {
@@ -39,9 +85,9 @@ object NativeBoardSceneRenderer {
         val gameId = view.str("gameId")
         if (gameId !in supported) return null
         return when (gameId) {
-            "chess" -> renderChess(gui, font, area, view, ui.scene(gameId), selectedCell)
-            "xiangqi" -> renderXiangqi(gui, font, area, view, ui.scene(gameId), selectedCell)
-            "tower_defense" -> renderTowerDefense(gui, font, area, view, ui.scene(gameId), selectedCell)
+            "chess" -> renderChess(gui, font, area, view, ui, selectedCell)
+            "xiangqi" -> renderXiangqi(gui, font, area, view, ui, selectedCell)
+            "tower_defense" -> renderTowerDefense(gui, font, area, view, ui, selectedCell)
             "ludo" -> renderLudo(gui, font, area, view, ui.scene(gameId), selectedCell)
             else -> null
         }
@@ -52,9 +98,10 @@ object NativeBoardSceneRenderer {
         font: Font,
         area: UiRect,
         view: JsonObject,
-        scene: PokemonSceneState,
+        ui: NativeBoardSceneUiState,
         selectedCell: Int?
     ): NativeBoardSceneResult {
+        val scene = ui.scene("chess")
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         val serial = fields.long("moveSerial")
@@ -64,6 +111,7 @@ object NativeBoardSceneRenderer {
         val legalCells = if (selectedCell == null) emptySet() else legalMoves[selectedCell].orEmpty()
         val selected = selectedCell?.let(::setOf).orEmpty()
         val entities = mutableListOf<PokemonSceneEntity>()
+        val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
 
         repeat(minOf(64, board.size())) { index ->
             val token = runCatching { board[index].asString }.getOrDefault("")
@@ -92,6 +140,46 @@ object NativeBoardSceneRenderer {
             )
         }
 
+        val capturedToken = fields.str("lastCapturedPiece")
+        val capturedIndex = chessIndex(fields.str("lastCapturedSquare"))
+        val captureEntity = if (serial > 0L && capturedToken.isNotBlank() && capturedIndex != null) {
+            val visual = NativeGameVisualRegistry.piece("chess", capturedToken.lowercase())
+            val capturedTeam = if (capturedToken.firstOrNull()?.isUpperCase() == true) 0 else 1
+            visual?.let {
+                PokemonSceneEntity(
+                    id = "chess:captured:$serial",
+                    view = it.pokemon(capturedToken),
+                    label = capturedToken,
+                    boardX = (capturedIndex % 8).toFloat(),
+                    boardY = (capturedIndex / 8).toFloat(),
+                    team = capturedTeam,
+                    yaw = it.yaw + if (capturedTeam == 0) 180f else 0f,
+                    scale = it.scale
+                )
+            }
+        } else null
+        ui.captureGhost("chess", serial, captureEntity)?.let { ghost ->
+            entities += ghost.entity
+            nativeAnimations += SceneNativeAnimationSignal(
+                id = "chess:faint",
+                serial = ghost.serial,
+                entityId = ghost.entity.id,
+                kind = SceneNativeAnimationKind.FAINT
+            )
+        }
+        if (capturedToken.isNotBlank() && lastTo != null) {
+            val attacker = entities.firstOrNull { it.id.startsWith("chess:$lastTo:") }
+            if (attacker != null) {
+                nativeAnimations += SceneNativeAnimationSignal(
+                    id = "chess:capture",
+                    serial = serial,
+                    entityId = attacker.id,
+                    kind = SceneNativeAnimationKind.PHYSICAL,
+                    targetEntityId = "chess:captured:$serial"
+                )
+            }
+        }
+
         val frame = PokemonScene3D.render(
             gui = gui,
             font = font,
@@ -103,6 +191,7 @@ object NativeBoardSceneRenderer {
             selectedCells = selected,
             legalCells = legalCells,
             camera = SceneCameras.BOARD,
+            nativeAnimations = nativeAnimations,
             arenaId = "chess",
             arenaSeed = view.str("sessionId")
         )
@@ -114,9 +203,10 @@ object NativeBoardSceneRenderer {
         font: Font,
         area: UiRect,
         view: JsonObject,
-        scene: PokemonSceneState,
+        ui: NativeBoardSceneUiState,
         selectedCell: Int?
     ): NativeBoardSceneResult {
+        val scene = ui.scene("xiangqi")
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         val serial = fields.long("moveSerial")
@@ -126,6 +216,7 @@ object NativeBoardSceneRenderer {
         val legalCells = if (selectedCell == null) emptySet() else legalMoves[selectedCell].orEmpty()
         val selected = selectedCell?.let(::setOf).orEmpty()
         val entities = mutableListOf<PokemonSceneEntity>()
+        val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
 
         repeat(minOf(90, board.size())) { index ->
             val token = runCatching { board[index].asString }.getOrDefault("")
@@ -148,6 +239,46 @@ object NativeBoardSceneRenderer {
             )
         }
 
+        val capturedToken = fields.str("lastCapturedPiece")
+        val capturedIndex = xiangqiIndex(fields.str("lastCapturedSquare"))
+        val captureEntity = if (serial > 0L && capturedToken.isNotBlank() && capturedIndex != null) {
+            val visual = NativeGameVisualRegistry.piece("xiangqi", capturedToken.lowercase())
+            val capturedTeam = if (capturedToken.firstOrNull()?.isUpperCase() == true) 0 else 1
+            visual?.let {
+                PokemonSceneEntity(
+                    id = "xiangqi:captured:$serial",
+                    view = it.pokemon(capturedToken),
+                    label = capturedToken,
+                    boardX = (capturedIndex % 9).toFloat(),
+                    boardY = (capturedIndex / 9).toFloat(),
+                    team = capturedTeam,
+                    yaw = it.yaw + if (capturedTeam == 0) 180f else 0f,
+                    scale = it.scale
+                )
+            }
+        } else null
+        ui.captureGhost("xiangqi", serial, captureEntity)?.let { ghost ->
+            entities += ghost.entity
+            nativeAnimations += SceneNativeAnimationSignal(
+                id = "xiangqi:faint",
+                serial = ghost.serial,
+                entityId = ghost.entity.id,
+                kind = SceneNativeAnimationKind.FAINT
+            )
+        }
+        if (capturedToken.isNotBlank() && lastTo != null) {
+            val attacker = entities.firstOrNull { it.id.startsWith("xiangqi:$lastTo:") }
+            if (attacker != null) {
+                nativeAnimations += SceneNativeAnimationSignal(
+                    id = "xiangqi:capture",
+                    serial = serial,
+                    entityId = attacker.id,
+                    kind = SceneNativeAnimationKind.PHYSICAL,
+                    targetEntityId = "xiangqi:captured:$serial"
+                )
+            }
+        }
+
         val frame = PokemonScene3D.render(
             gui = gui,
             font = font,
@@ -159,6 +290,7 @@ object NativeBoardSceneRenderer {
             selectedCells = selected,
             legalCells = legalCells,
             camera = SceneCameras.XIANGQI,
+            nativeAnimations = nativeAnimations,
             arenaId = "xiangqi",
             arenaSeed = view.str("sessionId")
         )
@@ -170,9 +302,10 @@ object NativeBoardSceneRenderer {
         font: Font,
         area: UiRect,
         view: JsonObject,
-        scene: PokemonSceneState,
+        ui: NativeBoardSceneUiState,
         selectedCell: Int?
     ): NativeBoardSceneResult {
+        val scene = ui.scene("tower_defense")
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         val path = fields.str("path")
@@ -181,16 +314,32 @@ object NativeBoardSceneRenderer {
             .filter { it in 0 until 96 }
         val entities = mutableListOf<PokemonSceneEntity>()
         val effects = mutableListOf<SceneEffectSignal>()
+        val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
 
         repeat(minOf(96, board.size())) { index ->
             val raw = runCatching { board[index].asString }.getOrDefault("")
             if (raw.isBlank()) return@repeat
             raw.split(',').forEach { token ->
                 when {
-                    token.startsWith("tower:") -> parseTower(index, token)?.let { visual -> entities += visual.entity; visual.effect?.let(effects::add) }
+                    token.startsWith("tower:") -> parseTower(index, token)?.let { visual ->
+                        entities += visual.entity
+                        visual.effect?.let(effects::add)
+                        nativeAnimations += visual.animations
+                    }
                     token.startsWith("enemy:") -> parseEnemy(index, token, path)?.let(entities::add)
                 }
             }
+        }
+
+        val liveEnemies = entities.filter { it.id.startsWith("td:enemy:") }
+        ui.departedGhosts("tower_defense", liveEnemies).forEach { ghost ->
+            entities += ghost.entity
+            nativeAnimations += SceneNativeAnimationSignal(
+                id = "td:faint:${ghost.entity.id}",
+                serial = ghost.serial,
+                entityId = ghost.entity.id,
+                kind = SceneNativeAnimationKind.FAINT
+            )
         }
 
         val frame = PokemonScene3D.render(
@@ -204,6 +353,7 @@ object NativeBoardSceneRenderer {
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
             camera = SceneCameras.LANE,
             effects = effects,
+            nativeAnimations = nativeAnimations,
             arenaId = "tower_defense",
             arenaSeed = view.str("sessionId"),
             pathCells = path.toSet()
@@ -261,7 +411,11 @@ object NativeBoardSceneRenderer {
         return NativeBoardSceneResult(frame, emptySet())
     }
 
-    private data class TowerScene(val entity: PokemonSceneEntity, val effect: SceneEffectSignal?)
+    private data class TowerScene(
+        val entity: PokemonSceneEntity,
+        val effect: SceneEffectSignal?,
+        val animations: List<SceneNativeAnimationSignal>
+    )
 
     private fun parseTower(index: Int, token: String): TowerScene? {
         val parts = token.split(':')
@@ -285,7 +439,26 @@ object NativeBoardSceneRenderer {
         val effect = targetId?.takeIf { fireSerial > 0L }?.let { enemyId ->
             SceneEffectSignal("td:shot:$index", fireSerial, SceneEffectKind.PROJECTILE, entity.id, "td:enemy:$enemyId")
         }
-        return TowerScene(entity, effect)
+        val moveId = parts.getOrNull(5)?.takeIf(String::isNotBlank)
+        val animations = targetId?.takeIf { fireSerial > 0L }?.let { enemyId ->
+            listOf(
+                SceneNativeAnimationSignal(
+                    id = "td:attack:$index",
+                    serial = fireSerial,
+                    entityId = entity.id,
+                    kind = if (type == "lucario") SceneNativeAnimationKind.PHYSICAL else SceneNativeAnimationKind.SPECIAL,
+                    targetEntityId = "td:enemy:$enemyId",
+                    moveId = moveId
+                ),
+                SceneNativeAnimationSignal(
+                    id = "td:recoil:$enemyId:$index",
+                    serial = fireSerial,
+                    entityId = "td:enemy:$enemyId",
+                    kind = SceneNativeAnimationKind.RECOIL
+                )
+            )
+        }.orEmpty()
+        return TowerScene(entity, effect, animations)
     }
 
     private fun parseEnemy(index: Int, token: String, path: List<Int>): PokemonSceneEntity? {

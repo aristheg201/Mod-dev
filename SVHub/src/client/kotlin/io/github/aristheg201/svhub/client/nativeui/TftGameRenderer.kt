@@ -31,6 +31,7 @@ internal data class TftUnitInfo(
     val range: Int,
     val manaStart: Int,
     val manaMax: Int,
+    val abilityId: String,
     val abilityName: String,
     val abilityTarget: String,
     val damageType: String,
@@ -64,8 +65,13 @@ internal data class TftHoverTooltip(
 )
 
 class TftUiState {
-    private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long)
+    private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long, val alive:Boolean)
+    internal data class CombatPresentation(
+        val effects: List<SceneEffectSignal>,
+        val animations: List<SceneNativeAnimationSignal>
+    )
     private val combatCounters = linkedMapOf<String, CombatCounters>()
+    private val deadSince = linkedMapOf<String, Long>()
     private var unitCatalogRaw = ""
     private var traitCatalogRaw = ""
     private var unitCatalog: Map<String, TftUnitInfo> = emptyMap()
@@ -77,8 +83,16 @@ class TftUiState {
     var selectedItem: Int? = null
 
     fun clearUnit() { selectedOrigin = null; selectedIndex = null }
-    fun resetCombat() = combatCounters.clear()
-    fun pruneCombat(activeIds:Set<String>) { combatCounters.keys.removeIf { it !in activeIds } }
+    fun resetCombat() { combatCounters.clear(); deadSince.clear() }
+    fun pruneCombat(activeIds:Set<String>) {
+        combatCounters.keys.removeIf { it !in activeIds }
+        deadSince.keys.removeIf { it !in activeIds }
+    }
+    fun visibleCombatUnit(instanceId:String, alive:Boolean, now:Long):Boolean {
+        if (alive) { deadSince.remove(instanceId); return true }
+        val since = deadSince.getOrPut(instanceId) { now }
+        return now - since < FAINT_VISIBLE_MS
+    }
     internal fun beginFrame() { hoverTooltip = null }
     internal fun unitInfo(id: String): TftUnitInfo? = unitCatalog[id]
     internal fun traitInfo(id: String): TftTraitInfo? = traitCatalog[id]
@@ -116,6 +130,7 @@ class TftUiState {
                 range = obj.int("range"),
                 manaStart = obj.int("manaStart"),
                 manaMax = obj.int("manaMax"),
+                abilityId = obj.str("abilityId"),
                 abilityName = obj.str("abilityName"),
                 abilityTarget = obj.str("abilityTarget"),
                 damageType = obj.str("damageType"),
@@ -152,17 +167,85 @@ class TftUiState {
     private fun JsonObject.int(key: String, fallback: Int = 0) = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
     private fun JsonObject.double(key: String, fallback: Double = 0.0) = runCatching { get(key)?.asDouble ?: fallback }.getOrDefault(fallback)
 
-    fun observeCombat(instanceId:String,targetId:String?,casts:Int,damageDone:Long,healingDone:Long):List<SceneEffectSignal>{
-        val next=CombatCounters(targetId?.takeIf(String::isNotBlank),casts,damageDone,healingDone)
-        val previous=combatCounters.put(instanceId,next)?:return emptyList()
+    fun observeCombat(
+        instanceId:String,
+        targetId:String?,
+        casts:Int,
+        damageDone:Long,
+        healingDone:Long,
+        alive:Boolean,
+        moveId:String?,
+        damageType:String?
+    ):CombatPresentation{
+        val next=CombatCounters(targetId?.takeIf(String::isNotBlank),casts,damageDone,healingDone,alive)
+        val previous=combatCounters.put(instanceId,next)
         val source="tft:"+instanceId
         val target=next.targetId?.let { "tft:"+it }
-        return buildList {
-            if(casts>previous.casts) add(SceneEffectSignal("tft:cast:"+instanceId,casts.toLong(),SceneEffectKind.CAST,source,target))
-            if(damageDone>previous.damageDone) add(SceneEffectSignal("tft:damage:"+instanceId,damageDone,SceneEffectKind.PROJECTILE,source,target))
-            if(healingDone>previous.healingDone) add(SceneEffectSignal("tft:heal:"+instanceId,healingDone,SceneEffectKind.HEAL,source,source))
+        if(previous==null){
+            val initialAnimations=if(!alive) listOf(
+                SceneNativeAnimationSignal("tft:faint:"+instanceId,System.currentTimeMillis(),source,SceneNativeAnimationKind.FAINT)
+            ) else emptyList()
+            return CombatPresentation(emptyList(),initialAnimations)
         }
+
+        val effects=mutableListOf<SceneEffectSignal>()
+        val animations=mutableListOf<SceneNativeAnimationSignal>()
+        val casted=casts>previous.casts
+        val damaged=damageDone>previous.damageDone
+
+        if(casted){
+            effects+=SceneEffectSignal("tft:cast:"+instanceId,casts.toLong(),SceneEffectKind.CAST,source,target)
+            animations+=SceneNativeAnimationSignal(
+                id="tft:cast:"+instanceId,
+                serial=casts.toLong(),
+                entityId=source,
+                kind=if(damageType=="physical")SceneNativeAnimationKind.PHYSICAL else SceneNativeAnimationKind.SPECIAL,
+                targetEntityId=target,
+                moveId=moveId
+            )
+        }
+        if(damaged){
+            effects+=SceneEffectSignal("tft:damage:"+instanceId,damageDone,SceneEffectKind.PROJECTILE,source,target)
+            if(!casted){
+                animations+=SceneNativeAnimationSignal(
+                    id="tft:attack:"+instanceId,
+                    serial=damageDone,
+                    entityId=source,
+                    kind=SceneNativeAnimationKind.PHYSICAL,
+                    targetEntityId=target
+                )
+            }
+            target?.let{
+                animations+=SceneNativeAnimationSignal(
+                    id="tft:recoil:"+instanceId,
+                    serial=damageDone,
+                    entityId=it,
+                    kind=SceneNativeAnimationKind.RECOIL
+                )
+            }
+        }
+        if(healingDone>previous.healingDone){
+            effects+=SceneEffectSignal("tft:heal:"+instanceId,healingDone,SceneEffectKind.HEAL,source,source)
+            animations+=SceneNativeAnimationSignal(
+                id="tft:heal:"+instanceId,
+                serial=healingDone,
+                entityId=source,
+                kind=SceneNativeAnimationKind.STATUS,
+                moveId=moveId
+            )
+        }
+        if(previous.alive&&!alive){
+            animations+=SceneNativeAnimationSignal(
+                id="tft:faint:"+instanceId,
+                serial=System.currentTimeMillis(),
+                entityId=source,
+                kind=SceneNativeAnimationKind.FAINT
+            )
+        }
+        return CombatPresentation(effects,animations)
     }
+
+    companion object { private const val FAINT_VISIBLE_MS=900L }
 }
 
 object TftGameRenderer {
@@ -181,7 +264,8 @@ object TftGameRenderer {
         val targetId: String?,
         val casts: Int,
         val damageDone: Long,
-        val healingDone: Long
+        val healingDone: Long,
+        val alive: Boolean
     )
     private data class BenchToken(val index: Int, val instanceId: String, val unitId: String, val species: String, val star: Int, val aspects: Set<String>, val items: List<String>)
     private data class PlayerLine(val id: String, val name: String, val hp: Int, val level: Int, val placement: Int, val eliminated: Boolean)
@@ -329,7 +413,14 @@ object TftGameRenderer {
     ) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, 0xFF0D171A.toInt())
 
-        val entities = units.mapNotNull { (index, unit) ->
+        val now = System.currentTimeMillis()
+        val visibleUnits = if (phase == "combat") {
+            units.filterValues { unit -> ui.visibleCombatUnit(unit.instanceId, unit.alive, now) }
+        } else {
+            units
+        }
+
+        val entities = visibleUnits.mapNotNull { (index, unit) ->
             val view = pokemonView(unit.species, unit.aspects, unit.unitId)
             PokemonSceneEntity(
                 id = "tft:" + unit.instanceId,
@@ -349,11 +440,26 @@ object TftGameRenderer {
         }
 
         val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
-        val effectSignals=if(phase=="combat"){
-            buildList { units.values.forEach { unit -> addAll(ui.observeCombat(unit.instanceId,unit.targetId,unit.casts,unit.damageDone,unit.healingDone)) } }
+        val effectSignals=mutableListOf<SceneEffectSignal>()
+        val nativeAnimations=mutableListOf<SceneNativeAnimationSignal>()
+        if(phase=="combat"){
+            units.values.forEach { unit ->
+                val info=ui.unitInfo(unit.unitId)
+                val presentation=ui.observeCombat(
+                    unit.instanceId,
+                    unit.targetId,
+                    unit.casts,
+                    unit.damageDone,
+                    unit.healingDone,
+                    unit.alive,
+                    info?.abilityId,
+                    info?.damageType
+                )
+                effectSignals+=presentation.effects
+                nativeAnimations+=presentation.animations
+            }
         }else{
             ui.resetCombat()
-            emptyList()
         }
         ui.pruneCombat(activeIds)
 
@@ -377,6 +483,7 @@ object TftGameRenderer {
             teamSplitRow = 4,
             camera = SceneCameras.TFT,
             effects = effectSignals,
+            nativeAnimations = nativeAnimations,
             arenaId = "tft",
             arenaSeed = arenaSeed
         )
@@ -744,7 +851,8 @@ object TftGameRenderer {
             p.getOrNull(13)?.takeIf(String::isNotBlank),
             p.getOrNull(14)?.toIntOrNull() ?: 0,
             p.getOrNull(15)?.toLongOrNull() ?: 0L,
-            p.getOrNull(16)?.toLongOrNull() ?: 0L
+            p.getOrNull(16)?.toLongOrNull() ?: 0L,
+            p.getOrNull(17) != "0"
         )
     }
 

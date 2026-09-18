@@ -1,8 +1,22 @@
 package io.github.aristheg201.svhub.client.cobblemon
 
+import com.cobblemon.mod.common.api.moves.Moves
+import com.cobblemon.mod.common.api.moves.animations.ActionEffectTimeline
+import com.cobblemon.mod.common.api.moves.animations.ActionEffects
+import com.cobblemon.mod.common.api.moves.animations.keyframes.ActionEffectKeyframe
+import com.cobblemon.mod.common.api.moves.animations.keyframes.AnimationActionEffectKeyframe
+import com.cobblemon.mod.common.api.moves.animations.keyframes.EntityParticlesActionEffectKeyframe
+import com.cobblemon.mod.common.api.moves.animations.keyframes.ForkActionEffectKeyframe
+import com.cobblemon.mod.common.api.moves.animations.keyframes.ParallelActionEffectKeyframe
+import com.cobblemon.mod.common.api.moves.animations.keyframes.RunActionEffectKeyframe
+import com.cobblemon.mod.common.api.moves.animations.keyframes.SequenceActionEffectKeyframe
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
+import com.cobblemon.mod.common.client.render.models.blockbench.animation.ActiveAnimation
+import com.cobblemon.mod.common.client.render.models.blockbench.animation.PrimaryAnimation
+import com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation
+import com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockParticleKeyframe
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.gui.GuiGraphics
@@ -18,17 +32,44 @@ import kotlin.math.PI
  * poser, texture, layers and profile transforms. The renderer never snapshots the
  * model through an auxiliary framebuffer, so it cannot poison the main GUI target.
  */
+data class CobblemonSceneParticleCue(
+    val sourceEntityId: String,
+    val targetEntityId: String?,
+    val effectId: String,
+    val startedAtMs: Long,
+    val delayMs: Long = 0L,
+    val lifetimeMs: Long = 520L
+)
+
 object PokemonModelRenderer {
     private data class ModelKey(val species: String, val aspects: List<String>)
     private data class SceneModelKey(val instanceId: String, val species: String, val aspects: List<String>)
 
+    private data class SceneAnimationRequest(
+        val signalId: String,
+        val serial: Long,
+        val labels: LinkedHashSet<String>,
+        val faint: Boolean,
+        val targetEntityId: String?,
+        val moveId: String?
+    )
+
+    private data class MovePresentation(
+        val animationLabels: LinkedHashSet<String> = linkedSetOf(),
+        val particleEffects: List<String> = emptyList()
+    )
+
     private class LiveModel(val pokemon: RenderablePokemon) {
         val state = FloatingState()
+        val seenSceneSignals = linkedMapOf<String, Long>()
+        val pendingSceneAnimations = ArrayDeque<SceneAnimationRequest>()
+        val nativeParticleCues = ArrayDeque<CobblemonSceneParticleCue>()
         var lastRenderNanos: Long = System.nanoTime()
     }
 
     private val models = ConcurrentHashMap<ModelKey, LiveModel>()
     private val sceneModels = ConcurrentHashMap<SceneModelKey, LiveModel>()
+    private val movePresentationCache = ConcurrentHashMap<String, MovePresentation>()
 
     fun render(
         gui: GuiGraphics,
@@ -75,7 +116,7 @@ object PokemonModelRenderer {
     ): Boolean {
         val sceneKey = SceneModelKey(instanceId, view.speciesId, view.aspects.sorted())
         val live = sceneModel(sceneKey, view) ?: return false
-        return renderInternal(
+        val rendered = renderInternal(
             gui = gui,
             live = live,
             removal = { sceneModels.remove(sceneKey, live) },
@@ -88,6 +129,49 @@ object PokemonModelRenderer {
             depth = depth,
             selfClip = false
         )
+        if (rendered) flushSceneAnimations(instanceId, live)
+        return rendered
+    }
+
+    fun requestSceneAnimation(
+        view: PokemonView,
+        instanceId: String,
+        signalId: String,
+        serial: Long,
+        labels: Set<String>,
+        targetEntityId: String? = null,
+        moveId: String? = null,
+        faint: Boolean = false
+    ) {
+        if (serial <= 0L || signalId.isBlank()) return
+        val key = SceneModelKey(instanceId, view.speciesId, view.aspects.sorted())
+        val live = sceneModel(key, view) ?: return
+        if (live.seenSceneSignals[signalId] == serial) return
+        live.seenSceneSignals[signalId] = serial
+        while (live.seenSceneSignals.size > 64) {
+            val first = live.seenSceneSignals.entries.firstOrNull()?.key ?: break
+            live.seenSceneSignals.remove(first)
+        }
+        live.pendingSceneAnimations.addLast(
+            SceneAnimationRequest(
+                signalId = signalId,
+                serial = serial,
+                labels = LinkedHashSet(labels.filter(String::isNotBlank)),
+                faint = faint,
+                targetEntityId = targetEntityId,
+                moveId = moveId?.takeIf(String::isNotBlank)
+            )
+        )
+        while (live.pendingSceneAnimations.size > 8) live.pendingSceneAnimations.removeFirst()
+    }
+
+    fun drainSceneParticleCues(activeInstanceIds: Set<String>): List<CobblemonSceneParticleCue> {
+        val cues = mutableListOf<CobblemonSceneParticleCue>()
+        sceneModels.forEach { (key, live) ->
+            if (key.instanceId !in activeInstanceIds) return@forEach
+            while (live.nativeParticleCues.isNotEmpty()) cues += live.nativeParticleCues.removeFirst()
+        }
+        return cues
     }
 
     fun pruneScene(activeInstanceIds: Set<String>) {
@@ -158,6 +242,122 @@ object PokemonModelRenderer {
         return rendered
     }
 
+    private fun flushSceneAnimations(instanceId: String, live: LiveModel) {
+        val model = live.state.currentModel ?: return
+        while (live.pendingSceneAnimations.isNotEmpty()) {
+            val request = live.pendingSceneAnimations.removeFirst()
+            val movePresentation = request.moveId?.let(::resolveMovePresentation) ?: MovePresentation()
+            val labels = linkedSetOf<String>().apply {
+                addAll(movePresentation.animationLabels)
+                addAll(request.labels)
+                if (!request.faint && isEmpty()) add("physical")
+            }
+
+            val animation = if (request.faint) {
+                model.getFaintAnimation(live.state)
+                    ?: model.getAnimation(live.state, "faint", live.state.runtime)
+                    ?: model.getAnimation(live.state, "recoil", live.state.runtime)
+            } else {
+                labels.firstNotNullOfOrNull { label ->
+                    model.getAnimation(live.state, label, live.state.runtime)
+                }
+            }
+
+            if (animation != null) {
+                if (animation is PrimaryAnimation) live.state.addPrimaryAnimation(animation)
+                else if (request.faint) live.state.addPrimaryAnimation(PrimaryAnimation(animation))
+                else live.state.addActiveAnimation(animation)
+
+                collectAnimationParticles(animation).forEach { (effectId, delayMs) ->
+                    live.nativeParticleCues += CobblemonSceneParticleCue(
+                        sourceEntityId = instanceId,
+                        targetEntityId = request.targetEntityId,
+                        effectId = effectId,
+                        startedAtMs = System.currentTimeMillis(),
+                        delayMs = delayMs
+                    )
+                }
+            }
+
+            movePresentation.particleEffects.forEachIndexed { index, effectId ->
+                live.nativeParticleCues += CobblemonSceneParticleCue(
+                    sourceEntityId = instanceId,
+                    targetEntityId = request.targetEntityId,
+                    effectId = effectId,
+                    startedAtMs = System.currentTimeMillis(),
+                    delayMs = index * 45L,
+                    lifetimeMs = 620L
+                )
+            }
+            while (live.nativeParticleCues.size > 24) live.nativeParticleCues.removeFirst()
+        }
+    }
+
+    private fun collectAnimationParticles(animation: ActiveAnimation): List<Pair<String, Long>> = when (animation) {
+        is PrimaryAnimation -> collectAnimationParticles(animation.animation)
+        is BedrockActiveAnimation -> animation.animation.effects
+            .filterIsInstance<BedrockParticleKeyframe>()
+            .map { keyframe -> keyframe.effect.id.toString() to (keyframe.seconds * 1_000f).toLong().coerceAtLeast(0L) }
+        else -> emptyList()
+    }
+
+    private fun resolveMovePresentation(rawMoveId: String): MovePresentation {
+        val normalized = rawMoveId.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+        if (normalized.isBlank()) return MovePresentation()
+        return movePresentationCache.computeIfAbsent(normalized) {
+            val move = Moves.getByName(normalized) ?: return@computeIfAbsent MovePresentation()
+            val labels = linkedSetOf<String>()
+            val particles = linkedSetOf<String>()
+            move.actionEffect?.let { timeline ->
+                collectActionEffect(timeline, labels, particles, linkedSetOf(), 0)
+            }
+            MovePresentation(labels, particles.take(12))
+        }
+    }
+
+    private fun collectActionEffect(
+        timeline: ActionEffectTimeline,
+        labels: LinkedHashSet<String>,
+        particles: LinkedHashSet<String>,
+        visited: MutableSet<String>,
+        depth: Int
+    ) {
+        if (depth > 6) return
+        timeline.timeline.forEach { frame -> collectActionFrame(frame, labels, particles, visited, depth) }
+    }
+
+    private fun collectActionFrame(
+        frame: ActionEffectKeyframe,
+        labels: LinkedHashSet<String>,
+        particles: LinkedHashSet<String>,
+        visited: MutableSet<String>,
+        depth: Int
+    ) {
+        if (depth > 6) return
+        when (frame) {
+            is AnimationActionEffectKeyframe -> frame.animation.filter(String::isNotBlank).forEach(labels::add)
+            is EntityParticlesActionEffectKeyframe -> {
+                val raw = frame.effect?.trim()?.removeSurrounding("\"")?.removeSurrounding("'").orEmpty()
+                if (raw.matches(Regex("^[a-z0-9_.-]+(:[a-z0-9_./-]+)?$"))) {
+                    particles += if (':' in raw) raw else "cobblemon:$raw"
+                }
+            }
+            is SequenceActionEffectKeyframe -> frame.keyframes.forEach { collectActionFrame(it, labels, particles, visited, depth + 1) }
+            is ParallelActionEffectKeyframe -> frame.keyframes.forEach { collectActionFrame(it, labels, particles, visited, depth + 1) }
+            is ForkActionEffectKeyframe -> {
+                frame.ifTrue.forEach { collectActionFrame(it, labels, particles, visited, depth + 1) }
+                frame.ifFalse.forEach { collectActionFrame(it, labels, particles, visited, depth + 1) }
+            }
+            is RunActionEffectKeyframe -> {
+                val id = frame.actionEffect ?: return
+                val key = id.toString()
+                if (visited.add(key)) {
+                    ActionEffects.actionEffects[id]?.let { nested -> collectActionEffect(nested, labels, particles, visited, depth + 1) }
+                }
+            }
+        }
+    }
+
     private fun model(view: PokemonView): LiveModel? {
         val key = key(view)
         models[key]?.let { return it }
@@ -177,5 +377,5 @@ object PokemonModelRenderer {
 
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
     private fun degreesToRadians(value: Float): Float = (value * PI / 180.0).toFloat()
-    fun clear() { models.clear(); sceneModels.clear() }
+    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear() }
 }

@@ -31,6 +31,8 @@ class ChessSession(
     private var blackClock = initialClockMillis
     private var lastMoveFrom = -1
     private var lastMoveTo = -1
+    private var lastCapturedPiece = '.'
+    private var lastCapturedSquare = -1
     private var moveSerial = 0L
 
     init {
@@ -71,6 +73,8 @@ class ChessSession(
                 "legalMoves" to legal.joinToString(";") { squareName(it.from) + ":" + squareName(it.to) },
                 "lastMoveFrom" to if (lastMoveFrom >= 0) squareName(lastMoveFrom) else "",
                 "lastMoveTo" to if (lastMoveTo >= 0) squareName(lastMoveTo) else "",
+                "lastCapturedPiece" to if (lastCapturedPiece != '.') lastCapturedPiece.toString() else "",
+                "lastCapturedSquare" to if (lastCapturedSquare >= 0) squareName(lastCapturedSquare) else "",
                 "moveSerial" to moveSerial.toString()
             ),
             log = log.toList().takeLast(12),
@@ -130,7 +134,7 @@ class ChessSession(
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(String(board), side.toString(), castling, epSquare, halfmove, fullmove, revision, log.toList(),
             repetitions.toMap(), result, winner, drawOfferedBy, whiteClock.coerceAtLeast(0L),
-            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, moveSerial, rng.state)
+            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, lastCapturedPiece, lastCapturedSquare, moveSerial, rng.state)
     )
 
     private fun restoreSnapshot(state: JsonObject) {
@@ -154,6 +158,8 @@ class ChessSession(
         blackClock = s.blackClock.coerceAtLeast(0L)
         lastMoveFrom = s.lastMoveFrom.takeIf { it in -1..63 } ?: -1
         lastMoveTo = s.lastMoveTo.takeIf { it in -1..63 } ?: -1
+        lastCapturedPiece = s.lastCapturedPiece.takeIf { it.lowercaseChar() in "pnbrqk" } ?: '.'
+        lastCapturedSquare = s.lastCapturedSquare.takeIf { lastCapturedPiece != '.' && it in 0..63 } ?: -1
         moveSerial = s.moveSerial.coerceAtLeast(0L)
         rng.restore(s.rngState)
         lastClockAt = System.currentTimeMillis()
@@ -171,7 +177,8 @@ class ChessSession(
     private fun applyMove(m: Move) {
         val moving = side
         val piece = board[m.from]
-        val captured = if (m.enPassant) board[m.to + if (moving == 'w') 8 else -8] else board[m.to]
+        val capturedSquare = if (m.enPassant) m.to + if (moving == 'w') 8 else -8 else m.to
+        val captured = board[capturedSquare]
         val pawn = piece.lowercaseChar() == 'p'
         val capture = captured != '.'
         board[m.from] = '.'
@@ -206,6 +213,8 @@ class ChessSession(
         lastClockAt = System.currentTimeMillis()
         lastMoveFrom = m.from
         lastMoveTo = m.to
+        lastCapturedPiece = if (capture) captured else '.'
+        lastCapturedSquare = if (capture) capturedSquare else -1
         moveSerial++
         bump("${squareName(m.from)}-${squareName(m.to)}")
         val key = positionKey()
@@ -360,7 +369,8 @@ class ChessSession(
     private data class Snapshot(
         val board:String,val side:String,val castling:String,val epSquare:Int,val halfmove:Int,val fullmove:Int,
         val revision:Long,val log:List<String>,val repetitions:Map<String,Int>,val result:String?,val winner:String?,
-        val drawOfferedBy:String?,val whiteClock:Long,val blackClock:Long,val lastMoveFrom:Int,val lastMoveTo:Int,val moveSerial:Long,val rngState:Long
+        val drawOfferedBy:String?,val whiteClock:Long,val blackClock:Long,val lastMoveFrom:Int,val lastMoveTo:Int,
+        val lastCapturedPiece:Char,val lastCapturedSquare:Int,val moveSerial:Long,val rngState:Long
     )
 
     companion object {

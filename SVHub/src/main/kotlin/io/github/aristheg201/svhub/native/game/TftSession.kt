@@ -696,7 +696,7 @@ class TftSession(
         val match = combatFor(player.id)
         if (phase == Phase.COMBAT && match != null) {
             val viewerTeam = if (match.aId == player.id) 0 else 1
-            match.engine.units.filter { it.alive }.forEach { unit ->
+            match.engine.units.forEach { unit ->
                 val cell = if (viewerTeam == 0) unit.cell else rotateCell(unit.cell)
                 val team = if (unit.team == viewerTeam) 0 else 1
                 if (cell in cells.indices) cells[cell] = encodeCombatUnit(unit, team)
@@ -714,7 +714,8 @@ class TftSession(
     private fun encodeCombatUnit(unit: TftCombatUnit, relativeTeam: Int): String = listOf(
         unit.instanceId, unit.definition.id, unit.definition.species, unit.star, unit.hp, unit.maxHp,
         unit.mana, unit.maxMana, relativeTeam, unit.definition.aspects.joinToString(","), unit.items.joinToString(","),
-        unit.definition.cost, unit.definition.role, unit.targetId.orEmpty(), unit.casts, unit.damageDone, unit.healingDone
+        unit.definition.cost, unit.definition.role, unit.targetId.orEmpty(), unit.casts, unit.damageDone, unit.healingDone,
+        if (unit.alive) 1 else 0
     ).joinToString("~")
 
     private fun encodeBench(player: PlayerState): String = player.bench.mapIndexedNotNull { index, unit ->
@@ -761,6 +762,7 @@ class TftSession(
                     addProperty("range", def.stats.range)
                     addProperty("manaStart", def.stats.manaStart)
                     addProperty("manaMax", def.stats.manaMax)
+                    addProperty("abilityId", def.ability.id.take(96))
                     addProperty("abilityName", def.ability.name.take(96))
                     addProperty("abilityTarget", def.ability.target.take(64))
                     addProperty("damageType", def.ability.damageType.take(32))

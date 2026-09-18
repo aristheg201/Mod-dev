@@ -1,5 +1,9 @@
 package io.github.aristheg201.svhub.client.nativeui
 
+import com.cobblemon.mod.common.client.particle.BedrockParticleOptionsRepository
+import com.cobblemon.mod.common.util.getString
+import com.mojang.blaze3d.systems.RenderSystem
+import io.github.aristheg201.svhub.client.cobblemon.CobblemonSceneParticleCue
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameraPreset
@@ -8,6 +12,7 @@ import io.github.aristheg201.svhub.ui.SceneProjection
 import io.github.aristheg201.svhub.ui.UiRect
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -16,6 +21,17 @@ import kotlin.math.roundToInt
 data class ScenePoint(val x: Float, val y: Float)
 
 enum class SceneEffectKind { PROJECTILE, CAST, HIT, HEAL, BURST }
+
+enum class SceneNativeAnimationKind { PHYSICAL, SPECIAL, STATUS, RECOIL, FAINT, CRY }
+
+data class SceneNativeAnimationSignal(
+    val id: String,
+    val serial: Long,
+    val entityId: String,
+    val kind: SceneNativeAnimationKind,
+    val targetEntityId: String? = null,
+    val moveId: String? = null
+)
 
 data class SceneEffectSignal(
     val id: String,
@@ -29,6 +45,11 @@ internal data class ActiveSceneEffect(
     val kind: SceneEffectKind,
     val sourceEntityId: String,
     val targetEntityId: String?,
+    val progress: Float
+)
+
+internal data class ActiveNativeParticle(
+    val cue: CobblemonSceneParticleCue,
     val progress: Float
 )
 
@@ -56,6 +77,7 @@ class PokemonSceneState {
     private data class Effect(val serial:Long,val kind:SceneEffectKind,val source:String,val target:String?,val startedAt:Long)
     private val motions = linkedMapOf<String, Motion>()
     private val effects = linkedMapOf<String, Effect>()
+    private val nativeParticles = ArrayDeque<CobblemonSceneParticleCue>()
 
     fun position(entity: PokemonSceneEntity, now: Long = System.currentTimeMillis()): ScenePoint {
         val existing = motions[entity.id]
@@ -102,8 +124,25 @@ class PokemonSceneState {
         }
     }
 
+    fun observeNativeParticles(cues: List<CobblemonSceneParticleCue>, now: Long = System.currentTimeMillis()) {
+        cues.forEach { cue ->
+            nativeParticles += cue
+            while (nativeParticles.size > 96) nativeParticles.removeFirst()
+        }
+        nativeParticles.removeIf { cue -> now > cue.startedAtMs + cue.delayMs + cue.lifetimeMs + 80L }
+    }
+
+    internal fun activeNativeParticles(now: Long = System.currentTimeMillis()): List<ActiveNativeParticle> {
+        nativeParticles.removeIf { cue -> now > cue.startedAtMs + cue.delayMs + cue.lifetimeMs + 80L }
+        return nativeParticles.mapNotNull { cue ->
+            val elapsed = now - cue.startedAtMs - cue.delayMs
+            if (elapsed < 0L || elapsed > cue.lifetimeMs) null
+            else ActiveNativeParticle(cue, (elapsed.toFloat() / cue.lifetimeMs.coerceAtLeast(1L)).coerceIn(0f, 1f))
+        }
+    }
+
     fun prune(activeIds: Set<String>) { motions.keys.removeIf { it !in activeIds } }
-    fun clear() { motions.clear(); effects.clear() }
+    fun clear() { motions.clear(); effects.clear(); nativeParticles.clear() }
 
     private fun sample(motion: Motion, now: Long): ScenePoint {
         val t = ((now - motion.startedAt).toFloat() / MOTION_MS).coerceIn(0f, 1f)
@@ -157,6 +196,7 @@ object PokemonScene3D {
         teamSplitRow: Int? = null,
         camera: SceneCameraPreset = SceneCameras.BOARD,
         effects: List<SceneEffectSignal> = emptyList(),
+        nativeAnimations: List<SceneNativeAnimationSignal> = emptyList(),
         arenaId: String? = null,
         arenaSeed: String = "",
         pathCells: Set<Int> = emptySet()
@@ -189,6 +229,31 @@ object PokemonScene3D {
             if(arena!=null)MinecraftArenaRenderer.renderTile(gui,layout,arena,index,role,alternate,stableArenaSeed)
         }
         if(arena!=null)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
+
+        val nativeByEntity = nativeAnimations.filter { it.serial > 0L }.groupBy { it.entityId }
+        entities.forEach { entity ->
+            val view = entity.view ?: return@forEach
+            nativeByEntity[entity.id].orEmpty().forEach { signal ->
+                val labels = when (signal.kind) {
+                    SceneNativeAnimationKind.PHYSICAL -> linkedSetOf("physical")
+                    SceneNativeAnimationKind.SPECIAL -> linkedSetOf("special", "physical")
+                    SceneNativeAnimationKind.STATUS -> linkedSetOf("status", "special")
+                    SceneNativeAnimationKind.RECOIL -> linkedSetOf("recoil")
+                    SceneNativeAnimationKind.FAINT -> linkedSetOf("faint", "recoil")
+                    SceneNativeAnimationKind.CRY -> linkedSetOf("cry")
+                }
+                PokemonModelRenderer.requestSceneAnimation(
+                    view = view,
+                    instanceId = entity.id,
+                    signalId = signal.id,
+                    serial = signal.serial,
+                    labels = labels,
+                    targetEntityId = signal.targetEntityId,
+                    moveId = signal.moveId,
+                    faint = signal.kind == SceneNativeAnimationKind.FAINT
+                )
+            }
+        }
 
         val positioned=entities.map{entity->
             val logical=state.position(entity,now)
@@ -224,7 +289,10 @@ object PokemonScene3D {
                 if(entity.maxMana>0){val manaW=barW*entity.mana.coerceIn(0,entity.maxMana)/entity.maxMana;gui.fill(x,y+3,x+manaW,y+4,MANA)}
             }
         }
+        val nativeParticleCues = PokemonModelRenderer.drainSceneParticleCues(activeIds)
+        state.observeNativeParticles(nativeParticleCues, now)
         renderEffects(gui,state.activeEffects(now),centers,layout.tileWidth,layout.tileHeight)
+        renderNativeParticles(gui,state.activeNativeParticles(now),centers,layout.tileWidth,layout.tileHeight)
         gui.disableScissor()
         return PokemonSceneFrame(layout,centers)
     }
@@ -241,6 +309,68 @@ object PokemonScene3D {
                 SceneEffectKind.BURST->drawPulse(gui,target?:from,effect.progress,max(10,tileW/2),max(5,tileH/2),GOLD)
             }
         }
+    }
+
+    private fun renderNativeParticles(
+        gui: GuiGraphics,
+        particles: List<ActiveNativeParticle>,
+        centers: Map<String, ScenePoint>,
+        tileW: Int,
+        tileH: Int
+    ) {
+        if (particles.isEmpty()) return
+        RenderSystem.enableBlend()
+        RenderSystem.defaultBlendFunc()
+        particles.forEach { active ->
+            val cue = active.cue
+            val source = centers[cue.sourceEntityId] ?: return@forEach
+            val target = cue.targetEntityId?.let(centers::get)
+            val id = ResourceLocation.tryParse(cue.effectId) ?: return@forEach
+            val effect = BedrockParticleOptionsRepository.getEffect(id) ?: return@forEach
+            val particle = effect.particle
+            val uv = particle.uvMode
+            val textureWidth = uv.textureSizeX.coerceAtLeast(1)
+            val textureHeight = uv.textureSizeY.coerceAtLeast(1)
+            val u = uv.startU.getString().toDoubleOrNull()?.toInt()?.coerceIn(0, textureWidth - 1) ?: 0
+            val v = uv.startV.getString().toDoubleOrNull()?.toInt()?.coerceIn(0, textureHeight - 1) ?: 0
+            val sourceWidth = uv.uSize.getString().toDoubleOrNull()?.roundToInt()?.coerceIn(1, textureWidth - u) ?: min(8, textureWidth)
+            val sourceHeight = uv.vSize.getString().toDoubleOrNull()?.roundToInt()?.coerceIn(1, textureHeight - v) ?: min(8, textureHeight)
+            val baseSize = max(5, min(16, min(tileW, tileH * 2)))
+            val alpha = (1f - active.progress * 0.78f).coerceIn(0.18f, 1f)
+            RenderSystem.setShaderColor(1f, 1f, 1f, alpha)
+
+            repeat(5) { trail ->
+                val t = (active.progress - trail * 0.065f).coerceIn(0f, 1f)
+                val hash = cue.effectId.hashCode() * 31 + trail * 0x45d9f3b
+                val wobbleX = (((hash ushr 3) and 7) - 3) * (1f - active.progress)
+                val wobbleY = (((hash ushr 7) and 7) - 3) * (1f - active.progress)
+                val point = if (target != null) {
+                    ScenePoint(
+                        source.x + (target.x - source.x) * t + wobbleX,
+                        source.y + (target.y - source.y) * t + wobbleY
+                    )
+                } else {
+                    val spread = (3 + trail * 2) * active.progress
+                    ScenePoint(source.x + wobbleX * spread * 0.18f, source.y + wobbleY * spread * 0.18f)
+                }
+                val size = (baseSize * (1f - trail * 0.10f)).roundToInt().coerceAtLeast(4)
+                gui.blit(
+                    particle.texture,
+                    point.x.roundToInt() - size / 2,
+                    point.y.roundToInt() - size / 2,
+                    size,
+                    size,
+                    u.toFloat(),
+                    v.toFloat(),
+                    sourceWidth,
+                    sourceHeight,
+                    textureWidth,
+                    textureHeight
+                )
+            }
+        }
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+        RenderSystem.disableBlend()
     }
 
     private fun drawProjectile(gui:GuiGraphics,from:ScenePoint,to:ScenePoint,progress:Float,color:Int){
