@@ -156,7 +156,10 @@ object PokemonScene3D {
         legalCells: Set<Int> = emptySet(),
         teamSplitRow: Int? = null,
         camera: SceneCameraPreset = SceneCameras.BOARD,
-        effects: List<SceneEffectSignal> = emptyList()
+        effects: List<SceneEffectSignal> = emptyList(),
+        arenaId: String? = null,
+        arenaSeed: String = "",
+        pathCells: Set<Int> = emptySet()
     ): PokemonSceneFrame {
         val metrics=SceneProjection.resolve(area,columns,rows,camera)
         val layout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight)
@@ -165,11 +168,27 @@ object PokemonScene3D {
         val now=System.currentTimeMillis();state.observeEffects(effects,now)
 
         gui.enableScissor(area.x,area.y,area.right,area.bottom)
+        val arena = arenaId?.let(MinecraftArenaRegistry::definition)
+        val stableArenaSeed = if (arenaSeed.isNotBlank()) arenaSeed else arenaId.orEmpty()
         for(row in 0 until rows)for(col in 0 until columns){
             val index=row*columns+col;val point=layout.project(col.toFloat(),row.toFloat())
-            val fill=when{index in selectedCells->SELECTED;index in legalCells->LEGAL;teamSplitRow!=null&&row<teamSplitRow->if((row+col)and 1==0)ENEMY_A else ENEMY_B;else->if((row+col)and 1==0)ALLY_A else ALLY_B}
-            drawDiamond(gui,point.x.roundToInt(),point.y.roundToInt(),layout.tileWidth,layout.tileHeight,fill,GRID_LINE)
+            val alternate=((row+col) and 1)==1
+            val role=when{
+                index in pathCells->ArenaTileRole.PATH
+                teamSplitRow!=null&&row<teamSplitRow->ArenaTileRole.ENEMY
+                teamSplitRow!=null->ArenaTileRole.ALLY
+                else->ArenaTileRole.FLOOR
+            }
+            val baseFill=arena?.color(role,alternate)?:when{
+                role==ArenaTileRole.ENEMY->if(alternate)ENEMY_B else ENEMY_A
+                else->if(alternate)ALLY_B else ALLY_A
+            }
+            val fill=when{index in selectedCells->SELECTED;index in legalCells->LEGAL;else->baseFill}
+            val border=arena?.gridColor?:GRID_LINE
+            drawDiamond(gui,point.x.roundToInt(),point.y.roundToInt(),layout.tileWidth,layout.tileHeight,fill,border)
+            if(arena!=null)MinecraftArenaRenderer.renderTile(gui,layout,arena,index,role,alternate,stableArenaSeed)
         }
+        if(arena!=null)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
 
         val positioned=entities.map{entity->
             val logical=state.position(entity,now)

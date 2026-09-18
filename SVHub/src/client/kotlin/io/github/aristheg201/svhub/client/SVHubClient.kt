@@ -7,6 +7,7 @@ import io.github.aristheg201.svhub.client.cobblemon.PokemonInfoProvider
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.editor.HubEditorScreen
 import io.github.aristheg201.svhub.client.gui.HubScreen
+import io.github.aristheg201.svhub.client.nativeui.MinecraftArenaRegistry
 import io.github.aristheg201.svhub.client.nativeui.NativeGameVisualRegistry
 import io.github.aristheg201.svhub.client.nativeui.VanillaCompanionModelRenderer
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
@@ -41,7 +42,7 @@ object SVHubClient : ClientModInitializer {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
             override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath("svhub", "client_render_caches")
             override fun onResourceManagerReload(resourceManager: ResourceManager) {
-                PokemonModelRenderer.clear(); NativeGameVisualRegistry.clear(); VanillaCompanionModelRenderer.clear(); PokemonInfoProvider.clear(); ClientPokemonRuntimeInfo.clear(); CobblemonWikiProvider.clearCaches(); GeneratedBackgroundRenderer.clear(); MiniMessageText.clear()
+                PokemonModelRenderer.clear(); NativeGameVisualRegistry.clear(); MinecraftArenaRegistry.clear(); VanillaCompanionModelRenderer.clear(); PokemonInfoProvider.clear(); ClientPokemonRuntimeInfo.clear(); CobblemonWikiProvider.clearCaches(); GeneratedBackgroundRenderer.clear(); MiniMessageText.clear()
             }
         })
         ClientPlayNetworking.registerGlobalReceiver(HubHelloS2C.TYPE) { payload, context -> context.client().execute {

@@ -102,7 +102,9 @@ object NativeBoardSceneRenderer {
             state = scene,
             selectedCells = selected,
             legalCells = legalCells,
-            camera = SceneCameras.BOARD
+            camera = SceneCameras.BOARD,
+            arenaId = "chess",
+            arenaSeed = view.str("sessionId")
         )
         return NativeBoardSceneResult(frame, legalCells)
     }
@@ -156,7 +158,9 @@ object NativeBoardSceneRenderer {
             state = scene,
             selectedCells = selected,
             legalCells = legalCells,
-            camera = SceneCameras.XIANGQI
+            camera = SceneCameras.XIANGQI,
+            arenaId = "xiangqi",
+            arenaSeed = view.str("sessionId")
         )
         return NativeBoardSceneResult(frame, legalCells)
     }
@@ -199,7 +203,10 @@ object NativeBoardSceneRenderer {
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
             camera = SceneCameras.LANE,
-            effects = effects
+            effects = effects,
+            arenaId = "tower_defense",
+            arenaSeed = view.str("sessionId"),
+            pathCells = path.toSet()
         )
         return NativeBoardSceneResult(frame, emptySet())
     }
@@ -247,7 +254,9 @@ object NativeBoardSceneRenderer {
             entities = entities,
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
-            camera = SceneCameras.LUDO
+            camera = SceneCameras.LUDO,
+            arenaId = "ludo",
+            arenaSeed = view.str("sessionId")
         )
         return NativeBoardSceneResult(frame, emptySet())
     }

@@ -1,0 +1,55 @@
+{
+  "floor": [
+    "minecraft:grass_block",
+    "minecraft:moss_block",
+    "minecraft:coarse_dirt",
+    "minecraft:podzol"
+  ],
+  "floorAlt": [
+    "minecraft:moss_block",
+    "minecraft:grass_block"
+  ],
+  "ally": [
+    "minecraft:grass_block"
+  ],
+  "enemy": [
+    "minecraft:grass_block"
+  ],
+  "path": [
+    "minecraft:cobblestone",
+    "minecraft:stone_bricks",
+    "minecraft:gravel"
+  ],
+  "floorColor": "#426b3d",
+  "floorAltColor": "#355c36",
+  "allyColor": "#426b3d",
+  "enemyColor": "#426b3d",
+  "pathColor": "#716b61",
+  "gridColor": "#344a39",
+  "props": [
+    {
+      "item": "minecraft:oak_sapling",
+      "x": -0.6,
+      "y": 1,
+      "scale": 0.72
+    },
+    {
+      "item": "minecraft:chest",
+      "x": 11.7,
+      "y": 0.3,
+      "scale": 0.72
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": -0.5,
+      "y": 7,
+      "scale": 0.65
+    },
+    {
+      "item": "minecraft:campfire",
+      "x": 11.6,
+      "y": 7,
+      "scale": 0.78
+    }
+  ]
+}

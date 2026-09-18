@@ -2,6 +2,7 @@ package io.github.aristheg201.svhub.client.nativeui
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameras
@@ -15,16 +16,142 @@ import net.minecraft.resources.ResourceLocation
 import kotlin.math.max
 import kotlin.math.min
 
+internal data class TftUnitInfo(
+    val id: String,
+    val name: String,
+    val species: String,
+    val cost: Int,
+    val role: String,
+    val traits: List<String>,
+    val hp: Int,
+    val attackDamage: Int,
+    val defense: Int,
+    val specialDefense: Int,
+    val attackSpeed: Double,
+    val range: Int,
+    val manaStart: Int,
+    val manaMax: Int,
+    val abilityName: String,
+    val abilityTarget: String,
+    val damageType: String,
+    val damage: Int,
+    val heal: Int,
+    val shield: Int,
+    val radius: Int,
+    val stunMs: Int,
+    val dash: Int,
+    val effects: String
+)
+
+internal data class TftTraitTierInfo(
+    val threshold: Int,
+    val description: String,
+    val effects: String,
+    val teamEffects: String
+)
+
+internal data class TftTraitInfo(
+    val id: String,
+    val name: String,
+    val tiers: List<TftTraitTierInfo>
+)
+
+internal data class TftHoverTooltip(
+    val title: String,
+    val subtitle: String = "",
+    val lines: List<String>,
+    val accent: Int
+)
+
 class TftUiState {
     private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long)
     private val combatCounters = linkedMapOf<String, CombatCounters>()
+    private var unitCatalogRaw = ""
+    private var traitCatalogRaw = ""
+    private var unitCatalog: Map<String, TftUnitInfo> = emptyMap()
+    private var traitCatalog: Map<String, TftTraitInfo> = emptyMap()
+    private var hoverTooltip: TftHoverTooltip? = null
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
+
     fun clearUnit() { selectedOrigin = null; selectedIndex = null }
     fun resetCombat() = combatCounters.clear()
     fun pruneCombat(activeIds:Set<String>) { combatCounters.keys.removeIf { it !in activeIds } }
+    internal fun beginFrame() { hoverTooltip = null }
+    internal fun unitInfo(id: String): TftUnitInfo? = unitCatalog[id]
+    internal fun traitInfo(id: String): TftTraitInfo? = traitCatalog[id]
+    internal fun offerTooltip(value: TftHoverTooltip?) { if (hoverTooltip == null && value != null) hoverTooltip = value }
+    internal fun tooltip(): TftHoverTooltip? = hoverTooltip
+
+    internal fun updateCatalogs(unitsRaw: String, traitsRaw: String) {
+        if (unitsRaw != unitCatalogRaw) {
+            unitCatalogRaw = unitsRaw
+            unitCatalog = parseUnits(unitsRaw)
+        }
+        if (traitsRaw != traitCatalogRaw) {
+            traitCatalogRaw = traitsRaw
+            traitCatalog = parseTraits(traitsRaw)
+        }
+    }
+
+    private fun parseUnits(raw: String): Map<String, TftUnitInfo> {
+        if (raw.isBlank()) return emptyMap()
+        val root = runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull() ?: return emptyMap()
+        return root.entrySet().mapNotNull { (id, value) ->
+            val obj = runCatching { value.asJsonObject }.getOrNull() ?: return@mapNotNull null
+            id to TftUnitInfo(
+                id = id,
+                name = obj.str("name", id),
+                species = obj.str("species"),
+                cost = obj.int("cost", 1),
+                role = obj.str("role"),
+                traits = obj.str("traits").split(',').filter(String::isNotBlank),
+                hp = obj.int("hp"),
+                attackDamage = obj.int("attackDamage"),
+                defense = obj.int("defense"),
+                specialDefense = obj.int("specialDefense"),
+                attackSpeed = obj.double("attackSpeed"),
+                range = obj.int("range"),
+                manaStart = obj.int("manaStart"),
+                manaMax = obj.int("manaMax"),
+                abilityName = obj.str("abilityName"),
+                abilityTarget = obj.str("abilityTarget"),
+                damageType = obj.str("damageType"),
+                damage = obj.int("damage"),
+                heal = obj.int("heal"),
+                shield = obj.int("shield"),
+                radius = obj.int("radius"),
+                stunMs = obj.int("stunMs"),
+                dash = obj.int("dash"),
+                effects = obj.str("effects")
+            )
+        }.toMap()
+    }
+
+    private fun parseTraits(raw: String): Map<String, TftTraitInfo> {
+        if (raw.isBlank()) return emptyMap()
+        val root = runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull() ?: return emptyMap()
+        return root.entrySet().mapNotNull { (id, value) ->
+            val obj = runCatching { value.asJsonObject }.getOrNull() ?: return@mapNotNull null
+            val tiers = obj.getAsJsonArray("tiers")?.mapNotNull tierLoop@ { rawTier ->
+                val tier = runCatching { rawTier.asJsonObject }.getOrNull() ?: return@tierLoop null
+                TftTraitTierInfo(
+                    threshold = tier.int("threshold"),
+                    description = tier.str("description"),
+                    effects = tier.str("effects"),
+                    teamEffects = tier.str("teamEffects")
+                )
+            }.orEmpty()
+            id to TftTraitInfo(id, obj.str("name", id), tiers)
+        }.toMap()
+    }
+
+    private fun JsonObject.str(key: String, fallback: String = "") = runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.int(key: String, fallback: Int = 0) = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.double(key: String, fallback: Double = 0.0) = runCatching { get(key)?.asDouble ?: fallback }.getOrDefault(fallback)
+
     fun observeCombat(instanceId:String,targetId:String?,casts:Int,damageDone:Long,healingDone:Long):List<SceneEffectSignal>{
         val next=CombatCounters(targetId?.takeIf(String::isNotBlank),casts,damageDone,healingDone)
         val previous=combatCounters.put(instanceId,next)?:return emptyList()
@@ -93,6 +220,8 @@ object TftGameRenderer {
     ) {
         gui.fill(area.x, area.y, area.right, area.bottom, bg)
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
+        ui.beginFrame()
+        ui.updateCatalogs(fields.str("unitCatalog"), fields.str("traitCatalog"))
         val phase = view.str("phase")
         val canEdit = fields.str("canEditBoard") == "true"
         val board = view.getAsJsonArray("board")
@@ -109,14 +238,15 @@ object TftGameRenderer {
         val resolved = TftLayoutResolver.resolve(area, density)
 
         renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
-        resolved.traits?.let { renderTraits(gui, font, it, traits) }
+        resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
         resolved.players?.let { renderPlayers(gui, font, it, players) }
-        renderBoard(gui, font, resolved.board, boardTokens, phase, canEdit, ui, hooks)
-        renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks)
+        renderBoard(gui, font, resolved.board, boardTokens, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+        renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks, mouseX, mouseY)
 
-        if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players)
+        if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
         if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
         if (phase == "draft" && draft.isNotEmpty()) renderDraftOverlay(gui, font, resolved.board, draft, hooks)
+        ui.tooltip()?.let { renderHoverTooltip(gui, font, area, it, mouseX, mouseY) }
     }
 
     private fun renderHud(gui: GuiGraphics, font: Font, area: UiRect, fields: JsonObject, phase: String, status: String, density: UiDensity, hooks: Hooks, mouseX: Int, mouseY: Int) {
@@ -149,15 +279,17 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderTraits(gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>) {
+    private fun renderTraits(gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>, mouseX: Int, mouseY: Int, ui: TftUiState) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
         gui.drawString(font, tr("gui.svhub.tft.traits"), rect.x + 7, rect.y + 7, muted, true)
         var y = rect.y + 23
         traits.take(10).forEach { trait ->
             val active = trait.active > 0
             val color = if (active) accent else muted
-            gui.fill(rect.x + 5, y, rect.right - 5, y + 25, if (active) 0xFF19312E.toInt() else panel2)
-            gui.fill(rect.x + 5, y, rect.x + 8, y + 25, color)
+            val traitRect = UiRect(rect.x + 5, y, (rect.width - 10).coerceAtLeast(1), 25)
+            gui.fill(traitRect.x, traitRect.y, traitRect.right, traitRect.bottom, if (active) 0xFF19312E.toInt() else panel2)
+            gui.fill(traitRect.x, traitRect.y, traitRect.x + 3, traitRect.bottom, color)
+            if (traitRect.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(traitTooltip(ui, trait))
             gui.drawString(font, fit(font, trait.name, rect.width - 43), rect.x + 12, y + 5, text, active)
             gui.drawString(font, trait.count.toString(), rect.right - 22, y + 5, color, true)
             val threshold = when { trait.next > 0 -> "${trait.active}/${trait.next}"; trait.active > 0 -> "${trait.active}+"; else -> "0" }
@@ -190,7 +322,10 @@ object TftGameRenderer {
         phase: String,
         canEdit: Boolean,
         ui: TftUiState,
-        hooks: Hooks
+        hooks: Hooks,
+        mouseX: Int,
+        mouseY: Int,
+        arenaSeed: String
     ) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, 0xFF0D171A.toInt())
 
@@ -241,8 +376,15 @@ object TftGameRenderer {
             legalCells = legalCells,
             teamSplitRow = 4,
             camera = SceneCameras.TFT,
-            effects = effectSignals
+            effects = effectSignals,
+            arenaId = "tft",
+            arenaSeed = arenaSeed
         )
+
+        units.entries.firstOrNull { (index, _) -> frame.layout.hitBox(index).contains(mouseX.toDouble(), mouseY.toDouble()) }
+            ?.value?.let { unit ->
+                ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items, unit.hp, unit.maxHp, unit.mana, unit.maxMana))
+            }
 
         if (canEdit) {
             for (index in 28 until 56) {
@@ -311,7 +453,7 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, ui: TftUiState, hooks: Hooks) {
+    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
         val benchH = if (density == UiDensity.COMPACT) (rect.height / 2).coerceIn(14, 22) else 34
         val shopY = rect.y + benchH + if (density == UiDensity.COMPACT) 1 else 3
@@ -326,6 +468,9 @@ object TftGameRenderer {
             val unit = byIndex[index]
             gui.fill(slot.x, slot.y, slot.right, slot.bottom, if (ui.selectedOrigin == "bench" && ui.selectedIndex == index) 0xFF294F48.toInt() else panel2)
             if (unit != null) {
+                if (slot.contains(mouseX.toDouble(), mouseY.toDouble())) {
+                    ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items))
+                }
                 if (density == UiDensity.COMPACT) {
                     gui.drawCenteredString(font, shortUnit(unit.unitId).take(3), slot.x + slot.width / 2, slot.y + 4, text)
                     if (unit.star > 1) gui.drawString(font, unit.star.toString(), slot.right - 6, slot.y + 2, gold, true)
@@ -373,6 +518,9 @@ object TftGameRenderer {
                     gui.drawString(font, fit(font, unit, cardRect.width - 12), cardRect.x + 6, cardRect.y + 5, text, true)
                     gui.drawString(font, "${cost}g", cardRect.x + 6, cardRect.bottom - 11, gold, true)
                 }
+                if (cardRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
+                    ui.offerTooltip(unitTooltip(ui, unit, 1, emptyList()))
+                }
                 if (canEdit) hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'))) }
             }
         }
@@ -384,6 +532,9 @@ object TftGameRenderer {
                 val itemRect = UiRect(itemX + index * 18, itemY, 16, 15)
                 gui.fill(itemRect.x, itemRect.y, itemRect.right, itemRect.bottom, if (ui.selectedItem == index) 0xFF544B28.toInt() else panel2)
                 gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
+                if (itemRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
+                    ui.offerTooltip(TftHoverTooltip(humanize(item.substringAfter(':')), tr("gui.svhub.tft.tooltip.item"), listOf(item), gold))
+                }
                 hooks.hit(itemRect) { ui.selectedItem = if (ui.selectedItem == index) null else index }
             }
         }
@@ -435,19 +586,125 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderCompactChips(gui: GuiGraphics, font: Font, area: UiRect, traits: List<TraitLine>, players: List<PlayerLine>) {
+    private fun renderCompactChips(gui: GuiGraphics, font: Font, area: UiRect, traits: List<TraitLine>, players: List<PlayerLine>, ui: TftUiState, mouseX: Int, mouseY: Int) {
         val y = area.y + 29
         var x = area.x + 4
         traits.filter { it.active > 0 }.take(3).forEach { trait ->
             val value = "${trait.name} ${trait.count}"
             val w = font.width(value) + 10
-            gui.fill(x, y, x + w, y + 14, 0xFF18302D.toInt())
-            gui.drawString(font, value, x + 5, y + 3, accent, false)
+            val chip = UiRect(x, y, w, 14)
+            gui.fill(chip.x, chip.y, chip.right, chip.bottom, 0xFF18302D.toInt())
+            gui.drawString(font, value, chip.x + 5, chip.y + 3, accent, false)
+            if (chip.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(traitTooltip(ui, trait))
             x += w + 3
         }
         val alive = players.count { !it.eliminated }
         val label = "$alive/8"
         gui.drawString(font, label, area.right - font.width(label) - 5, y + 3, muted, false)
+    }
+
+    private fun unitTooltip(
+        ui: TftUiState,
+        unitId: String,
+        star: Int,
+        items: List<String>,
+        hp: Int = -1,
+        maxHp: Int = -1,
+        mana: Int = -1,
+        maxMana: Int = -1
+    ): TftHoverTooltip? {
+        val info = ui.unitInfo(unitId) ?: return null
+        val traitNames = info.traits.map { id -> ui.traitInfo(id)?.name ?: humanize(id) }
+        val lines = mutableListOf<String>()
+        if (traitNames.isNotEmpty()) lines += "${tr("gui.svhub.tft.tooltip.traits")}: ${traitNames.joinToString(" • ")}"
+        lines += "${tr("gui.svhub.tft.tooltip.skill")}: ${info.abilityName.ifBlank { humanize(unitId) }}"
+        val abilityParts = buildList {
+            add("${tr("gui.svhub.tft.tooltip.target")}: ${humanize(info.abilityTarget)}")
+            if (info.damage > 0) add("${tr("gui.svhub.tft.tooltip.damage")}: ${info.damage} ${humanize(info.damageType)}")
+            if (info.heal > 0) add("${tr("gui.svhub.tft.tooltip.heal")}: ${info.heal}")
+            if (info.shield > 0) add("${tr("gui.svhub.tft.tooltip.shield")}: ${info.shield}")
+            if (info.radius > 0) add("${tr("gui.svhub.tft.tooltip.radius")}: ${info.radius}")
+            if (info.stunMs > 0) add("${tr("gui.svhub.tft.tooltip.stun")}: ${"%.1f".format(java.util.Locale.ROOT, info.stunMs / 1000.0)}s")
+            if (info.dash > 0) add("${tr("gui.svhub.tft.tooltip.dash")}: ${info.dash}")
+            if (info.effects.isNotBlank()) add(humanizeEffects(info.effects))
+        }
+        if (abilityParts.isNotEmpty()) lines += abilityParts.joinToString(" • ")
+        lines += "${tr("gui.svhub.tft.tooltip.stats")}: HP ${info.hp} • AD ${info.attackDamage} • DEF ${info.defense}/${info.specialDefense} • AS ${"%.2f".format(java.util.Locale.ROOT, info.attackSpeed)} • RNG ${info.range}"
+        val manaLine = if (maxMana > 0) "$mana/$maxMana" else "${info.manaStart}/${info.manaMax}"
+        lines += "${tr("gui.svhub.tft.tooltip.mana")}: $manaLine"
+        if (hp >= 0 && maxHp > 0) lines += "HP: $hp/$maxHp"
+        if (items.isNotEmpty()) lines += "${tr("gui.svhub.tft.tooltip.items")}: ${items.joinToString(" • ") { humanize(it.substringAfter(':')) }}"
+        return TftHoverTooltip(
+            title = info.name,
+            subtitle = "${"★".repeat(star.coerceIn(1, 3))} • ${info.cost}g • ${humanize(info.role)}",
+            lines = lines,
+            accent = costColor(info.cost)
+        )
+    }
+
+    private fun traitTooltip(ui: TftUiState, trait: TraitLine): TftHoverTooltip {
+        val info = ui.traitInfo(trait.id)
+        val lines = mutableListOf<String>()
+        val progress = buildString {
+            append(tr("gui.svhub.tft.tooltip.active")).append(": ").append(trait.count)
+            if (trait.active > 0) append(" • ").append(tr("gui.svhub.tft.tooltip.tier")).append(" ").append(trait.active)
+            if (trait.next > 0) append(" • ").append(tr("gui.svhub.tft.tooltip.next")).append(": ").append(trait.next)
+        }
+        lines += progress
+        val tiers = info?.tiers.orEmpty()
+        if (tiers.isNotEmpty()) {
+            tiers.forEach { tier ->
+                val marker = if (trait.count >= tier.threshold) "✓" else "○"
+                lines += "$marker ${tier.threshold}: ${tier.description}"
+                if (tier.teamEffects.isNotBlank()) lines += "  ${tr("gui.svhub.tft.tooltip.team")}: ${humanizeEffects(tier.teamEffects)}"
+            }
+        } else if (trait.description.isNotBlank()) lines += trait.description
+        return TftHoverTooltip(
+            title = info?.name ?: trait.name,
+            subtitle = "${trait.count} ${tr("gui.svhub.tft.tooltip.units")}",
+            lines = lines,
+            accent = if (trait.active > 0) accent else muted
+        )
+    }
+
+    private fun renderHoverTooltip(gui: GuiGraphics, font: Font, bounds: UiRect, tooltip: TftHoverTooltip, mouseX: Int, mouseY: Int) {
+        val maxWidth = min(248, (bounds.width - 10).coerceAtLeast(96))
+        val body = buildList {
+            if (tooltip.subtitle.isNotBlank()) addAll(font.split(net.minecraft.network.chat.Component.literal(tooltip.subtitle), maxWidth - 14))
+            tooltip.lines.forEach { line ->
+                addAll(font.split(net.minecraft.network.chat.Component.literal(line), maxWidth - 14))
+            }
+        }.take(14)
+        val titleWidth = font.width(tooltip.title)
+        val bodyWidth = body.maxOfOrNull { line -> font.width(line) } ?: 0
+        val width = min(maxWidth, max(titleWidth, bodyWidth) + 14).coerceAtLeast(96)
+        val height = 22 + body.size * 10
+        val minX = bounds.x + 2
+        val maxX = max(minX, bounds.right - width - 2)
+        var x = if (mouseX + 13 + width <= bounds.right) mouseX + 13 else mouseX - width - 13
+        x = x.coerceIn(minX, maxX)
+        val minY = bounds.y + 2
+        val maxY = max(minY, bounds.bottom - height - 2)
+        val y = (mouseY + 10).coerceIn(minY, maxY)
+        gui.fill(x, y, x + width, y + height, 0xF50A1114.toInt())
+        gui.fill(x, y, x + 3, y + height, tooltip.accent)
+        gui.fill(x, y, x + width, y + 1, tooltip.accent)
+        gui.drawString(font, fit(font, tooltip.title, width - 12), x + 8, y + 6, text, true)
+        var lineY = y + 17
+        body.forEach { sequence ->
+            gui.drawString(font, sequence, x + 8, lineY, muted, false)
+            lineY += 10
+        }
+    }
+
+    private fun humanize(raw: String): String =
+        raw.replace("full:", "").replace("combo:", "").replace('_', ' ').trim()
+            .split(' ').filter(String::isNotBlank).joinToString(" ") { word -> word.replaceFirstChar { ch -> ch.uppercase() } }
+
+    private fun humanizeEffects(raw: String): String = raw.split(',').filter(String::isNotBlank).joinToString(" • ") { entry ->
+        val key = entry.substringBefore('=')
+        val value = entry.substringAfter('=', "")
+        "${humanize(key)}${if (value.isNotBlank()) " $value" else ""}"
     }
 
     private fun drawHex(gui: GuiGraphics, r: UiRect, fill: Int, border: Int) {

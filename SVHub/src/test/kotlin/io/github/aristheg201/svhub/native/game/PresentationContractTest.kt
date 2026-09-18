@@ -63,4 +63,19 @@ class PresentationContractTest {
         assertTrue(hp in 0..maxHp)
         assertTrue(progress >= 0.0)
     }
+
+    @Test
+    fun `tft exposes hover catalogs for units abilities and traits`() {
+        val game = TftSession(listOf(seat("p1", "P1"), seat("p2", "P2")), seed = 19L)
+        val fields = game.viewFor("p1").fields
+        val unitCatalog = fields.getValue("unitCatalog")
+        val traitCatalog = fields.getValue("traitCatalog")
+        assertTrue(unitCatalog.contains("\"abilityName\""))
+        assertTrue(unitCatalog.contains("\"traits\""))
+        assertTrue(unitCatalog.contains("\"attackDamage\""))
+        assertTrue(traitCatalog.contains("\"tiers\""))
+        assertTrue(traitCatalog.contains("\"description\""))
+        assertTrue(traitCatalog.contains("\"teamEffects\""))
+    }
+
 }

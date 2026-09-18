@@ -1,0 +1,56 @@
+{
+  "floor": [
+    "minecraft:grass_block",
+    "minecraft:moss_block",
+    "minecraft:podzol"
+  ],
+  "floorAlt": [
+    "minecraft:moss_block",
+    "minecraft:grass_block"
+  ],
+  "ally": [
+    "minecraft:grass_block",
+    "minecraft:moss_block",
+    "minecraft:azalea_leaves"
+  ],
+  "enemy": [
+    "minecraft:crimson_nylium",
+    "minecraft:netherrack",
+    "minecraft:nether_wart_block"
+  ],
+  "path": [
+    "minecraft:stone_bricks"
+  ],
+  "floorColor": "#42693f",
+  "floorAltColor": "#375b38",
+  "allyColor": "#376f48",
+  "enemyColor": "#6e3438",
+  "pathColor": "#6f6a5e",
+  "gridColor": "#314b42",
+  "props": [
+    {
+      "item": "minecraft:campfire",
+      "x": -0.75,
+      "y": 3.7,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:soul_campfire",
+      "x": 6.75,
+      "y": 3.7,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": -0.55,
+      "y": 7.1,
+      "scale": 0.68
+    },
+    {
+      "item": "minecraft:soul_lantern",
+      "x": 6.55,
+      "y": -0.1,
+      "scale": 0.68
+    }
+  ]
+}

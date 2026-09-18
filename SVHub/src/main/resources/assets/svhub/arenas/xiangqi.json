@@ -1,0 +1,49 @@
+{
+  "floor": [
+    "minecraft:bamboo_planks",
+    "minecraft:stripped_bamboo_block"
+  ],
+  "floorAlt": [
+    "minecraft:cherry_planks",
+    "minecraft:mud_bricks"
+  ],
+  "ally": [
+    "minecraft:bamboo_planks"
+  ],
+  "enemy": [
+    "minecraft:cherry_planks"
+  ],
+  "path": [],
+  "floorColor": "#8b6e3f",
+  "floorAltColor": "#7a4039",
+  "allyColor": "#8b6e3f",
+  "enemyColor": "#7a4039",
+  "pathColor": "#66513d",
+  "gridColor": "#4a382a",
+  "props": [
+    {
+      "item": "minecraft:red_candle",
+      "x": -0.65,
+      "y": 0,
+      "scale": 0.65
+    },
+    {
+      "item": "minecraft:red_candle",
+      "x": 8.65,
+      "y": 0,
+      "scale": 0.65
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": -0.65,
+      "y": 9,
+      "scale": 0.7
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": 8.65,
+      "y": 9,
+      "scale": 0.7
+    }
+  ]
+}

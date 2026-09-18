@@ -72,6 +72,7 @@ const rewardService = read("src/main/kotlin/io/github/aristheg201/svhub/native/N
 const gachaTxn = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeGachaTransactionService.kt");
 const gachaRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/GachaRouletteRenderer.kt");
 const sceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/PokemonScene3D.kt");
+const arenaRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/MinecraftArenaRenderer.kt");
 const boardSceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeBoardSceneRenderer.kt");
 const visualRegistry = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeGameVisualRegistry.kt");
 const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/PokemonModelRenderer.kt");
@@ -131,8 +132,15 @@ if (skinService.includes("givepokemonother")) failures.push("NativeSkinService.k
 for (const marker of ["lastRoll", "requestId", "DURATION_MS", "u * u * u * u * u"]) {
   if (!gachaRenderer.includes(marker)) failures.push(`GachaRouletteRenderer.kt: missing authoritative roulette marker ${marker}`);
 }
-for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride"]) {
+for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride", "arenaId", "MinecraftArenaRenderer.renderTile", "pathCells"]) {
   if (!sceneRenderer.includes(marker)) failures.push(`PokemonScene3D.kt: missing shared scene marker ${marker}`);
+}
+for (const marker of ["MinecraftArenaRegistry", "BuiltInRegistries.ITEM.getOptional", "assets/svhub/arenas", "ArenaTileRole.PATH"]) {
+  if (!arenaRenderer.includes(marker.replace("assets/svhub/arenas", "arenas/"))) failures.push(`MinecraftArenaRenderer.kt: missing arena marker ${marker}`);
+}
+for (const arena of ["chess", "xiangqi", "ludo", "tft", "tower_defense"]) {
+  const file = path.join(root, `src/main/resources/assets/svhub/arenas/${arena}.json`);
+  if (!fs.existsSync(file)) failures.push(`Missing arena definition: ${arena}`);
 }
 for (const marker of ["SceneCameraPreset", "SceneCameras", "SceneProjectionMetrics", "depthFor"]) {
   if (!sceneProjection.includes(marker)) failures.push(`SceneProjection.kt: missing camera/projection marker ${marker}`);
@@ -309,10 +317,10 @@ for (const locale of ["en_us", "vi_vn"]) {
   for (const key of requiredMessageKeys) if (!(key in lang)) failures.push(`${locale}: missing system message key ${key}`);
 }
 
-for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"', "observeCombat", "SceneCameras.TFT", "effects = effectSignals"]) {
+for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"', "observeCombat", "SceneCameras.TFT", "effects = effectSignals", "unitCatalog", "traitCatalog", "unitTooltip", "traitTooltip", "renderHoverTooltip", 'arenaId = "tft"']) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
 }
-for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone"]) {
+for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone", "unitCatalogJson", "traitCatalogJson", "abilityName", "teamEffects"]) {
   if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing render metadata marker ${marker}`);
 }
 for (const marker of ["fireSerial", "targetEnemyId", '"towerEncoding" to "v2"']) {

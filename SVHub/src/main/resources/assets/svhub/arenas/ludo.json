@@ -1,0 +1,51 @@
+{
+  "floor": [
+    "minecraft:white_concrete",
+    "minecraft:light_gray_concrete"
+  ],
+  "floorAlt": [
+    "minecraft:yellow_concrete",
+    "minecraft:lime_concrete",
+    "minecraft:light_blue_concrete",
+    "minecraft:red_concrete"
+  ],
+  "ally": [
+    "minecraft:light_blue_concrete"
+  ],
+  "enemy": [
+    "minecraft:red_concrete"
+  ],
+  "path": [],
+  "floorColor": "#ddd8ca",
+  "floorAltColor": "#8aa8a0",
+  "allyColor": "#65a8ca",
+  "enemyColor": "#c96b6b",
+  "pathColor": "#918773",
+  "gridColor": "#6f776e",
+  "props": [
+    {
+      "item": "minecraft:blue_banner",
+      "x": -0.6,
+      "y": 0.1,
+      "scale": 0.7
+    },
+    {
+      "item": "minecraft:red_banner",
+      "x": 12.6,
+      "y": 0.1,
+      "scale": 0.7
+    },
+    {
+      "item": "minecraft:lime_banner",
+      "x": -0.6,
+      "y": 3,
+      "scale": 0.7
+    },
+    {
+      "item": "minecraft:yellow_banner",
+      "x": 12.6,
+      "y": 3,
+      "scale": 0.7
+    }
+  ]
+}

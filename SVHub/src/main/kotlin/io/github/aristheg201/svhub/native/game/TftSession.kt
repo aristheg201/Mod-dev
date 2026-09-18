@@ -30,6 +30,8 @@ class TftSession(
     private val traitDefs = set.traits.associateBy { it.id }
     private val augmentDefs = set.augments.associateBy { it.id }
     private val itemRecipes = set.fullItems.associateBy { it.components.sorted().joinToString("+") }
+    private val unitCatalogJson = encodeUnitCatalog()
+    private val traitCatalogJson = encodeTraitCatalog()
     private val pool = SharedPool(set, rng)
     private val players = linkedMapOf<String, PlayerState>()
     private val combats = linkedMapOf<String, MatchCombat>()
@@ -300,6 +302,8 @@ class TftSession(
                 "bench" to encodeBench(player),
                 "players" to encodePlayers(),
                 "traits" to encodeTraits(player),
+                "unitCatalog" to unitCatalogJson,
+                "traitCatalog" to traitCatalogJson,
                 "itemBench" to player.itemBench.joinToString(","),
                 "augments" to player.augments.joinToString(","),
                 "augmentChoices" to encodeAugmentChoices(player),
@@ -734,6 +738,63 @@ class TftSession(
             listOf(id, def?.name ?: id, count, active?.threshold ?: 0, next?.threshold ?: 0, active?.description ?: "").joinToString("~")
         }
     }
+
+    private fun encodeUnitCatalog(): String = JsonObject().apply {
+        set.units.forEach { def ->
+            add(def.id, JsonObject().apply {
+                addProperty("name", def.id.replace('_', ' ').replaceFirstChar { it.uppercase() }.take(96))
+                addProperty("species", def.species.take(160))
+                addProperty("cost", def.cost)
+                addProperty("role", def.role.take(64))
+                addProperty("traits", def.traits.joinToString(",").take(512))
+                addProperty("hp", def.stats.hp)
+                addProperty("attackDamage", def.stats.attackDamage)
+                addProperty("defense", def.stats.defense)
+                addProperty("specialDefense", def.stats.specialDefense)
+                addProperty("attackSpeed", def.stats.attackSpeed)
+                addProperty("range", def.stats.range)
+                addProperty("manaStart", def.stats.manaStart)
+                addProperty("manaMax", def.stats.manaMax)
+                addProperty("abilityName", def.ability.name.take(96))
+                addProperty("abilityTarget", def.ability.target.take(64))
+                addProperty("damageType", def.ability.damageType.take(32))
+                addProperty("damage", def.ability.damage)
+                addProperty("heal", def.ability.heal)
+                addProperty("shield", def.ability.shield)
+                addProperty("radius", def.ability.radius)
+                addProperty("stunMs", def.ability.stunMs)
+                addProperty("dash", def.ability.dash)
+                addProperty(
+                    "effects",
+                    def.ability.effects.entries.joinToString(",") { (key, value) -> "$key=$value" }.take(512)
+                )
+            })
+        }
+    }.toString()
+
+    private fun encodeTraitCatalog(): String = JsonObject().apply {
+        set.traits.forEach { def ->
+            add(def.id, JsonObject().apply {
+                addProperty("name", def.name.take(96))
+                add("tiers", com.google.gson.JsonArray().also { tiers ->
+                    def.tiers.forEach { tier ->
+                        tiers.add(JsonObject().apply {
+                            addProperty("threshold", tier.threshold)
+                            addProperty("description", tier.description.take(512))
+                            addProperty(
+                                "effects",
+                                tier.effects.entries.joinToString(",") { (key, value) -> "$key=$value" }.take(512)
+                            )
+                            addProperty(
+                                "teamEffects",
+                                tier.teamEffects.entries.joinToString(",") { (key, value) -> "$key=$value" }.take(512)
+                            )
+                        })
+                    }
+                })
+            })
+        }
+    }.toString()
 
     private fun encodeAugmentChoices(player: PlayerState): String = player.augmentChoices.joinToString(";") { id ->
         val def = augmentDefs[id]; listOf(id, def?.name ?: id, def?.description ?: "", def?.aiWeight ?: 50).joinToString("~")
