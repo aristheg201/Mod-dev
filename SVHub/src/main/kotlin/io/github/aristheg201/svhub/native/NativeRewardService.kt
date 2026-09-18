@@ -146,11 +146,16 @@ object NativeRewardService {
 
     private fun notifyReward(id: UUID, entry: JournalEntry) {
         val player = SVHubRuntime.server?.playerList?.getPlayer(id) ?: return
-        val parts = buildList {
-            if (entry.arcadeTokens > 0) add("+${entry.arcadeTokens} Arcade Token")
-            if (entry.gachaTickets > 0) add("+${entry.gachaTickets} Gacha Ticket")
+        val message = when {
+            entry.arcadeTokens > 0 && entry.gachaTickets > 0 ->
+                Component.translatable("message.svhub.reward.both", entry.arcadeTokens, entry.gachaTickets)
+            entry.arcadeTokens > 0 ->
+                Component.translatable("message.svhub.reward.tokens", entry.arcadeTokens)
+            entry.gachaTickets > 0 ->
+                Component.translatable("message.svhub.reward.tickets", entry.gachaTickets)
+            else -> null
         }
-        if (parts.isNotEmpty()) player.sendSystemMessage(Component.literal("SVHub reward • ${parts.joinToString(" • ")}"))
+        if (message != null) player.sendSystemMessage(message)
     }
 
     private fun loadPending() {

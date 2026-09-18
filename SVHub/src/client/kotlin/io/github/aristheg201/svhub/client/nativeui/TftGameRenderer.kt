@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
+import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.UiDensity
 import io.github.aristheg201.svhub.ui.UiRect
 import io.github.aristheg201.svhub.ui.TftLayoutResolver
@@ -15,11 +16,26 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TftUiState {
+    private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long)
+    private val combatCounters = linkedMapOf<String, CombatCounters>()
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
     fun clearUnit() { selectedOrigin = null; selectedIndex = null }
+    fun resetCombat() = combatCounters.clear()
+    fun pruneCombat(activeIds:Set<String>) { combatCounters.keys.removeIf { it !in activeIds } }
+    fun observeCombat(instanceId:String,targetId:String?,casts:Int,damageDone:Long,healingDone:Long):List<SceneEffectSignal>{
+        val next=CombatCounters(targetId?.takeIf(String::isNotBlank),casts,damageDone,healingDone)
+        val previous=combatCounters.put(instanceId,next)?:return emptyList()
+        val source="tft:"+instanceId
+        val target=next.targetId?.let { "tft:"+it }
+        return buildList {
+            if(casts>previous.casts) add(SceneEffectSignal("tft:cast:"+instanceId,casts.toLong(),SceneEffectKind.CAST,source,target))
+            if(damageDone>previous.damageDone) add(SceneEffectSignal("tft:damage:"+instanceId,damageDone,SceneEffectKind.PROJECTILE,source,target))
+            if(healingDone>previous.healingDone) add(SceneEffectSignal("tft:heal:"+instanceId,healingDone,SceneEffectKind.HEAL,source,source))
+        }
+    }
 }
 
 object TftGameRenderer {
@@ -34,7 +50,11 @@ object TftGameRenderer {
         val maxMana: Int,
         val team: Int,
         val aspects: Set<String>,
-        val items: List<String>
+        val items: List<String>,
+        val targetId: String?,
+        val casts: Int,
+        val damageDone: Long,
+        val healingDone: Long
     )
     private data class BenchToken(val index: Int, val instanceId: String, val unitId: String, val species: String, val star: Int, val aspects: Set<String>, val items: List<String>)
     private data class PlayerLine(val id: String, val name: String, val hp: Int, val level: Int, val placement: Int, val eliminated: Boolean)
@@ -193,6 +213,15 @@ object TftGameRenderer {
             )
         }
 
+        val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
+        val effectSignals=if(phase=="combat"){
+            buildList { units.values.forEach { unit -> addAll(ui.observeCombat(unit.instanceId,unit.targetId,unit.casts,unit.damageDone,unit.healingDone)) } }
+        }else{
+            ui.resetCombat()
+            emptyList()
+        }
+        ui.pruneCombat(activeIds)
+
         val selectedCells = if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
             setOf(28 + ui.selectedIndex!!)
         } else emptySet()
@@ -210,7 +239,9 @@ object TftGameRenderer {
             state = ui.scene,
             selectedCells = selectedCells,
             legalCells = legalCells,
-            teamSplitRow = 4
+            teamSplitRow = 4,
+            camera = SceneCameras.TFT,
+            effects = effectSignals
         )
 
         if (canEdit) {
@@ -452,7 +483,11 @@ object TftGameRenderer {
             p[6].toIntOrNull() ?: 0, p[7].toIntOrNull() ?: 0,
             p[8].toIntOrNull() ?: 0,
             p.getOrNull(9).orEmpty().split(',').filter(String::isNotBlank).toSet(),
-            p.getOrNull(10).orEmpty().split(',').filter(String::isNotBlank)
+            p.getOrNull(10).orEmpty().split(',').filter(String::isNotBlank),
+            p.getOrNull(13)?.takeIf(String::isNotBlank),
+            p.getOrNull(14)?.toIntOrNull() ?: 0,
+            p.getOrNull(15)?.toLongOrNull() ?: 0L,
+            p.getOrNull(16)?.toLongOrNull() ?: 0L
         )
     }
 

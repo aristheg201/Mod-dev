@@ -40,10 +40,17 @@ class PresentationContractTest {
     @Test
     fun `tower defense enemy payload carries stable id max hp and progress`() {
         val game = TowerDefenseSession(listOf(seat("player", "Player")), seed = 7L)
+        assertTrue(game.act("player", "deploy", mapOf("type" to "pikachu", "slot" to "0")).accepted)
         assertTrue(game.act("player", "start_wave", emptyMap()).accepted)
         game.tick(System.currentTimeMillis() + 1_000L)
         val view = game.viewFor("player")
         assertEquals("v2", view.fields["enemyEncoding"])
+        assertEquals("v2", view.fields["towerEncoding"])
+        val tower = view.board[0]
+        val towerParts = tower.split(':')
+        assertTrue(towerParts.size >= 5, "Expected tower:<type>:<level>:<fireSerial>:<targetEnemyId>")
+        assertTrue(towerParts[3].toLong() > 0L)
+        assertTrue(towerParts[4].toInt() > 0)
         val token = view.board.firstOrNull { it.startsWith("enemy:") }
         assertTrue(token != null, "Expected at least one spawned enemy token")
         val parts = token!!.substringBefore(',').split(':')

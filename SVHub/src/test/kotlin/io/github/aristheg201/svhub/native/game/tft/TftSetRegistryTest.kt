@@ -86,6 +86,13 @@ class TftSetRegistryTest {
         val start = System.currentTimeMillis()
         session.tick(start + set.planningSeconds * 1_000L + 100L)
         assertEquals("combat", session.viewFor("p1").phase)
+        val combatView = session.viewFor("p1")
+        val combatToken = assertNotNull(combatView.board.firstOrNull { it.isNotBlank() })
+        val combatParts = combatToken.split('~')
+        assertTrue(combatParts.size >= 17, "TFT combat token must expose target/cast/damage/heal metadata")
+        assertNotNull(combatParts[14].toIntOrNull())
+        assertNotNull(combatParts[15].toLongOrNull())
+        assertNotNull(combatParts[16].toLongOrNull())
 
         val combat = session.snapshotState()
         val restoredCombat = NativeGameRestorer.restore("tft", seats, session.sessionId, combat)

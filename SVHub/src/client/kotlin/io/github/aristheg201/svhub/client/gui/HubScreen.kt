@@ -10,6 +10,9 @@ import io.github.aristheg201.svhub.content.HubContent
 import io.github.aristheg201.svhub.content.HubPage
 import io.github.aristheg201.svhub.content.HubTheme
 import io.github.aristheg201.svhub.network.HubActionC2S
+import io.github.aristheg201.svhub.ui.ScrollbarLayout
+import io.github.aristheg201.svhub.ui.ScrollbarMetrics
+import io.github.aristheg201.svhub.ui.UiRect
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -34,10 +37,7 @@ class HubScreen(
     private var contentHeight = 0
     private var sidebarScroll = 0
     private var sidebarMaxScroll = 0
-    private var sidebarTrackTop = 0
-    private var sidebarTrackBottom = 0
-    private var sidebarThumbTop = 0
-    private var sidebarThumbBottom = 0
+    private var sidebarScrollbar: ScrollbarMetrics? = null
     private var draggingSidebarScrollbar = false
     private var sidebarDragOffset = 0.0
     private var detailScroll = 0
@@ -57,8 +57,8 @@ class HubScreen(
     override fun init() {
         searchWidth = minOf(360, width - 220).coerceAtLeast(130)
         searchX = width / 2 - searchWidth / 2
-        search = EditBox(font, searchX + 7, 10, searchWidth - 14, 22, Component.literal("Tìm kiếm"))
-        search.setHint(Component.literal("Tìm Pokémon, Fakemon, lệnh, shop, hướng dẫn..."))
+        search = EditBox(font, searchX + 7, 10, searchWidth - 14, 22, Component.translatable("gui.svhub.search"))
+        search.setHint(Component.translatable("gui.svhub.search_hint"))
         search.setMaxLength(160)
         search.setBordered(false)
         search.setResponder { scrollOffset = 0 }
@@ -137,7 +137,7 @@ class HubScreen(
             val x = width - 82
             val hovered = mouseX in x until x + 72 && mouseY in 8 until 34
             PixelUi.button(gui, x, 8, 72, 26, hovered, theme)
-            gui.drawCenteredString(font, "Editor", x + 36, 17, p.text)
+            gui.drawCenteredString(font, Component.translatable("gui.svhub.editor"), x + 36, 17, p.text)
             hitTargets += HubHitTarget(x, 8, x + 72, 34) { io.github.aristheg201.svhub.client.SVHubClient.requestEditor() }
         }
     }
@@ -215,7 +215,7 @@ class HubScreen(
         sidebarScroll = sidebarScroll.coerceIn(0, sidebarMaxScroll)
         gui.fill(0, CHROME_HEIGHT, sidebarWidth, height, PixelUi.withAlpha(p.panel, 242))
         gui.fill(sidebarWidth - 2, CHROME_HEIGHT, sidebarWidth, height, PixelUi.withAlpha(p.accent, 65))
-        MiniMessageText.draw(gui, font, "<bold>MỤC LỤC</bold>", 16, CHROME_HEIGHT + 13, p.mutedText)
+        gui.drawString(font, Component.translatable("gui.svhub.sidebar.contents"), 16, CHROME_HEIGHT + 13, p.mutedText, true)
         gui.enableScissor(0, viewportTop, sidebarWidth, viewportBottom)
         var y = viewportTop - sidebarScroll
         pages.forEach { page ->
@@ -234,21 +234,15 @@ class HubScreen(
             y += 32
         }
         gui.disableScissor()
-        sidebarTrackTop = viewportTop
-        sidebarTrackBottom = viewportBottom
-        if (sidebarMaxScroll > 0) {
-            val trackX = sidebarWidth - 8
-            val trackHeight = viewportHeight.coerceAtLeast(1)
-            val thumbHeight = ((viewportHeight.toLong() * viewportHeight / contentPixels.coerceAtLeast(1)).toInt()).coerceIn(18, trackHeight)
-            val travel = (trackHeight - thumbHeight).coerceAtLeast(1)
-            val thumbOffset = (sidebarScroll.toLong() * travel / sidebarMaxScroll.coerceAtLeast(1)).toInt()
-            sidebarThumbTop = viewportTop + thumbOffset
-            sidebarThumbBottom = sidebarThumbTop + thumbHeight
-            gui.fill(trackX, viewportTop, trackX + 4, viewportBottom, PixelUi.withAlpha(p.panelAlt, 210))
-            gui.fill(trackX, sidebarThumbTop, trackX + 4, sidebarThumbBottom, if (draggingSidebarScrollbar) p.accent2 else p.accent)
-        } else {
-            sidebarThumbTop = viewportTop
-            sidebarThumbBottom = viewportBottom
+        val metrics=ScrollbarLayout.resolve(UiRect(0,viewportTop,sidebarWidth,viewportHeight),contentPixels,sidebarScroll)
+        sidebarScrollbar=metrics
+        sidebarMaxScroll=metrics?.maxScroll?:0
+        sidebarScroll=metrics?.clampedScroll?:0
+        if(metrics!=null){
+            val track=metrics.visualTrack
+            val thumb=metrics.visualThumb
+            gui.fill(track.x,track.y,track.right,track.bottom,PixelUi.withAlpha(p.panelAlt,210))
+            gui.fill(thumb.x,thumb.y,thumb.right,thumb.bottom,if(draggingSidebarScrollbar)p.accent2 else p.accent)
         }
     }
 
@@ -269,11 +263,8 @@ class HubScreen(
     }
 
     private fun setSidebarScrollFromThumb(mouseY: Double) {
-        if (sidebarMaxScroll <= 0) return
-        val thumbHeight = (sidebarThumbBottom - sidebarThumbTop).coerceAtLeast(1)
-        val travel = ((sidebarTrackBottom - sidebarTrackTop) - thumbHeight).coerceAtLeast(1)
-        val offset = (mouseY - sidebarDragOffset - sidebarTrackTop).coerceIn(0.0, travel.toDouble())
-        sidebarScroll = (offset / travel.toDouble() * sidebarMaxScroll).roundToInt().coerceIn(0, sidebarMaxScroll)
+        val metrics=sidebarScrollbar?:return
+        sidebarScroll=ScrollbarLayout.scrollFromPointer(metrics,mouseY,sidebarDragOffset)
     }
 
     private fun renderNotFound(gui: GuiGraphics, theme: HubTheme, missing: String) {
@@ -281,7 +272,7 @@ class HubScreen(
         val left = (width - panelWidth) / 2
         val top = maxOf(CHROME_HEIGHT + 24, height / 3)
         PixelUi.panel(gui, left, top, panelWidth, 92, theme.palette.panel, theme.palette.danger)
-        MiniMessageText.drawCentered(gui, font, "<bold>Không tìm thấy nội dung</bold>", width / 2, top + 24, theme.palette.danger)
+        gui.drawCenteredString(font, Component.translatable("gui.svhub.not_found"), width / 2, top + 24, theme.palette.danger)
         gui.drawCenteredString(font, font.plainSubstrByWidth(missing, panelWidth - 24), width / 2, top + 48, theme.palette.mutedText)
     }
 
@@ -333,15 +324,15 @@ class HubScreen(
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (button == 0) {
-            if (width >= 760 && sidebarMaxScroll > 0 && mouseX >= 172.0 && mouseX < 184.0 &&
-                mouseY >= sidebarTrackTop && mouseY < sidebarTrackBottom) {
-                if (mouseY >= sidebarThumbTop && mouseY < sidebarThumbBottom) {
-                    draggingSidebarScrollbar = true
-                    sidebarDragOffset = mouseY - sidebarThumbTop
-                } else {
-                    sidebarDragOffset = (sidebarThumbBottom - sidebarThumbTop) / 2.0
+            val scrollbar=sidebarScrollbar
+            if(width>=760&&scrollbar!=null&&scrollbar.hitRect.contains(mouseX,mouseY)){
+                if(mouseY>=scrollbar.thumbTop&&mouseY<scrollbar.thumbBottom){
+                    draggingSidebarScrollbar=true
+                    sidebarDragOffset=mouseY-scrollbar.thumbTop
+                }else{
+                    sidebarDragOffset=(scrollbar.thumbBottom-scrollbar.thumbTop)/2.0
                     setSidebarScrollFromThumb(mouseY)
-                    draggingSidebarScrollbar = true
+                    draggingSidebarScrollbar=true
                 }
                 return true
             }

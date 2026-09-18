@@ -167,7 +167,7 @@ object NativeGameEngineRuntime {
             val refreshForClock = command.nowMillis - lastSnapshotAt >= SNAPSHOT_REFRESH_MS
             if (changed || finishChanged || refreshForClock) refreshSnapshot()
             if (changed || finishChanged) {
-                val update = Update(sessionId, null, false, null, true, changed, if (finished) "Game finished" else "", finished, winnerSeatId)
+                val update = Update(sessionId, null, false, null, true, changed, if (finished) "gui.svhub.game.finished" else "", finished, winnerSeatId)
                 server.execute { callback(update) }
             }
             scheduleBots()
@@ -176,8 +176,15 @@ object NativeGameEngineRuntime {
         private fun afterMutation(sourceSeatId: String?, sourceBot: Boolean, action: String?, result: NativeGameResult) {
             if (result.changed || result.accepted || session.finished != finished) refreshSnapshot()
             scheduleBots()
-            val update = Update(sessionId, sourceSeatId, sourceBot, action, result.accepted, result.changed, result.message, finished, winnerSeatId)
+            val update = Update(sessionId, sourceSeatId, sourceBot, action, result.accepted, result.changed, publicMessage(result), finished, winnerSeatId)
             server.execute { callback(update) }
+        }
+
+        private fun publicMessage(result: NativeGameResult): String = when {
+            result.message.startsWith("gui.") -> result.message
+            result.message.isBlank() -> ""
+            result.accepted -> "gui.svhub.game.action_applied"
+            else -> "gui.svhub.game.action_rejected"
         }
 
         private fun refreshSnapshot() {

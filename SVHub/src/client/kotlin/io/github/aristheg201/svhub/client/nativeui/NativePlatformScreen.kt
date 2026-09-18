@@ -7,6 +7,8 @@ import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.native.network.NativeCloseC2S
 import io.github.aristheg201.svhub.native.network.NativeIntentC2S
 import io.github.aristheg201.svhub.ui.NativeLayout
+import io.github.aristheg201.svhub.ui.ScrollbarLayout
+import io.github.aristheg201.svhub.ui.ScrollbarMetrics
 import io.github.aristheg201.svhub.ui.UiDensity
 import io.github.aristheg201.svhub.ui.UiRect
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -50,10 +52,7 @@ class NativePlatformScreen(
     private var moduleScroll = 0
     private var moduleContentHeight = 0
     private var moduleMaxScroll = 0
-    private var moduleTrackTop = 0
-    private var moduleTrackBottom = 0
-    private var moduleThumbTop = 0
-    private var moduleThumbBottom = 0
+    private var moduleScrollbar: ScrollbarMetrics? = null
     private var draggingModuleScrollbar = false
     private var moduleDragOffset = 0.0
     private var moduleViewport = UiRect(0, 0, 0, 0)
@@ -334,11 +333,16 @@ class NativePlatformScreen(
         gui.drawCenteredString(font,fit(arena.str("enemyName"),enemyRect.width-8),enemyRect.x+enemyRect.width/2,enemyRect.y+5,text)
         NativePixelArt.healthBar(gui,playerRect.x+7,playerRect.bottom-15,playerRect.width-14,arena.num("playerHp"),arena.num("playerMaxHp"),accent)
         NativePixelArt.healthBar(gui,enemyRect.x+7,enemyRect.bottom-15,enemyRect.width-14,arena.num("enemyHp"),arena.num("enemyMaxHp"),danger)
-        gui.drawString(font,"EN ${arena.num("playerEnergy")}/3",playerRect.x+7,playerRect.bottom-27,gold,false)
+        gui.drawString(font,trf("gui.svhub.arena.energy",arena.num("playerEnergy")),playerRect.x+7,playerRect.bottom-27,gold,false)
 
         val finished=arena.bool("finished")
         val logY=modelBottom+7
-        gui.drawCenteredString(font,fit(if(finished)arena.str("result") else arena.str("log"),area.width-12),area.x+area.width/2,logY,if(finished)gold else muted)
+        val arenaStatus=when{
+            finished&&arena.str("result")=="Victory"->tr("gui.svhub.arena.victory")
+            finished->tr("gui.svhub.arena.defeat")
+            else->trf("gui.svhub.arena.turn",arena.num("turn"))
+        }
+        gui.drawCenteredString(font,fit(arenaStatus,area.width-12),area.x+area.width/2,logY,if(finished)gold else muted)
 
         val controlsY=area.bottom-25
         if(finished){
@@ -490,7 +494,11 @@ class NativePlatformScreen(
                 gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selected)0xFF21443E.toInt() else panelAlt)
                 gui.fill(rect.x,rect.y,rect.right,rect.y+3,cardColor(card.str("accent")))
                 gui.drawCenteredString(font,fit(card.str("label",card.str("id")),rect.width-6),rect.x+rect.width/2,rect.y+10,text)
-                gui.drawCenteredString(font,fit(card.str("subtitle"),rect.width-6),rect.x+rect.width/2,rect.y+25,muted)
+                val cardSubtitle=if(gameId=="tower_defense"){
+                    val meta=card.getAsJsonObject("meta")?:JsonObject()
+                    trf("gui.svhub.td.card_stats",card.num("cost"),meta.str("damage"),meta.str("range"))
+                }else card.str("subtitle")
+                gui.drawCenteredString(font,fit(cardSubtitle,rect.width-6),rect.x+rect.width/2,rect.y+25,muted)
                 addHit(rect){
                     when(gameId){
                         "uno" -> {
@@ -526,33 +534,19 @@ class NativePlatformScreen(
     }
 
     private fun renderModuleScrollbar(gui:GuiGraphics,content:UiRect){
-        moduleMaxScroll=(moduleContentHeight-content.height).coerceAtLeast(0)
-        moduleScroll=moduleScroll.coerceIn(0,moduleMaxScroll)
-        if(moduleMaxScroll<=0){
-            moduleTrackTop=0;moduleTrackBottom=0;moduleThumbTop=0;moduleThumbBottom=0;draggingModuleScrollbar=false
-            return
-        }
-        val x=content.right-5
-        val top=content.y+4
-        val bottom=content.bottom-4
-        val trackH=(bottom-top).coerceAtLeast(1)
-        val thumbH=((trackH.toLong()*content.height/moduleContentHeight.coerceAtLeast(1)).toInt()).coerceIn(18,trackH)
-        val travel=(trackH-thumbH).coerceAtLeast(1)
-        val offset=(moduleScroll.toLong()*travel/moduleMaxScroll.coerceAtLeast(1)).toInt()
-        moduleTrackTop=top
-        moduleTrackBottom=bottom
-        moduleThumbTop=top+offset
-        moduleThumbBottom=moduleThumbTop+thumbH
-        gui.fill(x,top,x+3,bottom,0xCC223337.toInt())
-        gui.fill(x,moduleThumbTop,x+3,moduleThumbBottom,if(draggingModuleScrollbar)gold else accent)
+        val metrics=ScrollbarLayout.resolve(content,moduleContentHeight,moduleScroll)
+        moduleScrollbar=metrics
+        moduleMaxScroll=metrics?.maxScroll?:0
+        moduleScroll=metrics?.clampedScroll?:0
+        if(metrics==null){draggingModuleScrollbar=false;return}
+        val track=metrics.visualTrack;val thumb=metrics.visualThumb
+        gui.fill(track.x,track.y,track.right,track.bottom,0xCC223337.toInt())
+        gui.fill(thumb.x,thumb.y,thumb.right,thumb.bottom,if(draggingModuleScrollbar)gold else accent)
     }
 
     private fun setModuleScrollFromThumb(mouseY:Double){
-        if(moduleMaxScroll<=0)return
-        val thumbH=(moduleThumbBottom-moduleThumbTop).coerceAtLeast(1)
-        val travel=((moduleTrackBottom-moduleTrackTop)-thumbH).coerceAtLeast(1)
-        val offset=(mouseY-moduleDragOffset-moduleTrackTop).coerceIn(0.0,travel.toDouble())
-        moduleScroll=(offset/travel.toDouble()*moduleMaxScroll).toInt().coerceIn(0,moduleMaxScroll)
+        val metrics=moduleScrollbar?:return
+        moduleScroll=ScrollbarLayout.scrollFromPointer(metrics,mouseY,moduleDragOffset)
     }
 
     private fun drawModuleCard(gui:GuiGraphics,rect:UiRect,id:String,title:String,value:String,mouseX:Int,mouseY:Int,action:()->Unit){val hovered=rect.contains(mouseX.toDouble(),mouseY.toDouble());gui.fill(rect.x,rect.y+if(hovered)1 else 2,rect.right,rect.bottom,if(hovered)0xFF203438.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(hovered)gold else accent);if(rect.height<32){NativePixelArt.icon(gui,id,rect.x+7,rect.y+4,14,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-31),rect.x+26,rect.y+8,text,true)}else{NativePixelArt.icon(gui,id,rect.x+11,rect.y+10,24,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-50),rect.x+43,rect.y+9,text,true);gui.drawString(font,fit(value,rect.width-50),rect.x+43,rect.y+25,muted,false)};addHit(rect,action=action)}
@@ -563,12 +557,13 @@ class NativePlatformScreen(
     private fun visible(rect:UiRect):Boolean{val c=clip?:return rect.right>0&&rect.x<width&&rect.bottom>0&&rect.y<height;return rect.right>c.x&&rect.x<c.right&&rect.bottom>c.y&&rect.y<c.bottom}
     override fun mouseClicked(mouseX:Double,mouseY:Double,button:Int):Boolean{
         if(button==0){
-            if(module!="game"&&moduleMaxScroll>0&&mouseX>=moduleViewport.right-9&&mouseX<moduleViewport.right&&mouseY>=moduleTrackTop&&mouseY<moduleTrackBottom){
-                if(mouseY>=moduleThumbTop&&mouseY<moduleThumbBottom){
+            val scrollbar=moduleScrollbar
+            if(module!="game"&&scrollbar!=null&&scrollbar.hitRect.contains(mouseX,mouseY)){
+                if(mouseY>=scrollbar.thumbTop&&mouseY<scrollbar.thumbBottom){
                     draggingModuleScrollbar=true
-                    moduleDragOffset=mouseY-moduleThumbTop
+                    moduleDragOffset=mouseY-scrollbar.thumbTop
                 }else{
-                    moduleDragOffset=(moduleThumbBottom-moduleThumbTop)/2.0
+                    moduleDragOffset=(scrollbar.thumbBottom-scrollbar.thumbTop)/2.0
                     setModuleScrollFromThumb(mouseY)
                     draggingModuleScrollbar=true
                 }

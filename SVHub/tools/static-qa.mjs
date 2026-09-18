@@ -83,6 +83,11 @@ const engineRuntime = read("src/main/kotlin/io/github/aristheg201/svhub/native/N
 const gamePersistence = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/NativeGamePersistence.kt");
 const tftSessionCore = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/TftSession.kt");
 const tftCombatCore = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/tft/TftCombatEngine.kt");
+const sceneProjection = read("src/main/kotlin/io/github/aristheg201/svhub/ui/SceneProjection.kt");
+const scrollbarLayout = read("src/main/kotlin/io/github/aristheg201/svhub/ui/ScrollbarLayout.kt");
+const nativePlatform = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativePlatform.kt");
+const nativeSkinService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeSkinService.kt");
+const towerDefenseCore = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/TowerDefenseSession.kt");
 
 for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeCloseC2S"]) {
   if (!nativePayloads.includes(marker)) failures.push(`NativePayloads.kt: missing lifecycle marker ${marker}`);
@@ -116,8 +121,14 @@ if (skinService.includes("givepokemonother")) failures.push("NativeSkinService.k
 for (const marker of ["lastRoll", "requestId", "DURATION_MS", "u * u * u * u * u"]) {
   if (!gachaRenderer.includes(marker)) failures.push(`GachaRouletteRenderer.kt: missing authoritative roulette marker ${marker}`);
 }
-for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial"]) {
+for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride"]) {
   if (!sceneRenderer.includes(marker)) failures.push(`PokemonScene3D.kt: missing shared scene marker ${marker}`);
+}
+for (const marker of ["SceneCameraPreset", "SceneCameras", "SceneProjectionMetrics", "depthFor"]) {
+  if (!sceneProjection.includes(marker)) failures.push(`SceneProjection.kt: missing camera/projection marker ${marker}`);
+}
+for (const marker of ["TOUCH_HIT_WIDTH = 14", "MIN_THUMB = 24", "scrollFromPointer"]) {
+  if (!scrollbarLayout.includes(marker)) failures.push(`ScrollbarLayout.kt: missing touch-scroll marker ${marker}`);
 }
 for (const marker of ["SceneModelKey", "renderScene(", "instanceId"]) {
   if (!pokemonRenderer.includes(marker)) failures.push(`PokemonModelRenderer.kt: missing per-entity scene renderer marker ${marker}`);
@@ -146,8 +157,12 @@ if (screen.includes('"color" to "red"')) failures.push("NativePlatformScreen.kt:
 if (!screen.includes("UUID.randomUUID().toString()") || !screen.includes("GachaRouletteRenderer.render")) {
   failures.push("NativePlatformScreen.kt: gacha request id / roulette integration missing");
 }
-for (const marker of ["CardTable3DRenderer.render", "VanillaCompanionModelRenderer.render", "draggingModuleScrollbar", "setModuleScrollFromThumb", "moduleMaxScroll"]) {
+for (const marker of ["CardTable3DRenderer.render", "VanillaCompanionModelRenderer.render", "draggingModuleScrollbar", "setModuleScrollFromThumb", "moduleMaxScroll", "ScrollbarLayout.resolve", "gui.svhub.arena.energy"]) {
   if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing production UI marker ${marker}`);
+}
+if (screen.includes('arena.str("log")')) failures.push("NativePlatformScreen.kt: raw companion arena log is still rendered");
+for (const marker of ["ScrollbarLayout.resolve", "scrollbar.hitRect.contains", "setSidebarScrollFromThumb"]) {
+  if (!hubScreen.includes(marker)) failures.push(`HubScreen.kt: missing touch sidebar marker ${marker}`);
 }
 if (screen.includes("NativePixelArt.companion(")) failures.push("NativePlatformScreen.kt: companion arena still uses sprite placeholder");
 if (screen.includes("coerceIn(0,1200)")) failures.push("NativePlatformScreen.kt: native module scroll still uses hardcoded 1200 clamp");
@@ -225,15 +240,89 @@ const requiredSemanticKeys = [
   "gui.svhub.uno.card.reverse",
   "gui.svhub.uno.card.draw2",
   "gui.svhub.uno.card.wild",
-  "gui.svhub.uno.card.wild4"
+  "gui.svhub.uno.card.wild4",
+  "gui.svhub.profile.loading",
+  "gui.svhub.error.no_action",
+  "gui.svhub.error.invalid_module",
+  "gui.svhub.error.invalid_action",
+  "gui.svhub.companion.selected",
+  "gui.svhub.companion.invalid",
+  "gui.svhub.arena.started",
+  "gui.svhub.arena.updated",
+  "gui.svhub.arena.select_first",
+  "gui.svhub.arena.victory",
+  "gui.svhub.arena.defeat",
+  "gui.svhub.arena.turn",
+  "gui.svhub.arena.energy",
+  "gui.svhub.game.action_applied",
+  "gui.svhub.game.action_rejected",
+  "gui.svhub.skin.not_found",
+  "gui.svhub.skin.shop_opened",
+  "gui.svhub.skin.backend_unavailable",
+  "gui.svhub.skin.equipped",
+  "gui.svhub.skin.removed",
+  "gui.svhub.skin.operation_failed",
+  "gui.svhub.skin.inventory_opened",
+  "gui.svhub.arcade.recovering",
+  "gui.svhub.arcade.invalid_game",
+  "gui.svhub.arcade.server_busy",
+  "gui.svhub.arcade.invalid_mode",
+  "gui.svhub.arcade.active_exists",
+  "gui.svhub.arcade.queued",
+  "gui.svhub.arcade.matched",
+  "gui.svhub.arcade.started",
+  "gui.svhub.arcade.queue_left",
+  "gui.svhub.arcade.not_queued",
+  "gui.svhub.arcade.no_active",
+  "gui.svhub.arcade.session_expired",
+  "gui.svhub.arcade.processing",
+  "gui.svhub.arcade.worker_busy",
+  "gui.svhub.arcade.left",
+  "gui.svhub.arcade.restored",
+  "gui.svhub.td.card_stats",
+  "gui.svhub.editor",
+  "gui.svhub.sidebar.contents",
+  "gui.svhub.not_found"
 ];
 for (const locale of ["en_us", "vi_vn"]) {
   const lang = JSON.parse(fs.readFileSync(path.join(root, `src/main/resources/assets/svhub/lang/${locale}.json`), "utf8"));
   for (const key of requiredSemanticKeys) if (!(key in lang)) failures.push(`${locale}: missing semantic game key ${key}`);
 }
+const requiredMessageKeys = [
+  "message.svhub.reward.both",
+  "message.svhub.reward.tokens",
+  "message.svhub.reward.tickets",
+  "message.svhub.profile_loading"
+];
+for (const locale of ["en_us", "vi_vn"]) {
+  const lang = JSON.parse(fs.readFileSync(path.join(root, `src/main/resources/assets/svhub/lang/${locale}.json`), "utf8"));
+  for (const key of requiredMessageKeys) if (!(key in lang)) failures.push(`${locale}: missing system message key ${key}`);
+}
 
-for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"']) {
+for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"', "observeCombat", "SceneCameras.TFT", "effects = effectSignals"]) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
+}
+for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone"]) {
+  if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing render metadata marker ${marker}`);
+}
+for (const marker of ["fireSerial", "targetEnemyId", '"towerEncoding" to "v2"']) {
+  if (!towerDefenseCore.includes(marker)) failures.push(`TowerDefenseSession.kt: missing projectile metadata marker ${marker}`);
+}
+for (const marker of ["SceneCameras.LANE", 'SceneEffectSignal("td:shot:', "SceneCameras.XIANGQI", "SceneCameras.LUDO"]) {
+  if (!boardSceneRenderer.includes(marker)) failures.push(`NativeBoardSceneRenderer.kt: missing camera/effect marker ${marker}`);
+}
+for (const marker of ["publicMessage(result)", "gui.svhub.game.action_applied", "gui.svhub.game.action_rejected"]) {
+  if (!engineRuntime.includes(marker)) failures.push(`NativeGameEngineRuntime.kt: missing semantic result boundary ${marker}`);
+}
+if (rewardService.includes('Component.literal("SVHub reward')) failures.push("NativeRewardService.kt: reward message is still a raw literal");
+for (const marker of ["message.svhub.reward.both", "message.svhub.reward.tokens", "message.svhub.reward.tickets"]) {
+  if (!rewardService.includes(marker)) failures.push(`NativeRewardService.kt: missing localized reward marker ${marker}`);
+}
+for (const marker of ["gui.svhub.skin.equipped", "gui.svhub.skin.removed", "gui.svhub.skin.operation_failed"]) {
+  if (!nativeSkinService.includes(marker)) failures.push(`NativeSkinService.kt: missing semantic skin result ${marker}`);
+}
+for (const marker of ["message.svhub.profile_loading", "gui.svhub.error.invalid_action", "gui.svhub.arena.select_first"]) {
+  if (!nativePlatform.includes(marker)) failures.push(`NativePlatform.kt: missing semantic platform marker ${marker}`);
 }
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);

@@ -704,14 +704,15 @@ class TftSession(
         player.board.forEach { (slot, unit) ->
             val def = unitDefs[unit.unitId] ?: return@forEach
             val cell = 28 + slot
-            if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.species, unit.star, "-1", "-1", "0", "0", "0", def.aspects.joinToString(","), unit.items.joinToString(","), def.cost, def.role).joinToString("~")
+            if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.species, unit.star, "-1", "-1", "0", "0", "0", def.aspects.joinToString(","), unit.items.joinToString(","), def.cost, def.role, "", 0, 0L, 0L).joinToString("~")
         }
         return cells
     }
 
     private fun encodeCombatUnit(unit: TftCombatUnit, relativeTeam: Int): String = listOf(
         unit.instanceId, unit.definition.id, unit.definition.species, unit.star, unit.hp, unit.maxHp,
-        unit.mana, unit.maxMana, relativeTeam, unit.definition.aspects.joinToString(","), unit.items.joinToString(",")
+        unit.mana, unit.maxMana, relativeTeam, unit.definition.aspects.joinToString(","), unit.items.joinToString(","),
+        unit.definition.cost, unit.definition.role, unit.targetId.orEmpty(), unit.casts, unit.damageDone, unit.healingDone
     ).joinToString("~")
 
     private fun encodeBench(player: PlayerState): String = player.bench.mapIndexedNotNull { index, unit ->

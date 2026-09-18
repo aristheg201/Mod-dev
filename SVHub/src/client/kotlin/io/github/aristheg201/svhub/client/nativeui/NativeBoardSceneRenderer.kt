@@ -3,6 +3,7 @@ package io.github.aristheg201.svhub.client.nativeui
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
+import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.UiRect
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
@@ -100,7 +101,8 @@ object NativeBoardSceneRenderer {
             entities = entities,
             state = scene,
             selectedCells = selected,
-            legalCells = legalCells
+            legalCells = legalCells,
+            camera = SceneCameras.BOARD
         )
         return NativeBoardSceneResult(frame, legalCells)
     }
@@ -153,7 +155,8 @@ object NativeBoardSceneRenderer {
             entities = entities,
             state = scene,
             selectedCells = selected,
-            legalCells = legalCells
+            legalCells = legalCells,
+            camera = SceneCameras.XIANGQI
         )
         return NativeBoardSceneResult(frame, legalCells)
     }
@@ -173,13 +176,14 @@ object NativeBoardSceneRenderer {
             .mapNotNull(String::toIntOrNull)
             .filter { it in 0 until 96 }
         val entities = mutableListOf<PokemonSceneEntity>()
+        val effects = mutableListOf<SceneEffectSignal>()
 
         repeat(minOf(96, board.size())) { index ->
             val raw = runCatching { board[index].asString }.getOrDefault("")
             if (raw.isBlank()) return@repeat
             raw.split(',').forEach { token ->
                 when {
-                    token.startsWith("tower:") -> parseTower(index, token)?.let(entities::add)
+                    token.startsWith("tower:") -> parseTower(index, token)?.let { visual -> entities += visual.entity; visual.effect?.let(effects::add) }
                     token.startsWith("enemy:") -> parseEnemy(index, token, path)?.let(entities::add)
                 }
             }
@@ -193,7 +197,9 @@ object NativeBoardSceneRenderer {
             rows = 8,
             entities = entities,
             state = scene,
-            selectedCells = selectedCell?.let(::setOf).orEmpty()
+            selectedCells = selectedCell?.let(::setOf).orEmpty(),
+            camera = SceneCameras.LANE,
+            effects = effects
         )
         return NativeBoardSceneResult(frame, emptySet())
     }
@@ -240,18 +246,23 @@ object NativeBoardSceneRenderer {
             rows = 4,
             entities = entities,
             state = scene,
-            selectedCells = selectedCell?.let(::setOf).orEmpty()
+            selectedCells = selectedCell?.let(::setOf).orEmpty(),
+            camera = SceneCameras.LUDO
         )
         return NativeBoardSceneResult(frame, emptySet())
     }
 
-    private fun parseTower(index: Int, token: String): PokemonSceneEntity? {
+    private data class TowerScene(val entity: PokemonSceneEntity, val effect: SceneEffectSignal?)
+
+    private fun parseTower(index: Int, token: String): TowerScene? {
         val parts = token.split(':')
         val type = parts.getOrNull(1)?.takeIf(String::isNotBlank) ?: return null
         val level = parts.getOrNull(2)?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+        val fireSerial = parts.getOrNull(3)?.toLongOrNull() ?: 0L
+        val targetId = parts.getOrNull(4)?.toIntOrNull()?.takeIf { it >= 0 }
         val species = if (':' in type) type else "cobblemon:$type"
         val visual = NativePieceVisual(species = species, scale = (0.78f + level * 0.05f).coerceAtMost(1.15f))
-        return PokemonSceneEntity(
+        val entity = PokemonSceneEntity(
             id = "td:tower:$index",
             view = visual.pokemon(type),
             label = type,
@@ -262,6 +273,10 @@ object NativeBoardSceneRenderer {
             scale = visual.scale,
             star = level.coerceIn(1, 3)
         )
+        val effect = targetId?.takeIf { fireSerial > 0L }?.let { enemyId ->
+            SceneEffectSignal("td:shot:$index", fireSerial, SceneEffectKind.PROJECTILE, entity.id, "td:enemy:$enemyId")
+        }
+        return TowerScene(entity, effect)
     }
 
     private fun parseEnemy(index: Int, token: String, path: List<Int>): PokemonSceneEntity? {

@@ -94,14 +94,14 @@ object NativeArcadeService {
 
     fun start(player: ServerPlayer, gameId: String, requestedMode: String): Result {
         if (!NativeArcadeSessionStore.isLoadComplete()) {
-            return Result(false, "Arcade đang phục hồi session; hãy thử lại sau.")
+            return Result(false, "gui.svhub.arcade.recovering")
         }
         restoreLoadedSessions(player.server, System.currentTimeMillis())
-        val def = games.firstOrNull { it.id == gameId } ?: return Result(false, "Game không tồn tại.")
-        if (sessions.size >= MAX_SESSIONS) return Result(false, "Arcade đang đạt giới hạn session; hãy thử lại sau.")
+        val def = games.firstOrNull { it.id == gameId } ?: return Result(false, "gui.svhub.arcade.invalid_game")
+        if (sessions.size >= MAX_SESSIONS) return Result(false, "gui.svhub.arcade.server_busy")
         val mode = if (requestedMode == "bot") "bot_normal" else requestedMode
-        if (mode !in def.modes) return Result(false, "Mode không hợp lệ.")
-        if (active.containsKey(player.uuid)) return Result(false, "Bạn đang có một ván chưa kết thúc.")
+        if (mode !in def.modes) return Result(false, "gui.svhub.arcade.invalid_mode")
+        if (active.containsKey(player.uuid)) return Result(false, "gui.svhub.arcade.active_exists")
         queues.values.forEach { it.remove(player.uuid) }
 
         if (mode == "pvp") {
@@ -119,20 +119,20 @@ object NativeArcadeService {
                 q.addAll(retained)
                 if (ready.size < 8) {
                     ready.forEach { if (!q.contains(it.uuid)) q.addLast(it.uuid) }
-                    return Result(true, "Pokémon TFT PvP: ${ready.size}/8 trainers trong hàng chờ.", ready.map { it.uuid }.toSet())
+                    return Result(true, "gui.svhub.arcade.queued", ready.map { it.uuid }.toSet())
                 }
                 val handle = register(player.server, create(gameId, ready.map(::realSeat)), mode)
-                return Result(true, "Pokémon TFT đã đủ 8 trainers.", realPlayers(handle))
+                return Result(true, "gui.svhub.arcade.matched", realPlayers(handle))
             }
             while (q.isNotEmpty()) {
                 val oid = q.removeFirst()
                 val op = player.server.playerList.getPlayer(oid) ?: continue
                 if (oid == player.uuid || active.containsKey(oid)) continue
                 val handle = register(player.server, create(gameId, listOf(realSeat(player), realSeat(op))), mode)
-                return Result(true, "Đã ghép trận với ${op.gameProfile.name}.", realPlayers(handle))
+                return Result(true, "gui.svhub.arcade.matched", realPlayers(handle))
             }
             q.addLast(player.uuid)
-            return Result(true, "Đã vào hàng chờ ${def.title} PvP.", setOf(player.uuid))
+            return Result(true, "gui.svhub.arcade.queued", setOf(player.uuid))
         }
 
         val difficulty = difficultyFor(mode)
@@ -147,31 +147,31 @@ object NativeArcadeService {
             else -> listOf(realSeat(player), botSeat("SV Bot", difficulty))
         }
         val handle = register(player.server, create(gameId, seats), mode)
-        return Result(true, "Đã tạo ${def.title}${if (mode.startsWith("bot_")) " • ${difficulty.name}" else ""}.", realPlayers(handle))
+        return Result(true, "gui.svhub.arcade.started", realPlayers(handle))
     }
 
     fun cancelQueue(player: ServerPlayer): Result {
         var removed = false
         queues.values.forEach { removed = it.remove(player.uuid) || removed }
-        return Result(removed, if (removed) "Đã rời hàng chờ." else "Bạn không ở hàng chờ.", setOf(player.uuid))
+        return Result(removed, if (removed) "gui.svhub.arcade.queue_left" else "gui.svhub.arcade.not_queued", setOf(player.uuid))
     }
 
     fun act(player: ServerPlayer, action: String, args: Map<String, String>): Result {
-        val sid = active[player.uuid] ?: return Result(false, "Không có ván đang hoạt động.")
-        val handle = sessions[sid] ?: return Result(false, "Session đã hết hạn.")
+        val sid = active[player.uuid] ?: return Result(false, "gui.svhub.arcade.no_active")
+        val handle = sessions[sid] ?: return Result(false, "gui.svhub.arcade.session_expired")
         if (action == "resign") meta[sid]?.forfeited?.add(player.uuid)
         val queued = handle.submitAction(player.uuid.toString(), action, args, bot = false)
-        return if (queued) Result(true, "Đang xử lý…") else Result(false, "Game worker đang bận; hãy thử lại.", setOf(player.uuid))
+        return if (queued) Result(true, "gui.svhub.arcade.processing") else Result(false, "gui.svhub.arcade.worker_busy", setOf(player.uuid))
     }
 
     fun leave(player: ServerPlayer): Result {
         cancelQueue(player)
         disconnectedUntil.remove(player.uuid)
-        val sid = active.remove(player.uuid) ?: return Result(true, "Đã rời Arcade.", setOf(player.uuid))
+        val sid = active.remove(player.uuid) ?: return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
         val handle = sessions[sid]
         meta[sid]?.forfeited?.add(player.uuid)
         handle?.submitAction(player.uuid.toString(), "resign", emptyMap(), bot = false)
-        return Result(true, "Đã rời ván.", setOf(player.uuid))
+        return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
     }
 
     fun tick(server: MinecraftServer, now: Long = System.currentTimeMillis()): Map<UUID, String> {
@@ -404,7 +404,7 @@ object NativeArcadeService {
                     disconnectedUntil[id] = now + RESTART_RECONNECT_GRACE_MS
                 } else {
                     disconnectedUntil.remove(id)
-                    asyncMessages[id] = "Đã phục hồi ván " + handle.gameId + " sau restart."
+                    asyncMessages[id] = "gui.svhub.arcade.restored"
                 }
             }
             persistSession(handle, now, force = true)

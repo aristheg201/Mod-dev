@@ -16,10 +16,10 @@ object NativeSkinService {
     data class BonusPokemonSpec(val uuid:String,val species:String,val perfectIvs:Int)
     enum class BonusDeliveryResult { ALREADY_PRESENT, DELIVERED, RETRY }
 
-    fun purchase(player:ServerPlayer,skinId:String):Result{val skin=NativeSkinCatalog.get(skinId)?:return Result(false,"Skin không tồn tại trong SkiesSkins.");val ok=SkiesSkinsBridge.openShop(player,skin.source);return Result(ok,if(ok)"Đã mở shop SkiesSkins tương ứng." else "Không thể mở SkiesSkins shop.")}
-    fun equip(player:ServerPlayer,skinId:String,slot:Int)=SkiesSkinsBridge.apply(player,skinId,slot).let{Result(it.ok,it.message)}
-    fun unequip(player:ServerPlayer,slot:Int)=SkiesSkinsBridge.remove(player,slot).let{Result(it.ok,it.message)}
-    fun openInventory(player:ServerPlayer):Result{val ok=SkiesSkinsBridge.openInventory(player);return Result(ok,if(ok)"Đã mở tủ SkiesSkins." else "Không thể mở tủ SkiesSkins.")}
+    fun purchase(player:ServerPlayer,skinId:String):Result{val skin=NativeSkinCatalog.get(skinId)?:return Result(false,"gui.svhub.skin.not_found");val ok=SkiesSkinsBridge.openShop(player,skin.source);return Result(ok,if(ok)"gui.svhub.skin.shop_opened" else "gui.svhub.skin.backend_unavailable")}
+    fun equip(player:ServerPlayer,skinId:String,slot:Int)=SkiesSkinsBridge.apply(player,skinId,slot).let{Result(it.ok,if(it.ok)"gui.svhub.skin.equipped" else "gui.svhub.skin.operation_failed")}
+    fun unequip(player:ServerPlayer,slot:Int)=SkiesSkinsBridge.remove(player,slot).let{Result(it.ok,if(it.ok)"gui.svhub.skin.removed" else "gui.svhub.skin.operation_failed")}
+    fun openInventory(player:ServerPlayer):Result{val ok=SkiesSkinsBridge.openInventory(player);return Result(ok,if(ok)"gui.svhub.skin.inventory_opened" else "gui.svhub.skin.backend_unavailable")}
 
     fun state(player:ServerPlayer,page:Int=0,source:String="all"):JsonObject{
         val owned=SkiesSkinsBridge.ownedIds(player);val (skins,pages)=NativeSkinCatalog.page(page,24,source)

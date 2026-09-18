@@ -50,12 +50,12 @@ object NativePlatform {
         NativeProfileStore.shutdown()
     }
     fun open(player: ServerPlayer, requested: String): Boolean {
-        if (!NativeProfileStore.isLoaded(player.uuid)) { player.sendSystemMessage(net.minecraft.network.chat.Component.literal("SVHub đang tải profile.")); return false }
+        if (!NativeProfileStore.isLoaded(player.uuid)) { player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.svhub.profile_loading")); return false }
         val module = requested.lowercase().trim().takeIf { it in MODULES } ?: "dashboard"
         NativePlatformNetwork.sendOpen(player, module, state(player, module)); return true
     }
     fun handleIntent(player: ServerPlayer, module: String, action: String, data: JsonObject): String {
-        if (!NativeProfileStore.isLoaded(player.uuid)) return "Profile chưa sẵn sàng."
+        if (!NativeProfileStore.isLoaded(player.uuid)) return "gui.svhub.profile.loading"
         if (action == "open") { open(player, data.string("module", "dashboard")); return "" }
         return when (module) {
             "gacha" -> handleGacha(player, action, data)
@@ -66,9 +66,9 @@ object NativePlatform {
             "wallet", "dashboard" -> when (action) {
                 "open" -> { open(player, data.string("module", "dashboard")); "" }
                 "close" -> { NativePlatformNetwork.close(player.uuid); "" }
-                else -> "Không có thao tác cho module này."
+                else -> "gui.svhub.error.no_action"
             }
-            else -> "Module không hợp lệ."
+            else -> "gui.svhub.error.invalid_module"
         }
     }
     fun state(player: ServerPlayer, module: String): JsonObject = when (module) {
@@ -96,7 +96,7 @@ object NativePlatform {
             NativePlatformNetwork.sendState(player, "gacha", NativeGachaService.state(player, data.string("banner", "hunter")))
             ""
         }
-        else -> "Gacha action không hợp lệ."
+        else -> "gui.svhub.error.invalid_action"
     }
 
     private fun handleSkins(player: ServerPlayer, action: String, data: JsonObject) = when (action) {
@@ -108,7 +108,7 @@ object NativePlatform {
         "inventory" -> NativeSkinService.openInventory(player).message
         "equip" -> NativeSkinService.equip(player, data.string("skin"), data.int("slot")).let { r -> NativePlatformNetwork.sendState(player, "skins", NativeSkinService.state(player, data.int("page", 0), data.string("source", "all")), r.message); r.message }
         "unequip" -> NativeSkinService.unequip(player, data.int("slot")).let { r -> NativePlatformNetwork.sendState(player, "skins", NativeSkinService.state(player, data.int("page", 0), data.string("source", "all")), r.message); r.message }
-        else -> "Skin action không hợp lệ."
+        else -> "gui.svhub.error.invalid_action"
     }
 
     private fun handleArcade(player: ServerPlayer, action: String, data: JsonObject) = when (action) {
@@ -118,12 +118,12 @@ object NativePlatform {
         }
         "cancel_queue" -> NativeArcadeService.cancelQueue(player).let { r -> NativePlatformNetwork.sendState(player, "arcade", NativeArcadeService.lobbyState(player), r.message); r.message }
         "resume" -> { val s = gameState(player); if (s.get("empty")?.asBoolean == false) NativePlatformNetwork.sendOpen(player, "game", s); "" }
-        else -> "Arcade action không hợp lệ."
+        else -> "gui.svhub.error.invalid_action"
     }
 
     private fun handleGame(player: ServerPlayer, action: String, data: JsonObject): String {
         if (action == "leave") { val r = NativeArcadeService.leave(player); NativePlatformNetwork.sendOpen(player, "arcade", NativeArcadeService.lobbyState(player)); return r.message }
-        if (action != "act") return "Game action không hợp lệ."
+        if (action != "act") return "gui.svhub.error.invalid_action"
         val args = linkedMapOf<String, String>()
         data.getAsJsonObject("args")?.entrySet()?.forEach { (k, v) -> if (k.length <= 32) args[k] = runCatching { v.asString }.getOrDefault("").take(128) }
         val r = NativeArcadeService.act(player, data.string("gameAction"), args)
@@ -134,10 +134,14 @@ object NativePlatform {
 
     private fun handleCompanions(player: ServerPlayer, action: String, data: JsonObject): String {
         val msg = when (action) {
-            "select" -> { val entity = data.string("entity"); if (VanillaCompanionService.select(player, entity)) "Đã chọn ${CompanionArena.roster[entity]?.name ?: entity}." else "Linh Thú không hợp lệ." }
-            "arena_start" -> CompanionArena.start(player.uuid, VanillaCompanionService.selectedFor(player.uuid).orEmpty())
-            "arena_act" -> CompanionArena.act(player.uuid, data.string("move"))
-            else -> "Thao tác đấu trường không hợp lệ."
+            "select" -> { val entity = data.string("entity"); if (VanillaCompanionService.select(player, entity)) "gui.svhub.companion.selected" else "gui.svhub.companion.invalid" }
+            "arena_start" -> {
+                val selected = VanillaCompanionService.selectedFor(player.uuid)
+                if (selected.isNullOrBlank()) "gui.svhub.arena.select_first"
+                else { CompanionArena.start(player.uuid, selected); "gui.svhub.arena.started" }
+            }
+            "arena_act" -> { CompanionArena.act(player.uuid, data.string("move")); "gui.svhub.arena.updated" }
+            else -> "gui.svhub.error.invalid_action"
         }
         NativePlatformNetwork.sendState(player, "companions", companionState(player), msg); return msg
     }
