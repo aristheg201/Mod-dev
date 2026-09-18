@@ -1,5 +1,6 @@
 package io.github.aristheg201.svhub.native.game
 
+import com.google.gson.JsonObject
 import kotlin.math.abs
 import kotlin.random.Random
 
@@ -7,7 +8,8 @@ class ChessSession(
     override val seats: List<NativeSeat>,
     private val initialClockMillis: Long = 10 * 60 * 1000L,
     private val incrementMillis: Long = 5_000L,
-    override val sessionId: String = NativeIds.session("chess")
+    override val sessionId: String = NativeIds.session("chess"),
+    private val restoreState: JsonObject? = null
 ) : NativeGameSession {
     override val gameId: String = "chess"
     private var board = START.toCharArray()
@@ -31,7 +33,7 @@ class ChessSession(
 
     init {
         require(seats.size == 2)
-        repetitions[positionKey()] = 1
+        if (restoreState == null) repetitions[positionKey()] = 1 else restoreSnapshot(restoreState)
     }
 
     override val finished get() = result != null
@@ -121,6 +123,37 @@ class ChessSession(
         if (blackClock <= 0) { blackClock = 0; finish("Black lost on time", seats[0].id); return true }
         if (seatForSide(side).bot) { maybeRunBot(); return true }
         return false
+    }
+
+    override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
+        Snapshot(String(board), side.toString(), castling, epSquare, halfmove, fullmove, revision, log.toList(),
+            repetitions.toMap(), result, winner, drawOfferedBy, whiteClock.coerceAtLeast(0L),
+            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, moveSerial)
+    )
+
+    private fun restoreSnapshot(state: JsonObject) {
+        val s = NativeGamePersistence.fromJson(state, Snapshot::class.java)
+        require(s.board.length == 64) { "Invalid chess recovery board" }
+        require(s.side == "w" || s.side == "b") { "Invalid chess recovery side" }
+        board = s.board.toCharArray()
+        side = s.side[0]
+        castling = s.castling.filter { it in "KQkq" }
+        epSquare = s.epSquare.takeIf { it in -1..63 } ?: -1
+        halfmove = s.halfmove.coerceAtLeast(0)
+        fullmove = s.fullmove.coerceAtLeast(1)
+        revision = s.revision.coerceAtLeast(0L)
+        log.clear(); s.log.takeLast(32).forEach(log::add)
+        repetitions.clear(); s.repetitions.filterValues { it > 0 }.forEach { (key, value) -> repetitions[key] = value }
+        if (repetitions.isEmpty()) repetitions[positionKey()] = 1
+        result = s.result
+        winner = s.winner?.takeIf { id -> seats.any { it.id == id } }
+        drawOfferedBy = s.drawOfferedBy?.takeIf { id -> seats.any { it.id == id } }
+        whiteClock = s.whiteClock.coerceAtLeast(0L)
+        blackClock = s.blackClock.coerceAtLeast(0L)
+        lastMoveFrom = s.lastMoveFrom.takeIf { it in -1..63 } ?: -1
+        lastMoveTo = s.lastMoveTo.takeIf { it in -1..63 } ?: -1
+        moveSerial = s.moveSerial.coerceAtLeast(0L)
+        lastClockAt = System.currentTimeMillis()
     }
 
     private fun maybeRunBot() {
@@ -320,6 +353,12 @@ class ChessSession(
     private fun bump(m: String) { revision++; log.add(m); while (log.size > 32) log.removeFirst() }
     private fun seatForSide(c: Char) = seats[if (c == 'w') 0 else 1]
     private data class Move(val from: Int, val to: Int, val promotion: Boolean = false, val promoteTo: Char = 'q', val enPassant: Boolean = false, val castle: Boolean = false)
+
+    private data class Snapshot(
+        val board:String,val side:String,val castling:String,val epSquare:Int,val halfmove:Int,val fullmove:Int,
+        val revision:Long,val log:List<String>,val repetitions:Map<String,Int>,val result:String?,val winner:String?,
+        val drawOfferedBy:String?,val whiteClock:Long,val blackClock:Long,val lastMoveFrom:Int,val lastMoveTo:Int,val moveSerial:Long
+    )
 
     companion object {
         private const val START = "rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR"

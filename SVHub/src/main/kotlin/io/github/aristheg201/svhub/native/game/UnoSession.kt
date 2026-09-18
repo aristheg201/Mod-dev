@@ -1,11 +1,13 @@
 package io.github.aristheg201.svhub.native.game
 
+import com.google.gson.JsonObject
 import kotlin.random.Random
 
 class UnoSession(
     override val seats: List<NativeSeat>,
     seed: Long = Random.nextLong(),
-    override val sessionId: String = NativeIds.session("uno")
+    override val sessionId: String = NativeIds.session("uno"),
+    private val restoreState: JsonObject? = null
 ) : NativeGameSession {
     override val gameId = "uno"
 
@@ -24,20 +26,17 @@ class UnoSession(
 
     init {
         require(seats.size in 2..4)
-        buildDeck().shuffled(rng).forEach(drawPile::add)
-        repeat(7) { seats.forEach { hands.getValue(it.id).add(drawOne()) } }
-        var first = drawOne()
-        while (first.kind == Kind.WILD4) {
-            drawPile.add(first)
-            first = drawOne()
-        }
-        discard.add(first)
-        activeColor = if (first.color == Color.WILD) {
-            Color.entries.filter { it != Color.WILD }.random(rng)
+        if (restoreState != null) {
+            restoreSnapshot(restoreState)
         } else {
-            first.color
+            buildDeck().shuffled(rng).forEach(drawPile::add)
+            repeat(7) { seats.forEach { hands.getValue(it.id).add(drawOne()) } }
+            var first = drawOne()
+            while (first.kind == Kind.WILD4) { drawPile.add(first); first = drawOne() }
+            discard.add(first)
+            activeColor = if (first.color == Color.WILD) Color.entries.filter { it != Color.WILD }.random(rng) else first.color
+            applyOpening(first)
         }
-        applyOpening(first)
     }
 
     override val finished get() = result != null
@@ -147,6 +146,29 @@ class UnoSession(
             return true
         }
         return false
+    }
+
+    override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
+        Snapshot(drawPile.toList(), discard.toList(), hands.mapValues { (_, value) -> value.toList() }, eliminated.toList(),
+            turnIndex, direction, activeColor, revision, winner, result, log.toList())
+    )
+
+    private fun restoreSnapshot(state: JsonObject) {
+        val s = NativeGamePersistence.fromJson(state, Snapshot::class.java)
+        require(s.discard.isNotEmpty()) { "UNO recovery requires a discard top" }
+        drawPile.clear(); s.drawPile.forEach(drawPile::add)
+        discard.clear(); s.discard.forEach(discard::add)
+        hands.values.forEach { it.clear() }
+        seats.forEach { seat -> s.hands[seat.id].orEmpty().forEach(hands.getValue(seat.id)::add) }
+        eliminated.clear(); s.eliminated.filter { id -> seats.any { it.id == id } }.forEach(eliminated::add)
+        turnIndex = s.turnIndex.coerceIn(0, seats.lastIndex)
+        direction = if (s.direction < 0) -1 else 1
+        activeColor = s.activeColor.takeIf { it != Color.WILD } ?: Color.RED
+        revision = s.revision.coerceAtLeast(0L)
+        winner = s.winner?.takeIf { id -> seats.any { it.id == id } }
+        result = s.result
+        log.clear(); s.log.takeLast(32).forEach(log::add)
+        if (!finished && seats[turnIndex].id in eliminated) advance()
     }
 
     private fun resign(seatIndex: Int): NativeGameResult {
@@ -323,6 +345,8 @@ class UnoSession(
 
     private enum class Color { RED, YELLOW, GREEN, BLUE, WILD }
     private enum class Kind { NUMBER, SKIP, REVERSE, DRAW2, WILD, WILD4 }
+
+    private data class Snapshot(val drawPile:List<Card>,val discard:List<Card>,val hands:Map<String,List<Card>>,val eliminated:List<String>,val turnIndex:Int,val direction:Int,val activeColor:Color,val revision:Long,val winner:String?,val result:String?,val log:List<String>)
 
     private data class Card(
         val color: Color,

@@ -1,11 +1,13 @@
 package io.github.aristheg201.svhub.native.game
 
+import com.google.gson.JsonObject
 import kotlin.random.Random
 
 class LudoSession(
     override val seats: List<NativeSeat>,
     seed: Long = Random.nextLong(),
-    override val sessionId: String = NativeIds.session("ludo")
+    override val sessionId: String = NativeIds.session("ludo"),
+    private val restoreState: JsonObject? = null
 ) : NativeGameSession {
     override val gameId = "ludo"
 
@@ -22,6 +24,7 @@ class LudoSession(
 
     init {
         require(seats.size in 2..4)
+        restoreState?.let(::restoreSnapshot)
     }
 
     override val finished get() = result != null
@@ -154,6 +157,29 @@ class LudoSession(
             return true
         }
         return false
+    }
+
+    override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
+        Snapshot(pieces.mapValues { (_, value) -> value.toList() }, eliminated.toList(), turn, rolled, sixChain,
+            revision, winner, result, log.toList())
+    )
+
+    private fun restoreSnapshot(state: JsonObject) {
+        val s = NativeGamePersistence.fromJson(state, Snapshot::class.java)
+        seats.forEach { seat ->
+            val restored = s.pieces[seat.id]
+            val target = pieces.getValue(seat.id)
+            if (restored != null && restored.size == target.size) restored.forEachIndexed { index, value -> target[index] = value.coerceIn(HOME, FINISHED) }
+        }
+        eliminated.clear(); s.eliminated.filter { id -> seats.any { it.id == id } }.forEach(eliminated::add)
+        turn = s.turn.coerceIn(0, seats.lastIndex)
+        rolled = s.rolled.coerceIn(0, 6)
+        sixChain = s.sixChain.coerceIn(0, 2)
+        revision = s.revision.coerceAtLeast(0L)
+        winner = s.winner?.takeIf { id -> seats.any { it.id == id } }
+        result = s.result
+        log.clear(); s.log.takeLast(32).forEach(log::add)
+        if (!finished && seats[turn].id in eliminated) nextTurn(true)
     }
 
     private fun resign(seatIndex: Int): NativeGameResult {
@@ -319,6 +345,8 @@ class LudoSession(
         FINISHED -> "đích"
         else -> progress.toString()
     }
+
+    private data class Snapshot(val pieces:Map<String,List<Int>>,val eliminated:List<String>,val turn:Int,val rolled:Int,val sixChain:Int,val revision:Long,val winner:String?,val result:String?,val log:List<String>)
 
     companion object {
         private const val HOME = -1
