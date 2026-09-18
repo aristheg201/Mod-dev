@@ -2,6 +2,7 @@ package io.github.aristheg201.svhub.native
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.SVHub
 import io.github.aristheg201.svhub.native.game.*
 import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
 import net.minecraft.server.MinecraftServer
@@ -42,12 +43,14 @@ object NativeArcadeService {
     private val disconnectedUntil = hashMapOf<UUID, Long>()
     private val meta = hashMapOf<String, SessionMeta>()
     private val asyncMessages = ConcurrentHashMap<UUID, String>()
+    private val lastPersistedAt = hashMapOf<String, Long>()
 
     fun start(root: Path) {
         TftSetRegistry.start(root.resolve("tft"))
         NativeBotRuntime.start()
         NativeGameEngineRuntime.start()
         NativeRewardService.start(root.resolve("rewards.json"))
+        NativeArcadeSessionStore.start(root.resolve("sessions"))
     }
 
     fun lobbyState(player: ServerPlayer) = JsonObject().apply {
@@ -90,6 +93,10 @@ object NativeArcadeService {
     }
 
     fun start(player: ServerPlayer, gameId: String, requestedMode: String): Result {
+        if (!NativeArcadeSessionStore.isLoadComplete()) {
+            return Result(false, "Arcade đang phục hồi session; hãy thử lại sau.")
+        }
+        restoreLoadedSessions(player.server, System.currentTimeMillis())
         val def = games.firstOrNull { it.id == gameId } ?: return Result(false, "Game không tồn tại.")
         if (sessions.size >= MAX_SESSIONS) return Result(false, "Arcade đang đạt giới hạn session; hãy thử lại sau.")
         val mode = if (requestedMode == "bot") "bot_normal" else requestedMode
@@ -168,7 +175,12 @@ object NativeArcadeService {
     }
 
     fun tick(server: MinecraftServer, now: Long = System.currentTimeMillis()): Map<UUID, String> {
-        sessions.values.toList().forEach { handle -> if (!handle.finished) handle.submitTick(now) else finishIfNeeded(handle) }
+        NativeArcadeSessionStore.tick(now)
+        restoreLoadedSessions(server, now)
+        sessions.values.toList().forEach { handle ->
+            if (!handle.finished) handle.submitTick(now) else finishIfNeeded(handle)
+            persistSession(handle, now, force = false)
+        }
         disconnectedUntil.entries.toList().forEach { (id, deadline) ->
             if (now < deadline || server.playerList.getPlayer(id) != null) return@forEach
             if (!disconnectedUntil.remove(id, deadline)) return@forEach
@@ -186,19 +198,34 @@ object NativeArcadeService {
 
     fun onDisconnect(player: ServerPlayer) {
         queues.values.forEach { it.remove(player.uuid) }
+        active[player.uuid]?.let { sid -> sessions[sid]?.let { persistSession(it, System.currentTimeMillis(), force = true) } }
         if (active.containsKey(player.uuid)) disconnectedUntil[player.uuid] = System.currentTimeMillis() + DISCONNECT_GRACE_MS
         asyncMessages.remove(player.uuid)
     }
 
     fun onReconnect(player: ServerPlayer): Boolean {
+        if (NativeArcadeSessionStore.isLoadComplete()) restoreLoadedSessions(player.server, System.currentTimeMillis())
         disconnectedUntil.remove(player.uuid)
         val sid = active[player.uuid] ?: return false
         return sessions.containsKey(sid)
     }
 
     fun shutdown() {
-        NativeGameEngineRuntime.shutdown(); NativeBotRuntime.shutdown(); NativeRewardService.shutdown()
-        sessions.clear(); active.clear(); queues.values.forEach { it.clear() }; rewarding.clear(); finishedAt.clear(); disconnectedUntil.clear(); meta.clear(); asyncMessages.clear()
+        val now = System.currentTimeMillis()
+        sessions.values.toList().forEach { persistSession(it, now, force = true) }
+        NativeGameEngineRuntime.shutdown()
+        NativeBotRuntime.shutdown()
+        NativeRewardService.shutdown()
+        NativeArcadeSessionStore.shutdown()
+        sessions.clear()
+        active.clear()
+        queues.values.forEach { it.clear() }
+        rewarding.clear()
+        finishedAt.clear()
+        disconnectedUntil.clear()
+        meta.clear()
+        asyncMessages.clear()
+        lastPersistedAt.clear()
     }
 
     private fun onEngineUpdate(update: NativeGameEngineRuntime.Update) {
@@ -211,15 +238,24 @@ object NativeArcadeService {
         if (update.changed || update.finished || update.message.isNotBlank()) {
             realPlayers(handle).forEach { id -> if (active[id] == update.sessionId) asyncMessages[id] = update.message }
         }
+        if (update.changed || update.finished) persistSession(handle, System.currentTimeMillis(), force = true)
         finishIfNeeded(handle)
     }
 
-    private fun register(server: MinecraftServer, session: NativeGameSession, mode: String): NativeGameEngineRuntime.Handle {
+    private fun register(
+        server: MinecraftServer,
+        session: NativeGameSession,
+        mode: String,
+        restoredMeta: SessionMeta? = null,
+        persistImmediately: Boolean = true
+    ): NativeGameEngineRuntime.Handle {
         val handle = NativeGameEngineRuntime.register(server, session, ::onEngineUpdate)
         sessions[handle.sessionId] = handle
         val players = realPlayers(handle)
         players.forEach { active[it] = handle.sessionId; disconnectedUntil.remove(it) }
-        meta[handle.sessionId] = SessionMeta(mode = mode, humanActions = players.associateWith { 0 }.toMutableMap())
+        meta[handle.sessionId] = restoredMeta
+            ?: SessionMeta(mode = mode, humanActions = players.associateWith { 0 }.toMutableMap())
+        if (persistImmediately) persistSession(handle, System.currentTimeMillis(), force = true)
         return handle
     }
 
@@ -230,8 +266,10 @@ object NativeArcadeService {
     }
 
     private fun finishIfNeeded(handle: NativeGameEngineRuntime.Handle) {
-        if (!handle.finished || finishedAt.containsKey(handle.sessionId) || !rewarding.add(handle.sessionId)) return
+        if (!handle.finished || finishedAt.containsKey(handle.sessionId)) return
         val now = System.currentTimeMillis()
+        persistSession(handle, now, force = true)
+        if (!rewarding.add(handle.sessionId)) return
         val m = meta[handle.sessionId] ?: SessionMeta("unknown", now)
         val players = realPlayers(handle)
         val participants = players.map { id ->
@@ -265,7 +303,113 @@ object NativeArcadeService {
         }
         sessions.remove(sessionId)
         meta.remove(sessionId)
+        lastPersistedAt.remove(sessionId)
+        NativeArcadeSessionStore.delete(sessionId)
         NativeGameEngineRuntime.unregister(sessionId)
+    }
+
+    private fun persistSession(
+        handle: NativeGameEngineRuntime.Handle,
+        now: Long,
+        force: Boolean
+    ) {
+        val sessionId = handle.sessionId
+        val m = meta[sessionId] ?: return
+        val last = lastPersistedAt[sessionId] ?: 0L
+        if (!force && now - last < SESSION_PERSIST_INTERVAL_MS) return
+        val state = handle.snapshotState()
+        if (state.size() <= 0) return
+        NativeArcadeSessionStore.save(
+            NativeArcadeSessionStore.StoredSession(
+                sessionId = sessionId,
+                gameId = handle.gameId,
+                mode = m.mode,
+                createdAtEpochMs = m.createdAtEpochMs,
+                seats = handle.seats.toList(),
+                humanActions = m.humanActions.mapKeys { it.key.toString() },
+                forfeited = m.forfeited.mapTo(linkedSetOf()) { it.toString() },
+                state = state,
+                savedAtEpochMs = now
+            )
+        )
+        lastPersistedAt[sessionId] = now
+    }
+
+    private fun restoreLoadedSessions(server: MinecraftServer, now: Long) {
+        val records = NativeArcadeSessionStore.drainLoaded()
+            .sortedByDescending { it.savedAtEpochMs }
+        if (records.isEmpty()) return
+
+        records.forEach { record ->
+            if (record.sessionId in sessions) return@forEach
+            if (games.none { it.id == record.gameId }) {
+                SVHub.LOGGER.warn("Ignoring recovery for unknown native game {}", record.gameId)
+                return@forEach
+            }
+            if (sessions.size >= MAX_SESSIONS) {
+                SVHub.LOGGER.error("Cannot restore native session {}; session capacity reached", record.sessionId)
+                return@forEach
+            }
+
+            val realIds = record.seats.asSequence()
+                .filterNot { it.anyBot }
+                .mapNotNull { runCatching { UUID.fromString(it.id) }.getOrNull() }
+                .toSet()
+            if (realIds.isEmpty()) {
+                SVHub.LOGGER.warn("Ignoring native recovery {} with no real players", record.sessionId)
+                return@forEach
+            }
+            if (realIds.any(active::containsKey)) {
+                SVHub.LOGGER.warn("Dropping duplicate older native recovery {}", record.sessionId)
+                NativeArcadeSessionStore.delete(record.sessionId)
+                return@forEach
+            }
+
+            val restored = runCatching {
+                NativeGameRestorer.restore(
+                    record.gameId,
+                    record.seats,
+                    record.sessionId,
+                    record.state.deepCopy()
+                )
+            }.onFailure { error ->
+                SVHub.LOGGER.error("Unable to restore native session {}", record.sessionId, error)
+            }.getOrNull() ?: return@forEach
+
+            val actions = linkedMapOf<UUID, Int>()
+            record.humanActions.forEach { (raw, count) ->
+                runCatching { UUID.fromString(raw) }.getOrNull()
+                    ?.takeIf(realIds::contains)
+                    ?.let { actions[it] = count.coerceIn(0, 1_000_000) }
+            }
+            realIds.forEach { actions.putIfAbsent(it, 0) }
+            val forfeited = record.forfeited.mapNotNullTo(linkedSetOf()) { raw ->
+                runCatching { UUID.fromString(raw) }.getOrNull()?.takeIf(realIds::contains)
+            }
+            val restoredMeta = SessionMeta(
+                mode = record.mode,
+                createdAtEpochMs = record.createdAtEpochMs.coerceAtLeast(0L),
+                humanActions = actions,
+                forfeited = forfeited
+            )
+            val handle = register(
+                server,
+                restored,
+                record.mode,
+                restoredMeta = restoredMeta,
+                persistImmediately = false
+            )
+            realIds.forEach { id ->
+                if (server.playerList.getPlayer(id) == null) {
+                    disconnectedUntil[id] = now + RESTART_RECONNECT_GRACE_MS
+                } else {
+                    disconnectedUntil.remove(id)
+                    asyncMessages[id] = "Đã phục hồi ván " + handle.gameId + " sau restart."
+                }
+            }
+            persistSession(handle, now, force = true)
+            if (handle.finished) finishIfNeeded(handle)
+        }
     }
 
     private fun realPlayers(handle: NativeGameEngineRuntime.Handle) = handle.seats.asSequence().filterNot { it.anyBot }.mapNotNull { runCatching { UUID.fromString(it.id) }.getOrNull() }.toSet()
@@ -274,6 +418,8 @@ object NativeArcadeService {
     private fun difficultyFor(mode: String) = when (mode) { "bot_easy" -> NativeBotDifficulty.EASY; "bot_hard" -> NativeBotDifficulty.HARD; else -> NativeBotDifficulty.NORMAL }
 
     private const val DISCONNECT_GRACE_MS = 90_000L
+    private const val RESTART_RECONNECT_GRACE_MS = 5 * 60 * 1000L
+    private const val SESSION_PERSIST_INTERVAL_MS = 1_000L
     private const val TERMINAL_DEDUP_MS = 10 * 60 * 1000L
     private const val MAX_SESSIONS = 512
 }

@@ -1,6 +1,8 @@
 package io.github.aristheg201.svhub.native.game
 
+import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.native.game.tft.TftCombatEngine
+import io.github.aristheg201.svhub.native.game.tft.TftCombatSnapshot
 import io.github.aristheg201.svhub.native.game.tft.TftCombatUnit
 import io.github.aristheg201.svhub.native.game.tft.TftDefinitionValidator
 import io.github.aristheg201.svhub.native.game.tft.TftOwnedUnit
@@ -18,11 +20,12 @@ class TftSession(
     override val seats: List<NativeSeat>,
     seed: Long = Random.nextLong(),
     override val sessionId: String = NativeIds.session("tft"),
-    definition: TftSetDefinition = TftSetRegistry.active()
+    definition: TftSetDefinition = TftSetRegistry.active(),
+    private val restoreState: JsonObject? = null
 ) : NativeGameSession {
     override val gameId: String = "tft"
     private val set = TftDefinitionValidator.validate(definition)
-    private val rng = Random(seed)
+    private val rng = NativeStatefulRandom(seed)
     private val unitDefs = set.units.associateBy { it.id }
     private val traitDefs = set.traits.associateBy { it.id }
     private val augmentDefs = set.augments.associateBy { it.id }
@@ -43,12 +46,192 @@ class TftSession(
 
     init {
         require(seats.size in 2..8) { "Pokémon TFT requires 2-8 trainers" }
-        seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name) }
-        startPlanning(System.currentTimeMillis(), firstRound = true)
+        if (restoreState == null) {
+            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name) }
+            startPlanning(System.currentTimeMillis(), firstRound = true)
+        } else {
+            restoreSnapshot(restoreState)
+        }
     }
 
     override val finished: Boolean get() = result != null
     override val winnerSeatId: String? get() = winner
+
+    override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
+        Snapshot(
+            schema = 1,
+            setDefinition = set,
+            phase = phase.name,
+            roundIndex = roundIndex,
+            phaseRemainingMs = (phaseEndsAt - nowMillis).coerceAtLeast(0L),
+            nextUnitSerial = nextUnitSerial,
+            revision = revision,
+            result = result,
+            winner = winner,
+            rngState = rng.state,
+            poolCounts = pool.snapshotCounts(),
+            players = players.values.map { player ->
+                PlayerSnapshot(
+                    id = player.id,
+                    name = player.name,
+                    hp = player.hp,
+                    gold = player.gold,
+                    level = player.level,
+                    xp = player.xp,
+                    streak = player.streak,
+                    lastOutcome = player.lastOutcome,
+                    eliminated = player.eliminated,
+                    placement = player.placement,
+                    lastOpponentId = player.lastOpponentId,
+                    bench = player.bench.map { owned -> owned?.copy(items = owned.items.toMutableList()) },
+                    board = player.board.entries.sortedBy { it.key }.map { entry ->
+                        BoardSnapshot(entry.key, entry.value.copy(items = entry.value.items.toMutableList()))
+                    },
+                    shop = player.shop.toList(),
+                    itemBench = player.itemBench.toList(),
+                    augments = player.augments.toList(),
+                    augmentChoices = player.augmentChoices.toList(),
+                    freeRerolls = player.freeRerolls,
+                    draftPicked = player.draftPicked,
+                    draftUnlockRemainingMs = (player.draftUnlockAt - nowMillis).coerceAtLeast(0L),
+                    lastIncome = player.lastIncome,
+                    lastInterest = player.lastInterest,
+                    lastStreakGold = player.lastStreakGold
+                )
+            },
+            draftOffers = draftOffers.map { offer ->
+                DraftSnapshot(offer.index, offer.unitId, offer.itemId, offer.takenBy)
+            },
+            combats = combats.values.distinctBy { System.identityHashCode(it) }.map { match ->
+                MatchSnapshot(
+                    aId = match.aId,
+                    bId = match.bId,
+                    opponentLabel = match.opponentLabel,
+                    pveRound = match.pve?.round,
+                    ghostOwnerId = match.ghostOwnerId,
+                    resolved = match.resolved,
+                    combat = match.engine.snapshotState()
+                )
+            },
+            log = log.toList()
+        )
+    )
+
+    private fun restoreSnapshot(state: JsonObject) {
+        val saved = NativeGamePersistence.fromJson(state, Snapshot::class.java)
+        require(saved.schema == 1) { "Unsupported TFT session snapshot schema " + saved.schema }
+        require(saved.setDefinition.id == set.id) { "TFT set mismatch during recovery" }
+        require(saved.players.map { it.id }.toSet() == seats.map { it.id }.toSet()) {
+            "TFT recovery seat mismatch"
+        }
+        val now = System.currentTimeMillis()
+        val seatById = seats.associateBy { it.id }
+
+        phase = Phase.entries.firstOrNull { it.name == saved.phase }
+            ?: error("Unknown TFT recovery phase " + saved.phase)
+        roundIndex = saved.roundIndex.coerceAtLeast(0)
+        phaseEndsAt = if (phase == Phase.FINISHED) 0L
+            else now + saved.phaseRemainingMs.coerceIn(0L, 600_000L)
+        nextUnitSerial = saved.nextUnitSerial.coerceAtLeast(1L)
+        revision = saved.revision.coerceAtLeast(0L)
+        result = saved.result
+        winner = saved.winner?.takeIf(seatById::containsKey)
+        rng.restore(saved.rngState)
+        pool.restoreCounts(saved.poolCounts)
+
+        players.clear()
+        saved.players.forEach { p ->
+            val seat = seatById.getValue(p.id)
+            val bench = p.bench.take(BENCH_SIZE).map { owned ->
+                owned?.takeIf { it.unitId in unitDefs }?.copy(items = it.items.toMutableList())
+            }.toMutableList()
+            while (bench.size < BENCH_SIZE) bench.add(null)
+
+            val board = linkedMapOf<Int, TftOwnedUnit>()
+            p.board.filter { it.slot in 0 until FORMATION_CELLS }
+                .distinctBy { it.slot }
+                .forEach { entry ->
+                    if (entry.unit.unitId in unitDefs) {
+                        board[entry.slot] = entry.unit.copy(items = entry.unit.items.toMutableList())
+                    }
+                }
+
+            val shop = p.shop.take(SHOP_SIZE).toMutableList()
+            while (shop.size < SHOP_SIZE) shop.add(null)
+            shop.indices.forEach { index ->
+                val id = shop[index]
+                if (id != null && id !in unitDefs) shop[index] = null
+            }
+
+            players[p.id] = PlayerState(
+                id = p.id,
+                name = seat.name,
+                hp = p.hp.coerceIn(-10_000, 100),
+                gold = p.gold.coerceIn(0, MAX_GOLD),
+                level = p.level.coerceIn(1, set.maxLevel),
+                xp = p.xp.coerceAtLeast(0),
+                streak = p.streak,
+                lastOutcome = p.lastOutcome.coerceIn(-1, 1),
+                eliminated = p.eliminated,
+                placement = p.placement?.coerceIn(1, seats.size),
+                lastOpponentId = p.lastOpponentId?.takeIf(seatById::containsKey),
+                bench = bench,
+                board = board,
+                shop = shop,
+                itemBench = p.itemBench.take(128).toMutableList(),
+                augments = p.augments.filter(augmentDefs::containsKey).toMutableList(),
+                augmentChoices = p.augmentChoices.filter(augmentDefs::containsKey).toMutableList(),
+                freeRerolls = p.freeRerolls.coerceIn(0, 100),
+                draftPicked = p.draftPicked,
+                draftUnlockAt = now + p.draftUnlockRemainingMs.coerceIn(0L, DRAFT_TOTAL_MS),
+                lastIncome = p.lastIncome.coerceAtLeast(0),
+                lastInterest = p.lastInterest.coerceAtLeast(0),
+                lastStreakGold = p.lastStreakGold.coerceAtLeast(0)
+            )
+        }
+
+        draftOffers.clear()
+        saved.draftOffers.take(32)
+            .filter { it.unitId in unitDefs }
+            .forEach { offer ->
+                draftOffers += DraftOffer(
+                    offer.index,
+                    offer.unitId,
+                    offer.itemId,
+                    offer.takenBy?.takeIf(players::containsKey)
+                )
+            }
+
+        combats.clear()
+        if (phase == Phase.COMBAT) {
+            saved.combats.take(8).forEach { savedMatch ->
+                require(savedMatch.aId in players) {
+                    "TFT recovery combat references missing player " + savedMatch.aId
+                }
+                require(savedMatch.bId == null || savedMatch.bId in players) {
+                    "TFT recovery combat references missing opponent"
+                }
+                val pve = savedMatch.pveRound?.let { round ->
+                    set.pveRounds.firstOrNull { it.round == round }
+                }
+                val match = MatchCombat(
+                    aId = savedMatch.aId,
+                    bId = savedMatch.bId,
+                    opponentLabel = savedMatch.opponentLabel,
+                    engine = TftCombatEngine(set, savedMatch.combat),
+                    pve = pve,
+                    ghostOwnerId = savedMatch.ghostOwnerId?.takeIf(players::containsKey),
+                    resolved = savedMatch.resolved
+                )
+                combats[savedMatch.aId] = match
+                savedMatch.bId?.let { id -> combats[id] = match }
+            }
+        }
+
+        log.clear()
+        saved.log.takeLast(40).forEach(log::add)
+        lastTickAt = now
+    }
 
     override fun viewFor(viewerId: String): NativeGameView {
         val player = players[viewerId] ?: players.values.first()
@@ -600,6 +783,65 @@ class TftSession(
     private fun unitLocations(player: PlayerState): List<UnitLocation> = buildList { player.board.forEach { (slot, unit) -> add(UnitLocation("board", slot, unit)) }; player.bench.forEachIndexed { index, unit -> if (unit != null) add(UnitLocation("bench", index, unit)) } }
     private fun removeLocation(player: PlayerState, ref: UnitLocation) { if (ref.origin == "board") player.board.remove(ref.index) else if (ref.index in player.bench.indices) player.bench[ref.index] = null }
 
+    private data class Snapshot(
+        val schema: Int,
+        val setDefinition: TftSetDefinition,
+        val phase: String,
+        val roundIndex: Int,
+        val phaseRemainingMs: Long,
+        val nextUnitSerial: Long,
+        val revision: Long,
+        val result: String?,
+        val winner: String?,
+        val rngState: Long,
+        val poolCounts: Map<String, Int>,
+        val players: List<PlayerSnapshot>,
+        val draftOffers: List<DraftSnapshot>,
+        val combats: List<MatchSnapshot>,
+        val log: List<String>
+    )
+    private data class PlayerSnapshot(
+        val id: String,
+        val name: String,
+        val hp: Int,
+        val gold: Int,
+        val level: Int,
+        val xp: Int,
+        val streak: Int,
+        val lastOutcome: Int,
+        val eliminated: Boolean,
+        val placement: Int?,
+        val lastOpponentId: String?,
+        val bench: List<TftOwnedUnit?>,
+        val board: List<BoardSnapshot>,
+        val shop: List<String?>,
+        val itemBench: List<String>,
+        val augments: List<String>,
+        val augmentChoices: List<String>,
+        val freeRerolls: Int,
+        val draftPicked: Boolean,
+        val draftUnlockRemainingMs: Long,
+        val lastIncome: Int,
+        val lastInterest: Int,
+        val lastStreakGold: Int
+    )
+    private data class BoardSnapshot(val slot: Int, val unit: TftOwnedUnit)
+    private data class DraftSnapshot(
+        val index: Int,
+        val unitId: String,
+        val itemId: String,
+        val takenBy: String?
+    )
+    private data class MatchSnapshot(
+        val aId: String,
+        val bId: String?,
+        val opponentLabel: String,
+        val pveRound: String?,
+        val ghostOwnerId: String?,
+        val resolved: Boolean,
+        val combat: TftCombatSnapshot
+    )
+
     private data class UnitLocation(val origin: String, val index: Int, val unit: TftOwnedUnit)
     private data class PlayerState(
         val id: String, val name: String, var hp: Int = 100, var gold: Int = 5, var level: Int = 2, var xp: Int = 0,
@@ -619,6 +861,13 @@ class TftSession(
         init{set.units.forEach{unit->val amount=set.poolSizeByCost[unit.cost.toString()]?:error("Missing TFT pool size for cost ${unit.cost}");counts[unit.id]=amount;initial[unit.id]=amount}}
         fun reserveForLevel(level:Int):String?{val row=odds[level]?:odds.values.minByOrNull{abs(it.level-level)}?:return null;repeat(7){val cost=rollCost(row.odds);reserveCost(cost)?.let{return it}};return counts.entries.filter{it.value>0}.weightedByCount()?.also{counts[it]=counts.getValue(it)-1}}
         fun returnCopies(unitId:String,amount:Int){if(amount<=0||unitId !in counts)return;counts[unitId]=(counts.getValue(unitId)+amount).coerceAtMost(initial.getValue(unitId))}
+        fun snapshotCounts(): Map<String, Int> = counts.toMap()
+        fun restoreCounts(saved: Map<String, Int>) {
+            require(saved.keys == counts.keys) { "TFT recovery pool keys do not match set units" }
+            counts.keys.forEach { id ->
+                counts[id] = (saved[id] ?: 0).coerceIn(0, initial.getValue(id))
+            }
+        }
         private fun reserveCost(cost:Int):String?{val candidates=counts.entries.filter{it.value>0&&defs[it.key]?.cost==cost};val chosen=candidates.weightedByCount()?:return null;counts[chosen]=counts.getValue(chosen)-1;return chosen}
         private fun rollCost(values:List<Int>):Int{val roll=rng.nextInt(100);var acc=0;values.forEachIndexed{index,chance->acc+=chance;if(roll<acc)return index+1};return 1}
         private fun List<Map.Entry<String,Int>>.weightedByCount():String?{val total=sumOf{it.value};if(total<=0)return null;var roll=rng.nextInt(total);for(entry in this){roll-=entry.value;if(roll<0)return entry.key};return lastOrNull()?.key}

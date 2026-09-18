@@ -3,6 +3,7 @@ package io.github.aristheg201.svhub.native.game
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.native.game.tft.TftSetDefinition
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import kotlin.random.Random
@@ -27,6 +28,20 @@ object NativeGameRestorer {
             "uno" -> UnoSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
             "pokecards" -> CardDuelSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
             "tower_defense" -> TowerDefenseSession(seats = seats, seed = seed, sessionId = sessionId, restoreState = state)
+            "tft" -> {
+                val setElement = state.get("setDefinition")
+                    ?: error("TFT recovery snapshot is missing setDefinition")
+                val definition = requireNotNull(NativeGamePersistence.gson.fromJson(setElement, TftSetDefinition::class.java)) {
+                    "TFT recovery snapshot has no set definition"
+                }
+                TftSession(
+                    seats = seats,
+                    seed = seed,
+                    sessionId = sessionId,
+                    definition = definition,
+                    restoreState = state
+                )
+            }
             else -> throw IllegalArgumentException("No recovery codec for game: $gameId")
         }
     }

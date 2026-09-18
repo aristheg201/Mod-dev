@@ -1,5 +1,6 @@
 package io.github.aristheg201.svhub.native.game.tft
 
+import io.github.aristheg201.svhub.native.game.NativeStatefulRandom
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -51,6 +52,47 @@ data class TftCombatResult(
     val timedOut: Boolean
 )
 
+data class TftCombatUnitSnapshot(
+    val instanceId: String,
+    val ownerId: String,
+    val team: Int,
+    val unitId: String,
+    val star: Int,
+    val items: List<String>,
+    val cell: Int,
+    val maxHp: Int,
+    val hp: Int,
+    val maxMana: Int,
+    val mana: Int,
+    val attackDamage: Double,
+    val defense: Double,
+    val specialDefense: Double,
+    val attackSpeed: Double,
+    val range: Int,
+    val critChance: Double,
+    val critMultiplier: Double,
+    val abilityPower: Double,
+    val manaOnAttack: Int,
+    val shield: Int,
+    val stunMs: Long,
+    val attackCooldownMs: Double,
+    val targetId: String?,
+    val casts: Int,
+    val damageDone: Long,
+    val healingDone: Long
+)
+
+data class TftCombatSnapshot(
+    val schema: Int = 1,
+    val maxDurationMs: Long,
+    val elapsedMs: Long,
+    val finished: Boolean,
+    val winnerTeam: Int?,
+    val timedOut: Boolean,
+    val rngState: Long,
+    val units: List<TftCombatUnitSnapshot>
+)
+
 /** Pure deterministic TFT-like combat. It never touches Minecraft state. */
 class TftCombatEngine(
     private val set: TftSetDefinition,
@@ -63,7 +105,7 @@ class TftCombatEngine(
     seed: Long,
     private val maxDurationMs: Long = set.combatSeconds.coerceIn(15, 90) * 1_000L
 ) {
-    private val rng = Random(seed)
+    private val rng = NativeStatefulRandom(seed)
     private val unitDefs = set.units.associateBy { it.id }
     private val traitDefs = set.traits.associateBy { it.id }
     private val componentDefs = set.components.associateBy { it.id }
@@ -82,6 +124,110 @@ class TftCombatEngine(
         units += createTeam(1, team1Owner, team1Board, team1Augments)
         if (units.none { it.team == 0 } || units.none { it.team == 1 }) resolve(false)
     }
+
+    constructor(set: TftSetDefinition, snapshot: TftCombatSnapshot) : this(
+        set = set,
+        team0Owner = "restore:0",
+        team0Board = emptyMap(),
+        team0Augments = emptyList(),
+        team1Owner = "restore:1",
+        team1Board = emptyMap(),
+        team1Augments = emptyList(),
+        seed = 0L,
+        maxDurationMs = snapshot.maxDurationMs.coerceIn(1_000L, 600_000L)
+    ) {
+        require(snapshot.schema == 1) { "Unsupported TFT combat snapshot schema " + snapshot.schema }
+        units.clear()
+        snapshot.units.forEach { saved ->
+            val def = unitDefs[saved.unitId]
+                ?: error("TFT combat restore references unknown unit " + saved.unitId)
+            val maxHp = saved.maxHp.coerceAtLeast(1)
+            val maxMana = saved.maxMana.coerceAtLeast(0)
+            units += TftCombatUnit(
+                instanceId = saved.instanceId,
+                ownerId = saved.ownerId,
+                team = saved.team.coerceIn(0, 1),
+                definition = def,
+                star = saved.star.coerceIn(1, 3),
+                items = saved.items.toList(),
+                cell = saved.cell.coerceIn(0, BOARD_COLUMNS * BOARD_ROWS - 1),
+                maxHp = maxHp,
+                hp = saved.hp.coerceIn(0, maxHp),
+                maxMana = maxMana,
+                mana = saved.mana.coerceIn(0, maxMana),
+                attackDamage = saved.attackDamage.coerceAtLeast(0.0),
+                defense = saved.defense,
+                specialDefense = saved.specialDefense,
+                attackSpeed = saved.attackSpeed.coerceIn(0.1, 5.0),
+                range = saved.range.coerceIn(1, 6),
+                critChance = saved.critChance.coerceIn(0.0, 1.0),
+                critMultiplier = saved.critMultiplier.coerceAtLeast(1.0),
+                abilityPower = saved.abilityPower.coerceAtLeast(0.0),
+                manaOnAttack = saved.manaOnAttack.coerceAtLeast(0),
+                shield = saved.shield.coerceAtLeast(0),
+                stunMs = saved.stunMs.coerceAtLeast(0L),
+                attackCooldownMs = saved.attackCooldownMs.coerceAtLeast(0.0),
+                targetId = saved.targetId,
+                casts = saved.casts.coerceAtLeast(0),
+                damageDone = saved.damageDone.coerceAtLeast(0L),
+                healingDone = saved.healingDone.coerceAtLeast(0L)
+            )
+        }
+        elapsedMs = snapshot.elapsedMs.coerceIn(0L, maxDurationMs)
+        rng.restore(snapshot.rngState)
+        finished = snapshot.finished
+        result = if (finished) {
+            TftCombatResult(
+                winnerTeam = snapshot.winnerTeam?.coerceIn(0, 1),
+                survivingTeam0 = units.filter { it.alive && it.team == 0 },
+                survivingTeam1 = units.filter { it.alive && it.team == 1 },
+                timedOut = snapshot.timedOut
+            )
+        } else {
+            null
+        }
+        cleanupTargets()
+    }
+
+    fun snapshotState(): TftCombatSnapshot = TftCombatSnapshot(
+        maxDurationMs = maxDurationMs,
+        elapsedMs = elapsedMs,
+        finished = finished,
+        winnerTeam = result?.winnerTeam,
+        timedOut = result?.timedOut ?: false,
+        rngState = rng.state,
+        units = units.map { unit ->
+            TftCombatUnitSnapshot(
+                instanceId = unit.instanceId,
+                ownerId = unit.ownerId,
+                team = unit.team,
+                unitId = unit.definition.id,
+                star = unit.star,
+                items = unit.items.toList(),
+                cell = unit.cell,
+                maxHp = unit.maxHp,
+                hp = unit.hp,
+                maxMana = unit.maxMana,
+                mana = unit.mana,
+                attackDamage = unit.attackDamage,
+                defense = unit.defense,
+                specialDefense = unit.specialDefense,
+                attackSpeed = unit.attackSpeed,
+                range = unit.range,
+                critChance = unit.critChance,
+                critMultiplier = unit.critMultiplier,
+                abilityPower = unit.abilityPower,
+                manaOnAttack = unit.manaOnAttack,
+                shield = unit.shield,
+                stunMs = unit.stunMs,
+                attackCooldownMs = unit.attackCooldownMs,
+                targetId = unit.targetId,
+                casts = unit.casts,
+                damageDone = unit.damageDone,
+                healingDone = unit.healingDone
+            )
+        }
+    )
 
     fun step(deltaMillis: Long): Boolean {
         if (finished) return false

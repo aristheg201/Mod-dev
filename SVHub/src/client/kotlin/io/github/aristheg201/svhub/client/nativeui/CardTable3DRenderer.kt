@@ -7,6 +7,7 @@ import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.UiRect
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.resources.language.I18n
 import kotlin.math.max
 import kotlin.math.min
 
@@ -70,10 +71,12 @@ object CardTable3DRenderer {
             if (gameId == "pokecards") {
                 renderPokemonCard(gui, font, rect, card, index)
             } else {
-                val label = font.plainSubstrByWidth(card.str("label", card.str("id")), rect.width - 10)
+                val label = font.plainSubstrByWidth(unoCardLabel(card), rect.width - 10)
                 gui.drawCenteredString(font, label, rect.x + rect.width / 2, rect.y + rect.height / 2 - 4, TEXT)
-                val subtitle = font.plainSubstrByWidth(card.str("subtitle"), rect.width - 10)
-                if (subtitle.isNotBlank()) gui.drawCenteredString(font, subtitle, rect.x + rect.width / 2, rect.bottom - 15, MUTED)
+                if (card.str("subtitle").isNotBlank()) {
+                    val subtitle = font.plainSubstrByWidth(I18n.get("gui.svhub.uno.playable"), rect.width - 10)
+                    gui.drawCenteredString(font, subtitle, rect.x + rect.width / 2, rect.bottom - 15, MUTED)
+                }
             }
             pose.popPose()
             onCard(rect, card)
@@ -82,10 +85,18 @@ object CardTable3DRenderer {
         val fields = view.getAsJsonObject("fields")
         if (gameId == "uno") {
             val active = fields?.str("activeColor").orEmpty()
-            val top = fields?.str("top").orEmpty()
+            val top = fields?.let(::unoTopLabel).orEmpty()
             if (top.isNotBlank()) {
                 gui.drawCenteredString(font, top, table.x + table.width / 2, table.y + 16, TEXT)
-                if (active.isNotBlank()) gui.drawCenteredString(font, active.uppercase(), table.x + table.width / 2, table.y + 29, unoColor(active))
+                if (active.isNotBlank()) {
+                    gui.drawCenteredString(
+                        font,
+                        I18n.get("gui.svhub.uno." + active),
+                        table.x + table.width / 2,
+                        table.y + 29,
+                        unoColor(active)
+                    )
+                }
             }
         } else {
             val mine = fields?.str("yourScore").orEmpty()
@@ -93,6 +104,27 @@ object CardTable3DRenderer {
             if (mine.isNotBlank() || theirs.isNotBlank()) {
                 gui.drawCenteredString(font, "$mine — $theirs", table.x + table.width / 2, table.y + 18, GOLD)
             }
+        }
+    }
+
+    private fun unoCardLabel(card: JsonObject): String {
+        val meta = card.getAsJsonObject("meta") ?: JsonObject()
+        return unoLabel(meta.str("kind"), meta.str("color"), meta.str("number"))
+    }
+
+    private fun unoTopLabel(fields: JsonObject): String =
+        unoLabel(fields.str("topKind"), fields.str("topColor"), fields.str("topNumber"))
+
+    private fun unoLabel(kind: String, color: String, number: String): String {
+        val colorLabel = if (color == "wild" || color.isBlank()) "" else I18n.get("gui.svhub.uno." + color)
+        return when (kind) {
+            "number" -> I18n.get("gui.svhub.uno.card.number", colorLabel, number)
+            "skip" -> I18n.get("gui.svhub.uno.card.skip", colorLabel)
+            "reverse" -> I18n.get("gui.svhub.uno.card.reverse", colorLabel)
+            "draw2" -> I18n.get("gui.svhub.uno.card.draw2", colorLabel)
+            "wild" -> I18n.get("gui.svhub.uno.card.wild")
+            "wild4" -> I18n.get("gui.svhub.uno.card.wild4")
+            else -> ""
         }
     }
 

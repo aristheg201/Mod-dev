@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.native.game.tft
 
 import com.google.gson.Gson
+import io.github.aristheg201.svhub.native.game.NativeGameRestorer
 import io.github.aristheg201.svhub.native.game.NativeSeat
 import io.github.aristheg201.svhub.native.game.TftSession
 import java.net.JarURLConnection
@@ -64,6 +65,37 @@ class TftSetRegistryTest {
         assertTrue(session.act("p1", "buy", mapOf("index" to "0")).accepted)
         assertTrue(session.act("p1", "deploy", mapOf("bench" to "0", "slot" to "3")).accepted)
         assertEquals("1", session.viewFor("p1").fields["boardCount"])
+    }
+
+    @Test fun tftSnapshotRestoresPlanningAndLiveCombat() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val seats = (1..4).map { NativeSeat("p" + it, "Trainer " + it) }
+        val session = TftSession(seats, seed = 162L, definition = set)
+
+        assertTrue(session.act("p1", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(session.act("p1", "deploy", mapOf("bench" to "0", "slot" to "3")).accepted)
+
+        val planning = session.snapshotState()
+        val restoredPlanning = NativeGameRestorer.restore("tft", seats, session.sessionId, planning)
+        assertEquals("planning", restoredPlanning.viewFor("p1").phase)
+        assertEquals(session.viewFor("p1").board, restoredPlanning.viewFor("p1").board)
+        assertEquals(session.viewFor("p1").cards, restoredPlanning.viewFor("p1").cards)
+        assertEquals(session.viewFor("p1").fields["gold"], restoredPlanning.viewFor("p1").fields["gold"])
+        assertEquals(session.viewFor("p1").fields["boardCount"], restoredPlanning.viewFor("p1").fields["boardCount"])
+
+        val start = System.currentTimeMillis()
+        session.tick(start + set.planningSeconds * 1_000L + 100L)
+        assertEquals("combat", session.viewFor("p1").phase)
+
+        val combat = session.snapshotState()
+        val restoredCombat = NativeGameRestorer.restore("tft", seats, session.sessionId, combat)
+        assertEquals("combat", restoredCombat.viewFor("p1").phase)
+        assertEquals(session.viewFor("p1").board, restoredCombat.viewFor("p1").board)
+        assertEquals(
+            combat.getAsJsonArray("combats").toString(),
+            restoredCombat.snapshotState().getAsJsonArray("combats").toString(),
+            "Live TFT combat runtime must round-trip exactly"
+        )
     }
 
     @Test fun malformedOverrideFallsBackWithoutOverwritingUserFile() = inTempDirectory { root ->

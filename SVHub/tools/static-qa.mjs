@@ -77,6 +77,12 @@ const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/clie
 const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt");
 const cardTableRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt");
 const companionRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VanillaCompanionModelRenderer.kt");
+const arcadeService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeService.kt");
+const sessionStore = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeSessionStore.kt");
+const engineRuntime = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeGameEngineRuntime.kt");
+const gamePersistence = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/NativeGamePersistence.kt");
+const tftSessionCore = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/TftSession.kt");
+const tftCombatCore = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/tft/TftCombatEngine.kt");
 
 for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeCloseC2S"]) {
   if (!nativePayloads.includes(marker)) failures.push(`NativePayloads.kt: missing lifecycle marker ${marker}`);
@@ -145,11 +151,85 @@ for (const marker of ["CardTable3DRenderer.render", "VanillaCompanionModelRender
 }
 if (screen.includes("NativePixelArt.companion(")) failures.push("NativePlatformScreen.kt: companion arena still uses sprite placeholder");
 if (screen.includes("coerceIn(0,1200)")) failures.push("NativePlatformScreen.kt: native module scroll still uses hardcoded 1200 clamp");
-for (const marker of ["PokemonModelRenderer.renderScene", "Axis.ZP.rotationDegrees", '"uno"', '"pokecards"']) {
+for (const marker of ["PokemonModelRenderer.renderScene", "Axis.ZP.rotationDegrees", '"uno"', '"pokecards"', "unoCardLabel", "unoTopLabel", 'I18n.get("gui.svhub.uno."']) {
   if (!cardTableRenderer.includes(marker)) failures.push(`CardTable3DRenderer.kt: missing ${marker}`);
 }
+if (cardTableRenderer.includes("active.uppercase()")) failures.push("CardTable3DRenderer.kt: UNO active color is still rendered raw");
+if (!tftRenderer.includes('tr("gui.svhub.game.tft.title")')) failures.push("TftGameRenderer.kt: TFT title is still hardcoded");
 for (const marker of ["InventoryScreen.renderEntityInInventoryFollowsMouse", "BuiltInRegistries.ENTITY_TYPE", "LivingEntity"]) {
   if (!companionRenderer.includes(marker)) failures.push(`VanillaCompanionModelRenderer.kt: missing ${marker}`);
+}
+
+for (const marker of ["NativeArcadeSessionStore.start", "restoreLoadedSessions", "persistSession", "NativeArcadeSessionStore.delete", "RESTART_RECONNECT_GRACE_MS"]) {
+  if (!arcadeService.includes(marker)) failures.push(`NativeArcadeService.kt: missing recovery marker ${marker}`);
+}
+if (arcadeService.includes("Files.") || arcadeService.includes("Files.read")) {
+  failures.push("NativeArcadeService.kt: server lifecycle must not perform direct disk IO");
+}
+for (const marker of ["AtomicFiles.writeUtf8", 'MessageDigest.getInstance("SHA-256")', "ConcurrentLinkedQueue", "SAVE_RETRY_MS", "MAX_JSON_CHARS"]) {
+  if (!sessionStore.includes(marker)) failures.push(`NativeArcadeSessionStore.kt: missing durable store marker ${marker}`);
+}
+if (sessionStore.includes("root.resolve(sessionId")) failures.push("NativeArcadeSessionStore.kt: raw session id must not be used as a filesystem path");
+for (const marker of ["snapshotState(): JsonObject", "captureState(", "stateJson", "snapshotEpochMs"]) {
+  if (!engineRuntime.includes(marker)) failures.push(`NativeGameEngineRuntime.kt: missing actor snapshot marker ${marker}`);
+}
+if (!gamePersistence.includes('"tft" ->')) failures.push("NativeGamePersistence.kt: TFT restore codec missing");
+for (const marker of ["override fun snapshotState", "pool.snapshotCounts", "restoreSnapshot", "TftCombatEngine(set, savedMatch.combat)", "setDefinition = set"]) {
+  if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing recovery marker ${marker}`);
+}
+for (const marker of ["TftCombatSnapshot", "NativeStatefulRandom", "constructor(set: TftSetDefinition, snapshot: TftCombatSnapshot)", "fun snapshotState(): TftCombatSnapshot"]) {
+  if (!tftCombatCore.includes(marker)) failures.push(`TftCombatEngine.kt: missing live-combat recovery marker ${marker}`);
+}
+
+for (const marker of ["gameTitleFor", "localizedGameStatus", "localizedGameAction", "trOr("]) {
+  if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing semantic localization marker ${marker}`);
+}
+if (screen.includes('gui.drawString(font,fit(view.str("status")')) {
+  failures.push("NativePlatformScreen.kt: raw server game status is still rendered directly");
+}
+if (tftRenderer.includes("fit(font, status, 250)")) {
+  failures.push("TftGameRenderer.kt: raw server TFT status is still rendered directly");
+}
+const requiredSemanticKeys = [
+  "gui.svhub.game.chess.title",
+  "gui.svhub.game.xiangqi.title",
+  "gui.svhub.game.ludo.title",
+  "gui.svhub.game.uno.title",
+  "gui.svhub.game.pokecards.title",
+  "gui.svhub.game.tower_defense.title",
+  "gui.svhub.game.tft.title",
+  "gui.svhub.game.turn",
+  "gui.svhub.game.finished",
+  "gui.svhub.game.finished_winner",
+  "gui.svhub.action.resign",
+  "gui.svhub.action.offer_draw",
+  "gui.svhub.action.accept_draw",
+  "gui.svhub.action.roll",
+  "gui.svhub.action.move",
+  "gui.svhub.action.draw",
+  "gui.svhub.action.start_wave",
+  "gui.svhub.chess.check",
+  "gui.svhub.xiangqi.check",
+  "gui.svhub.ludo.roll_wait",
+  "gui.svhub.ludo.rolled",
+  "gui.svhub.ludo.move_piece",
+  "gui.svhub.pokecards.pick",
+  "gui.svhub.pokecards.waiting",
+  "gui.svhub.td.prepare",
+  "gui.svhub.td.wave_running",
+  "gui.svhub.tft.eliminated",
+  "gui.svhub.tft.vs",
+  "gui.svhub.uno.playable",
+  "gui.svhub.uno.card.number",
+  "gui.svhub.uno.card.skip",
+  "gui.svhub.uno.card.reverse",
+  "gui.svhub.uno.card.draw2",
+  "gui.svhub.uno.card.wild",
+  "gui.svhub.uno.card.wild4"
+];
+for (const locale of ["en_us", "vi_vn"]) {
+  const lang = JSON.parse(fs.readFileSync(path.join(root, `src/main/resources/assets/svhub/lang/${locale}.json`), "utf8"));
+  for (const key of requiredSemanticKeys) if (!(key in lang)) failures.push(`${locale}: missing semantic game key ${key}`);
 }
 
 for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"']) {

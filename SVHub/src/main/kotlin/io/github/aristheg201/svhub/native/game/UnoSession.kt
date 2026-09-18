@@ -61,7 +61,11 @@ class UnoSession(
                     if (isPlayable(card)) "Có thể đánh" else "",
                     card.color.name.lowercase(),
                     card.score,
-                    mapOf("kind" to card.kind.name.lowercase(), "color" to card.color.name.lowercase())
+                    mapOf(
+                        "kind" to card.kind.name.lowercase(),
+                        "color" to card.color.name.lowercase(),
+                        "number" to card.number.toString()
+                    )
                 )
             },
             actions = listOf(
@@ -79,6 +83,9 @@ class UnoSession(
             ),
             fields = linkedMapOf(
                 "top" to top.label(),
+                "topKind" to top.kind.name.lowercase(),
+                "topColor" to top.color.name.lowercase(),
+                "topNumber" to top.number.toString(),
                 "activeColor" to activeColor.name.lowercase(),
                 "direction" to if (direction > 0) "clockwise" else "counterclockwise",
                 "hands" to seats.joinToString(" • ") { seat ->

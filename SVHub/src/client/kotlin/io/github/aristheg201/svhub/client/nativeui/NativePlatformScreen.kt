@@ -252,7 +252,7 @@ class NativePlatformScreen(
         val games=state.getAsJsonArray("games")?:return;val rowH=42
         moduleContentHeight=maxOf(moduleContentHeight,area.y+22+games.size()*(rowH+5)+8-layout.content.y)
         val modeLabels=linkedMapOf("bot_easy" to tr("gui.svhub.easy"),"bot_normal" to tr("gui.svhub.normal"),"bot_hard" to tr("gui.svhub.hard"),"pvp" to "PvP","solo" to tr("gui.svhub.solo"))
-        for(i in 0 until games.size()){val game=games[i].asJsonObject;val id=game.str("id");val y=area.y+22+i*(rowH+5)-moduleScroll;val rect=UiRect(area.x,y,area.width,rowH);gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id));NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id));gui.drawString(font,game.str("title",id),rect.x+45,rect.y+9,text,true)
+        for(i in 0 until games.size()){val game=games[i].asJsonObject;val id=game.str("id");val y=area.y+22+i*(rowH+5)-moduleScroll;val rect=UiRect(area.x,y,area.width,rowH);gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id));NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id));gui.drawString(font,gameTitleFor(id,game.str("title",id)),rect.x+45,rect.y+9,text,true)
             val advertised=game.getAsJsonArray("modes")?.let{a->(0 until a.size()).map{a[it].asString}}.orEmpty();val modes=if(advertised.isEmpty())listOf("bot_easy","bot_normal","bot_hard","pvp") else advertised;var right=rect.right-6
             modes.asReversed().forEach{mode->val label=modeLabels[mode]?:mode;val w=(font.width(label)+14).coerceAtLeast(42);right-=w;addControl(UiRect(right,rect.y+10,w,22),label,mouseX,mouseY){intent("start",json("game" to id,"mode" to mode))};right-=4}
         }
@@ -390,8 +390,8 @@ class NativePlatformScreen(
         }
 
         val area=layout.content.inset(8)
-        gui.drawString(font,view.str("title",tr("gui.svhub.game")),area.x,area.y,text,true)
-        gui.drawString(font,fit(view.str("status"),area.width-8),area.x,area.y+13,gold,false)
+        gui.drawString(font,gameTitleFor(gameId,view.str("title",tr("gui.svhub.game"))),area.x,area.y,text,true)
+        gui.drawString(font,fit(localizedGameStatus(view),area.width-8),area.x,area.y+13,gold,false)
 
         val actions=view.getAsJsonArray("actions")
         val cards=view.getAsJsonArray("cards")
@@ -457,7 +457,7 @@ class NativePlatformScreen(
                     val widthPer=(area.width/enabled.size.coerceAtLeast(1)).coerceAtLeast(65)
                     UiRect(area.x+index*widthPer,area.bottom-22,widthPer-4,20)
                 }
-                addControl(rect,fit(action.str("label",action.str("id")),rect.width-8),mouseX,mouseY){
+                addControl(rect,fit(localizedGameAction(view,action),rect.width-8),mouseX,mouseY){
                     gameAct(action.str("id"),actionPayload(action))
                 }
             }
@@ -640,6 +640,49 @@ class NativePlatformScreen(
     private fun intent(action:String,data:JsonObject)=ClientPlayNetworking.send(NativeIntentC2S(module,action,gson.toJson(data),viewId))
     private fun json(vararg pairs:Pair<String,Any>)=JsonObject().apply{pairs.forEach{(key,value)->when(value){is Number->addProperty(key,value);is Boolean->addProperty(key,value);else->addProperty(key,value.toString())}}}
     private fun fit(value:String,availableWidth:Int):String=font.plainSubstrByWidth(value,availableWidth.coerceAtLeast(8))
+    private fun gameTitleFor(gameId:String,fallback:String):String =
+        trOr("gui.svhub.game." + gameId + ".title", fallback)
+
+    private fun localizedGameAction(view:JsonObject,action:JsonObject):String {
+        val id=action.str("id")
+        val fields=view.getAsJsonObject("fields")?:JsonObject()
+        return when {
+            id=="move" && view.str("gameId")=="ludo" -> {
+                val piece=action.getAsJsonObject("payload")?.str("piece")?.toIntOrNull()?.plus(1)
+                if(piece!=null)trf("gui.svhub.ludo.move_piece",piece) else trOr("gui.svhub.action.move",action.str("label",id))
+            }
+            id=="start_wave" -> trf("gui.svhub.action.start_wave",fields.num("wave")+1)
+            else -> trOr("gui.svhub.action." + id,action.str("label",id))
+        }
+    }
+
+    private fun localizedGameStatus(view:JsonObject):String {
+        if(view.bool("finished")){
+            val winner=view.str("winner")
+            return if(winner.isNotBlank())trf("gui.svhub.game.finished_winner",winner) else tr("gui.svhub.game.finished")
+        }
+        val gameId=view.str("gameId")
+        val phase=view.str("phase")
+        val fields=view.getAsJsonObject("fields")?:JsonObject()
+        return when(gameId){
+            "chess" -> if(view.str("status")=="Check")tr("gui.svhub.chess.check") else trf("gui.svhub.game.turn",view.str("turn"))
+            "xiangqi" -> if(view.str("status")=="Chiếu tướng")tr("gui.svhub.xiangqi.check") else trf("gui.svhub.game.turn",view.str("turn"))
+            "ludo" -> if(phase=="roll")tr("gui.svhub.ludo.roll_wait") else trf("gui.svhub.ludo.rolled",fields.num("rolled"))
+            "uno" -> {
+                val color=fields.str("activeColor")
+                trf("gui.svhub.uno.status",trOr("gui.svhub.uno." + color,color),fields.str("top"))
+            }
+            "pokecards" -> if(phase=="waiting")tr("gui.svhub.pokecards.waiting") else tr("gui.svhub.pokecards.pick")
+            "tower_defense" -> if(fields.bool("running"))trf("gui.svhub.td.wave_running",fields.num("wave")) else trf("gui.svhub.td.prepare",fields.num("wave")+1)
+            else -> view.str("status")
+        }
+    }
+
+    private fun trOr(key:String,fallback:String):String {
+        val translated=tr(key)
+        return if(translated==key)fallback else translated
+    }
+    private fun trf(key:String,vararg args:Any):String=I18n.get(key,*args)
     private fun tr(key:String):String=I18n.get(key)
     private fun moduleTitle(value:String)=tr("gui.svhub.module.$value")
     private fun moduleIcon(value:String)=if(value=="game")state.getAsJsonObject("view")?.str("gameId","arcade")?:"arcade" else value

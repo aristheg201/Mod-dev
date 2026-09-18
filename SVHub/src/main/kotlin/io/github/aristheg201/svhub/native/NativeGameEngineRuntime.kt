@@ -2,6 +2,7 @@ package io.github.aristheg201.svhub.native
 
 import com.google.gson.Gson
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.SVHub
 import io.github.aristheg201.svhub.native.game.NativeBotAction
 import io.github.aristheg201.svhub.native.game.NativeGameResult
@@ -47,6 +48,8 @@ object NativeGameEngineRuntime {
         fun submitBotCandidates(seatId: String, candidates: List<NativeBotAction>): Boolean =
             actor.submitBotCandidates(seatId, candidates)
         fun submitTick(nowMillis: Long): Boolean = actor.submitTick(nowMillis)
+        fun snapshotState(): JsonObject = actor.stateJson.deepCopy()
+        val snapshotEpochMs: Long get() = actor.stateEpochMs
         fun close() = actor.close()
     }
 
@@ -72,7 +75,9 @@ object NativeGameEngineRuntime {
         @Volatile var viewJson: Map<String, JsonElement> = serializeViews(views)
         @Volatile var finished: Boolean = session.finished
         @Volatile var winnerSeatId: String? = session.winnerSeatId
-        @Volatile private var lastSnapshotAt: Long = System.currentTimeMillis()
+        @Volatile var stateJson: JsonObject = captureState(System.currentTimeMillis())
+        @Volatile var stateEpochMs: Long = System.currentTimeMillis()
+        @Volatile private var lastSnapshotAt: Long = stateEpochMs
 
         fun startBots() = scheduleBots()
 
@@ -176,13 +181,22 @@ object NativeGameEngineRuntime {
         }
 
         private fun refreshSnapshot() {
+            val now = System.currentTimeMillis()
             val captured = captureViews()
+            val state = captureState(now)
             views = captured
             viewJson = serializeViews(captured)
+            if (state.size() > 0) stateJson = state
+            stateEpochMs = now
             finished = session.finished
             winnerSeatId = session.winnerSeatId
-            lastSnapshotAt = System.currentTimeMillis()
+            lastSnapshotAt = now
         }
+
+        private fun captureState(nowMillis: Long): JsonObject =
+            runCatching { session.snapshotState(nowMillis) }
+                .onFailure { error -> SVHub.LOGGER.warn("Native game snapshot failed for {} / {}", gameId, sessionId, error) }
+                .getOrDefault(JsonObject())
 
         private fun captureViews(): Map<String, NativeGameView> = seats.associate { seat -> seat.id to session.viewFor(seat.id) }
         private fun serializeViews(captured: Map<String, NativeGameView>): Map<String, JsonElement> =

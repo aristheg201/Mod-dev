@@ -111,7 +111,7 @@ object TftGameRenderer {
         val goldValue = fields.int("gold")
         val streak = fields.int("streak")
         val timer = ((fields.long("phaseEndsAt") - System.currentTimeMillis()).coerceAtLeast(0L) + 999L) / 1000L
-        val title = if (density == UiDensity.COMPACT) "$round • Lv.$level • ${goldValue}g • HP $hp" else "Pokémon TFT  •  $round  •  Lv.$level $xp/$xpNext XP  •  ${goldValue}g  •  HP $hp"
+        val title = if (density == UiDensity.COMPACT) "$round • Lv.$level • ${goldValue}g • HP $hp" else "${tr("gui.svhub.game.tft.title")}  •  $round  •  Lv.$level $xp/$xpNext XP  •  ${goldValue}g  •  HP $hp"
         gui.drawString(font, fit(font, title, area.width - 118), area.x + 58, area.y + 7, text, true)
         if (density != UiDensity.COMPACT) {
             val economy = "${tr("gui.svhub.tft.interest")}: ${fields.int("lastInterest")}  •  ${tr("gui.svhub.tft.streak")}: ${if (streak >= 0) "+$streak" else streak}"
@@ -119,7 +119,14 @@ object TftGameRenderer {
         }
         val phaseText = when (phase) { "planning" -> tr("gui.svhub.tft.planning"); "combat" -> tr("gui.svhub.tft.combat"); "draft" -> tr("gui.svhub.tft.draft"); "post" -> tr("gui.svhub.tft.results"); else -> phase }
         gui.drawString(font, "$phaseText ${if (timer > 0) "${timer}s" else ""}", area.right - 58, area.y + 7, if (phase == "combat") danger else gold, true)
-        if (status.isNotBlank() && density == UiDensity.WIDE) gui.drawString(font, fit(font, status, 250), area.right - 305, area.y + 19, muted, false)
+        if (density == UiDensity.WIDE) {
+            val semanticStatus = when {
+                fields.str("eliminated") == "true" -> tr("gui.svhub.tft.eliminated")
+                phase == "combat" && fields.str("opponent").isNotBlank() -> trf("gui.svhub.tft.vs", fields.str("opponent"))
+                else -> ""
+            }
+            if (semanticStatus.isNotBlank()) gui.drawString(font, fit(font, semanticStatus, 250), area.right - 305, area.y + 19, muted, false)
+        }
     }
 
     private fun renderTraits(gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>) {
@@ -483,6 +490,7 @@ object TftGameRenderer {
     private fun JsonObject.long(key: String, fallback: Long = 0L): Long = runCatching { get(key)?.asLong ?: fallback }.getOrDefault(fallback)
     private fun JsonObject.bool(key: String, fallback: Boolean = false): Boolean = runCatching { get(key)?.asBoolean ?: fallback }.getOrDefault(fallback)
     private fun fit(font: Font, value: String, width: Int) = font.plainSubstrByWidth(value, width.coerceAtLeast(4))
+    private fun trf(key: String, vararg args: Any) = I18n.get(key, *args)
     private fun tr(key: String) = I18n.get(key)
     private fun shortUnit(id: String) = id.replace('_', ' ').split(' ').joinToString("") { it.take(2) }.take(5).uppercase()
     private fun itemGlyph(id: String) = when {
