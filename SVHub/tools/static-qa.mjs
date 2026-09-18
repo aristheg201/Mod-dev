@@ -69,6 +69,8 @@ const profileStore = read("src/main/kotlin/io/github/aristheg201/svhub/native/Na
 const rewardService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeRewardService.kt");
 const gachaTxn = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeGachaTransactionService.kt");
 const gachaRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/GachaRouletteRenderer.kt");
+const sceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/PokemonScene3D.kt");
+const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/PokemonModelRenderer.kt");
 for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeCloseC2S"]) {
   if (!nativePayloads.includes(marker)) failures.push(`NativePayloads.kt: missing lifecycle marker ${marker}`);
 }
@@ -90,6 +92,15 @@ for (const marker of ["GRANTING", "ownedQuantity", "debitTx", "finalTx", "refund
 }
 for (const marker of ["lastRoll", "requestId", "DURATION_MS", "u * u * u * u * u"]) {
   if (!gachaRenderer.includes(marker)) failures.push(`GachaRouletteRenderer.kt: missing authoritative roulette marker ${marker}`);
+}
+for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial"]) {
+  if (!sceneRenderer.includes(marker)) failures.push(`PokemonScene3D.kt: missing shared scene marker ${marker}`);
+}
+for (const marker of ["SceneModelKey", "renderScene(", "instanceId"]) {
+  if (!pokemonRenderer.includes(marker)) failures.push(`PokemonModelRenderer.kt: missing per-entity scene renderer marker ${marker}`);
+}
+if (!tftRenderer.includes("PokemonScene3D.render") || tftRenderer.includes("renderUnit(gui, font, cell")) {
+  failures.push("TftGameRenderer.kt: TFT board is not using the shared scene renderer");
 }
 if (!screen.includes("UUID.randomUUID().toString()") || !screen.includes("GachaRouletteRenderer.render")) {
   failures.push("NativePlatformScreen.kt: gacha request id / roulette integration missing");

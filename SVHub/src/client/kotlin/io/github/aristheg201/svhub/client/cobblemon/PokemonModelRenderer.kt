@@ -20,6 +20,7 @@ import kotlin.math.PI
  */
 object PokemonModelRenderer {
     private data class ModelKey(val species: String, val aspects: List<String>)
+    private data class SceneModelKey(val instanceId: String, val species: String, val aspects: List<String>)
 
     private class LiveModel(val pokemon: RenderablePokemon) {
         val state = FloatingState()
@@ -27,6 +28,7 @@ object PokemonModelRenderer {
     }
 
     private val models = ConcurrentHashMap<ModelKey, LiveModel>()
+    private val sceneModels = ConcurrentHashMap<SceneModelKey, LiveModel>()
 
     fun render(
         gui: GuiGraphics,
@@ -39,8 +41,75 @@ object PokemonModelRenderer {
         pitch: Float = 13f
     ): Boolean {
         val live = model(view) ?: return false
-        val safeSize = size.coerceIn(40, 512)
-        val safeZoom = zoom.coerceIn(0.55f, 2.25f)
+        return renderInternal(
+            gui = gui,
+            live = live,
+            removal = { models.remove(key(view), live) },
+            centerX = centerX,
+            centerY = centerY,
+            size = size,
+            yaw = yaw,
+            zoom = zoom,
+            pitch = pitch,
+            depth = 1000.0,
+            selfClip = true
+        )
+    }
+
+    /**
+     * Scene render path. The caller owns the shared scene scissor and depth order.
+     * Each logical entity gets an independent FloatingState even when several
+     * entities use the same species/aspects.
+     */
+    fun renderScene(
+        gui: GuiGraphics,
+        view: PokemonView,
+        instanceId: String,
+        centerX: Int,
+        centerY: Int,
+        size: Int,
+        yaw: Float = 0f,
+        zoom: Float = 1f,
+        pitch: Float = 28f,
+        depth: Double = 1000.0
+    ): Boolean {
+        val sceneKey = SceneModelKey(instanceId, view.speciesId, view.aspects.sorted())
+        val live = sceneModel(sceneKey, view) ?: return false
+        return renderInternal(
+            gui = gui,
+            live = live,
+            removal = { sceneModels.remove(sceneKey, live) },
+            centerX = centerX,
+            centerY = centerY,
+            size = size,
+            yaw = yaw,
+            zoom = zoom,
+            pitch = pitch,
+            depth = depth,
+            selfClip = false
+        )
+    }
+
+    fun pruneScene(activeInstanceIds: Set<String>) {
+        if (sceneModels.size <= activeInstanceIds.size + 32) return
+        sceneModels.keys.removeIf { it.instanceId !in activeInstanceIds }
+    }
+
+    private fun renderInternal(
+        gui: GuiGraphics,
+        live: LiveModel,
+        removal: () -> Unit,
+        centerX: Int,
+        centerY: Int,
+        size: Int,
+        yaw: Float,
+        zoom: Float,
+        pitch: Float,
+        depth: Double,
+        selfClip: Boolean
+    ): Boolean {
+        val safeSize = size.coerceIn(28, 512)
+        val safeZoom = zoom.coerceIn(0.45f, 2.25f)
         val now = System.nanoTime()
         val deltaTicks = ((now - live.lastRenderNanos).coerceAtLeast(0L) / 50_000_000.0)
             .toFloat()
@@ -49,14 +118,16 @@ object PokemonModelRenderer {
 
         val pose = gui.pose()
         pose.pushPose()
-        gui.enableScissor(
-            centerX - safeSize / 2,
-            centerY - safeSize / 2,
-            centerX + safeSize / 2,
-            centerY + safeSize / 2
-        )
+        if (selfClip) {
+            gui.enableScissor(
+                centerX - safeSize / 2,
+                centerY - safeSize / 2,
+                centerX + safeSize / 2,
+                centerY + safeSize / 2
+            )
+        }
 
-        pose.translate(centerX.toDouble(), centerY - safeSize * 0.43, 1000.0)
+        pose.translate(centerX.toDouble(), centerY - safeSize * 0.43, depth)
         val guiScale = 2.0f * (safeSize / 140.0f) * safeZoom
         pose.scale(guiScale, guiScale, guiScale)
 
@@ -78,11 +149,11 @@ object PokemonModelRenderer {
             )
             rendered = true
         } catch (_: Throwable) {
-            models.remove(key(view), live)
+            removal()
         } finally {
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
             pose.popPose()
-            gui.disableScissor()
+            if (selfClip) gui.disableScissor()
         }
         return rendered
     }
@@ -96,7 +167,15 @@ object PokemonModelRenderer {
         return models.putIfAbsent(key, created) ?: created
     }
 
+    private fun sceneModel(key: SceneModelKey, view: PokemonView): LiveModel? {
+        sceneModels[key]?.let { return it }
+        val id = ResourceLocation.tryParse(view.speciesId) ?: return null
+        val species = PokemonSpecies.getByIdentifier(id) ?: return null
+        val created = LiveModel(RenderablePokemon(species, view.aspects.toSet()))
+        return sceneModels.putIfAbsent(key, created) ?: created
+    }
+
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
     private fun degreesToRadians(value: Float): Float = (value * PI / 180.0).toFloat()
-    fun clear() = models.clear()
+    fun clear() { models.clear(); sceneModels.clear() }
 }

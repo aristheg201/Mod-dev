@@ -15,6 +15,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class TftUiState {
+    val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
@@ -154,57 +155,93 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderBoard(gui: GuiGraphics, font: Font, rect: UiRect, units: Map<Int, UnitToken>, phase: String, canEdit: Boolean, ui: TftUiState, hooks: Hooks) {
+    private fun renderBoard(
+        gui: GuiGraphics,
+        font: Font,
+        rect: UiRect,
+        units: Map<Int, UnitToken>,
+        phase: String,
+        canEdit: Boolean,
+        ui: TftUiState,
+        hooks: Hooks
+    ) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, 0xFF0D171A.toInt())
-        val maxTileW = ((rect.width - 8) * 2 / 15).coerceAtLeast(10)
-        val maxTileH = ((rect.height - 8) * 4 / 25).coerceAtLeast(8)
-        val tileW = min(maxTileW, maxTileH * 4 / 3).coerceAtLeast(10)
-        val tileH = max(8, tileW * 3 / 4)
-        val stepY = max(6, tileH - tileH / 4)
-        val boardW = tileW * 7 + tileW / 2
-        val boardH = tileH + stepY * 7
-        val startX = rect.x + (rect.width - boardW) / 2
-        val startY = rect.y + (rect.height - boardH) / 2
 
-        for (row in 0 until 8) for (col in 0 until 7) {
-            val index = row * 7 + col
-            val x = startX + col * tileW + if (row and 1 == 1) tileW / 2 else 0
-            val y = startY + row * stepY
-            val cell = UiRect(x, y, tileW - 1, tileH - 1)
-            val token = units[index]
-            val ownHalf = row >= 4
-            val selected = when (ui.selectedOrigin) {
-                "board" -> ownHalf && ui.selectedIndex == index - 28
-                else -> false
-            }
-            val base = when {
-                selected -> 0xFF2D7067.toInt()
-                ownHalf -> if ((row + col) and 1 == 0) 0xFF173530.toInt() else 0xFF132C29.toInt()
-                else -> if ((row + col) and 1 == 0) 0xFF302126.toInt() else 0xFF291B20.toInt()
-            }
-            drawHex(gui, cell, base, if (ownHalf) accent else enemy)
-            if (token != null) renderUnit(gui, font, cell, token, rect)
-            if (canEdit && ownHalf) {
-                hooks.hit(cell) {
-                    val local = index - 28
+        val entities = units.mapNotNull { (index, unit) ->
+            val view = pokemonView(unit.species, unit.aspects, unit.unitId)
+            PokemonSceneEntity(
+                id = "tft:" + unit.instanceId,
+                view = view,
+                label = shortUnit(unit.unitId),
+                boardX = (index % 7).toFloat(),
+                boardY = (index / 7).toFloat(),
+                team = unit.team,
+                yaw = if (unit.team == 0) 0f else 180f,
+                scale = if (unit.star >= 3) 1.03f else 0.90f,
+                hp = unit.hp,
+                maxHp = unit.maxHp,
+                mana = unit.mana,
+                maxMana = unit.maxMana,
+                star = unit.star
+            )
+        }
+
+        val selectedCells = if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
+            setOf(28 + ui.selectedIndex!!)
+        } else emptySet()
+        val legalCells = if (canEdit && (ui.selectedOrigin != null || ui.selectedItem != null)) {
+            (28 until 56).toSet()
+        } else emptySet()
+
+        val frame = PokemonScene3D.render(
+            gui = gui,
+            font = font,
+            area = rect.inset(4),
+            columns = 7,
+            rows = 8,
+            entities = entities,
+            state = ui.scene,
+            selectedCells = selectedCells,
+            legalCells = legalCells,
+            teamSplitRow = 4
+        )
+
+        if (canEdit) {
+            for (index in 28 until 56) {
+                val local = index - 28
+                val token = units[index]
+                hooks.hit(frame.layout.hitBox(index)) {
                     if (ui.selectedItem != null && token != null && token.team == 0) {
-                        hooks.action("equip_item", mapOf("item" to ui.selectedItem.toString(), "origin" to "board", "index" to local.toString()))
+                        hooks.action(
+                            "equip_item",
+                            mapOf("item" to ui.selectedItem.toString(), "origin" to "board", "index" to local.toString())
+                        )
                         ui.selectedItem = null
                     } else if (ui.selectedOrigin == "bench" && ui.selectedIndex != null) {
                         hooks.action("deploy", mapOf("bench" to ui.selectedIndex.toString(), "slot" to local.toString()))
                         ui.clearUnit()
                     } else if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
-                        if (ui.selectedIndex == local) ui.clearUnit() else {
+                        if (ui.selectedIndex == local) {
+                            ui.clearUnit()
+                        } else {
                             hooks.action("move", mapOf("from" to ui.selectedIndex.toString(), "to" to local.toString()))
                             ui.clearUnit()
                         }
                     } else if (token != null && token.team == 0) {
-                        ui.selectedOrigin = "board"; ui.selectedIndex = local
+                        ui.selectedOrigin = "board"
+                        ui.selectedIndex = local
                     }
                 }
             }
         }
-        gui.drawCenteredString(font, if (phase == "combat") tr("gui.svhub.tft.enemy_board") else tr("gui.svhub.tft.enemy_side"), rect.x + rect.width / 2, startY - 10, muted)
+
+        gui.drawCenteredString(
+            font,
+            if (phase == "combat") tr("gui.svhub.tft.enemy_board") else tr("gui.svhub.tft.enemy_side"),
+            rect.x + rect.width / 2,
+            rect.y + 3,
+            muted
+        )
     }
 
     private fun renderUnit(gui: GuiGraphics, font: Font, cell: UiRect, unit: UnitToken, clip: UiRect) {
