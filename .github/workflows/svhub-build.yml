@@ -46,6 +46,9 @@ jobs:
           test -f build.gradle.kts
           test -f gradle.properties
           test -f src/main/resources/fabric.mod.json
+          test -f src/main/resources/svhub.client.mixins.json
+          test -f src/main/kotlin/io/github/aristheg201/svhub/compat/CobblemonPoseSanitizer.kt
+          test -f src/client/kotlin/io/github/aristheg201/svhub/mixin/client/VaryingModelRepositoryMixin.kt
           test -d src/main/kotlin
           test -d src/client/kotlin
 
@@ -70,11 +73,14 @@ jobs:
           MAIN_PATH='io/github/aristheg201/svhub/SVHubEntrypoint.class'
           CLIENT_PATH='io/github/aristheg201/svhub/client/SVHubClientEntrypoint.class'
           NATIVE_CLIENT_PATH='io/github/aristheg201/svhub/client/nativeui/NativePlatformClientEntrypoint.class'
+          POSE_MIXIN_PATH='io/github/aristheg201/svhub/mixin/client/VaryingModelRepositoryMixin.class'
 
           jar tf "$REMAPPED_JAR" > /tmp/svhub-final-jar.txt
           grep -Fx "$MAIN_PATH" /tmp/svhub-final-jar.txt
           grep -Fx "$CLIENT_PATH" /tmp/svhub-final-jar.txt
           grep -Fx "$NATIVE_CLIENT_PATH" /tmp/svhub-final-jar.txt
+          grep -Fx "$POSE_MIXIN_PATH" /tmp/svhub-final-jar.txt
+          grep -Fx 'svhub.client.mixins.json' /tmp/svhub-final-jar.txt
 
           javap -classpath "$REMAPPED_JAR" -public "$MAIN_CLASS" | tee /tmp/svhub-main-entrypoint.txt
           javap -classpath "$REMAPPED_JAR" -public "$CLIENT_CLASS" | tee /tmp/svhub-client-entrypoint.txt
@@ -94,7 +100,9 @@ jobs:
               'io.github.aristheg201.svhub.client.SVHubClientEntrypoint',
               'io.github.aristheg201.svhub.client.nativeui.NativePlatformClientEntrypoint',
           ], data['entrypoints']['client']
-          print('Final Fabric entrypoint manifest + class + public constructor checks passed')
+          assert data['depends']['cobblemon'] == '>=1.8.1', data['depends']['cobblemon']
+          assert data['mixins'] == [{'config': 'svhub.client.mixins.json', 'environment': 'client'}], data.get('mixins')
+          print('Final Fabric entrypoint + Cobblemon 1.8.1 compatibility manifest checks passed')
           PY
 
       - name: Verify bundled Placeholder API and Kyori isolation
@@ -122,15 +130,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CANDIDATES="$(find ~/.gradle/caches -type f -name '*.jar' 2>/dev/null | grep -E '/(com\.cobblemon|cobblemon)/|cobblemon.*1\.8\.0' || true)"
+          CANDIDATES="$(find ~/.gradle/caches -type f -name '*.jar' 2>/dev/null | grep -E '/(com\.cobblemon|cobblemon)/|cobblemon.*1\.8\.1' || true)"
           if [ -z "$CANDIDATES" ]; then
             echo 'No Cobblemon cache jar found'
             exit 0
           fi
-          printf '%s\n' "$CANDIDATES" | while IFS= read -r jar; do
+          POSE_CLASS='com.cobblemon.mod.common.client.render.models.blockbench.repository.VaryingModelRepository'
+          POSE_PATH='com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.class'
+          FOUND_POSE_API=0
+          while IFS= read -r jar; do
             echo "=== $jar ==="
-            jar tf "$jar" 2>/dev/null | grep -E 'ModelWidget|RenderablePokemon|PokemonModelRepository|PokemonPoseableModel|PokemonRenderer|render.*pokemon|pokemon.*render' | head -n 160 || true
-          done
+            jar tf "$jar" 2>/dev/null | grep -E 'ModelWidget|RenderablePokemon|PokemonModelRepository|PokemonPoseableModel|PokemonRenderer|VaryingModelRepository|render.*pokemon|pokemon.*render' | head -n 160 || true
+            if jar tf "$jar" 2>/dev/null | grep -q "^${POSE_PATH}$"; then
+              javap -classpath "$jar" -public "$POSE_CLASS" | tee /tmp/svhub-cobblemon-poser-api.txt
+              grep -F 'loadJsonPoser(' /tmp/svhub-cobblemon-poser-api.txt
+              FOUND_POSE_API=1
+              break
+            fi
+          done <<< "$CANDIDATES"
+          test "$FOUND_POSE_API" -eq 1
 
       - name: Inspect Minecraft 1.21.1 portrait render API
         shell: bash

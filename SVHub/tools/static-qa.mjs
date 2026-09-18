@@ -52,7 +52,7 @@ for (const locale of ["en_us", "vi_vn"]) {
 }
 const properties = fs.readFileSync(path.join(root, "gradle.properties"), "utf8");
 const metadata = fs.readFileSync(path.join(root, "src/main/resources/fabric.mod.json"), "utf8");
-if (!/^mod_version=0\.4\.1\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.1");
+if (!/^mod_version=0\.4\.2\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.2");
 if (!metadata.includes('"version": "${version}"')) failures.push("fabric.mod.json: Gradle version expansion marker missing");
 for (const [name, marker] of [
   ["responsive layout", "NativeLayout.resolve(width, height)"],
@@ -63,6 +63,16 @@ for (const [name, marker] of [
 ]) if (!screen.includes(marker)) failures.push(`${screenPath}: missing ${name} marker`);
 
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
+if (!/^cobblemon_version=1\.8\.1\+1\.21\.1\s*$/m.test(properties)) failures.push("gradle.properties: expected Cobblemon 1.8.1 compile target");
+if (!metadata.includes('"config": "svhub.client.mixins.json"')) failures.push("fabric.mod.json: client poser compatibility mixin missing");
+const poseSanitizer = read("src/main/kotlin/io/github/aristheg201/svhub/compat/CobblemonPoseSanitizer.kt");
+const poseMixin = read("src/client/kotlin/io/github/aristheg201/svhub/mixin/client/VaryingModelRepositoryMixin.kt");
+for (const marker of ["removeInvalidAnimationEntries", "removedNamedAnimations", "normalizeSingularAnimation"]) {
+  if (!poseSanitizer.includes(marker)) failures.push(`CobblemonPoseSanitizer.kt: missing ${marker}`);
+}
+for (const marker of ["loadJsonPoser", "svhubSanitizePoserJson", "require = 1"]) {
+  if (!poseMixin.includes(marker)) failures.push(`VaryingModelRepositoryMixin.kt: missing ${marker}`);
+}
 const nativePayloads = read("src/main/kotlin/io/github/aristheg201/svhub/native/network/NativePayloads.kt");
 const nativeClient = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativePlatformClient.kt");
 const nativeNetwork = read("src/main/kotlin/io/github/aristheg201/svhub/native/network/NativePlatformNetwork.kt");
@@ -344,4 +354,4 @@ for (const marker of ["message.svhub.profile_loading", "gui.svhub.error.invalid_
 }
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);
-console.log("SVHub 0.4.1 structural QA passed (runtime/gameplay/visual verification is separate)");
+console.log("SVHub 0.4.2 structural QA passed (runtime/gameplay/visual verification is separate)");

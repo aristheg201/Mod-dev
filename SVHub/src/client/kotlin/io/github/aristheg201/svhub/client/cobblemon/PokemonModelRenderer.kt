@@ -253,12 +253,12 @@ object PokemonModelRenderer {
             }
 
             val animation = if (request.faint) {
-                model.getFaintAnimation(live.state)
-                    ?: model.getAnimation(live.state, "faint", live.state.runtime)
-                    ?: model.getAnimation(live.state, "recoil", live.state.runtime)
+                runCatching { model.getFaintAnimation(live.state) }.getOrNull()
+                    ?: runCatching { model.getAnimation(live.state, "faint", live.state.runtime) }.getOrNull()
+                    ?: runCatching { model.getAnimation(live.state, "recoil", live.state.runtime) }.getOrNull()
             } else {
                 labels.firstNotNullOfOrNull { label ->
-                    model.getAnimation(live.state, label, live.state.runtime)
+                    runCatching { model.getAnimation(live.state, label, live.state.runtime) }.getOrNull()
                 }
             }
 
