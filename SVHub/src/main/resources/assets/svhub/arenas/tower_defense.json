@@ -1,55 +1,71 @@
 {
+  "style": "forest_route",
+  "depth": 4,
+  "detailEvery": 11,
+  "pathDetailEvery": 0,
   "floor": [
-    "minecraft:grass_block",
-    "minecraft:moss_block",
-    "minecraft:coarse_dirt",
-    "minecraft:podzol"
+    "minecraft:oak_sapling",
+    "minecraft:fern",
+    "minecraft:moss_carpet",
+    "minecraft:azalea"
   ],
   "floorAlt": [
-    "minecraft:moss_block",
-    "minecraft:grass_block"
+    "minecraft:fern",
+    "minecraft:moss_carpet"
   ],
   "ally": [
-    "minecraft:grass_block"
+    "minecraft:fern"
   ],
   "enemy": [
-    "minecraft:grass_block"
+    "minecraft:fern"
   ],
   "path": [
-    "minecraft:cobblestone",
-    "minecraft:stone_bricks",
-    "minecraft:gravel"
+    "minecraft:cobblestone"
   ],
-  "floorColor": "#426b3d",
-  "floorAltColor": "#355c36",
-  "allyColor": "#426b3d",
-  "enemyColor": "#426b3d",
-  "pathColor": "#716b61",
-  "gridColor": "#344a39",
+  "floorColor": "#3f673d",
+  "floorAltColor": "#365d38",
+  "allyColor": "#3f673d",
+  "enemyColor": "#3f673d",
+  "pathColor": "#6c665c",
+  "pathAccentColor": "#9a8c70",
+  "gridColor": "#2c4932",
+  "depthColor": "#17251a",
   "props": [
     {
       "item": "minecraft:oak_sapling",
-      "x": -0.6,
-      "y": 1,
-      "scale": 0.72
+      "x": -0.9,
+      "y": 0.4,
+      "scale": 0.9
     },
     {
-      "item": "minecraft:chest",
-      "x": 11.7,
-      "y": 0.3,
-      "scale": 0.72
-    },
-    {
-      "item": "minecraft:lantern",
-      "x": -0.5,
-      "y": 7,
-      "scale": 0.65
+      "item": "minecraft:spruce_sapling",
+      "x": -0.7,
+      "y": 6.8,
+      "scale": 0.9
     },
     {
       "item": "minecraft:campfire",
-      "x": 11.6,
-      "y": 7,
-      "scale": 0.78
+      "x": 2.4,
+      "y": -0.75,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": 7,
+      "y": 7.7,
+      "scale": 0.7
+    },
+    {
+      "item": "minecraft:bell",
+      "x": 11.8,
+      "y": 0.5,
+      "scale": 0.8
+    },
+    {
+      "item": "minecraft:chest",
+      "x": 11.8,
+      "y": 6.8,
+      "scale": 0.9
     }
   ]
 }

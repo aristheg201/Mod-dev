@@ -143,6 +143,11 @@ object HubDynamicGridRenderer {
         val form = species?.getForm(view.aspects)
         val type = form?.types?.joinToString("/") { it.name.replaceFirstChar(Char::uppercase) }.orEmpty()
         val dex = if (view.dexNumber > 0) "#${view.dexNumber}" else "Custom"
-        return if (type.isBlank()) dex else "$dex · $type"
+        val parts = buildList {
+            view.sourcePack?.takeIf(String::isNotBlank)?.let(::add)
+            add(dex)
+            if (type.isNotBlank()) add(type)
+        }
+        return parts.joinToString(" · ")
     }
 }

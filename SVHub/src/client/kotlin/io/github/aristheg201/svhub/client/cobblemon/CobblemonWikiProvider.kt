@@ -20,6 +20,7 @@ data class PokemonView(
     val displayName: String,
     val dexNumber: Int,
     val fakemon: Boolean,
+    val sourcePack: String? = null,
     val wikiPage: String? = null,
     val score: Int = 0
 )
@@ -60,12 +61,13 @@ object CobblemonWikiProvider {
         }.sortedByDescending { it.score }.take(limit)
     }
 
-    fun clearCaches() = cache.clear()
+    fun clearCaches() { cache.clear(); BundledFakemonCatalog.clear() }
 
     private fun build(content: HubContent): List<PokemonView> {
         val signature = "${content.revision}:${PokemonSpecies.species.size}:${content.cobblemonWiki.hashCode()}"
         return cache.computeIfAbsent(signature) {
             val cfg = content.cobblemonWiki
+            val bundled = BundledFakemonCatalog.snapshot()
             val explicitBySpecies = cfg.explicitFakemon.groupBy { it.species }
             val result = mutableListOf<PokemonView>()
 
@@ -76,10 +78,11 @@ object CobblemonWikiProvider {
                 .forEach { species ->
                     val id = species.resourceIdentifier.toString()
                     val explicit = explicitBySpecies[id].orEmpty()
-                    val speciesIsCustom = isCustomSpecies(species, cfg.fakemonNamespaces, cfg.autoFakemonNamespaces)
+                    val sourcePack = bundled.sourceForSpecies(id)
+                    val speciesIsCustom = sourcePack != null || isCustomSpecies(species, cfg.fakemonNamespaces, cfg.autoFakemonNamespaces)
 
                     if (speciesIsCustom) {
-                        result += baseView(species, fakemon = true)
+                        result += baseView(species, fakemon = true, sourcePack = sourcePack)
                     } else if (cfg.autoPokemon) {
                         result += baseView(species, fakemon = false)
                     }
@@ -90,8 +93,8 @@ object CobblemonWikiProvider {
                     species.forms
                         .asSequence()
                         .filter { it !== species.standardForm }
-                        .filter(::isCustomForm)
-                        .forEach { form -> result += formView(species, form) }
+                        .filter { form -> isCustomForm(form) || bundled.sourceForForm(id, form.aspects.toSet()) != null }
+                        .forEach { form -> result += formView(species, form, bundled.sourceForForm(id, form.aspects.toSet())) }
 
                     explicit.forEach { entry ->
                         result += explicitView(entry, species.nationalPokedexNumber, species.translatedName.string)
@@ -102,7 +105,7 @@ object CobblemonWikiProvider {
         }
     }
 
-    private fun baseView(species: Species, fakemon: Boolean): PokemonView {
+    private fun baseView(species: Species, fakemon: Boolean, sourcePack: String? = null): PokemonView {
         val id = species.resourceIdentifier.toString()
         return PokemonView(
             key = id,
@@ -111,11 +114,12 @@ object CobblemonWikiProvider {
             aspects = emptySet(),
             displayName = species.translatedName.string,
             dexNumber = species.nationalPokedexNumber,
-            fakemon = fakemon
+            fakemon = fakemon,
+            sourcePack = sourcePack
         )
     }
 
-    private fun formView(species: Species, form: FormData): PokemonView {
+    private fun formView(species: Species, form: FormData, sourcePack: String? = null): PokemonView {
         val id = species.resourceIdentifier.toString()
         val aspects = form.aspects.toSet()
         val key = "$id|${aspects.sorted().joinToString(",")}" 
@@ -131,7 +135,8 @@ object CobblemonWikiProvider {
             aspects = aspects,
             displayName = "${species.translatedName.string} — $suffix",
             dexNumber = species.nationalPokedexNumber,
-            fakemon = true
+            fakemon = true,
+            sourcePack = sourcePack
         )
     }
 

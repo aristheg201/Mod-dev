@@ -225,7 +225,29 @@ object PokemonScene3D {
             }
             val fill=when{index in selectedCells->SELECTED;index in legalCells->LEGAL;else->baseFill}
             val border=arena?.gridColor?:GRID_LINE
+            if(arena!=null&&arena.depth>0){
+                drawDiamond(
+                    gui,
+                    point.x.roundToInt(),
+                    point.y.roundToInt()+arena.depth,
+                    layout.tileWidth,
+                    layout.tileHeight,
+                    arena.depthColor,
+                    darken(arena.depthColor,0.72f)
+                )
+            }
             drawDiamond(gui,point.x.roundToInt(),point.y.roundToInt(),layout.tileWidth,layout.tileHeight,fill,border)
+            if(arena!=null&&role==ArenaTileRole.PATH){
+                drawDiamond(
+                    gui,
+                    point.x.roundToInt(),
+                    point.y.roundToInt(),
+                    max(8,(layout.tileWidth*0.56f).roundToInt()),
+                    max(4,(layout.tileHeight*0.52f).roundToInt()),
+                    arena.pathAccentColor,
+                    arena.pathAccentColor
+                )
+            }
             if(arena!=null)MinecraftArenaRenderer.renderTile(gui,layout,arena,index,role,alternate,stableArenaSeed)
         }
         if(arena!=null)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
@@ -263,7 +285,7 @@ object PokemonScene3D {
         positioned.forEachIndexed{order,(entity,_,point)->
             centers[entity.id]=point
             val ring=if(entity.team==0)ALLY_RING else ENEMY_RING
-            drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(10,(layout.tileWidth*0.52f).roundToInt()),max(5,(layout.tileHeight*0.30f).roundToInt()),ring,ring)
+            drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(10,(layout.tileWidth*0.46f).roundToInt()),max(5,(layout.tileHeight*0.24f).roundToInt()),ring,ring)
             val modelSize=max(30,(layout.tileWidth*1.18f*entity.scale*camera.modelZoom).roundToInt()).coerceAtMost(108)
             val rendered=entity.view?.let{view->
                 PokemonModelRenderer.renderScene(
@@ -387,13 +409,22 @@ object PokemonScene3D {
         drawDiamond(gui,point.x.roundToInt(),point.y.roundToInt(),w,h,color,color)
     }
 
+    private fun darken(color:Int,factor:Float):Int{
+        val f=factor.coerceIn(0f,1f)
+        val a=color ushr 24 and 0xFF
+        val r=((color ushr 16 and 0xFF)*f).roundToInt()
+        val g=((color ushr 8 and 0xFF)*f).roundToInt()
+        val b=((color and 0xFF)*f).roundToInt()
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
     private fun drawDiamond(gui:GuiGraphics,cx:Int,cy:Int,width:Int,height:Int,fill:Int,border:Int){
         val halfW=max(2,width/2);val halfH=max(2,height/2);val bands=min(10,max(4,halfH*2))
         repeat(bands){band->val y0=cy-halfH+(band*halfH*2/bands);val y1=cy-halfH+((band+1)*halfH*2/bands);val midY=(y0+y1)*0.5;val ratio=1.0-abs(midY-cy)/halfH.toDouble();val half=max(1,(halfW*ratio).roundToInt());gui.fill(cx-half-1,y0,cx+half+1,max(y0+1,y1),border);if(half>1)gui.fill(cx-half,y0,cx+half,max(y0+1,y1),fill)}
     }
 
     private const val GRID_LINE=0xFF29403F.toInt();private const val ALLY_A=0xFF173530.toInt();private const val ALLY_B=0xFF132C29.toInt();private const val ENEMY_A=0xFF302126.toInt();private const val ENEMY_B=0xFF291B20.toInt()
-    private const val SELECTED=0xFF2F786E.toInt();private const val LEGAL=0xFF365D45.toInt();private const val ALLY_RING=0xFF4CC7B2.toInt();private const val ENEMY_RING=0xFFB95E67.toInt()
+    private const val SELECTED=0xFF2F786E.toInt();private const val LEGAL=0xFF365D45.toInt();private const val ALLY_RING=0x994CC7B2.toInt();private const val ENEMY_RING=0x99B95E67.toInt()
     private const val TEXT=0xFFF2F6F4.toInt();private const val GOLD=0xFFE2BE62.toInt();private const val BAR_BG=0xFF10191C.toInt();private const val HP_ALLY=0xFF54C97A.toInt();private const val HP_ENEMY=0xFFD86668.toInt();private const val MANA=0xFF55A9E8.toInt()
     private const val PROJECTILE=0xFFE2BE62.toInt();private const val CAST=0xFF9A7FE3.toInt();private const val HIT=0xFFE36C5C.toInt();private const val HEAL=0xFF67C989.toInt()
 }

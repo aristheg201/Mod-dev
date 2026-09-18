@@ -47,7 +47,10 @@ object SVHubClient : ClientModInitializer {
         })
         ClientPlayNetworking.registerGlobalReceiver(HubHelloS2C.TYPE) { payload, context -> context.client().execute {
             ClientHubState.serverRevision=payload.revision;ClientHubState.canOpen=payload.canOpen;ClientHubState.canEdit=payload.canEdit;ClientHubState.serverManifest=payload.serverManifest;ClientHubState.setCachePolicy(payload.cacheable)
-            if(!payload.canOpen){pendingRoute=null;pendingEditor=false}
+            // Keep a user-initiated open pending while the server store is still warming up.
+            // canOpen is also false during that short readiness window, so clearing pendingRoute
+            // here made H / /hub appear dead after reconnect until the user tried yet again.
+            if(!payload.canOpen){pendingEditor=false}
             val cachedRevision=if(payload.protocol==HUB_PROTOCOL_VERSION&&payload.cacheable)ClientHubState.loadCachedIfRevision(payload.revision)else -1L
             val manifest=EnvironmentManifest.clientAdvertisement(setOf("gui","cobblemon-model","asset-cache","editor","minimessage","placeholder-api"));ClientPlayNetworking.send(HubClientManifestC2S(HUB_PROTOCOL_VERSION,cachedRevision,manifest.toJson()))
             if(payload.protocol!=HUB_PROTOCOL_VERSION)context.player().sendSystemMessage(Component.literal("SVHub protocol không tương thích: client=$HUB_PROTOCOL_VERSION, server=${payload.protocol}"))else if(cachedRevision==payload.revision)openPendingIfReady()

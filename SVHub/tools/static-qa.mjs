@@ -52,7 +52,7 @@ for (const locale of ["en_us", "vi_vn"]) {
 }
 const properties = fs.readFileSync(path.join(root, "gradle.properties"), "utf8");
 const metadata = fs.readFileSync(path.join(root, "src/main/resources/fabric.mod.json"), "utf8");
-if (!/^mod_version=0\.4\.2\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.2");
+if (!/^mod_version=0\.4\.3\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.3");
 if (!metadata.includes('"version": "${version}"')) failures.push("fabric.mod.json: Gradle version expansion marker missing");
 for (const [name, marker] of [
   ["responsive layout", "NativeLayout.resolve(width, height)"],
@@ -86,6 +86,8 @@ const arenaRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client
 const boardSceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeBoardSceneRenderer.kt");
 const visualRegistry = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeGameVisualRegistry.kt");
 const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/PokemonModelRenderer.kt");
+const fakemonCatalogProvider = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/BundledFakemonCatalog.kt");
+const spawnEcologyRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/gui/SpawnEcologyRenderer.kt");
 const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt");
 const cardTableRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt");
 const companionRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VanillaCompanionModelRenderer.kt");
@@ -109,6 +111,12 @@ if (!nativeClient.includes("closedViews") || !nativeClient.includes("current.vie
 }
 for (const marker of ["prepareForServerReplacement", "ClientPlayConnectionEvents.DISCONNECT", "closedViews.clear()"]) {
   if (!nativeClient.includes(marker)) failures.push(`NativePlatformClient.kt: missing lifecycle reset marker ${marker}`);
+}
+for (const marker of ["explicitlyClosed", "payload.viewId in closedViews"]) {
+  if (!nativeClient.includes(marker)) failures.push(`NativePlatformClient.kt: missing reopen-race marker ${marker}`);
+}
+if (!read("src/client/kotlin/io/github/aristheg201/svhub/client/SVHubClient.kt").includes("Keep a user-initiated open pending")) {
+  failures.push("SVHubClient.kt: reconnect open-pending protection missing");
 }
 for (const marker of ['module=="game"', "NativeArcadeService.leave(player)"]) {
   if (!nativeNetwork.includes(marker)) failures.push(`NativePlatformNetwork.kt: missing game-close lifecycle marker ${marker}`);
@@ -152,6 +160,17 @@ for (const arena of ["chess", "xiangqi", "ludo", "tft", "tower_defense"]) {
   const file = path.join(root, `src/main/resources/assets/svhub/arenas/${arena}.json`);
   if (!fs.existsSync(file)) failures.push(`Missing arena definition: ${arena}`);
 }
+for (const arena of ["chess", "xiangqi", "ludo", "tft", "tower_defense"]) {
+  const file = path.join(root, `src/main/resources/assets/svhub/arenas/${arena}.json`);
+  if (!fs.existsSync(file)) continue;
+  const def = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!("depth" in def)) failures.push(`${arena}.json: missing board depth`);
+  if (!("detailEvery" in def)) failures.push(`${arena}.json: missing sparse-detail cadence`);
+  if (["chess", "xiangqi", "ludo"].includes(arena) && def.detailEvery !== 0) failures.push(`${arena}.json: board must not spam block items per cell`);
+}
+for (const marker of ["detailCadence", "Sparse surface detail only", "sortedBy { it.third.y }"]) {
+  if (!arenaRenderer.includes(marker)) failures.push(`MinecraftArenaRenderer.kt: missing board cleanup marker ${marker}`);
+}
 for (const marker of ["SceneCameraPreset", "SceneCameras", "SceneProjectionMetrics", "depthFor"]) {
   if (!sceneProjection.includes(marker)) failures.push(`SceneProjection.kt: missing camera/projection marker ${marker}`);
 }
@@ -160,6 +179,19 @@ for (const marker of ["TOUCH_HIT_WIDTH = 14", "MIN_THUMB = 24", "scrollFromPoint
 }
 for (const marker of ["SceneModelKey", "renderScene(", "instanceId"]) {
   if (!pokemonRenderer.includes(marker)) failures.push(`PokemonModelRenderer.kt: missing per-entity scene renderer marker ${marker}`);
+}
+for (const marker of ["BundledFakemonCatalog", "sourceForSpecies", "sourceForForm"]) {
+  if (!fakemonCatalogProvider.includes(marker)) failures.push(`BundledFakemonCatalog.kt: missing ${marker}`);
+}
+const livelyCatalogPath = path.join(root, "src/main/resources/assets/svhub/fakemon_catalog/lively_mons_1_11.json");
+if (!fs.existsSync(livelyCatalogPath)) failures.push("Missing Lively Mons Fakemon catalog");
+else {
+  const lively = JSON.parse(fs.readFileSync(livelyCatalogPath, "utf8"));
+  if ((lively.species || []).length !== 73) failures.push(`Lively Mons catalog: expected 73 species, got ${(lively.species || []).length}`);
+  for (const id of ["cobblemon:peccareck", "cobblemon:porygondelta"]) if (!(lively.species || []).includes(id)) failures.push(`Lively Mons catalog missing ${id}`);
+}
+for (const marker of ["BIOMES", "renderChips", "bucketColor", "environmentColor"]) {
+  if (!spawnEcologyRenderer.includes(marker)) failures.push(`SpawnEcologyRenderer.kt: missing ${marker}`);
 }
 if (!tftRenderer.includes("PokemonScene3D.render") || tftRenderer.includes("renderUnit(gui, font, cell")) {
   failures.push("TftGameRenderer.kt: TFT board is not using the shared scene renderer");
@@ -354,4 +386,4 @@ for (const marker of ["message.svhub.profile_loading", "gui.svhub.error.invalid_
 }
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);
-console.log("SVHub 0.4.2 structural QA passed (runtime/gameplay/visual verification is separate)");
+console.log("SVHub 0.4.3 structural QA passed (runtime/gameplay/visual verification is separate)");

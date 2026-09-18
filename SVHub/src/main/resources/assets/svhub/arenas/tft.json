@@ -1,56 +1,68 @@
 {
+  "style": "split_battleground",
+  "depth": 4,
+  "detailEvery": 9,
+  "pathDetailEvery": 0,
   "floor": [
-    "minecraft:grass_block",
-    "minecraft:moss_block",
-    "minecraft:podzol"
+    "minecraft:moss_carpet",
+    "minecraft:small_dripleaf"
   ],
   "floorAlt": [
-    "minecraft:moss_block",
-    "minecraft:grass_block"
+    "minecraft:moss_carpet"
   ],
   "ally": [
-    "minecraft:grass_block",
-    "minecraft:moss_block",
-    "minecraft:azalea_leaves"
+    "minecraft:azalea_leaves",
+    "minecraft:moss_carpet"
   ],
   "enemy": [
-    "minecraft:crimson_nylium",
-    "minecraft:netherrack",
-    "minecraft:nether_wart_block"
+    "minecraft:crimson_fungus",
+    "minecraft:nether_sprouts"
   ],
-  "path": [
-    "minecraft:stone_bricks"
-  ],
-  "floorColor": "#42693f",
-  "floorAltColor": "#375b38",
-  "allyColor": "#376f48",
-  "enemyColor": "#6e3438",
+  "path": [],
+  "floorColor": "#385b3b",
+  "floorAltColor": "#385b3b",
+  "allyColor": "#3f7049",
+  "enemyColor": "#733d42",
   "pathColor": "#6f6a5e",
-  "gridColor": "#314b42",
+  "pathAccentColor": "#918978",
+  "gridColor": "#27443a",
+  "depthColor": "#16221f",
   "props": [
     {
       "item": "minecraft:campfire",
-      "x": -0.75,
-      "y": 3.7,
-      "scale": 0.82
+      "x": -0.95,
+      "y": 3.5,
+      "scale": 0.9
     },
     {
       "item": "minecraft:soul_campfire",
-      "x": 6.75,
-      "y": 3.7,
-      "scale": 0.82
+      "x": 6.95,
+      "y": 3.5,
+      "scale": 0.9
     },
     {
       "item": "minecraft:lantern",
-      "x": -0.55,
+      "x": -0.75,
       "y": 7.1,
-      "scale": 0.68
+      "scale": 0.72
     },
     {
       "item": "minecraft:soul_lantern",
-      "x": 6.55,
-      "y": -0.1,
-      "scale": 0.68
+      "x": 6.75,
+      "y": -0.15,
+      "scale": 0.72
+    },
+    {
+      "item": "minecraft:bell",
+      "x": 3,
+      "y": 7.75,
+      "scale": 0.78
+    },
+    {
+      "item": "minecraft:respawn_anchor",
+      "x": 3,
+      "y": -0.85,
+      "scale": 0.78
     }
   ]
 }

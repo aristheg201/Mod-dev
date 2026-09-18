@@ -18,8 +18,12 @@ object NativePlatformClient {
             context.client().execute {
                 val minecraft = Minecraft.getInstance()
                 val current = minecraft.screen as? NativePlatformScreen
-                val replacesClosed = payload.replacesViewId.isNotBlank() && payload.replacesViewId in closedViews
-                val accepted = !replacesClosed && (current == null || current.viewId == payload.replacesViewId || current.viewId == payload.viewId)
+                // A freshly-created server view is allowed to replace a view the player just
+                // closed. Reject the closed view itself, not every future view that references it.
+                // The old check used replacesViewId and made a fast close -> reopen race reject
+                // the legitimate new Hub view forever from the user's perspective.
+                val explicitlyClosed = payload.viewId in closedViews
+                val accepted = !explicitlyClosed && (current == null || current.viewId == payload.replacesViewId || current.viewId == payload.viewId)
                 if (!accepted) { reject(payload.viewId); return@execute }
                 if (payload.replacesViewId.isNotBlank()) closedViews.remove(payload.replacesViewId)
                 closedViews.remove(payload.viewId)
@@ -36,7 +40,11 @@ object NativePlatformClient {
         ClientPlayNetworking.registerGlobalReceiver(NativeCloseS2C.TYPE) { payload, context ->
             context.client().execute {
                 val minecraft = Minecraft.getInstance();val current = minecraft.screen
-                if (current is NativePlatformScreen && current.viewId == payload.viewId) { markClosed(payload.viewId);minecraft.setScreen(null) }
+                if (current is NativePlatformScreen && current.viewId == payload.viewId) {
+                    markClosed(payload.viewId)
+                    current.prepareForServerReplacement()
+                    minecraft.setScreen(null)
+                }
             }
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> reset() }

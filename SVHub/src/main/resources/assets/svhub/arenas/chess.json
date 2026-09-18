@@ -1,49 +1,61 @@
 {
+  "style": "stone_table",
+  "depth": 4,
+  "detailEvery": 0,
+  "pathDetailEvery": 0,
   "floor": [
-    "minecraft:quartz_block",
     "minecraft:smooth_quartz"
   ],
   "floorAlt": [
-    "minecraft:polished_blackstone",
-    "minecraft:deepslate_tiles"
-  ],
-  "ally": [
-    "minecraft:quartz_block"
-  ],
-  "enemy": [
     "minecraft:polished_blackstone"
   ],
+  "ally": [],
+  "enemy": [],
   "path": [],
   "floorColor": "#d8d2c3",
-  "floorAltColor": "#25292e",
+  "floorAltColor": "#24272b",
   "allyColor": "#d8d2c3",
-  "enemyColor": "#25292e",
+  "enemyColor": "#24272b",
   "pathColor": "#6a6257",
-  "gridColor": "#776f62",
+  "pathAccentColor": "#8d856f",
+  "gridColor": "#4f4d49",
+  "depthColor": "#111416",
   "props": [
     {
       "item": "minecraft:lantern",
-      "x": -0.7,
-      "y": -0.3,
-      "scale": 0.7
+      "x": -0.85,
+      "y": -0.55,
+      "scale": 0.82
     },
     {
       "item": "minecraft:soul_lantern",
-      "x": 7.7,
-      "y": -0.3,
-      "scale": 0.7
+      "x": 7.85,
+      "y": -0.55,
+      "scale": 0.82
     },
     {
-      "item": "minecraft:chiseled_stone_bricks",
-      "x": -0.6,
-      "y": 7.5,
-      "scale": 0.75
+      "item": "minecraft:lantern",
+      "x": -0.85,
+      "y": 7.55,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:soul_lantern",
+      "x": 7.85,
+      "y": 7.55,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:chiseled_quartz_block",
+      "x": 3.5,
+      "y": -1,
+      "scale": 0.9
     },
     {
       "item": "minecraft:chiseled_deepslate",
-      "x": 7.6,
-      "y": 7.5,
-      "scale": 0.75
+      "x": 3.5,
+      "y": 8,
+      "scale": 0.9
     }
   ]
 }
