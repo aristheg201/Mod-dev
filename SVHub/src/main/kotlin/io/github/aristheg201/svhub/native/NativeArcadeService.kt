@@ -167,13 +167,8 @@ object NativeArcadeService {
 
     fun tick(server: MinecraftServer, now: Long = System.currentTimeMillis()): Map<UUID, String> {
         sessions.values.toList().forEach { handle -> if (!handle.finished) handle.submitTick(now) }
-        finishedAt.filterValues { now - it > SESSION_RETAIN_MS }.keys.toList().forEach { sid ->
-            sessions.remove(sid)?.let { handle ->
-                realPlayers(handle).forEach { id -> if (active[id] == sid) active.remove(id) }
-                handle.close()
-            }
-            NativeGameEngineRuntime.unregister(sid)
-            rewarded.remove(sid); finishedAt.remove(sid); meta.remove(sid); NativeBotRuntime.forgetSession(sid)
+        finishedAt.filterValues { now - it > TERMINAL_DEDUP_MS }.keys.toList().forEach { sid ->
+            rewarded.remove(sid); finishedAt.remove(sid)
         }
         queues.values.forEach { q -> q.removeIf { server.playerList.getPlayer(it) == null || active.containsKey(it) } }
         if (asyncMessages.isEmpty()) return emptyMap()
@@ -244,6 +239,10 @@ object NativeArcadeService {
             NativeRewardParticipant(id, outcome, m.humanActions[id] ?: 0, id in m.forfeited, placement)
         }
         NativeRewardService.enqueue(NativeRewardCompletion(handle.sessionId, handle.gameId, m.mode, (now - m.createdAtEpochMs).coerceAtLeast(0L), participants))
+        players.forEach { id -> if (active[id] == handle.sessionId) active.remove(id) }
+        sessions.remove(handle.sessionId)
+        meta.remove(handle.sessionId)
+        NativeGameEngineRuntime.unregister(handle.sessionId)
     }
 
     private fun realPlayers(handle: NativeGameEngineRuntime.Handle) = handle.seats.asSequence().filterNot { it.anyBot }.mapNotNull { runCatching { UUID.fromString(it.id) }.getOrNull() }.toSet()
@@ -251,6 +250,6 @@ object NativeArcadeService {
     private fun botSeat(name: String, difficulty: NativeBotDifficulty) = NativeSeat(id = "bot:${UUID.randomUUID()}", name = name, bot = false, managedBot = true, botDifficulty = difficulty)
     private fun difficultyFor(mode: String) = when (mode) { "bot_easy" -> NativeBotDifficulty.EASY; "bot_hard" -> NativeBotDifficulty.HARD; else -> NativeBotDifficulty.NORMAL }
 
-    private const val SESSION_RETAIN_MS = 120_000L
+    private const val TERMINAL_DEDUP_MS = 10 * 60 * 1000L
     private const val MAX_SESSIONS = 512
 }

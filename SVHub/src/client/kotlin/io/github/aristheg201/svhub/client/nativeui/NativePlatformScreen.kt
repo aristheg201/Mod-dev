@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.gui.SVHubScreen
+import io.github.aristheg201.svhub.native.network.NativeCloseC2S
 import io.github.aristheg201.svhub.native.network.NativeIntentC2S
 import io.github.aristheg201.svhub.ui.NativeLayout
 import io.github.aristheg201.svhub.ui.UiDensity
@@ -18,7 +19,8 @@ import kotlin.math.min
 class NativePlatformScreen(
     val module: String,
     private var state: JsonObject,
-    private var notice: String
+    private var notice: String,
+    val viewId: String
 ) : SVHubScreen(Component.translatable("screen.svhub.native")) {
     private data class Control(
         val rect: UiRect,
@@ -60,6 +62,12 @@ class NativePlatformScreen(
     }
 
     override fun init() { controls.clear() }
+
+    override fun removed() {
+        NativePlatformClient.markClosed(viewId)
+        ClientPlayNetworking.send(NativeCloseC2S(viewId))
+        super.removed()
+    }
 
     override fun render(gui: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         currentGui = gui
@@ -230,8 +238,8 @@ class NativePlatformScreen(
     override fun mouseScrolled(mouseX:Double,mouseY:Double,horizontalAmount:Double,verticalAmount:Double):Boolean{if(module in setOf("gacha","skins","arcade","companions","wallet")){moduleScroll=(moduleScroll-verticalAmount.toInt()*24).coerceIn(0,1200);return true};return super.mouseScrolled(mouseX,mouseY,horizontalAmount,verticalAmount)}
     private fun coord(game:String,index:Int):String{val columns=if(game=="xiangqi")9 else 8;val row=index/columns;val column=index%columns;return if(game=="xiangqi")"${('a'.code+column).toChar()}$row" else "${('a'.code+column).toChar()}${8-row}"}
     private fun gameAct(action:String,args:Map<String,String>){val data=JsonObject();data.addProperty("gameAction",action);data.add("args",JsonObject().apply{args.forEach{(key,value)->addProperty(key,value)}});intent("act",data)}
-    private fun open(target:String)=intent("open",json("module" to target),"dashboard")
-    private fun intent(action:String,data:JsonObject,targetModule:String=module)=ClientPlayNetworking.send(NativeIntentC2S(targetModule,action,gson.toJson(data)))
+    private fun open(target:String)=intent("open",json("module" to target))
+    private fun intent(action:String,data:JsonObject)=ClientPlayNetworking.send(NativeIntentC2S(module,action,gson.toJson(data),viewId))
     private fun json(vararg pairs:Pair<String,Any>)=JsonObject().apply{pairs.forEach{(key,value)->when(value){is Number->addProperty(key,value);is Boolean->addProperty(key,value);else->addProperty(key,value.toString())}}}
     private fun fit(value:String,availableWidth:Int):String=font.plainSubstrByWidth(value,availableWidth.coerceAtLeast(8))
     private fun tr(key:String):String=I18n.get(key)

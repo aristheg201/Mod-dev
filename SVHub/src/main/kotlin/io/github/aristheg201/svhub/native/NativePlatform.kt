@@ -16,8 +16,17 @@ object NativePlatform {
     fun onDisconnect(player: ServerPlayer) { NativeArcadeService.onDisconnect(player); NativeProfileStore.onDisconnect(player) }
     fun tick(server: MinecraftServer) {
         tickCounter++
-        NativeArcadeService.tick(server).forEach { (id, message) -> server.playerList.getPlayer(id)?.let { p -> if (NativePlatformNetwork.currentModule(id) == "game") NativePlatformNetwork.sendState(p, "game", gameState(p), message) } }
-        if (tickCounter % 20 == 0) server.playerList.players.forEach { p -> if (NativePlatformNetwork.currentModule(p.uuid) == "game") NativePlatformNetwork.sendState(p, "game", gameState(p)) }
+        val messages = NativeArcadeService.tick(server)
+        server.playerList.players.forEach { p ->
+            if (NativePlatformNetwork.currentModule(p.uuid) != "game") return@forEach
+            val state = gameState(p)
+            if (state.get("empty")?.asBoolean == true) {
+                NativePlatformNetwork.sendOpen(p, "arcade", NativeArcadeService.lobbyState(p))
+            } else {
+                val message = messages[p.uuid].orEmpty()
+                if (message.isNotBlank() || tickCounter % 20 == 0) NativePlatformNetwork.sendState(p, "game", state, message)
+            }
+        }
     }
     fun shutdown() { NativeArcadeService.shutdown(); NativeProfileStore.shutdown() }
     fun open(player: ServerPlayer, requested: String): Boolean {
@@ -27,6 +36,7 @@ object NativePlatform {
     }
     fun handleIntent(player: ServerPlayer, module: String, action: String, data: JsonObject): String {
         if (!NativeProfileStore.isLoaded(player.uuid)) return "Profile chưa sẵn sàng."
+        if (action == "open") { open(player, data.string("module", "dashboard")); return "" }
         return when (module) {
             "gacha" -> handleGacha(player, action, data)
             "skins" -> handleSkins(player, action, data)

@@ -32,6 +32,14 @@ class HubScreen(
     private var tickCounter = 0L
     private var scrollOffset = 0
     private var contentHeight = 0
+    private var sidebarScroll = 0
+    private var sidebarMaxScroll = 0
+    private var sidebarTrackTop = 0
+    private var sidebarTrackBottom = 0
+    private var sidebarThumbTop = 0
+    private var sidebarThumbBottom = 0
+    private var draggingSidebarScrollbar = false
+    private var sidebarDragOffset = 0.0
     private var detailScroll = 0
     private var detailMaxScroll = 0
     private val hitTargets = mutableListOf<HubHitTarget>()
@@ -198,25 +206,74 @@ class HubScreen(
 
     private fun renderSidebar(gui: GuiGraphics, theme: HubTheme, sidebarWidth: Int, mouseX: Int, mouseY: Int) {
         val p = theme.palette
+        val pages = content.pages.filter { it.showInNavigation }
+        val viewportTop = CHROME_HEIGHT + 32
+        val viewportBottom = (height - 8).coerceAtLeast(viewportTop + 1)
+        val viewportHeight = viewportBottom - viewportTop
+        val contentPixels = pages.size * 32
+        sidebarMaxScroll = (contentPixels - viewportHeight).coerceAtLeast(0)
+        sidebarScroll = sidebarScroll.coerceIn(0, sidebarMaxScroll)
         gui.fill(0, CHROME_HEIGHT, sidebarWidth, height, PixelUi.withAlpha(p.panel, 242))
         gui.fill(sidebarWidth - 2, CHROME_HEIGHT, sidebarWidth, height, PixelUi.withAlpha(p.accent, 65))
         MiniMessageText.draw(gui, font, "<bold>MỤC LỤC</bold>", 16, CHROME_HEIGHT + 13, p.mutedText)
-        var y = CHROME_HEIGHT + 32
-        content.pages.filter { it.showInNavigation }.take(18).forEach { page ->
-            val active = page.route == route || page.id == route
-            val hovered = mouseX in 8 until sidebarWidth - 8 && mouseY in y until y + 29
-            if (active || hovered) {
-                gui.fill(8, y, sidebarWidth - 8, y + 29, if (active) p.panelAlt else PixelUi.withAlpha(p.panelAlt, 175))
-                gui.fill(8, y, 12, y + 29, if (active) p.accent else p.accent2)
+        gui.enableScissor(0, viewportTop, sidebarWidth, viewportBottom)
+        var y = viewportTop - sidebarScroll
+        pages.forEach { page ->
+            if (y + 29 > viewportTop && y < viewportBottom) {
+                val active = page.route == route || page.id == route
+                val hovered = mouseX in 8 until sidebarWidth - 12 && mouseY in maxOf(y, viewportTop) until minOf(y + 29, viewportBottom)
+                if (active || hovered) {
+                    gui.fill(8, y, sidebarWidth - 12, y + 29, if (active) p.panelAlt else PixelUi.withAlpha(p.panelAlt, 175))
+                    gui.fill(8, y, 12, y + 29, if (active) p.accent else p.accent2)
+                }
+                val parsed = MiniMessageText.component(page.title.resolve(content.defaultLocale))
+                val line = font.split(parsed, sidebarWidth - 40).firstOrNull()
+                if (line != null) gui.drawString(font, line, 18, y + 10, if (active) p.accent else p.text, active)
+                hitTargets += HubHitTarget(8, maxOf(y, viewportTop), sidebarWidth - 12, minOf(y + 29, viewportBottom)) { navigate(page.route) }
             }
-            val parsed = MiniMessageText.component(page.title.resolve(content.defaultLocale))
-            val line = font.split(parsed, sidebarWidth - 34).firstOrNull()
-            if (line != null) {
-                gui.drawString(font, line, 18, y + 10, if (active) p.accent else p.text, active)
-            }
-            hitTargets += HubHitTarget(8, y, sidebarWidth - 8, y + 29) { navigate(page.route) }
             y += 32
         }
+        gui.disableScissor()
+        sidebarTrackTop = viewportTop
+        sidebarTrackBottom = viewportBottom
+        if (sidebarMaxScroll > 0) {
+            val trackX = sidebarWidth - 8
+            val trackHeight = viewportHeight.coerceAtLeast(1)
+            val thumbHeight = ((viewportHeight.toLong() * viewportHeight / contentPixels.coerceAtLeast(1)).toInt()).coerceIn(18, trackHeight)
+            val travel = (trackHeight - thumbHeight).coerceAtLeast(1)
+            val thumbOffset = (sidebarScroll.toLong() * travel / sidebarMaxScroll.coerceAtLeast(1)).toInt()
+            sidebarThumbTop = viewportTop + thumbOffset
+            sidebarThumbBottom = sidebarThumbTop + thumbHeight
+            gui.fill(trackX, viewportTop, trackX + 4, viewportBottom, PixelUi.withAlpha(p.panelAlt, 210))
+            gui.fill(trackX, sidebarThumbTop, trackX + 4, sidebarThumbBottom, if (draggingSidebarScrollbar) p.accent2 else p.accent)
+        } else {
+            sidebarThumbTop = viewportTop
+            sidebarThumbBottom = viewportBottom
+        }
+    }
+
+    private fun ensureSidebarRouteVisible() {
+        if (width < 760) return
+        val pages = content.pages.filter { it.showInNavigation }
+        val index = pages.indexOfFirst { it.route == route || it.id == route }
+        if (index < 0) return
+        val viewportHeight = ((height - 8) - (CHROME_HEIGHT + 32)).coerceAtLeast(1)
+        sidebarMaxScroll = (pages.size * 32 - viewportHeight).coerceAtLeast(0)
+        val itemTop = index * 32
+        val itemBottom = itemTop + 29
+        sidebarScroll = when {
+            itemTop < sidebarScroll -> itemTop
+            itemBottom > sidebarScroll + viewportHeight -> itemBottom - viewportHeight
+            else -> sidebarScroll
+        }.coerceIn(0, sidebarMaxScroll)
+    }
+
+    private fun setSidebarScrollFromThumb(mouseY: Double) {
+        if (sidebarMaxScroll <= 0) return
+        val thumbHeight = (sidebarThumbBottom - sidebarThumbTop).coerceAtLeast(1)
+        val travel = ((sidebarTrackBottom - sidebarTrackTop) - thumbHeight).coerceAtLeast(1)
+        val offset = (mouseY - sidebarDragOffset - sidebarTrackTop).coerceIn(0.0, travel.toDouble())
+        sidebarScroll = (offset / travel.toDouble() * sidebarMaxScroll).roundToInt().coerceIn(0, sidebarMaxScroll)
     }
 
     private fun renderNotFound(gui: GuiGraphics, theme: HubTheme, missing: String) {
@@ -252,6 +309,7 @@ class HubScreen(
         historyIndex = history.lastIndex
         route = normalized
         resetViewState()
+        ensureSidebarRouteVisible()
     }
 
     private fun goBack() {
@@ -259,6 +317,7 @@ class HubScreen(
         historyIndex--
         route = history[historyIndex]
         resetViewState()
+        ensureSidebarRouteVisible()
     }
 
     private fun resetViewState() {
@@ -274,6 +333,18 @@ class HubScreen(
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (button == 0) {
+            if (width >= 760 && sidebarMaxScroll > 0 && mouseX >= 172.0 && mouseX < 184.0 &&
+                mouseY >= sidebarTrackTop && mouseY < sidebarTrackBottom) {
+                if (mouseY >= sidebarThumbTop && mouseY < sidebarThumbBottom) {
+                    draggingSidebarScrollbar = true
+                    sidebarDragOffset = mouseY - sidebarThumbTop
+                } else {
+                    sidebarDragOffset = (sidebarThumbBottom - sidebarThumbTop) / 2.0
+                    setSidebarScrollFromThumb(mouseY)
+                    draggingSidebarScrollbar = true
+                }
+                return true
+            }
             hitTargets.asReversed().firstOrNull { it.contains(mouseX, mouseY) }?.let { target ->
                 target.action()
                 return true
@@ -291,11 +362,18 @@ class HubScreen(
     }
 
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (button == 0) draggingModel = false
+        if (button == 0) {
+            draggingModel = false
+            draggingSidebarScrollbar = false
+        }
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dragX: Double, dragY: Double): Boolean {
+        if (draggingSidebarScrollbar && button == 0) {
+            setSidebarScrollFromThumb(mouseY)
+            return true
+        }
         if (draggingModel && button == 0 && (route.startsWith("pokemon/") || route.startsWith("fakemon/"))) {
             modelYaw = (modelYaw + dragX.toFloat() * 1.3f) % 360f
             return true
@@ -304,6 +382,10 @@ class HubScreen(
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        if (width >= 760 && mouseX >= 0.0 && mouseX < 184.0 && mouseY >= CHROME_HEIGHT + 32 && mouseY < height - 8 && sidebarMaxScroll > 0) {
+            sidebarScroll = (sidebarScroll - (verticalAmount * 28.0).roundToInt()).coerceIn(0, sidebarMaxScroll)
+            return true
+        }
         if (route.startsWith("pokemon/") || route.startsWith("fakemon/")) {
             if (PokemonDetailView.isModelArea(width, mouseX, mouseY, height)) {
                 modelZoom = (modelZoom + verticalAmount.toFloat() * 0.08f).coerceIn(0.55f, 2.2f)
