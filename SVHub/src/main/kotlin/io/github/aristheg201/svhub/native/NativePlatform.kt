@@ -12,10 +12,21 @@ import java.nio.file.Path
 object NativePlatform {
     private var tickCounter = 0
     fun start(root: Path) { NativeProfileStore.start(root.resolve("profiles")); NativeArcadeService.start(root.resolve("arcade")) }
-    fun onJoin(player: ServerPlayer) { SkiesSkinsBridge.invalidate(); NativeProfileStore.onJoin(player) {} }
-    fun onDisconnect(player: ServerPlayer) { NativeArcadeService.onDisconnect(player); NativeProfileStore.onDisconnect(player) }
+    fun onJoin(player: ServerPlayer) {
+        SkiesSkinsBridge.invalidate()
+        NativeProfileStore.onJoin(player) { live ->
+            NativeArcadeService.onReconnect(live)
+            NativeRewardService.recoverPlayer(live.uuid)
+        }
+    }
+    fun onDisconnect(player: ServerPlayer) {
+        NativePlatformNetwork.close(player.uuid)
+        NativeArcadeService.onDisconnect(player)
+        NativeProfileStore.onDisconnect(player)
+    }
     fun tick(server: MinecraftServer) {
         tickCounter++
+        NativeProfileStore.tick()
         val messages = NativeArcadeService.tick(server)
         server.playerList.players.forEach { p ->
             if (NativePlatformNetwork.currentModule(p.uuid) != "game") return@forEach

@@ -37,8 +37,9 @@ object NativeArcadeService {
     private val sessions = linkedMapOf<String, NativeGameEngineRuntime.Handle>()
     private val active = linkedMapOf<UUID, String>()
     private val queues = games.associate { it.id to ArrayDeque<UUID>() }.toMutableMap()
-    private val rewarded = hashSetOf<String>()
+    private val rewarding = hashSetOf<String>()
     private val finishedAt = hashMapOf<String, Long>()
+    private val disconnectedUntil = hashMapOf<UUID, Long>()
     private val meta = hashMapOf<String, SessionMeta>()
     private val asyncMessages = ConcurrentHashMap<UUID, String>()
 
@@ -158,6 +159,7 @@ object NativeArcadeService {
 
     fun leave(player: ServerPlayer): Result {
         cancelQueue(player)
+        disconnectedUntil.remove(player.uuid)
         val sid = active.remove(player.uuid) ?: return Result(true, "Đã rời Arcade.", setOf(player.uuid))
         val handle = sessions[sid]
         meta[sid]?.forfeited?.add(player.uuid)
@@ -166,10 +168,15 @@ object NativeArcadeService {
     }
 
     fun tick(server: MinecraftServer, now: Long = System.currentTimeMillis()): Map<UUID, String> {
-        sessions.values.toList().forEach { handle -> if (!handle.finished) handle.submitTick(now) }
-        finishedAt.filterValues { now - it > TERMINAL_DEDUP_MS }.keys.toList().forEach { sid ->
-            rewarded.remove(sid); finishedAt.remove(sid)
+        sessions.values.toList().forEach { handle -> if (!handle.finished) handle.submitTick(now) else finishIfNeeded(handle) }
+        disconnectedUntil.entries.toList().forEach { (id, deadline) ->
+            if (now < deadline || server.playerList.getPlayer(id) != null) return@forEach
+            if (!disconnectedUntil.remove(id, deadline)) return@forEach
+            val sid = active.remove(id) ?: return@forEach
+            meta[sid]?.forfeited?.add(id)
+            sessions[sid]?.submitAction(id.toString(), "resign", emptyMap(), bot = false)
         }
+        finishedAt.filterValues { now - it > TERMINAL_DEDUP_MS }.keys.toList().forEach { sid -> finishedAt.remove(sid) }
         queues.values.forEach { q -> q.removeIf { server.playerList.getPlayer(it) == null || active.containsKey(it) } }
         if (asyncMessages.isEmpty()) return emptyMap()
         val out = linkedMapOf<UUID, String>()
@@ -179,15 +186,19 @@ object NativeArcadeService {
 
     fun onDisconnect(player: ServerPlayer) {
         queues.values.forEach { it.remove(player.uuid) }
-        val sid = active.remove(player.uuid) ?: return
-        meta[sid]?.forfeited?.add(player.uuid)
-        sessions[sid]?.submitAction(player.uuid.toString(), "resign", emptyMap(), bot = false)
+        if (active.containsKey(player.uuid)) disconnectedUntil[player.uuid] = System.currentTimeMillis() + DISCONNECT_GRACE_MS
         asyncMessages.remove(player.uuid)
+    }
+
+    fun onReconnect(player: ServerPlayer): Boolean {
+        disconnectedUntil.remove(player.uuid)
+        val sid = active[player.uuid] ?: return false
+        return sessions.containsKey(sid)
     }
 
     fun shutdown() {
         NativeGameEngineRuntime.shutdown(); NativeBotRuntime.shutdown(); NativeRewardService.shutdown()
-        sessions.clear(); active.clear(); queues.values.forEach { it.clear() }; rewarded.clear(); finishedAt.clear(); meta.clear(); asyncMessages.clear()
+        sessions.clear(); active.clear(); queues.values.forEach { it.clear() }; rewarding.clear(); finishedAt.clear(); disconnectedUntil.clear(); meta.clear(); asyncMessages.clear()
     }
 
     private fun onEngineUpdate(update: NativeGameEngineRuntime.Update) {
@@ -207,7 +218,7 @@ object NativeArcadeService {
         val handle = NativeGameEngineRuntime.register(server, session, ::onEngineUpdate)
         sessions[handle.sessionId] = handle
         val players = realPlayers(handle)
-        players.forEach { active[it] = handle.sessionId }
+        players.forEach { active[it] = handle.sessionId; disconnectedUntil.remove(it) }
         meta[handle.sessionId] = SessionMeta(mode = mode, humanActions = players.associateWith { 0 }.toMutableMap())
         return handle
     }
@@ -219,8 +230,8 @@ object NativeArcadeService {
     }
 
     private fun finishIfNeeded(handle: NativeGameEngineRuntime.Handle) {
-        if (!handle.finished || !rewarded.add(handle.sessionId)) return
-        val now = System.currentTimeMillis(); finishedAt[handle.sessionId] = now; NativeBotRuntime.forgetSession(handle.sessionId)
+        if (!handle.finished || finishedAt.containsKey(handle.sessionId) || !rewarding.add(handle.sessionId)) return
+        val now = System.currentTimeMillis()
         val m = meta[handle.sessionId] ?: SessionMeta("unknown", now)
         val players = realPlayers(handle)
         val participants = players.map { id ->
@@ -232,17 +243,29 @@ object NativeArcadeService {
                 handle.winnerSeatId == id.toString() -> NativeRewardOutcome.WIN
                 else -> NativeRewardOutcome.LOSS
             }
-            NativeProfileStore.mutate(id) { p ->
-                val st = p.stats.getOrPut(handle.gameId) { NativeGameStats() }; st.played++
-                when (outcome) { NativeRewardOutcome.WIN -> st.wins++; NativeRewardOutcome.DRAW -> st.draws++; NativeRewardOutcome.LOSS, NativeRewardOutcome.FORFEIT -> st.losses++ }
-            }
             NativeRewardParticipant(id, outcome, m.humanActions[id] ?: 0, id in m.forfeited, placement)
         }
-        NativeRewardService.enqueue(NativeRewardCompletion(handle.sessionId, handle.gameId, m.mode, (now - m.createdAtEpochMs).coerceAtLeast(0L), participants))
-        players.forEach { id -> if (active[id] == handle.sessionId) active.remove(id) }
-        sessions.remove(handle.sessionId)
-        meta.remove(handle.sessionId)
-        NativeGameEngineRuntime.unregister(handle.sessionId)
+        val accepted = NativeRewardService.enqueue(
+            NativeRewardCompletion(handle.sessionId, handle.gameId, m.mode, (now - m.createdAtEpochMs).coerceAtLeast(0L), participants)
+        ) { durable ->
+            rewarding.remove(handle.sessionId)
+            if (durable) finalizeFinishedSession(handle.sessionId)
+        }
+        if (!accepted) rewarding.remove(handle.sessionId)
+    }
+
+    private fun finalizeFinishedSession(sessionId: String) {
+        val handle = sessions[sessionId] ?: return
+        if (!handle.finished || finishedAt.containsKey(sessionId)) return
+        finishedAt[sessionId] = System.currentTimeMillis()
+        NativeBotRuntime.forgetSession(sessionId)
+        realPlayers(handle).forEach { id ->
+            if (active[id] == sessionId) active.remove(id)
+            disconnectedUntil.remove(id)
+        }
+        sessions.remove(sessionId)
+        meta.remove(sessionId)
+        NativeGameEngineRuntime.unregister(sessionId)
     }
 
     private fun realPlayers(handle: NativeGameEngineRuntime.Handle) = handle.seats.asSequence().filterNot { it.anyBot }.mapNotNull { runCatching { UUID.fromString(it.id) }.getOrNull() }.toSet()
@@ -250,6 +273,7 @@ object NativeArcadeService {
     private fun botSeat(name: String, difficulty: NativeBotDifficulty) = NativeSeat(id = "bot:${UUID.randomUUID()}", name = name, bot = false, managedBot = true, botDifficulty = difficulty)
     private fun difficultyFor(mode: String) = when (mode) { "bot_easy" -> NativeBotDifficulty.EASY; "bot_hard" -> NativeBotDifficulty.HARD; else -> NativeBotDifficulty.NORMAL }
 
+    private const val DISCONNECT_GRACE_MS = 90_000L
     private const val TERMINAL_DEDUP_MS = 10 * 60 * 1000L
     private const val MAX_SESSIONS = 512
 }

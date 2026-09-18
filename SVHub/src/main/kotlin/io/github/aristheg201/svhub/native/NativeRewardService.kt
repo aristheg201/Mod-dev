@@ -8,23 +8,37 @@ import io.github.aristheg201.svhub.util.AtomicFiles
 import net.minecraft.network.chat.Component
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/** Computes reward policy off-thread. */
 object NativeRewardService {
+    private data class JournalEntry(
+        val playerId: String, val arcadeTokens: Long, val gachaTickets: Int,
+        val outcome: String, val eligible: Boolean, val reason: String
+    )
+    private data class JournalRecord(
+        val schema: Int = 1, val sessionId: String, val gameId: String, val mode: String,
+        val createdAtEpochMs: Long, val entries: List<JournalEntry>
+    )
+
     private val gson = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
     private val threadCounter = AtomicInteger()
+    private val pending = ConcurrentHashMap<String, JournalRecord>()
     @Volatile private var executor: ThreadPoolExecutor? = null
     @Volatile private var rules: NativeRewardRules = NativeRewardRules()
     private lateinit var configPath: Path
+    private lateinit var journalRoot: Path
 
     fun start(path: Path) {
         configPath = path
+        journalRoot = path.parent.resolve("reward-journal")
         Files.createDirectories(path.parent)
+        Files.createDirectories(journalRoot)
         if (!Files.exists(path)) runCatching { AtomicFiles.writeUtf8(path, gson.toJson(defaultJson())) }
             .onFailure { SVHub.LOGGER.warn("Unable to write native arcade reward config", it) }
         rules = loadRules(path)
@@ -35,45 +49,124 @@ object NativeRewardService {
                 ThreadPoolExecutor.AbortPolicy()
             )
         }
+        loadPending()
     }
 
-    fun enqueue(completion: NativeRewardCompletion) {
-        val pool = executor ?: return
+    fun enqueue(completion: NativeRewardCompletion, journalDurable: (Boolean) -> Unit): Boolean {
+        pending[completion.sessionId]?.let { existing ->
+            SVHubRuntime.server?.execute { journalDurable(true); applyRecord(existing) }
+            return true
+        }
+        val pool = executor ?: return false
         val snapshotRules = rules
+        val awards = runCatching { NativeRewardPolicy.calculate(completion, snapshotRules) }
+            .onFailure { SVHub.LOGGER.warn("Reward calculation failed for {}", completion.sessionId, it) }
+            .getOrNull() ?: return false
+        val participants = completion.participants.associateBy { it.playerId }
+        val record = JournalRecord(
+            sessionId = completion.sessionId, gameId = completion.gameId, mode = completion.mode,
+            createdAtEpochMs = System.currentTimeMillis(),
+            entries = awards.map { award ->
+                val participant = participants[award.playerId]
+                JournalEntry(award.playerId.toString(), award.arcadeTokens, award.gachaTickets, participant?.outcome?.name ?: NativeRewardOutcome.LOSS.name, award.eligible, award.reason)
+            }
+        )
         try {
             pool.execute {
-                val awards = runCatching { NativeRewardPolicy.calculate(completion, snapshotRules) }
-                    .onFailure { SVHub.LOGGER.warn("Reward calculation failed for {}", completion.sessionId, it) }
-                    .getOrNull() ?: return@execute
-                val server = SVHubRuntime.server ?: return@execute
-                server.execute {
-                    for (award in awards) {
-                        if (!award.eligible || (award.arcadeTokens <= 0 && award.gachaTickets <= 0)) continue
-                        val changed = NativeProfileStore.mutate(award.playerId) { profile ->
-                            profile.credit("arcade", award.arcadeTokens)
-                            profile.credit("ticket", award.gachaTickets.toLong())
-                        }
-                        if (!changed) continue
-                        server.playerList.getPlayer(award.playerId)?.let { player ->
-                            val parts = buildList {
-                                if (award.arcadeTokens > 0) add("+${award.arcadeTokens} Arcade Token")
-                                if (award.gachaTickets > 0) add("+${award.gachaTickets} Gacha Ticket")
-                            }
-                            player.sendSystemMessage(Component.literal("SVHub reward • ${parts.joinToString(" • ")}"))
-                        }
-                    }
+                val ok = runCatching { AtomicFiles.writeUtf8(journalPath(record.sessionId), gson.toJson(record)); true }
+                    .onFailure { SVHub.LOGGER.error("Unable to persist reward journal {}", record.sessionId, it) }.getOrDefault(false)
+                if (ok) pending[record.sessionId] = record
+                SVHubRuntime.server?.execute {
+                    journalDurable(ok)
+                    if (ok) applyRecord(record)
                 }
             }
+            return true
         } catch (_: RejectedExecutionException) {
-            SVHub.LOGGER.warn("Native reward queue full; session {} reward was not queued", completion.sessionId)
+            SVHub.LOGGER.warn("Native reward journal queue full for {}", completion.sessionId)
+            return false
         }
     }
 
+    fun recoverPlayer(playerId: UUID) {
+        pending.values.filter { record -> record.entries.any { it.playerId == playerId.toString() } }.forEach(::applyRecord)
+    }
+
     fun reload() { if (::configPath.isInitialized) rules = loadRules(configPath) }
+
     fun shutdown() {
         val pool = synchronized(this) { val p = executor; executor = null; p }
-        pool?.shutdown(); runCatching { pool?.awaitTermination(2, TimeUnit.SECONDS) }; pool?.shutdownNow()
+        pool?.shutdown()
+        runCatching { pool?.awaitTermination(5, TimeUnit.SECONDS) }
+        pool?.shutdownNow()
+        pending.clear()
     }
+
+    private fun applyRecord(record: JournalRecord) {
+        record.entries.forEach { entry ->
+            val id = runCatching { UUID.fromString(entry.playerId) }.getOrNull() ?: return@forEach
+            if (NativeProfileStore.get(id) == null) return@forEach
+            val tx = "reward:${record.sessionId}"
+            NativeProfileStore.mutateDurableOnce(id, tx, mutation = { profile ->
+                if (entry.eligible) {
+                    profile.credit("arcade", entry.arcadeTokens)
+                    profile.credit("ticket", entry.gachaTickets.toLong())
+                }
+                val stats = profile.stats.getOrPut(record.gameId) { NativeGameStats() }
+                stats.played++
+                when (runCatching { NativeRewardOutcome.valueOf(entry.outcome) }.getOrDefault(NativeRewardOutcome.LOSS)) {
+                    NativeRewardOutcome.WIN -> stats.wins++
+                    NativeRewardOutcome.DRAW -> stats.draws++
+                    NativeRewardOutcome.LOSS, NativeRewardOutcome.FORFEIT -> stats.losses++
+                }
+                true
+            }) { result ->
+                if (result == DurableMutationResult.APPLIED && entry.eligible && (entry.arcadeTokens > 0 || entry.gachaTickets > 0)) notifyReward(id, entry)
+                tryFinalize(record)
+            }
+        }
+        tryFinalize(record)
+    }
+
+    private fun tryFinalize(record: JournalRecord) {
+        val allDurable = record.entries.all { entry ->
+            val id = runCatching { UUID.fromString(entry.playerId) }.getOrNull() ?: return@all false
+            NativeProfileStore.isTransactionDurable(id, "reward:${record.sessionId}")
+        }
+        if (!allDurable) return
+        val pool = executor ?: return
+        try {
+            pool.execute {
+                val deleted = runCatching { Files.deleteIfExists(journalPath(record.sessionId)); true }
+                    .onFailure { SVHub.LOGGER.warn("Unable to delete completed reward journal {}", record.sessionId, it) }.getOrDefault(false)
+                if (deleted) pending.remove(record.sessionId, record)
+            }
+        } catch (_: RejectedExecutionException) { }
+    }
+
+    private fun notifyReward(id: UUID, entry: JournalEntry) {
+        val player = SVHubRuntime.server?.playerList?.getPlayer(id) ?: return
+        val parts = buildList {
+            if (entry.arcadeTokens > 0) add("+${entry.arcadeTokens} Arcade Token")
+            if (entry.gachaTickets > 0) add("+${entry.gachaTickets} Gacha Ticket")
+        }
+        if (parts.isNotEmpty()) player.sendSystemMessage(Component.literal("SVHub reward • ${parts.joinToString(" • ")}"))
+    }
+
+    private fun loadPending() {
+        if (!::journalRoot.isInitialized || !Files.isDirectory(journalRoot)) return
+        runCatching {
+            Files.list(journalRoot).use { stream ->
+                stream.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".json") }.forEach { file ->
+                    runCatching { gson.fromJson(Files.readString(file), JournalRecord::class.java) }
+                        .onFailure { SVHub.LOGGER.warn("Unable to read reward journal {}", file, it) }
+                        .getOrNull()?.takeIf { it.sessionId.isNotBlank() && it.entries.isNotEmpty() }?.let { pending[it.sessionId] = it }
+                }
+            }
+        }.onFailure { SVHub.LOGGER.warn("Unable to scan reward journal directory", it) }
+    }
+
+    private fun journalPath(sessionId: String): Path = journalRoot.resolve(sessionId.replace(Regex("[^A-Za-z0-9._-]"), "_") + ".json")
 
     private fun loadRules(path: Path): NativeRewardRules = runCatching {
         val root = gson.fromJson(Files.readString(path), JsonObject::class.java) ?: JsonObject()

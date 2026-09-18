@@ -1,5 +1,7 @@
 package io.github.aristheg201.svhub.util
 
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -10,11 +12,17 @@ object AtomicFiles {
     fun writeUtf8(path: Path, content: String) {
         Files.createDirectories(path.parent)
         val tmp = path.resolveSibling(path.fileName.toString() + ".tmp")
-        Files.writeString(tmp, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
+        val bytes = content.toByteArray(StandardCharsets.UTF_8)
+        FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE).use { channel ->
+            val buffer = ByteBuffer.wrap(bytes)
+            while (buffer.hasRemaining()) channel.write(buffer)
+            channel.force(true)
+        }
         try {
             Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } catch (_: Exception) {
             Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
         }
+        runCatching { FileChannel.open(path.parent, StandardOpenOption.READ).use { it.force(true) } }
     }
 }

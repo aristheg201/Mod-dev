@@ -34,11 +34,13 @@ object NativeSkinCatalog {
 data class NativeGameStats(var played: Int = 0, var wins: Int = 0, var losses: Int = 0, var draws: Int = 0)
 
 data class NativeProfile(
-    var schema: Int = 2,
+    var schema: Int = 3,
+    var revision: Long = 0L,
     var arcadeTokens: Long = 0L,
     var gachaTickets: Int = 0,
     var pity: MutableMap<String, Int> = linkedMapOf(),
     var stats: MutableMap<String, NativeGameStats> = linkedMapOf(),
+    var appliedTransactions: MutableMap<String, Long> = linkedMapOf(),
     var lastUpdatedEpochMs: Long = System.currentTimeMillis()
 ) {
     fun balance(currency: String): Long = when (currency.lowercase()) {
