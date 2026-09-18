@@ -48,6 +48,15 @@ class NativePlatformScreen(
     private var boardH = 0
     private var cellSize = 0
     private var moduleScroll = 0
+    private var moduleContentHeight = 0
+    private var moduleMaxScroll = 0
+    private var moduleTrackTop = 0
+    private var moduleTrackBottom = 0
+    private var moduleThumbTop = 0
+    private var moduleThumbBottom = 0
+    private var draggingModuleScrollbar = false
+    private var moduleDragOffset = 0.0
+    private var moduleViewport = UiRect(0, 0, 0, 0)
     private var clip: UiRect? = null
     private var currentGui: GuiGraphics? = null
 
@@ -104,6 +113,8 @@ class NativePlatformScreen(
         gui.fill(layout.content.x, layout.content.y, layout.content.right, layout.content.bottom, panel)
         gui.fill(layout.content.x, layout.content.y, layout.content.right, layout.content.y + 1, line)
         clip = layout.content
+        moduleViewport = layout.content
+        moduleContentHeight = layout.content.height
         gui.enableScissor(layout.content.x, layout.content.y, layout.content.right, layout.content.bottom)
         when (module) {
             "dashboard" -> renderDashboard(gui, layout, mouseX, mouseY)
@@ -114,6 +125,7 @@ class NativePlatformScreen(
             "wallet" -> renderWallet(gui, layout)
             "game" -> renderGame(gui, layout, mouseX, mouseY)
         }
+        if (module != "game") renderModuleScrollbar(gui, layout.content)
         gui.disableScissor(); clip = null
         drawNotice(gui, layout)
         super.render(gui, mouseX, mouseY, partialTick)
@@ -196,7 +208,10 @@ class NativePlatformScreen(
         val cols=if(area.width>=360)2 else 1
         val bannerW=(area.width-gap*(cols-1))/cols
 
-        listOf("hunter" to tr("gui.svhub.gacha.hunter"),"beast" to tr("gui.svhub.gacha.beast")).forEachIndexed{index,(id,title)->
+        val banners=listOf("hunter" to tr("gui.svhub.gacha.hunter"),"beast" to tr("gui.svhub.gacha.beast"))
+        val bannerRows=(banners.size+cols-1)/cols
+        moduleContentHeight=maxOf(moduleContentHeight,bannerTop-layout.content.y+bannerRows*74+10)
+        banners.forEachIndexed{index,(id,title)->
             val rect=UiRect(
                 area.x+(index%cols)*(bannerW+gap),
                 bannerTop+(index/cols)*74-moduleScroll,
@@ -227,28 +242,122 @@ class NativePlatformScreen(
         val tabGap=3;val tabW=(area.width-tabGap*(tabs.size-1))/tabs.size
         tabs.forEachIndexed{index,(id,label)->addControl(UiRect(area.x+index*(tabW+tabGap),area.y+18,tabW,20),if(label.startsWith("gui."))tr(label) else label,mouseX,mouseY,active=source==id){intent("source",json("source" to id,"page" to 0))}}
         val skins=state.getAsJsonArray("skins")?:JsonArray();val cols=when{area.width>=650->4;area.width>=430->3;else->2};val gap=5;val cellW=(area.width-gap*(cols-1))/cols;val cellH=36
-        repeat(min(skins.size(),24)){i->val e=skins[i].asJsonObject;val row=i/cols;val col=i%cols;val rect=UiRect(area.x+col*(cellW+gap),area.y+45+row*(cellH+gap)-moduleScroll,cellW,cellH);val owned=e.bool("owned");gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selectedSkin==e.str("id"))0xFF21443E.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,if(owned)accent else muted);gui.drawString(font,fit(e.str("name",e.str("id")),rect.width-14),rect.x+9,rect.y+8,text,false);gui.drawString(font,if(owned)tr("gui.svhub.owned") else e.str("rarity"),rect.x+9,rect.y+21,if(owned)accent else muted,false);addHit(rect){selectedSkin=e.str("id")}}
+        val visibleCount=min(skins.size(),24);val rows=(visibleCount+cols-1)/cols
+        moduleContentHeight=maxOf(moduleContentHeight,area.y+45+rows*(cellH+gap)+8-layout.content.y)
+        repeat(visibleCount){i->val e=skins[i].asJsonObject;val row=i/cols;val col=i%cols;val rect=UiRect(area.x+col*(cellW+gap),area.y+45+row*(cellH+gap)-moduleScroll,cellW,cellH);val owned=e.bool("owned");gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selectedSkin==e.str("id"))0xFF21443E.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,if(owned)accent else muted);gui.drawString(font,fit(e.str("name",e.str("id")),rect.width-14),rect.x+9,rect.y+8,text,false);gui.drawString(font,if(owned)tr("gui.svhub.owned") else e.str("rarity"),rect.x+9,rect.y+21,if(owned)accent else muted,false);addHit(rect){selectedSkin=e.str("id")}}
     }
 
     private fun renderArcade(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
         val area=layout.content.inset(8);gui.drawString(font,tr("gui.svhub.arcade.subtitle"),area.x,area.y,muted,false)
-        val games=state.getAsJsonArray("games")?:return;val rowH=42;val modeLabels=linkedMapOf("bot_easy" to tr("gui.svhub.easy"),"bot_normal" to tr("gui.svhub.normal"),"bot_hard" to tr("gui.svhub.hard"),"pvp" to "PvP","solo" to tr("gui.svhub.solo"))
-        for(i in 0 until games.size()){val game=games[i].asJsonObject;val id=game.str("id");val y=area.y+22+i*(rowH+5)-moduleScroll;val rect=UiRect(area.x,y,area.width,rowH);gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id));NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id));gui.drawString(font,game.str("title",id),rect.x+45,rect.y+9,text,true);gui.drawString(font,tr("gui.svhub.arcade.server_auth"),rect.x+45,rect.y+24,muted,false)
+        val games=state.getAsJsonArray("games")?:return;val rowH=42
+        moduleContentHeight=maxOf(moduleContentHeight,area.y+22+games.size()*(rowH+5)+8-layout.content.y)
+        val modeLabels=linkedMapOf("bot_easy" to tr("gui.svhub.easy"),"bot_normal" to tr("gui.svhub.normal"),"bot_hard" to tr("gui.svhub.hard"),"pvp" to "PvP","solo" to tr("gui.svhub.solo"))
+        for(i in 0 until games.size()){val game=games[i].asJsonObject;val id=game.str("id");val y=area.y+22+i*(rowH+5)-moduleScroll;val rect=UiRect(area.x,y,area.width,rowH);gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id));NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id));gui.drawString(font,game.str("title",id),rect.x+45,rect.y+9,text,true)
             val advertised=game.getAsJsonArray("modes")?.let{a->(0 until a.size()).map{a[it].asString}}.orEmpty();val modes=if(advertised.isEmpty())listOf("bot_easy","bot_normal","bot_hard","pvp") else advertised;var right=rect.right-6
             modes.asReversed().forEach{mode->val label=modeLabels[mode]?:mode;val w=(font.width(label)+14).coerceAtLeast(42);right-=w;addControl(UiRect(right,rect.y+10,w,22),label,mouseX,mouseY){intent("start",json("game" to id,"mode" to mode))};right-=4}
         }
     }
 
     private fun renderCompanions(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val area=layout.content.inset(8);val arena=state.getAsJsonObject("arena")
-        if(layout.density==UiDensity.COMPACT&&arena!=null){renderCompanionsCompact(gui,area,arena,mouseX,mouseY);return}
-        gui.drawString(font,tr("gui.svhub.arena.title"),area.x,area.y,text,true);gui.drawString(font,tr("gui.svhub.arena.subtitle"),area.x,area.y+14,muted,false)
+        val area=layout.content.inset(8)
+        val arena=state.getAsJsonObject("arena")
+        val serverSelected=state.str("selected")
+        if(selectedCompanion==null&&serverSelected.isNotBlank())selectedCompanion=serverSelected
+
+        gui.drawString(font,tr("gui.svhub.arena.title"),area.x,area.y,text,true)
+        if(arena!=null){
+            renderCompanionArena(gui,area,arena,mouseX,mouseY)
+            moduleContentHeight=maxOf(moduleContentHeight,area.height)
+            return
+        }
+
+        gui.drawString(font,tr("gui.svhub.arena.pick"),area.x,area.y+14,muted,false)
+        val companions=state.getAsJsonArray("companions")?:JsonArray()
+        val cols=when{area.width>=700->4;area.width>=460->3;else->2}
+        val gap=6
+        val cardW=(area.width-gap*(cols-1))/cols
+        val cardH=88
+        val top=area.y+36
+        val rows=(companions.size()+cols-1)/cols
+        moduleContentHeight=maxOf(moduleContentHeight,top+rows*(cardH+gap)+44-layout.content.y)
+
+        repeat(companions.size()){index->
+            val entry=companions[index].asJsonObject
+            val id=entry.str("id")
+            val col=index%cols
+            val row=index/cols
+            val rect=UiRect(area.x+col*(cardW+gap),top+row*(cardH+gap)-moduleScroll,cardW,cardH)
+            val selected=id==selectedCompanion||id==serverSelected
+            gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selected)0xFF21443E.toInt() else panelAlt)
+            gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(selected)accent else line)
+            val modelTop=rect.y+5
+            val modelBottom=rect.bottom-24
+            val rendered=VanillaCompanionModelRenderer.render(
+                gui,id,rect.x+5,modelTop,rect.right-5,modelBottom,true
+            )
+            if(!rendered)NativePixelArt.icon(gui,"companions",rect.x+10,rect.y+18,24,accent)
+            gui.drawCenteredString(font,fit(entry.str("name",id),rect.width-10),rect.x+rect.width/2,rect.bottom-18,text)
+            gui.drawCenteredString(font,"HP ${entry.num("hp")}  •  ATK ${entry.num("power")}",rect.x+rect.width/2,rect.bottom-8,muted)
+            addHit(rect){
+                selectedCompanion=id
+                intent("select",json("entity" to id))
+            }
+        }
+
+        val selected=selectedCompanion?.takeIf(String::isNotBlank)
+        if(selected!=null){
+            val y=top+rows*(cardH+gap)-moduleScroll+2
+            addControl(UiRect(area.x,y,(area.width-6)/2,22),tr("gui.svhub.arena.fight"),mouseX,mouseY,enabled=selected==serverSelected){
+                intent("arena_start",JsonObject())
+            }
+            addControl(UiRect(area.x+(area.width+6)/2,y,(area.width-6)/2,22),tr("gui.svhub.arena.dismiss"),mouseX,mouseY){
+                selectedCompanion=null
+                intent("select",json("entity" to "none"))
+            }
+        }
     }
 
-    private fun renderCompanionsCompact(gui:GuiGraphics,area:UiRect,arena:JsonObject,mouseX:Int,mouseY:Int){
-        val mid=area.x+area.width/2;NativePixelArt.companion(gui,arena.str("playerId"),area.x+area.width/4,area.y+50,2,accent,gold,true);NativePixelArt.companion(gui,arena.str("enemyId"),area.x+area.width*3/4,area.y+50,2,danger,gold,false)
-        gui.drawCenteredString(font,arena.str("playerName"),area.x+area.width/4,area.y+7,text);gui.drawCenteredString(font,arena.str("enemyName"),area.x+area.width*3/4,area.y+7,text)
-        NativePixelArt.healthBar(gui,area.x+8,area.y+20,area.width/2-16,arena.num("playerHp"),arena.num("playerMaxHp"),accent);NativePixelArt.healthBar(gui,mid+8,area.y+20,area.width/2-16,arena.num("enemyHp"),arena.num("enemyMaxHp"),danger)
+    private fun renderCompanionArena(gui:GuiGraphics,area:UiRect,arena:JsonObject,mouseX:Int,mouseY:Int){
+        val top=area.y+20
+        val modelBottom=(area.y+area.height*2/3).coerceAtLeast(top+70)
+        val mid=area.x+area.width/2
+        val half=(area.width/2-8).coerceAtLeast(60)
+        val playerRect=UiRect(area.x,top,half,modelBottom-top)
+        val enemyRect=UiRect(mid+4,top,half,modelBottom-top)
+
+        gui.fill(playerRect.x,playerRect.y,playerRect.right,playerRect.bottom,panelAlt)
+        gui.fill(enemyRect.x,enemyRect.y,enemyRect.right,enemyRect.bottom,panelAlt)
+        VanillaCompanionModelRenderer.render(gui,arena.str("playerId"),playerRect.x+4,playerRect.y+6,playerRect.right-4,playerRect.bottom-20,false)
+        VanillaCompanionModelRenderer.render(gui,arena.str("enemyId"),enemyRect.x+4,enemyRect.y+6,enemyRect.right-4,enemyRect.bottom-20,true)
+
+        gui.drawCenteredString(font,fit(arena.str("playerName"),playerRect.width-8),playerRect.x+playerRect.width/2,playerRect.y+5,text)
+        gui.drawCenteredString(font,fit(arena.str("enemyName"),enemyRect.width-8),enemyRect.x+enemyRect.width/2,enemyRect.y+5,text)
+        NativePixelArt.healthBar(gui,playerRect.x+7,playerRect.bottom-15,playerRect.width-14,arena.num("playerHp"),arena.num("playerMaxHp"),accent)
+        NativePixelArt.healthBar(gui,enemyRect.x+7,enemyRect.bottom-15,enemyRect.width-14,arena.num("enemyHp"),arena.num("enemyMaxHp"),danger)
+        gui.drawString(font,"EN ${arena.num("playerEnergy")}/3",playerRect.x+7,playerRect.bottom-27,gold,false)
+
+        val finished=arena.bool("finished")
+        val logY=modelBottom+7
+        gui.drawCenteredString(font,fit(if(finished)arena.str("result") else arena.str("log"),area.width-12),area.x+area.width/2,logY,if(finished)gold else muted)
+
+        val controlsY=area.bottom-25
+        if(finished){
+            addControl(UiRect(area.x,controlsY,area.width,21),tr("gui.svhub.arena.rematch"),mouseX,mouseY){
+                intent("arena_start",JsonObject())
+            }
+        }else{
+            val gap=4
+            val w=(area.width-gap*2)/3
+            addControl(UiRect(area.x,controlsY,w,21),tr("gui.svhub.arena.attack"),mouseX,mouseY){
+                intent("arena_act",json("move" to "attack"))
+            }
+            addControl(UiRect(area.x+w+gap,controlsY,w,21),tr("gui.svhub.arena.skill"),mouseX,mouseY,enabled=arena.num("playerEnergy")>=2){
+                intent("arena_act",json("move" to "skill"))
+            }
+            addControl(UiRect(area.x+(w+gap)*2,controlsY,w,21),tr("gui.svhub.arena.guard"),mouseX,mouseY){
+                intent("arena_act",json("move" to "guard"))
+            }
+        }
     }
 
     private fun renderWallet(gui:GuiGraphics,layout:NativeLayout){val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet");drawBalance(gui,area.x,area.y,area.width,"wallet",tr("gui.svhub.token"),wallet?.num("arcade")?:0,accent);drawBalance(gui,area.x,area.y+44,area.width,"gacha",tr("gui.svhub.ticket"),wallet?.num("ticket")?:0,gold)}
@@ -299,8 +408,25 @@ class NativePlatformScreen(
         val boardTop=area.y+30
         val boardAvailableHeight=(area.bottom-bottomReserve-boardTop).coerceAtLeast(30)
         val sceneArea=UiRect(area.x,boardTop,availableBoardWidth,boardAvailableHeight)
+        val cardTable=CardTable3DRenderer.supports(gameId)
 
-        if(NativeBoardSceneRenderer.supports(gameId)){
+        if(cardTable){
+            sceneFrame=null
+            boardRect=sceneArea
+            cellSize=0
+            CardTable3DRenderer.render(gui,font,sceneArea,view,mouseX,mouseY){rect,card->
+                addHit(rect){
+                    when(gameId){
+                        "uno"->{
+                            val kind=card.getAsJsonObject("meta")?.str("kind").orEmpty()
+                            if(kind=="wild"||kind=="wild4")unoPendingCard=card.str("id")
+                            else gameAct("play",mapOf("index" to card.str("id")))
+                        }
+                        "pokecards"->gameAct("play",mapOf("index" to card.str("id")))
+                    }
+                }
+            }
+        }else if(NativeBoardSceneRenderer.supports(gameId)){
             val rendered=NativeBoardSceneRenderer.render(gui,font,sceneArea,view,boardSceneUi,selectedCell)
             sceneFrame=rendered?.frame
             boardRect=sceneArea
@@ -352,7 +478,7 @@ class NativePlatformScreen(
             }
         }
 
-        if(cards!=null&&cards.size()>0){
+        if(cards!=null&&cards.size()>0&&!cardTable){
             val count=min(cards.size(),6)
             val gap=4
             val cardW=((area.width-gap*(count-1))/count).coerceAtLeast(44)
@@ -399,6 +525,36 @@ class NativePlatformScreen(
         return payload.entrySet().associate{(key,value)->key to runCatching{value.asString}.getOrDefault("")}
     }
 
+    private fun renderModuleScrollbar(gui:GuiGraphics,content:UiRect){
+        moduleMaxScroll=(moduleContentHeight-content.height).coerceAtLeast(0)
+        moduleScroll=moduleScroll.coerceIn(0,moduleMaxScroll)
+        if(moduleMaxScroll<=0){
+            moduleTrackTop=0;moduleTrackBottom=0;moduleThumbTop=0;moduleThumbBottom=0;draggingModuleScrollbar=false
+            return
+        }
+        val x=content.right-5
+        val top=content.y+4
+        val bottom=content.bottom-4
+        val trackH=(bottom-top).coerceAtLeast(1)
+        val thumbH=((trackH.toLong()*content.height/moduleContentHeight.coerceAtLeast(1)).toInt()).coerceIn(18,trackH)
+        val travel=(trackH-thumbH).coerceAtLeast(1)
+        val offset=(moduleScroll.toLong()*travel/moduleMaxScroll.coerceAtLeast(1)).toInt()
+        moduleTrackTop=top
+        moduleTrackBottom=bottom
+        moduleThumbTop=top+offset
+        moduleThumbBottom=moduleThumbTop+thumbH
+        gui.fill(x,top,x+3,bottom,0xCC223337.toInt())
+        gui.fill(x,moduleThumbTop,x+3,moduleThumbBottom,if(draggingModuleScrollbar)gold else accent)
+    }
+
+    private fun setModuleScrollFromThumb(mouseY:Double){
+        if(moduleMaxScroll<=0)return
+        val thumbH=(moduleThumbBottom-moduleThumbTop).coerceAtLeast(1)
+        val travel=((moduleTrackBottom-moduleTrackTop)-thumbH).coerceAtLeast(1)
+        val offset=(mouseY-moduleDragOffset-moduleTrackTop).coerceIn(0.0,travel.toDouble())
+        moduleScroll=(offset/travel.toDouble()*moduleMaxScroll).toInt().coerceIn(0,moduleMaxScroll)
+    }
+
     private fun drawModuleCard(gui:GuiGraphics,rect:UiRect,id:String,title:String,value:String,mouseX:Int,mouseY:Int,action:()->Unit){val hovered=rect.contains(mouseX.toDouble(),mouseY.toDouble());gui.fill(rect.x,rect.y+if(hovered)1 else 2,rect.right,rect.bottom,if(hovered)0xFF203438.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(hovered)gold else accent);if(rect.height<32){NativePixelArt.icon(gui,id,rect.x+7,rect.y+4,14,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-31),rect.x+26,rect.y+8,text,true)}else{NativePixelArt.icon(gui,id,rect.x+11,rect.y+10,24,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-50),rect.x+43,rect.y+9,text,true);gui.drawString(font,fit(value,rect.width-50),rect.x+43,rect.y+25,muted,false)};addHit(rect,action=action)}
     private fun drawBalance(gui:GuiGraphics,x:Int,y:Int,width:Int,icon:String,label:String,value:Int,color:Int){gui.fill(x,y,x+width,y+36,panelAlt);gui.fill(x,y,x+4,y+36,color);NativePixelArt.icon(gui,icon,x+12,y+8,20,color);gui.drawString(font,label,x+42,y+7,muted,false);gui.drawString(font,value.toString(),x+42,y+20,text,true)}
     private fun drawNotice(gui:GuiGraphics,layout:NativeLayout){if(notice.isBlank())return;val value=fit(notice,(layout.content.width-20).coerceAtLeast(80));val w=(font.width(value)+20).coerceAtMost(layout.content.width);val x=layout.content.x+(layout.content.width-w)/2;val y=layout.content.bottom-23;gui.fill(x,y,x+w,y+19,0xEE1C2B2E.toInt());gui.fill(x,y,x+3,y+19,gold);gui.drawCenteredString(font,value,x+w/2,y+6,text)}
@@ -407,6 +563,17 @@ class NativePlatformScreen(
     private fun visible(rect:UiRect):Boolean{val c=clip?:return rect.right>0&&rect.x<width&&rect.bottom>0&&rect.y<height;return rect.right>c.x&&rect.x<c.right&&rect.bottom>c.y&&rect.y<c.bottom}
     override fun mouseClicked(mouseX:Double,mouseY:Double,button:Int):Boolean{
         if(button==0){
+            if(module!="game"&&moduleMaxScroll>0&&mouseX>=moduleViewport.right-9&&mouseX<moduleViewport.right&&mouseY>=moduleTrackTop&&mouseY<moduleTrackBottom){
+                if(mouseY>=moduleThumbTop&&mouseY<moduleThumbBottom){
+                    draggingModuleScrollbar=true
+                    moduleDragOffset=mouseY-moduleThumbTop
+                }else{
+                    moduleDragOffset=(moduleThumbBottom-moduleThumbTop)/2.0
+                    setModuleScrollFromThumb(mouseY)
+                    draggingModuleScrollbar=true
+                }
+                return true
+            }
             controls.asReversed().firstOrNull{it.enabled&&it.rect.contains(mouseX,mouseY)}?.let{it.action();return true}
             if(module=="game"){
                 val game=state.getAsJsonObject("view")?.str("gameId").orEmpty()
@@ -449,7 +616,24 @@ class NativePlatformScreen(
         }
         return super.mouseClicked(mouseX,mouseY,button)
     }
-    override fun mouseScrolled(mouseX:Double,mouseY:Double,horizontalAmount:Double,verticalAmount:Double):Boolean{if(module in setOf("gacha","skins","arcade","companions","wallet")){moduleScroll=(moduleScroll-verticalAmount.toInt()*24).coerceIn(0,1200);return true};return super.mouseScrolled(mouseX,mouseY,horizontalAmount,verticalAmount)}
+    override fun mouseDragged(mouseX:Double,mouseY:Double,button:Int,dragX:Double,dragY:Double):Boolean{
+        if(button==0&&draggingModuleScrollbar){
+            setModuleScrollFromThumb(mouseY)
+            return true
+        }
+        return super.mouseDragged(mouseX,mouseY,button,dragX,dragY)
+    }
+    override fun mouseReleased(mouseX:Double,mouseY:Double,button:Int):Boolean{
+        if(button==0)draggingModuleScrollbar=false
+        return super.mouseReleased(mouseX,mouseY,button)
+    }
+    override fun mouseScrolled(mouseX:Double,mouseY:Double,horizontalAmount:Double,verticalAmount:Double):Boolean{
+        if(module!="game"&&moduleViewport.contains(mouseX,mouseY)&&moduleMaxScroll>0){
+            moduleScroll=(moduleScroll-(verticalAmount*28.0).toInt()).coerceIn(0,moduleMaxScroll)
+            return true
+        }
+        return super.mouseScrolled(mouseX,mouseY,horizontalAmount,verticalAmount)
+    }
     private fun coord(game:String,index:Int):String{val columns=if(game=="xiangqi")9 else 8;val row=index/columns;val column=index%columns;return if(game=="xiangqi")"${('a'.code+column).toChar()}$row" else "${('a'.code+column).toChar()}${8-row}"}
     private fun gameAct(action:String,args:Map<String,String>){val data=JsonObject();data.addProperty("gameAction",action);data.add("args",JsonObject().apply{args.forEach{(key,value)->addProperty(key,value)}});intent("act",data)}
     private fun open(target:String)=intent("open",json("module" to target))

@@ -8,6 +8,7 @@ import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.editor.HubEditorScreen
 import io.github.aristheg201.svhub.client.gui.HubScreen
 import io.github.aristheg201.svhub.client.nativeui.NativeGameVisualRegistry
+import io.github.aristheg201.svhub.client.nativeui.VanillaCompanionModelRenderer
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
 import io.github.aristheg201.svhub.client.render.MiniMessageText
 import io.github.aristheg201.svhub.content.HUB_PROTOCOL_VERSION
@@ -40,7 +41,7 @@ object SVHubClient : ClientModInitializer {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
             override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath("svhub", "client_render_caches")
             override fun onResourceManagerReload(resourceManager: ResourceManager) {
-                PokemonModelRenderer.clear(); NativeGameVisualRegistry.clear(); PokemonInfoProvider.clear(); ClientPokemonRuntimeInfo.clear(); CobblemonWikiProvider.clearCaches(); GeneratedBackgroundRenderer.clear(); MiniMessageText.clear()
+                PokemonModelRenderer.clear(); NativeGameVisualRegistry.clear(); VanillaCompanionModelRenderer.clear(); PokemonInfoProvider.clear(); ClientPokemonRuntimeInfo.clear(); CobblemonWikiProvider.clearCaches(); GeneratedBackgroundRenderer.clear(); MiniMessageText.clear()
             }
         })
         ClientPlayNetworking.registerGlobalReceiver(HubHelloS2C.TYPE) { payload, context -> context.client().execute {
@@ -55,7 +56,7 @@ object SVHubClient : ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(PokemonRuntimeInfoS2C.TYPE){payload,context->context.client().execute{ClientPokemonRuntimeInfo.accept(payload)}}
         ClientPlayNetworking.registerGlobalReceiver(HubEditorResultS2C.TYPE){payload,context->context.client().execute{ClientHubState.lastEditorMessage=payload.message;ClientHubState.serverRevision=payload.revision;val screen=Minecraft.getInstance().screen;if(screen is HubEditorScreen){screen.onPublishResult(payload.ok,payload.message);if(payload.ok){pendingEditor=true;ClientPlayNetworking.send(HubRequestSnapshotC2S(true))}}}}
         ClientTickEvents.END_CLIENT_TICK.register{client->while(openHubKey.consumeClick()){if(client.player!=null)openHub("home")}}
-        ClientPlayConnectionEvents.DISCONNECT.register{_,_->pendingRoute=null;pendingEditor=false;ClientHubState.reset();ClientPokemonRuntimeInfo.clear()}
+        ClientPlayConnectionEvents.DISCONNECT.register{_,_->pendingRoute=null;pendingEditor=false;ClientHubState.reset();ClientPokemonRuntimeInfo.clear();VanillaCompanionModelRenderer.clear();PokemonModelRenderer.clear()}
     }
     fun openHub(route:String="home"){openHub(route,false)}
     private fun openHub(route:String,serverAuthorized:Boolean){val client=Minecraft.getInstance();if(client.player==null)return;if(!serverAuthorized&&!ClientHubState.canOpen){pendingRoute=route;ClientPlayNetworking.send(HubRequestSnapshotC2S(false));return};if(ClientHubState.playerContent!=null){pendingRoute=null;client.setScreen(HubScreen(route));if(!ClientHubState.cacheAllowed)ClientPlayNetworking.send(HubRequestSnapshotC2S(false))}else{pendingRoute=route;ClientPlayNetworking.send(HubRequestSnapshotC2S(false))}}

@@ -75,6 +75,8 @@ const boardSceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/c
 const visualRegistry = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeGameVisualRegistry.kt");
 const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/PokemonModelRenderer.kt");
 const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt");
+const cardTableRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt");
+const companionRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VanillaCompanionModelRenderer.kt");
 
 for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeCloseC2S"]) {
   if (!nativePayloads.includes(marker)) failures.push(`NativePayloads.kt: missing lifecycle marker ${marker}`);
@@ -128,6 +130,18 @@ if (screen.includes('"color" to "red"')) failures.push("NativePlatformScreen.kt:
 if (!screen.includes("UUID.randomUUID().toString()") || !screen.includes("GachaRouletteRenderer.render")) {
   failures.push("NativePlatformScreen.kt: gacha request id / roulette integration missing");
 }
+for (const marker of ["CardTable3DRenderer.render", "VanillaCompanionModelRenderer.render", "draggingModuleScrollbar", "setModuleScrollFromThumb", "moduleMaxScroll"]) {
+  if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing production UI marker ${marker}`);
+}
+if (screen.includes("NativePixelArt.companion(")) failures.push("NativePlatformScreen.kt: companion arena still uses sprite placeholder");
+if (screen.includes("coerceIn(0,1200)")) failures.push("NativePlatformScreen.kt: native module scroll still uses hardcoded 1200 clamp");
+for (const marker of ["PokemonModelRenderer.renderScene", "Axis.ZP.rotationDegrees", '"uno"', '"pokecards"']) {
+  if (!cardTableRenderer.includes(marker)) failures.push(`CardTable3DRenderer.kt: missing ${marker}`);
+}
+for (const marker of ["InventoryScreen.renderEntityInInventoryFollowsAngle", "BuiltInRegistries.ENTITY_TYPE", "LivingEntity"]) {
+  if (!companionRenderer.includes(marker)) failures.push(`VanillaCompanionModelRenderer.kt: missing ${marker}`);
+}
+
 for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"']) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
 }
