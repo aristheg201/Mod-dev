@@ -31,7 +31,7 @@ object NativePlatformNetwork{
    if(close(player.uuid,payload.viewId)&&module=="game")NativeArcadeService.leave(player)
   }}
  }
- fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();openViews[player.uuid]=Subscription(module,viewId);ServerPlayNetworking.send(player,NativeOpenS2C(module,gson.toJson(state),viewId,previous?.viewId.orEmpty()));return viewId}
+ fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();openViews[player.uuid]=Subscription(module,viewId);lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeOpenS2C(module,gson.toJson(state),viewId,previous?.viewId.orEmpty()));return viewId}
  fun sendState(player:ServerPlayer,module:String,state:JsonObject,message:String=""){val sub=openViews[player.uuid]?:return;if(sub.module!=module)return;ServerPlayNetworking.send(player,NativeStateS2C(module,gson.toJson(state),message.take(512),sub.viewId))}
  fun sendClose(player:ServerPlayer,reason:String=""){val sub=openViews.remove(player.uuid)?:return;lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeCloseS2C(sub.viewId,reason.take(512)))}
  fun currentModule(id:UUID):String?=openViews[id]?.module

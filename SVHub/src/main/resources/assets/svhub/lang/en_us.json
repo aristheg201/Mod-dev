@@ -193,5 +193,8 @@
   "gui.svhub.tft.tooltip.next": "Next",
   "gui.svhub.tft.tooltip.team": "Team bonus",
   "gui.svhub.tft.tooltip.units": "units",
-  "gui.svhub.tft.tooltip.item": "Item"
+  "gui.svhub.tft.tooltip.item": "Item",
+  "gui.svhub.leave_game": "Leave game",
+  "gui.svhub.arcade.current_game": "Active: %s",
+  "gui.svhub.arcade.resumed": "Resuming your active game."
 }

@@ -193,5 +193,8 @@
   "gui.svhub.tft.tooltip.next": "Mốc tiếp",
   "gui.svhub.tft.tooltip.team": "Buff toàn đội",
   "gui.svhub.tft.tooltip.units": "tướng",
-  "gui.svhub.tft.tooltip.item": "Trang bị"
+  "gui.svhub.tft.tooltip.item": "Trang bị",
+  "gui.svhub.leave_game": "Rời ván",
+  "gui.svhub.arcade.current_game": "Đang chơi: %s",
+  "gui.svhub.arcade.resumed": "Đang mở lại ván hiện tại."
 }

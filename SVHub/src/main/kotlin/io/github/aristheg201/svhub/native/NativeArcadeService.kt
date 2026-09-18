@@ -92,6 +92,22 @@ object NativeArcadeService {
         }
     }
 
+    fun hasActiveSession(player: ServerPlayer): Boolean {
+        restoreLoadedSessions(player.server, System.currentTimeMillis())
+        val sid = active[player.uuid]
+        val handle = sid?.let(sessions::get)
+        val resolution = NativeArcadeLifecyclePolicy.resolve(
+            sid,
+            sessionPresent = handle != null,
+            viewPresent = handle?.viewJsonFor(player.uuid.toString()) != null
+        )
+        if (resolution == ActiveSessionResolution.STALE) {
+            active.remove(player.uuid)
+            disconnectedUntil.remove(player.uuid)
+        }
+        return resolution == ActiveSessionResolution.RESUME
+    }
+
     fun start(player: ServerPlayer, gameId: String, requestedMode: String): Result {
         if (!NativeArcadeSessionStore.isLoadComplete()) {
             return Result(false, "gui.svhub.arcade.recovering")
@@ -101,7 +117,23 @@ object NativeArcadeService {
         if (sessions.size >= MAX_SESSIONS) return Result(false, "gui.svhub.arcade.server_busy")
         val mode = if (requestedMode == "bot") "bot_normal" else requestedMode
         if (mode !in def.modes) return Result(false, "gui.svhub.arcade.invalid_mode")
-        if (active.containsKey(player.uuid)) return Result(false, "gui.svhub.arcade.active_exists")
+        val existingSession = active[player.uuid]
+        val existingHandle = existingSession?.let(sessions::get)
+        when (NativeArcadeLifecyclePolicy.resolve(
+            existingSession,
+            sessionPresent = existingHandle != null,
+            viewPresent = existingHandle?.viewJsonFor(player.uuid.toString()) != null
+        )) {
+            ActiveSessionResolution.RESUME -> {
+                disconnectedUntil.remove(player.uuid)
+                return Result(true, "gui.svhub.arcade.resumed", setOf(player.uuid))
+            }
+            ActiveSessionResolution.STALE -> {
+                active.remove(player.uuid)
+                disconnectedUntil.remove(player.uuid)
+            }
+            ActiveSessionResolution.NONE -> Unit
+        }
         queues.values.forEach { it.remove(player.uuid) }
 
         if (mode == "pvp") {

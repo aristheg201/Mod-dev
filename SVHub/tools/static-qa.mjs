@@ -52,7 +52,7 @@ for (const locale of ["en_us", "vi_vn"]) {
 }
 const properties = fs.readFileSync(path.join(root, "gradle.properties"), "utf8");
 const metadata = fs.readFileSync(path.join(root, "src/main/resources/fabric.mod.json"), "utf8");
-if (!/^mod_version=0\.4\.3\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.3");
+if (!/^mod_version=0\.4\.4\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.4");
 if (!metadata.includes('"version": "${version}"')) failures.push("fabric.mod.json: Gradle version expansion marker missing");
 for (const [name, marker] of [
   ["responsive layout", "NativeLayout.resolve(width, height)"],
@@ -92,6 +92,7 @@ const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/n
 const cardTableRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt");
 const companionRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VanillaCompanionModelRenderer.kt");
 const arcadeService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeService.kt");
+const arcadeLifecyclePolicy = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeLifecyclePolicy.kt");
 const sessionStore = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeSessionStore.kt");
 const engineRuntime = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeGameEngineRuntime.kt");
 const gamePersistence = read("src/main/kotlin/io/github/aristheg201/svhub/native/game/NativeGamePersistence.kt");
@@ -117,6 +118,14 @@ for (const marker of ["explicitlyClosed", "payload.viewId in closedViews"]) {
 }
 if (!read("src/client/kotlin/io/github/aristheg201/svhub/client/SVHubClient.kt").includes("Keep a user-initiated open pending")) {
   failures.push("SVHubClient.kt: reconnect open-pending protection missing");
+}
+if (!read("src/client/kotlin/io/github/aristheg201/svhub/client/SVHubClient.kt").includes("ClientPlayConnectionEvents.JOIN.register") ||
+    !read("src/client/kotlin/io/github/aristheg201/svhub/client/SVHubClient.kt").includes("HubRequestSnapshotC2S(false)")) {
+  failures.push("SVHubClient.kt: reconnect handshake prefetch missing");
+}
+const hubNetwork = read("src/main/kotlin/io/github/aristheg201/svhub/network/SVHubNetwork.kt");
+for (const marker of ["Send the open intent even while the store is warming up", "ServerPlayNetworking.send(player,HubOpenS2C"]) {
+  if (!hubNetwork.includes(marker)) failures.push(`SVHubNetwork.kt: missing reconnect-open marker ${marker}`);
 }
 for (const marker of ['module=="game"', "NativeArcadeService.leave(player)"]) {
   if (!nativeNetwork.includes(marker)) failures.push(`NativePlatformNetwork.kt: missing game-close lifecycle marker ${marker}`);
@@ -238,6 +247,21 @@ for (const marker of ["InventoryScreen.renderEntityInInventoryFollowsMouse", "Bu
 for (const marker of ["NativeArcadeSessionStore.start", "restoreLoadedSessions", "persistSession", "NativeArcadeSessionStore.delete", "RESTART_RECONNECT_GRACE_MS"]) {
   if (!arcadeService.includes(marker)) failures.push(`NativeArcadeService.kt: missing recovery marker ${marker}`);
 }
+for (const marker of ["hasActiveSession", "existingSession", "gui.svhub.arcade.resumed"]) {
+  if (!arcadeService.includes(marker)) failures.push(`NativeArcadeService.kt: missing resume marker ${marker}`);
+}
+for (const marker of ["ActiveSessionResolution.RESUME", "ActiveSessionResolution.STALE", "sessionPresent && viewPresent"]) {
+  if (!arcadeLifecyclePolicy.includes(marker)) failures.push(`NativeArcadeLifecyclePolicy.kt: missing ${marker}`);
+}
+for (const marker of ["pendingOpen", 'module == "arcade" && NativeArcadeService.hasActiveSession(player)', '"leave_active"']) {
+  if (!nativePlatform.includes(marker)) failures.push(`NativePlatform.kt: missing reconnect/arcade marker ${marker}`);
+}
+if (!nativeNetwork.includes("lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeOpenS2C")) {
+  failures.push("NativePlatformNetwork.kt: new native views inherit stale intent throttle");
+}
+for (const marker of ["gui.svhub.arcade.current_game", 'intent("resume"', 'intent("leave_active"']) {
+  if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing active-game recovery control ${marker}`);
+}
 if (arcadeService.includes("Files.") || arcadeService.includes("Files.read")) {
   failures.push("NativeArcadeService.kt: server lifecycle must not perform direct disk IO");
 }
@@ -339,6 +363,9 @@ const requiredSemanticKeys = [
   "gui.svhub.arcade.worker_busy",
   "gui.svhub.arcade.left",
   "gui.svhub.arcade.restored",
+  "gui.svhub.arcade.resumed",
+  "gui.svhub.arcade.current_game",
+  "gui.svhub.leave_game",
   "gui.svhub.td.card_stats",
   "gui.svhub.editor",
   "gui.svhub.sidebar.contents",
@@ -386,4 +413,4 @@ for (const marker of ["message.svhub.profile_loading", "gui.svhub.error.invalid_
 }
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);
-console.log("SVHub 0.4.3 structural QA passed (runtime/gameplay/visual verification is separate)");
+console.log("SVHub 0.4.4 structural QA passed (runtime/gameplay/visual verification is separate)");

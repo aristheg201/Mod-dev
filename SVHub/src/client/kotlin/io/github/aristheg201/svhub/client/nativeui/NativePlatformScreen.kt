@@ -252,13 +252,52 @@ class NativePlatformScreen(
     }
 
     private fun renderArcade(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val area=layout.content.inset(8);gui.drawString(font,tr("gui.svhub.arcade.subtitle"),area.x,area.y,muted,false)
-        val games=state.getAsJsonArray("games")?:return;val rowH=42
-        moduleContentHeight=maxOf(moduleContentHeight,area.y+22+games.size()*(rowH+5)+8-layout.content.y)
+        val area=layout.content.inset(8)
+        gui.drawString(font,tr("gui.svhub.arcade.subtitle"),area.x,area.y,muted,false)
+        val games=state.getAsJsonArray("games")?:return
+        val activeGame=state.str("activeGame")
+        val rowH=42
+        val activeHeight=if(activeGame.isNotBlank())38 else 0
+        val listTop=area.y+22+activeHeight
+        moduleContentHeight=maxOf(moduleContentHeight,listTop+games.size()*(rowH+5)+8-layout.content.y)
+
+        if(activeGame.isNotBlank()){
+            val activeRect=UiRect(area.x,area.y+18-moduleScroll,area.width,32)
+            gui.fill(activeRect.x,activeRect.y,activeRect.right,activeRect.bottom,0xFF17312D.toInt())
+            gui.fill(activeRect.x,activeRect.y,activeRect.x+4,activeRect.bottom,accent)
+            gui.drawString(font,trf("gui.svhub.arcade.current_game",gameTitleFor(activeGame,activeGame)),activeRect.x+10,activeRect.y+11,text,true)
+            val leaveW=(font.width(tr("gui.svhub.leave_game"))+14).coerceAtLeast(56)
+            val resumeW=(font.width(tr("gui.svhub.resume"))+14).coerceAtLeast(58)
+            addControl(UiRect(activeRect.right-leaveW-6,activeRect.y+6,leaveW,20),tr("gui.svhub.leave_game"),mouseX,mouseY){
+                intent("leave_active",JsonObject())
+            }
+            addControl(UiRect(activeRect.right-leaveW-resumeW-10,activeRect.y+6,resumeW,20),tr("gui.svhub.resume"),mouseX,mouseY){
+                intent("resume",JsonObject())
+            }
+        }
+
         val modeLabels=linkedMapOf("bot_easy" to tr("gui.svhub.easy"),"bot_normal" to tr("gui.svhub.normal"),"bot_hard" to tr("gui.svhub.hard"),"pvp" to "PvP","solo" to tr("gui.svhub.solo"))
-        for(i in 0 until games.size()){val game=games[i].asJsonObject;val id=game.str("id");val y=area.y+22+i*(rowH+5)-moduleScroll;val rect=UiRect(area.x,y,area.width,rowH);gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id));NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id));gui.drawString(font,gameTitleFor(id,game.str("title",id)),rect.x+45,rect.y+9,text,true)
-            val advertised=game.getAsJsonArray("modes")?.let{a->(0 until a.size()).map{a[it].asString}}.orEmpty();val modes=if(advertised.isEmpty())listOf("bot_easy","bot_normal","bot_hard","pvp") else advertised;var right=rect.right-6
-            modes.asReversed().forEach{mode->val label=modeLabels[mode]?:mode;val w=(font.width(label)+14).coerceAtLeast(42);right-=w;addControl(UiRect(right,rect.y+10,w,22),label,mouseX,mouseY){intent("start",json("game" to id,"mode" to mode))};right-=4}
+        for(i in 0 until games.size()){
+            val game=games[i].asJsonObject
+            val id=game.str("id")
+            val y=listTop+i*(rowH+5)-moduleScroll
+            val rect=UiRect(area.x,y,area.width,rowH)
+            gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt)
+            gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id))
+            NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id))
+            gui.drawString(font,gameTitleFor(id,game.str("title",id)),rect.x+45,rect.y+9,text,true)
+            val advertised=game.getAsJsonArray("modes")?.let{a->(0 until a.size()).map{a[it].asString}}.orEmpty()
+            val modes=if(advertised.isEmpty())listOf("bot_easy","bot_normal","bot_hard","pvp") else advertised
+            var right=rect.right-6
+            modes.asReversed().forEach{mode->
+                val label=modeLabels[mode]?:mode
+                val w=(font.width(label)+14).coerceAtLeast(42)
+                right-=w
+                addControl(UiRect(right,rect.y+10,w,22),label,mouseX,mouseY){
+                    intent("start",json("game" to id,"mode" to mode))
+                }
+                right-=4
+            }
         }
     }
 

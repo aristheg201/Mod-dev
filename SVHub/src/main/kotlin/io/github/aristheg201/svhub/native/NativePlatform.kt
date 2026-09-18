@@ -8,9 +8,12 @@ import io.github.aristheg201.svhub.native.network.NativePlatformNetwork
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.nio.file.Path
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 object NativePlatform {
     private var tickCounter = 0
+    private val pendingOpen = ConcurrentHashMap<UUID, String>()
     fun start(root: Path) {
         NativeProfileStore.start(root.resolve("profiles"))
         NativeArcadeService.start(root.resolve("arcade"))
@@ -22,9 +25,11 @@ object NativePlatform {
             NativeArcadeService.onReconnect(live)
             NativeRewardService.recoverPlayer(live.uuid)
             NativeGachaService.recoverPlayer(live)
+            pendingOpen.remove(live.uuid)?.let { requested -> open(live, requested) }
         }
     }
     fun onDisconnect(player: ServerPlayer) {
+        pendingOpen.remove(player.uuid)
         NativePlatformNetwork.close(player.uuid)
         NativeArcadeService.onDisconnect(player)
         NativeProfileStore.onDisconnect(player)
@@ -45,14 +50,25 @@ object NativePlatform {
         }
     }
     fun shutdown() {
+        pendingOpen.clear()
         NativeGachaTransactionService.shutdown()
         NativeArcadeService.shutdown()
         NativeProfileStore.shutdown()
     }
     fun open(player: ServerPlayer, requested: String): Boolean {
-        if (!NativeProfileStore.isLoaded(player.uuid)) { player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.svhub.profile_loading")); return false }
         val module = requested.lowercase().trim().takeIf { it in MODULES } ?: "dashboard"
-        NativePlatformNetwork.sendOpen(player, module, state(player, module)); return true
+        if (!NativeProfileStore.isLoaded(player.uuid)) {
+            pendingOpen[player.uuid] = module
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("message.svhub.profile_loading"))
+            return false
+        }
+        pendingOpen.remove(player.uuid)
+        if (module == "arcade" && NativeArcadeService.hasActiveSession(player)) {
+            NativePlatformNetwork.sendOpen(player, "game", gameState(player))
+        } else {
+            NativePlatformNetwork.sendOpen(player, module, state(player, module))
+        }
+        return true
     }
     fun handleIntent(player: ServerPlayer, module: String, action: String, data: JsonObject): String {
         if (!NativeProfileStore.isLoaded(player.uuid)) return "gui.svhub.profile.loading"
@@ -113,11 +129,22 @@ object NativePlatform {
 
     private fun handleArcade(player: ServerPlayer, action: String, data: JsonObject) = when (action) {
         "start" -> NativeArcadeService.start(player, data.string("game"), data.string("mode", "bot_normal")).let { r ->
-            r.changedPlayers.forEach { id -> player.server.playerList.getPlayer(id)?.let { p -> if (NativeArcadeService.gameState(p).get("empty")?.asBoolean == false) NativePlatformNetwork.sendOpen(p, "game", gameState(p)) else NativePlatformNetwork.sendState(p, "arcade", NativeArcadeService.lobbyState(p), r.message) } }
+            if (r.changedPlayers.isEmpty()) {
+                NativePlatformNetwork.sendState(player, "arcade", NativeArcadeService.lobbyState(player), r.message)
+            } else {
+                r.changedPlayers.forEach { id ->
+                    player.server.playerList.getPlayer(id)?.let { p ->
+                        val activeState = NativeArcadeService.gameState(p)
+                        if (activeState.get("empty")?.asBoolean == false) NativePlatformNetwork.sendOpen(p, "game", activeState)
+                        else NativePlatformNetwork.sendState(p, "arcade", NativeArcadeService.lobbyState(p), r.message)
+                    }
+                }
+            }
             r.message
         }
         "cancel_queue" -> NativeArcadeService.cancelQueue(player).let { r -> NativePlatformNetwork.sendState(player, "arcade", NativeArcadeService.lobbyState(player), r.message); r.message }
-        "resume" -> { val s = gameState(player); if (s.get("empty")?.asBoolean == false) NativePlatformNetwork.sendOpen(player, "game", s); "" }
+        "resume" -> { val s = gameState(player); if (s.get("empty")?.asBoolean == false) NativePlatformNetwork.sendOpen(player, "game", s) else NativePlatformNetwork.sendState(player, "arcade", NativeArcadeService.lobbyState(player), "gui.svhub.arcade.no_active"); "" }
+        "leave_active" -> NativeArcadeService.leave(player).let { r -> NativePlatformNetwork.sendState(player, "arcade", NativeArcadeService.lobbyState(player), r.message); r.message }
         else -> "gui.svhub.error.invalid_action"
     }
 

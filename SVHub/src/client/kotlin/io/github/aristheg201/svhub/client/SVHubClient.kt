@@ -60,6 +60,14 @@ object SVHubClient : ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(PokemonRuntimeInfoS2C.TYPE){payload,context->context.client().execute{ClientPokemonRuntimeInfo.accept(payload)}}
         ClientPlayNetworking.registerGlobalReceiver(HubEditorResultS2C.TYPE){payload,context->context.client().execute{ClientHubState.lastEditorMessage=payload.message;ClientHubState.serverRevision=payload.revision;val screen=Minecraft.getInstance().screen;if(screen is HubEditorScreen){screen.onPublishResult(payload.ok,payload.message);if(payload.ok){pendingEditor=true;ClientPlayNetworking.send(HubRequestSnapshotC2S(true))}}}}
         ClientTickEvents.END_CLIENT_TICK.register{client->while(openHubKey.consumeClick()){if(client.player!=null)openHub("home")}}
+        // Re-establish the Hub handshake on every play connection. Relying only on the
+        // first server hello left reconnects with an empty ClientHubState if that packet
+        // raced connection setup; H and /hub then looked completely dead.
+        ClientPlayConnectionEvents.JOIN.register { _, _, client ->
+            client.execute {
+                if (client.player != null) ClientPlayNetworking.send(HubRequestSnapshotC2S(false))
+            }
+        }
         ClientPlayConnectionEvents.DISCONNECT.register{_,_->pendingRoute=null;pendingEditor=false;ClientHubState.reset();ClientPokemonRuntimeInfo.clear();VanillaCompanionModelRenderer.clear();PokemonModelRenderer.clear()}
     }
     fun openHub(route:String="home"){openHub(route,false)}
