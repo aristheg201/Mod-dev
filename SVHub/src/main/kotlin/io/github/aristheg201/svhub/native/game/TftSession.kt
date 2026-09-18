@@ -143,7 +143,7 @@ class TftSession(
         saved.players.forEach { p ->
             val seat = seatById.getValue(p.id)
             val bench = p.bench.take(BENCH_SIZE).map { owned ->
-                owned?.takeIf { it.unitId in unitDefs }?.copy(items = it.items.toMutableList())
+                owned?.takeIf { unit -> unit.unitId in unitDefs }?.let { unit -> unit.copy(items = unit.items.toMutableList()) }
             }.toMutableList()
             while (bench.size < BENCH_SIZE) bench.add(null)
 
