@@ -83,5 +83,11 @@
   "gui.svhub.gacha.busy": "A roll is already processing.",
   "gui.svhub.gacha.empty_banner": "This banner has no rewards.",
   "gui.svhub.gacha.persist_failed": "Could not save the roll transaction.",
-  "gui.svhub.gacha.grant_failed": "Reward grant failed. Ticket refunded."
+  "gui.svhub.gacha.grant_failed": "Reward grant failed. Ticket refunded.",
+  "gui.svhub.td.upgrade": "Upgrade",
+  "gui.svhub.td.sell": "Sell",
+  "gui.svhub.uno.red": "Red",
+  "gui.svhub.uno.yellow": "Yellow",
+  "gui.svhub.uno.green": "Green",
+  "gui.svhub.uno.blue": "Blue"
 }

@@ -37,7 +37,6 @@ const kotlinFiles = walk(path.join(root, "src"), ".kt");
 kotlinFiles.forEach(checkBalanced);
 const screenPath = path.join(root, "src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativePlatformScreen.kt");
 const screen = fs.readFileSync(screenPath, "utf8");
-const clientUiFiles = walk(path.join(root, "src/client/kotlin/io/github/aristheg201/svhub/client"), ".kt");
 const translationSources = kotlinFiles;
 const translationKeys = translationSources.flatMap((file) => {
   const source = fs.readFileSync(file, "utf8");
@@ -59,8 +58,10 @@ for (const [name, marker] of [
   ["responsive layout", "NativeLayout.resolve(width, height)"],
   ["compact companion presentation", "renderCompanionsCompact"],
   ["pixel art", "NativePixelArt.icon"],
-  ["TFT renderer", "TftGameRenderer.render"]
+  ["TFT renderer", "TftGameRenderer.render"],
+  ["shared board scene", "NativeBoardSceneRenderer.render"]
 ]) if (!screen.includes(marker)) failures.push(`${screenPath}: missing ${name} marker`);
+
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const nativePayloads = read("src/main/kotlin/io/github/aristheg201/svhub/native/network/NativePayloads.kt");
 const nativeClient = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativePlatformClient.kt");
@@ -70,8 +71,11 @@ const rewardService = read("src/main/kotlin/io/github/aristheg201/svhub/native/N
 const gachaTxn = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeGachaTransactionService.kt");
 const gachaRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/GachaRouletteRenderer.kt");
 const sceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/PokemonScene3D.kt");
+const boardSceneRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeBoardSceneRenderer.kt");
+const visualRegistry = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/NativeGameVisualRegistry.kt");
 const pokemonRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/cobblemon/PokemonModelRenderer.kt");
 const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt");
+
 for (const marker of ["viewId", "replacesViewId", "NativeCloseS2C", "NativeCloseC2S"]) {
   if (!nativePayloads.includes(marker)) failures.push(`NativePayloads.kt: missing lifecycle marker ${marker}`);
 }
@@ -103,11 +107,27 @@ for (const marker of ["SceneModelKey", "renderScene(", "instanceId"]) {
 if (!tftRenderer.includes("PokemonScene3D.render") || tftRenderer.includes("renderUnit(gui, font, cell")) {
   failures.push("TftGameRenderer.kt: TFT board is not using the shared scene renderer");
 }
+for (const marker of ['"chess"', '"xiangqi"', '"tower_defense"', '"ludo"', "PokemonScene3D.render", "parseLegalMoves", "pathPosition"]) {
+  if (!boardSceneRenderer.includes(marker)) failures.push(`NativeBoardSceneRenderer.kt: missing ${marker}`);
+}
+for (const marker of ["game_visuals/$gameId.json", "NativePieceVisual", "resourceManager.getResource"]) {
+  if (!visualRegistry.includes(marker)) failures.push(`NativeGameVisualRegistry.kt: missing ${marker}`);
+}
+for (const game of ["chess", "xiangqi", "ludo"]) {
+  const file = path.join(root, `src/main/resources/assets/svhub/game_visuals/${game}.json`);
+  if (!fs.existsSync(file)) failures.push(`Missing game visual definition: ${game}`);
+  else {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!parsed.pieces && !parsed.teams) failures.push(`${game}.json: no pieces/teams visual mapping`);
+  }
+}
+for (const marker of ["sceneFrame?.layout?.pick", "actionPayload(action)", 'gameAct("deploy"', "unoPendingCard", 'tr("gui.svhub.uno.$color")']) {
+  if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing interaction marker ${marker}`);
+}
+if (screen.includes('"color" to "red"')) failures.push("NativePlatformScreen.kt: UNO wild color is still hardcoded to red");
 if (!screen.includes("UUID.randomUUID().toString()") || !screen.includes("GachaRouletteRenderer.render")) {
   failures.push("NativePlatformScreen.kt: gacha request id / roulette integration missing");
 }
-
-
 for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"']) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
 }

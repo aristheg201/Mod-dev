@@ -39,6 +39,10 @@ class NativePlatformScreen(
     private var selectedCompanion: String? = null
     private val tftUi = TftUiState()
     private val gachaUi = GachaRouletteState().also { it.observe(state, false) }
+    private val boardSceneUi = NativeBoardSceneUiState()
+    private var sceneFrame: PokemonSceneFrame? = null
+    private var selectedTowerType: String? = null
+    private var unoPendingCard: String? = null
     private var boardRect = UiRect(0, 0, 0, 0)
     private var boardW = 0
     private var boardH = 0
@@ -60,6 +64,14 @@ class NativePlatformScreen(
 
     fun applyState(newState: JsonObject, message: String) {
         if (module == "gacha") gachaUi.observe(newState, true)
+        if (module == "game") {
+            val newView = newState.getAsJsonObject("view")
+            if (newView == null || newView.bool("finished")) {
+                selectedCell = null
+                selectedTowerType = null
+                unoPendingCard = null
+            }
+        }
         state = newState
         val errorKey = runCatching { newState.get("errorKey")?.asString.orEmpty() }.getOrDefault("")
         notice = when {
@@ -242,21 +254,149 @@ class NativePlatformScreen(
     private fun renderWallet(gui:GuiGraphics,layout:NativeLayout){val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet");drawBalance(gui,area.x,area.y,area.width,"wallet",tr("gui.svhub.token"),wallet?.num("arcade")?:0,accent);drawBalance(gui,area.x,area.y+44,area.width,"gacha",tr("gui.svhub.ticket"),wallet?.num("ticket")?:0,gold)}
 
     private fun renderGame(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val view=state.getAsJsonObject("view")?:return;val gameId=view.str("gameId");if(gameId=="tft"){boardRect=UiRect(0,0,0,0);boardW=0;boardH=0;TftGameRenderer.render(
-            gui = gui, font = font, area = layout.content, density = layout.density,
-            view = view, ui = tftUi, mouseX = mouseX, mouseY = mouseY,
-            hooks = TftGameRenderer.Hooks(
-                control = { rect, label, enabled, action -> addControl(rect, label, mouseX, mouseY, enabled = enabled, action = action) },
-                hit = { rect, action -> addHit(rect, action = action) },
-                action = ::gameAct,
-                back = { intent("leave", JsonObject()) }
+        val view=state.getAsJsonObject("view")?:return
+        val gameId=view.str("gameId")
+        if(gameId=="tft"){
+            sceneFrame=null
+            boardRect=UiRect(0,0,0,0)
+            boardW=0
+            boardH=0
+            TftGameRenderer.render(
+                gui = gui,
+                font = font,
+                area = layout.content,
+                density = layout.density,
+                view = view,
+                ui = tftUi,
+                mouseX = mouseX,
+                mouseY = mouseY,
+                hooks = TftGameRenderer.Hooks(
+                    control = { rect, label, enabled, action -> addControl(rect, label, mouseX, mouseY, enabled = enabled, action = action) },
+                    hit = { rect, action -> addHit(rect, action = action) },
+                    action = ::gameAct,
+                    back = { intent("leave", JsonObject()) }
+                )
             )
-        );return}
-        val area=layout.content.inset(8);gui.drawString(font,view.str("title",tr("gui.svhub.game")),area.x,area.y,text,true);gui.drawString(font,fit(view.str("status"),area.width-8),area.x,area.y+13,gold,false)
-        val actions=view.getAsJsonArray("actions");val cards=view.getAsJsonArray("cards");boardW=view.num("boardWidth");boardH=view.num("boardHeight");val actionWidth=if(area.width>=520)110 else 0;val sideActions=actionWidth>0;val availableBoardWidth=area.width-if(sideActions)actionWidth+8 else 0;val bottomReserve=if(cards!=null&&cards.size()>0)58 else 8;val boardTop=area.y+30;val boardAvailableHeight=(area.bottom-bottomReserve-boardTop).coerceAtLeast(30)
-        if(boardW>0&&boardH>0){cellSize=min(30,min((availableBoardWidth/boardW).coerceAtLeast(12),(boardAvailableHeight/boardH).coerceAtLeast(12)));boardRect=UiRect(area.x,boardTop,cellSize*boardW,cellSize*boardH);val board=view.getAsJsonArray("board")?:JsonArray();repeat(boardH){r->repeat(boardW){c->val index=r*boardW+c;val x=boardRect.x+c*cellSize;val y=boardRect.y+r*cellSize;val cellColor=if((r+c)%2==0)0xFF1A2B2F.toInt() else 0xFF132226.toInt();gui.fill(x,y,x+cellSize-1,y+cellSize-1,cellColor);NativePixelArt.gamePiece(gui,board.elementOrNull(index)?.asString.orEmpty(),x,y,cellSize)}}}else boardRect=UiRect(0,0,0,0)
-        if(actions!=null){val enabled=(0 until actions.size()).map{actions[it].asJsonObject}.filter{it.bool("enabled",true)}.take(6);enabled.forEachIndexed{index,action->val rect=if(sideActions)UiRect(area.right-actionWidth,boardTop+index*25,actionWidth,20) else UiRect(area.x+index*((area.width/enabled.size.coerceAtLeast(1)).coerceAtLeast(65)),area.bottom-22,(area.width/enabled.size.coerceAtLeast(1)-4).coerceAtLeast(61),20);addControl(rect,fit(action.str("label",action.str("id")),rect.width-8),mouseX,mouseY){gameAct(action.str("id"),emptyMap())}}}
-        if(cards!=null&&cards.size()>0){val count=min(cards.size(),6);val gap=4;val cardW=((area.width-gap*(count-1))/count).coerceAtLeast(44);val y=area.bottom-48;repeat(count){index->val card=cards[index].asJsonObject;val rect=UiRect(area.x+index*(cardW+gap),y,cardW,43);gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.right,rect.y+3,cardColor(card.str("accent")));gui.drawCenteredString(font,fit(card.str("label",card.str("id")),rect.width-6),rect.x+rect.width/2,rect.y+10,text);gui.drawCenteredString(font,fit(card.str("subtitle"),rect.width-6),rect.x+rect.width/2,rect.y+25,muted);addHit(rect){when(view.str("gameId")){"uno"->gameAct("play",mapOf("index" to card.str("id"),"color" to "red"));"tft"->gameAct("buy",mapOf("index" to card.str("id").substringAfter(':')));else->gameAct("play",mapOf("index" to card.str("id")))}}}}
+            return
+        }
+
+        val area=layout.content.inset(8)
+        gui.drawString(font,view.str("title",tr("gui.svhub.game")),area.x,area.y,text,true)
+        gui.drawString(font,fit(view.str("status"),area.width-8),area.x,area.y+13,gold,false)
+
+        val actions=view.getAsJsonArray("actions")
+        val cards=view.getAsJsonArray("cards")
+        boardW=view.num("boardWidth")
+        boardH=view.num("boardHeight")
+        val actionWidth=if(area.width>=520)110 else 0
+        val sideActions=actionWidth>0
+        val availableBoardWidth=area.width-if(sideActions)actionWidth+8 else 0
+        val bottomReserve=when {
+            gameId=="uno" && unoPendingCard!=null -> 84
+            cards!=null&&cards.size()>0 -> 58
+            else -> 8
+        }
+        val boardTop=area.y+30
+        val boardAvailableHeight=(area.bottom-bottomReserve-boardTop).coerceAtLeast(30)
+        val sceneArea=UiRect(area.x,boardTop,availableBoardWidth,boardAvailableHeight)
+
+        if(NativeBoardSceneRenderer.supports(gameId)){
+            val rendered=NativeBoardSceneRenderer.render(gui,font,sceneArea,view,boardSceneUi,selectedCell)
+            sceneFrame=rendered?.frame
+            boardRect=sceneArea
+            cellSize=0
+        }else{
+            sceneFrame=null
+            if(boardW>0&&boardH>0){
+                cellSize=min(30,min((availableBoardWidth/boardW).coerceAtLeast(12),(boardAvailableHeight/boardH).coerceAtLeast(12)))
+                boardRect=UiRect(area.x,boardTop,cellSize*boardW,cellSize*boardH)
+                val board=view.getAsJsonArray("board")?:JsonArray()
+                repeat(boardH){row->repeat(boardW){col->
+                    val index=row*boardW+col
+                    val x=boardRect.x+col*cellSize
+                    val y=boardRect.y+row*cellSize
+                    val cellColor=if((row+col)%2==0)0xFF1A2B2F.toInt() else 0xFF132226.toInt()
+                    gui.fill(x,y,x+cellSize-1,y+cellSize-1,cellColor)
+                    NativePixelArt.gamePiece(gui,board.elementOrNull(index)?.asString.orEmpty(),x,y,cellSize)
+                }}
+            }else boardRect=UiRect(0,0,0,0)
+        }
+
+        if(actions!=null){
+            val enabled=(0 until actions.size()).map{actions[it].asJsonObject}.filter{it.bool("enabled",true)}.take(8)
+            enabled.forEachIndexed{index,action->
+                val rect=if(sideActions){
+                    UiRect(area.right-actionWidth,boardTop+index*25,actionWidth,20)
+                }else{
+                    val widthPer=(area.width/enabled.size.coerceAtLeast(1)).coerceAtLeast(65)
+                    UiRect(area.x+index*widthPer,area.bottom-22,widthPer-4,20)
+                }
+                addControl(rect,fit(action.str("label",action.str("id")),rect.width-8),mouseX,mouseY){
+                    gameAct(action.str("id"),actionPayload(action))
+                }
+            }
+        }
+
+        if(gameId=="tower_defense" && selectedCell!=null){
+            val board=view.getAsJsonArray("board")
+            val token=board?.elementOrNull(selectedCell!!)?.asString.orEmpty()
+            if(token.startsWith("tower:")){
+                val y=if(sideActions) area.bottom-48 else area.bottom-46
+                val w=54
+                addControl(UiRect(area.right-w*2-8,y,w,20),tr("gui.svhub.td.upgrade"),mouseX,mouseY){
+                    gameAct("upgrade",mapOf("slot" to selectedCell.toString()))
+                }
+                addControl(UiRect(area.right-w-4,y,w,20),tr("gui.svhub.td.sell"),mouseX,mouseY){
+                    gameAct("sell",mapOf("slot" to selectedCell.toString()))
+                }
+            }
+        }
+
+        if(cards!=null&&cards.size()>0){
+            val count=min(cards.size(),6)
+            val gap=4
+            val cardW=((area.width-gap*(count-1))/count).coerceAtLeast(44)
+            val y=area.bottom-48
+            repeat(count){index->
+                val card=cards[index].asJsonObject
+                val rect=UiRect(area.x+index*(cardW+gap),y,cardW,43)
+                val selected=gameId=="tower_defense"&&selectedTowerType==card.str("id")
+                gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selected)0xFF21443E.toInt() else panelAlt)
+                gui.fill(rect.x,rect.y,rect.right,rect.y+3,cardColor(card.str("accent")))
+                gui.drawCenteredString(font,fit(card.str("label",card.str("id")),rect.width-6),rect.x+rect.width/2,rect.y+10,text)
+                gui.drawCenteredString(font,fit(card.str("subtitle"),rect.width-6),rect.x+rect.width/2,rect.y+25,muted)
+                addHit(rect){
+                    when(gameId){
+                        "uno" -> {
+                            val kind=card.getAsJsonObject("meta")?.str("kind").orEmpty()
+                            if(kind=="wild"||kind=="wild4") unoPendingCard=card.str("id")
+                            else gameAct("play",mapOf("index" to card.str("id")))
+                        }
+                        "tower_defense" -> selectedTowerType=card.str("id")
+                        else -> gameAct("play",mapOf("index" to card.str("id")))
+                    }
+                }
+            }
+        }
+
+        if(gameId=="uno" && unoPendingCard!=null){
+            val colors=listOf("red","yellow","green","blue")
+            val gap=4
+            val w=((area.width-gap*3)/4).coerceAtLeast(42)
+            colors.forEachIndexed{index,color->
+                val rect=UiRect(area.x+index*(w+gap),area.bottom-74,w,20)
+                addControl(rect,tr("gui.svhub.uno.$color"),mouseX,mouseY){
+                    val card=unoPendingCard?:return@addControl
+                    unoPendingCard=null
+                    gameAct("play",mapOf("index" to card,"color" to color))
+                }
+            }
+        }
+    }
+
+    private fun actionPayload(action:JsonObject):Map<String,String>{
+        val payload=action.getAsJsonObject("payload")?:return emptyMap()
+        return payload.entrySet().associate{(key,value)->key to runCatching{value.asString}.getOrDefault("")}
     }
 
     private fun drawModuleCard(gui:GuiGraphics,rect:UiRect,id:String,title:String,value:String,mouseX:Int,mouseY:Int,action:()->Unit){val hovered=rect.contains(mouseX.toDouble(),mouseY.toDouble());gui.fill(rect.x,rect.y+if(hovered)1 else 2,rect.right,rect.bottom,if(hovered)0xFF203438.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(hovered)gold else accent);if(rect.height<32){NativePixelArt.icon(gui,id,rect.x+7,rect.y+4,14,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-31),rect.x+26,rect.y+8,text,true)}else{NativePixelArt.icon(gui,id,rect.x+11,rect.y+10,24,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-50),rect.x+43,rect.y+9,text,true);gui.drawString(font,fit(value,rect.width-50),rect.x+43,rect.y+25,muted,false)};addHit(rect,action=action)}
@@ -265,7 +405,50 @@ class NativePlatformScreen(
     private fun addControl(rect:UiRect,label:String,mouseX:Int,mouseY:Int,icon:String?=null,active:Boolean=false,enabled:Boolean=true,action:()->Unit){if(!visible(rect))return;val hovered=enabled&&rect.contains(mouseX.toDouble(),mouseY.toDouble());val fill=when{!enabled->0xFF141C1E.toInt();active->0xFF21443E.toInt();hovered->0xFF213338.toInt();else->panelAlt};val border=if(active)accent else if(hovered)gold else line;currentGui?.let{gui->gui.fill(rect.x,rect.y,rect.right,rect.bottom,fill);gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,border);icon?.let{NativePixelArt.icon(gui,it,rect.x+6,rect.y+(rect.height-16)/2,16,if(active)accent else muted)};val textX=rect.x+if(icon==null)7 else 27;if(label.isNotBlank())gui.drawString(font,fit(label,rect.width-(textX-rect.x)-5),textX,rect.y+(rect.height-8)/2,if(enabled)text else muted,false)};controls+=Control(rect,label,icon,active,enabled,action)}
     private fun addHit(rect:UiRect,label:String="",action:()->Unit){if(visible(rect))controls+=Control(rect,label,action=action)}
     private fun visible(rect:UiRect):Boolean{val c=clip?:return rect.right>0&&rect.x<width&&rect.bottom>0&&rect.y<height;return rect.right>c.x&&rect.x<c.right&&rect.bottom>c.y&&rect.y<c.bottom}
-    override fun mouseClicked(mouseX:Double,mouseY:Double,button:Int):Boolean{if(button==0){controls.asReversed().firstOrNull{it.enabled&&it.rect.contains(mouseX,mouseY)}?.let{it.action();return true};if(module=="game"&&boardW>0&&boardH>0&&boardRect.contains(mouseX,mouseY)){val col=((mouseX-boardRect.x)/cellSize).toInt();val row=((mouseY-boardRect.y)/cellSize).toInt();val index=row*boardW+col;val game=state.getAsJsonObject("view")?.str("gameId").orEmpty();if(game=="chess"||game=="xiangqi"){val first=selectedCell;if(first==null)selectedCell=index else{selectedCell=null;gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,index)))}}else selectedCell=index;return true}};return super.mouseClicked(mouseX,mouseY,button)}
+    override fun mouseClicked(mouseX:Double,mouseY:Double,button:Int):Boolean{
+        if(button==0){
+            controls.asReversed().firstOrNull{it.enabled&&it.rect.contains(mouseX,mouseY)}?.let{it.action();return true}
+            if(module=="game"){
+                val game=state.getAsJsonObject("view")?.str("gameId").orEmpty()
+                val projected=sceneFrame?.layout?.pick(mouseX,mouseY)
+                if(projected!=null){
+                    when(game){
+                        "chess","xiangqi"->{
+                            val first=selectedCell
+                            if(first==null) selectedCell=projected
+                            else if(first==projected) selectedCell=null
+                            else{
+                                selectedCell=null
+                                gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,projected)))
+                            }
+                        }
+                        "tower_defense"->{
+                            val tower=selectedTowerType
+                            if(tower!=null){
+                                selectedTowerType=null
+                                selectedCell=projected
+                                gameAct("deploy",mapOf("type" to tower,"slot" to projected.toString()))
+                            }else selectedCell=projected
+                        }
+                        "ludo"->selectedCell=projected
+                    }
+                    return true
+                }
+                if(boardW>0&&boardH>0&&cellSize>0&&boardRect.contains(mouseX,mouseY)){
+                    val col=((mouseX-boardRect.x)/cellSize).toInt()
+                    val row=((mouseY-boardRect.y)/cellSize).toInt()
+                    val index=row*boardW+col
+                    if(game=="chess"||game=="xiangqi"){
+                        val first=selectedCell
+                        if(first==null)selectedCell=index
+                        else{selectedCell=null;gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,index)))}
+                    }else selectedCell=index
+                    return true
+                }
+            }
+        }
+        return super.mouseClicked(mouseX,mouseY,button)
+    }
     override fun mouseScrolled(mouseX:Double,mouseY:Double,horizontalAmount:Double,verticalAmount:Double):Boolean{if(module in setOf("gacha","skins","arcade","companions","wallet")){moduleScroll=(moduleScroll-verticalAmount.toInt()*24).coerceIn(0,1200);return true};return super.mouseScrolled(mouseX,mouseY,horizontalAmount,verticalAmount)}
     private fun coord(game:String,index:Int):String{val columns=if(game=="xiangqi")9 else 8;val row=index/columns;val column=index%columns;return if(game=="xiangqi")"${('a'.code+column).toChar()}$row" else "${('a'.code+column).toChar()}${8-row}"}
     private fun gameAct(action:String,args:Map<String,String>){val data=JsonObject();data.addProperty("gameAction",action);data.add("args",JsonObject().apply{args.forEach{(key,value)->addProperty(key,value)}});intent("act",data)}

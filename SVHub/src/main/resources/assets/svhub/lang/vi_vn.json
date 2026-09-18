@@ -83,5 +83,11 @@
   "gui.svhub.gacha.busy": "Một lượt quay đang được xử lý.",
   "gui.svhub.gacha.empty_banner": "Banner này chưa có phần thưởng.",
   "gui.svhub.gacha.persist_failed": "Không thể lưu giao dịch quay.",
-  "gui.svhub.gacha.grant_failed": "Phát thưởng thất bại. Vé đã được hoàn."
+  "gui.svhub.gacha.grant_failed": "Phát thưởng thất bại. Vé đã được hoàn.",
+  "gui.svhub.td.upgrade": "Nâng cấp",
+  "gui.svhub.td.sell": "Bán",
+  "gui.svhub.uno.red": "Đỏ",
+  "gui.svhub.uno.yellow": "Vàng",
+  "gui.svhub.uno.green": "Xanh lá",
+  "gui.svhub.uno.blue": "Xanh dương"
 }
