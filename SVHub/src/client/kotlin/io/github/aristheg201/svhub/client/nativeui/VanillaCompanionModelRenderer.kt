@@ -40,14 +40,14 @@ object VanillaCompanionModelRenderer {
         val height = y2 - y1
         val scale = (minOf(width, height) * 0.72f).toInt().coerceIn(24, 110)
         return runCatching {
-            InventoryScreen.renderEntityInInventoryFollowsAngle(
+            InventoryScreen.renderEntityInInventoryFollowsMouse(
                 gui,
                 x1,
                 y1,
                 x2,
                 y2,
                 scale,
-                0f,
+                1.0f,
                 if (facingLeft) 18f else -18f,
                 0f,
                 entity

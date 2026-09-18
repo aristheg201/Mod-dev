@@ -138,7 +138,7 @@ if (screen.includes("coerceIn(0,1200)")) failures.push("NativePlatformScreen.kt:
 for (const marker of ["PokemonModelRenderer.renderScene", "Axis.ZP.rotationDegrees", '"uno"', '"pokecards"']) {
   if (!cardTableRenderer.includes(marker)) failures.push(`CardTable3DRenderer.kt: missing ${marker}`);
 }
-for (const marker of ["InventoryScreen.renderEntityInInventoryFollowsAngle", "BuiltInRegistries.ENTITY_TYPE", "LivingEntity"]) {
+for (const marker of ["InventoryScreen.renderEntityInInventoryFollowsMouse", "BuiltInRegistries.ENTITY_TYPE", "LivingEntity"]) {
   if (!companionRenderer.includes(marker)) failures.push(`VanillaCompanionModelRenderer.kt: missing ${marker}`);
 }
 
