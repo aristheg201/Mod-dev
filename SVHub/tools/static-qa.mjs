@@ -56,7 +56,7 @@ if (!/^mod_version=0\.4\.1\s*$/m.test(properties)) failures.push("gradle.propert
 if (!metadata.includes('"version": "${version}"')) failures.push("fabric.mod.json: Gradle version expansion marker missing");
 for (const [name, marker] of [
   ["responsive layout", "NativeLayout.resolve(width, height)"],
-  ["compact companion presentation", "renderCompanionsCompact"],
+  ["real companion presentation", "VanillaCompanionModelRenderer.render"],
   ["pixel art", "NativePixelArt.icon"],
   ["TFT renderer", "TftGameRenderer.render"],
   ["shared board scene", "NativeBoardSceneRenderer.render"]
