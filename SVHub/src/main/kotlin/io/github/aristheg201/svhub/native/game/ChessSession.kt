@@ -25,6 +25,9 @@ class ChessSession(
     private var lastClockAt = System.currentTimeMillis()
     private var whiteClock = initialClockMillis
     private var blackClock = initialClockMillis
+    private var lastMoveFrom = -1
+    private var lastMoveTo = -1
+    private var moveSerial = 0L
 
     init {
         require(seats.size == 2)
@@ -37,6 +40,8 @@ class ChessSession(
     override fun viewFor(viewerId: String): NativeGameView {
         val i = seats.indexOfFirst { it.id == viewerId }
         val check = isKingInCheck(side)
+        val viewerSide = when (i) { 0 -> 'w'; 1 -> 'b'; else -> null }
+        val legal = if (!finished && viewerSide == side) legalMoves(side).distinctBy { it.from to it.to } else emptyList()
         return NativeGameView(
             sessionId, gameId, "Pokémon Chess",
             if (finished) "finished" else "playing",
@@ -58,7 +63,11 @@ class ChessSession(
                 "halfmove" to halfmove.toString(),
                 "fullmove" to fullmove.toString(),
                 "castling" to castling,
-                "enPassant" to if (epSquare >= 0) squareName(epSquare) else "-"
+                "enPassant" to if (epSquare >= 0) squareName(epSquare) else "-",
+                "legalMoves" to legal.joinToString(";") { squareName(it.from) + ":" + squareName(it.to) },
+                "lastMoveFrom" to if (lastMoveFrom >= 0) squareName(lastMoveFrom) else "",
+                "lastMoveTo" to if (lastMoveTo >= 0) squareName(lastMoveTo) else "",
+                "moveSerial" to moveSerial.toString()
             ),
             log = log.toList().takeLast(12),
             revision = revision,
@@ -159,6 +168,9 @@ class ChessSession(
         side = opposite(side)
         drawOfferedBy = null
         lastClockAt = System.currentTimeMillis()
+        lastMoveFrom = m.from
+        lastMoveTo = m.to
+        moveSerial++
         bump("${squareName(m.from)}-${squareName(m.to)}")
         val key = positionKey()
         repetitions[key] = (repetitions[key] ?: 0) + 1
