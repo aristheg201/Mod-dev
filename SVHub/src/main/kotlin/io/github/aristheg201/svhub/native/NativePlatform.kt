@@ -11,12 +11,17 @@ import java.nio.file.Path
 
 object NativePlatform {
     private var tickCounter = 0
-    fun start(root: Path) { NativeProfileStore.start(root.resolve("profiles")); NativeArcadeService.start(root.resolve("arcade")) }
+    fun start(root: Path) {
+        NativeProfileStore.start(root.resolve("profiles"))
+        NativeArcadeService.start(root.resolve("arcade"))
+        NativeGachaTransactionService.start(root.resolve("gacha"))
+    }
     fun onJoin(player: ServerPlayer) {
         SkiesSkinsBridge.invalidate()
         NativeProfileStore.onJoin(player) { live ->
             NativeArcadeService.onReconnect(live)
             NativeRewardService.recoverPlayer(live.uuid)
+            NativeGachaService.recoverPlayer(live)
         }
     }
     fun onDisconnect(player: ServerPlayer) {
@@ -39,7 +44,11 @@ object NativePlatform {
             }
         }
     }
-    fun shutdown() { NativeArcadeService.shutdown(); NativeProfileStore.shutdown() }
+    fun shutdown() {
+        NativeGachaTransactionService.shutdown()
+        NativeArcadeService.shutdown()
+        NativeProfileStore.shutdown()
+    }
     fun open(player: ServerPlayer, requested: String): Boolean {
         if (!NativeProfileStore.isLoaded(player.uuid)) { player.sendSystemMessage(net.minecraft.network.chat.Component.literal("SVHub đang tải profile.")); return false }
         val module = requested.lowercase().trim().takeIf { it in MODULES } ?: "dashboard"
@@ -69,8 +78,23 @@ object NativePlatform {
     fun refresh(player: ServerPlayer, module: String) = NativePlatformNetwork.sendState(player, module, state(player, module))
 
     private fun handleGacha(player: ServerPlayer, action: String, data: JsonObject) = when (action) {
-        "roll" -> NativeGachaService.roll(player, data.string("banner", "hunter")).let { r -> NativePlatformNetwork.sendState(player, "gacha", r.state ?: NativeGachaService.state(player, data.string("banner", "hunter")), r.message); r.message }
-        "select" -> { NativePlatformNetwork.sendState(player, "gacha", NativeGachaService.state(player, data.string("banner", "hunter"))); "" }
+        "roll" -> NativeGachaService.requestRoll(
+            player,
+            data.string("banner", "hunter"),
+            data.string("requestId")
+        ).let { r ->
+            NativePlatformNetwork.sendState(
+                player,
+                "gacha",
+                r.state ?: NativeGachaService.state(player, data.string("banner", "hunter")),
+                r.message
+            )
+            r.message
+        }
+        "select" -> {
+            NativePlatformNetwork.sendState(player, "gacha", NativeGachaService.state(player, data.string("banner", "hunter")))
+            ""
+        }
         else -> "Gacha action không hợp lệ."
     }
 

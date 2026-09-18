@@ -43,7 +43,7 @@
   "gui.svhub.preview": "preview",
   "gui.svhub.pvp": "PvP",
   "gui.svhub.resume": "Resume",
-  "gui.svhub.roll": "Open",
+  "gui.svhub.roll": "Roll",
   "gui.svhub.search": "Search",
   "gui.svhub.search_hint": "Find Pokémon, commands, or guides",
   "gui.svhub.shop": "Open shop",
@@ -72,5 +72,16 @@
   "key.categories.svhub": "SV Hub",
   "key.svhub.open": "Open SV Hub",
   "screen.svhub.native": "SV Hub",
-  "screen.svhub.title": "SV Hub"
+  "screen.svhub.title": "SV Hub",
+  "gui.svhub.gacha.rolling": "Rolling…",
+  "gui.svhub.gacha.invalid_request": "Invalid roll request.",
+  "gui.svhub.gacha.backend_unavailable": "SkiesSkins is unavailable.",
+  "gui.svhub.gacha.invalid_banner": "Banner unavailable.",
+  "gui.svhub.gacha.profile_loading": "Profile is still loading.",
+  "gui.svhub.gacha.not_enough_tickets": "Not enough tickets.",
+  "gui.svhub.gacha.duplicate_request": "This roll was already processed.",
+  "gui.svhub.gacha.busy": "A roll is already processing.",
+  "gui.svhub.gacha.empty_banner": "This banner has no rewards.",
+  "gui.svhub.gacha.persist_failed": "Could not save the roll transaction.",
+  "gui.svhub.gacha.grant_failed": "Reward grant failed. Ticket refunded."
 }

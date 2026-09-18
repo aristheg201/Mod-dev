@@ -14,6 +14,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.language.I18n
 import net.minecraft.network.chat.Component
+import java.util.UUID
 import kotlin.math.min
 
 class NativePlatformScreen(
@@ -37,6 +38,7 @@ class NativePlatformScreen(
     private var selectedSkin: String? = null
     private var selectedCompanion: String? = null
     private val tftUi = TftUiState()
+    private val gachaUi = GachaRouletteState().also { it.observe(state, false) }
     private var boardRect = UiRect(0, 0, 0, 0)
     private var boardW = 0
     private var boardH = 0
@@ -57,15 +59,21 @@ class NativePlatformScreen(
     private val modVersion: String = FabricLoader.getInstance().getModContainer("svhub").map { it.metadata.version.friendlyString }.orElse("?")
 
     fun applyState(newState: JsonObject, message: String) {
+        if (module == "gacha") gachaUi.observe(newState, true)
         state = newState
-        notice = message
+        val errorKey = runCatching { newState.get("errorKey")?.asString.orEmpty() }.getOrDefault("")
+        notice = when {
+            errorKey.startsWith("gui.") -> tr(errorKey)
+            message.startsWith("gui.") -> tr(message)
+            else -> message
+        }
     }
 
     override fun init() { controls.clear() }
 
     override fun removed() {
         NativePlatformClient.markClosed(viewId)
-        ClientPlayNetworking.send(NativeCloseC2S(viewId))
+        runCatching { ClientPlayNetworking.send(NativeCloseC2S(viewId)) }
         super.removed()
     }
 
@@ -165,15 +173,38 @@ class NativePlatformScreen(
     }
 
     private fun renderGacha(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet")
+        val area=layout.content.inset(10)
+        val wallet=state.getAsJsonObject("wallet")
+        val rolling=state.bool("rolling")
         gui.drawString(font,"${tr("gui.svhub.ticket")}: ${wallet?.num("ticket") ?: 0}",area.x,area.y,gold,true)
-        val gap=8;val cols=if(area.width>=360)2 else 1;val bannerW=(area.width-gap*(cols-1))/cols
+
+        val rouletteHeight=GachaRouletteRenderer.render(gui,font,area,state,gachaUi)
+        val bannerTop=area.y+24+rouletteHeight
+        val gap=8
+        val cols=if(area.width>=360)2 else 1
+        val bannerW=(area.width-gap*(cols-1))/cols
+
         listOf("hunter" to tr("gui.svhub.gacha.hunter"),"beast" to tr("gui.svhub.gacha.beast")).forEachIndexed{index,(id,title)->
-            val rect=UiRect(area.x+(index%cols)*(bannerW+gap),area.y+24+(index/cols)*74-moduleScroll,bannerW,66)
-            gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(id=="hunter")accent else gold)
+            val rect=UiRect(
+                area.x+(index%cols)*(bannerW+gap),
+                bannerTop+(index/cols)*74-moduleScroll,
+                bannerW,
+                66
+            )
+            gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt)
+            gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(id=="hunter")accent else gold)
             NativePixelArt.icon(gui,"gacha",rect.x+12,rect.y+12,28,if(id=="hunter")accent else gold)
-            gui.drawString(font,fit(title,rect.width-60),rect.x+48,rect.y+12,text,true);gui.drawString(font,tr("gui.svhub.gacha.cost"),rect.x+48,rect.y+29,muted,false)
-            addControl(UiRect(rect.right-74,rect.bottom-23,66,17),tr("gui.svhub.roll"),mouseX,mouseY){intent("roll",json("banner" to id))}
+            gui.drawString(font,fit(title,rect.width-60),rect.x+48,rect.y+12,text,true)
+            gui.drawString(font,tr("gui.svhub.gacha.cost"),rect.x+48,rect.y+29,muted,false)
+            addControl(
+                UiRect(rect.right-74,rect.bottom-23,66,17),
+                if(rolling)tr("gui.svhub.gacha.rolling") else tr("gui.svhub.roll"),
+                mouseX,
+                mouseY,
+                enabled=!rolling
+            ){
+                intent("roll",json("banner" to id,"requestId" to UUID.randomUUID().toString()))
+            }
         }
     }
 

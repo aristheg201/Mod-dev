@@ -43,7 +43,7 @@
   "gui.svhub.preview": "xem trước",
   "gui.svhub.pvp": "PvP",
   "gui.svhub.resume": "Tiếp tục",
-  "gui.svhub.roll": "Mở",
+  "gui.svhub.roll": "Quay",
   "gui.svhub.search": "Tìm kiếm",
   "gui.svhub.search_hint": "Tìm Pokémon, lệnh hoặc hướng dẫn",
   "gui.svhub.shop": "Mở shop",
@@ -72,5 +72,16 @@
   "key.categories.svhub": "SV Hub",
   "key.svhub.open": "Mở SV Hub",
   "screen.svhub.native": "SV Hub",
-  "screen.svhub.title": "SV Hub"
+  "screen.svhub.title": "SV Hub",
+  "gui.svhub.gacha.rolling": "Đang quay…",
+  "gui.svhub.gacha.invalid_request": "Yêu cầu quay không hợp lệ.",
+  "gui.svhub.gacha.backend_unavailable": "SkiesSkins chưa sẵn sàng.",
+  "gui.svhub.gacha.invalid_banner": "Banner không khả dụng.",
+  "gui.svhub.gacha.profile_loading": "Profile đang tải.",
+  "gui.svhub.gacha.not_enough_tickets": "Không đủ vé.",
+  "gui.svhub.gacha.duplicate_request": "Lượt quay này đã được xử lý.",
+  "gui.svhub.gacha.busy": "Một lượt quay đang được xử lý.",
+  "gui.svhub.gacha.empty_banner": "Banner này chưa có phần thưởng.",
+  "gui.svhub.gacha.persist_failed": "Không thể lưu giao dịch quay.",
+  "gui.svhub.gacha.grant_failed": "Phát thưởng thất bại. Vé đã được hoàn."
 }

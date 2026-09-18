@@ -1,0 +1,360 @@
+package io.github.aristheg201.svhub.native
+
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.SVHub
+import io.github.aristheg201.svhub.SVHubRuntime
+import io.github.aristheg201.svhub.native.network.NativePlatformNetwork
+import io.github.aristheg201.svhub.util.AtomicFiles
+import net.minecraft.server.level.ServerPlayer
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.UUID
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
+
+object NativeGachaTransactionService {
+    private data class Journal(
+        val schema: Int = 1,
+        val requestId: String,
+        val playerId: String,
+        val bannerId: String,
+        val winnerId: String,
+        val winnerName: String,
+        val species: String,
+        val aspect: String,
+        val source: String,
+        val rarity: String,
+        val perfectIvs: Int,
+        val ticketCost: Int,
+        val newPity: Int,
+        val beforeQuantity: Int,
+        val seed: Long,
+        val createdAtEpochMs: Long = System.currentTimeMillis(),
+        val stage: String = PREPARED
+    )
+
+    private val gson = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
+    private val pending = ConcurrentHashMap<String, Journal>()
+    private val inFlight = ConcurrentHashMap.newKeySet<UUID>()
+    private val threadCounter = AtomicInteger()
+    @Volatile private var executor: ThreadPoolExecutor? = null
+    private lateinit var journalRoot: Path
+
+    fun start(root: Path) {
+        journalRoot = root.resolve("journal")
+        Files.createDirectories(journalRoot)
+        if (executor == null) synchronized(this) {
+            if (executor == null) {
+                executor = ThreadPoolExecutor(
+                    1, 1, 30L, TimeUnit.SECONDS, ArrayBlockingQueue(128),
+                    { task -> Thread(task, "SVHub-Gacha-" + threadCounter.incrementAndGet()).apply {
+                        isDaemon = true
+                        priority = Thread.NORM_PRIORITY - 1
+                    } },
+                    ThreadPoolExecutor.AbortPolicy()
+                )
+            }
+        }
+        loadPending()
+    }
+
+    fun shutdown() {
+        val pool = synchronized(this) { val p = executor; executor = null; p }
+        pool?.shutdown()
+        runCatching { pool?.awaitTermination(5, TimeUnit.SECONDS) }
+        pool?.shutdownNow()
+        pending.clear()
+        inFlight.clear()
+    }
+
+    fun activeRequest(playerId: UUID): String? =
+        pending.values.firstOrNull { it.playerId == playerId.toString() && !completed(it) }?.requestId
+            ?: if (playerId in inFlight) "processing" else null
+
+    fun request(player: ServerPlayer, bannerId: String, requestId: String): NativeGachaService.RollResult {
+        val parsed = runCatching { UUID.fromString(requestId) }.getOrNull()
+            ?: return fail(player, "gui.svhub.gacha.invalid_request")
+        if (parsed.toString() != requestId.lowercase()) return fail(player, "gui.svhub.gacha.invalid_request")
+        if (!SkiesSkinsBridge.available()) return fail(player, "gui.svhub.gacha.backend_unavailable")
+        val banner = NativeGachaService.banners.firstOrNull { it.id == bannerId }
+            ?: return fail(player, "gui.svhub.gacha.invalid_banner")
+        val profile = NativeProfileStore.get(player.uuid)
+            ?: return fail(player, "gui.svhub.gacha.profile_loading")
+        if (profile.gachaTickets < banner.costTickets) return fail(player, "gui.svhub.gacha.not_enough_tickets")
+
+        if (
+            pending.containsKey(requestId) ||
+            NativeProfileStore.hasTransaction(player.uuid, debitTx(requestId)) ||
+            NativeProfileStore.hasTransaction(player.uuid, finalTx(requestId)) ||
+            NativeProfileStore.hasTransaction(player.uuid, refundTx(requestId))
+        ) return fail(player, "gui.svhub.gacha.duplicate_request")
+
+        if (pending.values.any { it.playerId == player.uuid.toString() } || !inFlight.add(player.uuid)) {
+            return fail(player, "gui.svhub.gacha.busy")
+        }
+
+        val pool = NativeGachaService.poolFor(banner)
+        if (pool.isEmpty()) {
+            inFlight.remove(player.uuid)
+            return fail(player, "gui.svhub.gacha.empty_banner")
+        }
+
+        val oldPity = profile.pity[banner.id] ?: 0
+        val seed = java.util.concurrent.ThreadLocalRandom.current().nextLong()
+        val winner = NativeGachaService.pickForRoll(pool, oldPity + 1 >= banner.pity, Random(seed))
+        val record = Journal(
+            requestId = requestId,
+            playerId = player.uuid.toString(),
+            bannerId = banner.id,
+            winnerId = winner.id,
+            winnerName = winner.name,
+            species = winner.species,
+            aspect = winner.aspect,
+            source = winner.source,
+            rarity = winner.rarity,
+            perfectIvs = winner.perfectIvs,
+            ticketCost = banner.costTickets,
+            newPity = if (NativeGachaService.isPremium(winner.rarity)) 0 else oldPity + 1,
+            beforeQuantity = SkiesSkinsBridge.ownedQuantity(player, winner.id),
+            seed = seed
+        )
+
+        if (!persist(record) { ok ->
+                if (ok) begin(record) else {
+                    inFlight.remove(player.uuid)
+                    pushFailure(player, "gui.svhub.gacha.persist_failed")
+                }
+            }) {
+            inFlight.remove(player.uuid)
+            return fail(player, "gui.svhub.gacha.busy")
+        }
+
+        return NativeGachaService.RollResult(
+            true, "",
+            NativeGachaService.state(player, banner.id).apply {
+                addProperty("rolling", true)
+                addProperty("requestId", requestId)
+            }
+        )
+    }
+
+    fun recoverPlayer(player: ServerPlayer) {
+        val records = pending.values
+            .filter { it.playerId == player.uuid.toString() }
+            .sortedBy { it.createdAtEpochMs }
+        records.filter(::completed).forEach(::cleanup)
+        val active = records.firstOrNull { !completed(it) } ?: return
+        if (inFlight.add(player.uuid)) begin(active)
+    }
+
+    private fun begin(record: Journal) {
+        val id = playerId(record) ?: return
+        if (completed(record)) { cleanup(record); inFlight.remove(id); return }
+        val player = SVHubRuntime.server?.playerList?.getPlayer(id) ?: run { inFlight.remove(id); return }
+        val accepted = NativeProfileStore.mutateDurableOnce(
+            id, debitTx(record.requestId),
+            mutation = { profile ->
+                if (profile.gachaTickets < record.ticketCost) false
+                else profile.debit("ticket", record.ticketCost.toLong())
+            }
+        ) { result ->
+            when (result) {
+                DurableMutationResult.APPLIED, DurableMutationResult.ALREADY_APPLIED -> afterDebit(record)
+                DurableMutationResult.REJECTED -> abort(record, player, "gui.svhub.gacha.not_enough_tickets")
+            }
+        }
+        if (!accepted) inFlight.remove(id)
+    }
+
+    private fun afterDebit(record: Journal) {
+        when (record.stage) {
+            PREPARED -> {
+                val granting = record.copy(stage = GRANTING)
+                if (!persist(granting) { ok -> if (ok) grantOrRecover(granting) else release(record) }) release(record)
+            }
+            GRANTING -> grantOrRecover(record)
+            GRANTED -> finalizeWin(record)
+            REFUNDING -> refund(record)
+            else -> release(record)
+        }
+    }
+
+    private fun grantOrRecover(record: Journal) {
+        val id = playerId(record) ?: return
+        val player = SVHubRuntime.server?.playerList?.getPlayer(id) ?: run { inFlight.remove(id); return }
+        if (SkiesSkinsBridge.ownedQuantity(player, record.winnerId) > record.beforeQuantity) {
+            persistGranted(record)
+            return
+        }
+        if (!SkiesSkinsBridge.grant(player, record.winnerId, 1)) {
+            val refunding = record.copy(stage = REFUNDING)
+            if (!persist(refunding) { ok -> if (ok) refund(refunding) else release(record) }) release(record)
+            return
+        }
+        persistGranted(record)
+    }
+
+    private fun persistGranted(record: Journal) {
+        if (record.stage == GRANTED) { finalizeWin(record); return }
+        val granted = record.copy(stage = GRANTED)
+        if (!persist(granted) { ok -> if (ok) finalizeWin(granted) else release(record) }) release(record)
+    }
+
+    private fun finalizeWin(record: Journal) {
+        val id = playerId(record) ?: return
+        val accepted = NativeProfileStore.mutateDurableOnce(
+            id, finalTx(record.requestId),
+            mutation = { profile ->
+                if (profile.appliedTransactions.containsKey(refundTx(record.requestId))) false
+                else { profile.pity[record.bannerId] = record.newPity; true }
+            }
+        ) { result ->
+            when (result) {
+                DurableMutationResult.APPLIED, DurableMutationResult.ALREADY_APPLIED ->
+                    completeSuccess(record, SVHubRuntime.server?.playerList?.getPlayer(id), result == DurableMutationResult.APPLIED)
+                DurableMutationResult.REJECTED -> release(record)
+            }
+        }
+        if (!accepted) release(record)
+    }
+
+    private fun refund(record: Journal) {
+        val id = playerId(record) ?: return
+        val accepted = NativeProfileStore.mutateDurableOnce(
+            id, refundTx(record.requestId),
+            mutation = { profile ->
+                if (profile.appliedTransactions.containsKey(finalTx(record.requestId))) false
+                else { profile.credit("ticket", record.ticketCost.toLong()); true }
+            }
+        ) { result ->
+            when (result) {
+                DurableMutationResult.APPLIED, DurableMutationResult.ALREADY_APPLIED ->
+                    completeFailure(record, SVHubRuntime.server?.playerList?.getPlayer(id), "gui.svhub.gacha.grant_failed")
+                DurableMutationResult.REJECTED -> release(record)
+            }
+        }
+        if (!accepted) release(record)
+    }
+
+    private fun completeSuccess(record: Journal, player: ServerPlayer?, newlyApplied: Boolean) {
+        deleteRecord(record)
+        playerId(record)?.let(inFlight::remove)
+        if (player == null) return
+        if (newlyApplied && record.perfectIvs > 0) NativeSkinService.grantBonusPokemon(player, record.perfectIvs)
+        val winner = NativeSkin(
+            record.winnerId, record.winnerName, record.species, record.aspect, record.source,
+            "", 0L, record.perfectIvs, record.rarity, true
+        )
+        val banner = NativeGachaService.banners.firstOrNull { it.id == record.bannerId } ?: NativeGachaService.banners.first()
+        val result = NativeGachaService.state(player, record.bannerId).apply {
+            add("lastRoll", JsonObject().apply {
+                addProperty("requestId", record.requestId)
+                addProperty("banner", record.bannerId)
+                addProperty("winnerId", record.winnerId)
+                addProperty("winnerName", record.winnerName)
+                addProperty("species", record.species)
+                addProperty("aspect", record.aspect)
+                addProperty("source", record.source)
+                addProperty("rarity", record.rarity)
+                addProperty("pity", record.newPity)
+                addProperty("seed", record.seed)
+            })
+            add("strip", NativeGachaService.buildStrip(NativeGachaService.poolFor(banner), winner, record.seed))
+            addProperty("rolling", false)
+        }
+        if (NativePlatformNetwork.currentModule(player.uuid) == "gacha") {
+            NativePlatformNetwork.sendState(player, "gacha", result, "")
+        }
+    }
+
+    private fun completeFailure(record: Journal, player: ServerPlayer?, key: String) {
+        deleteRecord(record)
+        playerId(record)?.let(inFlight::remove)
+        if (player != null) pushFailure(player, key)
+    }
+
+    private fun abort(record: Journal, player: ServerPlayer?, key: String) {
+        deleteRecord(record)
+        playerId(record)?.let(inFlight::remove)
+        if (player != null) pushFailure(player, key)
+    }
+
+    private fun pushFailure(player: ServerPlayer, key: String) {
+        if (NativePlatformNetwork.currentModule(player.uuid) == "gacha") {
+            NativePlatformNetwork.sendState(
+                player, "gacha", NativeGachaService.state(player).apply { addProperty("errorKey", key) }, ""
+            )
+        }
+    }
+
+    private fun fail(player: ServerPlayer, key: String) =
+        NativeGachaService.RollResult(false, "", NativeGachaService.state(player).apply { addProperty("errorKey", key) })
+
+    private fun release(record: Journal) { playerId(record)?.let(inFlight::remove) }
+
+    private fun persist(record: Journal, done: (Boolean) -> Unit): Boolean {
+        val pool = executor ?: return false
+        return try {
+            pool.execute {
+                val ok = runCatching {
+                    AtomicFiles.writeUtf8(journalPath(record.requestId), gson.toJson(record))
+                    true
+                }.onFailure { SVHub.LOGGER.error("Unable to persist gacha journal {}", record.requestId, it) }
+                    .getOrDefault(false)
+                if (ok) pending[record.requestId] = record
+                SVHubRuntime.server?.execute { done(ok) }
+            }
+            true
+        } catch (_: RejectedExecutionException) { false }
+    }
+
+    private fun deleteRecord(record: Journal) {
+        pending.remove(record.requestId, record)
+        val pool = executor ?: return
+        try {
+            pool.execute {
+                runCatching { Files.deleteIfExists(journalPath(record.requestId)) }
+                    .onFailure { SVHub.LOGGER.warn("Unable to delete gacha journal {}", record.requestId, it) }
+            }
+        } catch (_: RejectedExecutionException) { }
+    }
+
+    private fun cleanup(record: Journal) { deleteRecord(record); playerId(record)?.let(inFlight::remove) }
+
+    private fun completed(record: Journal): Boolean {
+        val id = playerId(record) ?: return true
+        return NativeProfileStore.isTransactionDurable(id, finalTx(record.requestId)) ||
+            NativeProfileStore.isTransactionDurable(id, refundTx(record.requestId))
+    }
+
+    private fun loadPending() {
+        if (!::journalRoot.isInitialized || !Files.isDirectory(journalRoot)) return
+        runCatching {
+            Files.list(journalRoot).use { files ->
+                files.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".json") }.forEach { file ->
+                    runCatching { gson.fromJson(Files.readString(file), Journal::class.java) }
+                        .onFailure { SVHub.LOGGER.warn("Unable to read gacha journal {}", file, it) }
+                        .getOrNull()?.takeIf { it.requestId.isNotBlank() && it.playerId.isNotBlank() }
+                        ?.let { pending[it.requestId] = it }
+                }
+            }
+        }.onFailure { SVHub.LOGGER.warn("Unable to scan gacha journal", it) }
+    }
+
+    private fun playerId(record: Journal) = runCatching { UUID.fromString(record.playerId) }.getOrNull()
+    private fun journalPath(requestId: String) = journalRoot.resolve(requestId + ".json")
+    private fun debitTx(requestId: String) = "gacha:" + requestId + ":debit"
+    private fun finalTx(requestId: String) = "gacha:" + requestId + ":final"
+    private fun refundTx(requestId: String) = "gacha:" + requestId + ":refund"
+
+    private const val PREPARED = "PREPARED"
+    private const val GRANTING = "GRANTING"
+    private const val GRANTED = "GRANTED"
+    private const val REFUNDING = "REFUNDING"
+}

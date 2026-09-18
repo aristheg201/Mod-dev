@@ -35,6 +35,7 @@ object SkiesSkinsBridge {
 
     fun ownedIds(player: ServerPlayer): Set<String> = inventoryObjects(player).mapNotNullTo(linkedSetOf()) { field(it, "id")?.toString() }
     fun ownedCount(player: ServerPlayer): Int = inventoryObjects(player).size
+    fun ownedQuantity(player: ServerPlayer, skinId: String): Int = inventoryObjects(player).count { field(it, "id")?.toString() == skinId }
 
     fun grant(player: ServerPlayer, skinId: String, amount: Int = 1): Boolean {
         if (amount !in 1..100) return false
