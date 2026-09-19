@@ -371,6 +371,8 @@ class TftSession(
                 "augmentChoices" to encodeAugmentChoices(player),
                 "draft" to encodeDraft(player),
                 "carouselPosition" to "${player.carouselX},${player.carouselY}",
+                "carouselMaxMove" to set.carousel.maxMovePerIntent.toString(),
+                "carouselPickupRadius" to set.carousel.pickupRadius.toString(),
                 "carouselPicked" to player.draftPicked.toString(),
                 "carouselRevision" to revision.toString(),
                 "carouselCenterDecoration" to set.carousel.centerDecoration,
