@@ -29,11 +29,23 @@ object RouteEffectRuntime {
     data class Status(val id:String,val remainingTicks:Int,val intensity:Double,val stacks:Int=1)
     interface Target { var hp:Int;var shield:Int;val statuses:MutableMap<String,Status>;val resistances:List<TdResistance> }
     fun apply(nodes:List<EffectDefinition>,target:Target,element:String,baseDamage:Double):Int {var dealt=0;for(node in nodes){when(node.op()){
-        "damage","true_damage"->{val authored=node.value("amount",baseDamage);val resistance=if(node.op()=="true_damage")1.0 else target.resistances.firstOrNull{it.type.equals(element,true)}?.multiplier?:1.0;var amount=DamagePipeline.scalar(authored,resistance).toInt();val absorbed=minOf(target.shield,amount);target.shield-=absorbed;amount-=absorbed;val actual=minOf(target.hp,amount);target.hp-=actual;dealt+=actual}
+        "damage","true_damage"->{val authored=node.value("amount",baseDamage);val vulnerability=1.0+(target.statuses["vulnerability"]?.intensity?:0.0);val resistanceModifier=1.0+(target.statuses["resistance_modification"]?.intensity?:0.0);val resistance=if(node.op()=="true_damage")1.0 else (target.resistances.firstOrNull{it.type.equals(element,true)}?.multiplier?:1.0)*resistanceModifier;var amount=DamagePipeline.scalar(authored*vulnerability,resistance).toInt();val absorbed=minOf(target.shield,amount);target.shield-=absorbed;amount-=absorbed;val actual=minOf(target.hp,amount);target.hp-=actual;dealt+=actual}
         "add_status"->{val id=node.text("id","");if(id.isNotBlank()){val next=Status(id,node.value("duration_ticks",5.0).toInt().coerceAtLeast(1),node.value("intensity",1.0),node.value("stacks",1.0).toInt().coerceAtLeast(1));target.statuses[id]=next}}
         "shield"->target.shield=(target.shield+node.value("amount",0.0).toInt()).coerceAtLeast(0)
         "sequence","parallel","area_effect","targeted_effect"->dealt+=apply(node.children(),target,element,baseDamage)
     }};return dealt}
+}
+
+
+object RouteStatusRuntime {
+    data class TickResult(val damage:Int,val stunned:Boolean,val speedMultiplier:Double)
+    fun tick(target:RouteEffectRuntime.Target):TickResult {
+        val burn=target.statuses["burn"]?.intensity?:0.0;val poison=target.statuses["poison"]?.intensity?:0.0
+        val damage=(burn+poison).toInt().coerceAtLeast(0);val absorbed=minOf(target.shield,damage);target.shield-=absorbed;target.hp=(target.hp-(damage-absorbed)).coerceAtLeast(0)
+        val stunned="stun" in target.statuses;val speed=(1.0-(target.statuses["slow"]?.intensity?:0.0)).coerceIn(0.0,1.0)
+        target.statuses.replaceAll{_,status->status.copy(remainingTicks=status.remainingTicks-1)};target.statuses.entries.removeIf{it.value.remainingTicks<=0}
+        return TickResult(damage-absorbed,stunned,speed)
+    }
 }
 
 /** Generic deterministic TriggerDefinition dispatcher for route-mode actors. */

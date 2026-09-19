@@ -31,6 +31,8 @@ class ChessSession(
     private var blackClock = initialClockMillis
     private var lastMoveFrom = -1
     private var lastMoveTo = -1
+    private var lastAuxMoveFrom = -1
+    private var lastAuxMoveTo = -1
     private var lastCapturedPiece = '.'
     private var lastCapturedSquare = -1
     private var moveSerial = 0L
@@ -73,6 +75,8 @@ class ChessSession(
                 "legalMoves" to legal.joinToString(";") { squareName(it.from) + ":" + squareName(it.to) },
                 "lastMoveFrom" to if (lastMoveFrom >= 0) squareName(lastMoveFrom) else "",
                 "lastMoveTo" to if (lastMoveTo >= 0) squareName(lastMoveTo) else "",
+                "lastAuxMoveFrom" to if (lastAuxMoveFrom >= 0) squareName(lastAuxMoveFrom) else "",
+                "lastAuxMoveTo" to if (lastAuxMoveTo >= 0) squareName(lastAuxMoveTo) else "",
                 "lastCapturedPiece" to if (lastCapturedPiece != '.') lastCapturedPiece.toString() else "",
                 "lastCapturedSquare" to if (lastCapturedSquare >= 0) squareName(lastCapturedSquare) else "",
                 "moveSerial" to moveSerial.toString()
@@ -134,7 +138,7 @@ class ChessSession(
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(String(board), side.toString(), castling, epSquare, halfmove, fullmove, revision, log.toList(),
             repetitions.toMap(), result, winner, drawOfferedBy, whiteClock.coerceAtLeast(0L),
-            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, lastCapturedPiece, lastCapturedSquare, moveSerial, rng.state)
+            blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, lastCapturedPiece, lastCapturedSquare, moveSerial, rng.state,lastAuxMoveFrom,lastAuxMoveTo)
     )
 
     private fun restoreSnapshot(state: JsonObject) {
@@ -158,6 +162,7 @@ class ChessSession(
         blackClock = s.blackClock.coerceAtLeast(0L)
         lastMoveFrom = s.lastMoveFrom.takeIf { it in -1..63 } ?: -1
         lastMoveTo = s.lastMoveTo.takeIf { it in -1..63 } ?: -1
+        lastAuxMoveFrom=s.lastAuxMoveFrom?.takeIf{it in 0..63}?:-1;lastAuxMoveTo=s.lastAuxMoveTo?.takeIf{it in 0..63}?:-1
         lastCapturedPiece = s.lastCapturedPiece.takeIf { it.lowercaseChar() in "pnbrqk" } ?: '.'
         lastCapturedSquare = s.lastCapturedSquare.takeIf { lastCapturedPiece != '.' && it in 0..63 } ?: -1
         moveSerial = s.moveSerial.coerceAtLeast(0L)
@@ -184,11 +189,12 @@ class ChessSession(
         board[m.from] = '.'
         if (m.enPassant) board[m.to + if (moving == 'w') 8 else -8] = '.'
         board[m.to] = if (m.promotion) if (moving == 'w') m.promoteTo.uppercaseChar() else m.promoteTo.lowercaseChar() else piece
+        lastAuxMoveFrom=-1;lastAuxMoveTo=-1
         if (m.castle) when (m.to) {
-            62 -> { board[63] = '.'; board[61] = 'R' }
-            58 -> { board[56] = '.'; board[59] = 'R' }
-            6 -> { board[7] = '.'; board[5] = 'r' }
-            2 -> { board[0] = '.'; board[3] = 'r' }
+            62 -> { board[63] = '.'; board[61] = 'R';lastAuxMoveFrom=63;lastAuxMoveTo=61 }
+            58 -> { board[56] = '.'; board[59] = 'R';lastAuxMoveFrom=56;lastAuxMoveTo=59 }
+            6 -> { board[7] = '.'; board[5] = 'r';lastAuxMoveFrom=7;lastAuxMoveTo=5 }
+            2 -> { board[0] = '.'; board[3] = 'r';lastAuxMoveFrom=0;lastAuxMoveTo=3 }
         }
         if (piece == 'K') castling = castling.replace("K", "").replace("Q", "")
         if (piece == 'k') castling = castling.replace("k", "").replace("q", "")
@@ -370,7 +376,8 @@ class ChessSession(
         val board:String,val side:String,val castling:String,val epSquare:Int,val halfmove:Int,val fullmove:Int,
         val revision:Long,val log:List<String>,val repetitions:Map<String,Int>,val result:String?,val winner:String?,
         val drawOfferedBy:String?,val whiteClock:Long,val blackClock:Long,val lastMoveFrom:Int,val lastMoveTo:Int,
-        val lastCapturedPiece:Char,val lastCapturedSquare:Int,val moveSerial:Long,val rngState:Long
+        val lastCapturedPiece:Char,val lastCapturedSquare:Int,val moveSerial:Long,val rngState:Long,
+        val lastAuxMoveFrom:Int?=null,val lastAuxMoveTo:Int?=null
     )
 
     companion object {

@@ -107,6 +107,7 @@ object NativeBoardSceneRenderer {
         val serial = fields.long("moveSerial")
         val lastFrom = chessIndex(fields.str("lastMoveFrom"))
         val lastTo = chessIndex(fields.str("lastMoveTo"))
+        val auxFrom=chessIndex(fields.str("lastAuxMoveFrom"));val auxTo=chessIndex(fields.str("lastAuxMoveTo"))
         val legalMoves = parseLegalMoves(fields.str("legalMoves"), ::chessIndex)
         val legalCells = if (selectedCell == null) emptySet() else legalMoves[selectedCell].orEmpty()
         val selected = selectedCell?.let(::setOf).orEmpty()
@@ -120,10 +121,7 @@ object NativeBoardSceneRenderer {
             val team = if (token.firstOrNull()?.isUpperCase() == true) 0 else 1
             var motionFrom: Int? = if (index == lastTo) lastFrom else null
 
-            if (serial > 0 && token.lowercase() == "r") {
-                val rookMotion = castleRookMotion(lastFrom, lastTo, index)
-                if (rookMotion != null) motionFrom = rookMotion
-            }
+            if (serial > 0 && index==auxTo) motionFrom=auxFrom
 
             entities += PokemonSceneEntity(
                 id = "chess:$index:$token",
@@ -520,14 +518,6 @@ object NativeBoardSceneRenderer {
             out.getOrPut(from) { linkedSetOf() } += to
         }
         return out.mapValues { it.value.toSet() }
-    }
-
-    private fun castleRookMotion(lastFrom: Int?, lastTo: Int?, rookIndex: Int): Int? = when {
-        lastFrom == 60 && lastTo == 62 && rookIndex == 61 -> 63
-        lastFrom == 60 && lastTo == 58 && rookIndex == 59 -> 56
-        lastFrom == 4 && lastTo == 6 && rookIndex == 5 -> 7
-        lastFrom == 4 && lastTo == 2 && rookIndex == 3 -> 0
-        else -> null
     }
 
     private fun chessIndex(square: String): Int? {
