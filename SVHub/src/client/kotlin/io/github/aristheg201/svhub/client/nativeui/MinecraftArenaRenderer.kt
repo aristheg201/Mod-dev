@@ -83,7 +83,7 @@ data class MinecraftArenaDefinition(
     fun itemAnchor(index:Int):ArenaPoint = itemBenchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.6f,boardOrigin.y+boardRows+1.6f,boardOrigin.z)
     fun camera(role:ArenaCameraRole,fallback:SceneCameraPreset):SceneCameraPreset {
         val point=when(role){ArenaCameraRole.NORMAL->cameras.spectator;ArenaCameraRole.SPECTATOR->cameras.spectator;ArenaCameraRole.SCOUTING->cameras.scouting;ArenaCameraRole.CAROUSEL->cameras.carousel}
-        val span=max(1f,arenaBounds.maxY-arenaBounds.minY);val height=(point.z/span).coerceIn(.5f,1.5f)
+        val span=max(1f,arenaBounds.maxY-arenaBounds.minY);val height=(point.z/span).coerceIn(.5f,1.25f)
         return fallback.copy(id="${fallback.id}:${role.name.lowercase()}",tileScale=height,verticalScale=(point.y/span).coerceIn(.5f,1.25f),originBiasY=(point.y/(span+point.y.coerceAtLeast(0f))).coerceIn(0f,1f),pitch=(18f+point.z*2f).coerceIn(0f,75f))
     }
     fun interactionAt(x:Float,y:Float):ArenaInteractionRegion?=interactionRegions.firstOrNull{x in it.bounds.minX..it.bounds.maxX&&y in it.bounds.minY..it.bounds.maxY}
