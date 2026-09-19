@@ -172,7 +172,7 @@ object CardTable3DRenderer {
         if (subtitle.isNotBlank()) gui.drawCenteredString(font, subtitle, rect.x + rect.width / 2, rect.bottom - 14, MUTED)
     }
 
-    private fun drawPile(gui:GuiGraphics,font:Font,rect:UiRect,label:String,count:String,face:Boolean){gui.fill(rect.x+2,rect.y+3,rect.right+2,rect.bottom+3,0xAA000000.toInt());gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(face)CARD_HOVER:CARD);gui.fill(rect.x,rect.y,rect.right,rect.y+3,GOLD);gui.drawCenteredString(font,font.plainSubstrByWidth(label,rect.width-6),rect.x+rect.width/2,rect.y+rect.height/2-5,TEXT);if(count.isNotBlank())gui.drawCenteredString(font,count,rect.x+rect.width/2,rect.bottom-12,MUTED)}
+    private fun drawPile(gui:GuiGraphics,font:Font,rect:UiRect,label:String,count:String,face:Boolean){gui.fill(rect.x+2,rect.y+3,rect.right+2,rect.bottom+3,0xAA000000.toInt());gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(face) CARD_HOVER else CARD);gui.fill(rect.x,rect.y,rect.right,rect.y+3,GOLD);gui.drawCenteredString(font,font.plainSubstrByWidth(label,rect.width-6),rect.x+rect.width/2,rect.y+rect.height/2-5,TEXT);if(count.isNotBlank())gui.drawCenteredString(font,count,rect.x+rect.width/2,rect.bottom-12,MUTED)}
 
     private fun drawTable(gui: GuiGraphics, rect: UiRect, theme:MinecraftArenaDefinition?) {
         val cx = rect.x + rect.width / 2
