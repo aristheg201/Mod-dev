@@ -13,6 +13,7 @@ class TftSetRegistryTest {
     @Test fun bundledSetLoadsAllOriginalContent() {
         val set = TftSetRegistry.bundled("kanto_rising")
         assertEquals(43, set.units.size)
+        assertEquals(listOf("svhub:kanto_vanguard"), set.teams.map { it.id })
         assertEquals(23, set.traits.size)
         assertEquals(8, set.components.size)
         assertEquals(36, set.fullItems.size)
@@ -30,7 +31,7 @@ class TftSetRegistryTest {
         val origin = TftSetRegistry::class.java.protectionDomain.codeSource.location
         assertTrue(origin.path.substringAfterLast('/').startsWith("SVHub-fabric-"), origin.toString())
         assertTrue(origin.path.endsWith(".jar"), origin.toString())
-        for (name in listOf("set", "units", "traits", "components", "full_items", "augments", "pve")) {
+        for (name in listOf("set", "units", "teams", "traits", "components", "full_items", "augments", "pve")) {
             val url = assertNotNull(TftSetRegistry::class.java.getResource("/data/svhub/tft/sets/kanto_rising/$name.json"))
             assertEquals("jar", url.protocol)
             assertEquals(origin, (url.openConnection() as JarURLConnection).jarFileURL)
@@ -135,6 +136,39 @@ class TftSetRegistryTest {
         assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(set.copy(shopOdds = set.shopOdds.dropLast(1))) }
         assertFailsWith<IllegalArgumentException> {
             TftDefinitionValidator.validate(set.copy(pveRounds = listOf(TftPveRoundDefinition(enemies = listOf(TftPveEnemyDefinition("missing"))))))
+        }
+    }
+
+    @Test fun pokemonPresentationIdentityPreservesResolverStateAndLegacyContent() {
+        val legacy = TftUnitDefinition(species = "cobblemon:mewtwo", aspects = listOf("greenlantern"))
+        assertEquals("cobblemon:mewtwo", legacy.presentation.species)
+        assertEquals(setOf("greenlantern"), legacy.presentation.resolverAspects())
+
+        val identity = PokemonPresentationIdentity(
+            species = "cobblemon:mewtwo",
+            form = "mega-x",
+            aspects = setOf("greenlantern"),
+            shiny = true,
+            gender = "genderless",
+            cosmeticAspects = setOf("event-cape"),
+            features = mapOf("marking" to "corps")
+        )
+        assertEquals(
+            setOf("greenlantern", "mega-x", "shiny", "genderless", "event-cape", "marking=corps"),
+            identity.resolverAspects()
+        )
+    }
+
+    @Test fun rejectsBrokenTeamReferencesAndOverlappingPositions() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val team = set.teams.single()
+        assertFailsWith<IllegalArgumentException> {
+            TftDefinitionValidator.validate(set.copy(teams = listOf(team.copy(members = listOf(TftTeamMemberDefinition("missing", 0))))))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            TftDefinitionValidator.validate(set.copy(teams = listOf(team.copy(members = listOf(
+                TftTeamMemberDefinition("pikachu", 0), TftTeamMemberDefinition("eevee", 0)
+            )))))
         }
     }
 

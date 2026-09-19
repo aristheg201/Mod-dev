@@ -22,7 +22,7 @@ try:
         data[name] = json.loads(raw)
     if not isinstance(data['set.json'], dict):
         raise ValueError('set.json must contain the manifest object, not component definitions')
-    counts = {'units.json': 43, 'traits.json': 23, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7}
+    counts = {'units.json': 43, 'teams.json': 1, 'traits.json': 23, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7}
     for name, count in counts.items():
         if not isinstance(data[name], list) or len(data[name]) != count:
             raise ValueError(f'{name}: expected {count} reviewed definitions')
@@ -38,6 +38,10 @@ try:
     for round_ in data['pve.json']:
         if not all(e['unit'] in units for e in round_['enemies']):
             raise ValueError(f"Unknown unit in PvE round {round_['round']}")
+    for team in data['teams.json']:
+        members = team['members'] + team.get('bench', [])
+        if not all(member['unit'] in units for member in members):
+            raise ValueError(f"Unknown unit in team {team['id']}")
     print('TFT bundle verified:', ', '.join(f'{name}={count}' for name, count in counts.items()))
 finally:
     if jar:

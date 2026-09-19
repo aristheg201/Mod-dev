@@ -19,6 +19,7 @@ data class TftSetDefinition(
     val effectGraphs: Map<String, List<EffectDefinition>> = emptyMap(),
     val shopOdds: List<TftShopOdds> = emptyList(),
     val units: List<TftUnitDefinition> = emptyList(),
+    val teams: List<TftTeamDefinition> = emptyList(),
     val traits: List<TftTraitDefinition> = emptyList(),
     val components: List<TftItemComponentDefinition> = emptyList(),
     val fullItems: List<TftFullItemDefinition> = emptyList(),
@@ -33,6 +34,9 @@ data class TftTacticianDefinition(val id: String = "", val entity: String = "", 
 
 data class TftUnitDefinition(
     val id: String = "",
+    /** Complete immutable presentation identity. New content must use this field. */
+    val pokemon: PokemonPresentationIdentity? = null,
+    /** Schema-one compatibility. Migrated to [pokemon] when definitions are compiled. */
     val species: String = "",
     val aspects: List<String> = emptyList(),
     val cost: Int = 1,
@@ -43,6 +47,53 @@ data class TftUnitDefinition(
     val triggers: List<TriggerDefinition> = emptyList(),
     val tags: Set<String> = emptySet(),
     val team: String = ""
+) {
+    val presentation: PokemonPresentationIdentity
+        get() = pokemon ?: PokemonPresentationIdentity(species = species, aspects = aspects.toSet())
+}
+
+data class PokemonPresentationIdentity(
+    val species: String = "",
+    val form: String? = null,
+    val aspects: Set<String> = emptySet(),
+    val shiny: Boolean = false,
+    val gender: String? = null,
+    val features: Map<String, String> = emptyMap(),
+    val cosmeticAspects: Set<String> = emptySet(),
+    val scale: Double = 1.0
+) {
+    fun resolverAspects(): Set<String> = buildSet {
+        addAll(aspects)
+        addAll(cosmeticAspects)
+        form?.takeIf(String::isNotBlank)?.let(::add)
+        if (shiny) add("shiny")
+        gender?.takeIf(String::isNotBlank)?.let(::add)
+        features.toSortedMap().forEach { (key, value) ->
+            add(if (value.isBlank()) key else "$key=$value")
+        }
+    }
+}
+
+data class TftTeamDefinition(
+    val id: String = "",
+    val name: String = "",
+    val synergyTrait: String? = null,
+    val members: List<TftTeamMemberDefinition> = emptyList(),
+    val bench: List<TftTeamMemberDefinition> = emptyList(),
+    val augments: List<String> = emptyList(),
+    val tactician: String? = null,
+    val arena: String? = null,
+    val startingLevel: Int = 2,
+    val startingGold: Int = 0,
+    val startingHealth: Int = 100,
+    val aiProfile: String = "normal"
+)
+
+data class TftTeamMemberDefinition(
+    val unit: String = "",
+    val slot: Int? = null,
+    val star: Int = 1,
+    val items: List<String> = emptyList()
 )
 
 data class TftUnitStats(
@@ -152,7 +203,11 @@ object TftDefinitionValidator {
         val traitIds = set.traits.map { it.id }.toSet()
         set.units.forEach { unit ->
             require(unit.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid TFT unit id ${unit.id}" }
-            require(unit.species.contains(':')) { "TFT unit ${unit.id} must use a namespaced species id" }
+            val identity = unit.presentation
+            require(identity.species.matches(Regex("^[a-z0-9_.-]+:[a-z0-9_./-]+$"))) { "TFT unit ${unit.id}.pokemon.species must be namespaced" }
+            require(identity.scale in 0.1..8.0) { "TFT unit ${unit.id}.pokemon.scale is out of range" }
+            require(identity.aspects.none(String::isBlank) && identity.cosmeticAspects.none(String::isBlank)) { "TFT unit ${unit.id}.pokemon contains a blank aspect" }
+            require(identity.gender == null || identity.gender in setOf("male", "female", "genderless")) { "TFT unit ${unit.id}.pokemon.gender is invalid" }
             require(unit.cost in 1..5) { "TFT unit ${unit.id} has invalid cost ${unit.cost}" }
             require(unit.stats.hp > 0 && unit.stats.attackDamage > 0) { "TFT unit ${unit.id} has invalid base stats" }
             require(unit.stats.attackSpeed in 0.1..5.0) { "TFT unit ${unit.id} attack speed out of range" }
@@ -187,6 +242,27 @@ object TftDefinitionValidator {
         require(set.augments.map { it.id }.toSet().size == set.augments.size) { "Duplicate TFT augment id" }
         require(set.pveRounds.map { it.round }.toSet().size == set.pveRounds.size) { "Duplicate TFT PvE round" }
         val unitIds = set.units.map { it.id }.toSet()
+        require(set.teams.map { it.id }.toSet().size == set.teams.size) { "Duplicate TFT team id" }
+        val augmentIds = set.augments.map { it.id }.toSet()
+        val itemIds = componentIds + set.fullItems.map { it.id }
+        val tacticianIds = set.tacticians.map { it.id }.toSet()
+        set.teams.forEach { team ->
+            require(team.id.matches(Regex("^[a-z0-9_.-]+:[a-z0-9_.-]+$"))) { "TFT team ${team.id}: id must be namespaced" }
+            require(team.name.isNotBlank()) { "TFT team ${team.id}.name is empty" }
+            require(team.members.isNotEmpty()) { "TFT team ${team.id}.members is empty" }
+            require(team.startingLevel in 1..progression.maxLevel && team.startingGold >= 0 && team.startingHealth > 0) { "TFT team ${team.id}: invalid starting state" }
+            require(team.synergyTrait == null || team.synergyTrait in traitIds) { "TFT team ${team.id}.synergyTrait is unknown" }
+            require(team.augments.all(augmentIds::contains)) { "TFT team ${team.id}.augments contains an unknown augment" }
+            require(team.tactician == null || team.tactician in tacticianIds) { "TFT team ${team.id}.tactician is unknown" }
+            val positioned = team.members + team.bench
+            require(team.members.mapNotNull { it.slot }.distinct().size == team.members.mapNotNull { it.slot }.size) { "TFT team ${team.id}.members has duplicate board slots" }
+            positioned.forEachIndexed { index, member ->
+                require(member.unit in unitIds) { "TFT team ${team.id}.member[$index].unit is unknown: ${member.unit}" }
+                require(member.star in 1..3) { "TFT team ${team.id}.member[$index].star is invalid" }
+                require(member.slot == null || member.slot in 0..27) { "TFT team ${team.id}.member[$index].slot is invalid" }
+                require(member.items.all(itemIds::contains)) { "TFT team ${team.id}.member[$index].items contains an unknown item" }
+            }
+        }
         set.pveRounds.forEach { round ->
             require(round.enemies.isNotEmpty()) { "PvE round ${round.round} has no enemies" }
             require(round.componentDrops >= 0) { "PvE round ${round.round} has negative drops" }

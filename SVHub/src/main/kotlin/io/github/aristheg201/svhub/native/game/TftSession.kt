@@ -264,8 +264,8 @@ class TftSession(
                 value = def.cost,
                 meta = mapOf(
                     "unit" to def.id,
-                    "species" to def.species,
-                    "aspects" to def.aspects.joinToString(","),
+                    "species" to def.presentation.species,
+                    "aspects" to def.presentation.resolverAspects().joinToString(","),
                     "traits" to def.traits.joinToString(","),
                     "role" to def.role,
                     "enabled" to shopEnabled.toString()
@@ -771,14 +771,14 @@ class TftSession(
         player.board.forEach { (slot, unit) ->
             val def = unitDefs[unit.unitId] ?: return@forEach
             val cell = 28 + slot
-            if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.species, unit.star, "-1", "-1", "0", "0", "0", def.aspects.joinToString(","), unit.items.joinToString(","), def.cost, def.role, "", 0, 0L, 0L).joinToString("~")
+            if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.presentation.species, unit.star, "-1", "-1", "0", "0", "0", def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role, "", 0, 0L, 0L).joinToString("~")
         }
         return cells
     }
 
     private fun encodeCombatUnit(unit: TftCombatUnit, relativeTeam: Int): String = listOf(
-        unit.instanceId, unit.definition.id, unit.definition.species, unit.star, unit.hp, unit.maxHp,
-        unit.mana, unit.maxMana, relativeTeam, unit.definition.aspects.joinToString(","), unit.items.joinToString(","),
+        unit.instanceId, unit.definition.id, unit.definition.presentation.species, unit.star, unit.hp, unit.maxHp,
+        unit.mana, unit.maxMana, relativeTeam, unit.definition.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","),
         unit.definition.cost, unit.definition.role, unit.targetId.orEmpty(), unit.casts, unit.damageDone, unit.healingDone,
         if (unit.alive) 1 else 0
     ).joinToString("~")
@@ -786,7 +786,7 @@ class TftSession(
     private fun encodeBench(player: PlayerState): String = player.bench.mapIndexedNotNull { index, unit ->
         unit ?: return@mapIndexedNotNull null
         val def = unitDefs[unit.unitId] ?: return@mapIndexedNotNull null
-        listOf(index, unit.instanceId, unit.unitId, def.species, unit.star, def.aspects.joinToString(","), unit.items.joinToString(","), def.cost, def.role).joinToString("~")
+        listOf(index, unit.instanceId, unit.unitId, def.presentation.species, unit.star, def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role).joinToString("~")
     }.joinToString(";")
 
     private fun encodePlayers(): String = players.values.sortedWith(compareBy<PlayerState> { it.eliminated }.thenByDescending { it.hp }).joinToString(";") { p ->
@@ -815,7 +815,7 @@ class TftSession(
                 val def = unitDefs[id] ?: return@forEach
                 add(def.id, JsonObject().apply {
                     addProperty("name", def.id.replace('_', ' ').replaceFirstChar { it.uppercase() }.take(96))
-                    addProperty("species", def.species.take(160))
+                    addProperty("species", def.presentation.species.take(160))
                     addProperty("cost", def.cost)
                     addProperty("role", def.role.take(64))
                     addProperty("traits", def.traits.joinToString(",").take(512))
@@ -898,7 +898,7 @@ class TftSession(
         val unlocked = System.currentTimeMillis() >= player.draftUnlockAt
         return draftOffers.joinToString(";") { offer ->
             val def = unitDefs[offer.unitId]
-            listOf(offer.index, offer.unitId, def?.species ?: "", offer.itemId, offer.takenBy ?: "", if (unlocked) 1 else 0, def?.cost ?: 1, def?.traits?.joinToString(",") ?: "").joinToString("~")
+            listOf(offer.index, offer.unitId, def?.presentation?.species ?: "", offer.itemId, offer.takenBy ?: "", if (unlocked) 1 else 0, def?.cost ?: 1, def?.traits?.joinToString(",") ?: "").joinToString("~")
         }
     }
 

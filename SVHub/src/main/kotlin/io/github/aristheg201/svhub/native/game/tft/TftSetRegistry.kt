@@ -56,6 +56,7 @@ object TftSetRegistry {
         require(base.id == id) { "$root/set.json: expected set id $id, got ${base.id}" }
         return TftDefinitionValidator.validate(base.copy(
             units = resourceList("$root/units.json", object : TypeToken<List<TftUnitDefinition>>() {}),
+            teams = optionalResourceList("$root/teams.json", object : TypeToken<List<TftTeamDefinition>>() {}),
             traits = resourceList("$root/traits.json", object : TypeToken<List<TftTraitDefinition>>() {}),
             components = resourceList("$root/components.json", object : TypeToken<List<TftItemComponentDefinition>>() {}),
             fullItems = resourceList("$root/full_items.json", object : TypeToken<List<TftFullItemDefinition>>() {}),
@@ -84,6 +85,20 @@ object TftSetRegistry {
             requireNotNull(gson.fromJson<List<T>>(json, token.type)) { "$path: empty definition list" }
         } catch (error: Exception) {
             throw IllegalArgumentException("$path: invalid TFT definition field types", error)
+        }
+    }
+
+    private fun <T> optionalResourceList(path: String, token: TypeToken<List<T>>): List<T> {
+        val stream = TftSetRegistry::class.java.getResourceAsStream(path) ?: return emptyList()
+        return stream.reader(Charsets.UTF_8).use { reader ->
+            val json = readJson(reader, path)
+            require(json.isJsonArray) { "$path: expected an array of definitions" }
+            require(json.asJsonArray.all { it.isJsonObject }) { "$path: every definition must be a non-null object" }
+            try {
+                requireNotNull(gson.fromJson<List<T>>(json, token.type)) { "$path: empty definition list" }
+            } catch (error: Exception) {
+                throw IllegalArgumentException("$path: invalid TFT definition field types", error)
+            }
         }
     }
 

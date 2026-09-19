@@ -1,0 +1,24 @@
+[
+  {
+    "id": "svhub:kanto_vanguard",
+    "name": "Kanto Vanguard",
+    "synergyTrait": "kanto",
+    "members": [
+      { "unit": "snorlax", "slot": 9, "star": 1 },
+      { "unit": "venusaur", "slot": 10, "star": 1 },
+      { "unit": "charizard", "slot": 16, "star": 1 },
+      { "unit": "blastoise", "slot": 17, "star": 1 },
+      { "unit": "pikachu", "slot": 23, "star": 2 },
+      { "unit": "mewtwo", "slot": 24, "star": 1 }
+    ],
+    "bench": [
+      { "unit": "eevee", "star": 1 },
+      { "unit": "gengar", "star": 1 }
+    ],
+    "tactician": "svhub:allay",
+    "startingLevel": 6,
+    "startingGold": 20,
+    "startingHealth": 100,
+    "aiProfile": "normal"
+  }
+]
