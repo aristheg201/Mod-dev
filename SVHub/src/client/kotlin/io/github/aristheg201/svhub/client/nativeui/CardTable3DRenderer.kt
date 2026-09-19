@@ -32,7 +32,8 @@ object CardTable3DRenderer {
             (area.width - max(16, area.width / 8)).coerceAtLeast(80),
             (area.height - 10).coerceAtLeast(70)
         )
-        drawTable(gui, table, gameId)
+        val theme=MinecraftArenaRegistry.definition(view.getAsJsonObject("fields")?.str("arenaId",gameId)?:gameId)
+        drawTable(gui, table, theme)
 
         val cards = view.getAsJsonArray("cards") ?: return
         val count = min(cards.size(), 6)
@@ -87,6 +88,8 @@ object CardTable3DRenderer {
             val active = fields?.str("activeColor").orEmpty()
             val top = fields?.let(::unoTopLabel).orEmpty()
             if (top.isNotBlank()) {
+                drawPile(gui,font,UiRect(table.x+table.width/2-54,table.y+table.height/2-28,42,56),I18n.get("gui.svhub.uno.draw"),fields?.str("drawPile").orEmpty(),false)
+                drawPile(gui,font,UiRect(table.x+table.width/2+12,table.y+table.height/2-28,42,56),top,"",true)
                 gui.drawCenteredString(font, top, table.x + table.width / 2, table.y + 16, TEXT)
                 if (active.isNotBlank()) {
                     gui.drawCenteredString(
@@ -98,12 +101,16 @@ object CardTable3DRenderer {
                     )
                 }
             }
+            fields?.str("hands")?.takeIf(String::isNotBlank)?.let { hands -> gui.drawCenteredString(font,font.plainSubstrByWidth(hands,table.width-24),table.x+table.width/2,table.y+42,MUTED) }
+            fields?.str("direction")?.takeIf(String::isNotBlank)?.let { direction -> gui.drawCenteredString(font,I18n.get("gui.svhub.uno.direction.$direction"),table.x+table.width/2,table.y+54,MUTED) }
         } else {
             val mine = fields?.str("yourScore").orEmpty()
             val theirs = fields?.str("opponentScore").orEmpty()
             if (mine.isNotBlank() || theirs.isNotBlank()) {
                 gui.drawCenteredString(font, "$mine — $theirs", table.x + table.width / 2, table.y + 18, GOLD)
             }
+            fields?.str("opponent")?.takeIf(String::isNotBlank)?.let { opponent -> gui.drawCenteredString(font,font.plainSubstrByWidth(opponent,table.width-24),table.x+table.width/2,table.y+34,MUTED) }
+            drawPile(gui,font,UiRect(table.x+table.width/2-23,table.y+table.height/2-31,46,62),I18n.get("gui.svhub.cards.play_zone"),"",true)
         }
     }
 
@@ -165,7 +172,9 @@ object CardTable3DRenderer {
         if (subtitle.isNotBlank()) gui.drawCenteredString(font, subtitle, rect.x + rect.width / 2, rect.bottom - 14, MUTED)
     }
 
-    private fun drawTable(gui: GuiGraphics, rect: UiRect, gameId: String) {
+    private fun drawPile(gui:GuiGraphics,font:Font,rect:UiRect,label:String,count:String,face:Boolean){gui.fill(rect.x+2,rect.y+3,rect.right+2,rect.bottom+3,0xAA000000.toInt());gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(face)CARD_HOVER:CARD);gui.fill(rect.x,rect.y,rect.right,rect.y+3,GOLD);gui.drawCenteredString(font,font.plainSubstrByWidth(label,rect.width-6),rect.x+rect.width/2,rect.y+rect.height/2-5,TEXT);if(count.isNotBlank())gui.drawCenteredString(font,count,rect.x+rect.width/2,rect.bottom-12,MUTED)}
+
+    private fun drawTable(gui: GuiGraphics, rect: UiRect, theme:MinecraftArenaDefinition?) {
         val cx = rect.x + rect.width / 2
         val cy = rect.y + rect.height / 2
         val halfW = rect.width / 2
@@ -177,8 +186,8 @@ object CardTable3DRenderer {
             val mid = (y0 + y1) * 0.5
             val ratio = 1.0 - kotlin.math.abs(mid - cy) / halfH.coerceAtLeast(1).toDouble()
             val width = max(2, (halfW * ratio).toInt())
-            gui.fill(cx - width - 2, y0, cx + width + 2, max(y0 + 1, y1), TABLE_EDGE)
-            gui.fill(cx - width, y0, cx + width, max(y0 + 1, y1), if (gameId == "uno") TABLE_UNO else TABLE_DRAFT)
+            gui.fill(cx - width - 2, y0, cx + width + 2, max(y0 + 1, y1), theme?.borderColor?:TABLE_EDGE)
+            gui.fill(cx - width, y0, cx + width, max(y0 + 1, y1), theme?.floorColor?:TABLE_DEFAULT)
         }
     }
 
@@ -204,8 +213,7 @@ object CardTable3DRenderer {
         runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
 
     private const val TABLE_EDGE = 0xFF253438.toInt()
-    private const val TABLE_UNO = 0xFF17302D.toInt()
-    private const val TABLE_DRAFT = 0xFF182632.toInt()
+    private const val TABLE_DEFAULT = 0xFF17302D.toInt()
     private const val CARD = 0xFF111C20.toInt()
     private const val CARD_HOVER = 0xFF21363B.toInt()
     private const val BORDER = 0xFF31484D.toInt()

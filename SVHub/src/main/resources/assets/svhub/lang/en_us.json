@@ -198,5 +198,9 @@
   "gui.svhub.arcade.current_game": "Active: %s",
   "gui.svhub.arcade.resumed": "Resuming your active game.",
   "gui.svhub.tft.home": "Home",
-  "gui.svhub.arcade.bot_takeover": "Bot takeover active while disconnected."
+  "gui.svhub.arcade.bot_takeover": "Bot takeover active while disconnected.",
+  "gui.svhub.uno.draw": "Draw pile",
+  "gui.svhub.uno.direction.clockwise": "Clockwise",
+  "gui.svhub.uno.direction.counterclockwise": "Counter-clockwise",
+  "gui.svhub.cards.play_zone": "Play zone"
 }

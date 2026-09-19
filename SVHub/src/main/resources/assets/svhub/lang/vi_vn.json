@@ -198,5 +198,9 @@
   "gui.svhub.arcade.current_game": "Đang chơi: %s",
   "gui.svhub.arcade.resumed": "Đang mở lại ván hiện tại.",
   "gui.svhub.tft.home": "Về sân",
-  "gui.svhub.arcade.bot_takeover": "Bot đang tiếp quản trong khi mất kết nối."
+  "gui.svhub.arcade.bot_takeover": "Bot đang tiếp quản trong khi mất kết nối.",
+  "gui.svhub.uno.draw": "Chồng bài rút",
+  "gui.svhub.uno.direction.clockwise": "Theo chiều kim đồng hồ",
+  "gui.svhub.uno.direction.counterclockwise": "Ngược chiều kim đồng hồ",
+  "gui.svhub.cards.play_zone": "Khu vực đánh bài"
 }

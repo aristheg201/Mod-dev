@@ -432,6 +432,9 @@ for (const relative of genericRuntimeFiles) {
     if (source.includes(`"${id}"`)) failures.push(`${relative}: generic runtime hardcodes shipped content id ${id}`);
   }
 }
+if (boardSceneRenderer.includes('definition("ludo")')) failures.push("NativeBoardSceneRenderer.kt: shipped Ludo arena lookup must come from authoritative state");
+if (/minOf\(96|until 96/.test(boardSceneRenderer)) failures.push("NativeBoardSceneRenderer.kt: TD capacity must derive from board dimensions");
+if (read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt").includes("TABLE_UNO")) failures.push("CardTable3DRenderer.kt: shipped UNO theme must come from resources");
 
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);

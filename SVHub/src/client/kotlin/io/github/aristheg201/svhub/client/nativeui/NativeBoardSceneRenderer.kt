@@ -309,15 +309,16 @@ object NativeBoardSceneRenderer {
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         val columns=view.int("boardWidth",1).coerceAtLeast(1);val rows=view.int("boardHeight",1).coerceAtLeast(1)
+        val capacity=columns*rows
         val path = fields.str("path")
             .split(',')
             .mapNotNull(String::toIntOrNull)
-            .filter { it in 0 until 96 }
+            .filter { it in 0 until capacity }
         val entities = mutableListOf<PokemonSceneEntity>()
         val effects = mutableListOf<SceneEffectSignal>()
         val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
 
-        repeat(minOf(96, board.size())) { index ->
+        repeat(minOf(capacity, board.size())) { index ->
             val raw = runCatching { board[index].asString }.getOrDefault("")
             if (raw.isBlank()) return@repeat
             raw.split(',').forEach { token ->
@@ -374,7 +375,8 @@ object NativeBoardSceneRenderer {
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         val viewerTeam = fields.int("you", -1)
-        val arena = MinecraftArenaRegistry.definition("ludo") ?: MinecraftArenaDefinition(boardColumns = 13, boardRows = 4)
+        val arenaId=fields.str("arenaId",view.str("gameId"))
+        val arena = MinecraftArenaRegistry.definition(arenaId) ?: MinecraftArenaDefinition(boardColumns = view.int("boardWidth",13), boardRows = view.int("boardHeight",4))
         val entities = mutableListOf<PokemonSceneEntity>()
 
         repeat(minOf(arena.boardAnchors.size.takeIf { it > 0 } ?: board.size(), board.size())) { index ->
@@ -408,7 +410,7 @@ object NativeBoardSceneRenderer {
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
             camera = SceneCameras.LUDO,
-            arenaId = "ludo",
+            arenaId = arenaId,
             arenaSeed = view.str("sessionId"),
             pathCells = arena.boardAnchors.indices.map { index ->
                 val point = arena.boardAnchor(index)

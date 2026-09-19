@@ -333,7 +333,8 @@ class TftSession(
                 "arenaId" to observed.arena,
                 "tacticianEntity" to set.tacticians.firstOrNull { it.id == observed.tactician }?.entity.orEmpty(),
                 "tacticianId" to observed.tactician,
-                "tacticianState" to when { player.eliminated -> "defeat"; finished && winner==player.id -> "victory"; finished -> "defeat"; phase==Phase.DRAFT && player.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
+                "tacticianState" to when { player.eliminated -> "defeat"; finished && winner==player.id -> "victory"; finished -> "defeat"; System.currentTimeMillis()<player.tacticianEmoteUntil -> "emote"; phase==Phase.DRAFT && player.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
+                "tacticianTarget" to if(phase==Phase.DRAFT) "${player.carouselX},${player.carouselY}" else "",
                 "tacticianPresentationOnly" to "true",
                 "scouting" to scouting.toString(),
                 "scoutTarget" to observed.id,
@@ -405,6 +406,7 @@ class TftSession(
             "carousel_move" -> carouselMove(player, args)
             "carousel_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
             "draft_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
+            "tactician_emote" -> { player.tacticianEmoteUntil=System.currentTimeMillis()+2_000L;bump("${player.name} emotes");accept("Tactician emote") }
             "resign" -> resign(player)
             else -> NativeGameResult(false, message = "Unknown TFT action")
         }
@@ -1154,7 +1156,7 @@ class TftSession(
         var draftUnlockAt: Long = 0L, var carouselX: Double = 0.0, var carouselY: Double = 0.0,
         var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
         var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false,
-        var tactician: String = "", var arena: String = "kanto_stadium",
+        var tactician: String = "", var arena: String = "kanto_stadium", var tacticianEmoteUntil:Long=0L,
         val specialRewards: MutableList<String> = mutableListOf()
     )
     private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null, val x: Double = 0.0, val y: Double = 0.0)

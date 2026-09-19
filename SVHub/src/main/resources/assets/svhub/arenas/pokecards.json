@@ -1,0 +1,11 @@
+{
+  "style": "card_table",
+  "surface": "terrain",
+  "floorColor": "#182632",
+  "floorAltColor": "#203545",
+  "borderColor": "#465E70",
+  "edgeColor": "#101719",
+  "depthColor": "#101719",
+  "depth": 3,
+  "metadata": {"boardColumns": 1, "boardRows": 1, "boardOrigin": [0, 0, 0], "arenaBounds": [0, 0, 1, 1], "lighting": "cool_table"}
+}

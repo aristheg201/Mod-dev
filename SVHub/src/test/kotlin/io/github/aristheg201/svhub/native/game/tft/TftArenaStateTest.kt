@@ -20,6 +20,16 @@ class TftArenaStateTest {
         assertTrue(restored.viewFor("a").board.all(String::isBlank))
     }
 
+    @Test fun authoritativeTacticianEmoteSurvivesRecoveryAndRemainsPresentationOnly() {
+        val session=create();val before=session.snapshotState().get("poolCounts")
+        assertTrue(session.act("a","tactician_emote",emptyMap()).accepted)
+        assertEquals("emote",session.viewFor("a").fields["tacticianState"])
+        val restored=NativeGameRestorer.restore("tft",seats,session.sessionId,session.snapshotState())
+        assertEquals("emote",restored.viewFor("a").fields["tacticianState"])
+        assertEquals("true",restored.viewFor("a").fields["tacticianPresentationOnly"])
+        assertEquals(before,restored.snapshotState().get("poolCounts"))
+    }
+
     @Test fun scoutingShowsPublicBoardBenchAndTacticianWithoutOpponentShop() {
         val s = create()
         assertTrue(s.act("b", "buy", mapOf("index" to "0")).accepted)

@@ -106,6 +106,7 @@ class LudoSession(
                 }.joinToString(" • "),
                 "you" to viewerSeat.toString(),
                 "safeSquares" to SAFE.joinToString(","),
+                "arenaId" to gameId,
                 "eliminated" to eliminated.joinToString(",")
             ),
             log = log.toList().takeLast(12),
