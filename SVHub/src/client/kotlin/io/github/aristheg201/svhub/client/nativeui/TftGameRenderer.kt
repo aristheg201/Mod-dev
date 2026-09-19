@@ -550,6 +550,15 @@ object TftGameRenderer {
             extraRows = 2
         )
 
+        presentation?.let { p ->
+            MinecraftArenaRenderer.renderPresentation(gui,frame.layout,p,phase)
+            p.interactionRegions.forEach { region ->
+                hooks.hit(MinecraftArenaRenderer.interactionRect(frame.layout,region)) {
+                    if(region.action.isNotBlank()) hooks.action(region.action,emptyMap())
+                }
+            }
+        }
+
         val tacticianEntity=fields.str("tacticianEntity")
         if(tacticianEntity.isNotBlank()&&arena!=null){val target=fields.str("tacticianTarget").split(',').takeIf{it.size==2}?.let{parts->val x=parts[0].toFloatOrNull();val y=parts[1].toFloatOrNull();if(x!=null&&y!=null)ArenaPoint(x+arena.carouselCenter.x,y+arena.carouselCenter.y)else null}?:arena.tacticianSpawn;val pose=ui.tactician(target,arena.tacticianMovementBounds,fields.str("tacticianState","IDLE"));val point=frame.layout.project(pose.point.x,pose.point.y);val size=max(24,min(52,rect.width/10));VanillaCompanionModelRenderer.render(gui,tacticianEntity,point.x.roundToInt()-size/2,point.y.roundToInt()-size,point.x.roundToInt()+size/2,point.y.roundToInt(),pose.state in setOf("WALK","RUN","CAROUSEL_MOVEMENT"))}
 
