@@ -16,14 +16,24 @@ object TftBotPlanner {
             if (raw.isBlank()) return@mapNotNull null
             val p = raw.split('~')
             if (p.size < 8 || p[4].isNotBlank() || p[5] != "1") return@mapNotNull null
-            Draft(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[6].toIntOrNull() ?: 1, p[7])
+            Draft(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[6].toIntOrNull() ?: 1, p[7],p.getOrNull(8)?.toDoubleOrNull()?:return@mapNotNull null,p.getOrNull(9)?.toDoubleOrNull()?:return@mapNotNull null)
         }
         val ordered = when (difficulty) {
             NativeBotDifficulty.EASY -> offers.sortedBy { it.index }
             NativeBotDifficulty.NORMAL -> offers.sortedWith(compareByDescending<Draft> { it.cost }.thenBy { it.index })
             NativeBotDifficulty.HARD -> offers.sortedWith(compareByDescending<Draft> { it.cost * 20 + traitFit(view, it.traits) }.thenBy { it.index })
         }
-        return NativeBotPlan(ordered.map { NativeBotAction("draft_pick", mapOf("index" to it.index.toString())) })
+        val target=ordered.firstOrNull()?:return NativeBotPlan(emptyList())
+        val current=view.fields["carouselPosition"].orEmpty().split(',').mapNotNull(String::toDoubleOrNull)
+        if(current.size!=2)return NativeBotPlan(emptyList())
+        val dx=target.x-current[0];val dy=target.y-current[1];val distance=kotlin.math.hypot(dx,dy)
+        val pickup=view.fields["carouselPickupRadius"]?.toDoubleOrNull()?:0.72
+        if(distance<=pickup){
+            return NativeBotPlan(listOf(NativeBotAction("draft_pick",mapOf("index" to target.index.toString(),"revision" to view.revision.toString()))))
+        }
+        val maxStep=(view.fields["carouselMaxMove"]?.toDoubleOrNull()?:0.8).coerceAtLeast(0.1)
+        val scale=(maxStep/distance).coerceAtMost(1.0)
+        return NativeBotPlan(listOf(NativeBotAction("carousel_move",mapOf("x" to (current[0]+dx*scale).toString(),"y" to (current[1]+dy*scale).toString()))))
     }
 
     private fun planPlanning(view: NativeGameView, difficulty: NativeBotDifficulty): NativeBotPlan {
@@ -57,7 +67,7 @@ object TftBotPlanner {
                 NativeBotDifficulty.HARD -> bench.maxByOrNull { it.cost * 12 + it.star * 12 + roleScore(it.role) }
             }
             if (chosen != null) {
-                formationSlots(chosen.role, difficulty, view.boardWidth.coerceAtLeast(1), view.boardHeight.coerceAtLeast(1),strategy.positioning).forEach { slot ->
+                formationSlots(chosen.role, difficulty, view.fields["boardColumns"]?.toIntOrNull()?.coerceAtLeast(1) ?: view.boardWidth.coerceAtLeast(1), view.fields["boardRows"]?.toIntOrNull()?.coerceAtLeast(1) ?: (view.boardHeight/2).coerceAtLeast(1),strategy.positioning).forEach { slot ->
                     out += NativeBotAction("deploy", mapOf("bench" to chosen.index.toString(), "slot" to slot.toString()))
                 }
             }
@@ -96,7 +106,7 @@ object TftBotPlanner {
         }
 
         val xpNext = view.fields["xpNext"]?.toIntOrNull() ?: 0
-        val health=view.fields["health"]?.toIntOrNull()?:100
+        val health=view.fields["hp"]?.toIntOrNull()?:100
         val emergency=health <= (strategy.economy["emergencyHp"]?:0.0)
         val interestFloor = when (difficulty) { NativeBotDifficulty.EASY -> 0; NativeBotDifficulty.NORMAL -> 10; NativeBotDifficulty.HARD -> if(emergency) 0 else strategy.economy["interestFloor"]?.toInt() ?: 30 }
         val capLevel=(strategy.level["capLevel"]?:10.0).toInt()
@@ -177,7 +187,7 @@ object TftBotPlanner {
         val tagFit=recipe?.id?.let{id->strategy.itemTags.count{id.contains(it,true)}}?:0
         return (roleFit+tagFit*10+(if(recipe!=null)12 else 0)).toInt()
     }
-    private fun emergencyItemSlam(view:NativeGameView,strategy:Strategy):Boolean=(view.fields["health"]?.toIntOrNull()?:100)<=((strategy.economy["emergencyHp"]?:25.0).toInt())
+    private fun emergencyItemSlam(view:NativeGameView,strategy:Strategy):Boolean=(view.fields["hp"]?.toIntOrNull()?:100)<=((strategy.economy["emergencyHp"]?:25.0).toInt())
 
     private fun roleScore(role: String): Int = when (role.lowercase()) {
         "guardian", "tank" -> 12
@@ -188,7 +198,7 @@ object TftBotPlanner {
 
     private data class Bench(val index: Int, val star: Int, val cost: Int, val role: String)
     private data class Shop(val index: Int,val unitId:String, val cost: Int, val traits: String, val role: String,val team:String,val tags:String,val ownedCopies:Int)
-    private data class Draft(val index: Int, val unitId: String, val cost: Int, val traits: String)
+    private data class Draft(val index: Int, val unitId: String, val cost: Int, val traits: String,val x:Double,val y:Double)
     private data class Augment(val id: String, val weight: Int,val tags:String)
     private fun contestedUnitIds(view:NativeGameView)=view.fields["contestedUnits"].orEmpty().split(',').filter(String::isNotBlank).toSet()
     private data class Transition(val phase:String,val minLevel:Int,val maxLevel:Int,val team:String,val minimumCopies:Int,val maximumContested:Int)
