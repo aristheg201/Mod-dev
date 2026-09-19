@@ -109,7 +109,10 @@ class TftProgressionTest {
     }
 
     @Test fun augmentModifiersAffectPassiveXp() {
-        val augment = TftAugmentDefinition("scholar", "Scholar", effects = mapOf("passive_xp_bonus" to 2.0, "passive_xp_multiplier" to 0.5))
+        val augment = TftAugmentDefinition("scholar", "Scholar", playerModifiers = mapOf(
+            TftPlayerModifier.XP_GAIN_FLAT to 2.0,
+            TftPlayerModifier.XP_GAIN_MULTIPLIER to 0.5
+        ))
         val state = create(base.copy(augments = base.augments + augment)).snapshotState()
         state.getAsJsonArray("players")[0].asJsonObject.getAsJsonArray("augments").add("scholar")
         val s = restore(state); finishRound(s)

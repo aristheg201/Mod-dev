@@ -163,6 +163,7 @@ data class TftAugmentDefinition(
     val name: String = "",
     val description: String = "",
     val effects: Map<String, Double> = emptyMap(),
+    val playerModifiers: Map<TftPlayerModifier, Double> = emptyMap(),
     /** Data-driven bot preference. Gameplay never branches on augment ids. */
     val aiWeight: Int = 50,
     val tier: String = "Gold",
@@ -233,7 +234,14 @@ object TftDefinitionValidator {
         require(componentIds.size == set.components.size) { "Duplicate TFT component id" }
         require(set.fullItems.map { it.id }.toSet().size == set.fullItems.size) { "Duplicate TFT full item id" }
         require(set.fullItems.map { it.components.sorted().joinToString("+") }.toSet().size == set.fullItems.size) { "Duplicate TFT full item recipe" }
-        set.augments.forEach { require(it.aiWeight in 0..1000) { "Augment ${it.id} aiWeight out of range" } }
+        set.augments.forEach { augment ->
+            require(augment.aiWeight in 0..1000) { "Augment ${augment.id} aiWeight out of range" }
+            augment.playerModifiers.forEach { (capability, value) ->
+                require(value.isFinite() && value in capability.minimum..capability.maximum) {
+                    "Augment ${augment.id}.playerModifiers.$capability is out of range"
+                }
+            }
+        }
         set.fullItems.forEach { item ->
             require(item.components.size == 2) { "Full item ${item.id} must have exactly two components" }
             require(item.components.all(componentIds::contains)) { "Full item ${item.id} references unknown components" }

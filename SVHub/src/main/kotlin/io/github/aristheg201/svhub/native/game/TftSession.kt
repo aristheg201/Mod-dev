@@ -12,6 +12,8 @@ import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
 import io.github.aristheg201.svhub.native.game.tft.TftTraitTier
 import io.github.aristheg201.svhub.native.game.tft.TftProgression
 import io.github.aristheg201.svhub.native.game.tft.TftProgressionDefinition
+import io.github.aristheg201.svhub.native.game.tft.TftPlayerModifier
+import io.github.aristheg201.svhub.native.game.tft.TftPlayerModifierSet
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.max
@@ -273,8 +275,10 @@ class TftSession(
             )
         }
         val actions = buildList {
-            add(NativeActionView("refresh", "Refresh", "2g", shopEnabled && player.gold >= refreshCost(player)))
-            add(NativeActionView("buy_xp", "Buy XP", "${progression.buyXp.goldCost}g", shopEnabled && player.gold >= progression.buyXp.goldCost && player.level < progression.maxLevel))
+            val refreshGold = refreshCost(player)
+            val xpGold = playerModifiers(player).apply(TftPlayerModifier.XP_PURCHASE_COST, progression.buyXp.goldCost.toDouble()).toInt().coerceAtLeast(0)
+            add(NativeActionView("refresh", "Refresh", "${refreshGold}g", shopEnabled && player.gold >= refreshGold))
+            add(NativeActionView("buy_xp", "Buy XP", "${xpGold}g", shopEnabled && player.gold >= xpGold && player.level < progression.maxLevel))
             add(NativeActionView("resign", "Resign", "", !finished && !player.eliminated))
         }
         val active = combatFor(player.id)
@@ -441,10 +445,12 @@ class TftSession(
 
     private fun buyXp(player: PlayerState): NativeGameResult {
         if (phase != Phase.PLANNING || player.level >= progression.maxLevel) return reject("Cannot buy XP")
-        if (player.gold < progression.buyXp.goldCost) return reject("Not enough gold")
-        val amount = (progression.buyXp.xpGranted + augmentEffect(player, "xp_purchase_bonus")).coerceIn(0.0, 100000.0).toInt()
+        val modifiers = playerModifiers(player)
+        val goldCost = modifiers.apply(TftPlayerModifier.XP_PURCHASE_COST, progression.buyXp.goldCost.toDouble()).toInt().coerceAtLeast(0)
+        if (player.gold < goldCost) return reject("Not enough gold")
+        val amount = modifiers.apply(TftPlayerModifier.XP_PURCHASE_AMOUNT, progression.buyXp.xpGranted.toDouble()).toInt()
         grantXp(player, amount)
-        player.gold -= progression.buyXp.goldCost
+        player.gold -= goldCost
         bump("${player.name} bought XP")
         return accept("XP purchased")
     }
@@ -597,7 +603,7 @@ class TftSession(
                 val owned = player.augments.toSet()
                 player.augmentChoices += set.augments.filterNot { it.id in owned }.shuffled(rng).take(3).map { it.id }
             }
-            player.freeRerolls = augmentEffect(player, "free_rerolls").toInt().coerceAtLeast(0)
+            player.freeRerolls = playerModifiers(player).value(TftPlayerModifier.FREE_REFRESH_COUNT).toInt().coerceAtLeast(0)
             rerollShop(player)
         }
         phaseEndsAt = now + set.planningSeconds.coerceIn(10, 90) * 1_000L
@@ -651,22 +657,22 @@ class TftSession(
             if (match.pve != null) {
                 if (outcome.winnerTeam == 0) {
                     onWin(a)
-                    val drops = match.pve.componentDrops + augmentEffect(a, "extra_component_on_pve").toInt()
+                    val drops = playerModifiers(a).apply(TftPlayerModifier.PVE_DROP_COUNT, match.pve.componentDrops.toDouble()).toInt()
                     repeat(drops.coerceIn(0, 6)) { set.components.randomOrNull(rng)?.id?.let(a.itemBench::add) }
                 } else { onLoss(a); a.hp -= PVE_LOSS_DAMAGE }
-                healFromAugments(a); if (a.hp <= 0) eliminated += a; return@forEach
+                healFromModifiers(a); if (a.hp <= 0) eliminated += a; return@forEach
             }
             val b = match.bId?.let(players::get)
             if (b == null) {
                 when (outcome.winnerTeam) { 0 -> onWin(a); 1 -> { onLoss(a); a.hp -= playerDamage(stageNumber(), outcome.survivingTeam1) }; else -> { a.streak = 0; a.hp -= DRAW_DAMAGE } }
-                healFromAugments(a); if (a.hp <= 0) eliminated += a; return@forEach
+                healFromModifiers(a); if (a.hp <= 0) eliminated += a; return@forEach
             }
             when (outcome.winnerTeam) {
                 0 -> { onWin(a); onLoss(b); b.hp -= playerDamage(stageNumber(), outcome.survivingTeam0) }
                 1 -> { onWin(b); onLoss(a); a.hp -= playerDamage(stageNumber(), outcome.survivingTeam1) }
                 else -> { a.streak = 0; b.streak = 0; a.hp -= DRAW_DAMAGE; b.hp -= DRAW_DAMAGE }
             }
-            healFromAugments(a); healFromAugments(b); if (a.hp <= 0) eliminated += a; if (b.hp <= 0) eliminated += b
+            healFromModifiers(a); healFromModifiers(b); if (a.hp <= 0) eliminated += a; if (b.hp <= 0) eliminated += b
         }
         eliminatePlayers(eliminated.distinctBy { it.id })
         // Result, damage and elimination precede all economic grants. Commit the
@@ -694,18 +700,20 @@ class TftSession(
     }
 
     private fun grantIncome(player: PlayerState) {
-        val cap = max(5, augmentEffect(player, "interest_cap").toInt())
+        val cap = playerModifiers(player).apply(TftPlayerModifier.INTEREST_CAP, 5.0).toInt()
         val interest = (player.gold / 10).coerceAtMost(cap)
         val streakGold = streakGold(player.streak)
         val winGold = if (player.lastOutcome > 0) 1 else 0
-        val income = 5 + interest + streakGold + winGold
+        val modifiers = playerModifiers(player)
+        val incomeBeforeMultiplier = modifiers.apply(TftPlayerModifier.INCOME_FLAT, (5 + interest + streakGold + winGold).toDouble())
+        val income = (incomeBeforeMultiplier * (1.0 + modifiers.value(TftPlayerModifier.INCOME_MULTIPLIER))).toInt().coerceAtLeast(0)
         player.gold = (player.gold + income).coerceAtMost(MAX_GOLD)
         player.lastIncome = income; player.lastInterest = interest; player.lastStreakGold = streakGold
     }
 
     private fun onWin(player: PlayerState) { player.lastOutcome = 1; player.streak = if (player.streak >= 0) player.streak + 1 else 1 }
     private fun onLoss(player: PlayerState) { player.lastOutcome = -1; player.streak = if (player.streak <= 0) player.streak - 1 else -1 }
-    private fun healFromAugments(player: PlayerState) { val heal = augmentEffect(player, "heal_after_round").toInt(); if (heal > 0) player.hp = (player.hp + heal).coerceAtMost(100) }
+    private fun healFromModifiers(player: PlayerState) { val heal = playerModifiers(player).value(TftPlayerModifier.POST_ROUND_HEAL).toInt(); if (heal > 0) player.hp = (player.hp + heal).coerceAtMost(100) }
 
     private fun rerollShop(player: PlayerState) {
         player.shop.forEach { unit -> if (unit != null) pool.returnCopies(unit, 1) }
@@ -884,7 +892,8 @@ class TftSession(
             add(JsonObject().apply {
                 addProperty("id", id); addProperty("name", def.name); addProperty("tier", def.tier)
                 addProperty("description", def.description)
-                addProperty("mechanic", def.effects.entries.joinToString(" • ") { (key, value) -> "$key: $value" })
+                addProperty("mechanic", (def.effects.entries.map { (key, value) -> "$key: $value" } +
+                    def.playerModifiers.entries.map { (key, value) -> "${key.name.lowercase()}: $value" }).joinToString(" • "))
             })
         }
     }.toString()
@@ -903,15 +912,20 @@ class TftSession(
     }
 
     private fun traitCounts(player: PlayerState): Map<String, Int> = player.board.values.distinctBy { it.unitId }.mapNotNull { unitDefs[it.unitId] }.flatMap { it.traits }.groupingBy { it }.eachCount()
-    private fun augmentEffect(player: PlayerState, key: String): Double = player.augments.sumOf { id -> augmentDefs[id]?.effects?.get(key) ?: 0.0 }
-    private fun refreshCost(player: PlayerState) = if (player.freeRerolls > 0) 0 else 2
+    private fun playerModifiers(player: PlayerState): TftPlayerModifierSet = TftPlayerModifierSet.compile(
+        player.augments.mapNotNull(augmentDefs::get).map { it.playerModifiers }
+    )
+    private fun refreshCost(player: PlayerState) = if (player.freeRerolls > 0) 0 else
+        playerModifiers(player).apply(TftPlayerModifier.SHOP_REFRESH_COST, 2.0).toInt().coerceAtLeast(0)
     private fun canEditBoard(player: PlayerState) = phase == Phase.PLANNING && !player.eliminated
-    private fun unitCap(player: PlayerState) = (player.level + augmentEffect(player, "team_size_bonus").toInt()).coerceIn(1, 12)
+    private fun unitCap(player: PlayerState) = playerModifiers(player)
+        .apply(TftPlayerModifier.BOARD_CAPACITY, player.level.toDouble()).toInt().coerceIn(1, 12)
 
     private fun settleRound(player: PlayerState, roundType: String) {
         if (player.lastSettledRound >= roundIndex) return
+        val modifiers = playerModifiers(player)
         val amount = TftProgression.passiveAmount(progression, roundType,
-            augmentEffect(player, "passive_xp_bonus"), augmentEffect(player, "passive_xp_multiplier"))
+            modifiers.value(TftPlayerModifier.XP_GAIN_FLAT), modifiers.value(TftPlayerModifier.XP_GAIN_MULTIPLIER))
         // Validate arithmetic before mutating currency. No callbacks or I/O may
         // observe half a settlement on the session actor.
         val xp = TftProgression.grant(progression, player.level, player.xp, amount)
