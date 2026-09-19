@@ -1175,5 +1175,31 @@
       "clearGold": 55,
       "lootTable": "svhub:td_wave"
     }
+  ],
+  "lootTables": [
+    {
+      "id": "svhub:td_wave",
+      "rolls": 1,
+      "entries": [
+        {
+          "id": "wave_gold",
+          "type": "gold",
+          "amount": 3,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "svhub:td_clear",
+      "rolls": 1,
+      "entries": [
+        {
+          "id": "clear_gold",
+          "type": "gold",
+          "amount": 25,
+          "weight": 1
+        }
+      ]
+    }
   ]
 }

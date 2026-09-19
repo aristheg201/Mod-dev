@@ -18,6 +18,8 @@ data class TdBossPhase(val hpRatio:Double=1.0,val effects:List<EffectDefinition>
 data class TdBossDefinition(val id:String="",val hp:Int=1,val speed:Double=.1,val reward:Int=1,val leakDamage:Int=1,val tags:Set<String> = setOf("boss"),val resistances:List<TdResistance> = emptyList(),val phases:List<TdBossPhase> = emptyList())
 data class TdSpawnGroup(val enemy:String="",val count:Int=1,val intervalTicks:Int=3,val initialDelayTicks:Int=0)
 data class TdWaveDefinition(val number:Int=1,val groups:List<TdSpawnGroup> = emptyList(),val clearGold:Int=0,val lootTable:String?=null)
+data class TdLootEntry(val id:String="",val type:String="gold",val amount:Int=0,val weight:Int=1)
+data class TdLootTable(val id:String="",val rolls:Int=1,val entries:List<TdLootEntry> = emptyList())
 data class TdDifficulty(val id:String="normal",val hpMultiplier:Double=1.0,val speedMultiplier:Double=1.0,val rewardMultiplier:Double=1.0,val livesMultiplier:Double=1.0)
 data class TdEndlessRules(val enabled:Boolean=false,val repeatFromWave:Int=1,val hpMultiplierPerCycle:Double=1.0)
 data class TowerDefenseDefinition(
@@ -26,7 +28,8 @@ data class TowerDefenseDefinition(
     val simulationStepMs:Long=200,val sellRatio:Double=.7,val towers:List<TdTowerDefinition> = emptyList(),
     val enemies:List<TdEnemyDefinition> = emptyList(),val bosses:List<TdBossDefinition> = emptyList(),val waves:List<TdWaveDefinition> = emptyList(),
     val victoryWave:Int=20,val victoryCondition:String="clear_all_waves",val endless:TdEndlessRules=TdEndlessRules(),
-    val difficulties:List<TdDifficulty> = listOf(TdDifficulty()),val defaultDifficulty:String="normal",val clearLootTable:String?=null
+    val difficulties:List<TdDifficulty> = listOf(TdDifficulty()),val defaultDifficulty:String="normal",val clearLootTable:String?=null,
+    val lootTables:List<TdLootTable> = emptyList()
 )
 
 object TowerDefenseDefinitions {
@@ -56,6 +59,9 @@ object TowerDefenseDefinitions {
         val enemyIds=(d.enemies.map{it.id}+d.bosses.map{it.id}).toSet();check(enemyIds.size==d.enemies.size+d.bosses.size,"enemies","IDs must be unique")
         check(d.waves.isNotEmpty()&&d.waves.map{it.number}==(1..d.waves.size).toList(),"waves","must be explicit and contiguous")
         d.waves.forEach { w->w.groups.forEachIndexed{i,g->check(g.enemy in enemyIds&&g.count>0&&g.intervalTicks>=0,"waves.${w.number}.groups[$i]","invalid enemy/count/timing")} }
+        val lootIds=d.lootTables.map{it.id}.toSet();check(lootIds.size==d.lootTables.size,"lootTables","IDs must be unique")
+        d.lootTables.forEach{table->check(table.id.isNotBlank()&&table.rolls in 1..20&&table.entries.isNotEmpty()&&table.entries.all{it.id.isNotBlank()&&it.amount>=0&&it.weight>0},"lootTables.${table.id}","invalid rolls or entries")}
+        d.waves.forEach{w->check(w.lootTable==null||w.lootTable in lootIds,"waves.${w.number}.lootTable","unknown table")};check(d.clearLootTable==null||d.clearLootTable in lootIds,"clearLootTable","unknown table")
         check(d.victoryWave in 1..d.waves.size,"victoryWave","must reference explicit wave");return d
     }
 }
