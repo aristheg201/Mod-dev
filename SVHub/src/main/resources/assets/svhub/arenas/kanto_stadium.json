@@ -1,0 +1,102 @@
+{
+  "style": "kanto_stadium",
+  "surface": "tactical",
+  "depth": 7,
+  "detailEvery": 12,
+  "pathDetailEvery": 0,
+  "floor": [
+    "minecraft:grass_block",
+    "minecraft:red_concrete"
+  ],
+  "floorAlt": [
+    "minecraft:moss_carpet"
+  ],
+  "ally": [
+    "minecraft:azalea_leaves",
+    "minecraft:moss_carpet"
+  ],
+  "enemy": [
+    "minecraft:crimson_fungus",
+    "minecraft:nether_sprouts"
+  ],
+  "path": [],
+  "floorColor": "#3e5542",
+  "floorAltColor": "#314a36",
+  "allyColor": "#3e5542",
+  "enemyColor": "#694448",
+  "pathColor": "#756e5f",
+  "pathAccentColor": "#b2a887",
+  "gridColor": "#80a08e",
+  "borderColor": "#3f4b40",
+  "edgeColor": "#172019",
+  "depthColor": "#172019",
+  "props": [
+    {
+      "item": "minecraft:campfire",
+      "x": -1.05,
+      "y": 3.5,
+      "scale": 0.95
+    },
+    {
+      "item": "minecraft:soul_campfire",
+      "x": 7.05,
+      "y": 3.5,
+      "scale": 0.95
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": -0.85,
+      "y": 7.1,
+      "scale": 0.78
+    },
+    {
+      "item": "minecraft:soul_lantern",
+      "x": 6.85,
+      "y": -0.15,
+      "scale": 0.78
+    },
+    {
+      "item": "minecraft:bell",
+      "x": 3,
+      "y": 7.8,
+      "scale": 0.82
+    },
+    {
+      "item": "minecraft:respawn_anchor",
+      "x": 3,
+      "y": -0.95,
+      "scale": 0.82
+    }
+  ],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "tacticianRegion": [
+      -1.0,
+      -1.0,
+      7.0,
+      8.0
+    ],
+    "camera": {
+      "spectator": [
+        3.0,
+        9.0,
+        12.0
+      ],
+      "scouting": [
+        3.0,
+        8.0,
+        10.0
+      ],
+      "carousel": [
+        3.0,
+        10.0,
+        13.0
+      ]
+    },
+    "lighting": "themed",
+    "ambientVfx": "kanto_stadium",
+    "music": "minecraft:music.game"
+  }
+}

@@ -10,6 +10,8 @@ data class TftSetDefinition(
     val planningSeconds: Int = 30,
     val combatSeconds: Int = 45,
     val postCombatSeconds: Int = 4,
+    val rules: TftRulesDefinition = TftRulesDefinition(),
+    val roundSchedule: List<TftRoundDefinition> = emptyList(),
     val maxLevel: Int = 10,
     val poolSizeByCost: Map<String, Int> = emptyMap(),
     val xpToNextByLevel: Map<String, Int> = emptyMap(),
@@ -26,6 +28,12 @@ data class TftSetDefinition(
     val augments: List<TftAugmentDefinition> = emptyList(),
     val pveRounds: List<TftPveRoundDefinition> = emptyList()
 )
+
+data class TftRulesDefinition(val shopSlots: Int = 5, val benchSlots: Int = 9, val boardColumns: Int = 7, val boardRows: Int = 4, val maxBoardCapacity: Int = 12) {
+    val formationCells: Int get() = boardColumns * boardRows
+}
+
+data class TftRoundDefinition(val label: String = "", val type: String = "pvp", val planningSeconds: Int? = null, val combatSeconds: Int? = null, val income: Boolean = true, val passiveXp: Boolean = true, val pve: String? = null)
 
 data class TftShopOdds(val level: Int = 2, val odds: List<Int> = listOf(100, 0, 0, 0, 0))
 
@@ -197,6 +205,14 @@ object TftDefinitionValidator {
         }
         require(set.tacticians.isEmpty() || set.tacticians.any { it.id == set.defaultTactician }) { "set ${set.id}.defaultTactician: unknown id" }
         require(set.planningSeconds in 1..600 && set.combatSeconds in 1..600 && set.postCombatSeconds in 1..60) { "Invalid TFT phase durations" }
+        require(set.rules.shopSlots in 1..12 && set.rules.benchSlots in 1..24) { "set ${set.id}.rules inventory geometry is invalid" }
+        require(set.rules.boardColumns in 2..12 && set.rules.boardRows in 2..8 && set.rules.maxBoardCapacity in 1..set.rules.formationCells) { "set ${set.id}.rules board geometry is invalid" }
+        require(set.roundSchedule.isNotEmpty()) { "set ${set.id}.roundSchedule is empty" }
+        require(set.roundSchedule.map { it.label }.distinct().size == set.roundSchedule.size) { "set ${set.id}.roundSchedule has duplicate labels" }
+        set.roundSchedule.forEachIndexed { index, round ->
+            require(round.label.isNotBlank()) { "set ${set.id}.roundSchedule[$index].label is empty" }
+            require(round.type in setOf("planning", "pvp", "pve", "augment", "carousel", "boss", "special")) { "set ${set.id}.roundSchedule[$index].type is invalid: ${round.type}" }
+        }
         require(set.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid TFT set id ${set.id}" }
         require(set.units.size >= 20) { "TFT set ${set.id} requires at least 20 units" }
         require(set.units.map { it.id }.toSet().size == set.units.size) { "Duplicate TFT unit id" }
@@ -267,7 +283,7 @@ object TftDefinitionValidator {
             positioned.forEachIndexed { index, member ->
                 require(member.unit in unitIds) { "TFT team ${team.id}.member[$index].unit is unknown: ${member.unit}" }
                 require(member.star in 1..3) { "TFT team ${team.id}.member[$index].star is invalid" }
-                require(member.slot == null || member.slot in 0..27) { "TFT team ${team.id}.member[$index].slot is invalid" }
+                require(member.slot == null || member.slot in 0 until set.rules.formationCells) { "TFT team ${team.id}.member[$index].slot is invalid for configured board" }
                 require(member.items.all(itemIds::contains)) { "TFT team ${team.id}.member[$index].items contains an unknown item" }
             }
         }
@@ -277,7 +293,7 @@ object TftDefinitionValidator {
             require(round.enemies.map { it.slot }.toSet().size == round.enemies.size) { "PvE round ${round.round} overlaps formation slots" }
             round.enemies.forEach { enemy ->
                 require(enemy.unit in unitIds) { "PvE round ${round.round} references unknown unit ${enemy.unit}" }
-                require(enemy.star in 1..3 && enemy.slot in 0..27) { "PvE round ${round.round} has invalid star/slot" }
+                require(enemy.star in 1..3 && enemy.slot in 0 until set.rules.formationCells) { "PvE round ${round.round} has invalid star/slot" }
             }
         }
         TftEffectValidator.validate(set)

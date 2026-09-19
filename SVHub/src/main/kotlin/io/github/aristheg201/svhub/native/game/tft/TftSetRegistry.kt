@@ -42,11 +42,15 @@ object TftSetRegistry {
     /** Version-one manifests and embedded recovery definitions keep their XP
      * curve. Newly introduced grants come from shipped content, never Java IDs. */
     internal fun migrateDefinition(set: TftSetDefinition): TftSetDefinition {
-        if (set.progression != null) return set
-        val defaults = open("/data/svhub/tft/sets/kanto_rising/set.json").use { reader ->
-            gson.fromJson(readJson(reader, "bundled progression").asJsonObject.get("progression"), TftProgressionDefinition::class.java)
+        if (set.progression != null && set.roundSchedule.isNotEmpty()) return set
+        val manifest = open("/data/svhub/tft/sets/kanto_rising/set.json").use { reader ->
+            readJson(reader, "bundled migration defaults").asJsonObject
         }
-        return set.copy(progression = defaults.copy(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel.toMap()))
+        val progression = set.progression ?: gson.fromJson(manifest.get("progression"), TftProgressionDefinition::class.java)
+            .copy(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel.toMap())
+        val schedule = if (set.roundSchedule.isNotEmpty()) set.roundSchedule else
+            gson.fromJson<List<TftRoundDefinition>>(manifest.get("roundSchedule"), object : TypeToken<List<TftRoundDefinition>>() {}.type)
+        return set.copy(progression = progression, roundSchedule = schedule)
     }
 
     internal fun bundled(id: String): TftSetDefinition {

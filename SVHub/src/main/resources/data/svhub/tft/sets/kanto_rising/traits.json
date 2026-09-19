@@ -1,1 +1,851 @@
-[{"id":"kanto","name":"Kanto","tiers":[{"threshold":3,"description":"Kanto units gain 8% HP","effects":{"hp_pct":0.08},"teamEffects":{}},{"threshold":5,"description":"Kanto units gain 15% HP and 8% Attack","effects":{"hp_pct":0.15,"attack_pct":0.08},"teamEffects":{}},{"threshold":7,"description":"The whole team gains 12% HP; Kanto units gain 25% HP","effects":{"hp_pct":0.25},"teamEffects":{"hp_pct":0.12}}]},{"id":"starter","name":"Starter","tiers":[{"threshold":2,"description":"Starter units gain 10% Attack Speed","effects":{"attack_speed_pct":0.1},"teamEffects":{}},{"threshold":4,"description":"Starter units gain 20% Attack Speed and +2 mana per attack","effects":{"attack_speed_pct":0.2,"mana_on_attack":2},"teamEffects":{}},{"threshold":6,"description":"Starter units gain 35% Attack Speed and 15% Attack","effects":{"attack_speed_pct":0.35,"attack_pct":0.15},"teamEffects":{}}]},{"id":"fire","name":"Fire","tiers":[{"threshold":2,"description":"Fire units gain 10% Attack","effects":{"attack_pct":0.1},"teamEffects":{}},{"threshold":4,"description":"Fire units gain 22% Attack","effects":{"attack_pct":0.22},"teamEffects":{}},{"threshold":6,"description":"Fire units gain 38% Attack and 10% Attack Speed","effects":{"attack_pct":0.38,"attack_speed_pct":0.1},"teamEffects":{}}]},{"id":"water","name":"Water","tiers":[{"threshold":2,"description":"Water units gain 15 Armor and Sp.Def","effects":{"defense":15,"spdef":15},"teamEffects":{}},{"threshold":4,"description":"Water units gain 30 Armor and Sp.Def","effects":{"defense":30,"spdef":30},"teamEffects":{}},{"threshold":6,"description":"Team gains 15 Armor/Sp.Def; Water units gain 45","effects":{"defense":45,"spdef":45},"teamEffects":{"defense":15,"spdef":15}}]},{"id":"grass","name":"Grass","tiers":[{"threshold":2,"description":"Grass units gain 12% HP","effects":{"hp_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Grass units gain 25% HP","effects":{"hp_pct":0.25},"teamEffects":{}},{"threshold":6,"description":"Team gains 10% HP; Grass units gain 35%","effects":{"hp_pct":0.35},"teamEffects":{"hp_pct":0.1}}]},{"id":"electric","name":"Electric","tiers":[{"threshold":2,"description":"Electric units gain 12% Attack Speed","effects":{"attack_speed_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Electric units gain 28% Attack Speed and +4 mana per attack","effects":{"attack_speed_pct":0.28,"mana_on_attack":4},"teamEffects":{}}]},{"id":"psychic","name":"Psychic","tiers":[{"threshold":2,"description":"Psychic units gain 15% Ability Power","effects":{"ability_power_pct":0.15},"teamEffects":{}},{"threshold":4,"description":"Psychic units gain 35% Ability Power","effects":{"ability_power_pct":0.35},"teamEffects":{}},{"threshold":6,"description":"Team gains 15% AP; Psychic units gain 55%","effects":{"ability_power_pct":0.55},"teamEffects":{"ability_power_pct":0.15}}]},{"id":"ghost","name":"Ghost","tiers":[{"threshold":2,"description":"Ghost units gain 10% Crit","effects":{"crit_chance":0.1},"teamEffects":{}},{"threshold":4,"description":"Ghost units gain 20% Crit and 12% Attack","effects":{"crit_chance":0.2,"attack_pct":0.12},"teamEffects":{}}]},{"id":"dragon","name":"Dragon","tiers":[{"threshold":2,"description":"Dragon units gain 12% HP and Attack","effects":{"hp_pct":0.12,"attack_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Dragon units gain 25% HP and Attack","effects":{"hp_pct":0.25,"attack_pct":0.25},"teamEffects":{}},{"threshold":6,"description":"Team gains 10% HP/Attack; Dragons gain 40%","effects":{"hp_pct":0.4,"attack_pct":0.4},"teamEffects":{"hp_pct":0.1,"attack_pct":0.1}}]},{"id":"steel","name":"Steel","tiers":[{"threshold":2,"description":"Steel units gain 25 Armor","effects":{"defense":25},"teamEffects":{}},{"threshold":4,"description":"Steel units gain 50 Armor and 25 Sp.Def","effects":{"defense":50,"spdef":25},"teamEffects":{}}]},{"id":"dark","name":"Dark","tiers":[{"threshold":2,"description":"Dark units gain 12% Attack","effects":{"attack_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Dark units gain 25% Attack and 10% Crit","effects":{"attack_pct":0.25,"crit_chance":0.1},"teamEffects":{}}]},{"id":"fighting","name":"Fighting","tiers":[{"threshold":2,"description":"Fighting units gain 10% HP and Attack","effects":{"hp_pct":0.1,"attack_pct":0.1},"teamEffects":{}},{"threshold":4,"description":"Fighting units gain 22% HP and Attack","effects":{"hp_pct":0.22,"attack_pct":0.22},"teamEffects":{}}]},{"id":"rock","name":"Rock","tiers":[{"threshold":2,"description":"Rock units gain 25 Armor","effects":{"defense":25},"teamEffects":{}},{"threshold":4,"description":"Rock units gain 55 Armor","effects":{"defense":55},"teamEffects":{}}]},{"id":"flying","name":"Flying","tiers":[{"threshold":2,"description":"Flying units gain 10% Attack Speed","effects":{"attack_speed_pct":0.1},"teamEffects":{}},{"threshold":4,"description":"Flying units gain 22% Attack Speed and +1 Range","effects":{"attack_speed_pct":0.22,"range":1},"teamEffects":{}}]},{"id":"fairy","name":"Fairy","tiers":[{"threshold":2,"description":"Fairy units start with 15 mana","effects":{"mana_start":15},"teamEffects":{}},{"threshold":4,"description":"Fairy units gain 25% AP and start with 25 mana","effects":{"ability_power_pct":0.25,"mana_start":25},"teamEffects":{}}]},{"id":"normal","name":"Normal","tiers":[{"threshold":2,"description":"Normal units gain 10% HP","effects":{"hp_pct":0.1},"teamEffects":{}},{"threshold":4,"description":"Normal units gain 20% HP and 12% Attack Speed","effects":{"hp_pct":0.2,"attack_speed_pct":0.12},"teamEffects":{}}]},{"id":"legendary","name":"Legendary","tiers":[{"threshold":1,"description":"Legendary unit gains 8% all offense","effects":{"attack_pct":0.08,"ability_power_pct":0.08},"teamEffects":{}},{"threshold":2,"description":"Legendary units gain 18% all offense","effects":{"attack_pct":0.18,"ability_power_pct":0.18},"teamEffects":{}},{"threshold":3,"description":"Team gains 10% offense; Legendaries gain 30%","effects":{"attack_pct":0.3,"ability_power_pct":0.3},"teamEffects":{"attack_pct":0.1,"ability_power_pct":0.1}}]},{"id":"pseudo","name":"Pseudo-Legendary","tiers":[{"threshold":2,"description":"Pseudo units gain 15% HP","effects":{"hp_pct":0.15},"teamEffects":{}},{"threshold":4,"description":"Pseudo units gain 30% HP and 15% Attack","effects":{"hp_pct":0.3,"attack_pct":0.15},"teamEffects":{}}]},{"id":"eeveelution","name":"Eeveelution","tiers":[{"threshold":2,"description":"Eeveelutions gain 12% HP and AP","effects":{"hp_pct":0.12,"ability_power_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Eeveelutions gain 25% HP and AP","effects":{"hp_pct":0.25,"ability_power_pct":0.25},"teamEffects":{}}]},{"id":"guardian","name":"Guardian","tiers":[{"threshold":2,"description":"Guardians gain 20 Armor/Sp.Def","effects":{"defense":20,"spdef":20},"teamEffects":{}},{"threshold":4,"description":"Guardians gain 45 Armor/Sp.Def","effects":{"defense":45,"spdef":45},"teamEffects":{}}]},{"id":"caster","name":"Caster","tiers":[{"threshold":2,"description":"Casters gain 15% AP","effects":{"ability_power_pct":0.15},"teamEffects":{}},{"threshold":4,"description":"Casters gain 35% AP and +10 starting mana","effects":{"ability_power_pct":0.35,"mana_start":10},"teamEffects":{}}]},{"id":"striker","name":"Striker","tiers":[{"threshold":2,"description":"Strikers gain 12% Attack","effects":{"attack_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Strikers gain 28% Attack and 10% Attack Speed","effects":{"attack_pct":0.28,"attack_speed_pct":0.1},"teamEffects":{}}]},{"id":"ranger","name":"Ranger","tiers":[{"threshold":2,"description":"Rangers gain 12% Attack Speed","effects":{"attack_speed_pct":0.12},"teamEffects":{}},{"threshold":4,"description":"Rangers gain 25% Attack Speed and +1 Range","effects":{"attack_speed_pct":0.25,"range":1},"teamEffects":{}}]}]
+[
+  {
+    "id": "kanto",
+    "name": "Kanto",
+    "tiers": [
+      {
+        "threshold": 3,
+        "description": "Kanto units gain 8% HP",
+        "effects": {
+          "hp_pct": 0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 5,
+        "description": "Kanto units gain 15% HP and 8% Attack",
+        "effects": {
+          "hp_pct": 0.15,
+          "attack_pct": 0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 7,
+        "description": "The whole team gains 12% HP; Kanto units gain 25% HP",
+        "effects": {
+          "hp_pct": 0.25
+        },
+        "teamEffects": {
+          "hp_pct": 0.12
+        }
+      }
+    ]
+  },
+  {
+    "id": "starter",
+    "name": "Starter",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Starter units gain 10% Attack Speed",
+        "effects": {
+          "attack_speed_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Starter units gain 20% Attack Speed and +2 mana per attack",
+        "effects": {
+          "attack_speed_pct": 0.2,
+          "mana_on_attack": 2
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Starter units gain 35% Attack Speed and 15% Attack",
+        "effects": {
+          "attack_speed_pct": 0.35,
+          "attack_pct": 0.15
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "fire",
+    "name": "Fire",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Fire units gain 10% Attack",
+        "effects": {
+          "attack_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Fire units gain 22% Attack",
+        "effects": {
+          "attack_pct": 0.22
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Fire units gain 38% Attack and 10% Attack Speed",
+        "effects": {
+          "attack_pct": 0.38,
+          "attack_speed_pct": 0.1
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "water",
+    "name": "Water",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Water units gain 15 Armor and Sp.Def",
+        "effects": {
+          "defense": 15,
+          "spdef": 15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Water units gain 30 Armor and Sp.Def",
+        "effects": {
+          "defense": 30,
+          "spdef": 30
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Team gains 15 Armor/Sp.Def; Water units gain 45",
+        "effects": {
+          "defense": 45,
+          "spdef": 45
+        },
+        "teamEffects": {
+          "defense": 15,
+          "spdef": 15
+        }
+      }
+    ]
+  },
+  {
+    "id": "grass",
+    "name": "Grass",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Grass units gain 12% HP",
+        "effects": {
+          "hp_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Grass units gain 25% HP",
+        "effects": {
+          "hp_pct": 0.25
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Team gains 10% HP; Grass units gain 35%",
+        "effects": {
+          "hp_pct": 0.35
+        },
+        "teamEffects": {
+          "hp_pct": 0.1
+        }
+      }
+    ]
+  },
+  {
+    "id": "electric",
+    "name": "Electric",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Electric units gain 12% Attack Speed",
+        "effects": {
+          "attack_speed_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Electric units gain 28% Attack Speed and +4 mana per attack",
+        "effects": {
+          "attack_speed_pct": 0.28,
+          "mana_on_attack": 4
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "psychic",
+    "name": "Psychic",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Psychic units gain 15% Ability Power",
+        "effects": {
+          "ability_power_pct": 0.15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Psychic units gain 35% Ability Power",
+        "effects": {
+          "ability_power_pct": 0.35
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Team gains 15% AP; Psychic units gain 55%",
+        "effects": {
+          "ability_power_pct": 0.55
+        },
+        "teamEffects": {
+          "ability_power_pct": 0.15
+        }
+      }
+    ]
+  },
+  {
+    "id": "ghost",
+    "name": "Ghost",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Ghost units gain 10% Crit",
+        "effects": {
+          "crit_chance": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Ghost units gain 20% Crit and 12% Attack",
+        "effects": {
+          "crit_chance": 0.2,
+          "attack_pct": 0.12
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "dragon",
+    "name": "Dragon",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Dragon units gain 12% HP and Attack",
+        "effects": {
+          "hp_pct": 0.12,
+          "attack_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Dragon units gain 25% HP and Attack",
+        "effects": {
+          "hp_pct": 0.25,
+          "attack_pct": 0.25
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Team gains 10% HP/Attack; Dragons gain 40%",
+        "effects": {
+          "hp_pct": 0.4,
+          "attack_pct": 0.4
+        },
+        "teamEffects": {
+          "hp_pct": 0.1,
+          "attack_pct": 0.1
+        }
+      }
+    ]
+  },
+  {
+    "id": "steel",
+    "name": "Steel",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Steel units gain 25 Armor",
+        "effects": {
+          "defense": 25
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Steel units gain 50 Armor and 25 Sp.Def",
+        "effects": {
+          "defense": 50,
+          "spdef": 25
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "dark",
+    "name": "Dark",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Dark units gain 12% Attack",
+        "effects": {
+          "attack_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Dark units gain 25% Attack and 10% Crit",
+        "effects": {
+          "attack_pct": 0.25,
+          "crit_chance": 0.1
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "fighting",
+    "name": "Fighting",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Fighting units gain 10% HP and Attack",
+        "effects": {
+          "hp_pct": 0.1,
+          "attack_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Fighting units gain 22% HP and Attack",
+        "effects": {
+          "hp_pct": 0.22,
+          "attack_pct": 0.22
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "rock",
+    "name": "Rock",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Rock units gain 25 Armor",
+        "effects": {
+          "defense": 25
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Rock units gain 55 Armor",
+        "effects": {
+          "defense": 55
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "flying",
+    "name": "Flying",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Flying units gain 10% Attack Speed",
+        "effects": {
+          "attack_speed_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Flying units gain 22% Attack Speed and +1 Range",
+        "effects": {
+          "attack_speed_pct": 0.22,
+          "range": 1
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "fairy",
+    "name": "Fairy",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Fairy units start with 15 mana",
+        "effects": {
+          "mana_start": 15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Fairy units gain 25% AP and start with 25 mana",
+        "effects": {
+          "ability_power_pct": 0.25,
+          "mana_start": 25
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "normal",
+    "name": "Normal",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Normal units gain 10% HP",
+        "effects": {
+          "hp_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Normal units gain 20% HP and 12% Attack Speed",
+        "effects": {
+          "hp_pct": 0.2,
+          "attack_speed_pct": 0.12
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "legendary",
+    "name": "Legendary",
+    "tiers": [
+      {
+        "threshold": 1,
+        "description": "Legendary unit gains 8% all offense",
+        "effects": {
+          "attack_pct": 0.08,
+          "ability_power_pct": 0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 2,
+        "description": "Legendary units gain 18% all offense",
+        "effects": {
+          "attack_pct": 0.18,
+          "ability_power_pct": 0.18
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 3,
+        "description": "Team gains 10% offense; Legendaries gain 30%",
+        "effects": {
+          "attack_pct": 0.3,
+          "ability_power_pct": 0.3
+        },
+        "teamEffects": {
+          "attack_pct": 0.1,
+          "ability_power_pct": 0.1
+        }
+      }
+    ]
+  },
+  {
+    "id": "pseudo",
+    "name": "Pseudo-Legendary",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Pseudo units gain 15% HP",
+        "effects": {
+          "hp_pct": 0.15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Pseudo units gain 30% HP and 15% Attack",
+        "effects": {
+          "hp_pct": 0.3,
+          "attack_pct": 0.15
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "eeveelution",
+    "name": "Eeveelution",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Eeveelutions gain 12% HP and AP",
+        "effects": {
+          "hp_pct": 0.12,
+          "ability_power_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Eeveelutions gain 25% HP and AP",
+        "effects": {
+          "hp_pct": 0.25,
+          "ability_power_pct": 0.25
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "guardian",
+    "name": "Guardian",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Guardians gain 20 Armor/Sp.Def",
+        "effects": {
+          "defense": 20,
+          "spdef": 20
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Guardians gain 45 Armor/Sp.Def",
+        "effects": {
+          "defense": 45,
+          "spdef": 45
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "caster",
+    "name": "Caster",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Casters gain 15% AP",
+        "effects": {
+          "ability_power_pct": 0.15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Casters gain 35% AP and +10 starting mana",
+        "effects": {
+          "ability_power_pct": 0.35,
+          "mana_start": 10
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "striker",
+    "name": "Striker",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Strikers gain 12% Attack",
+        "effects": {
+          "attack_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Strikers gain 28% Attack and 10% Attack Speed",
+        "effects": {
+          "attack_pct": 0.28,
+          "attack_speed_pct": 0.1
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "ranger",
+    "name": "Ranger",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Rangers gain 12% Attack Speed",
+        "effects": {
+          "attack_speed_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Rangers gain 25% Attack Speed and +1 Range",
+        "effects": {
+          "attack_speed_pct": 0.25,
+          "range": 1
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "monsterverse",
+    "name": "MonsterVerse",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Titan allies gain rage when damaged",
+        "effects": {
+          "hp_pct": 0.04,
+          "mana_on_attack": 1
+        },
+        "teamEffects": {
+          "defense": 3,
+          "spdef": 3
+        }
+      },
+      {
+        "threshold": 3,
+        "description": "Titans roar on cast, shielding allies",
+        "effects": {
+          "hp_pct": 0.08,
+          "mana_on_attack": 2
+        },
+        "teamEffects": {
+          "defense": 6,
+          "spdef": 6
+        }
+      },
+      {
+        "threshold": 5,
+        "description": "Titan casts create boss-scale shockwaves",
+        "effects": {
+          "hp_pct": 0.12,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 9,
+          "spdef": 9
+        }
+      }
+    ]
+  },
+  {
+    "id": "dc_universe",
+    "name": "DC Universe",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Heroes protect their lowest-health ally",
+        "effects": {
+          "hp_pct": 0.04,
+          "mana_on_attack": 1
+        },
+        "teamEffects": {
+          "defense": 3,
+          "spdef": 3
+        }
+      },
+      {
+        "threshold": 4,
+        "description": "Bat Family coordinates control after casts",
+        "effects": {
+          "hp_pct": 0.08,
+          "mana_on_attack": 2
+        },
+        "teamEffects": {
+          "defense": 6,
+          "spdef": 6
+        }
+      },
+      {
+        "threshold": 6,
+        "description": "Heroes and villains trigger bounded team-up attacks",
+        "effects": {
+          "hp_pct": 0.12,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 9,
+          "spdef": 9
+        }
+      }
+    ]
+  },
+  {
+    "id": "green_lantern",
+    "name": "Green Lantern Corps",
+    "tiers": [
+      {
+        "threshold": 1,
+        "description": "Willpower creates a cast shield",
+        "effects": {
+          "hp_pct": 0.04,
+          "mana_on_attack": 1
+        },
+        "teamEffects": {
+          "defense": 3,
+          "spdef": 3
+        }
+      },
+      {
+        "threshold": 2,
+        "description": "Constructs share protection between Lanterns",
+        "effects": {
+          "hp_pct": 0.08,
+          "mana_on_attack": 2
+        },
+        "teamEffects": {
+          "defense": 6,
+          "spdef": 6
+        }
+      },
+      {
+        "threshold": 3,
+        "description": "Empowered constructs gain AP and projectile impact",
+        "effects": {
+          "hp_pct": 0.12,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 9,
+          "spdef": 9
+        }
+      }
+    ]
+  },
+  {
+    "id": "fortune",
+    "name": "Thần Tài",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Kills build deterministic fortune",
+        "effects": {
+          "hp_pct": 0.04,
+          "mana_on_attack": 1
+        },
+        "teamEffects": {
+          "defense": 3,
+          "spdef": 3
+        }
+      },
+      {
+        "threshold": 4,
+        "description": "Interest and loot value increase",
+        "effects": {
+          "hp_pct": 0.08,
+          "mana_on_attack": 2
+        },
+        "teamEffects": {
+          "defense": 6,
+          "spdef": 6
+        }
+      },
+      {
+        "threshold": 6,
+        "description": "Jackpot settles once after combat",
+        "effects": {
+          "hp_pct": 0.12,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 9,
+          "spdef": 9
+        }
+      }
+    ]
+  },
+  {
+    "id": "straw_hat",
+    "name": "Straw Hat Crew",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Crew assists the first cast",
+        "effects": {
+          "hp_pct": 0.04,
+          "mana_on_attack": 1
+        },
+        "teamEffects": {
+          "defense": 3,
+          "spdef": 3
+        }
+      },
+      {
+        "threshold": 4,
+        "description": "Nakama chains attacks",
+        "effects": {
+          "hp_pct": 0.08,
+          "mana_on_attack": 2
+        },
+        "teamEffects": {
+          "defense": 6,
+          "spdef": 6
+        }
+      },
+      {
+        "threshold": 6,
+        "description": "Supports shield the lowest-health carry",
+        "effects": {
+          "hp_pct": 0.12,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 9,
+          "spdef": 9
+        }
+      },
+      {
+        "threshold": 8,
+        "description": "Surviving crew empower comeback casts",
+        "effects": {
+          "hp_pct": 0.16,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 12,
+          "spdef": 12
+        }
+      },
+      {
+        "threshold": 10,
+        "description": "The full crew coordinates every cast",
+        "effects": {
+          "hp_pct": 0.2,
+          "mana_on_attack": 3
+        },
+        "teamEffects": {
+          "defense": 15,
+          "spdef": 15
+        }
+      }
+    ]
+  }
+]

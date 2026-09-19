@@ -4,21 +4,276 @@
     "name": "Kanto Vanguard",
     "synergyTrait": "kanto",
     "members": [
-      { "unit": "snorlax", "slot": 9, "star": 1 },
-      { "unit": "venusaur", "slot": 10, "star": 1 },
-      { "unit": "charizard", "slot": 16, "star": 1 },
-      { "unit": "blastoise", "slot": 17, "star": 1 },
-      { "unit": "pikachu", "slot": 23, "star": 2 },
-      { "unit": "mewtwo", "slot": 24, "star": 1 }
+      {
+        "unit": "snorlax",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "venusaur",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "charizard",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "blastoise",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "pikachu",
+        "slot": 23,
+        "star": 2
+      },
+      {
+        "unit": "mewtwo",
+        "slot": 24,
+        "star": 1
+      }
     ],
     "bench": [
-      { "unit": "eevee", "star": 1 },
-      { "unit": "gengar", "star": 1 }
+      {
+        "unit": "eevee",
+        "star": 1
+      },
+      {
+        "unit": "gengar",
+        "star": 1
+      }
     ],
     "tactician": "svhub:allay",
     "startingLevel": 6,
     "startingGold": 20,
     "startingHealth": 100,
     "aiProfile": "normal"
+  },
+  {
+    "id": "svhub:monsterverse",
+    "name": "MonsterVerse",
+    "synergyTrait": "monsterverse",
+    "members": [
+      {
+        "unit": "mv_godzilla",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "mv_kong",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "mv_rodan",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "mv_mothra",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "mv_ghidorah",
+        "slot": 23,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svhub:sniffer",
+    "arena": "svhub:monster_island",
+    "startingLevel": 7,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:dc_universe",
+    "name": "DC Universe",
+    "synergyTrait": "dc_universe",
+    "members": [
+      {
+        "unit": "dc_superman",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "dc_nightwing",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "dc_robin",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "dc_red_hood",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "dc_batman",
+        "slot": 22,
+        "star": 1
+      },
+      {
+        "unit": "dc_joker",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svhub:allay",
+    "arena": "svhub:gotham_rooftops",
+    "startingLevel": 7,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:green_lantern_corps",
+    "name": "Green Lantern Corps",
+    "synergyTrait": "green_lantern",
+    "members": [
+      {
+        "unit": "gl_mewtwo_x",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "gl_mewtwo",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "gl_mewtwo_y",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svhub:allay",
+    "arena": "svhub:sector_2814",
+    "startingLevel": 5,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:than_tai",
+    "name": "Thần Tài",
+    "synergyTrait": "fortune",
+    "members": [
+      {
+        "unit": "fortune_greedent",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "fortune_persian",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "fortune_meowth",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "fortune_pikachu",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "fortune_chiyu",
+        "slot": 23,
+        "star": 1
+      },
+      {
+        "unit": "fortune_gholdengo",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svhub:cat",
+    "arena": "svhub:celestial_vault",
+    "startingLevel": 7,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:one_piece",
+    "name": "One Piece",
+    "synergyTrait": "straw_hat",
+    "members": [
+      {
+        "unit": "op_jinbe",
+        "slot": 7,
+        "star": 1
+      },
+      {
+        "unit": "op_franky",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "op_sanji",
+        "slot": 11,
+        "star": 1
+      },
+      {
+        "unit": "op_luffy",
+        "slot": 14,
+        "star": 1
+      },
+      {
+        "unit": "op_zoro",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "op_chopper",
+        "slot": 18,
+        "star": 1
+      },
+      {
+        "unit": "op_nami",
+        "slot": 21,
+        "star": 1
+      },
+      {
+        "unit": "op_robin",
+        "slot": 22,
+        "star": 1
+      },
+      {
+        "unit": "op_usopp",
+        "slot": 23,
+        "star": 1
+      },
+      {
+        "unit": "op_brook",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [
+      {
+        "unit": "op_sunny",
+        "star": 1
+      }
+    ],
+    "tactician": "svhub:parrot",
+    "arena": "svhub:grand_line",
+    "startingLevel": 10,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
   }
 ]

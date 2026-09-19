@@ -37,6 +37,9 @@ class TftSession(
     private val augmentDefs = set.augments.associateBy { it.id }
     private val itemRecipes = set.fullItems.associateBy { it.components.sorted().joinToString("+") }
     private val pool = SharedPool(set, rng)
+    private val shopSlots = set.rules.shopSlots
+    private val benchSlots = set.rules.benchSlots
+    private val formationCells = set.rules.formationCells
     private val players = linkedMapOf<String, PlayerState>()
     private val combats = linkedMapOf<String, MatchCombat>()
     private val scoutTargets = mutableMapOf<String, String>()
@@ -54,7 +57,7 @@ class TftSession(
     init {
         require(seats.size in 2..8) { "Pokémon TFT requires 2-8 trainers" }
         if (restoreState == null) {
-            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, tactician = resolveTactician(tacticianSelections[seat.id])) }
+            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, bench = MutableList(benchSlots) { null }, shop = MutableList(shopSlots) { null }, tactician = resolveTactician(tacticianSelections[seat.id])) }
             startPlanning(System.currentTimeMillis(), firstRound = true)
         } else {
             restoreSnapshot(restoreState)
@@ -154,13 +157,13 @@ class TftSession(
         players.clear()
         saved.players.forEach { p ->
             val seat = seatById.getValue(p.id)
-            val bench = p.bench.take(BENCH_SIZE).map { owned ->
+            val bench = p.bench.take(benchSlots).map { owned ->
                 owned?.takeIf { unit -> unit.unitId in unitDefs }?.let { unit -> unit.copy(items = unit.items.toMutableList()) }
             }.toMutableList()
-            while (bench.size < BENCH_SIZE) bench.add(null)
+            while (bench.size < benchSlots) bench.add(null)
 
             val board = linkedMapOf<Int, TftOwnedUnit>()
-            p.board.filter { it.slot in 0 until FORMATION_CELLS }
+            p.board.filter { it.slot in 0 until formationCells }
                 .distinctBy { it.slot }
                 .forEach { entry ->
                     if (entry.unit.unitId in unitDefs) {
@@ -168,8 +171,8 @@ class TftSession(
                     }
                 }
 
-            val shop = p.shop.take(SHOP_SIZE).toMutableList()
-            while (shop.size < SHOP_SIZE) shop.add(null)
+            val shop = p.shop.take(shopSlots).toMutableList()
+            while (shop.size < shopSlots) shop.add(null)
             shop.indices.forEach { index ->
                 val id = shop[index]
                 if (id != null && id !in unitDefs) shop[index] = null
@@ -459,7 +462,7 @@ class TftSession(
         if (!canEditBoard(player)) return reject("Board is locked")
         val bi = benchIndex ?: return reject("Missing bench slot")
         val target = slot ?: return reject("Missing board slot")
-        if (target !in 0 until FORMATION_CELLS) return reject("Invalid board slot")
+        if (target !in 0 until formationCells) return reject("Invalid board slot")
         val unit = player.bench.getOrNull(bi) ?: return reject("Bench slot empty")
         val occupied = player.board[target]
         if (occupied == null && player.board.size >= unitCap(player)) return reject("Team size limit reached")
@@ -473,7 +476,7 @@ class TftSession(
         if (!canEditBoard(player)) return reject("Board is locked")
         val a = from ?: return reject("Missing source")
         val b = to ?: return reject("Missing destination")
-        if (a !in 0 until FORMATION_CELLS || b !in 0 until FORMATION_CELLS) return reject("Invalid board slot")
+        if (a !in 0 until formationCells || b !in 0 until formationCells) return reject("Invalid board slot")
         val first = player.board[a] ?: return reject("Source slot empty")
         val second = player.board[b]
         player.board[b] = first
@@ -620,7 +623,7 @@ class TftSession(
     private fun startPveCombats(pve: TftPveRoundDefinition) {
         alivePlayers().forEach { player ->
             val enemyBoard = linkedMapOf<Int, TftOwnedUnit>()
-            pve.enemies.forEachIndexed { index, enemy -> if (enemy.unit in unitDefs) enemyBoard[enemy.slot.coerceIn(0, FORMATION_CELLS - 1)] = TftOwnedUnit("pve:${roundIndex}:$index:${player.id}", enemy.unit, enemy.star.coerceIn(1, 3)) }
+            pve.enemies.forEachIndexed { index, enemy -> if (enemy.unit in unitDefs) enemyBoard[enemy.slot.coerceIn(0, formationCells - 1)] = TftOwnedUnit("pve:${roundIndex}:$index:${player.id}", enemy.unit, enemy.star.coerceIn(1, 3)) }
             val engine = TftCombatEngine(set, player.id, snapshotBoard(player), player.augments, "pve", enemyBoard, emptyList(), rng.nextLong())
             combats[player.id] = MatchCombat(player.id, null, "PvE", engine, pve = pve)
         }
@@ -724,7 +727,7 @@ class TftSession(
         val cap = unitCap(player)
         while (player.board.size < cap) {
             val benchIndex = player.bench.indexOfFirst { it != null }; if (benchIndex < 0) break
-            val slot = (0 until FORMATION_CELLS).firstOrNull { it !in player.board } ?: break
+            val slot = (0 until formationCells).firstOrNull { it !in player.board } ?: break
             player.board[slot] = player.bench[benchIndex]!!; player.bench[benchIndex] = null
         }
     }
@@ -743,7 +746,7 @@ class TftSession(
                 else {
                     val empty = player.bench.indexOfFirst { it == null }
                     if (empty >= 0) player.bench[empty] = upgraded else {
-                        val slot = (0 until FORMATION_CELLS).firstOrNull { it !in player.board }
+                        val slot = (0 until formationCells).firstOrNull { it !in player.board }
                         if (slot != null) player.board[slot] = upgraded else player.bench[0] = upgraded
                     }
                 }
@@ -919,7 +922,7 @@ class TftSession(
         playerModifiers(player).apply(TftPlayerModifier.SHOP_REFRESH_COST, 2.0).toInt().coerceAtLeast(0)
     private fun canEditBoard(player: PlayerState) = phase == Phase.PLANNING && !player.eliminated
     private fun unitCap(player: PlayerState) = playerModifiers(player)
-        .apply(TftPlayerModifier.BOARD_CAPACITY, player.level.toDouble()).toInt().coerceIn(1, 12)
+        .apply(TftPlayerModifier.BOARD_CAPACITY, player.level.toDouble()).toInt().coerceIn(1, set.rules.maxBoardCapacity)
 
     private fun settleRound(player: PlayerState, roundType: String) {
         if (player.lastSettledRound >= roundIndex) return
@@ -950,10 +953,11 @@ class TftSession(
     }
     private fun streakGold(streak: Int): Int = when (abs(streak)) { in 0..1 -> 0; 2, 3 -> 1; 4 -> 2; else -> 3 }
     private fun autoChooseAugments() { alivePlayers().forEach { player -> if (player.augmentChoices.isNotEmpty()) { player.augments += player.augmentChoices.random(rng); player.augmentChoices.clear() } } }
-    private fun pveDefinition(label: String): TftPveRoundDefinition? = set.pveRounds.firstOrNull { it.round == label } ?: if (label.endsWith("-7")) set.pveRounds.lastOrNull { it.round.endsWith("-7") && (it.round.substringBefore('-').toIntOrNull() ?: 0) <= stageNumber() } else null
-    private fun isAugmentRound(label: String) = label in AUGMENT_ROUNDS
-    private fun isDraftRound(label: String): Boolean { val stage=label.substringBefore('-').toIntOrNull()?:return false;val turn=label.substringAfter('-').toIntOrNull()?:return false;return stage>=2&&turn==4 }
-    private fun roundLabel(): String { if (roundIndex <= 2) return "1-${roundIndex + 1}"; val shifted=roundIndex-3;return "${2+shifted/7}-${1+shifted%7}" }
+    private fun roundDefinition() = set.roundSchedule[roundIndex.coerceAtMost(set.roundSchedule.lastIndex)]
+    private fun pveDefinition(label: String): TftPveRoundDefinition? = roundDefinition().pve?.let { ref -> set.pveRounds.firstOrNull { it.round == ref } } ?: set.pveRounds.firstOrNull { it.round == label }
+    private fun isAugmentRound(label: String) = roundDefinition().type == "augment"
+    private fun isDraftRound(label: String) = roundDefinition().type == "carousel"
+    private fun roundLabel(): String = roundDefinition().label
     private fun stageNumber() = roundLabel().substringBefore('-').toIntOrNull() ?: 1
     private fun secondsLeft(): Long = ((phaseEndsAt - System.currentTimeMillis()).coerceAtLeast(0L) + 999L) / 1_000L
     private fun alivePlayers() = players.values.filterNot { it.eliminated }
@@ -1041,8 +1045,8 @@ class TftSession(
     private data class PlayerState(
         val id: String, val name: String, var hp: Int = 100, var gold: Int = 5, var level: Int = 2, var xp: Int = 0,
         var streak: Int = 0, var lastOutcome: Int = 0, var eliminated: Boolean = false, var placement: Int? = null,
-        var lastOpponentId: String? = null, val bench: MutableList<TftOwnedUnit?> = MutableList(BENCH_SIZE) { null },
-        val board: MutableMap<Int, TftOwnedUnit> = linkedMapOf(), val shop: MutableList<String?> = MutableList(SHOP_SIZE) { null },
+        var lastOpponentId: String? = null, val bench: MutableList<TftOwnedUnit?>,
+        val board: MutableMap<Int, TftOwnedUnit> = linkedMapOf(), val shop: MutableList<String?>,
         val itemBench: MutableList<String> = mutableListOf(), val augments: MutableList<String> = mutableListOf(),
         val augmentChoices: MutableList<String> = mutableListOf(), var freeRerolls: Int = 0, var draftPicked: Boolean = false,
         var draftUnlockAt: Long = 0L, var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
@@ -1070,8 +1074,7 @@ class TftSession(
     }
 
     companion object {
-        private const val SHOP_SIZE=5;private const val BENCH_SIZE=9;private const val FORMATION_CELLS=28;private const val MAX_GOLD=999
+        private const val MAX_GOLD=999
         private const val PVE_LOSS_DAMAGE=5;private const val DRAW_DAMAGE=2;private const val DRAFT_WAVE_MS=1_500L;private const val DRAFT_TOTAL_MS=10_000L
-        private val AUGMENT_ROUNDS=setOf("2-1","3-2","4-2")
     }
 }

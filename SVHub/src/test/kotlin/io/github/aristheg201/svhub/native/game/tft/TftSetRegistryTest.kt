@@ -12,9 +12,9 @@ import kotlin.test.*
 class TftSetRegistryTest {
     @Test fun bundledSetLoadsAllOriginalContent() {
         val set = TftSetRegistry.bundled("kanto_rising")
-        assertEquals(43, set.units.size)
-        assertEquals(listOf("svhub:kanto_vanguard"), set.teams.map { it.id })
-        assertEquals(23, set.traits.size)
+        assertEquals(74, set.units.size)
+        assertEquals(6, set.teams.size)
+        assertEquals(28, set.traits.size)
         assertEquals(8, set.components.size)
         assertEquals(36, set.fullItems.size)
         assertEquals(9, set.augments.size)
@@ -110,7 +110,7 @@ class TftSetRegistryTest {
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")
         TftSetRegistry.start(root)
-        assertEquals(43, TftSetRegistry.active().units.size)
+        assertEquals(74, TftSetRegistry.active().units.size)
         assertEquals("[]", Files.readString(path))
     }
 
@@ -161,7 +161,7 @@ class TftSetRegistryTest {
 
     @Test fun rejectsBrokenTeamReferencesAndOverlappingPositions() {
         val set = TftSetRegistry.bundled("kanto_rising")
-        val team = set.teams.single()
+        val team = set.teams.first { it.id == "svhub:kanto_vanguard" }
         assertFailsWith<IllegalArgumentException> {
             TftDefinitionValidator.validate(set.copy(teams = listOf(team.copy(members = listOf(TftTeamMemberDefinition("missing", 0))))))
         }
@@ -170,6 +170,29 @@ class TftSetRegistryTest {
                 TftTeamMemberDefinition("pikachu", 0), TftTeamMemberDefinition("eevee", 0)
             )))))
         }
+    }
+
+    @Test fun shipsProductionTeamsWithExactFranchisePresentation() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        assertTrue(setOf("svhub:monsterverse", "svhub:dc_universe", "svhub:green_lantern_corps", "svhub:than_tai", "svhub:one_piece")
+            .all(set.teams.map { it.id }.toSet()::contains))
+        val units = set.units.associateBy { it.id }
+        assertEquals(setOf("cosmetic_item-godzilla"), units.getValue("mv_godzilla").presentation.aspects)
+        assertEquals(setOf("op"), units.getValue("op_sunny").presentation.aspects)
+        assertEquals("mega-x", units.getValue("gl_mewtwo_x").presentation.form)
+        assertEquals("mega-y", units.getValue("gl_mewtwo_y").presentation.form)
+        assertEquals(setOf("greenlantern", "mega-x"), units.getValue("gl_mewtwo_x").presentation.resolverAspects())
+        assertEquals(setOf("greenlantern", "mega-y"), units.getValue("gl_mewtwo_y").presentation.resolverAspects())
+    }
+
+    @Test fun validatesNonDefaultGeometryAndDataDrivenSchedule() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val resized = set.copy(rules = TftRulesDefinition(shopSlots = 7, benchSlots = 12, boardColumns = 8, boardRows = 5, maxBoardCapacity = 14))
+        assertEquals(40, TftDefinitionValidator.validate(resized).rules.formationCells)
+        assertEquals("pve", set.roundSchedule.first().type)
+        assertTrue(set.roundSchedule.any { it.type == "augment" })
+        assertTrue(set.roundSchedule.any { it.type == "carousel" })
+        assertTrue(set.roundSchedule.any { it.type == "boss" })
     }
 
     private fun inTempDirectory(block: (Path) -> Unit) {

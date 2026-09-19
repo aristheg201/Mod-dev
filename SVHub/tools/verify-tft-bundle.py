@@ -22,7 +22,7 @@ try:
         data[name] = json.loads(raw)
     if not isinstance(data['set.json'], dict):
         raise ValueError('set.json must contain the manifest object, not component definitions')
-    counts = {'units.json': 43, 'teams.json': 1, 'traits.json': 23, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7}
+    counts = {'units.json': 74, 'teams.json': 6, 'traits.json': 28, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7}
     for name, count in counts.items():
         if not isinstance(data[name], list) or len(data[name]) != count:
             raise ValueError(f'{name}: expected {count} reviewed definitions')
@@ -42,6 +42,23 @@ try:
         members = team['members'] + team.get('bench', [])
         if not all(member['unit'] in units for member in members):
             raise ValueError(f"Unknown unit in team {team['id']}")
+    required_teams = {'svhub:monsterverse', 'svhub:dc_universe', 'svhub:green_lantern_corps', 'svhub:than_tai', 'svhub:one_piece'}
+    team_ids = {team['id'] for team in data['teams.json']}
+    if not required_teams <= team_ids:
+        raise ValueError(f'Missing production teams: {sorted(required_teams - team_ids)}')
+    by_id = {unit['id']: unit for unit in data['units.json']}
+    expected_aspects = {
+        'mv_godzilla': {'cosmetic_item-godzilla'}, 'mv_ghidorah': {'cosmetic_item-kingghidora'},
+        'mv_kong': {'cosmetic_item-kingkong'}, 'mv_mothra': {'cosmetic_item-mothra'}, 'mv_rodan': {'cosmetic_item-rodan'},
+        'gl_mewtwo': {'greenlantern'}, 'gl_mewtwo_x': {'greenlantern'}, 'gl_mewtwo_y': {'greenlantern'},
+        **{name: {'op'} for name in ('op_luffy','op_zoro','op_nami','op_sanji','op_robin','op_usopp','op_franky','op_brook','op_jinbe','op_chopper','op_sunny')}
+    }
+    for unit_id, aspects in expected_aspects.items():
+        actual = set(by_id[unit_id]['pokemon'].get('aspects', []))
+        if actual != aspects:
+            raise ValueError(f'{unit_id}: expected exact aspects {sorted(aspects)}, got {sorted(actual)}')
+    if by_id['gl_mewtwo_x']['pokemon'].get('form') != 'mega-x' or by_id['gl_mewtwo_y']['pokemon'].get('form') != 'mega-y':
+        raise ValueError('Green Lantern Mega provider forms are not canonical')
     print('TFT bundle verified:', ', '.join(f'{name}={count}' for name, count in counts.items()))
 finally:
     if jar:
