@@ -65,6 +65,8 @@ internal data class TftHoverTooltip(
     val accent: Int
 )
 
+enum class TacticianPresentationState { IDLE,WALK,RUN,EMOTE,ROUND_START,VICTORY,DEFEAT,CAROUSEL_MOVEMENT,PICKUP_REACTION }
+
 class TftUiState {
     data class TacticianPose(val point:ArenaPoint,val state:String)
     private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long, val alive:Boolean)
@@ -85,7 +87,31 @@ class TftUiState {
     var selectedItem: Int? = null
     private var tacticianPoint:ArenaPoint?=null
     private var tacticianAt=System.currentTimeMillis()
-    fun tactician(target:ArenaPoint,bounds:ArenaRegion,requested:String,now:Long=System.currentTimeMillis()):TacticianPose {val safe=bounds.clamp(target);val previous=tacticianPoint?:safe;val elapsed=(now-tacticianAt).coerceAtLeast(1);val distance=kotlin.math.hypot((safe.x-previous.x).toDouble(),(safe.y-previous.y).toDouble()).toFloat();val step=(elapsed/1000f*if(distance>2f)4f else 2f).coerceAtMost(distance);val next=if(distance<=.001f)safe else bounds.clamp(ArenaPoint(previous.x+(safe.x-previous.x)/distance*step,previous.y+(safe.y-previous.y)/distance*step,safe.z));tacticianPoint=next;tacticianAt=now;val moving=when{distance>2f->"RUN";distance>.05f->"WALK";else->requested.uppercase()};return TacticianPose(next,moving)}
+    private var tacticianState=TacticianPresentationState.IDLE
+    private var tacticianStateSince=tacticianAt
+    internal fun tacticianState()=tacticianState
+    fun tactician(target:ArenaPoint,bounds:ArenaRegion,requested:String,now:Long=System.currentTimeMillis()):TacticianPose {
+        val safe=bounds.clamp(target)
+        val previous=tacticianPoint?:safe
+        val elapsed=(now-tacticianAt).coerceAtLeast(1)
+        val distance=kotlin.math.hypot((safe.x-previous.x).toDouble(),(safe.y-previous.y).toDouble()).toFloat()
+        val requestedState=runCatching{TacticianPresentationState.valueOf(requested.uppercase())}.getOrDefault(TacticianPresentationState.IDLE)
+        val speed=if(distance>2f)4f else 2f
+        val step=(elapsed/1000f*speed).coerceAtMost(distance)
+        val next=if(distance<=.001f)safe else bounds.clamp(ArenaPoint(previous.x+(safe.x-previous.x)/distance*step,previous.y+(safe.y-previous.y)/distance*step,safe.z))
+        val movement=when{distance>2f->TacticianPresentationState.RUN;distance>.05f->TacticianPresentationState.WALK;else->null}
+        val holdMs=when(tacticianState){TacticianPresentationState.EMOTE->1200L;TacticianPresentationState.ROUND_START->900L;TacticianPresentationState.PICKUP_REACTION->900L;TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT->Long.MAX_VALUE;else->0L}
+        val nextState=when{
+            tacticianState in setOf(TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT)->tacticianState
+            movement!=null&&requestedState !in setOf(TacticianPresentationState.EMOTE,TacticianPresentationState.ROUND_START,TacticianPresentationState.PICKUP_REACTION,TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT)->movement
+            now-tacticianStateSince<holdMs->tacticianState
+            else->requestedState
+        }
+        if(nextState!=tacticianState){tacticianState=nextState;tacticianStateSince=now}
+        tacticianPoint=next
+        tacticianAt=now
+        return TacticianPose(next,tacticianState.name)
+    }
 
     fun clearUnit() { selectedOrigin = null; selectedIndex = null }
     fun resetCombat() { combatCounters.clear(); deadSince.clear() }
