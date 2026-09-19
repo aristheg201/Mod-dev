@@ -265,6 +265,44 @@ object MinecraftArenaRegistry {
 }
 
 object MinecraftArenaRenderer {
+    fun renderPresentation(gui:GuiGraphics,layout:PokemonSceneLayout,frame:ArenaPresentationFrame,phase:String){
+        val lightingAlpha=when(frame.lighting.lowercase()){"dark","night"->56;"bright","day"->10;"dramatic"->34;else->18}
+        if(lightingAlpha>0){
+            val a=layout.project(-.7f,-.7f);val b=layout.project(layout.columns-.3f,layout.rows-.3f)
+            val left=minOf(a.x,b.x).roundToInt();val right=maxOf(a.x,b.x).roundToInt()
+            val top=minOf(a.y,b.y).roundToInt();val bottom=maxOf(a.y,b.y).roundToInt()
+            if(right>left&&bottom>top)gui.fill(left,top,right,bottom,(lightingAlpha shl 24))
+        }
+        if(frame.ambientVfx.isNotBlank()){
+            val hash=frame.ambientVfx.hashCode()
+            repeat(6){i->
+                val x=Math.floorMod(hash+i*31,layout.columns.coerceAtLeast(1)).toFloat()
+                val y=Math.floorMod(hash/31+i*17,layout.rows.coerceAtLeast(1)).toFloat()
+                val p=layout.project(x,y);gui.fill(p.x.roundToInt()-1,p.y.roundToInt()-1,p.x.roundToInt()+2,p.y.roundToInt()+2,0x88FFFFFF.toInt())
+            }
+        }
+        if(frame.semanticVfx.isNotBlank()){
+            val center=layout.project((layout.columns-1)/2f,(layout.rows-1)/2f)
+            val pulse=if(phase.equals("combat",true))10 else 14
+            drawDiamondOutline(gui,center.x.roundToInt(),center.y.roundToInt(),pulse*2,pulse,0xCCFFFFFF.toInt())
+        }
+        frame.lootAnchors.forEachIndexed{index,anchor->
+            val p=layout.project(anchor.x,anchor.y)
+            val size=if(index%2==0)5 else 4
+            fillDiamond(gui,p.x.roundToInt(),p.y.roundToInt(),size*2,size,0xB8E2BE62.toInt())
+        }
+    }
+
+    fun interactionRect(layout:PokemonSceneLayout,region:ArenaInteractionRegion):io.github.aristheg201.svhub.ui.UiRect{
+        val points=listOf(
+            layout.project(region.bounds.minX,region.bounds.minY),layout.project(region.bounds.maxX,region.bounds.minY),
+            layout.project(region.bounds.minX,region.bounds.maxY),layout.project(region.bounds.maxX,region.bounds.maxY)
+        )
+        val left=points.minOf{it.x}.roundToInt();val right=points.maxOf{it.x}.roundToInt()
+        val top=points.minOf{it.y}.roundToInt();val bottom=points.maxOf{it.y}.roundToInt()
+        return io.github.aristheg201.svhub.ui.UiRect(left,top,(right-left).coerceAtLeast(1),(bottom-top).coerceAtLeast(1))
+    }
+
     /**
      * Draws one continuous Minecraft-like platform before the gameplay overlay.
      * This deliberately replaces the old "one floating block per cell" look.
