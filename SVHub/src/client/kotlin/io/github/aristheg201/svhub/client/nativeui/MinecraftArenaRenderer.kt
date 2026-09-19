@@ -81,6 +81,10 @@ object ArenaPresentationRuntime {
         activeMusicInstance=sound
         Minecraft.getInstance().soundManager.play(sound)
     }
+    fun stopAll(){
+        activeMusicInstance?.let{Minecraft.getInstance().soundManager.stop(it)}
+        activeMusicInstance=null;activeMusic="";activeArena=null;lastSemantic=""
+    }
     fun interaction(arenaId:String,x:Float,y:Float)=MinecraftArenaRegistry.definition(arenaId)?.interactionAt(x,y)
     fun music()=activeMusic
     fun semanticVfx()=lastSemantic
