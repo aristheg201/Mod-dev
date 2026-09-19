@@ -32,7 +32,10 @@ object CardTable3DRenderer {
             (area.width - max(16, area.width / 8)).coerceAtLeast(80),
             (area.height - 10).coerceAtLeast(70)
         )
-        val theme=MinecraftArenaRegistry.definition(view.getAsJsonObject("fields")?.str("arenaId",gameId)?:gameId)
+        val fields=view.getAsJsonObject("fields")
+        val arenaId=fields?.str("arenaId",gameId)?:gameId
+        val theme=MinecraftArenaRegistry.definition(arenaId)
+        ArenaPresentationRuntime.frame(arenaId,ArenaCameraRole.NORMAL,SceneCameras.TFT,view.str("phase"),fields?.str("result"))
         drawTable(gui, table, theme)
 
         val cards = view.getAsJsonArray("cards") ?: return
@@ -83,7 +86,6 @@ object CardTable3DRenderer {
             onCard(rect, card)
         }
 
-        val fields = view.getAsJsonObject("fields")
         if (gameId == "uno") {
             val active = fields?.str("activeColor").orEmpty()
             val top = fields?.let(::unoTopLabel).orEmpty()
