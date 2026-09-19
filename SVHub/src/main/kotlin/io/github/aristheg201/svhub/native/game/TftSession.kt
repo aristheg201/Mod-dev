@@ -364,6 +364,7 @@ class TftSession(
                 "unitCatalog" to encodeUnitCatalog(observed, includeShop = !scouting),
                 "traitCatalog" to encodeTraitCatalog(observed, includeShop = !scouting),
                 "itemBench" to player.itemBench.joinToString(","),
+                "itemCatalog" to encodeItemCatalog(),
                 "augments" to player.augments.joinToString(","),
                 "selectedAugments" to encodeSelectedAugments(observed),
                 "augmentChoices" to encodeAugmentChoices(player),
@@ -1055,6 +1056,24 @@ class TftSession(
         val requestedEntity = selection?.let { if (':' in it) it else "minecraft:$it" }
         return set.tacticians.firstOrNull { it.id == selection || it.entity == requestedEntity }?.id ?: set.defaultTactician
     }
+
+    private fun encodeItemCatalog():String = JsonObject().apply {
+        set.components.forEach { component ->
+            add(component.id,JsonObject().apply {
+                addProperty("kind","component")
+                addProperty("name",component.name)
+                addProperty("effects",component.effects.entries.joinToString(","){"${it.key}=${it.value}"})
+            })
+        }
+        set.fullItems.forEach { item ->
+            add(item.id,JsonObject().apply {
+                addProperty("kind","full")
+                addProperty("name",item.name)
+                addProperty("components",item.components.joinToString(","))
+                addProperty("effects",item.effects.entries.joinToString(","){"${it.key}=${it.value}"})
+            })
+        }
+    }.toString()
 
     private fun encodeBotStrategy(participantId:String):String {
         if(set.botStrategies.isEmpty())return ""
