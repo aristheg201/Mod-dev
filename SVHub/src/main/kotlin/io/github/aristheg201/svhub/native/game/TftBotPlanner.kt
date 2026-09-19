@@ -28,6 +28,7 @@ object TftBotPlanner {
 
     private fun planPlanning(view: NativeGameView, difficulty: NativeBotDifficulty): NativeBotPlan {
         val out = mutableListOf<NativeBotAction>()
+        val strategy=Strategy.parse(view.fields["botStrategy"].orEmpty())
         val gold = view.fields["gold"]?.toIntOrNull() ?: 0
         val cap = view.fields["unitCap"]?.toIntOrNull() ?: 1
         val boardCount = view.fields["boardCount"]?.toIntOrNull() ?: 0
@@ -37,13 +38,13 @@ object TftBotPlanner {
             if (raw.isBlank()) return@mapNotNull null
             val p = raw.split('~')
             if (p.size < 4) return@mapNotNull null
-            Augment(p[0], p[3].toIntOrNull() ?: 50)
+            Augment(p[0], p[3].toIntOrNull() ?: 50, p.getOrNull(4).orEmpty())
         }
         if (augments.isNotEmpty()) {
             val ordered = when (difficulty) {
                 NativeBotDifficulty.EASY -> augments.sortedBy { it.id }
                 NativeBotDifficulty.NORMAL -> augments.sortedByDescending { it.weight }
-                NativeBotDifficulty.HARD -> augments.sortedWith(compareByDescending<Augment> { it.weight }.thenBy { it.id })
+                NativeBotDifficulty.HARD -> augments.sortedWith(compareByDescending<Augment> { it.weight + strategy.augmentScore(it.tags) }.thenBy { it.id })
             }
             out += ordered.map { NativeBotAction("choose_augment", mapOf("id" to it.id)) }
         }
@@ -63,12 +64,12 @@ object TftBotPlanner {
 
         val shop = view.cards.filter { it.value <= gold }.mapNotNull { card ->
             val idx = card.id.substringAfter(':').toIntOrNull() ?: return@mapNotNull null
-            Shop(idx, card.value, card.meta["traits"].orEmpty(), card.meta["role"].orEmpty())
+            Shop(idx, card.value, card.meta["traits"].orEmpty(), card.meta["role"].orEmpty(),card.meta["team"].orEmpty(),card.meta["tags"].orEmpty(),card.meta["ownedCopies"]?.toIntOrNull()?:0)
         }
         val orderedShop = when (difficulty) {
             NativeBotDifficulty.EASY -> shop.sortedWith(compareBy<Shop> { it.cost }.thenBy { it.index })
             NativeBotDifficulty.NORMAL -> shop.sortedWith(compareByDescending<Shop> { it.cost }.thenByDescending { traitFit(view, it.traits) })
-            NativeBotDifficulty.HARD -> shop.sortedWith(compareByDescending<Shop> { it.cost * 20 + traitFit(view, it.traits) * 5 + roleScore(it.role) }.thenBy { it.index })
+            NativeBotDifficulty.HARD -> shop.sortedWith(compareByDescending<Shop> { it.cost * 20 + traitFit(view, it.traits) * 5 + roleScore(it.role) + strategy.shopScore(it) }.thenBy { it.index })
         }
         out += orderedShop.map { NativeBotAction("buy", mapOf("index" to it.index.toString())) }
 
@@ -80,7 +81,7 @@ object TftBotPlanner {
 
         val xpNext = view.fields["xpNext"]?.toIntOrNull() ?: 0
         val level = view.fields["level"]?.toIntOrNull() ?: 2
-        val interestFloor = when (difficulty) { NativeBotDifficulty.EASY -> 0; NativeBotDifficulty.NORMAL -> 10; NativeBotDifficulty.HARD -> 30 }
+        val interestFloor = when (difficulty) { NativeBotDifficulty.EASY -> 0; NativeBotDifficulty.NORMAL -> 10; NativeBotDifficulty.HARD -> strategy.economy["interestFloor"]?.toInt() ?: 30 }
         if (gold >= 4 + interestFloor && xpNext > 0 && level < 10 && (difficulty == NativeBotDifficulty.HARD || boardCount >= cap)) {
             out += NativeBotAction("buy_xp")
         }
@@ -131,7 +132,12 @@ object TftBotPlanner {
     }
 
     private data class Bench(val index: Int, val star: Int, val cost: Int, val role: String)
-    private data class Shop(val index: Int, val cost: Int, val traits: String, val role: String)
+    private data class Shop(val index: Int, val cost: Int, val traits: String, val role: String,val team:String,val tags:String,val ownedCopies:Int)
     private data class Draft(val index: Int, val unitId: String, val cost: Int, val traits: String)
-    private data class Augment(val id: String, val weight: Int)
+    private data class Augment(val id: String, val weight: Int,val tags:String)
+    private data class Strategy(val preferredTeams:Set<String>,val fallbackTeams:Set<String>,val traits:Set<String>,val carryRoles:Set<String>,val itemTags:Set<String>,val augmentTags:Set<String>,val economy:Map<String,Double>){
+        fun shopScore(s:Shop)= (if(s.team in preferredTeams)45 else if(s.team in fallbackTeams)15 else 0)+s.traits.split(',').count{it in traits}*18+(if(s.role in carryRoles)14 else 0)+s.tags.split(',').count{it in itemTags}*3+s.ownedCopies*9
+        fun augmentScore(tags:String)=tags.split(',').count{it in augmentTags}*20
+        companion object{fun parse(raw:String):Strategy{val p=raw.split('~');fun set(i:Int)=p.getOrNull(i).orEmpty().split(',').filter(String::isNotBlank).toSet();val economy=p.getOrNull(7).orEmpty().split(',').mapNotNull{v->v.substringBefore('=').takeIf(String::isNotBlank)?.let{it to (v.substringAfter('=',"").toDoubleOrNull()?:return@mapNotNull null)}}.toMap();return Strategy(set(1),set(2),set(3),set(4),set(5),set(6),economy)}}
+    }
 }

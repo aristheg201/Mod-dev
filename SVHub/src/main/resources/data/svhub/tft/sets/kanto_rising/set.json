@@ -513,5 +513,307 @@
     "releaseDelayMs": 1500,
     "releaseOrder": "lowest_health_first",
     "centerDecoration": "minecraft:beacon"
-  }
+  },
+  "botStrategies": [
+    {
+      "id": "production_1",
+      "preferredTeams": [
+        "svhub:monsterverse"
+      ],
+      "fallbackTeams": [
+        "svhub:dc_universe"
+      ],
+      "preferredTraits": [
+        "monsterverse"
+      ],
+      "preferredCarryRoles": [
+        "fighter"
+      ],
+      "preferredItemTags": [
+        "damage",
+        "survivability"
+      ],
+      "preferredAugmentTags": [
+        "monsterverse",
+        "combat"
+      ],
+      "economyProfile": {
+        "interestFloor": 30,
+        "emergencyHp": 35,
+        "slowRollLevel": 6
+      },
+      "rollProfile": {
+        "stabilizeGold": 20,
+        "contestedPenalty": 8,
+        "upgradeWeight": 12
+      },
+      "levelProfile": {
+        "fastLevelGold": 50,
+        "capLevel": 9
+      },
+      "positioningProfile": {
+        "spread": 0,
+        "carryProtection": 2,
+        "frontlineDepth": 1
+      },
+      "transitionRules": [
+        {
+          "phase": "early",
+          "minimumLevel": 1,
+          "maximumLevel": 5,
+          "team": "svhub:dc_universe",
+          "minimumCopies": 0,
+          "maximumContested": 8
+        },
+        {
+          "phase": "final",
+          "minimumLevel": 6,
+          "maximumLevel": 10,
+          "team": "svhub:monsterverse",
+          "minimumCopies": 2,
+          "maximumContested": 4
+        }
+      ]
+    },
+    {
+      "id": "production_2",
+      "preferredTeams": [
+        "svhub:dc_universe"
+      ],
+      "fallbackTeams": [
+        "svhub:green_lantern_corps"
+      ],
+      "preferredTraits": [
+        "dc_universe"
+      ],
+      "preferredCarryRoles": [
+        "ranger"
+      ],
+      "preferredItemTags": [
+        "damage",
+        "survivability"
+      ],
+      "preferredAugmentTags": [
+        "dc_universe",
+        "combat"
+      ],
+      "economyProfile": {
+        "interestFloor": 20,
+        "emergencyHp": 35,
+        "slowRollLevel": 7
+      },
+      "rollProfile": {
+        "stabilizeGold": 20,
+        "contestedPenalty": 8,
+        "upgradeWeight": 12
+      },
+      "levelProfile": {
+        "fastLevelGold": 50,
+        "capLevel": 9
+      },
+      "positioningProfile": {
+        "spread": 1,
+        "carryProtection": 2,
+        "frontlineDepth": 1
+      },
+      "transitionRules": [
+        {
+          "phase": "early",
+          "minimumLevel": 1,
+          "maximumLevel": 5,
+          "team": "svhub:green_lantern_corps",
+          "minimumCopies": 0,
+          "maximumContested": 8
+        },
+        {
+          "phase": "final",
+          "minimumLevel": 6,
+          "maximumLevel": 10,
+          "team": "svhub:dc_universe",
+          "minimumCopies": 2,
+          "maximumContested": 4
+        }
+      ]
+    },
+    {
+      "id": "production_3",
+      "preferredTeams": [
+        "svhub:green_lantern_corps"
+      ],
+      "fallbackTeams": [
+        "svhub:than_tai"
+      ],
+      "preferredTraits": [
+        "green_lantern"
+      ],
+      "preferredCarryRoles": [
+        "caster"
+      ],
+      "preferredItemTags": [
+        "damage",
+        "survivability"
+      ],
+      "preferredAugmentTags": [
+        "green_lantern",
+        "combat"
+      ],
+      "economyProfile": {
+        "interestFloor": 30,
+        "emergencyHp": 35,
+        "slowRollLevel": 8
+      },
+      "rollProfile": {
+        "stabilizeGold": 20,
+        "contestedPenalty": 8,
+        "upgradeWeight": 12
+      },
+      "levelProfile": {
+        "fastLevelGold": 50,
+        "capLevel": 9
+      },
+      "positioningProfile": {
+        "spread": 1,
+        "carryProtection": 2,
+        "frontlineDepth": 1
+      },
+      "transitionRules": [
+        {
+          "phase": "early",
+          "minimumLevel": 1,
+          "maximumLevel": 5,
+          "team": "svhub:than_tai",
+          "minimumCopies": 0,
+          "maximumContested": 8
+        },
+        {
+          "phase": "final",
+          "minimumLevel": 6,
+          "maximumLevel": 10,
+          "team": "svhub:green_lantern_corps",
+          "minimumCopies": 2,
+          "maximumContested": 4
+        }
+      ]
+    },
+    {
+      "id": "production_4",
+      "preferredTeams": [
+        "svhub:than_tai"
+      ],
+      "fallbackTeams": [
+        "svhub:one_piece"
+      ],
+      "preferredTraits": [
+        "fortune"
+      ],
+      "preferredCarryRoles": [
+        "support"
+      ],
+      "preferredItemTags": [
+        "utility",
+        "survivability"
+      ],
+      "preferredAugmentTags": [
+        "fortune",
+        "economy"
+      ],
+      "economyProfile": {
+        "interestFloor": 20,
+        "emergencyHp": 35,
+        "slowRollLevel": 6
+      },
+      "rollProfile": {
+        "stabilizeGold": 20,
+        "contestedPenalty": 8,
+        "upgradeWeight": 12
+      },
+      "levelProfile": {
+        "fastLevelGold": 50,
+        "capLevel": 9
+      },
+      "positioningProfile": {
+        "spread": 0,
+        "carryProtection": 2,
+        "frontlineDepth": 1
+      },
+      "transitionRules": [
+        {
+          "phase": "early",
+          "minimumLevel": 1,
+          "maximumLevel": 5,
+          "team": "svhub:one_piece",
+          "minimumCopies": 0,
+          "maximumContested": 8
+        },
+        {
+          "phase": "final",
+          "minimumLevel": 6,
+          "maximumLevel": 10,
+          "team": "svhub:than_tai",
+          "minimumCopies": 2,
+          "maximumContested": 4
+        }
+      ]
+    },
+    {
+      "id": "production_5",
+      "preferredTeams": [
+        "svhub:one_piece"
+      ],
+      "fallbackTeams": [
+        "svhub:monsterverse"
+      ],
+      "preferredTraits": [
+        "straw_hat"
+      ],
+      "preferredCarryRoles": [
+        "striker"
+      ],
+      "preferredItemTags": [
+        "damage",
+        "survivability"
+      ],
+      "preferredAugmentTags": [
+        "straw_hat",
+        "combat"
+      ],
+      "economyProfile": {
+        "interestFloor": 20,
+        "emergencyHp": 35,
+        "slowRollLevel": 7
+      },
+      "rollProfile": {
+        "stabilizeGold": 20,
+        "contestedPenalty": 8,
+        "upgradeWeight": 12
+      },
+      "levelProfile": {
+        "fastLevelGold": 50,
+        "capLevel": 9
+      },
+      "positioningProfile": {
+        "spread": 0,
+        "carryProtection": 2,
+        "frontlineDepth": 1
+      },
+      "transitionRules": [
+        {
+          "phase": "early",
+          "minimumLevel": 1,
+          "maximumLevel": 5,
+          "team": "svhub:monsterverse",
+          "minimumCopies": 0,
+          "maximumContested": 8
+        },
+        {
+          "phase": "final",
+          "minimumLevel": 6,
+          "maximumLevel": 10,
+          "team": "svhub:one_piece",
+          "minimumCopies": 2,
+          "maximumContested": 4
+        }
+      ]
+    }
+  ]
 }

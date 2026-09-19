@@ -66,6 +66,7 @@ internal data class TftHoverTooltip(
 )
 
 class TftUiState {
+    data class TacticianPose(val point:ArenaPoint,val state:String)
     private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long, val alive:Boolean)
     internal data class CombatPresentation(
         val effects: List<SceneEffectSignal>,
@@ -82,6 +83,9 @@ class TftUiState {
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
+    private var tacticianPoint:ArenaPoint?=null
+    private var tacticianAt=System.currentTimeMillis()
+    fun tactician(target:ArenaPoint,bounds:ArenaRegion,requested:String,now:Long=System.currentTimeMillis()):TacticianPose {val safe=bounds.clamp(target);val previous=tacticianPoint?:safe;val elapsed=(now-tacticianAt).coerceAtLeast(1);val distance=kotlin.math.hypot((safe.x-previous.x).toDouble(),(safe.y-previous.y).toDouble()).toFloat();val step=(elapsed/1000f*if(distance>2f)4f else 2f).coerceAtMost(distance);val next=if(distance<=.001f)safe else bounds.clamp(ArenaPoint(previous.x+(safe.x-previous.x)/distance*step,previous.y+(safe.y-previous.y)/distance*step,safe.z));tacticianPoint=next;tacticianAt=now;val moving=when{distance>2f->"RUN";distance>.05f->"WALK";else->requested.uppercase()};return TacticianPose(next,moving)}
 
     fun clearUnit() { selectedOrigin = null; selectedIndex = null }
     fun resetCombat() { combatCounters.clear(); deadSince.clear() }
@@ -425,6 +429,7 @@ object TftGameRenderer {
         val combatRows = playerRows * 2
         val formationCells = columns * playerRows
         val benchSlots = fields.int("benchSlots", 9).coerceIn(1, 24)
+        val arena=MinecraftArenaRegistry.definition(fields.str("arenaId", "kanto_stadium"))
 
         val now = System.currentTimeMillis()
         val visibleUnits = if (phase == "combat") {
@@ -439,8 +444,8 @@ object TftGameRenderer {
                 id = "tft:" + unit.instanceId,
                 view = view,
                 label = shortUnit(unit.unitId),
-                boardX = (index % columns).toFloat(),
-                boardY = (index / columns).toFloat(),
+                boardX = arena?.boardAnchor(index)?.x ?: (index % columns).toFloat(),
+                boardY = arena?.boardAnchor(index)?.y ?: (index / columns).toFloat(),
                 team = unit.team,
                 yaw = if (unit.team == 0) 0f else 180f,
                 scale = if (unit.star >= 3) 1.03f else 0.90f,
@@ -457,8 +462,8 @@ object TftGameRenderer {
                 id = "tft:" + unit.instanceId,
                 view = pokemonView(unit.species, unit.aspects, unit.unitId),
                 label = shortUnit(unit.unitId),
-                boardX = unit.index * 0.75f,
-                boardY = combatRows + 0.8f,
+                boardX = arena?.benchAnchor(unit.index)?.x ?: unit.index * 0.75f,
+                boardY = arena?.benchAnchor(unit.index)?.y ?: combatRows + 0.8f,
                 scale = 0.65f,
                 star = unit.star
             )
@@ -505,19 +510,22 @@ object TftGameRenderer {
             selectedCells = selectedCells,
             legalCells = legalCells,
             teamSplitRow = playerRows,
-            camera = SceneCameras.TFT,
+            camera = arena?.camera(if(fields.bool("scouting"))ArenaCameraRole.SCOUTING else ArenaCameraRole.NORMAL,SceneCameras.TFT)?:SceneCameras.TFT,
             effects = effectSignals,
             nativeAnimations = nativeAnimations,
             arenaId = fields.str("arenaId", "kanto_stadium"),
             arenaSeed = arenaSeed,
-            platforms = (0 until benchSlots).map { index -> ScenePlatform(index * 0.75f, combatRows + 0.8f,
+            platforms = (0 until benchSlots).map { index -> val anchor=arena?.benchAnchor(index);ScenePlatform(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f,
                 selected = ui.selectedOrigin == "bench" && ui.selectedIndex == index) },
             extraRows = 2
         )
 
+        val tacticianEntity=fields.str("tacticianEntity")
+        if(tacticianEntity.isNotBlank()&&arena!=null){val pose=ui.tactician(arena.tacticianSpawn,arena.tacticianMovementBounds,fields.str("tacticianState","IDLE"));val point=frame.layout.project(pose.point.x,pose.point.y);val size=max(24,min(52,rect.width/10));VanillaCompanionModelRenderer.render(gui,tacticianEntity,point.x.roundToInt()-size/2,point.y.roundToInt()-size,point.x.roundToInt()+size/2,point.y.roundToInt(),pose.state in setOf("WALK","RUN","CAROUSEL_MOVEMENT"))}
+
         val benchByIndex = bench.associateBy { it.index }
         repeat(benchSlots) { index ->
-            val point = frame.layout.project(index * 0.75f, combatRows + 0.8f)
+            val anchor=arena?.benchAnchor(index);val point = frame.layout.project(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f)
             val w = max(14, frame.layout.tileWidth * 2 / 3)
             val h = max(16, frame.layout.tileHeight * 2)
             val hit = UiRect(point.x.roundToInt() - w / 2, point.y.roundToInt() - h, w, h + 8)
@@ -734,13 +742,17 @@ object TftGameRenderer {
             label = shortUnit(offer.unitId), boardX = offer.x + 5f, boardY = offer.y + 5f,
             scale = 0.82f + offer.cost * 0.025f, star = 1, motionSerial = revision
         ) }
-        val frame = PokemonScene3D.render(gui, font, board.inset(4), 10, 10, entities, ui.scene,
-            camera = SceneCameras.TFT, arenaId = fields.str("arenaId", "tft"), arenaSeed = "carousel:$arenaSeed", extraRows = 1)
+        val arena=MinecraftArenaRegistry.definition(fields.str("arenaId", "tft"));val center=arena?.carouselCenter?:ArenaPoint(5f,5f)
+        val shifted=entities.map{it.copy(boardX=it.boardX-5f+center.x,boardY=it.boardY-5f+center.y)}
+        val frame = PokemonScene3D.render(gui, font, board.inset(4), 10, 10, shifted, ui.scene,
+            camera = arena?.camera(ArenaCameraRole.CAROUSEL,SceneCameras.TFT)?:SceneCameras.TFT, arenaId = fields.str("arenaId", "tft"), arenaSeed = "carousel:$arenaSeed", extraRows = 1)
         gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), board.x + board.width / 2, board.y + 5, gold)
         val pos = fields.str("carouselPosition").split(',')
         val playerX = pos.getOrNull(0)?.toFloatOrNull() ?: 0f
         val playerY = pos.getOrNull(1)?.toFloatOrNull() ?: 0f
-        val tacticianPoint = frame.layout.project(playerX + 5f, playerY + 5f)
+        val target=arena?.tacticianMovementBounds?.clamp(ArenaPoint(playerX-5f+center.x,playerY-5f+center.y))?:ArenaPoint(playerX+5f,playerY+5f)
+        val tactician=ui.tactician(target,arena?.tacticianMovementBounds?:ArenaRegion(0f,0f,10f,10f),fields.str("tacticianState","CAROUSEL_MOVEMENT"))
+        val tacticianPoint = frame.layout.project(tactician.point.x,tactician.point.y)
         val tacticianBox = max(22, min(48, board.width / 9))
         VanillaCompanionModelRenderer.render(gui, fields.str("tacticianEntity"), tacticianPoint.x.roundToInt() - tacticianBox / 2,
             tacticianPoint.y.roundToInt() - tacticianBox, tacticianPoint.x.roundToInt() + tacticianBox / 2,

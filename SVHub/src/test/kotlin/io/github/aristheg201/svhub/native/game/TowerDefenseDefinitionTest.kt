@@ -5,7 +5,7 @@ import kotlin.test.*
 class TowerDefenseDefinitionTest {
  @Test fun bundledMapTowersEnemiesExplicitWavesAndBossesAreExternalized(){val d=TowerDefenseDefinitions.bundled;assertEquals(12,d.width);assertEquals(8,d.height);assertTrue(d.path.size>20);assertEquals(6,d.towers.size);assertEquals(4,d.enemies.size);assertEquals(20,d.waves.size);assertTrue(d.waves[4].groups.any{it.enemy in d.bosses.map(TdBossDefinition::id)});assertTrue(d.bosses.isNotEmpty())}
  @Test fun nonDefaultDefinitionControlsGeometryUpgradesTimingDamageAndRecovery(){
-  val tower=TdTowerDefinition("odd","Odd","cobblemon:ditto","Arcane",3,7,9.0,1,"transform","strongest",setOf("boss","ground"),upgrades=listOf(TdUpgradeLevel(1),TdUpgradeLevel(2,17,3.0,4.0,1)))
+  val tower=TdTowerDefinition(id="odd",name="Odd",species="cobblemon:ditto",element="Arcane",cost=3,damage=7,range=9.0,cooldown=1,moveId="transform",targetMode="strongest",targetFilters=setOf("boss","ground"),effects=listOf(io.github.aristheg201.svhub.engine.EffectDefinition.amount("damage","current_target",7.0)),upgrades=listOf(TdUpgradeLevel(1),TdUpgradeLevel(2,17,3.0,4.0,1)))
   val enemy=TdEnemyDefinition("tiny",11,.01,2,7,setOf("ground"),listOf(TdResistance("Arcane",.25)))
   val boss=TdBossDefinition("odd_boss",31,.01,19,9,phases=listOf(TdBossPhase(.4,enrageMultiplier=2.0)))
   val d=TowerDefenseDefinition("test:odd",5,4,listOf(0,1,2,3,4),mapOf(0 to listOf(1),1 to listOf(2),2 to listOf(3),3 to listOf(4)),listOf(5,6,7),0,4,23,13,10,.42,listOf(tower),listOf(enemy),listOf(boss),listOf(TdWaveDefinition(1,listOf(TdSpawnGroup("odd_boss",1,9,4)),37)),1)

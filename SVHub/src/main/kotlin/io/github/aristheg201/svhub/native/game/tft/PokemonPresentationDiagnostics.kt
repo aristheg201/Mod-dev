@@ -24,7 +24,7 @@ data class PokemonPresentationReport(
         append(" features=").append(features.toSortedMap())
         append(" shiny=").append(shiny).append(" gender=").append(gender ?: "provider-default")
         append(" scale=").append(scale).append(" providerFormAspects=").append(providerFormAspects.sorted())
-        append(" model/poser/texture/layers=client-resource-resolver")
+        append(" providerVisuals=UNOBSERVABLE(server command source has no client render repository; request client preview for model/poser/texture/layers)")
         append(" outcome=").append(resolverOutcome)
         rejectionReason?.let { append(" reason=").append(it) }
     }

@@ -43,6 +43,23 @@ data class CobblemonSceneParticleCue(
 )
 
 object PokemonModelRenderer {
+    data class ProviderDiagnostics(val outcome:String,val model:String?,val poser:String?,val texture:String?,val layers:List<String>,val animationLabels:Set<String>,val reason:String?)
+
+    /** Inspects the actual resolved client model. Unknown provider internals are reported, never guessed. */
+    fun diagnostics(view:PokemonView):ProviderDiagnostics {
+        val live=model(view)?:return ProviderDiagnostics("REJECTED",null,null,null,emptyList(),emptySet(),"species or renderable model could not be created")
+        live.state.currentAspects=live.pokemon.aspects
+        val poser=runCatching{VaryingModelRepository.getPoser(live.pokemon.species.resourceIdentifier,live.state)}.getOrNull()
+            ?:return ProviderDiagnostics("FALLBACK",null,null,null,emptyList(),emptySet(),"provider returned no poser for effective aspects")
+        live.state.currentModel=poser
+        val labels=poser.poses.values.flatMap{pose->pose.animations.mapNotNull{animation->
+            runCatching{animation.javaClass.methods.firstOrNull{it.parameterCount==0&&it.name in setOf("getName","getAnimation") }?.invoke(animation)?.toString()}.getOrNull()
+        }}.filter(String::isNotBlank).toSortedSet()
+        fun observable(vararg names:String):String?=names.firstNotNullOfOrNull{name->runCatching{poser.javaClass.methods.firstOrNull{it.parameterCount==0&&it.name.equals(name,true)}?.invoke(poser)?.toString()}.getOrNull()?.takeIf(String::isNotBlank)}
+        val texture=observable("getTexture","texture");val layers=observable("getLayers","layers")?.let(::listOf).orEmpty()
+        val reason=buildList{if(texture==null)add("provider poser API exposes no texture accessor");if(layers.isEmpty())add("provider poser API exposes no layer accessor");if(labels.isEmpty())add("provider poses expose no named animation labels")}.takeIf{it.isNotEmpty()}?.joinToString("; ")
+        return ProviderDiagnostics(if(reason==null)"RESOLVED" else "UNOBSERVABLE",poser.javaClass.name,poser.javaClass.name,texture,layers,labels,reason)
+    }
     private data class ModelKey(val species: String, val aspects: List<String>)
     private data class SceneModelKey(val instanceId: String, val species: String, val aspects: List<String>)
 

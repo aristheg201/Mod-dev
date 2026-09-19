@@ -1,0 +1,8 @@
+package io.github.aristheg201.svhub.native.game
+import io.github.aristheg201.svhub.engine.EffectDefinition
+import kotlin.test.*
+class RouteCombatSystemsTest {
+ private data class Target(override var hp:Int=100,override var shield:Int=0,override val statuses:MutableMap<String,RouteEffectRuntime.Status> = linkedMapOf(),override val resistances:List<TdResistance> = emptyList()):RouteEffectRuntime.Target
+ @Test fun sharedSelectorsCoverAllAuthoredModesAndTags(){val a=RouteTargetSelectors.Candidate("a",9.0,10.0,20.0,3.0,setOf("ground"),"a");val b=RouteTargetSelectors.Candidate("b",2.0,30.0,50.0,1.0,setOf("flying"),"b");assertEquals("a",RouteTargetSelectors.select("first",listOf(a,b),setOf("ground")));assertEquals("b",RouteTargetSelectors.select("nearest",listOf(a,b),emptySet()));assertTrue(setOf("first","last","strongest","weakest","nearest","highest_hp","lowest_hp").all(RouteTargetSelectors.supported()::contains))}
+ @Test fun effectDefinitionsExecuteDamageResistanceShieldAndStatus(){val t=Target(shield=5,resistances=listOf(TdResistance("fire",.5)));val damage=EffectDefinition("damage","current_target",mapOf("amount" to 30.0),mapOf(),listOf(),listOf());val slow=EffectDefinition("add_status","current_target",mapOf("duration_ticks" to 8.0,"intensity" to .4),mapOf("id" to "slow"),listOf(),listOf());assertEquals(10,RouteEffectRuntime.apply(listOf(damage,slow),t,"fire",0.0));assertEquals(90,t.hp);assertEquals(.4,t.statuses.getValue("slow").intensity)}
+}

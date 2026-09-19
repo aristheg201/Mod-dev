@@ -308,6 +308,7 @@ object NativeBoardSceneRenderer {
         val scene = ui.scene("tower_defense")
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
+        val columns=view.int("boardWidth",1).coerceAtLeast(1);val rows=view.int("boardHeight",1).coerceAtLeast(1)
         val path = fields.str("path")
             .split(',')
             .mapNotNull(String::toIntOrNull)
@@ -321,12 +322,12 @@ object NativeBoardSceneRenderer {
             if (raw.isBlank()) return@repeat
             raw.split(',').forEach { token ->
                 when {
-                    token.startsWith("tower:") -> parseTower(index, token)?.let { visual ->
+                    token.startsWith("tower:") -> parseTower(index, token,columns)?.let { visual ->
                         entities += visual.entity
                         visual.effect?.let(effects::add)
                         nativeAnimations += visual.animations
                     }
-                    token.startsWith("enemy:") -> parseEnemy(index, token, path)?.let(entities::add)
+                    token.startsWith("enemy:") -> parseEnemy(index, token, path,columns)?.let(entities::add)
                 }
             }
         }
@@ -346,8 +347,8 @@ object NativeBoardSceneRenderer {
             gui = gui,
             font = font,
             area = area,
-            columns = 12,
-            rows = 8,
+            columns = columns,
+            rows = rows,
             entities = entities,
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
@@ -418,7 +419,7 @@ object NativeBoardSceneRenderer {
         val animations: List<SceneNativeAnimationSignal>
     )
 
-    private fun parseTower(index: Int, token: String): TowerScene? {
+    private fun parseTower(index: Int, token: String,columns:Int): TowerScene? {
         val parts = token.split(':')
         val type = parts.getOrNull(1)?.takeIf(String::isNotBlank) ?: return null
         val level = parts.getOrNull(2)?.toIntOrNull()?.coerceAtLeast(1) ?: 1
@@ -430,8 +431,8 @@ object NativeBoardSceneRenderer {
             id = "td:tower:$index",
             view = visual.pokemon(type),
             label = type,
-            boardX = (index % 12).toFloat(),
-            boardY = (index / 12).toFloat(),
+            boardX = (index % columns).toFloat(),
+            boardY = (index / columns).toFloat(),
             team = 0,
             yaw = 165f,
             scale = visual.scale,
@@ -447,7 +448,7 @@ object NativeBoardSceneRenderer {
                     id = "td:attack:$index",
                     serial = fireSerial,
                     entityId = entity.id,
-                    kind = if (type == "lucario") SceneNativeAnimationKind.PHYSICAL else SceneNativeAnimationKind.SPECIAL,
+                    kind = if(parts.getOrNull(6)=="ATTACK_PHYSICAL")SceneNativeAnimationKind.PHYSICAL else SceneNativeAnimationKind.SPECIAL,
                     targetEntityId = "td:enemy:$enemyId",
                     moveId = moveId
                 ),
@@ -462,7 +463,7 @@ object NativeBoardSceneRenderer {
         return TowerScene(entity, effect, animations)
     }
 
-    private fun parseEnemy(index: Int, token: String, path: List<Int>): PokemonSceneEntity? {
+    private fun parseEnemy(index: Int, token: String, path: List<Int>,columns:Int): PokemonSceneEntity? {
         val parts = token.split(':')
         if (parts.size < 6) return null
         val id = parts[1].toIntOrNull() ?: return null
@@ -472,7 +473,7 @@ object NativeBoardSceneRenderer {
         val progress = parts[5].toFloatOrNull()?.coerceAtLeast(0f) ?: 0f
         val speciesName = kind.removeSuffix("_boss")
         val species = if (':' in speciesName) speciesName else "cobblemon:$speciesName"
-        val pos = pathPosition(path, progress, index)
+        val pos = pathPosition(path, progress, index,columns)
         val boss = kind.endsWith("_boss")
         return PokemonSceneEntity(
             id = "td:enemy:$id",
@@ -488,17 +489,17 @@ object NativeBoardSceneRenderer {
         )
     }
 
-    private fun pathPosition(path: List<Int>, progress: Float, fallbackIndex: Int): ScenePoint {
-        if (path.isEmpty()) return ScenePoint((fallbackIndex % 12).toFloat(), (fallbackIndex / 12).toFloat())
+    private fun pathPosition(path: List<Int>, progress: Float, fallbackIndex: Int,columns:Int): ScenePoint {
+        if (path.isEmpty()) return ScenePoint((fallbackIndex % columns).toFloat(), (fallbackIndex / columns).toFloat())
         val base = floor(progress).toInt().coerceIn(0, path.lastIndex)
         val next = (base + 1).coerceAtMost(path.lastIndex)
         val fraction = (progress - floor(progress)).coerceIn(0f, 1f)
         val a = path[base]
         val b = path[next]
-        val ax = (a % 12).toFloat()
-        val ay = (a / 12).toFloat()
-        val bx = (b % 12).toFloat()
-        val by = (b / 12).toFloat()
+        val ax = (a % columns).toFloat()
+        val ay = (a / columns).toFloat()
+        val bx = (b % columns).toFloat()
+        val by = (b / columns).toFloat()
         return ScenePoint(ax + (bx - ax) * fraction, ay + (by - ay) * fraction)
     }
 

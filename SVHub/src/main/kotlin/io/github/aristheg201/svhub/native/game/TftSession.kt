@@ -286,6 +286,9 @@ class TftSession(
                     "aspects" to def.presentation.resolverAspects().joinToString(","),
                     "traits" to def.traits.joinToString(","),
                     "role" to def.role,
+                    "team" to def.team,
+                    "tags" to def.tags.joinToString(","),
+                    "ownedCopies" to countCopies(player,def.id).toString(),
                     "enabled" to shopEnabled.toString()
                 )
             )
@@ -321,6 +324,8 @@ class TftSession(
             actions = actions,
             fields = linkedMapOf(
                 "set" to set.id,
+                "participantId" to player.id,
+                "botStrategy" to encodeBotStrategy(player.id),
                 "boardColumns" to set.rules.boardColumns.toString(),
                 "boardRows" to set.rules.boardRows.toString(),
                 "shopSlots" to set.rules.shopSlots.toString(),
@@ -1048,7 +1053,16 @@ class TftSession(
         val requestedEntity = selection?.let { if (':' in it) it else "minecraft:$it" }
         return set.tacticians.firstOrNull { it.id == selection || it.entity == requestedEntity }?.id ?: set.defaultTactician
     }
+
+    private fun encodeBotStrategy(participantId:String):String {
+        if(set.botStrategies.isEmpty())return ""
+        val strategy=set.botStrategies[Math.floorMod(participantId.hashCode(),set.botStrategies.size)]
+        fun list(values:List<String>)=values.joinToString(",")
+        fun map(values:Map<String,Double>)=values.entries.sortedBy{it.key}.joinToString(","){"${it.key}=${it.value}"}
+        return listOf(strategy.id,list(strategy.preferredTeams),list(strategy.fallbackTeams),list(strategy.preferredTraits),list(strategy.preferredCarryRoles),list(strategy.preferredItemTags),list(strategy.preferredAugmentTags),map(strategy.economyProfile),map(strategy.rollProfile),map(strategy.levelProfile),map(strategy.positioningProfile)).joinToString("~")
+    }
     private fun newOwned(unitId: String) = TftOwnedUnit("u${nextUnitSerial++}", unitId)
+    private fun countCopies(player:PlayerState,unitId:String)=unitLocations(player).filter{it.unit.unitId==unitId}.sumOf{copiesForStar(it.unit.star)}
     private fun copiesForStar(star: Int) = when (star) { 2 -> 3; 3 -> 9; else -> 1 }
     private fun unpackItem(item: String): List<String> = when { item.startsWith("combo:") -> item.removePrefix("combo:").split('+').filter(String::isNotBlank); item.startsWith("full:") -> set.fullItems.firstOrNull { it.id == item.removePrefix("full:") }?.components.orEmpty(); else -> listOf(item) }
     private fun rotateCell(cell: Int): Int = formationCells * 2 - 1 - cell

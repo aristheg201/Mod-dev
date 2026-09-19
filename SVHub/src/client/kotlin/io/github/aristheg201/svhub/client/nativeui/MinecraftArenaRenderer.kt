@@ -8,6 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import io.github.aristheg201.svhub.ui.SceneCameraPreset
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
@@ -31,6 +32,7 @@ data class ArenaRegion(val minX: Float, val minY: Float, val maxX: Float, val ma
 }
 data class ArenaCameraSet(val spectator: ArenaPoint, val scouting: ArenaPoint, val carousel: ArenaPoint)
 data class ArenaInteractionRegion(val id: String, val bounds: ArenaRegion, val action: String)
+enum class ArenaCameraRole { NORMAL, SPECTATOR, SCOUTING, CAROUSEL }
 
 data class MinecraftArenaDefinition(
     val style: String = "terrain",
@@ -76,6 +78,15 @@ data class MinecraftArenaDefinition(
     ,val defeatVfx: String = ""
     ,val interactionRegions: List<ArenaInteractionRegion> = emptyList()
 ) {
+    fun boardAnchor(index:Int):ArenaPoint = boardAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+(index%boardColumns),boardOrigin.y+(index/boardColumns),boardOrigin.z)
+    fun benchAnchor(index:Int):ArenaPoint = benchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.75f,boardOrigin.y+boardRows+.8f,boardOrigin.z)
+    fun itemAnchor(index:Int):ArenaPoint = itemBenchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.6f,boardOrigin.y+boardRows+1.6f,boardOrigin.z)
+    fun camera(role:ArenaCameraRole,fallback:SceneCameraPreset):SceneCameraPreset {
+        val point=when(role){ArenaCameraRole.NORMAL->cameras.spectator;ArenaCameraRole.SPECTATOR->cameras.spectator;ArenaCameraRole.SCOUTING->cameras.scouting;ArenaCameraRole.CAROUSEL->cameras.carousel}
+        val span=max(1f,arenaBounds.maxY-arenaBounds.minY);val height=(point.z/span).coerceIn(.5f,1.5f)
+        return fallback.copy(id="${fallback.id}:${role.name.lowercase()}",tileScale=height,verticalScale=(point.y/span).coerceIn(.5f,1.25f),originBiasY=(point.y/(span+point.y.coerceAtLeast(0f))).coerceIn(0f,1f),pitch=(18f+point.z*2f).coerceIn(0f,75f))
+    }
+    fun interactionAt(x:Float,y:Float):ArenaInteractionRegion?=interactionRegions.firstOrNull{x in it.bounds.minX..it.bounds.maxX&&y in it.bounds.minY..it.bounds.maxY}
     fun color(role: ArenaTileRole, alternate: Boolean): Int = when (role) {
         ArenaTileRole.PATH -> pathColor
         ArenaTileRole.ALLY -> allyColor

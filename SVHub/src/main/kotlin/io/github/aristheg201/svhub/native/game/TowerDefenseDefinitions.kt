@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 data class TdPoint(val x:Int=0,val y:Int=0)
 data class TdUpgradeLevel(val level:Int=1,val cost:Int=0,val damageMultiplier:Double=1.0,val rangeBonus:Double=0.0,val cooldown:Int?=null,val effects:List<EffectDefinition> = emptyList())
-data class TdTowerDefinition(val id:String="",val name:String="",val species:String="",val element:String="",val cost:Int=1,val damage:Int=1,val range:Double=1.0,val cooldown:Int=1,val moveId:String="",val targetMode:String="first",val targetFilters:Set<String> = emptySet(),val effects:List<EffectDefinition> = emptyList(),val triggers:List<TriggerDefinition> = emptyList(),val upgrades:List<TdUpgradeLevel> = emptyList())
+data class TdTowerDefinition(val id:String="",val name:String="",val species:String="",val element:String="",val cost:Int=1,val damage:Int=1,val range:Double=1.0,val cooldown:Int=1,val moveId:String="",val animationSemantic:String="ATTACK_SPECIAL",val targetMode:String="first",val targetFilters:Set<String> = emptySet(),val effects:List<EffectDefinition> = emptyList(),val triggers:List<TriggerDefinition> = emptyList(),val upgrades:List<TdUpgradeLevel> = emptyList())
 data class TdResistance(val type:String="",val multiplier:Double=1.0)
 data class TdEnemyDefinition(val id:String="",val hp:Int=1,val speed:Double=.2,val reward:Int=1,val leakDamage:Int=1,val tags:Set<String> = emptySet(),val resistances:List<TdResistance> = emptyList())
 data class TdBossPhase(val hpRatio:Double=1.0,val effects:List<EffectDefinition> = emptyList(),val adds:List<String> = emptyList(),val enrageMultiplier:Double=1.0)
@@ -52,7 +52,7 @@ object TowerDefenseDefinitions {
         check(d.spawn==d.path.first()&&d.core==d.path.last(),"spawn/core","must match path endpoints")
         check(d.buildZones.isNotEmpty()&&d.buildZones.all{it in cells&&it !in d.path},"buildZones","must be valid non-path cells")
         check(d.towers.map{it.id}.distinct().size==d.towers.size&&d.towers.isNotEmpty(),"towers","IDs must be unique")
-        d.towers.forEach { t->check(t.targetMode in setOf("first","last","strongest","weakest","nearest"),"towers.${t.id}.targetMode","unsupported");check(t.upgrades.map{it.level}==t.upgrades.map{it.level}.sorted().distinct(),"towers.${t.id}.upgrades","levels must be ordered and unique") }
+        d.towers.forEach { t->check(t.targetMode in RouteTargetSelectors.supported(),"towers.${t.id}.targetMode","unsupported");check(t.upgrades.map{it.level}==t.upgrades.map{it.level}.sorted().distinct(),"towers.${t.id}.upgrades","levels must be ordered and unique") }
         val enemyIds=(d.enemies.map{it.id}+d.bosses.map{it.id}).toSet();check(enemyIds.size==d.enemies.size+d.bosses.size,"enemies","IDs must be unique")
         check(d.waves.isNotEmpty()&&d.waves.map{it.number}==(1..d.waves.size).toList(),"waves","must be explicit and contiguous")
         d.waves.forEach { w->w.groups.forEachIndexed{i,g->check(g.enemy in enemyIds&&g.count>0&&g.intervalTicks>=0,"waves.${w.number}.groups[$i]","invalid enemy/count/timing")} }

@@ -29,7 +29,18 @@ data class TftSetDefinition(
     val augments: List<TftAugmentDefinition> = emptyList(),
     val pveRounds: List<TftPveRoundDefinition> = emptyList(),
     val lootTables: List<TftLootTableDefinition> = emptyList()
+    ,val botStrategies: List<TftBotStrategyDefinition> = emptyList()
 )
+
+data class TftBotStrategyDefinition(
+    val id:String="", val preferredTeams:List<String> = emptyList(), val fallbackTeams:List<String> = emptyList(),
+    val preferredTraits:List<String> = emptyList(), val preferredCarryRoles:List<String> = emptyList(),
+    val preferredItemTags:List<String> = emptyList(), val preferredAugmentTags:List<String> = emptyList(),
+    val economyProfile:Map<String,Double> = emptyMap(), val rollProfile:Map<String,Double> = emptyMap(),
+    val levelProfile:Map<String,Double> = emptyMap(), val positioningProfile:Map<String,Double> = emptyMap(),
+    val transitionRules:List<TftBotTransitionRule> = emptyList()
+)
+data class TftBotTransitionRule(val phase:String="early",val minimumLevel:Int=1,val maximumLevel:Int=10,val team:String="",val minimumCopies:Int=0,val maximumContested:Int=99)
 
 data class TftRulesDefinition(val shopSlots: Int = 5, val benchSlots: Int = 9, val boardColumns: Int = 7, val boardRows: Int = 4, val maxBoardCapacity: Int = 12, val defaultArena: String = "kanto_stadium", val arenas: Set<String> = setOf("kanto_stadium")) {
     val formationCells: Int get() = boardColumns * boardRows
@@ -219,6 +230,13 @@ object TftDefinitionValidator {
         val progression = set.progression ?: TftProgressionDefinition(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel)
         progression.validate("set ${set.id}.progression")
         require(set.tacticians.map { it.id }.distinct().size == set.tacticians.size) { "set ${set.id}.tacticians: duplicate id" }
+        require(set.botStrategies.map { it.id }.distinct().size == set.botStrategies.size) { "set ${set.id}.botStrategies: duplicate id" }
+        val teamDefinitionIds=set.teams.map{it.id}.toSet()
+        set.botStrategies.forEach { strategy ->
+            require(strategy.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "set ${set.id}.botStrategies.${strategy.id}.id: invalid" }
+            require((strategy.preferredTeams+strategy.fallbackTeams).all { it in teamDefinitionIds }) { "set ${set.id}.botStrategies.${strategy.id}.teams: unknown team" }
+            require(strategy.transitionRules.all { it.team in teamDefinitionIds && it.minimumLevel in 1..set.maxLevel && it.maximumLevel in it.minimumLevel..set.maxLevel }) { "set ${set.id}.botStrategies.${strategy.id}.transitionRules: invalid" }
+        }
         set.tacticians.forEach {
             require(it.id.isNotBlank() && it.entity.matches(Regex("minecraft:[a-z0-9_]+")) && it.scale in 0.2..3.0) {
                 "set ${set.id}.tacticians.${it.id}: expected a vanilla entity and valid scale"

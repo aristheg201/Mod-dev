@@ -57,7 +57,18 @@
         "flying",
         "boss"
       ],
-      "effects": [],
+      "effects": [
+        {
+          "op": "damage",
+          "selector": "current_target",
+          "values": {},
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        }
+      ],
       "triggers": [],
       "upgrades": [
         {
@@ -100,7 +111,8 @@
           "cooldown": 2,
           "effects": []
         }
-      ]
+      ],
+      "animationSemantic": "ATTACK_SPECIAL"
     },
     {
       "id": "charmander",
@@ -118,7 +130,18 @@
         "flying",
         "boss"
       ],
-      "effects": [],
+      "effects": [
+        {
+          "op": "damage",
+          "selector": "current_target",
+          "values": {},
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        }
+      ],
       "triggers": [],
       "upgrades": [
         {
@@ -161,7 +184,8 @@
           "cooldown": 3,
           "effects": []
         }
-      ]
+      ],
+      "animationSemantic": "ATTACK_SPECIAL"
     },
     {
       "id": "squirtle",
@@ -179,7 +203,18 @@
         "flying",
         "boss"
       ],
-      "effects": [],
+      "effects": [
+        {
+          "op": "damage",
+          "selector": "current_target",
+          "values": {},
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        }
+      ],
       "triggers": [],
       "upgrades": [
         {
@@ -222,7 +257,8 @@
           "cooldown": 1,
           "effects": []
         }
-      ]
+      ],
+      "animationSemantic": "ATTACK_SPECIAL"
     },
     {
       "id": "bulbasaur",
@@ -240,7 +276,18 @@
         "flying",
         "boss"
       ],
-      "effects": [],
+      "effects": [
+        {
+          "op": "damage",
+          "selector": "current_target",
+          "values": {},
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        }
+      ],
       "triggers": [],
       "upgrades": [
         {
@@ -283,7 +330,8 @@
           "cooldown": 2,
           "effects": []
         }
-      ]
+      ],
+      "animationSemantic": "ATTACK_SPECIAL"
     },
     {
       "id": "lucario",
@@ -301,7 +349,18 @@
         "flying",
         "boss"
       ],
-      "effects": [],
+      "effects": [
+        {
+          "op": "damage",
+          "selector": "current_target",
+          "values": {},
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        }
+      ],
       "triggers": [],
       "upgrades": [
         {
@@ -344,7 +403,8 @@
           "cooldown": 1,
           "effects": []
         }
-      ]
+      ],
+      "animationSemantic": "ATTACK_SPECIAL"
     },
     {
       "id": "gardevoir",
@@ -362,7 +422,18 @@
         "flying",
         "boss"
       ],
-      "effects": [],
+      "effects": [
+        {
+          "op": "damage",
+          "selector": "current_target",
+          "values": {},
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        }
+      ],
       "triggers": [],
       "upgrades": [
         {
@@ -405,7 +476,8 @@
           "cooldown": 3,
           "effects": []
         }
-      ]
+      ],
+      "animationSemantic": "ATTACK_SPECIAL"
     }
   ],
   "enemies": [
