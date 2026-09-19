@@ -15,6 +15,7 @@ import net.minecraft.client.resources.language.I18n
 import net.minecraft.resources.ResourceLocation
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 internal data class TftUnitInfo(
     val id: String,
@@ -324,7 +325,7 @@ object TftGameRenderer {
         renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
         resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
         resolved.players?.let { renderPlayers(gui, font, it, players) }
-        renderBoard(gui, font, resolved.board, boardTokens, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+        renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
         renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
@@ -403,6 +404,8 @@ object TftGameRenderer {
         font: Font,
         rect: UiRect,
         units: Map<Int, UnitToken>,
+        bench: List<BenchToken>,
+        fields: JsonObject,
         phase: String,
         canEdit: Boolean,
         ui: TftUiState,
@@ -439,6 +442,17 @@ object TftGameRenderer {
             )
         }
 
+        val benchEntities = bench.map { unit ->
+            PokemonSceneEntity(
+                id = "tft:" + unit.instanceId,
+                view = pokemonView(unit.species, unit.aspects, unit.unitId),
+                label = shortUnit(unit.unitId),
+                boardX = unit.index * 0.75f,
+                boardY = 8.8f,
+                scale = 0.65f,
+                star = unit.star
+            )
+        }
         val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
         val effectSignals=mutableListOf<SceneEffectSignal>()
         val nativeAnimations=mutableListOf<SceneNativeAnimationSignal>()
@@ -476,7 +490,7 @@ object TftGameRenderer {
             area = rect.inset(4),
             columns = 7,
             rows = 8,
-            entities = entities,
+            entities = entities + benchEntities,
             state = ui.scene,
             selectedCells = selectedCells,
             legalCells = legalCells,
@@ -485,8 +499,47 @@ object TftGameRenderer {
             effects = effectSignals,
             nativeAnimations = nativeAnimations,
             arenaId = "tft",
-            arenaSeed = arenaSeed
+            arenaSeed = arenaSeed,
+            platforms = (0..8).map { index -> ScenePlatform(index * 0.75f, 8.8f,
+                selected = ui.selectedOrigin == "bench" && ui.selectedIndex == index) },
+            extraRows = 2
         )
+
+        val benchByIndex = bench.associateBy { it.index }
+        repeat(9) { index ->
+            val point = frame.layout.project(index * 0.75f, 8.8f)
+            val w = max(14, frame.layout.tileWidth * 2 / 3)
+            val h = max(16, frame.layout.tileHeight * 2)
+            val hit = UiRect(point.x.roundToInt() - w / 2, point.y.roundToInt() - h, w, h + 8)
+            val unit = benchByIndex[index]
+            if (hit.contains(mouseX.toDouble(), mouseY.toDouble())) {
+                gui.fill(hit.x, hit.bottom - 2, hit.right, hit.bottom, accent)
+                if (unit != null) ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items))
+            }
+            if (canEdit) hooks.hit(hit) {
+                when {
+                    ui.selectedOrigin == "board" && ui.selectedIndex != null -> {
+                        hooks.action("bench", mapOf("slot" to ui.selectedIndex.toString(), "bench" to index.toString()))
+                        ui.clearUnit()
+                    }
+                    ui.selectedOrigin == "bench" && ui.selectedIndex != null -> {
+                        if (ui.selectedIndex != index) hooks.action("swap_bench", mapOf("from" to ui.selectedIndex.toString(), "to" to index.toString()))
+                        ui.clearUnit()
+                    }
+                    unit != null && ui.selectedItem != null -> {
+                        hooks.action("equip_item", mapOf("item" to ui.selectedItem.toString(), "origin" to "bench", "index" to index.toString()))
+                        ui.selectedItem = null
+                    }
+                    unit != null -> { ui.selectedOrigin = "bench"; ui.selectedIndex = index }
+                }
+            }
+        }
+        val tactician = fields.str("tacticianEntity")
+        if (tactician.isNotBlank()) {
+            val box = min(64, max(24, rect.width / 7))
+            VanillaCompanionModelRenderer.render(gui, tactician, rect.right - box - 4, rect.bottom - box - 4,
+                rect.right - 4, rect.bottom - 4, true)
+        }
 
         units.entries.firstOrNull { (index, _) -> frame.layout.hitBox(index).contains(mouseX.toDouble(), mouseY.toDouble()) }
             ?.value?.let { unit ->
@@ -562,42 +615,10 @@ object TftGameRenderer {
 
     private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
-        val benchH = if (density == UiDensity.COMPACT) (rect.height / 2).coerceIn(14, 22) else 34
+        val benchH = if (density == UiDensity.COMPACT) 18 else 22
         val shopY = rect.y + benchH + if (density == UiDensity.COMPACT) 1 else 3
         val shopH = (rect.bottom - shopY - 1).coerceAtLeast(12)
-        val slotGap = 2
         val benchW = (rect.width * 2 / 3).coerceAtLeast(90)
-        val slotW = ((benchW - slotGap * 8) / 9).coerceAtLeast(12)
-        val byIndex = bench.associateBy { it.index }
-        repeat(9) { index ->
-            val x = rect.x + index * (slotW + slotGap)
-            val slot = UiRect(x, rect.y + 2, slotW, benchH - 4)
-            val unit = byIndex[index]
-            gui.fill(slot.x, slot.y, slot.right, slot.bottom, if (ui.selectedOrigin == "bench" && ui.selectedIndex == index) 0xFF294F48.toInt() else panel2)
-            if (unit != null) {
-                if (slot.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                    ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items))
-                }
-                if (density == UiDensity.COMPACT) {
-                    gui.drawCenteredString(font, shortUnit(unit.unitId).take(3), slot.x + slot.width / 2, slot.y + 4, text)
-                    if (unit.star > 1) gui.drawString(font, unit.star.toString(), slot.right - 6, slot.y + 2, gold, true)
-                } else {
-                    gui.drawCenteredString(font, shortUnit(unit.unitId), slot.x + slot.width / 2, slot.y + 6, text)
-                    gui.drawCenteredString(font, "★".repeat(unit.star), slot.x + slot.width / 2, slot.bottom - 9, gold)
-                }
-            }
-            if (canEdit) hooks.hit(slot) {
-                if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
-                    hooks.action("bench", mapOf("slot" to ui.selectedIndex.toString())); ui.clearUnit()
-                } else if (unit != null && ui.selectedItem != null) {
-                    hooks.action("equip_item", mapOf("item" to ui.selectedItem.toString(), "origin" to "bench", "index" to index.toString())); ui.selectedItem = null
-                } else if (unit != null) {
-                    ui.selectedOrigin = if (ui.selectedOrigin == "bench" && ui.selectedIndex == index) null else "bench"
-                    ui.selectedIndex = if (ui.selectedOrigin == null) null else index
-                }
-            }
-        }
-
         val buttonX = rect.x + benchW + 7
         val buttonW = (rect.right - buttonX).coerceAtLeast(44)
         hooks.control(UiRect(buttonX, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.reroll"), view.actionEnabled("refresh")) { hooks.action("refresh", emptyMap()) }

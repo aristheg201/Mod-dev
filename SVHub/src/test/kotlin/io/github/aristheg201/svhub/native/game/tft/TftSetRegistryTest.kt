@@ -131,7 +131,7 @@ class TftSetRegistryTest {
     @Test fun validatesProgressionAndPveReferences() {
         val set = TftSetRegistry.bundled("kanto_rising")
         assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(set.copy(schema = 999)) }
-        assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(set.copy(xpToNextByLevel = emptyMap())) }
+        assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(set.copy(progression = set.progression!!.copy(xpToNextByLevel = emptyMap()))) }
         assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(set.copy(shopOdds = set.shopOdds.dropLast(1))) }
         assertFailsWith<IllegalArgumentException> {
             TftDefinitionValidator.validate(set.copy(pveRounds = listOf(TftPveRoundDefinition(enemies = listOf(TftPveEnemyDefinition("missing"))))))

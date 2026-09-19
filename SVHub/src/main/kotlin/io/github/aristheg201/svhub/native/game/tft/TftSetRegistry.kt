@@ -39,6 +39,16 @@ object TftSetRegistry {
     @Synchronized
     fun active(): TftSetDefinition = current ?: bundled("kanto_rising").also { current = it }
 
+    /** Version-one manifests and embedded recovery definitions keep their XP
+     * curve. Newly introduced grants come from shipped content, never Java IDs. */
+    internal fun migrateDefinition(set: TftSetDefinition): TftSetDefinition {
+        if (set.progression != null) return set
+        val defaults = open("/data/svhub/tft/sets/kanto_rising/set.json").use { reader ->
+            gson.fromJson(readJson(reader, "bundled progression").asJsonObject.get("progression"), TftProgressionDefinition::class.java)
+        }
+        return set.copy(progression = defaults.copy(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel.toMap()))
+    }
+
     internal fun bundled(id: String): TftSetDefinition {
         require(id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid bundled TFT set id: $id" }
         val root = "/data/svhub/tft/sets/$id"
@@ -60,7 +70,7 @@ object TftSetRegistry {
         val missing = manifestFields.filterNot(json.asJsonObject::has)
         require(missing.isEmpty()) { "$source: missing TFT manifest fields $missing" }
         return try {
-            requireNotNull(gson.fromJson(json, TftSetDefinition::class.java)) { "$source: empty TFT set" }
+            migrateDefinition(requireNotNull(gson.fromJson(json, TftSetDefinition::class.java)) { "$source: empty TFT set" })
         } catch (error: Exception) {
             throw IllegalArgumentException("$source: invalid TFT set field types", error)
         }

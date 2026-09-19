@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/svhub-production-20260916
     paths:
       - 'SVHub/**'
       - '.github/workflows/svhub-build.yml'

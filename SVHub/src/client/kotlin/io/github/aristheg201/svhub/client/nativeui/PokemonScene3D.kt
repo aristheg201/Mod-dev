@@ -20,6 +20,9 @@ import kotlin.math.roundToInt
 
 data class ScenePoint(val x: Float, val y: Float)
 
+/** Extra physical platforms (for example a bench) share the arena projection. */
+data class ScenePlatform(val x: Float, val y: Float, val selected: Boolean = false, val hovered: Boolean = false)
+
 enum class SceneEffectKind { PROJECTILE, CAST, HIT, HEAL, BURST }
 
 enum class SceneNativeAnimationKind { PHYSICAL, SPECIAL, STATUS, RECOIL, FAINT, CRY }
@@ -200,9 +203,11 @@ object PokemonScene3D {
         arenaId: String? = null,
         arenaSeed: String = "",
         pathCells: Set<Int> = emptySet(),
-        pathRoute: List<Int> = emptyList()
+        pathRoute: List<Int> = emptyList(),
+        platforms: List<ScenePlatform> = emptyList(),
+        extraRows: Int = 0
     ): PokemonSceneFrame {
-        val metrics=SceneProjection.resolve(area,columns,rows,camera)
+        val metrics=SceneProjection.resolve(area,columns,rows + extraRows.coerceIn(0, 4),camera)
         val layout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight)
         val activeIds=entities.mapTo(linkedSetOf()){it.id}
         state.prune(activeIds);PokemonModelRenderer.pruneScene(activeIds)
@@ -247,6 +252,13 @@ object PokemonScene3D {
             }
         }
         if(arena!=null)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
+
+        platforms.take(32).forEach { platform ->
+            val p = layout.project(platform.x, platform.y)
+            val color = if (platform.selected) SELECTED else if (platform.hovered) LEGAL else ALLY_B
+            drawDiamond(gui, p.x.roundToInt(), p.y.roundToInt() + 3, max(12, layout.tileWidth * 2 / 3), max(7, layout.tileHeight), 0xFF101719.toInt(), GRID_LINE)
+            drawDiamond(gui, p.x.roundToInt(), p.y.roundToInt(), max(12, layout.tileWidth * 2 / 3), max(7, layout.tileHeight), color, if (platform.hovered || platform.selected) GOLD else GRID_LINE)
+        }
 
         val nativeByEntity = nativeAnimations.filter { it.serial > 0L }.groupBy { it.entityId }
         entities.forEach { entity ->

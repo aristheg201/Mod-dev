@@ -10,6 +10,7 @@ data class TftSetDefinition(
     val maxLevel: Int = 10,
     val poolSizeByCost: Map<String, Int> = emptyMap(),
     val xpToNextByLevel: Map<String, Int> = emptyMap(),
+    val progression: TftProgressionDefinition? = null,
     val shopOdds: List<TftShopOdds> = emptyList(),
     val units: List<TftUnitDefinition> = emptyList(),
     val traits: List<TftTraitDefinition> = emptyList(),
@@ -114,7 +115,8 @@ object TftDefinitionValidator {
     fun validate(set: TftSetDefinition): TftSetDefinition {
         require(set.schema == 1) { "Unsupported TFT schema ${set.schema}" }
         require(set.name.isNotBlank()) { "TFT set name is empty" }
-        require(set.maxLevel in 2..10) { "TFT maxLevel must be between 2 and 10" }
+        val progression = set.progression ?: TftProgressionDefinition(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel)
+        progression.validate("set ${set.id}.progression")
         require(set.planningSeconds in 1..600 && set.combatSeconds in 1..600 && set.postCombatSeconds in 1..60) { "Invalid TFT phase durations" }
         require(set.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid TFT set id ${set.id}" }
         require(set.units.size >= 20) { "TFT set ${set.id} requires at least 20 units" }
@@ -132,9 +134,9 @@ object TftDefinitionValidator {
             require(unknown.isEmpty()) { "TFT unit ${unit.id} references unknown traits $unknown" }
         }
         require(set.shopOdds.map { it.level }.toSet().size == set.shopOdds.size) { "Duplicate TFT shop odds level" }
-        for (level in 2..set.maxLevel) {
+        for (level in 2..progression.maxLevel) {
             require(set.shopOdds.any { it.level == level }) { "Missing TFT shop odds for level $level" }
-            if (level < set.maxLevel) require((set.xpToNextByLevel[level.toString()] ?: 0) > 0) { "Missing TFT XP requirement for level $level" }
+            if (level < progression.maxLevel) require((progression.xpToNextByLevel[level.toString()] ?: 0) > 0) { "Missing TFT XP requirement for level $level" }
         }
         require(set.shopOdds.isNotEmpty()) { "TFT set has no shop odds" }
         set.shopOdds.forEach { row ->

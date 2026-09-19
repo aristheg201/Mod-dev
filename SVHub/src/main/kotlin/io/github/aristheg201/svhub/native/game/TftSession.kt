@@ -10,6 +10,8 @@ import io.github.aristheg201.svhub.native.game.tft.TftPveRoundDefinition
 import io.github.aristheg201.svhub.native.game.tft.TftSetDefinition
 import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
 import io.github.aristheg201.svhub.native.game.tft.TftTraitTier
+import io.github.aristheg201.svhub.native.game.tft.TftProgression
+import io.github.aristheg201.svhub.native.game.tft.TftProgressionDefinition
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.max
@@ -24,7 +26,8 @@ class TftSession(
     private val restoreState: JsonObject? = null
 ) : NativeGameSession {
     override val gameId: String = "tft"
-    private val set = TftDefinitionValidator.validate(definition)
+    private val set = TftDefinitionValidator.validate(TftSetRegistry.migrateDefinition(definition))
+    private val progression = set.progression ?: TftProgressionDefinition(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel)
     private val rng = NativeStatefulRandom(seed)
     private val unitDefs = set.units.associateBy { it.id }
     private val traitDefs = set.traits.associateBy { it.id }
@@ -59,7 +62,7 @@ class TftSession(
 
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(
-            schema = 1,
+            schema = 2,
             setDefinition = set,
             phase = phase.name,
             roundIndex = roundIndex,
@@ -96,7 +99,11 @@ class TftSession(
                     draftUnlockRemainingMs = (player.draftUnlockAt - nowMillis).coerceAtLeast(0L),
                     lastIncome = player.lastIncome,
                     lastInterest = player.lastInterest,
-                    lastStreakGold = player.lastStreakGold
+                    lastStreakGold = player.lastStreakGold,
+                    lastSettledRound = player.lastSettledRound,
+                    lastXpGranted = player.lastXpGranted,
+                    lastLevelsGained = player.lastLevelsGained,
+                    legacyIncomePending = player.legacyIncomePending
                 )
             },
             draftOffers = draftOffers.map { offer ->
@@ -119,7 +126,7 @@ class TftSession(
 
     private fun restoreSnapshot(state: JsonObject) {
         val saved = NativeGamePersistence.fromJson(state, Snapshot::class.java)
-        require(saved.schema == 1) { "Unsupported TFT session snapshot schema " + saved.schema }
+        require(saved.schema in 1..2) { "Unsupported TFT session snapshot schema " + saved.schema }
         require(saved.setDefinition.id == set.id) { "TFT set mismatch during recovery" }
         require(saved.players.map { it.id }.toSet() == seats.map { it.id }.toSet()) {
             "TFT recovery seat mismatch"
@@ -168,8 +175,8 @@ class TftSession(
                 name = seat.name,
                 hp = p.hp.coerceIn(-10_000, 100),
                 gold = p.gold.coerceIn(0, MAX_GOLD),
-                level = p.level.coerceIn(1, set.maxLevel),
-                xp = p.xp.coerceAtLeast(0),
+                level = p.level.coerceIn(2, progression.maxLevel),
+                xp = if (p.level >= progression.maxLevel) 0 else p.xp.coerceAtLeast(0),
                 streak = p.streak,
                 lastOutcome = p.lastOutcome.coerceIn(-1, 1),
                 eliminated = p.eliminated,
@@ -186,7 +193,11 @@ class TftSession(
                 draftUnlockAt = now + p.draftUnlockRemainingMs.coerceIn(0L, DRAFT_TOTAL_MS),
                 lastIncome = p.lastIncome.coerceAtLeast(0),
                 lastInterest = p.lastInterest.coerceAtLeast(0),
-                lastStreakGold = p.lastStreakGold.coerceAtLeast(0)
+                lastStreakGold = p.lastStreakGold.coerceAtLeast(0),
+                lastSettledRound = if (saved.schema >= 2) p.lastSettledRound else if (phase == Phase.POST_COMBAT || phase == Phase.FINISHED) roundIndex else roundIndex - 1,
+                lastXpGranted = if (saved.schema >= 2) p.lastXpGranted else 0,
+                lastLevelsGained = if (saved.schema >= 2) p.lastLevelsGained else 0,
+                legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT
             )
         }
 
@@ -257,7 +268,7 @@ class TftSession(
         }
         val actions = buildList {
             add(NativeActionView("refresh", "Refresh", "2g", shopEnabled && player.gold >= refreshCost(player)))
-            add(NativeActionView("buy_xp", "Buy XP", "4g", shopEnabled && player.gold >= 4 && player.level < set.maxLevel))
+            add(NativeActionView("buy_xp", "Buy XP", "${progression.buyXp.goldCost}g", shopEnabled && player.gold >= progression.buyXp.goldCost && player.level < progression.maxLevel))
             add(NativeActionView("resign", "Resign", "", !finished && !player.eliminated))
         }
         val active = combatFor(player.id)
@@ -292,6 +303,12 @@ class TftSession(
                 "level" to player.level.toString(),
                 "xp" to player.xp.toString(),
                 "xpNext" to xpToNext(player.level).toString(),
+                "xpGranted" to player.lastXpGranted.toString(),
+                "levelsGained" to player.lastLevelsGained.toString(),
+                "settledRound" to player.lastSettledRound.toString(),
+                "shopOdds" to set.shopOdds.first { it.level == player.level }.odds.joinToString(","),
+                "buyXpCost" to progression.buyXp.goldCost.toString(),
+                "buyXpAmount" to progression.buyXp.xpGranted.toString(),
                 "unitCap" to unitCap(player).toString(),
                 "boardCount" to player.board.size.toString(),
                 "streak" to player.streak.toString(),
@@ -330,7 +347,8 @@ class TftSession(
             "buy_xp" -> buyXp(player)
             "deploy" -> deploy(player, args["bench"]?.toIntOrNull(), args["slot"]?.toIntOrNull())
             "move" -> move(player, args["from"]?.toIntOrNull(), args["to"]?.toIntOrNull())
-            "bench" -> bench(player, args["slot"]?.toIntOrNull())
+            "bench" -> bench(player, args["slot"]?.toIntOrNull(), args["bench"]?.toIntOrNull())
+            "swap_bench" -> swapBench(player, args["from"]?.toIntOrNull(), args["to"]?.toIntOrNull())
             "sell" -> sell(player, args)
             "equip_item" -> equipItem(player, args)
             "choose_augment" -> chooseAugment(player, args["id"])
@@ -346,7 +364,7 @@ class TftSession(
         lastTickAt = nowMillis
         var changed = false
         when (phase) {
-            Phase.DRAFT -> if (nowMillis >= phaseEndsAt) { autoResolveDraft(); startPlanning(nowMillis, false, false); changed = true }
+            Phase.DRAFT -> if (nowMillis >= phaseEndsAt) { autoResolveDraft(); startPlanning(nowMillis, false); changed = true }
             Phase.PLANNING -> if (nowMillis >= phaseEndsAt) { autoChooseAugments(); startCombat(nowMillis); changed = true }
             Phase.COMBAT -> {
                 val unique = combats.values.distinctBy { System.identityHashCode(it) }
@@ -393,11 +411,11 @@ class TftSession(
     }
 
     private fun buyXp(player: PlayerState): NativeGameResult {
-        if (phase != Phase.PLANNING || player.level >= set.maxLevel) return reject("Cannot buy XP")
-        if (player.gold < 4) return reject("Not enough gold")
-        player.gold -= 4
-        player.xp += 4 + augmentEffect(player, "xp_purchase_bonus").toInt()
-        normalizeLevel(player)
+        if (phase != Phase.PLANNING || player.level >= progression.maxLevel) return reject("Cannot buy XP")
+        if (player.gold < progression.buyXp.goldCost) return reject("Not enough gold")
+        val amount = (progression.buyXp.xpGranted + augmentEffect(player, "xp_purchase_bonus")).coerceIn(0.0, 100000.0).toInt()
+        grantXp(player, amount)
+        player.gold -= progression.buyXp.goldCost
         bump("${player.name} bought XP")
         return accept("XP purchased")
     }
@@ -429,15 +447,28 @@ class TftSession(
         return accept("Unit moved")
     }
 
-    private fun bench(player: PlayerState, slot: Int?): NativeGameResult {
+    private fun bench(player: PlayerState, slot: Int?, destination: Int?): NativeGameResult {
         if (!canEditBoard(player)) return reject("Board is locked")
         val source = slot ?: return reject("Missing board slot")
         val unit = player.board[source] ?: return reject("Board slot empty")
-        val empty = player.bench.indexOfFirst { it == null }
-        if (empty < 0) return reject("Bench is full")
-        player.board.remove(source)
+        val empty = destination ?: player.bench.indexOfFirst { it == null }
+        if (empty !in player.bench.indices) return reject("Invalid or full bench")
+        val swapped = player.bench[empty]
+        if (swapped == null) player.board.remove(source) else player.board[source] = swapped
         player.bench[empty] = unit
+        bump("${player.name} returned ${unit.unitId} to bench")
         return accept("Unit returned to bench")
+    }
+
+    private fun swapBench(player: PlayerState, from: Int?, to: Int?): NativeGameResult {
+        if (!canEditBoard(player)) return reject("Board is locked")
+        val a = from ?: return reject("Missing source")
+        val b = to ?: return reject("Missing destination")
+        if (a !in player.bench.indices || b !in player.bench.indices) return reject("Invalid bench slot")
+        val unit = player.bench[a] ?: return reject("Bench slot empty")
+        player.bench[a] = player.bench[b]; player.bench[b] = unit
+        bump("${player.name} repositioned bench")
+        return accept("Bench unit moved")
     }
 
     private fun sell(player: PlayerState, args: Map<String, String>): NativeGameResult {
@@ -529,10 +560,10 @@ class TftSession(
         draftOffers.clear()
     }
 
-    private fun startPlanning(now: Long, firstRound: Boolean, rollIncome: Boolean = !firstRound) {
+    private fun startPlanning(now: Long, firstRound: Boolean) {
         phase = Phase.PLANNING; combats.clear()
         alivePlayers().forEach { player ->
-            if (rollIncome) grantIncome(player)
+            if (player.legacyIncomePending) { grantIncome(player); player.legacyIncomePending = false }
             if (isAugmentRound(roundLabel()) && player.augmentChoices.isEmpty()) {
                 val owned = player.augments.toSet()
                 player.augmentChoices += set.augments.filterNot { it.id in owned }.shuffled(rng).take(3).map { it.id }
@@ -585,8 +616,8 @@ class TftSession(
         val eliminated = mutableListOf<PlayerState>()
         unique.forEach { match ->
             if (match.resolved) return@forEach
-            match.resolved = true
             val outcome = match.engine.result ?: return@forEach
+            match.resolved = true
             val a = players[match.aId] ?: return@forEach
             if (match.pve != null) {
                 if (outcome.winnerTeam == 0) {
@@ -608,7 +639,13 @@ class TftSession(
             }
             healFromAugments(a); healFromAugments(b); if (a.hp <= 0) eliminated += a; if (b.hp <= 0) eliminated += b
         }
-        eliminatePlayers(eliminated.distinctBy { it.id }); combats.clear(); checkWinner()
+        eliminatePlayers(eliminated.distinctBy { it.id })
+        // Result, damage and elimination precede all economic grants. Commit the
+        // round marker with the same snapshot as gold/XP before any next-round shop.
+        val participants = unique.flatMap { listOfNotNull(it.aId, it.bId) }.toSet()
+        val roundType = if (unique.any { it.pve != null }) "pve" else "pvp"
+        alivePlayers().filter { it.id in participants }.forEach { settleRound(it, roundType) }
+        combats.clear(); checkWinner()
         if (!finished) { phase = Phase.POST_COMBAT; phaseEndsAt = now + set.postCombatSeconds.coerceIn(2, 10) * 1_000L; bump("${roundLabel()} resolved") }
     }
 
@@ -681,7 +718,6 @@ class TftSession(
     private fun addToBenchOrBoard(player: PlayerState, unit: TftOwnedUnit): Boolean {
         val empty = player.bench.indexOfFirst { it == null }
         if (empty >= 0) { player.bench[empty] = unit; return true }
-        if (player.board.size < unitCap(player)) { val slot = (0 until FORMATION_CELLS).firstOrNull { it !in player.board } ?: return false; player.board[slot] = unit; return true }
         return false
     }
 
@@ -832,10 +868,27 @@ class TftSession(
     private fun canEditBoard(player: PlayerState) = phase == Phase.PLANNING && !player.eliminated
     private fun unitCap(player: PlayerState) = (player.level + augmentEffect(player, "team_size_bonus").toInt()).coerceIn(1, 12)
 
-    private fun normalizeLevel(player: PlayerState) {
-        while (player.level < set.maxLevel) { val need = xpToNext(player.level); if (need <= 0 || player.xp < need) break; player.xp -= need; player.level++ }
+    private fun settleRound(player: PlayerState, roundType: String) {
+        if (player.lastSettledRound >= roundIndex) return
+        val amount = TftProgression.passiveAmount(progression, roundType,
+            augmentEffect(player, "passive_xp_bonus"), augmentEffect(player, "passive_xp_multiplier"))
+        // Validate arithmetic before mutating currency. No callbacks or I/O may
+        // observe half a settlement on the session actor.
+        val xp = TftProgression.grant(progression, player.level, player.xp, amount)
+        grantIncome(player)
+        player.level = xp.level; player.xp = xp.xp
+        player.lastXpGranted = xp.granted; player.lastLevelsGained = xp.levelsGained
+        player.lastSettledRound = roundIndex
     }
-    private fun xpToNext(level: Int): Int = set.xpToNextByLevel[level.toString()] ?: if (level >= set.maxLevel) 0 else 20 + level * 8
+
+    private fun grantXp(player: PlayerState, amount: Int) {
+        val xp = TftProgression.grant(progression, player.level, player.xp, amount)
+        player.level = xp.level; player.xp = xp.xp
+        player.lastXpGranted = xp.granted; player.lastLevelsGained = xp.levelsGained
+    }
+
+    private fun xpToNext(level: Int): Int = if (level >= progression.maxLevel) 0
+        else progression.xpToNextByLevel.getValue(level.toString())
     private fun playerDamage(stage: Int, survivors: List<TftCombatUnit>): Int {
         val base = when (stage) { 1 -> 0; 2 -> 2; 3 -> 5; 4 -> 8; 5 -> 10; 6 -> 13; else -> 15 + (stage - 7) * 2 }
         val units = survivors.fold(0) { acc, unit -> acc + when (unit.star) { 3 -> 3; 2 -> 2; else -> 1 } }
@@ -902,7 +955,11 @@ class TftSession(
         val draftUnlockRemainingMs: Long,
         val lastIncome: Int,
         val lastInterest: Int,
-        val lastStreakGold: Int
+        val lastStreakGold: Int,
+        val lastSettledRound: Int,
+        val lastXpGranted: Int,
+        val lastLevelsGained: Int,
+        val legacyIncomePending: Boolean
     )
     private data class BoardSnapshot(val slot: Int, val unit: TftOwnedUnit)
     private data class DraftSnapshot(
@@ -929,7 +986,8 @@ class TftSession(
         val board: MutableMap<Int, TftOwnedUnit> = linkedMapOf(), val shop: MutableList<String?> = MutableList(SHOP_SIZE) { null },
         val itemBench: MutableList<String> = mutableListOf(), val augments: MutableList<String> = mutableListOf(),
         val augmentChoices: MutableList<String> = mutableListOf(), var freeRerolls: Int = 0, var draftPicked: Boolean = false,
-        var draftUnlockAt: Long = 0L, var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0
+        var draftUnlockAt: Long = 0L, var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
+        var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false
     )
     private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null)
     private data class MatchCombat(val aId:String,val bId:String?,val opponentLabel:String,val engine:TftCombatEngine,val pve:TftPveRoundDefinition?=null,val ghostOwnerId:String?=null,var resolved:Boolean=false){fun opponentNameFor(viewer:String):String=when{pve!=null->"PvE";viewer==aId->opponentLabel;bId!=null&&viewer==bId->"Opponent";else->opponentLabel}}
