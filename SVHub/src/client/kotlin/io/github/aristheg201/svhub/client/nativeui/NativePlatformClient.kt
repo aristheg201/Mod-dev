@@ -13,12 +13,27 @@ import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationSemantic
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.minecraft.client.Minecraft
 
 object NativePlatformClient {
     private val gson = Gson()
     private val closedViews = linkedSetOf<String>()
+    private data class PreviewHud(val view:PokemonView,val instanceId:String,val message:String,val expiresAt:Long)
+    @Volatile private var previewHud:PreviewHud?=null
     fun register() {
+        HudRenderCallback.EVENT.register { gui, _ ->
+            val preview=previewHud ?: return@register
+            val now=System.currentTimeMillis()
+            if(now>=preview.expiresAt){previewHud=null;return@register}
+            val minecraft=Minecraft.getInstance()
+            val x=minecraft.window.guiScaledWidth-86
+            val y=96
+            gui.fill(x-68,y-72,x+68,y+48,0xCC091215.toInt())
+            PokemonModelRenderer.renderScene(gui,preview.view,preview.instanceId,x,y,112,175f,.9f,22f,1400.0,false)
+            gui.drawCenteredString(minecraft.font,preview.view.displayName,x,y-66,0xFFF2F6F4.toInt())
+            gui.drawCenteredString(minecraft.font,minecraft.font.plainSubstrByWidth(preview.message,128),x,y+31,0xFF91A6A1.toInt())
+        }
         ClientPlayNetworking.registerGlobalReceiver(NativeOpenS2C.TYPE) { payload, context ->
             context.client().execute {
                 val minecraft = Minecraft.getInstance()
@@ -69,6 +84,7 @@ object NativePlatformClient {
                 }else{
                     val diagnostics=PokemonModelRenderer.diagnostics(view)
                     val preview=PokemonModelRenderer.previewAnimation(view,"diagnostic:${payload.requestId}",semantic)
+                    previewHud=PreviewHud(view,"diagnostic:${payload.requestId}","${semantic.name} → ${preview.selected?:"poser-default"}",System.currentTimeMillis()+4_000L)
                     buildString{
                         append(payload.label).append(": outcome=").append(preview.outcome)
                         append(" poser=").append(diagnostics.poser?:"UNOBSERVABLE")
@@ -84,7 +100,7 @@ object NativePlatformClient {
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> reset() }
     }
-    fun reset(){closedViews.clear()}
+    fun reset(){closedViews.clear();previewHud=null;ArenaPresentationRuntime.stopAll()}
     fun markClosed(viewId:String){if(viewId.isBlank())return;closedViews+=viewId;while(closedViews.size>64){val it=closedViews.iterator();if(it.hasNext()){it.next();it.remove()}else break}}
     private fun reject(viewId:String){markClosed(viewId);ClientPlayNetworking.send(NativeCloseC2S(viewId))}
     private fun decode(raw:String):JsonObject = runCatching { gson.fromJson(raw, JsonObject::class.java) ?: JsonObject() }.getOrDefault(JsonObject())
