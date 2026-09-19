@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.native.game.tft
 
 import io.github.aristheg201.svhub.native.game.NativeStatefulRandom
+import io.github.aristheg201.svhub.engine.BattleRuntime
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -17,23 +18,23 @@ data class TftCombatUnit(
     val instanceId: String,
     val ownerId: String,
     val team: Int,
-    val definition: TftUnitDefinition,
+    var definition: TftUnitDefinition,
     val star: Int,
-    val items: List<String>,
+    var items: List<String>,
     var cell: Int,
-    val maxHp: Int,
+    var maxHp: Int,
     var hp: Int,
-    val maxMana: Int,
+    var maxMana: Int,
     var mana: Int,
-    val attackDamage: Double,
-    val defense: Double,
-    val specialDefense: Double,
+    var attackDamage: Double,
+    var defense: Double,
+    var specialDefense: Double,
     var attackSpeed: Double,
-    val range: Int,
-    val critChance: Double,
-    val critMultiplier: Double,
-    val abilityPower: Double,
-    val manaOnAttack: Int,
+    var range: Int,
+    var critChance: Double,
+    var critMultiplier: Double,
+    var abilityPower: Double,
+    var manaOnAttack: Int,
     var shield: Int = 0,
     var stunMs: Long = 0L,
     var attackCooldownMs: Double = 0.0,
@@ -83,14 +84,15 @@ data class TftCombatUnitSnapshot(
 )
 
 data class TftCombatSnapshot(
-    val schema: Int = 1,
+    val schema: Int = 2,
     val maxDurationMs: Long,
     val elapsedMs: Long,
     val finished: Boolean,
     val winnerTeam: Int?,
     val timedOut: Boolean,
     val rngState: Long,
-    val units: List<TftCombatUnitSnapshot>
+    val units: List<TftCombatUnitSnapshot>,
+    val effects: BattleRuntime.Snapshot? = null
 )
 
 /** Pure deterministic TFT-like combat. It never touches Minecraft state. */
@@ -119,9 +121,12 @@ class TftCombatEngine(
     var result: TftCombatResult? = null
         private set
 
+    private lateinit var effects: TftEffectCombatBridge
+
     init {
         units += createTeam(0, team0Owner, team0Board, team0Augments)
         units += createTeam(1, team1Owner, team1Board, team1Augments)
+        effects = TftEffectCombatBridge(set, units, mapOf(team0Owner to team0Augments, team1Owner to team1Augments), seed)
         if (units.none { it.team == 0 } || units.none { it.team == 1 }) resolve(false)
     }
 
@@ -136,7 +141,7 @@ class TftCombatEngine(
         seed = 0L,
         maxDurationMs = snapshot.maxDurationMs.coerceIn(1_000L, 600_000L)
     ) {
-        require(snapshot.schema == 1) { "Unsupported TFT combat snapshot schema " + snapshot.schema }
+        require(snapshot.schema in 1..2) { "Unsupported TFT combat snapshot schema " + snapshot.schema }
         units.clear()
         snapshot.units.forEach { saved ->
             val def = unitDefs[saved.unitId]
@@ -173,6 +178,7 @@ class TftCombatEngine(
                 healingDone = saved.healingDone.coerceAtLeast(0L)
             )
         }
+        effects = TftEffectCombatBridge(set, units, emptyMap(), snapshot.rngState, snapshot.effects, recovering = true)
         elapsedMs = snapshot.elapsedMs.coerceIn(0L, maxDurationMs)
         rng.restore(snapshot.rngState)
         finished = snapshot.finished
@@ -196,6 +202,7 @@ class TftCombatEngine(
         winnerTeam = result?.winnerTeam,
         timedOut = result?.timedOut ?: false,
         rngState = rng.state,
+        effects = effects.snapshot(),
         units = units.map { unit ->
             TftCombatUnitSnapshot(
                 instanceId = unit.instanceId,
@@ -233,6 +240,7 @@ class TftCombatEngine(
         if (finished) return false
         val dt = deltaMillis.coerceIn(20L, 250L)
         elapsedMs += dt
+        effects.advance(dt)
         val aliveAtStart = units.count { it.alive }
         val occupancy = linkedMapOf<Int, TftCombatUnit>()
         units.filter { it.alive }.forEach { occupancy[it.cell] = it }
@@ -240,7 +248,7 @@ class TftCombatEngine(
         val overtimeMultiplier = if (elapsedMs > OVERTIME_START_MS) 1.0 + ((elapsedMs - OVERTIME_START_MS) / 5_000.0).coerceAtMost(2.0) * 0.35 else 1.0
         val order = units.filter { it.alive }.sortedWith(compareBy<TftCombatUnit> { it.team }.thenBy { it.instanceId })
         for (unit in order) {
-            if (!unit.alive) continue
+            if (!unit.alive || !effects.canAct(unit.instanceId)) continue
             if (unit.stunMs > 0) {
                 unit.stunMs = (unit.stunMs - dt).coerceAtLeast(0L)
                 continue
@@ -251,15 +259,15 @@ class TftCombatEngine(
             var target = unit.targetId?.let { id -> enemies.firstOrNull { it.instanceId == id } }
             if (target == null) {
                 target = enemies.minWithOrNull(compareBy<TftCombatUnit> { hexDistance(unit.cell, it.cell) }.thenBy { it.hp }.thenBy { it.instanceId })
-                unit.targetId = target?.instanceId
+                effects.targetChanged(unit, target)
             }
             target ?: continue
             val distance = hexDistance(unit.cell, target.cell)
             if (distance > unit.range) {
-                val moved = moveToward(unit, target, occupancy)
+                val moved = effects.canMove(unit.instanceId) && moveToward(unit, target, occupancy)
                 if (moved) continue
             }
-            if (unit.mana >= unit.maxMana && unit.maxMana > 0) {
+            if (unit.mana >= unit.maxMana && unit.maxMana > 0 && effects.canCast(unit.instanceId)) {
                 cast(unit, target, overtimeMultiplier)
                 continue
             }
@@ -275,7 +283,7 @@ class TftCombatEngine(
     }
 
     private fun createTeam(team: Int, owner: String, board: Map<Int, TftOwnedUnit>, augments: List<String>): List<TftCombatUnit> {
-        val traitCounts = board.values.mapNotNull { unitDefs[it.unitId] }.flatMap { it.traits }.groupingBy { it }.eachCount()
+        val traitCounts = board.values.mapNotNull { unitDefs[it.unitId] }.distinctBy { it.id }.flatMap { it.traits }.groupingBy { it }.eachCount()
         val activeTraitEffects = mutableMapOf<String, Double>()
         val teamEffects = mutableMapOf<String, Double>()
         for ((traitId, count) in traitCounts) {
@@ -315,80 +323,32 @@ class TftCombatEngine(
     }
 
     private fun basicAttack(attacker: TftCombatUnit, target: TftCombatUnit, overtimeMultiplier: Double) {
-        val crit = rng.nextDouble() < attacker.critChance
-        var raw = attacker.attackDamage * if (crit) attacker.critMultiplier else 1.0
-        raw *= overtimeMultiplier
-        val damage = mitigate(raw, target.defense)
-        applyDamage(attacker, target, damage.roundToInt().coerceAtLeast(1))
-        attacker.mana = (attacker.mana + attacker.manaOnAttack).coerceAtMost(attacker.maxMana)
+        effects.basic(attacker, target, overtimeMultiplier)
         attacker.attackCooldownMs = 1000.0 / attacker.attackSpeed
     }
 
-    private fun cast(caster: TftCombatUnit, currentTarget: TftCombatUnit, overtimeMultiplier: Double) {
-        val ability = caster.definition.ability
-        val enemies = units.filter { it.alive && it.team != caster.team }
-        val allies = units.filter { it.alive && it.team == caster.team }
-        val target = when (ability.target) {
-            "lowest_hp_enemy" -> enemies.minByOrNull { it.hp.toDouble() / it.maxHp }
-            "farthest_enemy" -> enemies.maxByOrNull { hexDistance(caster.cell, it.cell) }
-            "lowest_hp_ally" -> allies.minByOrNull { it.hp.toDouble() / it.maxHp }
-            "self" -> caster
-            else -> currentTarget
-        } ?: return
-        caster.mana = 0; caster.casts++
-        if (ability.dash > 0 && target.team != caster.team) dashToward(caster, target, ability.dash)
-        val targets = if (ability.radius > 0 && target.team != caster.team) enemies.filter { hexDistance(it.cell, target.cell) <= ability.radius } else listOf(target)
-        if (ability.damage > 0 && target.team != caster.team) {
-            for (victim in targets) {
-                val raw = ability.damage * caster.abilityPower * starSpellMultiplier(caster.star) * overtimeMultiplier
-                val resistance = if (ability.damageType == "physical") victim.defense else victim.specialDefense
-                val amount = if (ability.damageType == "true") raw else mitigate(raw, resistance)
-                applyDamage(caster, victim, amount.roundToInt().coerceAtLeast(1))
-                if (ability.stunMs > 0) victim.stunMs = max(victim.stunMs, ability.stunMs.toLong())
-            }
-        }
-        if (ability.heal > 0) {
-            val amount = (ability.heal * caster.abilityPower * starSpellMultiplier(caster.star)).roundToInt()
-            val healed = minOf(amount, target.maxHp - target.hp).coerceAtLeast(0)
-            target.hp += healed; caster.healingDone += healed
-        }
-        if (ability.shield > 0) target.shield += (ability.shield * caster.abilityPower * starSpellMultiplier(caster.star)).roundToInt()
-        val execute = ability.effects["execute_below_pct"]
-        if (execute != null && target.team != caster.team && target.alive && target.hp.toDouble() / target.maxHp <= execute) { caster.damageDone += target.hp; target.hp = 0 }
+    private fun cast(caster: TftCombatUnit, target: TftCombatUnit, overtimeMultiplier: Double) {
+        effects.cast(caster, target, overtimeMultiplier)
     }
 
     private fun moveToward(unit: TftCombatUnit, target: TftCombatUnit, occupancy: MutableMap<Int, TftCombatUnit>): Boolean {
         val currentDistance = hexDistance(unit.cell, target.cell)
         val next = neighbors(unit.cell).filter { it !in occupancy }.minWithOrNull(compareBy<Int> { hexDistance(it, target.cell) }.thenBy { it })?.takeIf { hexDistance(it, target.cell) < currentDistance } ?: return false
-        occupancy.remove(unit.cell); unit.cell = next; occupancy[next] = unit
+        val previous = unit.cell
+        occupancy.remove(previous); unit.cell = next; occupancy[next] = unit
+        effects.moved(unit, previous)
         unit.attackCooldownMs = max(unit.attackCooldownMs, 240.0 / unit.definition.stats.moveSpeed.coerceAtLeast(0.2)); return true
     }
 
-    private fun dashToward(unit: TftCombatUnit, target: TftCombatUnit, cells: Int) {
-        val occupied = units.filter { it.alive && it !== unit }.map { it.cell }.toSet()
-        repeat(cells.coerceIn(1, 4)) {
-            val current = hexDistance(unit.cell, target.cell)
-            val next = neighbors(unit.cell).filterNot(occupied::contains).minByOrNull { hexDistance(it, target.cell) } ?: return
-            if (hexDistance(next, target.cell) >= current) return
-            unit.cell = next
-        }
-    }
-
-    private fun applyDamage(source: TftCombatUnit, target: TftCombatUnit, amount: Int) {
-        if (!target.alive || amount <= 0) return
-        var remaining = amount
-        if (target.shield > 0) { val absorbed = minOf(target.shield, remaining); target.shield -= absorbed; remaining -= absorbed }
-        if (remaining > 0) { target.hp = (target.hp - remaining).coerceAtLeast(0); source.damageDone += remaining; target.mana = (target.mana + 5).coerceAtMost(target.maxMana) }
-    }
     private fun cleanupTargets() { val dead = units.filterNot { it.alive }.map { it.instanceId }.toSet(); if (dead.isEmpty()) return; units.filter { it.alive && it.targetId in dead }.forEach { it.targetId = null } }
     private fun resolve(timeout: Boolean) {
-        if (finished) return; finished = true
+        if (finished) return
+        effects.finish()
+        finished = true
         val a = units.filter { it.alive && it.team == 0 }; val b = units.filter { it.alive && it.team == 1 }
         val winner = when { a.isNotEmpty() && b.isEmpty() -> 0; b.isNotEmpty() && a.isEmpty() -> 1; timeout -> { val ar = a.sumOf { it.hp.toDouble() / it.maxHp }; val br = b.sumOf { it.hp.toDouble() / it.maxHp }; when { ar > br + 0.01 -> 0; br > ar + 0.01 -> 1; else -> null } }; else -> null }
         result = TftCombatResult(winner, a, b, timeout)
     }
-    private fun mitigate(raw: Double, resistance: Double): Double = if (resistance >= 0) raw * 100.0 / (100.0 + resistance) else raw * (2.0 - 100.0 / (100.0 - resistance))
-    private fun starSpellMultiplier(star: Int) = when (star) { 2 -> 1.45; 3 -> 2.20; else -> 1.0 }
     private fun formationToCombatCell(slot: Int, team: Int): Int { val col = slot % BOARD_COLUMNS; val row = (slot / BOARD_COLUMNS).coerceIn(0, 3); return if (team == 0) (row + 4) * BOARD_COLUMNS + col else (3 - row) * BOARD_COLUMNS + (BOARD_COLUMNS - 1 - col) }
     private fun neighbors(cell: Int): List<Int> { val row = cell / BOARD_COLUMNS; val col = cell % BOARD_COLUMNS; val offsets = if (row and 1 == 0) EVEN_NEIGHBORS else ODD_NEIGHBORS; return offsets.mapNotNull { (dc, dr) -> val nc = col + dc; val nr = row + dr; if (nc in 0 until BOARD_COLUMNS && nr in 0 until BOARD_ROWS) nr * BOARD_COLUMNS + nc else null } }
     private fun hexDistance(a: Int, b: Int): Int { val ar = a / BOARD_COLUMNS; val ac = a % BOARD_COLUMNS; val br = b / BOARD_COLUMNS; val bc = b % BOARD_COLUMNS; val aq = ac - (ar - (ar and 1)) / 2; val bq = bc - (br - (br and 1)) / 2; val ax = aq; val az = ar; val ay = -ax - az; val bx = bq; val bz = br; val by = -bx - bz; return maxOf(abs(ax - bx), abs(ay - by), abs(az - bz)) }

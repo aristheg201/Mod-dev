@@ -1,5 +1,8 @@
 package io.github.aristheg201.svhub.native.game.tft
 
+import io.github.aristheg201.svhub.engine.EffectDefinition
+import io.github.aristheg201.svhub.engine.TriggerDefinition
+
 data class TftSetDefinition(
     val schema: Int = 1,
     val id: String = "kanto_rising",
@@ -13,6 +16,7 @@ data class TftSetDefinition(
     val progression: TftProgressionDefinition? = null,
     val tacticians: List<TftTacticianDefinition> = emptyList(),
     val defaultTactician: String = "",
+    val effectGraphs: Map<String, List<EffectDefinition>> = emptyMap(),
     val shopOdds: List<TftShopOdds> = emptyList(),
     val units: List<TftUnitDefinition> = emptyList(),
     val traits: List<TftTraitDefinition> = emptyList(),
@@ -35,7 +39,10 @@ data class TftUnitDefinition(
     val traits: List<String> = emptyList(),
     val role: String = "fighter",
     val stats: TftUnitStats = TftUnitStats(),
-    val ability: TftAbilityDefinition = TftAbilityDefinition()
+    val ability: TftAbilityDefinition = TftAbilityDefinition(),
+    val triggers: List<TriggerDefinition> = emptyList(),
+    val tags: Set<String> = emptySet(),
+    val team: String = ""
 )
 
 data class TftUnitStats(
@@ -63,7 +70,9 @@ data class TftAbilityDefinition(
     val radius: Int = 0,
     val stunMs: Int = 0,
     val dash: Int = 0,
-    val effects: Map<String, Double> = emptyMap()
+    val effects: Map<String, Double> = emptyMap(),
+    val graph: List<EffectDefinition> = emptyList(),
+    val castDelayMs: Long = 0
 )
 
 data class TftTraitDefinition(
@@ -78,20 +87,24 @@ data class TftTraitTier(
     /** Applied to units carrying this trait. */
     val effects: Map<String, Double> = emptyMap(),
     /** Applied to every allied unit while this threshold is active. */
-    val teamEffects: Map<String, Double> = emptyMap()
+    val teamEffects: Map<String, Double> = emptyMap(),
+    val triggers: List<TriggerDefinition> = emptyList(),
+    val teamTriggers: List<TriggerDefinition> = emptyList()
 )
 
 data class TftItemComponentDefinition(
     val id: String = "",
     val name: String = "",
-    val effects: Map<String, Double> = emptyMap()
+    val effects: Map<String, Double> = emptyMap(),
+    val triggers: List<TriggerDefinition> = emptyList()
 )
 
 data class TftFullItemDefinition(
     val id: String = "",
     val name: String = "",
     val components: List<String> = emptyList(),
-    val effects: Map<String, Double> = emptyMap()
+    val effects: Map<String, Double> = emptyMap(),
+    val triggers: List<TriggerDefinition> = emptyList()
 )
 
 data class TftAugmentDefinition(
@@ -101,7 +114,8 @@ data class TftAugmentDefinition(
     val effects: Map<String, Double> = emptyMap(),
     /** Data-driven bot preference. Gameplay never branches on augment ids. */
     val aiWeight: Int = 50,
-    val tier: String = "Gold"
+    val tier: String = "Gold",
+    val triggers: List<TriggerDefinition> = emptyList()
 )
 
 data class TftPveRoundDefinition(
@@ -182,6 +196,7 @@ object TftDefinitionValidator {
                 require(enemy.star in 1..3 && enemy.slot in 0..27) { "PvE round ${round.round} has invalid star/slot" }
             }
         }
+        TftEffectValidator.validate(set)
         return set
     }
 }
