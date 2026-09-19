@@ -12,7 +12,7 @@ class TowerDefenseSession(
 ):NativeGameSession {
     override val gameId="tower_defense"
     private val towersById=definition.towers.associateBy{it.id};private val enemiesById=(definition.enemies+definition.bosses.map{TdEnemyDefinition(it.id,it.hp,it.speed,it.reward,it.leakDamage,it.tags,it.resistances)}).associateBy{it.id}
-    private val rng=NativeStatefulRandom(seed);private val towers=linkedMapOf<Int,Tower>();private val enemies=mutableListOf<Enemy>();private val spawnQueue=ArrayDeque<PendingSpawn>();private val triggerRuntime=RouteTriggerRuntime();private val settledRewards=linkedSetOf<String>();private val rewardLog=mutableListOf<String>()
+    private val rng=NativeStatefulRandom(seed);private val towers=linkedMapOf<Int,Tower>();private val enemies=mutableListOf<Enemy>();private val spawnQueue=ArrayDeque<PendingSpawn>();private val triggerRuntime=RouteTriggerRuntime();private val settledRewards=linkedSetOf<String>();private val rewardLog=mutableListOf<String>();private val candidatePathCache=linkedMapOf<String,List<Int>>()
     private var gold=definition.startingGold;private var lives=definition.startingLives;private var wave=0;private var running=false;private var waveStartPending=false;private var spawnCooldown=0;private var revision=0L;private var result:String?=null;private var winner:String?=null;private var lastStepAt=System.currentTimeMillis();private var logicalTick=0L;private var nextEnemyId=1;private val log=ArrayDeque<String>()
     init{require(seats.isNotEmpty());TowerDefenseDefinitions.validate(definition);restoreState?.let(::restoreSnapshot)}
     override val finished get()=result!=null;override val winnerSeatId get()=winner
@@ -53,7 +53,10 @@ class TowerDefenseSession(
             val towerDefinition=towersById.getValue(tower.type)
             val upgrade=towerDefinition.upgrades.firstOrNull{it.level==tower.level}?:TdUpgradeLevel()
             val radius=towerDefinition.range+upgrade.rangeBonus
-            val candidates=progressIndex.values.flatten().map{enemy->RouteTargetSelectors.Candidate(enemy,enemy.progress,enemy.hp.toDouble(),enemy.maxHp.toDouble(),distance(slot,enemy.progress),enemy.tags,enemy.id.toString())}.filter{it.distance<=radius}
+            val candidates=candidatePathIndices(slot,radius).asSequence()
+                .flatMap{pathIndex->progressIndex[pathIndex].orEmpty().asSequence()}
+                .map{enemy->RouteTargetSelectors.Candidate(enemy,enemy.progress,enemy.hp.toDouble(),enemy.maxHp.toDouble(),distance(slot,enemy.progress),enemy.tags,enemy.id.toString())}
+                .filter{it.distance<=radius}.toList()
             val target=RouteTargetSelectors.select(towerDefinition.targetMode,candidates,towerDefinition.targetFilters)
             if(target!=null){
                 val alive=target.hp>0
@@ -124,6 +127,12 @@ class TowerDefenseSession(
         }
     }
     private fun spawn(kind:String):Enemy{val d=enemiesById.getValue(kind);return Enemy(nextEnemyId++,d.id,d.hp,d.hp,d.speed,d.reward,d.leakDamage,d.tags,d.resistances,0.0).also(enemies::add)}
+    private fun candidatePathIndices(slot:Int,radius:Double):List<Int>{
+        val key=slot.toString()+":"+java.lang.String.format(java.util.Locale.ROOT,"%.3f",radius)
+        return candidatePathCache.getOrPut(key){
+            definition.path.indices.filter{pathIndex->distance(slot,pathIndex.toDouble())<=radius+1.0}
+        }
+    }
     private fun distance(slot:Int,progress:Double):Double{val p=definition.path[progress.toInt().coerceIn(0,definition.path.lastIndex)];return abs(slot%definition.width-p%definition.width)+abs(slot/definition.width-p/definition.width).toDouble()}
     private fun finish(r:String,w:String?){result=r;winner=w;running=false;bump(r)};private fun bump(m:String){revision++;log+=m;while(log.size>40)log.removeFirst()}
     private data class PendingSpawn(val enemy:String,val delay:Int)
