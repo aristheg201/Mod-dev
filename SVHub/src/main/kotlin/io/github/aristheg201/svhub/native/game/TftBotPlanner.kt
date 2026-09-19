@@ -129,10 +129,10 @@ object TftBotPlanner {
         }
         val spread=profile["spread"]?:0.0
         val protection=profile["carryProtection"]?:0.0
-        val adjusted=preferred.sortedBy { cell ->
+        val adjusted=if(profile.isEmpty()) preferred else preferred.sortedBy { cell ->
             val x=cell%columns;val y=cell/columns
             val edge=if(spread>0) minOf(x,columns-1-x).toDouble() else 0.0
-            val protected=if(role.lowercase() in setOf("caster","ranger","support")) kotlin.math.abs(x-center)-protection else 0.0
+            val protected=if(protection>0&&role.lowercase() in setOf("caster","ranger","support")) kotlin.math.abs(x-center)-protection else 0.0
             preferred.indexOf(cell)+edge+protected
         }
         return if (difficulty == NativeBotDifficulty.EASY) adjusted.reversed() else adjusted
