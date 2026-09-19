@@ -4,6 +4,11 @@ package io.github.aristheg201.svhub.engine;
 public final class DamagePipeline {
     private DamagePipeline() {}
     public enum Type { PHYSICAL, MAGIC, TRUE }
+    /** Shared deterministic scalar stage used by non-BattleUnit modes such as route defense. */
+    public static double scalar(double base,double authoredMultiplier) {
+        if(!Double.isFinite(base)||!Double.isFinite(authoredMultiplier))throw new IllegalArgumentException("Non-finite damage input");
+        return Math.max(0,base*Math.max(0,authoredMultiplier));
+    }
     public static double damage(BattleRuntime w,BattleUnit source,BattleUnit target,double base,Type type,boolean critical,double executeBelow,int depth) {
         if(!target.alive()||target.hasStatus("invulnerability")||base<=0)return 0;
         double amount=base*(critical?Math.max(1,source.stat(Stat.CRIT_MULTIPLIER)):1)*(1+source.stat(Stat.DAMAGE_AMPLIFICATION));

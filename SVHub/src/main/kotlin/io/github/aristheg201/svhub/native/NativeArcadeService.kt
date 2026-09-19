@@ -39,15 +39,20 @@ object NativeArcadeService {
     private val active = linkedMapOf<UUID, String>()
     private val queues = games.associate { it.id to ArrayDeque<UUID>() }.toMutableMap()
     private val tftCollectionDeadline = hashMapOf<String, Long>()
+    @Volatile private var tftMatchmaking = TftLifecyclePolicy.MatchmakingConfig()
+    internal fun configureTftMatchmaking(config:TftLifecyclePolicy.MatchmakingConfig){tftMatchmaking=config}
     private val rewarding = hashSetOf<String>()
     private val finishedAt = hashMapOf<String, Long>()
     private val disconnectedUntil = hashMapOf<UUID, Long>()
     private val meta = hashMapOf<String, SessionMeta>()
     private val asyncMessages = ConcurrentHashMap<UUID, String>()
     private val lastPersistedAt = hashMapOf<String, Long>()
+    data class Metrics(val activeArcade:Int,val activeTft:Int,val activeTd:Int,val humans:Int,val bots:Int,val disconnectedHumans:Int,val matchmakingQueues:Map<String,Int>,val matchmakingWaitMs:Long)
+    fun metrics(now:Long=System.currentTimeMillis()):Metrics { val handles=sessions.values.toList();val queueSizes=queues.mapValues{it.value.size};val deadline=tftCollectionDeadline["tft"];return Metrics(handles.size,handles.count{it.gameId=="tft"},handles.count{it.gameId=="tower_defense"},handles.sumOf{h->h.seats.count{!it.anyBot}},handles.sumOf{h->h.seats.count{it.anyBot}}+NativeBotRuntime.metrics().takeovers,disconnectedUntil.size,queueSizes,deadline?.let{(it-now).coerceAtLeast(0)}?:0) }
 
     fun start(root: Path) {
         TftSetRegistry.start(root.resolve("tft"))
+        TowerDefenseDefinitions.start(root.resolve("tower_defense"))
         NativeBotRuntime.start()
         NativeGameEngineRuntime.start()
         NativeRewardService.start(root.resolve("rewards.json"))
@@ -147,16 +152,16 @@ object NativeArcadeService {
                     val id = q.removeFirst()
                     val live = player.server.playerList.getPlayer(id)
                     if (live == null || active.containsKey(id) || ready.any { it.uuid == id }) continue
-                    if (ready.size < TftLifecyclePolicy.PLAYER_SLOTS) ready += live else retained += id
+                    if (ready.size < tftMatchmaking.playerSlots) ready += live else retained += id
                 }
                 q.addAll(retained)
                 val now = System.currentTimeMillis()
                 val deadline = tftCollectionDeadline[gameId]
-                val decision = TftLifecyclePolicy.decision(ready.size, deadline, now)
+                val decision = TftLifecyclePolicy.decision(ready.size, deadline, now, tftMatchmaking)
                 if (decision != TftLifecyclePolicy.CollectionDecision.START) {
                     ready.forEach { if (!q.contains(it.uuid)) q.addLast(it.uuid) }
                     if (decision == TftLifecyclePolicy.CollectionDecision.COLLECTING && deadline == null) {
-                        tftCollectionDeadline[gameId] = now + TftLifecyclePolicy.COLLECTION_WINDOW_MS
+                        tftCollectionDeadline[gameId] = now + tftMatchmaking.collectionWindowMs
                     }
                     return Result(true, "gui.svhub.arcade.queued", ready.map { it.uuid }.toSet())
                 }
@@ -496,8 +501,8 @@ object NativeArcadeService {
         val ready = q.mapNotNull(server.playerList::getPlayer)
             .distinctBy { it.uuid }
             .filterNot { active.containsKey(it.uuid) }
-            .take(TftLifecyclePolicy.PLAYER_SLOTS)
-        when (TftLifecyclePolicy.decision(ready.size, deadline, now)) {
+            .take(tftMatchmaking.playerSlots)
+        when (TftLifecyclePolicy.decision(ready.size, deadline, now, tftMatchmaking)) {
             TftLifecyclePolicy.CollectionDecision.WAITING_FOR_MINIMUM -> tftCollectionDeadline.remove("tft")
             TftLifecyclePolicy.CollectionDecision.COLLECTING -> Unit
             TftLifecyclePolicy.CollectionDecision.START -> {
@@ -510,10 +515,11 @@ object NativeArcadeService {
     }
 
     private fun startTftPvp(server: MinecraftServer, humans: List<ServerPlayer>): NativeGameEngineRuntime.Handle {
-        val selected = humans.distinctBy { it.uuid }.take(TftLifecyclePolicy.PLAYER_SLOTS)
-        require(selected.size >= TftLifecyclePolicy.MINIMUM_HUMANS)
+        val selected = humans.distinctBy { it.uuid }.take(tftMatchmaking.playerSlots)
+        require(selected.size >= tftMatchmaking.minimumHumans)
+        require(tftMatchmaking.botFill || selected.size == tftMatchmaking.playerSlots)
         val seats = selected.map(::realSeat).toMutableList()
-        repeat(TftLifecyclePolicy.PLAYER_SLOTS - seats.size) { index ->
+        repeat(tftMatchmaking.playerSlots - seats.size) { index ->
             seats += botSeat("TFT Bot ${index + 1}", NativeBotDifficulty.NORMAL)
         }
         return register(server, create("tft", seats), "pvp")

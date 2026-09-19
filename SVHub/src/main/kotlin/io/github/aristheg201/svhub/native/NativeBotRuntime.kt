@@ -22,6 +22,9 @@ object NativeBotRuntime {
     private val takeovers = ConcurrentHashMap<Key, NativeBotDifficulty>()
     private val controllerGeneration = ConcurrentHashMap<Key, Long>()
     private val threadCounter = AtomicInteger()
+    private val decisions = java.util.concurrent.atomic.AtomicLong()
+    private val totalDecisionNanos = java.util.concurrent.atomic.AtomicLong()
+    private val maxDecisionNanos = java.util.concurrent.atomic.AtomicLong()
     @Volatile private var executor: ThreadPoolExecutor? = null
 
     fun start() {
@@ -62,9 +65,11 @@ object NativeBotRuntime {
             nextThinkAt[key] = nowMillis + thinkDelayMillis(difficulty)
             try {
                 pool.execute {
+                    val started=System.nanoTime()
                     val plan = runCatching {
                         if (view.gameId == "tft") TftBotPlanner.plan(view, difficulty) else NativeBotPlanner.plan(view, difficulty)
                     }
+                    val elapsed=System.nanoTime()-started;decisions.incrementAndGet();totalDecisionNanos.addAndGet(elapsed);maxDecisionNanos.accumulateAndGet(elapsed){a,b->maxOf(a,b)}
                     pending.remove(key)
                     plan.onSuccess { result ->
                         if (result.candidates.isNotEmpty() && (controllerGeneration[key] ?: 0L) == generation && (seat.anyBot || takeovers.containsKey(key))) {
@@ -124,6 +129,8 @@ object NativeBotRuntime {
         pending.clear(); nextThinkAt.clear(); pool?.shutdownNow()
         takeovers.clear(); controllerGeneration.clear()
     }
+    data class Metrics(val takeovers:Int,val queueDepth:Int,val pending:Int,val averageDecisionMicros:Long,val maxDecisionMicros:Long)
+    fun metrics():Metrics { val n=decisions.get();return Metrics(takeovers.size,executor?.queue?.size?:0,pending.size,if(n==0L)0 else totalDecisionNanos.get()/n/1_000,maxDecisionNanos.get()/1_000) }
 
     private fun thinkDelayMillis(difficulty: NativeBotDifficulty): Long = when (difficulty) {
         NativeBotDifficulty.EASY -> 650L

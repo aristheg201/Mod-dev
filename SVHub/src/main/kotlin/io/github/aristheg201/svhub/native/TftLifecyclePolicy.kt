@@ -24,7 +24,7 @@ object TftLifecyclePolicy {
     fun decision(humans: Int, collectionDeadlineMs: Long?, nowMs: Long, config: MatchmakingConfig = MatchmakingConfig()): CollectionDecision = when {
         humans < config.minimumHumans -> CollectionDecision.WAITING_FOR_MINIMUM
         humans >= config.playerSlots -> CollectionDecision.START
-        collectionDeadlineMs != null && nowMs >= collectionDeadlineMs -> CollectionDecision.START
+        config.botFill && collectionDeadlineMs != null && nowMs >= collectionDeadlineMs -> CollectionDecision.START
         else -> CollectionDecision.COLLECTING
     }
 

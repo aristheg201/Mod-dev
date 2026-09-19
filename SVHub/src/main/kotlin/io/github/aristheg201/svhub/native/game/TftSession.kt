@@ -328,6 +328,8 @@ class TftSession(
                 "arenaId" to observed.arena,
                 "tacticianEntity" to set.tacticians.firstOrNull { it.id == observed.tactician }?.entity.orEmpty(),
                 "tacticianId" to observed.tactician,
+                "tacticianState" to when { player.eliminated -> "defeat"; finished && winner==player.id -> "victory"; finished -> "defeat"; phase==Phase.DRAFT && player.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
+                "tacticianPresentationOnly" to "true",
                 "scouting" to scouting.toString(),
                 "scoutTarget" to observed.id,
                 "scoutName" to observed.name,

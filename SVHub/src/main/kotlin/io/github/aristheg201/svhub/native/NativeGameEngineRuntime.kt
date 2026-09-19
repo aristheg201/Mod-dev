@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * Minecraft's server thread never calls NativeGameSession.act/tick/viewFor after registration.
  */
 object NativeGameEngineRuntime {
+    internal fun botCommandCurrent(commandSession:String,currentSession:String,seatPresent:Boolean,botControlled:Boolean,commandGeneration:Long,currentGeneration:Long,sourceRevision:Long,currentRevision:Long?):Boolean =
+        commandSession==currentSession&&seatPresent&&botControlled&&commandGeneration==currentGeneration&&currentRevision!=null&&sourceRevision==currentRevision
     data class Update(
         val sessionId: String,
         val sourceSeatId: String?,
@@ -84,6 +86,10 @@ object NativeGameEngineRuntime {
         @Volatile var stateJson: JsonObject = captureState(System.currentTimeMillis())
         @Volatile var stateEpochMs: Long = System.currentTimeMillis()
         @Volatile private var lastSnapshotAt: Long = stateEpochMs
+        @Volatile var maxLatencyNanos: Long = 0
+        @Volatile var totalLatencyNanos: Long = 0
+        @Volatile var processedCommands: Long = 0
+        val queueDepth get()=queue.size
 
         fun startBots() = scheduleBots()
 
@@ -133,11 +139,13 @@ object NativeGameEngineRuntime {
                 var processed = 0
                 while (!closed.get() && processed++ < MAX_COMMANDS_PER_SLICE) {
                     val command = queue.poll() ?: break
+                    val started=System.nanoTime()
                     when (command) {
                         is Command.Act -> processAct(command)
                         is Command.BotCandidates -> processBotCandidates(command)
                         is Command.Tick -> { tickQueued.set(false); processTick(command) }
                     }
+                    val latency=System.nanoTime()-started;processedCommands++;totalLatencyNanos+=latency;if(latency>maxLatencyNanos)maxLatencyNanos=latency
                 }
             } catch (error: Throwable) {
                 SVHub.LOGGER.error("Native session actor crashed: {} / {}", gameId, sessionId, error)
@@ -156,11 +164,7 @@ object NativeGameEngineRuntime {
         private fun processBotCandidates(command: Command.BotCandidates) {
             val seat = seats.firstOrNull { it.id == command.seatId }
             val currentRevision = views[command.seatId]?.revision
-            if (command.sessionId != sessionId || seat == null ||
-                !NativeBotRuntime.isBotControlled(sessionId, seat) ||
-                NativeBotRuntime.controllerGeneration(sessionId, seat.id) != command.controllerGeneration ||
-                currentRevision == null || currentRevision != command.sourceRevision
-            ) {
+            if (!botCommandCurrent(command.sessionId,sessionId,seat!=null,seat?.let{NativeBotRuntime.isBotControlled(sessionId,it)}==true,command.controllerGeneration,seat?.let{NativeBotRuntime.controllerGeneration(sessionId,it.id)}?:-1,command.sourceRevision,currentRevision)) {
                 staleBotResults.incrementAndGet()
                 return
             }
@@ -271,6 +275,8 @@ object NativeGameEngineRuntime {
     }
 
     fun staleBotResultCount(): Int = staleBotResults.get()
+    data class Metrics(val sessions:Int,val workerQueueDepth:Int,val sessionQueueDepths:Map<String,Int>,val averageLatencyMicros:Long,val maxLatencyMicros:Long,val staleBotResults:Int)
+    fun metrics():Metrics { val values=actors.values.toList();val count=values.sumOf{it.processedCommands};return Metrics(values.size,executor?.queue?.size?:0,values.associate{it.sessionId to it.queueDepth},if(count==0L)0 else values.sumOf{it.totalLatencyNanos}/count/1_000,values.maxOfOrNull{it.maxLatencyNanos}?.div(1_000)?:0,staleBotResults.get()) }
 
     private const val MAX_COMMANDS_PER_SLICE = 32
     private const val MAX_BOT_CANDIDATES_TO_VALIDATE = 16

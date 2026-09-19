@@ -24,6 +24,14 @@ data class MinecraftArenaProp(
     val scale: Float = 0.7f
 )
 
+data class ArenaPoint(val x: Float, val y: Float, val z: Float = 0f)
+data class ArenaRegion(val minX: Float, val minY: Float, val maxX: Float, val maxY: Float) {
+    fun clamp(point: ArenaPoint) = ArenaPoint(point.x.coerceIn(minX, maxX), point.y.coerceIn(minY, maxY), point.z)
+    val center get() = ArenaPoint((minX + maxX) / 2f, (minY + maxY) / 2f)
+}
+data class ArenaCameraSet(val spectator: ArenaPoint, val scouting: ArenaPoint, val carousel: ArenaPoint)
+data class ArenaInteractionRegion(val id: String, val bounds: ArenaRegion, val action: String)
+
 data class MinecraftArenaDefinition(
     val style: String = "terrain",
     val surface: String = "",
@@ -46,6 +54,27 @@ data class MinecraftArenaDefinition(
     val depth: Int = 2,
     val detailEvery: Int = 0,
     val pathDetailEvery: Int = 0
+    ,val boardColumns: Int = 7
+    ,val boardRows: Int = 8
+    ,val boardOrigin: ArenaPoint = ArenaPoint(0f, 0f)
+    ,val boardAnchors: List<ArenaPoint> = emptyList()
+    ,val benchAnchors: List<ArenaPoint> = emptyList()
+    ,val itemBenchAnchors: List<ArenaPoint> = emptyList()
+    ,val tacticianSpawn: ArenaPoint = ArenaPoint(6f, 6f)
+    ,val tacticianMovementBounds: ArenaRegion = ArenaRegion(-1f, -1f, 7f, 8f)
+    ,val humanSpawn: ArenaPoint = ArenaPoint(3f, 7f)
+    ,val opponentSpawn: ArenaPoint = ArenaPoint(3f, 0f)
+    ,val cameras: ArenaCameraSet = ArenaCameraSet(ArenaPoint(3f,9f,12f), ArenaPoint(3f,8f,10f), ArenaPoint(3f,10f,13f))
+    ,val carouselCenter: ArenaPoint = ArenaPoint(3f, 3.5f)
+    ,val arenaBounds: ArenaRegion = ArenaRegion(-1f, -1f, 7f, 8f)
+    ,val lighting: String = "default"
+    ,val ambientVfx: String = ""
+    ,val music: String = ""
+    ,val lootAnchors: List<ArenaPoint> = emptyList()
+    ,val combatStartVfx: String = ""
+    ,val victoryVfx: String = ""
+    ,val defeatVfx: String = ""
+    ,val interactionRegions: List<ArenaInteractionRegion> = emptyList()
 ) {
     fun color(role: ArenaTileRole, alternate: Boolean): Int = when (role) {
         ArenaTileRole.PATH -> pathColor
@@ -97,7 +126,10 @@ object MinecraftArenaRegistry {
         }.getOrNull()
     }
 
-    private fun parse(root: JsonObject): MinecraftArenaDefinition {
+    internal fun parse(root: JsonObject): MinecraftArenaDefinition {
+        val metadata = root.getAsJsonObject("metadata") ?: JsonObject()
+        val camera = metadata.getAsJsonObject("camera") ?: JsonObject()
+        val bounds = region(metadata, "arenaBounds", region(metadata, "tacticianRegion", ArenaRegion(-1f,-1f,7f,8f)))
         return MinecraftArenaDefinition(
             style = string(root, "style", "terrain").take(32),
             surface = string(root, "surface", "").take(24),
@@ -129,8 +161,39 @@ object MinecraftArenaRegistry {
             depthColor = color(root, "depthColor", 0xFF101719.toInt()),
             depth = int(root, "depth", 2).coerceIn(0, 10),
             detailEvery = int(root, "detailEvery", 0).coerceIn(0, 32),
-            pathDetailEvery = int(root, "pathDetailEvery", 0).coerceIn(0, 32)
+            pathDetailEvery = int(root, "pathDetailEvery", 0).coerceIn(0, 32),
+            boardColumns = int(metadata, "boardColumns", 7).coerceIn(2, 16),
+            boardRows = int(metadata, "boardRows", 8).coerceIn(2, 16),
+            boardOrigin = point(metadata, "boardOrigin", ArenaPoint(0f,0f)),
+            boardAnchors = points(metadata, "boardAnchors"),
+            benchAnchors = points(metadata, "benchAnchors"),
+            itemBenchAnchors = points(metadata, "itemBenchAnchors"),
+            tacticianSpawn = point(metadata, "tacticianSpawn", region(metadata, "tacticianRegion", bounds).center),
+            tacticianMovementBounds = region(metadata, "tacticianRegion", bounds),
+            humanSpawn = point(metadata, "humanSpawn", ArenaPoint(3f,7f)),
+            opponentSpawn = point(metadata, "opponentSpawn", ArenaPoint(3f,0f)),
+            cameras = ArenaCameraSet(point(camera,"spectator",ArenaPoint(3f,9f,12f)), point(camera,"scouting",ArenaPoint(3f,8f,10f)), point(camera,"carousel",ArenaPoint(3f,10f,13f))),
+            carouselCenter = point(metadata, "carouselCenter", ArenaPoint(3f,3.5f)),
+            arenaBounds = bounds,
+            lighting = string(metadata,"lighting","default"), ambientVfx = string(metadata,"ambientVfx",""), music = string(metadata,"music",""),
+            lootAnchors = points(metadata,"lootAnchors"), combatStartVfx = string(metadata,"combatStartVfx",""),
+            victoryVfx = string(metadata,"victoryVfx",""), defeatVfx = string(metadata,"defeatVfx",""),
+            interactionRegions = metadata.getAsJsonArray("interactionRegions")?.mapNotNull { raw -> runCatching {
+                val obj=raw.asJsonObject; ArenaInteractionRegion(string(obj,"id",""),region(obj,"bounds",bounds),string(obj,"action",""))
+            }.getOrNull()?.takeIf { it.id.isNotBlank() && it.action.isNotBlank() } }.orEmpty()
         )
+    }
+
+    private fun point(root: JsonObject, key: String, fallback: ArenaPoint): ArenaPoint {
+        val a=root.getAsJsonArray(key) ?: return fallback
+        return ArenaPoint(runCatching { a[0].asFloat }.getOrDefault(fallback.x),runCatching { a[1].asFloat }.getOrDefault(fallback.y),runCatching { a[2].asFloat }.getOrDefault(fallback.z))
+    }
+    private fun points(root:JsonObject,key:String)=root.getAsJsonArray(key)?.mapNotNull { raw ->
+        runCatching { val a=raw.asJsonArray;ArenaPoint(a[0].asFloat,a[1].asFloat,runCatching { a[2].asFloat }.getOrDefault(0f)) }.getOrNull()
+    }.orEmpty()
+    private fun region(root:JsonObject,key:String,fallback:ArenaRegion):ArenaRegion {
+        val a=root.getAsJsonArray(key)?:return fallback
+        return runCatching { ArenaRegion(a[0].asFloat,a[1].asFloat,a[2].asFloat,a[3].asFloat) }.getOrDefault(fallback)
     }
 
     private fun strings(root: JsonObject, key: String): List<String> =

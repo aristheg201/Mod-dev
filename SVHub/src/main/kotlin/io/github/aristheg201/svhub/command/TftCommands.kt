@@ -2,6 +2,9 @@ package io.github.aristheg201.svhub.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
+import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationResolver
+import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationSemantic
+import io.github.aristheg201.svhub.native.game.tft.PokemonPresentationDiagnostics
 import io.github.aristheg201.svhub.permission.SVHubPermissions
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.commands.Commands
@@ -25,7 +28,12 @@ object TftCommands {
                     val species = canonicalSpecies(StringArgumentType.getString(ctx, "species")); val requested = StringArgumentType.getString(ctx, "aspects").split(' ').filter(String::isNotBlank).toSet()
                     val unknown = requested - TftSetRegistry.knownAspects(species)
                     if (unknown.isNotEmpty()) { ctx.source.sendFailure(Component.literal("Unresolved aspects for $species: $unknown")); 0 }
-                    else { ctx.source.sendSuccess({ Component.literal("Resolved $species aspects=${requested.sorted()}; provider resolution occurs client-side without fallback") }, false); 1 }
+                    else {
+                        val identity=io.github.aristheg201.svhub.native.game.tft.PokemonPresentationIdentity(species=species,aspects=requested)
+                        val report=PokemonPresentationDiagnostics.resolve(identity)
+                        if(report.rejectionReason!=null){ctx.source.sendFailure(Component.literal(report.describe()));0}
+                        else{ctx.source.sendSuccess({Component.literal(report.describe())},false);1}
+                    }
                 })))
                 .then(Commands.literal("validate").then(Commands.literal("team").then(teamArgument().executes { ctx ->
                     val id = StringArgumentType.getString(ctx, "team"); val team = TftSetRegistry.active().teams.firstOrNull { it.id == id }
@@ -40,10 +48,15 @@ object TftCommands {
                 }))
             .then(Commands.literal("preview")
                 .then(Commands.literal("unit").then(unitArgument().executes { ctx ->
-                    val id=StringArgumentType.getString(ctx,"unit"); val u=TftSetRegistry.active().units.first{it.id==id}; ctx.source.sendSuccess({Component.literal("${u.id}: ${u.presentation.species} ${u.presentation.resolverAspects()} • ${u.role} • ${u.ability.name}")},false);1
+                    val id=StringArgumentType.getString(ctx,"unit"); val u=TftSetRegistry.active().units.first{it.id==id}; val report=PokemonPresentationDiagnostics.resolve(u.presentation);ctx.source.sendSuccess({Component.literal("${u.id}: ${report.describe()} • role=${u.role} • ability=${u.ability.name}")},false);1
                 }))
                 .then(Commands.literal("team").then(teamArgument().executes { ctx -> val id=StringArgumentType.getString(ctx,"team");val t=TftSetRegistry.active().teams.first{it.id==id};ctx.source.sendSuccess({Component.literal("${t.name}: ${t.members.joinToString{it.unit}} • ${t.arena}")},false);1 }))
                 .then(Commands.literal("arena").then(Commands.argument("arena",StringArgumentType.word()).suggests{_,b->TftSetRegistry.active().rules.arenas.forEach(b::suggest);b.buildFuture()}.executes{ctx->ctx.source.sendSuccess({Component.literal("Arena ${StringArgumentType.getString(ctx,"arena")} is available for preview")},false);1})))
+                .then(Commands.literal("animation").then(unitArgument().then(Commands.argument("semantic",StringArgumentType.word()).suggests{_,b->PokemonAnimationSemantic.entries.forEach{b.suggest(it.name)};b.buildFuture()}.executes{ctx->
+                    val id=StringArgumentType.getString(ctx,"unit");val semantic=runCatching{PokemonAnimationSemantic.valueOf(StringArgumentType.getString(ctx,"semantic").uppercase())}.getOrNull()
+                    if(semantic==null){ctx.source.sendFailure(Component.literal("Unknown semantic"));0}else{val unit=TftSetRegistry.active().units.first{it.id==id};val labels=listOf(unit.ability.id,unit.ability.name.lowercase().replace(" ","_")).filter(String::isNotBlank);val resolved=PokemonAnimationResolver.resolve(semantic,labels);ctx.source.sendSuccess({Component.literal("${unit.id} ${resolved.semantic}: selected=${resolved.selectedLabel?:"poser-default"} labels=${resolved.availableLabels} outcome=${resolved.outcome}")},false);1}
+                    }
+                )))
         dispatcher.register(Commands.literal("svhub").then(admin))
     }
 

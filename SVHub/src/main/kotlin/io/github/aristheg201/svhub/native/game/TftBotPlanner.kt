@@ -55,7 +55,7 @@ object TftBotPlanner {
                 NativeBotDifficulty.HARD -> bench.maxByOrNull { it.cost * 12 + it.star * 12 + roleScore(it.role) }
             }
             if (chosen != null) {
-                formationSlots(chosen.role, difficulty).forEach { slot ->
+                formationSlots(chosen.role, difficulty, view.boardWidth.coerceAtLeast(1), view.boardHeight.coerceAtLeast(1)).forEach { slot ->
                     out += NativeBotAction("deploy", mapOf("bench" to chosen.index.toString(), "slot" to slot.toString()))
                 }
             }
@@ -72,13 +72,21 @@ object TftBotPlanner {
         }
         out += orderedShop.map { NativeBotAction("buy", mapOf("index" to it.index.toString())) }
 
+        // Item actions use only this participant's public snapshot. The authoritative session
+        // validates ownership, recipes, capacity, and target legality for every candidate.
+        val itemSlots=view.fields["itemBench"].orEmpty().split(';').mapIndexedNotNull{i,v->v.takeIf(String::isNotBlank)?.let{i}}
+        val carries=bench.sortedByDescending { it.cost*20+it.star*15+roleScore(it.role) }
+        for(item in itemSlots) for(carry in carries) out+=NativeBotAction("equip_item",mapOf("item" to item.toString(),"bench" to carry.index.toString()))
+
         val xpNext = view.fields["xpNext"]?.toIntOrNull() ?: 0
         val level = view.fields["level"]?.toIntOrNull() ?: 2
         val interestFloor = when (difficulty) { NativeBotDifficulty.EASY -> 0; NativeBotDifficulty.NORMAL -> 10; NativeBotDifficulty.HARD -> 30 }
         if (gold >= 4 + interestFloor && xpNext > 0 && level < 10 && (difficulty == NativeBotDifficulty.HARD || boardCount >= cap)) {
             out += NativeBotAction("buy_xp")
         }
-        if (gold >= 2 + interestFloor && shop.isEmpty()) out += NativeBotAction("refresh")
+        val streak=view.fields["streak"]?.toIntOrNull()?:0
+        val contested=view.fields["contestedUnits"].orEmpty().split(',').count(String::isNotBlank)
+        if (gold >= 2 + interestFloor && (shop.isEmpty() || difficulty==NativeBotDifficulty.HARD && boardCount<cap && (streak<0 || contested>2))) out += NativeBotAction("refresh")
         return NativeBotPlan(out.take(16))
     }
 
@@ -102,11 +110,15 @@ object TftBotPlanner {
         return traits.split(',').sumOf { trait -> if (trait.isBlank()) 0 else 1 + (active[trait] ?: 0) }
     }
 
-    private fun formationSlots(role: String, difficulty: NativeBotDifficulty): List<Int> {
+    internal fun formationSlots(role: String, difficulty: NativeBotDifficulty, columns:Int, rows:Int): List<Int> {
+        val center=(columns-1)/2.0
+        val cells=(0 until columns*rows).toList()
+        val front=cells.sortedWith(compareBy<Int>{it/columns}.thenBy{ kotlin.math.abs(it%columns-center) })
+        val back=cells.sortedWith(compareByDescending<Int>{it/columns}.thenBy{ kotlin.math.abs(it%columns-center) })
         val preferred = when (role.lowercase()) {
-            "guardian", "tank", "fighter", "striker" -> listOf(3, 2, 4, 1, 5, 0, 6, 10, 9, 11)
-            "ranger", "caster", "support" -> listOf(24, 23, 25, 22, 26, 21, 27, 17, 16, 18)
-            else -> listOf(10, 9, 11, 17, 16, 18, 3, 24)
+            "guardian", "tank", "fighter", "striker" -> front
+            "ranger", "caster", "support" -> back
+            else -> cells.sortedBy { kotlin.math.abs(it%columns-center)+kotlin.math.abs(it/columns-(rows-1)/2.0) }
         }
         return if (difficulty == NativeBotDifficulty.EASY) preferred.reversed() else preferred
     }
