@@ -34,6 +34,40 @@ data class ArenaCameraSet(val spectator: ArenaPoint, val scouting: ArenaPoint, v
 data class ArenaInteractionRegion(val id: String, val bounds: ArenaRegion, val action: String)
 enum class ArenaCameraRole { NORMAL, SPECTATOR, SCOUTING, CAROUSEL }
 
+data class ArenaPresentationFrame(
+    val arenaId:String,
+    val camera:SceneCameraPreset,
+    val lighting:String,
+    val ambientVfx:String,
+    val music:String,
+    val semanticVfx:String,
+    val lootAnchors:List<ArenaPoint>,
+    val interactionRegions:List<ArenaInteractionRegion>
+)
+
+object ArenaPresentationRuntime {
+    private var activeArena:String?=null
+    private var activeMusic:String=""
+    private var lastSemantic:String=""
+    fun frame(arenaId:String,role:ArenaCameraRole,fallback:SceneCameraPreset,phase:String,result:String?):ArenaPresentationFrame?{
+        val definition=MinecraftArenaRegistry.definition(arenaId)?:return null
+        val semantic=when{
+            result.equals("Victory",true)->definition.victoryVfx
+            result.equals("Defeat",true)->definition.defeatVfx
+            phase.equals("combat",true)->definition.combatStartVfx
+            else->""
+        }
+        activeArena=arenaId
+        activeMusic=definition.music
+        if(semantic.isNotBlank())lastSemantic=semantic
+        return ArenaPresentationFrame(arenaId,definition.camera(role,fallback),definition.lighting,definition.ambientVfx,activeMusic,semantic,definition.lootAnchors,definition.interactionRegions)
+    }
+    fun leave(arenaId:String){if(activeArena==arenaId){activeArena=null;activeMusic="";lastSemantic=""}}
+    fun interaction(arenaId:String,x:Float,y:Float)=MinecraftArenaRegistry.definition(arenaId)?.interactionAt(x,y)
+    fun music()=activeMusic
+    fun semanticVfx()=lastSemantic
+}
+
 data class MinecraftArenaDefinition(
     val style: String = "terrain",
     val surface: String = "",
