@@ -36,7 +36,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.14.3'
+          # Loom 1.7 uses the Gradle 8.8 Problems API. Newer Gradle releases
+          # removed Problems.forNamespace and fail before project evaluation.
+          gradle-version: '8.8'
 
       - name: Validate project structure
         shell: bash
