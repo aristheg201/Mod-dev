@@ -1059,7 +1059,8 @@ class TftSession(
         val strategy=set.botStrategies[Math.floorMod(participantId.hashCode(),set.botStrategies.size)]
         fun list(values:List<String>)=values.joinToString(",")
         fun map(values:Map<String,Double>)=values.entries.sortedBy{it.key}.joinToString(","){"${it.key}=${it.value}"}
-        return listOf(strategy.id,list(strategy.preferredTeams),list(strategy.fallbackTeams),list(strategy.preferredTraits),list(strategy.preferredCarryRoles),list(strategy.preferredItemTags),list(strategy.preferredAugmentTags),map(strategy.economyProfile),map(strategy.rollProfile),map(strategy.levelProfile),map(strategy.positioningProfile)).joinToString("~")
+        val transitions=strategy.transitionRules.joinToString(",") { rule -> listOf(rule.phase,rule.minimumLevel,rule.maximumLevel,rule.team,rule.minimumCopies,rule.maximumContested).joinToString(":") }
+        return listOf(strategy.id,list(strategy.preferredTeams),list(strategy.fallbackTeams),list(strategy.preferredTraits),list(strategy.preferredCarryRoles),list(strategy.preferredItemTags),list(strategy.preferredAugmentTags),map(strategy.economyProfile),map(strategy.rollProfile),map(strategy.levelProfile),map(strategy.positioningProfile),transitions).joinToString("~")
     }
     private fun newOwned(unitId: String) = TftOwnedUnit("u${nextUnitSerial++}", unitId)
     private fun countCopies(player:PlayerState,unitId:String)=unitLocations(player).filter{it.unit.unitId==unitId}.sumOf{copiesForStar(it.unit.star)}

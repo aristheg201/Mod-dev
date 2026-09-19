@@ -2,6 +2,8 @@ package io.github.aristheg201.svhub.native.game
 
 import io.github.aristheg201.svhub.engine.DamagePipeline
 import io.github.aristheg201.svhub.engine.EffectDefinition
+import io.github.aristheg201.svhub.engine.BattleEvent
+import io.github.aristheg201.svhub.engine.TriggerDefinition
 
 /** Shared route-mode selectors. Content supplies selector IDs; sessions supply immutable observations. */
 object RouteTargetSelectors {
@@ -32,4 +34,22 @@ object RouteEffectRuntime {
         "shield"->target.shield=(target.shield+node.value("amount",0.0).toInt()).coerceAtLeast(0)
         "sequence","parallel","area_effect","targeted_effect"->dealt+=apply(node.children(),target,element,baseDamage)
     }};return dealt}
+}
+
+/** Generic deterministic TriggerDefinition dispatcher for route-mode actors. */
+class RouteTriggerRuntime {
+    data class State(val counts:Map<String,Int> = emptyMap(),val lastTick:Map<String,Long> = emptyMap(),val once:Set<String> = emptySet())
+    private val counts=linkedMapOf<String,Int>();private val lastTick=linkedMapOf<String,Long>();private val once=linkedSetOf<String>()
+    fun snapshot()=State(counts.toMap(),lastTick.toMap(),once.toSet())
+    fun restore(state:State){counts.clear();counts.putAll(state.counts);lastTick.clear();lastTick.putAll(state.lastTick);once.clear();once.addAll(state.once)}
+    fun fire(triggers:List<TriggerDefinition>,event:BattleEvent,target:RouteEffectRuntime.Target,element:String,baseDamage:Double,tick:Long,roll:()->Double):Int {
+        var dealt=0
+        triggers.filter{it.event()==event}.sortedWith(compareByDescending<TriggerDefinition>{it.priority()}.thenBy{it.id()}).forEach{trigger->
+            val count=(counts[trigger.id()]?:0)+1;counts[trigger.id()]=count
+            val previous=lastTick[trigger.id()];val ready=count%trigger.every()==0&&(previous==null||tick-previous>=trigger.cooldownMs())&&(!trigger.oncePerCombat()||trigger.id() !in once)
+            val conditions=trigger.conditions().all{condition->when(condition.kind()){"target_hp_below"->target.hp<=condition.value();"target_has_status"->condition.key() in target.statuses;else->false}}
+            if(ready&&conditions&&roll()<=trigger.chance()){dealt+=RouteEffectRuntime.apply(trigger.effects(),target,element,baseDamage);lastTick[trigger.id()]=tick;if(trigger.oncePerCombat())once+=trigger.id()}
+        }
+        return dealt
+    }
 }
