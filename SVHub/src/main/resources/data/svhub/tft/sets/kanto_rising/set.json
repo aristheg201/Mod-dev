@@ -136,5 +136,74 @@
       "pvp",
       "pve"
     ]
-  }
+  },
+  "defaultTactician": "svhub:allay",
+  "tacticians": [
+    {
+      "id": "svhub:allay",
+      "entity": "minecraft:allay",
+      "name": "Allay",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:axolotl",
+      "entity": "minecraft:axolotl",
+      "name": "Axolotl",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:bee",
+      "entity": "minecraft:bee",
+      "name": "Bee",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:cat",
+      "entity": "minecraft:cat",
+      "name": "Cat",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:fox",
+      "entity": "minecraft:fox",
+      "name": "Fox",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:frog",
+      "entity": "minecraft:frog",
+      "name": "Frog",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:parrot",
+      "entity": "minecraft:parrot",
+      "name": "Parrot",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:rabbit",
+      "entity": "minecraft:rabbit",
+      "name": "Rabbit",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:wolf",
+      "entity": "minecraft:wolf",
+      "name": "Wolf",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:armadillo",
+      "entity": "minecraft:armadillo",
+      "name": "Armadillo",
+      "scale": 1.0
+    },
+    {
+      "id": "svhub:sniffer",
+      "entity": "minecraft:sniffer",
+      "name": "Sniffer",
+      "scale": 1.0
+    }
+  ]
 }

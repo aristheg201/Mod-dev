@@ -394,7 +394,7 @@ for (const locale of ["en_us", "vi_vn"]) {
 for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"', "observeCombat", "SceneCameras.TFT", "effects = effectSignals", "unitCatalog", "traitCatalog", "unitTooltip", "traitTooltip", "renderHoverTooltip", 'arenaId = "tft"']) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
 }
-for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone", "encodeUnitCatalog(player)", "encodeTraitCatalog(player)", "abilityName", "teamEffects"]) {
+for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone", "encodeUnitCatalog(observed, includeShop = !scouting)", "encodeTraitCatalog(observed, includeShop = !scouting)", "abilityName", "teamEffects"]) {
   if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing render metadata marker ${marker}`);
 }
 for (const marker of ["fireSerial", "targetEnemyId", '"towerEncoding" to "v2"']) {

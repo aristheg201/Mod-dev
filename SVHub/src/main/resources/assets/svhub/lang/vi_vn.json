@@ -196,5 +196,6 @@
   "gui.svhub.tft.tooltip.item": "Trang bị",
   "gui.svhub.leave_game": "Rời ván",
   "gui.svhub.arcade.current_game": "Đang chơi: %s",
-  "gui.svhub.arcade.resumed": "Đang mở lại ván hiện tại."
+  "gui.svhub.arcade.resumed": "Đang mở lại ván hiện tại.",
+  "gui.svhub.tft.home": "Về sân"
 }

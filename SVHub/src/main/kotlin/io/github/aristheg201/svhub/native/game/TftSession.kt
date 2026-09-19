@@ -23,7 +23,8 @@ class TftSession(
     seed: Long = Random.nextLong(),
     override val sessionId: String = NativeIds.session("tft"),
     definition: TftSetDefinition = TftSetRegistry.active(),
-    private val restoreState: JsonObject? = null
+    private val restoreState: JsonObject? = null,
+    tacticianSelections: Map<String, String> = emptyMap()
 ) : NativeGameSession {
     override val gameId: String = "tft"
     private val set = TftDefinitionValidator.validate(TftSetRegistry.migrateDefinition(definition))
@@ -36,6 +37,7 @@ class TftSession(
     private val pool = SharedPool(set, rng)
     private val players = linkedMapOf<String, PlayerState>()
     private val combats = linkedMapOf<String, MatchCombat>()
+    private val scoutTargets = mutableMapOf<String, String>()
     private val draftOffers = mutableListOf<DraftOffer>()
     private val log = ArrayDeque<String>()
     private var phase: Phase = Phase.PLANNING
@@ -50,7 +52,7 @@ class TftSession(
     init {
         require(seats.size in 2..8) { "Pokémon TFT requires 2-8 trainers" }
         if (restoreState == null) {
-            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name) }
+            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, tactician = resolveTactician(tacticianSelections[seat.id])) }
             startPlanning(System.currentTimeMillis(), firstRound = true)
         } else {
             restoreSnapshot(restoreState)
@@ -103,7 +105,8 @@ class TftSession(
                     lastSettledRound = player.lastSettledRound,
                     lastXpGranted = player.lastXpGranted,
                     lastLevelsGained = player.lastLevelsGained,
-                    legacyIncomePending = player.legacyIncomePending
+                    legacyIncomePending = player.legacyIncomePending,
+                    tactician = player.tactician
                 )
             },
             draftOffers = draftOffers.map { offer ->
@@ -197,7 +200,8 @@ class TftSession(
                 lastSettledRound = if (saved.schema >= 2) p.lastSettledRound else if (phase == Phase.POST_COMBAT || phase == Phase.FINISHED) roundIndex else roundIndex - 1,
                 lastXpGranted = if (saved.schema >= 2) p.lastXpGranted else 0,
                 lastLevelsGained = if (saved.schema >= 2) p.lastLevelsGained else 0,
-                legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT
+                legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT,
+                tactician = resolveTactician(p.tactician)
             )
         }
 
@@ -246,7 +250,9 @@ class TftSession(
 
     override fun viewFor(viewerId: String): NativeGameView {
         val player = players[viewerId] ?: players.values.first()
-        val board = buildBoardView(player)
+        val observed = scoutTargets[viewerId]?.let(players::get) ?: player
+        val scouting = observed.id != player.id
+        val board = buildBoardView(observed)
         val shopEnabled = phase == Phase.PLANNING && !player.eliminated
         val cards = player.shop.mapIndexedNotNull { index, unitId ->
             val def = unitId?.let(unitDefs::get) ?: return@mapIndexedNotNull null
@@ -295,6 +301,11 @@ class TftSession(
             actions = actions,
             fields = linkedMapOf(
                 "set" to set.id,
+                "tacticianEntity" to set.tacticians.firstOrNull { it.id == observed.tactician }?.entity.orEmpty(),
+                "tacticianId" to observed.tactician,
+                "scouting" to scouting.toString(),
+                "scoutTarget" to observed.id,
+                "scoutName" to observed.name,
                 "round" to roundLabel(),
                 "roundIndex" to roundIndex.toString(),
                 "phaseEndsAt" to phaseEndsAt.toString(),
@@ -314,13 +325,14 @@ class TftSession(
                 "streak" to player.streak.toString(),
                 "placement" to (player.placement ?: 0).toString(),
                 "eliminated" to player.eliminated.toString(),
-                "bench" to encodeBench(player),
+                "bench" to encodeBench(observed),
                 "players" to encodePlayers(),
-                "traits" to encodeTraits(player),
-                "unitCatalog" to encodeUnitCatalog(player),
-                "traitCatalog" to encodeTraitCatalog(player),
+                "traits" to encodeTraits(observed),
+                "unitCatalog" to encodeUnitCatalog(observed, includeShop = !scouting),
+                "traitCatalog" to encodeTraitCatalog(observed, includeShop = !scouting),
                 "itemBench" to player.itemBench.joinToString(","),
                 "augments" to player.augments.joinToString(","),
+                "selectedAugments" to encodeSelectedAugments(observed),
                 "augmentChoices" to encodeAugmentChoices(player),
                 "draft" to encodeDraft(player),
                 "opponent" to opponent,
@@ -328,7 +340,7 @@ class TftSession(
                 "lastInterest" to player.lastInterest.toString(),
                 "lastStreakGold" to player.lastStreakGold.toString(),
                 "freeRerolls" to player.freeRerolls.toString(),
-                "canEditBoard" to (phase == Phase.PLANNING && !player.eliminated).toString()
+                "canEditBoard" to (phase == Phase.PLANNING && !player.eliminated && !scouting).toString()
             ),
             log = log.toList().takeLast(12),
             revision = revision,
@@ -338,6 +350,7 @@ class TftSession(
     }
 
     override fun act(viewerId: String, action: String, args: Map<String, String>): NativeGameResult {
+        if (action == "scout") return scout(viewerId, args["target"])
         if (finished) return NativeGameResult(false, message = "Game finished")
         val player = players[viewerId] ?: return NativeGameResult(false, message = "Spectator")
         if (player.eliminated) return NativeGameResult(false, message = "Trainer eliminated")
@@ -356,6 +369,22 @@ class TftSession(
             "resign" -> resign(player)
             else -> NativeGameResult(false, message = "Unknown TFT action")
         }
+    }
+
+    private fun scout(viewerId: String, target: String?): NativeGameResult {
+        if (viewerId !in players) return reject("Spectator")
+        val ids = players.keys.toList()
+        val current = scoutTargets[viewerId] ?: viewerId
+        val id = when (target) {
+            "home" -> viewerId
+            "previous" -> ids[Math.floorMod(ids.indexOf(current) - 1, ids.size)]
+            "next" -> ids[(ids.indexOf(current) + 1) % ids.size]
+            else -> target
+        }
+        if (id !in players) return reject("Unknown scouting target")
+        if (id == viewerId) scoutTargets.remove(viewerId) else scoutTargets[viewerId] = id!!
+        revision++
+        return accept("Scouting ${players.getValue(id!!).name}")
     }
 
     override fun tick(nowMillis: Long): Boolean {
@@ -774,11 +803,11 @@ class TftSession(
         }
     }
 
-    private fun encodeUnitCatalog(player: PlayerState): String {
+    private fun encodeUnitCatalog(player: PlayerState, includeShop: Boolean = true): String {
         val ids = linkedSetOf<String>()
         player.board.values.forEach { ids += it.unitId }
         player.bench.forEach { unit -> if (unit != null) ids += unit.unitId }
-        player.shop.forEach { unitId -> if (unitId != null) ids += unitId }
+        if (includeShop) player.shop.forEach { unitId -> if (unitId != null) ids += unitId }
         combatFor(player.id)?.engine?.units?.forEach { ids += it.definition.id }
         if (phase == Phase.DRAFT) draftOffers.forEach { ids += it.unitId }
         return JsonObject().apply {
@@ -817,12 +846,12 @@ class TftSession(
         }.toString()
     }
 
-    private fun encodeTraitCatalog(player: PlayerState): String {
+    private fun encodeTraitCatalog(player: PlayerState, includeShop: Boolean = true): String {
         val ids = linkedSetOf<String>()
         traitCounts(player).keys.forEach(ids::add)
         player.board.values.forEach { unit -> unitDefs[unit.unitId]?.traits?.forEach(ids::add) }
         player.bench.forEach { unit -> unit?.let { unitDefs[it.unitId]?.traits?.forEach(ids::add) } }
-        player.shop.forEach { unitId -> unitId?.let { unitDefs[it]?.traits?.forEach(ids::add) } }
+        if (includeShop) player.shop.forEach { unitId -> unitId?.let { unitDefs[it]?.traits?.forEach(ids::add) } }
         return JsonObject().apply {
             ids.take(64).forEach { id ->
                 val def = traitDefs[id] ?: return@forEach
@@ -848,6 +877,17 @@ class TftSession(
             }
         }.toString()
     }
+
+    private fun encodeSelectedAugments(player: PlayerState): String = com.google.gson.JsonArray().apply {
+        player.augments.forEach { id ->
+            val def = augmentDefs.getValue(id)
+            add(JsonObject().apply {
+                addProperty("id", id); addProperty("name", def.name); addProperty("tier", def.tier)
+                addProperty("description", def.description)
+                addProperty("mechanic", def.effects.entries.joinToString(" • ") { (key, value) -> "$key: $value" })
+            })
+        }
+    }.toString()
 
     private fun encodeAugmentChoices(player: PlayerState): String = player.augmentChoices.joinToString(";") { id ->
         val def = augmentDefs[id]; listOf(id, def?.name ?: id, def?.description ?: "", def?.aiWeight ?: 50).joinToString("~")
@@ -905,6 +945,10 @@ class TftSession(
     private fun alivePlayers() = players.values.filterNot { it.eliminated }
     private fun combatFor(id: String) = combats[id]
     private fun snapshotBoard(player: PlayerState) = player.board.mapValues { (_, unit) -> unit.copy(items = unit.items.toMutableList()) }
+    private fun resolveTactician(selection: String?): String {
+        val requestedEntity = selection?.let { if (':' in it) it else "minecraft:$it" }
+        return set.tacticians.firstOrNull { it.id == selection || it.entity == requestedEntity }?.id ?: set.defaultTactician
+    }
     private fun newOwned(unitId: String) = TftOwnedUnit("u${nextUnitSerial++}", unitId)
     private fun copiesForStar(star: Int) = when (star) { 2 -> 3; 3 -> 9; else -> 1 }
     private fun unpackItem(item: String): List<String> = when { item.startsWith("combo:") -> item.removePrefix("combo:").split('+').filter(String::isNotBlank); item.startsWith("full:") -> set.fullItems.firstOrNull { it.id == item.removePrefix("full:") }?.components.orEmpty(); else -> listOf(item) }
@@ -959,7 +1003,8 @@ class TftSession(
         val lastSettledRound: Int,
         val lastXpGranted: Int,
         val lastLevelsGained: Int,
-        val legacyIncomePending: Boolean
+        val legacyIncomePending: Boolean,
+        val tactician: String?
     )
     private data class BoardSnapshot(val slot: Int, val unit: TftOwnedUnit)
     private data class DraftSnapshot(
@@ -987,7 +1032,7 @@ class TftSession(
         val itemBench: MutableList<String> = mutableListOf(), val augments: MutableList<String> = mutableListOf(),
         val augmentChoices: MutableList<String> = mutableListOf(), var freeRerolls: Int = 0, var draftPicked: Boolean = false,
         var draftUnlockAt: Long = 0L, var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
-        var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false
+        var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false, var tactician: String = ""
     )
     private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null)
     private data class MatchCombat(val aId:String,val bId:String?,val opponentLabel:String,val engine:TftCombatEngine,val pve:TftPveRoundDefinition?=null,val ghostOwnerId:String?=null,var resolved:Boolean=false){fun opponentNameFor(viewer:String):String=when{pve!=null->"PvE";viewer==aId->opponentLabel;bId!=null&&viewer==bId->"Opponent";else->opponentLabel}}

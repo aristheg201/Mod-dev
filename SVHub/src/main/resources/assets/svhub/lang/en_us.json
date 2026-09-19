@@ -196,5 +196,6 @@
   "gui.svhub.tft.tooltip.item": "Item",
   "gui.svhub.leave_game": "Leave game",
   "gui.svhub.arcade.current_game": "Active: %s",
-  "gui.svhub.arcade.resumed": "Resuming your active game."
+  "gui.svhub.arcade.resumed": "Resuming your active game.",
+  "gui.svhub.tft.home": "Home"
 }

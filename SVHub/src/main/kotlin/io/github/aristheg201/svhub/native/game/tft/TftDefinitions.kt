@@ -11,6 +11,8 @@ data class TftSetDefinition(
     val poolSizeByCost: Map<String, Int> = emptyMap(),
     val xpToNextByLevel: Map<String, Int> = emptyMap(),
     val progression: TftProgressionDefinition? = null,
+    val tacticians: List<TftTacticianDefinition> = emptyList(),
+    val defaultTactician: String = "",
     val shopOdds: List<TftShopOdds> = emptyList(),
     val units: List<TftUnitDefinition> = emptyList(),
     val traits: List<TftTraitDefinition> = emptyList(),
@@ -21,6 +23,9 @@ data class TftSetDefinition(
 )
 
 data class TftShopOdds(val level: Int = 2, val odds: List<Int> = listOf(100, 0, 0, 0, 0))
+
+/** Tacticians are presentation-only vanilla mobs, never combat units. */
+data class TftTacticianDefinition(val id: String = "", val entity: String = "", val name: String = "", val scale: Double = 1.0)
 
 data class TftUnitDefinition(
     val id: String = "",
@@ -95,7 +100,8 @@ data class TftAugmentDefinition(
     val description: String = "",
     val effects: Map<String, Double> = emptyMap(),
     /** Data-driven bot preference. Gameplay never branches on augment ids. */
-    val aiWeight: Int = 50
+    val aiWeight: Int = 50,
+    val tier: String = "Gold"
 )
 
 data class TftPveRoundDefinition(
@@ -117,6 +123,13 @@ object TftDefinitionValidator {
         require(set.name.isNotBlank()) { "TFT set name is empty" }
         val progression = set.progression ?: TftProgressionDefinition(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel)
         progression.validate("set ${set.id}.progression")
+        require(set.tacticians.map { it.id }.distinct().size == set.tacticians.size) { "set ${set.id}.tacticians: duplicate id" }
+        set.tacticians.forEach {
+            require(it.id.isNotBlank() && it.entity.matches(Regex("minecraft:[a-z0-9_]+")) && it.scale in 0.2..3.0) {
+                "set ${set.id}.tacticians.${it.id}: expected a vanilla entity and valid scale"
+            }
+        }
+        require(set.tacticians.isEmpty() || set.tacticians.any { it.id == set.defaultTactician }) { "set ${set.id}.defaultTactician: unknown id" }
         require(set.planningSeconds in 1..600 && set.combatSeconds in 1..600 && set.postCombatSeconds in 1..60) { "Invalid TFT phase durations" }
         require(set.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid TFT set id ${set.id}" }
         require(set.units.size >= 20) { "TFT set ${set.id} requires at least 20 units" }

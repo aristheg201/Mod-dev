@@ -324,8 +324,9 @@ object TftGameRenderer {
 
         renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
         resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
-        resolved.players?.let { renderPlayers(gui, font, it, players) }
+        resolved.players?.let { renderPlayers(gui, font, it, players, hooks) }
         renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+        renderAugmentHud(gui, font, resolved.board, fields, ui, mouseX, mouseY, hooks)
         renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
@@ -384,11 +385,12 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderPlayers(gui: GuiGraphics, font: Font, rect: UiRect, players: List<PlayerLine>) {
+    private fun renderPlayers(gui: GuiGraphics, font: Font, rect: UiRect, players: List<PlayerLine>, hooks: Hooks) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
         gui.drawString(font, tr("gui.svhub.tft.players"), rect.x + 7, rect.y + 7, muted, true)
         var y = rect.y + 23
         players.take(8).forEachIndexed { index, p ->
+            hooks.hit(UiRect(rect.x + 4, y, rect.width - 8, 22)) { hooks.action("scout", mapOf("target" to p.id)) }
             val color = if (p.eliminated) 0xFF586663.toInt() else if (p.hp <= 30) danger else text
             gui.fill(rect.x + 5, y, rect.right - 5, y + 22, panel2)
             gui.drawString(font, if (p.placement > 0) "#${p.placement}" else "${index + 1}", rect.x + 9, y + 5, if (p.eliminated) muted else gold, true)
@@ -672,6 +674,28 @@ object TftGameRenderer {
             hooks.control(sellRect, tr("gui.svhub.tft.sell"), true) {
                 hooks.action("sell", mapOf("origin" to ui.selectedOrigin!!, "index" to ui.selectedIndex.toString())); ui.clearUnit()
             }
+        }
+    }
+
+    private fun renderAugmentHud(gui: GuiGraphics, font: Font, board: UiRect, fields: JsonObject,
+        ui: TftUiState, mouseX: Int, mouseY: Int, hooks: Hooks) {
+        val selected = runCatching { JsonParser.parseString(fields.str("selectedAugments", "[]")).asJsonArray }.getOrNull()
+        val maxWidth = max(30, min(120, (board.width - 12) / 3))
+        selected?.take(3)?.forEachIndexed { index, value ->
+            val augment = value.asJsonObject
+            val rect = UiRect(board.x + 4 + index * maxWidth, board.y + 3, maxWidth - 3, 17)
+            gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel2)
+            gui.fill(rect.x, rect.bottom - 2, rect.right, rect.bottom, gold)
+            gui.drawString(font, fit(font, augment.str("name"), rect.width - 6), rect.x + 3, rect.y + 4, gold, false)
+            if (rect.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(TftHoverTooltip(
+                augment.str("name"), augment.str("tier"), listOf(augment.str("description"), humanize(augment.str("mechanic"))), gold))
+        }
+        val y = board.bottom - 17
+        hooks.control(UiRect(board.x + 3, y, 20, 14), "‹", true) { hooks.action("scout", mapOf("target" to "previous")) }
+        hooks.control(UiRect(board.x + 26, y, 20, 14), "›", true) { hooks.action("scout", mapOf("target" to "next")) }
+        if (fields.str("scouting") == "true") {
+            hooks.control(UiRect(board.x + 49, y, 48, 14), tr("gui.svhub.tft.home"), true) { hooks.action("scout", mapOf("target" to "home")) }
+            gui.drawString(font, fit(font, fields.str("scoutName"), board.width / 2), board.x + 4, board.y + 24, accent, true)
         }
     }
 
