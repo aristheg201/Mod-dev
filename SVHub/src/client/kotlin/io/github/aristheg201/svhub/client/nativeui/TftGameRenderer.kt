@@ -429,7 +429,11 @@ object TftGameRenderer {
         val combatRows = playerRows * 2
         val formationCells = columns * playerRows
         val benchSlots = fields.int("benchSlots", 9).coerceIn(1, 24)
-        val arena=MinecraftArenaRegistry.definition(fields.str("arenaId", "tft"))
+        val arenaId=fields.str("arenaId","tft")
+        val arena=MinecraftArenaRegistry.definition(arenaId)
+        val cameraRole=when{phase=="draft"->ArenaCameraRole.CAROUSEL;fields.bool("scouting")->ArenaCameraRole.SCOUTING;else->ArenaCameraRole.NORMAL}
+        val presentation=ArenaPresentationRuntime.frame(arenaId,cameraRole,SceneCameras.TFT,phase,fields.str("result"))
+        val authoredCamera=presentation?.camera?:arena?.camera(cameraRole,SceneCameras.TFT)?:SceneCameras.TFT
 
         val now = System.currentTimeMillis()
         val visibleUnits = if (phase == "combat") {
@@ -510,10 +514,10 @@ object TftGameRenderer {
             selectedCells = selectedCells,
             legalCells = legalCells,
             teamSplitRow = playerRows,
-            camera = arena?.camera(if(fields.bool("scouting"))ArenaCameraRole.SCOUTING else ArenaCameraRole.NORMAL,SceneCameras.TFT)?:SceneCameras.TFT,
+            camera = authoredCamera,
             effects = effectSignals,
             nativeAnimations = nativeAnimations,
-            arenaId = fields.str("arenaId", "tft"),
+            arenaId = arenaId,
             arenaSeed = arenaSeed,
             platforms = (0 until benchSlots).map { index -> val anchor=arena?.benchAnchor(index);ScenePlatform(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f,
                 selected = ui.selectedOrigin == "bench" && ui.selectedIndex == index) },
