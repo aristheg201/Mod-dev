@@ -46,7 +46,7 @@ object NativeBotRuntime {
         val pool = executor ?: return
         for (seat in seats) {
             val key = Key(sessionId, seat.id)
-            if (!seat.anyBot && key !in takeovers) continue
+            if (!seat.anyBot && !takeovers.containsKey(key)) continue
             val difficulty = takeovers[key] ?: seat.botDifficulty ?: NativeBotDifficulty.NORMAL
             val generation = controllerGeneration[key] ?: 0L
             val due = nextThinkAt[key] ?: 0L
@@ -67,7 +67,7 @@ object NativeBotRuntime {
                     }
                     pending.remove(key)
                     plan.onSuccess { result ->
-                        if (result.candidates.isNotEmpty() && (controllerGeneration[key] ?: 0L) == generation && (seat.anyBot || key in takeovers)) {
+                        if (result.candidates.isNotEmpty() && (controllerGeneration[key] ?: 0L) == generation && (seat.anyBot || takeovers.containsKey(key))) {
                             apply(sessionId, seat.id, generation, view.revision, result.candidates)
                         }
                     }
