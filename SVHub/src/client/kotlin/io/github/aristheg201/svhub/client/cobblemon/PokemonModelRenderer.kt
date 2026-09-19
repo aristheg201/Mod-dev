@@ -1,5 +1,8 @@
 package io.github.aristheg201.svhub.client.cobblemon
 
+import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationResolver
+import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationSemantic
+
 import com.cobblemon.mod.common.api.moves.animations.ActionEffectTimeline
 import com.cobblemon.mod.common.api.moves.animations.ActionEffects
 import com.cobblemon.mod.common.api.moves.animations.keyframes.ActionEffectKeyframe
@@ -61,14 +64,14 @@ object PokemonModelRenderer {
         return ProviderDiagnostics(if(reason==null)"RESOLVED" else "UNOBSERVABLE",poser.javaClass.name,poser.javaClass.name,texture,layers,labels,reason)
     }
     data class AnimationPreviewResult(val outcome:String,val requested:String,val selected:String?,val available:Set<String>,val reason:String?)
-    fun previewAnimation(view:PokemonView,instanceId:String,semantic:String,serial:Long=System.nanoTime()):AnimationPreviewResult{
+    fun previewAnimation(view:PokemonView,instanceId:String,semantic:PokemonAnimationSemantic,serial:Long=System.nanoTime()):AnimationPreviewResult{
         val diagnostics=diagnostics(view)
         if(diagnostics.outcome=="REJECTED"||diagnostics.outcome=="FALLBACK")return AnimationPreviewResult(diagnostics.outcome,semantic,null,diagnostics.animationLabels,diagnostics.reason)
         val available=diagnostics.animationLabels
         if(available.isEmpty())return AnimationPreviewResult("UNOBSERVABLE",semantic,null,available,diagnostics.reason?:"provider exposes no animation labels")
         val selected=PokemonAnimationResolver.resolve(semantic,available).firstOrNull()
             ?:return AnimationPreviewResult("FALLBACK",semantic,null,available,"no actual poser label maps to semantic")
-        requestSceneAnimation(view,instanceId,"preview:$semantic",serial,setOf(selected))
+        requestSceneAnimation(view,instanceId,"preview:${semantic.name.lowercase()}",serial,setOf(selected))
         return AnimationPreviewResult("RESOLVED",semantic,selected,available,null)
     }
 
