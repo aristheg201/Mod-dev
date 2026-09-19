@@ -36,7 +36,7 @@ object TftCommands {
                     val id = StringArgumentType.getString(ctx, "id"); ctx.source.sendSuccess({ Component.literal("{\"id\":\"svhub:$id\",\"name\":\"$id\",\"members\":[],\"bench\":[],\"aiProfile\":\"normal\"}") }, false); 1
                 })))
                 .then(Commands.literal("reload").executes { ctx ->
-                    TftSetRegistry.reload().fold(onSuccess = { ctx.source.sendSuccess({ Component.literal("TFT ${it.id} atomically reloaded") }, true); 1 }, onFailure = { ctx.source.sendFailure(Component.literal("TFT reload rejected; previous snapshot retained: ${it.message}")); 0 })
+                    val source=ctx.source;TftSetRegistry.reloadAsync().whenComplete{set,error->source.server.execute{if(error==null)source.sendSuccess({Component.literal("TFT ${set.id} atomically reloaded")},true)else source.sendFailure(Component.literal("TFT reload rejected; previous snapshot retained: ${error.message}"))}};1
                 }))
             .then(Commands.literal("preview")
                 .then(Commands.literal("unit").then(unitArgument().executes { ctx ->

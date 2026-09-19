@@ -4,6 +4,8 @@ import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.SVHub
 import io.github.aristheg201.svhub.native.NativeArcadeService
 import io.github.aristheg201.svhub.native.NativePlatform
+import io.github.aristheg201.svhub.native.TftLifecyclePolicy
+import io.github.aristheg201.svhub.network.SVHubNetwork
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer
@@ -18,6 +20,7 @@ object NativePlatformNetwork{
   PayloadTypeRegistry.playS2C().register(NativeCloseS2C.TYPE,NativeCloseS2C.CODEC)
   PayloadTypeRegistry.playC2S().register(NativeIntentC2S.TYPE,NativeIntentC2S.CODEC)
   PayloadTypeRegistry.playC2S().register(NativeCloseC2S.TYPE,NativeCloseC2S.CODEC)
+  PayloadTypeRegistry.playC2S().register(NativeResumeTftC2S.TYPE,NativeResumeTftC2S.CODEC)
   ServerPlayNetworking.registerGlobalReceiver(NativeIntentC2S.TYPE){payload,context->context.server().execute{
    val player=context.player();val sub=openViews[player.uuid]?:return@execute
    if(sub.viewId!=payload.viewId||sub.module!=payload.module)return@execute
@@ -28,7 +31,11 @@ object NativePlatformNetwork{
   }}
   ServerPlayNetworking.registerGlobalReceiver(NativeCloseC2S.TYPE){payload,context->context.server().execute{
    val player=context.player();val module=currentModule(player.uuid)
-   if(close(player.uuid,payload.viewId)&&module=="game")NativeArcadeService.leave(player)
+   if(close(player.uuid,payload.viewId)&&module=="game"&&TftLifecyclePolicy.closeResigns(NativeArcadeService.activeGameId(player.uuid)))NativeArcadeService.leave(player)
+  }}
+  ServerPlayNetworking.registerGlobalReceiver(NativeResumeTftC2S.TYPE){_,context->context.server().execute{
+   val player=context.player()
+   if(NativeArcadeService.resumeActiveTft(player))NativePlatform.open(player,"arcade") else SVHubNetwork.open(player,"home",false)
   }}
  }
  fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();openViews[player.uuid]=Subscription(module,viewId);lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeOpenS2C(module,gson.toJson(state),viewId,previous?.viewId.orEmpty()));return viewId}

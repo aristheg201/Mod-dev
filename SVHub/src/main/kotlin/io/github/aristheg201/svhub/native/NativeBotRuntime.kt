@@ -18,6 +18,8 @@ object NativeBotRuntime {
     private data class Key(val sessionId: String, val seatId: String)
     private val pending = ConcurrentHashMap.newKeySet<Key>()
     private val nextThinkAt = ConcurrentHashMap<Key, Long>()
+    private val takeovers = ConcurrentHashMap<Key, NativeBotDifficulty>()
+    private val controllerGeneration = ConcurrentHashMap<Key, Long>()
     private val threadCounter = AtomicInteger()
     @Volatile private var executor: ThreadPoolExecutor? = null
 
@@ -42,9 +44,10 @@ object NativeBotRuntime {
     ) {
         val pool = executor ?: return
         for (seat in seats) {
-            if (!seat.anyBot) continue
-            val difficulty = seat.botDifficulty ?: NativeBotDifficulty.NORMAL
             val key = Key(sessionId, seat.id)
+            if (!seat.anyBot && key !in takeovers) continue
+            val difficulty = takeovers[key] ?: seat.botDifficulty ?: NativeBotDifficulty.NORMAL
+            val generation = controllerGeneration[key] ?: 0L
             val due = nextThinkAt[key] ?: 0L
             if (nowMillis < due || key in pending) continue
             val view = views[seat.id] ?: continue
@@ -62,7 +65,9 @@ object NativeBotRuntime {
                         if (view.gameId == "tft") TftBotPlanner.plan(view, difficulty) else NativeBotPlanner.plan(view, difficulty)
                     }
                     pending.remove(key)
-                    plan.onSuccess { result -> if (result.candidates.isNotEmpty()) apply(sessionId, seat.id, result.candidates) }
+                    plan.onSuccess { result ->
+                        if (result.candidates.isNotEmpty() && (controllerGeneration[key] ?: 0L) == generation && (seat.anyBot || key in takeovers)) apply(sessionId, seat.id, result.candidates)
+                    }
                         .onFailure { error -> SVHub.LOGGER.warn("Native bot planner failed for {} / {}", view.gameId, sessionId, error) }
                 }
             } catch (_: RejectedExecutionException) {
@@ -75,11 +80,26 @@ object NativeBotRuntime {
     fun forgetSession(sessionId: String) {
         pending.removeIf { it.sessionId == sessionId }
         nextThinkAt.keys.removeIf { it.sessionId == sessionId }
+        takeovers.keys.removeIf { it.sessionId == sessionId }
+        controllerGeneration.keys.removeIf { it.sessionId == sessionId }
     }
+
+    fun takeover(sessionId: String, seatId: String, difficulty: NativeBotDifficulty) {
+        val key = Key(sessionId, seatId); takeovers[key] = difficulty
+        controllerGeneration.merge(key, 1L, Long::plus); nextThinkAt[key] = 0L
+    }
+
+    fun reclaim(sessionId: String, seatId: String) {
+        val key = Key(sessionId, seatId); takeovers.remove(key); pending.remove(key); nextThinkAt.remove(key)
+        controllerGeneration.merge(key, 1L, Long::plus)
+    }
+
+    fun isTakeover(sessionId: String, seatId: String): Boolean = Key(sessionId, seatId) in takeovers
 
     fun shutdown() {
         val pool = synchronized(this) { val current = executor; executor = null; current }
         pending.clear(); nextThinkAt.clear(); pool?.shutdownNow()
+        takeovers.clear(); controllerGeneration.clear()
     }
 
     private fun thinkDelayMillis(difficulty: NativeBotDifficulty): Long = when (difficulty) {

@@ -1,0 +1,20 @@
+{
+  "id":"svhub:default","width":12,"height":8,"startingGold":120,"startingLives":20,"victoryWave":20,
+  "path":[12,13,14,15,16,17,18,19,20,21,22,23,35,47,59,71,83,82,81,80,79,78,77,76,64,52,40,41,42,43,44,45,46],
+  "wave":{"baseEnemies":5,"enemiesPerWave":2,"bossEvery":5,"clearGold":15,"clearGoldPerWave":2},
+  "towers":[
+    {"id":"pikachu","name":"Pikachu","species":"cobblemon:pikachu","element":"Electric","cost":35,"damage":28,"range":3.2,"cooldown":4,"moveId":"thundershock"},
+    {"id":"charmander","name":"Charmander","species":"cobblemon:charmander","element":"Fire","cost":30,"damage":34,"range":2.5,"cooldown":5,"moveId":"ember"},
+    {"id":"squirtle","name":"Squirtle","species":"cobblemon:squirtle","element":"Water","cost":32,"damage":22,"range":3.0,"cooldown":3,"moveId":"watergun"},
+    {"id":"bulbasaur","name":"Bulbasaur","species":"cobblemon:bulbasaur","element":"Grass","cost":34,"damage":20,"range":3.6,"cooldown":4,"moveId":"vinewhip"},
+    {"id":"lucario","name":"Lucario","species":"cobblemon:lucario","element":"Fighting","cost":65,"damage":58,"range":2.2,"cooldown":3,"moveId":"forcepalm"},
+    {"id":"gardevoir","name":"Gardevoir","species":"cobblemon:gardevoir","element":"Psychic","cost":72,"damage":64,"range":4.0,"cooldown":5,"moveId":"confusion"}
+  ],
+  "enemies":[
+    {"id":"rattata","hp":90,"speed":0.28,"reward":4,"weakness":"Fighting"},
+    {"id":"zubat","hp":115,"speed":0.30,"reward":4,"weakness":"Electric"},
+    {"id":"geodude","hp":140,"speed":0.32,"reward":4,"weakness":"Water"},
+    {"id":"gastly","hp":165,"speed":0.34,"reward":4,"weakness":"Psychic"}
+  ],
+  "bosses":["snorlax_boss","tyranitar_boss","metagross_boss","rayquaza_boss"]
+}

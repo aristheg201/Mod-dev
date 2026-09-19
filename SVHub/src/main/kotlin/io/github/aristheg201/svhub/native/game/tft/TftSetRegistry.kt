@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory
 import java.io.Reader
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 
 /** Loads and validates complete sets before publishing them to new sessions. */
 object TftSetRegistry {
@@ -16,6 +18,7 @@ object TftSetRegistry {
     private val logger = LoggerFactory.getLogger("SVHub/TFT")
     @Volatile private var current: TftSetDefinition? = null
     @Volatile private var overrideFile: Path? = null
+    private val reloadWorker = Executors.newSingleThreadExecutor { task -> Thread(task, "SVHub-TFT-Reload").apply { isDaemon = true } }
     private const val MAX_JSON_CHARS = 4 * 1024 * 1024
     private val manifestFields = setOf("schema", "id", "name", "poolSizeByCost", "xpToNextByLevel", "shopOdds")
 
@@ -51,6 +54,10 @@ object TftSetRegistry {
         current = candidate
         candidate
     }
+
+    fun reloadAsync(): CompletableFuture<TftSetDefinition> = CompletableFuture.supplyAsync({
+        reload().getOrThrow()
+    }, reloadWorker)
 
     fun knownAspects(species: String? = null): Set<String> = active().units.asSequence()
         .filter { species == null || it.presentation.species == species }

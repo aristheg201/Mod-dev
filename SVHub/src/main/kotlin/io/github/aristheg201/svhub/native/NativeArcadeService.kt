@@ -146,14 +146,17 @@ object NativeArcadeService {
                     val id = q.removeFirst()
                     val live = player.server.playerList.getPlayer(id)
                     if (live == null || active.containsKey(id) || ready.any { it.uuid == id }) continue
-                    if (ready.size < 8) ready += live else retained += id
+                    if (ready.size < TftLifecyclePolicy.PLAYER_SLOTS) ready += live else retained += id
                 }
                 q.addAll(retained)
-                if (ready.size < 8) {
+                val fill = TftLifecyclePolicy.botFillCount(ready.size)
+                if (fill == null) {
                     ready.forEach { if (!q.contains(it.uuid)) q.addLast(it.uuid) }
                     return Result(true, "gui.svhub.arcade.queued", ready.map { it.uuid }.toSet())
                 }
-                val handle = register(player.server, create(gameId, ready.map(::realSeat)), mode)
+                val seats = ready.take(TftLifecyclePolicy.PLAYER_SLOTS).map(::realSeat).toMutableList()
+                repeat(fill) { index -> seats += botSeat("TFT Bot ${index + 1}", NativeBotDifficulty.NORMAL) }
+                val handle = register(player.server, create(gameId, seats), mode)
                 return Result(true, "gui.svhub.arcade.matched", realPlayers(handle))
             }
             while (q.isNotEmpty()) {
@@ -206,6 +209,15 @@ object NativeArcadeService {
         return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
     }
 
+    fun activeGameId(id: UUID): String? = active[id]?.let(sessions::get)?.gameId
+
+    fun resumeActiveTft(player: ServerPlayer): Boolean {
+        if (activeGameId(player.uuid) != "tft") return false
+        disconnectedUntil.remove(player.uuid)
+        active[player.uuid]?.let { NativeBotRuntime.reclaim(it, player.uuid.toString()) }
+        return true
+    }
+
     fun tick(server: MinecraftServer, now: Long = System.currentTimeMillis()): Map<UUID, String> {
         NativeArcadeSessionStore.tick(now)
         restoreLoadedSessions(server, now)
@@ -216,9 +228,15 @@ object NativeArcadeService {
         disconnectedUntil.entries.toList().forEach { (id, deadline) ->
             if (now < deadline || server.playerList.getPlayer(id) != null) return@forEach
             if (!disconnectedUntil.remove(id, deadline)) return@forEach
-            val sid = active.remove(id) ?: return@forEach
-            meta[sid]?.forfeited?.add(id)
-            sessions[sid]?.submitAction(id.toString(), "resign", emptyMap(), bot = false)
+            val sid = active[id] ?: return@forEach
+            val handle = sessions[sid] ?: return@forEach
+            if (TftLifecyclePolicy.disconnectExpiresToBot(handle.gameId)) {
+                NativeBotRuntime.takeover(sid, id.toString(), NativeBotDifficulty.NORMAL)
+                asyncMessages[id] = "gui.svhub.arcade.bot_takeover"
+            } else {
+                active.remove(id); meta[sid]?.forfeited?.add(id)
+                handle.submitAction(id.toString(), "resign", emptyMap(), bot = false)
+            }
         }
         finishedAt.filterValues { now - it > TERMINAL_DEDUP_MS }.keys.toList().forEach { sid -> finishedAt.remove(sid) }
         queues.values.forEach { q -> q.removeIf { server.playerList.getPlayer(it) == null || active.containsKey(it) } }
@@ -239,7 +257,9 @@ object NativeArcadeService {
         if (NativeArcadeSessionStore.isLoadComplete()) restoreLoadedSessions(player.server, System.currentTimeMillis())
         disconnectedUntil.remove(player.uuid)
         val sid = active[player.uuid] ?: return false
-        return sessions.containsKey(sid)
+        if (!sessions.containsKey(sid)) return false
+        NativeBotRuntime.reclaim(sid, player.uuid.toString())
+        return true
     }
 
     fun shutdown() {

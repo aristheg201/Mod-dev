@@ -10,6 +10,7 @@ import io.github.aristheg201.svhub.client.gui.HubScreen
 import io.github.aristheg201.svhub.client.nativeui.MinecraftArenaRegistry
 import io.github.aristheg201.svhub.client.nativeui.NativeGameVisualRegistry
 import io.github.aristheg201.svhub.client.nativeui.VanillaCompanionModelRenderer
+import io.github.aristheg201.svhub.native.network.NativeResumeTftC2S
 import io.github.aristheg201.svhub.client.render.GeneratedBackgroundRenderer
 import io.github.aristheg201.svhub.client.render.MiniMessageText
 import io.github.aristheg201.svhub.content.HUB_PROTOCOL_VERSION
@@ -59,7 +60,7 @@ object SVHubClient : ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(HubOpenS2C.TYPE){payload,context->context.client().execute openPacket@{if(payload.editor){if(!ClientHubState.canEdit)return@openPacket;if(ClientHubState.editorContent?.revision==ClientHubState.serverRevision)Minecraft.getInstance().setScreen(HubEditorScreen())else{pendingEditor=true;ClientPlayNetworking.send(HubRequestSnapshotC2S(true))}}else openHub(payload.page,serverAuthorized=true)}}
         ClientPlayNetworking.registerGlobalReceiver(PokemonRuntimeInfoS2C.TYPE){payload,context->context.client().execute{ClientPokemonRuntimeInfo.accept(payload)}}
         ClientPlayNetworking.registerGlobalReceiver(HubEditorResultS2C.TYPE){payload,context->context.client().execute{ClientHubState.lastEditorMessage=payload.message;ClientHubState.serverRevision=payload.revision;val screen=Minecraft.getInstance().screen;if(screen is HubEditorScreen){screen.onPublishResult(payload.ok,payload.message);if(payload.ok){pendingEditor=true;ClientPlayNetworking.send(HubRequestSnapshotC2S(true))}}}}
-        ClientTickEvents.END_CLIENT_TICK.register{client->while(openHubKey.consumeClick()){if(client.player!=null)openHub("home")}}
+        ClientTickEvents.END_CLIENT_TICK.register{client->while(openHubKey.consumeClick()){if(client.player!=null)ClientPlayNetworking.send(NativeResumeTftC2S())}}
         // Re-establish the Hub handshake on every play connection. Relying only on the
         // first server hello left reconnects with an empty ClientHubState if that packet
         // raced connection setup; H and /hub then looked completely dead.
