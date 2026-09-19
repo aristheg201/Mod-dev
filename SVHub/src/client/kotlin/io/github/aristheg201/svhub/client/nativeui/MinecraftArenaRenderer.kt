@@ -4,6 +4,10 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
+import net.minecraft.client.resources.sounds.SoundInstance
+import net.minecraft.sounds.SoundSource
+import net.minecraft.util.RandomSource
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
@@ -48,6 +52,7 @@ data class ArenaPresentationFrame(
 object ArenaPresentationRuntime {
     private var activeArena:String?=null
     private var activeMusic:String=""
+    private var activeMusicInstance:SimpleSoundInstance?=null
     private var lastSemantic:String=""
     fun frame(arenaId:String,role:ArenaCameraRole,fallback:SceneCameraPreset,phase:String,result:String?):ArenaPresentationFrame?{
         val definition=MinecraftArenaRegistry.definition(arenaId)?:return null
@@ -58,11 +63,24 @@ object ArenaPresentationRuntime {
             else->""
         }
         activeArena=arenaId
-        activeMusic=definition.music
+        syncMusic(definition.music)
         if(semantic.isNotBlank())lastSemantic=semantic
         return ArenaPresentationFrame(arenaId,definition.camera(role,fallback),definition.lighting,definition.ambientVfx,activeMusic,semantic,definition.lootAnchors,definition.interactionRegions)
     }
-    fun leave(arenaId:String){if(activeArena==arenaId){activeArena=null;activeMusic="";lastSemantic=""}}
+    fun leave(arenaId:String){if(activeArena==arenaId){
+        activeMusicInstance?.let{Minecraft.getInstance().soundManager.stop(it)}
+        activeMusicInstance=null;activeArena=null;activeMusic="";lastSemantic=""
+    }}
+    private fun syncMusic(requested:String){
+        if(requested==activeMusic)return
+        activeMusicInstance?.let{Minecraft.getInstance().soundManager.stop(it)}
+        activeMusicInstance=null
+        activeMusic=requested
+        val id=ResourceLocation.tryParse(requested)?:return
+        val sound=SimpleSoundInstance(id,SoundSource.MUSIC,.65f,1f,RandomSource.create(),true,0,SoundInstance.Attenuation.NONE,0.0,0.0,0.0,true)
+        activeMusicInstance=sound
+        Minecraft.getInstance().soundManager.play(sound)
+    }
     fun interaction(arenaId:String,x:Float,y:Float)=MinecraftArenaRegistry.definition(arenaId)?.interactionAt(x,y)
     fun music()=activeMusic
     fun semanticVfx()=lastSemantic
