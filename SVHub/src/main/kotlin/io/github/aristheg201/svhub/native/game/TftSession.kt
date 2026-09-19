@@ -360,6 +360,7 @@ class TftSession(
                 "eliminated" to player.eliminated.toString(),
                 "bench" to encodeBench(observed),
                 "players" to encodePlayers(),
+                "contestedUnits" to encodePublicContestedUnits(player.id),
                 "traits" to encodeTraits(observed),
                 "unitCatalog" to encodeUnitCatalog(observed, includeShop = !scouting),
                 "traitCatalog" to encodeTraitCatalog(observed, includeShop = !scouting),
@@ -863,6 +864,14 @@ class TftSession(
         val def = unitDefs[unit.unitId] ?: return@mapIndexedNotNull null
         listOf(index, unit.instanceId, unit.unitId, def.presentation.species, unit.star, def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role).joinToString("~")
     }.joinToString(";")
+
+    private fun encodePublicContestedUnits(viewerId:String):String = players.values.asSequence()
+        .filter{it.id!=viewerId}
+        .flatMap{it.board.values.asSequence()}
+        .map{it.unitId}
+        .distinct()
+        .sorted()
+        .joinToString(",")
 
     private fun encodePlayers(): String = players.values.sortedWith(compareBy<PlayerState> { it.eliminated }.thenByDescending { it.hp }).joinToString(";") { p ->
         listOf(p.id, p.name, p.hp, p.level, p.placement ?: 0, if (p.eliminated) 1 else 0).joinToString("~")
