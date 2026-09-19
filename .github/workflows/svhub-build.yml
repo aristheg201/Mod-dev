@@ -3,11 +3,10 @@ name: SVHub Loom build
 on:
   push:
     branches:
-      - feature/svhub-production-20260916
+      - main
     paths:
       - 'SVHub/**'
       - '.github/workflows/svhub-build.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
