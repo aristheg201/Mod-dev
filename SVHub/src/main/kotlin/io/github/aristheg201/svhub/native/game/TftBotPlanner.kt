@@ -74,11 +74,26 @@ object TftBotPlanner {
         }
         out += orderedShop.map { NativeBotAction("buy", mapOf("index" to it.index.toString())) }
 
-        // Item actions use only this participant's public snapshot. The authoritative session
-        // validates ownership, recipes, capacity, and target legality for every candidate.
-        val itemSlots=view.fields["itemBench"].orEmpty().split(';').mapIndexedNotNull{i,v->v.takeIf(String::isNotBlank)?.let{i}}
+        // Item planning is based only on the participant's own item bench plus authored public
+        // recipe/effect metadata. The session remains authoritative for every equip/combine.
+        val itemBenchRaw=view.fields["itemBench"].orEmpty().split(',').filter(String::isNotBlank)
+        val itemCatalog=parseItemCatalog(view.fields["itemCatalog"].orEmpty())
         val carries=bench.sortedByDescending { it.cost*20+it.star*15+roleScore(it.role) }
-        for(item in itemSlots) for(carry in carries) out+=NativeBotAction("equip_item",mapOf("item" to item.toString(),"bench" to carry.index.toString()))
+        val tank=carries.firstOrNull{it.role.lowercase() in setOf("guardian","tank","fighter")}
+        val damageCarry=carries.firstOrNull{it.role.lowercase() in setOf("caster","ranger","striker")}
+        val preferredTarget=damageCarry?:tank?:carries.firstOrNull()
+        if(preferredTarget!=null&&itemBenchRaw.isNotEmpty()){
+            val pair=itemBenchRaw.indices.flatMap{i->(i+1 until itemBenchRaw.size).map{j->i to j}}.maxByOrNull{(i,j)->
+                recipeScore(itemBenchRaw[i],itemBenchRaw[j],preferredTarget.role,itemCatalog,strategy)
+            }
+            val slamThreshold=(strategy.economy["itemSlamThreshold"]?:18.0).toInt()
+            if(pair!=null&&recipeScore(itemBenchRaw[pair.first],itemBenchRaw[pair.second],preferredTarget.role,itemCatalog,strategy)>=slamThreshold){
+                out+=NativeBotAction("equip_item",mapOf("item" to pair.first.toString(),"origin" to "bench","index" to preferredTarget.index.toString()))
+                out+=NativeBotAction("equip_item",mapOf("item" to (pair.second-1).coerceAtLeast(0).toString(),"origin" to "bench","index" to preferredTarget.index.toString()))
+            }else if(emergencyItemSlam(view,strategy)){
+                out+=NativeBotAction("equip_item",mapOf("item" to "0","origin" to "bench","index" to preferredTarget.index.toString()))
+            }
+        }
 
         val xpNext = view.fields["xpNext"]?.toIntOrNull() ?: 0
         val health=view.fields["health"]?.toIntOrNull()?:100
@@ -137,6 +152,32 @@ object TftBotPlanner {
         }
         return if (difficulty == NativeBotDifficulty.EASY) adjusted.reversed() else adjusted
     }
+
+    private data class ItemInfo(val id:String,val kind:String,val components:Set<String>,val effects:Map<String,Double>)
+    private fun parseItemCatalog(raw:String):Map<String,ItemInfo>{
+        if(raw.isBlank())return emptyMap()
+        val root=runCatching{com.google.gson.JsonParser.parseString(raw).asJsonObject}.getOrNull()?:return emptyMap()
+        return root.entrySet().associate{(id,value)->
+            val obj=value.asJsonObject
+            val components=runCatching{obj.get("components")?.asString.orEmpty()}.getOrDefault("").split(',').filter(String::isNotBlank).toSet()
+            val effects=runCatching{obj.get("effects")?.asString.orEmpty()}.getOrDefault("").split(',').mapNotNull{entry->
+                val key=entry.substringBefore('=').takeIf(String::isNotBlank)?:return@mapNotNull null
+                val amount=entry.substringAfter('=',"").toDoubleOrNull()?:return@mapNotNull null
+                key to amount
+            }.toMap()
+            id to ItemInfo(id,runCatching{obj.get("kind")?.asString}.getOrNull()?:"",components,effects)
+        }
+    }
+    private fun recipeScore(a:String,b:String,role:String,catalog:Map<String,ItemInfo>,strategy:Strategy):Int{
+        val recipe=catalog.values.firstOrNull{it.kind=="full"&&it.components==setOf(a,b)}
+        val effects=recipe?.effects.orEmpty()
+        val offensive=effects.filterKeys{key->key.contains("attack",true)||key.contains("power",true)||key.contains("crit",true)||key.contains("speed",true)}.values.sum()
+        val defensive=effects.filterKeys{key->key.contains("hp",true)||key.contains("defense",true)||key.contains("shield",true)||key.contains("resist",true)}.values.sum()
+        val roleFit=if(role.lowercase() in setOf("guardian","tank","fighter"))defensive else offensive
+        val tagFit=recipe?.id?.let{id->strategy.itemTags.count{id.contains(it,true)}}?:0
+        return (roleFit+tagFit*10+(if(recipe!=null)12 else 0)).toInt()
+    }
+    private fun emergencyItemSlam(view:NativeGameView,strategy:Strategy):Boolean=(view.fields["health"]?.toIntOrNull()?:100)<=((strategy.economy["emergencyHp"]?:25.0).toInt())
 
     private fun roleScore(role: String): Int = when (role.lowercase()) {
         "guardian", "tank" -> 12
