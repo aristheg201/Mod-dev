@@ -25,12 +25,7 @@ object VanillaCompanionModelRenderer {
         if (x2 <= x1 || y2 <= y1) return false
         val minecraft = Minecraft.getInstance()
         val level = minecraft.level ?: return false
-        val normalizedId = entityId.trim().lowercase()
-        if (normalizedId.isBlank()) return false
-        val id = runCatching {
-            if (':' in normalizedId) ResourceLocation.tryParse(normalizedId)
-            else ResourceLocation.fromNamespaceAndPath("minecraft", normalizedId)
-        }.getOrNull() ?: return false
+        val id = resolveEntityId(entityId) ?: return false
         val cacheKey = id.toString()
         val cached = cache[cacheKey]
         val entity = if (cached != null && cached.level === level && !cached.entity.isRemoved) {
@@ -60,6 +55,15 @@ object VanillaCompanionModelRenderer {
             )
             true
         }.getOrDefault(false)
+    }
+
+    internal fun resolveEntityId(raw: String): ResourceLocation? {
+        val normalized = raw.trim().lowercase()
+        if (normalized.isBlank()) return null
+        return runCatching {
+            if (':' in normalized) ResourceLocation.tryParse(normalized)
+            else ResourceLocation.fromNamespaceAndPath("minecraft", normalized)
+        }.getOrNull()
     }
 
     fun clear() {
