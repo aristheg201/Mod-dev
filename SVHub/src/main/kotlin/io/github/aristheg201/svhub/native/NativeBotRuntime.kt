@@ -97,7 +97,7 @@ object NativeBotRuntime {
         controllerGeneration.merge(key, 1L, Long::plus)
     }
 
-    fun isTakeover(sessionId: String, seatId: String): Boolean = Key(sessionId, seatId) in takeovers
+    fun isTakeover(sessionId: String, seatId: String): Boolean = takeovers.containsKey(Key(sessionId, seatId))
 
     /** Read by the session actor immediately before applying asynchronous bot work. */
     fun controllerGeneration(sessionId: String, seatId: String): Long =
@@ -105,7 +105,7 @@ object NativeBotRuntime {
 
     /** Permanent bots remain controlled even though they are not in [takeovers]. */
     fun isBotControlled(sessionId: String, seat: NativeSeat): Boolean =
-        seat.anyBot || Key(sessionId, seat.id) in takeovers
+        seat.anyBot || takeovers.containsKey(Key(sessionId, seat.id))
 
     fun controllerState(sessionId: String, seatId: String): ControllerState {
         val key = Key(sessionId, seatId)
