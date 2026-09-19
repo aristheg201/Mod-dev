@@ -25,14 +25,20 @@ object VanillaCompanionModelRenderer {
         if (x2 <= x1 || y2 <= y1) return false
         val minecraft = Minecraft.getInstance()
         val level = minecraft.level ?: return false
-        val cached = cache[entityId]
+        val normalizedId = entityId.trim().lowercase()
+        if (normalizedId.isBlank()) return false
+        val id = runCatching {
+            if (':' in normalizedId) ResourceLocation.tryParse(normalizedId)
+            else ResourceLocation.fromNamespaceAndPath("minecraft", normalizedId)
+        }.getOrNull() ?: return false
+        val cacheKey = id.toString()
+        val cached = cache[cacheKey]
         val entity = if (cached != null && cached.level === level && !cached.entity.isRemoved) {
             cached.entity
         } else {
-            val id = ResourceLocation.withDefaultNamespace(entityId)
-            val type = BuiltInRegistries.ENTITY_TYPE.get(id)
-            val created = type.create(level) as? LivingEntity ?: return false
-            cache[entityId] = Cached(level, created)
+            val type = BuiltInRegistries.ENTITY_TYPE.getOptional(id).orElse(null) ?: return false
+            val created = runCatching { type.create(level) as? LivingEntity }.getOrNull() ?: return false
+            cache[cacheKey] = Cached(level, created)
             created
         }
 
