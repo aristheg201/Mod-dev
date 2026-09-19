@@ -3,7 +3,7 @@
 plugins {
     java
     idea
-    id("fabric-loom") version "1.7.4"
+    id("fabric-loom") version "1.10.5"
     kotlin("jvm") version "2.2.20"
 }
 
