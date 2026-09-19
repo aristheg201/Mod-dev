@@ -5,6 +5,7 @@ import com.mojang.math.Axis
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.UiRect
+import io.github.aristheg201.svhub.ui.SceneCameras
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.language.I18n
