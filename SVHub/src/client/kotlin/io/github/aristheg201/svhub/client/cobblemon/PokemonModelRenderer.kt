@@ -60,6 +60,18 @@ object PokemonModelRenderer {
         val reason=buildList{if(texture==null)add("provider poser API exposes no texture accessor");if(layers.isEmpty())add("provider poser API exposes no layer accessor");if(labels.isEmpty())add("provider poses expose no named animation labels")}.takeIf{it.isNotEmpty()}?.joinToString("; ")
         return ProviderDiagnostics(if(reason==null)"RESOLVED" else "UNOBSERVABLE",poser.javaClass.name,poser.javaClass.name,texture,layers,labels,reason)
     }
+    data class AnimationPreviewResult(val outcome:String,val requested:String,val selected:String?,val available:Set<String>,val reason:String?)
+    fun previewAnimation(view:PokemonView,instanceId:String,semantic:String,serial:Long=System.nanoTime()):AnimationPreviewResult{
+        val diagnostics=diagnostics(view)
+        if(diagnostics.outcome=="REJECTED"||diagnostics.outcome=="FALLBACK")return AnimationPreviewResult(diagnostics.outcome,semantic,null,diagnostics.animationLabels,diagnostics.reason)
+        val available=diagnostics.animationLabels
+        if(available.isEmpty())return AnimationPreviewResult("UNOBSERVABLE",semantic,null,available,diagnostics.reason?:"provider exposes no animation labels")
+        val selected=PokemonAnimationResolver.resolve(semantic,available).firstOrNull()
+            ?:return AnimationPreviewResult("FALLBACK",semantic,null,available,"no actual poser label maps to semantic")
+        requestSceneAnimation(view,instanceId,"preview:$semantic",serial,setOf(selected))
+        return AnimationPreviewResult("RESOLVED",semantic,selected,available,null)
+    }
+
     private data class ModelKey(val species: String, val aspects: List<String>)
     private data class SceneModelKey(val instanceId: String, val species: String, val aspects: List<String>)
 
