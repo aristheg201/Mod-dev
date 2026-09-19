@@ -416,6 +416,23 @@ for (const marker of ["gui.svhub.skin.equipped", "gui.svhub.skin.removed", "gui.
 for (const marker of ["message.svhub.profile_loading", "gui.svhub.error.invalid_action", "gui.svhub.arena.select_first"]) {
   if (!nativePlatform.includes(marker)) failures.push(`NativePlatform.kt: missing semantic platform marker ${marker}`);
 }
+// Generic TFT/TD runtimes must never acquire dependencies on shipped content identifiers.
+const genericRuntimeFiles = [
+  "src/main/kotlin/io/github/aristheg201/svhub/native/game/TftBotPlanner.kt",
+  "src/main/kotlin/io/github/aristheg201/svhub/native/game/TowerDefenseSession.kt",
+  "src/main/kotlin/io/github/aristheg201/svhub/native/game/RouteCombatSystems.kt"
+];
+const shippedContentIds = [
+  "one_piece", "monsterverse", "dc_universe", "green_lantern_corps", "than_tai",
+  "sector_2814", "grand_line", "gotham_rooftops", "monster_island", "celestial_vault"
+];
+for (const relative of genericRuntimeFiles) {
+  const source = read(relative);
+  for (const id of shippedContentIds) {
+    if (source.includes(`"${id}"`)) failures.push(`${relative}: generic runtime hardcodes shipped content id ${id}`);
+  }
+}
+
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);
 console.log("SVHub 0.4.5 structural QA passed (runtime/gameplay/visual verification is separate)");

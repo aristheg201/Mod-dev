@@ -374,9 +374,10 @@ object NativeBoardSceneRenderer {
         val board = view.getAsJsonArray("board") ?: JsonArray()
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         val viewerTeam = fields.int("you", -1)
+        val arena = MinecraftArenaRegistry.definition("ludo") ?: MinecraftArenaDefinition(boardColumns = 13, boardRows = 4)
         val entities = mutableListOf<PokemonSceneEntity>()
 
-        repeat(minOf(52, board.size())) { index ->
+        repeat(minOf(arena.boardAnchors.size.takeIf { it > 0 } ?: board.size(), board.size())) { index ->
             val raw = runCatching { board[index].asString }.getOrDefault("")
             if (raw.isBlank()) return@repeat
             raw.split(',').forEach { token ->
@@ -388,8 +389,8 @@ object NativeBoardSceneRenderer {
                     id = "ludo:$teamIndex:$pieceIndex",
                     view = visual.pokemon("P${pieceIndex + 1}"),
                     label = "${teamIndex + 1}:${pieceIndex + 1}",
-                    boardX = (index % 13).toFloat(),
-                    boardY = (index / 13).toFloat(),
+                    boardX = arena.boardAnchor(index).x,
+                    boardY = arena.boardAnchor(index).y,
                     team = if (teamIndex == viewerTeam) 0 else 1,
                     yaw = visual.yaw + if (teamIndex == viewerTeam) 180f else 0f,
                     scale = visual.scale
@@ -401,14 +402,19 @@ object NativeBoardSceneRenderer {
             gui = gui,
             font = font,
             area = area,
-            columns = 13,
-            rows = 4,
+            columns = arena.boardColumns,
+            rows = arena.boardRows,
             entities = entities,
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
             camera = SceneCameras.LUDO,
             arenaId = "ludo",
-            arenaSeed = view.str("sessionId")
+            arenaSeed = view.str("sessionId"),
+            pathCells = arena.boardAnchors.indices.map { index ->
+                val point = arena.boardAnchor(index)
+                point.y.toInt() * arena.boardColumns + point.x.toInt()
+            }.toSet(),
+            pathRoute = arena.boardAnchors.map { point -> point.y.toInt() * arena.boardColumns + point.x.toInt() }
         )
         return NativeBoardSceneResult(frame, emptySet())
     }
