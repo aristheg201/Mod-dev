@@ -138,6 +138,17 @@ object TftBotPlanner {
     private data class Strategy(val preferredTeams:Set<String>,val fallbackTeams:Set<String>,val traits:Set<String>,val carryRoles:Set<String>,val itemTags:Set<String>,val augmentTags:Set<String>,val economy:Map<String,Double>){
         fun shopScore(s:Shop)= (if(s.team in preferredTeams)45 else if(s.team in fallbackTeams)15 else 0)+s.traits.split(',').count{it in traits}*18+(if(s.role in carryRoles)14 else 0)+s.tags.split(',').count{it in itemTags}*3+s.ownedCopies*9
         fun augmentScore(tags:String)=tags.split(',').count{it in augmentTags}*20
-        companion object{fun parse(raw:String):Strategy{val p=raw.split('~');fun set(i:Int)=p.getOrNull(i).orEmpty().split(',').filter(String::isNotBlank).toSet();val economy=p.getOrNull(7).orEmpty().split(',').mapNotNull{v->v.substringBefore('=').takeIf(String::isNotBlank)?.let{it to (v.substringAfter('=',"").toDoubleOrNull()?:return@mapNotNull null)}}.toMap();return Strategy(set(1),set(2),set(3),set(4),set(5),set(6),economy)}}
+        companion object {
+            fun parse(raw: String): Strategy {
+                val parts = raw.split('~')
+                fun values(index: Int) = parts.getOrNull(index).orEmpty().split(',').filter(String::isNotBlank).toSet()
+                val economy = parts.getOrNull(7).orEmpty().split(',').mapNotNull { value ->
+                    val key = value.substringBefore('=').takeIf(String::isNotBlank) ?: return@mapNotNull null
+                    val amount = value.substringAfter('=', "").toDoubleOrNull() ?: return@mapNotNull null
+                    key to amount
+                }.toMap()
+                return Strategy(values(1), values(2), values(3), values(4), values(5), values(6), economy)
+            }
+        }
     }
 }
