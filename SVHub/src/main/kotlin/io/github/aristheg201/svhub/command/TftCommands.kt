@@ -2,10 +2,10 @@ package io.github.aristheg201.svhub.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
-import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationResolver
 import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationSemantic
 import io.github.aristheg201.svhub.native.game.tft.PokemonPresentationDiagnostics
 import io.github.aristheg201.svhub.permission.SVHubPermissions
+import io.github.aristheg201.svhub.native.network.NativePlatformNetwork
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
@@ -54,7 +54,15 @@ object TftCommands {
                 .then(Commands.literal("arena").then(Commands.argument("arena",StringArgumentType.word()).suggests{_,b->TftSetRegistry.active().rules.arenas.forEach(b::suggest);b.buildFuture()}.executes{ctx->ctx.source.sendSuccess({Component.literal("Arena ${StringArgumentType.getString(ctx,"arena")} is available for preview")},false);1})))
                 .then(Commands.literal("animation").then(unitArgument().then(Commands.argument("semantic",StringArgumentType.word()).suggests{_,b->PokemonAnimationSemantic.entries.forEach{b.suggest(it.name)};b.buildFuture()}.executes{ctx->
                     val id=StringArgumentType.getString(ctx,"unit");val semantic=runCatching{PokemonAnimationSemantic.valueOf(StringArgumentType.getString(ctx,"semantic").uppercase())}.getOrNull()
-                    if(semantic==null){ctx.source.sendFailure(Component.literal("Unknown semantic"));0}else{val unit=TftSetRegistry.active().units.first{it.id==id};val labels=listOf(unit.ability.id,unit.ability.name.lowercase().replace(" ","_")).filter(String::isNotBlank);val resolved=PokemonAnimationResolver.resolve(semantic,labels);ctx.source.sendSuccess({Component.literal("${unit.id} ${resolved.semantic}: selected=${resolved.selectedLabel?:"poser-default"} labels=${resolved.availableLabels} outcome=${resolved.outcome}")},false);1}
+                    if(semantic==null){ctx.source.sendFailure(Component.literal("Unknown semantic"));0}else{
+                        val player=ctx.source.player
+                        if(player==null){ctx.source.sendFailure(Component.literal("Client poser preview requires a player source"));0}else{
+                            val unit=TftSetRegistry.active().units.first{it.id==id}
+                            NativePlatformNetwork.requestTftPreview(player,unit.id,unit.presentation.species,unit.presentation.resolverAspects(),semantic.name)
+                            ctx.source.sendSuccess({Component.literal("Requested live client poser preview for ${unit.id} ${semantic.name}")},false)
+                            1
+                        }
+                    }
                     }
                 )))
         dispatcher.register(Commands.literal("svhub").then(admin))
