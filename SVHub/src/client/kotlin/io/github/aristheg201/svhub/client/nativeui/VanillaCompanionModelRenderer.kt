@@ -57,7 +57,7 @@ object VanillaCompanionModelRenderer {
         }.getOrDefault(false)
     }
 
-    internal fun resolveEntityId(raw: String): ResourceLocation? {
+    fun resolveEntityId(raw: String): ResourceLocation? {
         val normalized = raw.trim().lowercase()
         if (normalized.isBlank()) return null
         return runCatching {
