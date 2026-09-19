@@ -26,12 +26,16 @@ class NativeArcadeSessionStoreTest {
             createdAtEpochMs = 1234L,
             seats = seats,
             humanActions = mapOf(first to 1, second to 0),
+            controllers = mapOf(first to NativeBotRuntime.ControllerState(4L, io.github.aristheg201.svhub.native.game.NativeBotDifficulty.HARD)),
+            reconnectRemainingMs = mapOf(first to 42_000L),
             state = game.snapshotState(),
             savedAtEpochMs = 5678L
         )
         val decoded = assertNotNull(NativeArcadeSessionStore.decode(NativeArcadeSessionStore.encode(record)))
         assertEquals(record.sessionId, decoded.sessionId)
         assertEquals(record.humanActions, decoded.humanActions)
+        assertEquals(record.controllers, decoded.controllers)
+        assertEquals(record.reconnectRemainingMs, decoded.reconnectRemainingMs)
 
         val restored = NativeGameRestorer.restore(
             decoded.gameId,

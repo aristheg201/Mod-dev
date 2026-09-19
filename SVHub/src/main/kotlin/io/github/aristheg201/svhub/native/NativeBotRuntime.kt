@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 object NativeBotRuntime {
+    data class ControllerState(val generation: Long, val takeoverDifficulty: NativeBotDifficulty? = null)
     private data class Key(val sessionId: String, val seatId: String)
     private val pending = ConcurrentHashMap.newKeySet<Key>()
     private val nextThinkAt = ConcurrentHashMap<Key, Long>()
@@ -39,7 +40,7 @@ object NativeBotRuntime {
         sessionId: String,
         seats: List<NativeSeat>,
         views: Map<String, NativeGameView>,
-        apply: (sessionId: String, seatId: String, candidates: List<NativeBotAction>) -> Unit,
+        apply: (sessionId: String, seatId: String, controllerGeneration: Long, sourceRevision: Long, candidates: List<NativeBotAction>) -> Unit,
         nowMillis: Long = System.currentTimeMillis()
     ) {
         val pool = executor ?: return
@@ -66,7 +67,9 @@ object NativeBotRuntime {
                     }
                     pending.remove(key)
                     plan.onSuccess { result ->
-                        if (result.candidates.isNotEmpty() && (controllerGeneration[key] ?: 0L) == generation && (seat.anyBot || key in takeovers)) apply(sessionId, seat.id, result.candidates)
+                        if (result.candidates.isNotEmpty() && (controllerGeneration[key] ?: 0L) == generation && (seat.anyBot || key in takeovers)) {
+                            apply(sessionId, seat.id, generation, view.revision, result.candidates)
+                        }
                     }
                         .onFailure { error -> SVHub.LOGGER.warn("Native bot planner failed for {} / {}", view.gameId, sessionId, error) }
                 }
@@ -95,6 +98,26 @@ object NativeBotRuntime {
     }
 
     fun isTakeover(sessionId: String, seatId: String): Boolean = Key(sessionId, seatId) in takeovers
+
+    /** Read by the session actor immediately before applying asynchronous bot work. */
+    fun controllerGeneration(sessionId: String, seatId: String): Long =
+        controllerGeneration[Key(sessionId, seatId)] ?: 0L
+
+    /** Permanent bots remain controlled even though they are not in [takeovers]. */
+    fun isBotControlled(sessionId: String, seat: NativeSeat): Boolean =
+        seat.anyBot || Key(sessionId, seat.id) in takeovers
+
+    fun controllerState(sessionId: String, seatId: String): ControllerState {
+        val key = Key(sessionId, seatId)
+        return ControllerState(controllerGeneration[key] ?: 0L, takeovers[key])
+    }
+
+    fun restoreController(sessionId: String, seatId: String, state: ControllerState) {
+        val key = Key(sessionId, seatId)
+        controllerGeneration[key] = state.generation.coerceAtLeast(0L)
+        state.takeoverDifficulty?.let { takeovers[key] = it }
+        nextThinkAt[key] = 0L
+    }
 
     fun shutdown() {
         val pool = synchronized(this) { val current = executor; executor = null; current }

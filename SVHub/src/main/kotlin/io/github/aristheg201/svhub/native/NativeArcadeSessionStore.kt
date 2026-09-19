@@ -27,6 +27,8 @@ object NativeArcadeSessionStore {
         val seats: List<NativeSeat>,
         val humanActions: Map<String, Int> = emptyMap(),
         val forfeited: Set<String> = emptySet(),
+        val controllers: Map<String, NativeBotRuntime.ControllerState> = emptyMap(),
+        val reconnectRemainingMs: Map<String, Long> = emptyMap(),
         val state: JsonObject,
         val savedAtEpochMs: Long = System.currentTimeMillis()
     )
@@ -132,7 +134,10 @@ object NativeArcadeSessionStore {
     internal fun decode(text: String): StoredSession? {
         if (text.length > MAX_JSON_CHARS) return null
         return runCatching {
-            gson.fromJson(text, StoredSession::class.java)
+            val json = gson.fromJson(text, JsonObject::class.java)
+            if (!json.has("controllers")) json.add("controllers", JsonObject())
+            if (!json.has("reconnectRemainingMs")) json.add("reconnectRemainingMs", JsonObject())
+            gson.fromJson(json, StoredSession::class.java)
         }.getOrNull()?.takeIf(::valid)
     }
 
@@ -256,6 +261,8 @@ object NativeArcadeSessionStore {
         if (record.seats.any { it.id.isBlank() || it.id.length > 160 || it.name.length > 96 }) return false
         if (record.humanActions.any { (id, count) -> id.length > 160 || count !in 0..1_000_000 }) return false
         if (record.forfeited.any { it.length > 160 }) return false
+        if (record.controllers.any { (id, state) -> id.length > 160 || state.generation < 0 }) return false
+        if (record.reconnectRemainingMs.any { (id, remaining) -> id.length > 160 || remaining < 0 }) return false
         return record.state.size() > 0
     }
 

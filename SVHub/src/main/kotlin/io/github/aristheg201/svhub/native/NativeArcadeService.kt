@@ -38,6 +38,7 @@ object NativeArcadeService {
     private val sessions = linkedMapOf<String, NativeGameEngineRuntime.Handle>()
     private val active = linkedMapOf<UUID, String>()
     private val queues = games.associate { it.id to ArrayDeque<UUID>() }.toMutableMap()
+    private val tftCollectionDeadline = hashMapOf<String, Long>()
     private val rewarding = hashSetOf<String>()
     private val finishedAt = hashMapOf<String, Long>()
     private val disconnectedUntil = hashMapOf<UUID, Long>()
@@ -149,14 +150,18 @@ object NativeArcadeService {
                     if (ready.size < TftLifecyclePolicy.PLAYER_SLOTS) ready += live else retained += id
                 }
                 q.addAll(retained)
-                val fill = TftLifecyclePolicy.botFillCount(ready.size)
-                if (fill == null) {
+                val now = System.currentTimeMillis()
+                val deadline = tftCollectionDeadline[gameId]
+                val decision = TftLifecyclePolicy.decision(ready.size, deadline, now)
+                if (decision != TftLifecyclePolicy.CollectionDecision.START) {
                     ready.forEach { if (!q.contains(it.uuid)) q.addLast(it.uuid) }
+                    if (decision == TftLifecyclePolicy.CollectionDecision.COLLECTING && deadline == null) {
+                        tftCollectionDeadline[gameId] = now + TftLifecyclePolicy.COLLECTION_WINDOW_MS
+                    }
                     return Result(true, "gui.svhub.arcade.queued", ready.map { it.uuid }.toSet())
                 }
-                val seats = ready.take(TftLifecyclePolicy.PLAYER_SLOTS).map(::realSeat).toMutableList()
-                repeat(fill) { index -> seats += botSeat("TFT Bot ${index + 1}", NativeBotDifficulty.NORMAL) }
-                val handle = register(player.server, create(gameId, seats), mode)
+                tftCollectionDeadline.remove(gameId)
+                val handle = startTftPvp(player.server, ready)
                 return Result(true, "gui.svhub.arcade.matched", realPlayers(handle))
             }
             while (q.isNotEmpty()) {
@@ -221,6 +226,7 @@ object NativeArcadeService {
     fun tick(server: MinecraftServer, now: Long = System.currentTimeMillis()): Map<UUID, String> {
         NativeArcadeSessionStore.tick(now)
         restoreLoadedSessions(server, now)
+        launchExpiredTftCollection(server, now)
         sessions.values.toList().forEach { handle ->
             if (!handle.finished) handle.submitTick(now) else finishIfNeeded(handle)
             persistSession(handle, now, force = false)
@@ -272,6 +278,7 @@ object NativeArcadeService {
         sessions.clear()
         active.clear()
         queues.values.forEach { it.clear() }
+        tftCollectionDeadline.clear()
         rewarding.clear()
         finishedAt.clear()
         disconnectedUntil.clear()
@@ -383,6 +390,12 @@ object NativeArcadeService {
                 seats = handle.seats.toList(),
                 humanActions = m.humanActions.mapKeys { it.key.toString() },
                 forfeited = m.forfeited.mapTo(linkedSetOf()) { it.toString() },
+                controllers = handle.seats.filterNot { it.anyBot }.associate { seat ->
+                    seat.id to NativeBotRuntime.controllerState(handle.sessionId, seat.id)
+                },
+                reconnectRemainingMs = realPlayers(handle).mapNotNull { id ->
+                    disconnectedUntil[id]?.let { deadline -> id.toString() to (deadline - now).coerceAtLeast(0L) }
+                }.toMap(),
                 state = state,
                 savedAtEpochMs = now
             )
@@ -454,9 +467,17 @@ object NativeArcadeService {
                 restoredMeta = restoredMeta,
                 persistImmediately = false
             )
+            record.controllers.forEach { (seatId, controller) ->
+                if (record.seats.any { it.id == seatId && !it.anyBot }) {
+                    NativeBotRuntime.restoreController(record.sessionId, seatId, controller)
+                }
+            }
             realIds.forEach { id ->
                 if (server.playerList.getPlayer(id) == null) {
-                    disconnectedUntil[id] = now + RESTART_RECONNECT_GRACE_MS
+                    val remaining = record.reconnectRemainingMs[id.toString()]
+                        ?.coerceIn(0L, RESTART_RECONNECT_GRACE_MS)
+                        ?: RESTART_RECONNECT_GRACE_MS
+                    disconnectedUntil[id] = now + remaining
                 } else {
                     disconnectedUntil.remove(id)
                     asyncMessages[id] = "gui.svhub.arcade.restored"
@@ -468,6 +489,35 @@ object NativeArcadeService {
     }
 
     private fun realPlayers(handle: NativeGameEngineRuntime.Handle) = handle.seats.asSequence().filterNot { it.anyBot }.mapNotNull { runCatching { UUID.fromString(it.id) }.getOrNull() }.toSet()
+
+    private fun launchExpiredTftCollection(server: MinecraftServer, now: Long) {
+        val deadline = tftCollectionDeadline["tft"] ?: return
+        val q = queues.getValue("tft")
+        val ready = q.mapNotNull(server.playerList::getPlayer)
+            .distinctBy { it.uuid }
+            .filterNot { active.containsKey(it.uuid) }
+            .take(TftLifecyclePolicy.PLAYER_SLOTS)
+        when (TftLifecyclePolicy.decision(ready.size, deadline, now)) {
+            TftLifecyclePolicy.CollectionDecision.WAITING_FOR_MINIMUM -> tftCollectionDeadline.remove("tft")
+            TftLifecyclePolicy.CollectionDecision.COLLECTING -> Unit
+            TftLifecyclePolicy.CollectionDecision.START -> {
+                ready.forEach { q.remove(it.uuid) }
+                tftCollectionDeadline.remove("tft")
+                val handle = startTftPvp(server, ready)
+                realPlayers(handle).forEach { asyncMessages[it] = "gui.svhub.arcade.matched" }
+            }
+        }
+    }
+
+    private fun startTftPvp(server: MinecraftServer, humans: List<ServerPlayer>): NativeGameEngineRuntime.Handle {
+        val selected = humans.distinctBy { it.uuid }.take(TftLifecyclePolicy.PLAYER_SLOTS)
+        require(selected.size >= TftLifecyclePolicy.MINIMUM_HUMANS)
+        val seats = selected.map(::realSeat).toMutableList()
+        repeat(TftLifecyclePolicy.PLAYER_SLOTS - seats.size) { index ->
+            seats += botSeat("TFT Bot ${index + 1}", NativeBotDifficulty.NORMAL)
+        }
+        return register(server, create("tft", seats), "pvp")
+    }
     private fun realSeat(p: ServerPlayer) = NativeSeat(id = p.uuid.toString(), name = p.gameProfile.name)
     private fun botSeat(name: String, difficulty: NativeBotDifficulty) = NativeSeat(id = "bot:${UUID.randomUUID()}", name = name, bot = false, managedBot = true, botDifficulty = difficulty)
     private fun difficultyFor(mode: String) = when (mode) { "bot_easy" -> NativeBotDifficulty.EASY; "bot_hard" -> NativeBotDifficulty.HARD; else -> NativeBotDifficulty.NORMAL }

@@ -45,8 +45,8 @@ object NativeGameEngineRuntime {
         fun viewJsonFor(viewerId: String): JsonElement? = actor.viewJson[viewerId]
         fun submitAction(seatId: String, action: String, args: Map<String, String>, bot: Boolean = false): Boolean =
             actor.submitAction(seatId, action, args, bot)
-        fun submitBotCandidates(seatId: String, candidates: List<NativeBotAction>): Boolean =
-            actor.submitBotCandidates(seatId, candidates)
+        fun submitBotCandidates(seatId: String, controllerGeneration: Long, sourceRevision: Long, candidates: List<NativeBotAction>): Boolean =
+            actor.submitBotCandidates(seatId, controllerGeneration, sourceRevision, candidates)
         fun submitTick(nowMillis: Long): Boolean = actor.submitTick(nowMillis)
         fun snapshotState(): JsonObject = actor.stateJson.deepCopy()
         val snapshotEpochMs: Long get() = actor.stateEpochMs
@@ -55,7 +55,13 @@ object NativeGameEngineRuntime {
 
     private sealed interface Command {
         data class Act(val seatId: String, val action: String, val args: Map<String, String>, val bot: Boolean) : Command
-        data class BotCandidates(val seatId: String, val candidates: List<NativeBotAction>) : Command
+        data class BotCandidates(
+            val sessionId: String,
+            val seatId: String,
+            val controllerGeneration: Long,
+            val sourceRevision: Long,
+            val candidates: List<NativeBotAction>
+        ) : Command
         data class Tick(val nowMillis: Long) : Command
     }
 
@@ -84,8 +90,8 @@ object NativeGameEngineRuntime {
         fun submitAction(seatId: String, action: String, args: Map<String, String>, bot: Boolean): Boolean =
             enqueue(Command.Act(seatId, action, args.toMap(), bot))
 
-        fun submitBotCandidates(seatId: String, candidates: List<NativeBotAction>): Boolean =
-            enqueue(Command.BotCandidates(seatId, candidates.toList()))
+        fun submitBotCandidates(seatId: String, controllerGeneration: Long, sourceRevision: Long, candidates: List<NativeBotAction>): Boolean =
+            enqueue(Command.BotCandidates(sessionId, seatId, controllerGeneration, sourceRevision, candidates.toList()))
 
         private fun enqueue(command: Command): Boolean {
             if (closed.get() || !queue.offer(command)) return false
@@ -148,6 +154,16 @@ object NativeGameEngineRuntime {
         }
 
         private fun processBotCandidates(command: Command.BotCandidates) {
+            val seat = seats.firstOrNull { it.id == command.seatId }
+            val currentRevision = views[command.seatId]?.revision
+            if (command.sessionId != sessionId || seat == null ||
+                !NativeBotRuntime.isBotControlled(sessionId, seat) ||
+                NativeBotRuntime.controllerGeneration(sessionId, seat.id) != command.controllerGeneration ||
+                currentRevision == null || currentRevision != command.sourceRevision
+            ) {
+                staleBotResults.incrementAndGet()
+                return
+            }
             var final = NativeGameResult(false, false, "Bot has no valid action")
             var action: String? = null
             for (candidate in command.candidates.take(MAX_BOT_CANDIDATES_TO_VALIDATE)) {
@@ -211,8 +227,8 @@ object NativeGameEngineRuntime {
 
         private fun scheduleBots() {
             if (closed.get() || finished) return
-            NativeBotRuntime.considerSnapshot(sessionId, seats, views, { _, seatId, candidates ->
-                submitBotCandidates(seatId, candidates)
+            NativeBotRuntime.considerSnapshot(sessionId, seats, views, { _, seatId, generation, revision, candidates ->
+                submitBotCandidates(seatId, generation, revision, candidates)
             })
         }
     }
@@ -220,6 +236,7 @@ object NativeGameEngineRuntime {
     private val gson = Gson()
     private val actors = ConcurrentHashMap<String, Actor>()
     private val threadCounter = AtomicInteger()
+    private val staleBotResults = AtomicInteger()
     @Volatile private var executor: ThreadPoolExecutor? = null
 
     fun start() {
@@ -252,6 +269,8 @@ object NativeGameEngineRuntime {
         val pool = synchronized(this) { val current = executor; executor = null; current }
         pool?.shutdownNow()
     }
+
+    fun staleBotResultCount(): Int = staleBotResults.get()
 
     private const val MAX_COMMANDS_PER_SLICE = 32
     private const val MAX_BOT_CANDIDATES_TO_VALIDATE = 16
