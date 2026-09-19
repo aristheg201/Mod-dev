@@ -126,7 +126,7 @@ object MinecraftArenaRegistry {
         }.getOrNull()
     }
 
-    internal fun parse(root: JsonObject): MinecraftArenaDefinition {
+    fun parse(root: JsonObject): MinecraftArenaDefinition {
         val metadata = root.getAsJsonObject("metadata") ?: JsonObject()
         val camera = metadata.getAsJsonObject("camera") ?: JsonObject()
         val bounds = region(metadata, "arenaBounds", region(metadata, "tacticianRegion", ArenaRegion(-1f,-1f,7f,8f)))
