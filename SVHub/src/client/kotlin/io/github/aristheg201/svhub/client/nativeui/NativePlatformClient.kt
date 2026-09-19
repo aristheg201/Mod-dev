@@ -6,6 +6,11 @@ import io.github.aristheg201.svhub.native.network.NativeCloseC2S
 import io.github.aristheg201.svhub.native.network.NativeCloseS2C
 import io.github.aristheg201.svhub.native.network.NativeOpenS2C
 import io.github.aristheg201.svhub.native.network.NativeStateS2C
+import io.github.aristheg201.svhub.native.network.NativeTftPreviewS2C
+import io.github.aristheg201.svhub.native.network.NativeTftPreviewResultC2S
+import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
+import io.github.aristheg201.svhub.client.cobblemon.PokemonView
+import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationSemantic
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
@@ -45,6 +50,36 @@ object NativePlatformClient {
                     current.prepareForServerReplacement()
                     minecraft.setScreen(null)
                 }
+            }
+        }
+        ClientPlayNetworking.registerGlobalReceiver(NativeTftPreviewS2C.TYPE) { payload, context ->
+            context.client().execute {
+                val semantic=runCatching{PokemonAnimationSemantic.valueOf(payload.semantic.uppercase())}.getOrNull()
+                val view=PokemonView(
+                    key="svhub-preview:${payload.requestId}",
+                    route="",
+                    speciesId=payload.species,
+                    aspects=payload.aspects.split(',').filter(String::isNotBlank).toSet(),
+                    displayName=payload.label,
+                    dexNumber=0,
+                    fakemon=payload.species.substringBefore(':')!="cobblemon"
+                )
+                val message=if(semantic==null){
+                    "${payload.label}: REJECTED semantic=${payload.semantic}"
+                }else{
+                    val diagnostics=PokemonModelRenderer.diagnostics(view)
+                    val preview=PokemonModelRenderer.previewAnimation(view,"diagnostic:${payload.requestId}",semantic)
+                    buildString{
+                        append(payload.label).append(": outcome=").append(preview.outcome)
+                        append(" poser=").append(diagnostics.poser?:"UNOBSERVABLE")
+                        append(" texture=").append(diagnostics.texture?:"UNOBSERVABLE")
+                        append(" layers=").append(diagnostics.layers)
+                        append(" labels=").append(preview.available)
+                        append(" selected=").append(preview.selected?:"poser-default")
+                        diagnostics.reason?.let{append(" reason=").append(it)}
+                    }
+                }
+                ClientPlayNetworking.send(NativeTftPreviewResultC2S(payload.requestId,message))
             }
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> reset() }
