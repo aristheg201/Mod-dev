@@ -272,7 +272,7 @@ object TftGameRenderer {
     private data class PlayerLine(val id: String, val name: String, val hp: Int, val level: Int, val placement: Int, val eliminated: Boolean)
     private data class TraitLine(val id: String, val name: String, val count: Int, val active: Int, val next: Int, val description: String)
     private data class AugmentChoice(val id: String, val name: String, val description: String)
-    private data class DraftOffer(val index: Int, val unitId: String, val species: String, val item: String, val takenBy: String, val unlocked: Boolean, val cost: Int)
+    private data class DraftOffer(val index: Int, val unitId: String, val species: String, val item: String, val takenBy: String, val unlocked: Boolean, val cost: Int, val x: Float, val y: Float, val aspects: Set<String>)
 
     data class Hooks(
         val control: (UiRect, String, Boolean, () -> Unit) -> Unit,
@@ -325,13 +325,16 @@ object TftGameRenderer {
         renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
         resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
         resolved.players?.let { renderPlayers(gui, font, it, players, hooks) }
-        renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+        if (phase == "draft" && draft.isNotEmpty()) {
+            renderCarouselScene(gui, font, resolved.board, draft, fields, ui, hooks, mouseX, mouseY, view.str("sessionId"), view.long("revision"))
+        } else {
+            renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+        }
         renderAugmentHud(gui, font, resolved.board, fields, ui, mouseX, mouseY, hooks)
         renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
         if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
-        if (phase == "draft" && draft.isNotEmpty()) renderDraftOverlay(gui, font, resolved.board, draft, hooks)
         ui.tooltip()?.let { renderHoverTooltip(gui, font, area, it, mouseX, mouseY) }
     }
 
@@ -417,6 +420,11 @@ object TftGameRenderer {
         arenaSeed: String
     ) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, 0xFF0D171A.toInt())
+        val columns = fields.int("boardColumns", 7).coerceIn(2, 12)
+        val playerRows = fields.int("boardRows", 4).coerceIn(2, 8)
+        val combatRows = playerRows * 2
+        val formationCells = columns * playerRows
+        val benchSlots = fields.int("benchSlots", 9).coerceIn(1, 24)
 
         val now = System.currentTimeMillis()
         val visibleUnits = if (phase == "combat") {
@@ -431,8 +439,8 @@ object TftGameRenderer {
                 id = "tft:" + unit.instanceId,
                 view = view,
                 label = shortUnit(unit.unitId),
-                boardX = (index % 7).toFloat(),
-                boardY = (index / 7).toFloat(),
+                boardX = (index % columns).toFloat(),
+                boardY = (index / columns).toFloat(),
                 team = unit.team,
                 yaw = if (unit.team == 0) 0f else 180f,
                 scale = if (unit.star >= 3) 1.03f else 0.90f,
@@ -450,7 +458,7 @@ object TftGameRenderer {
                 view = pokemonView(unit.species, unit.aspects, unit.unitId),
                 label = shortUnit(unit.unitId),
                 boardX = unit.index * 0.75f,
-                boardY = 8.8f,
+                boardY = combatRows + 0.8f,
                 scale = 0.65f,
                 star = unit.star
             )
@@ -480,36 +488,36 @@ object TftGameRenderer {
         ui.pruneCombat(activeIds)
 
         val selectedCells = if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
-            setOf(28 + ui.selectedIndex!!)
+            setOf(formationCells + ui.selectedIndex!!)
         } else emptySet()
         val legalCells = if (canEdit && (ui.selectedOrigin != null || ui.selectedItem != null)) {
-            (28 until 56).toSet()
+            (formationCells until formationCells * 2).toSet()
         } else emptySet()
 
         val frame = PokemonScene3D.render(
             gui = gui,
             font = font,
             area = rect.inset(4),
-            columns = 7,
-            rows = 8,
             entities = entities + benchEntities,
             state = ui.scene,
+            columns = columns,
+            rows = combatRows,
             selectedCells = selectedCells,
             legalCells = legalCells,
-            teamSplitRow = 4,
+            teamSplitRow = playerRows,
             camera = SceneCameras.TFT,
             effects = effectSignals,
             nativeAnimations = nativeAnimations,
-            arenaId = "tft",
+            arenaId = fields.str("arenaId", "kanto_stadium"),
             arenaSeed = arenaSeed,
-            platforms = (0..8).map { index -> ScenePlatform(index * 0.75f, 8.8f,
+            platforms = (0 until benchSlots).map { index -> ScenePlatform(index * 0.75f, combatRows + 0.8f,
                 selected = ui.selectedOrigin == "bench" && ui.selectedIndex == index) },
             extraRows = 2
         )
 
         val benchByIndex = bench.associateBy { it.index }
-        repeat(9) { index ->
-            val point = frame.layout.project(index * 0.75f, 8.8f)
+        repeat(benchSlots) { index ->
+            val point = frame.layout.project(index * 0.75f, combatRows + 0.8f)
             val w = max(14, frame.layout.tileWidth * 2 / 3)
             val h = max(16, frame.layout.tileHeight * 2)
             val hit = UiRect(point.x.roundToInt() - w / 2, point.y.roundToInt() - h, w, h + 8)
@@ -549,8 +557,8 @@ object TftGameRenderer {
             }
 
         if (canEdit) {
-            for (index in 28 until 56) {
-                val local = index - 28
+            for (index in formationCells until formationCells * 2) {
+                val local = index - formationCells
                 val token = units[index]
                 hooks.hit(frame.layout.hitBox(index)) {
                     if (ui.selectedItem != null && token != null && token.team == 0) {
@@ -628,9 +636,10 @@ object TftGameRenderer {
 
         val cards = view.getAsJsonArray("cards")
         if (cards != null && cards.size() > 0) {
+            val shopSlots = fields.int("shopSlots", 5).coerceIn(1, 12)
             val gap = 3
-            val cardW = ((rect.width - gap * 4) / 5).coerceAtLeast(26)
-            repeat(min(5, cards.size())) { index ->
+            val cardW = ((rect.width - gap * (shopSlots - 1)) / shopSlots).coerceAtLeast(26)
+            repeat(min(shopSlots, cards.size())) { index ->
                 val card = cards[index].asJsonObject
                 val cardRect = UiRect(rect.x + index * (cardW + gap), shopY, cardW, shopH)
                 val cost = card.int("value", 1)
@@ -718,24 +727,40 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderDraftOverlay(gui: GuiGraphics, font: Font, board: UiRect, offers: List<DraftOffer>, hooks: Hooks) {
-        val root = board.inset(8)
-        gui.fill(root.x, root.y, root.right, root.bottom, 0xE80B1417.toInt())
-        gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), root.x + root.width / 2, root.y + 5, gold)
-        val cols = if (root.width >= 330) 5 else 3
-        val gap = 4
-        val cellW = (root.width - gap * (cols - 1)) / cols
-        val rows = (offers.size + cols - 1) / cols
-        val cellH = ((root.height - 20 - gap * (rows - 1)) / rows.coerceAtLeast(1)).coerceAtLeast(28)
-        offers.forEachIndexed { i, offer ->
-            val rect = UiRect(root.x + (i % cols) * (cellW + gap), root.y + 18 + (i / cols) * (cellH + gap), cellW, cellH)
-            val taken = offer.takenBy.isNotBlank()
-            gui.fill(rect.x, rect.y, rect.right, rect.bottom, if (taken) 0xFF172023.toInt() else panel2)
-            gui.fill(rect.x, rect.y, rect.x + 3, rect.bottom, if (taken) muted else costColor(offer.cost))
-            gui.drawString(font, fit(font, offer.unitId, rect.width - 8), rect.x + 6, rect.y + 5, if (taken) muted else text, true)
-            gui.drawString(font, itemGlyph(offer.item), rect.x + 6, rect.bottom - 11, gold, false)
-            if (!taken && offer.unlocked) hooks.hit(rect) { hooks.action("draft_pick", mapOf("index" to offer.index.toString())) }
+    private fun renderCarouselScene(gui: GuiGraphics, font: Font, board: UiRect, offers: List<DraftOffer>, fields: JsonObject,
+        ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int, arenaSeed: String, revision: Long) {
+        val entities = offers.filter { it.takenBy.isBlank() }.map { offer -> PokemonSceneEntity(
+            id = "carousel:${offer.index}", view = pokemonView(offer.species, offer.aspects, offer.unitId),
+            label = shortUnit(offer.unitId), boardX = offer.x + 5f, boardY = offer.y + 5f,
+            scale = 0.82f + offer.cost * 0.025f, star = 1, motionSerial = revision
+        ) }
+        val frame = PokemonScene3D.render(gui, font, board.inset(4), 10, 10, entities, ui.scene,
+            camera = SceneCameras.TFT, arenaId = fields.str("arenaId", "tft"), arenaSeed = "carousel:$arenaSeed", extraRows = 1)
+        gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), board.x + board.width / 2, board.y + 5, gold)
+        val pos = fields.str("carouselPosition").split(',')
+        val playerX = pos.getOrNull(0)?.toFloatOrNull() ?: 0f
+        val playerY = pos.getOrNull(1)?.toFloatOrNull() ?: 0f
+        val tacticianPoint = frame.layout.project(playerX + 5f, playerY + 5f)
+        val tacticianBox = max(22, min(48, board.width / 9))
+        VanillaCompanionModelRenderer.render(gui, fields.str("tacticianEntity"), tacticianPoint.x.roundToInt() - tacticianBox / 2,
+            tacticianPoint.y.roundToInt() - tacticianBox, tacticianPoint.x.roundToInt() + tacticianBox / 2,
+            tacticianPoint.y.roundToInt(), true)
+        offers.filter { it.takenBy.isBlank() }.forEach { offer ->
+            val point = frame.layout.project(offer.x + 5f, offer.y + 5f)
+            val hit = UiRect(point.x.roundToInt() - 17, point.y.roundToInt() - 30, 34, 40)
+            gui.drawString(font, itemGlyph(offer.item), point.x.roundToInt() + 7, point.y.roundToInt() - 8, gold, true)
+            if (hit.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(unitTooltip(ui, offer.unitId, 1, listOf(offer.item)))
+            if (offer.unlocked && fields.str("carouselPicked") != "true") hooks.hit(hit) {
+                val dx = offer.x - playerX; val dy = offer.y - playerY
+                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                if (distance <= 0.72f) hooks.action("carousel_pick", mapOf("index" to offer.index.toString(), "revision" to revision.toString()))
+                else {
+                    val step = min(0.8f, distance)
+                    hooks.action("carousel_move", mapOf("x" to (playerX + dx / distance * step).toString(), "y" to (playerY + dy / distance * step).toString()))
+                }
+            }
         }
+        if (!offers.any { it.unlocked }) gui.drawCenteredString(font, "Release wave incoming", board.x + board.width / 2, board.bottom - 18, muted)
     }
 
     private fun renderCompactChips(gui: GuiGraphics, font: Font, area: UiRect, traits: List<TraitLine>, players: List<PlayerLine>, ui: TftUiState, mouseX: Int, mouseY: Int) {
@@ -923,7 +948,9 @@ object TftGameRenderer {
 
     private fun parseDraft(raw: String): List<DraftOffer> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
         val p = value.split('~'); if (p.size < 6) return@mapNotNull null
-        DraftOffer(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4], p[5] == "1", p.getOrNull(6)?.toIntOrNull() ?: 1)
+        DraftOffer(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4], p[5] == "1",
+            p.getOrNull(6)?.toIntOrNull() ?: 1, p.getOrNull(8)?.toFloatOrNull() ?: 0f,
+            p.getOrNull(9)?.toFloatOrNull() ?: 0f, p.getOrNull(10)?.split(',')?.filter(String::isNotBlank)?.toSet().orEmpty())
     }
 
     private fun JsonObject.actionEnabled(id: String): Boolean = getAsJsonArray("actions")?.let { arr ->

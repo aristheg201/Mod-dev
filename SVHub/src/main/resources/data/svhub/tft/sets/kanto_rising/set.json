@@ -211,7 +211,16 @@
     "benchSlots": 9,
     "boardColumns": 7,
     "boardRows": 4,
-    "maxBoardCapacity": 12
+    "maxBoardCapacity": 12,
+    "defaultArena": "kanto_stadium",
+    "arenas": [
+      "kanto_stadium",
+      "monster_island",
+      "gotham_rooftops",
+      "sector_2814",
+      "grand_line",
+      "celestial_vault"
+    ]
   },
   "roundSchedule": [
     {
@@ -491,5 +500,18 @@
       "income": true,
       "passiveXp": true
     }
-  ]
+  ],
+  "carousel": {
+    "offerCount": 9,
+    "ringRadius": 3.0,
+    "spawnRadius": 5.0,
+    "pickupRadius": 0.72,
+    "movementRadius": 5.6,
+    "maxMovePerIntent": 0.8,
+    "durationMs": 18000,
+    "releaseWaveSize": 2,
+    "releaseDelayMs": 1500,
+    "releaseOrder": "lowest_health_first",
+    "centerDecoration": "minecraft:beacon"
+  }
 }

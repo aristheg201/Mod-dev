@@ -15,6 +15,7 @@ object TftSetRegistry {
     // Do not initialize the Minecraft/Fabric entrypoint just to load pure game data.
     private val logger = LoggerFactory.getLogger("SVHub/TFT")
     @Volatile private var current: TftSetDefinition? = null
+    @Volatile private var overrideFile: Path? = null
     private const val MAX_JSON_CHARS = 4 * 1024 * 1024
     private val manifestFields = setOf("schema", "id", "name", "poolSizeByCost", "xpToNextByLevel", "shopOdds")
 
@@ -22,6 +23,7 @@ object TftSetRegistry {
     fun start(configRoot: Path) {
         Files.createDirectories(configRoot)
         val override = configRoot.resolve("active-set.json")
+        overrideFile = override
         val loaded = if (Files.isRegularFile(override)) {
             try {
                 Files.newBufferedReader(override, Charsets.UTF_8).use { reader ->
@@ -38,6 +40,21 @@ object TftSetRegistry {
 
     @Synchronized
     fun active(): TftSetDefinition = current ?: bundled("kanto_rising").also { current = it }
+
+    /** Parse, resolve, validate and only then atomically publish. Existing sessions retain their pinned set object. */
+    @Synchronized
+    fun reload(): Result<TftSetDefinition> = runCatching {
+        val path = overrideFile
+        val candidate = if (path != null && Files.isRegularFile(path)) {
+            Files.newBufferedReader(path, Charsets.UTF_8).use { TftDefinitionValidator.validate(decodeSet(it, path.toString())) }
+        } else bundled("kanto_rising")
+        current = candidate
+        candidate
+    }
+
+    fun knownAspects(species: String? = null): Set<String> = active().units.asSequence()
+        .filter { species == null || it.presentation.species == species }
+        .flatMap { it.presentation.resolverAspects().asSequence() }.toSortedSet()
 
     /** Version-one manifests and embedded recovery definitions keep their XP
      * curve. Newly introduced grants come from shipped content, never Java IDs. */
@@ -65,7 +82,8 @@ object TftSetRegistry {
             components = resourceList("$root/components.json", object : TypeToken<List<TftItemComponentDefinition>>() {}),
             fullItems = resourceList("$root/full_items.json", object : TypeToken<List<TftFullItemDefinition>>() {}),
             augments = resourceList("$root/augments.json", object : TypeToken<List<TftAugmentDefinition>>() {}),
-            pveRounds = resourceList("$root/pve.json", object : TypeToken<List<TftPveRoundDefinition>>() {})
+            pveRounds = resourceList("$root/pve.json", object : TypeToken<List<TftPveRoundDefinition>>() {}),
+            lootTables = resourceList("$root/loot.json", object : TypeToken<List<TftLootTableDefinition>>() {})
         ))
     }
 

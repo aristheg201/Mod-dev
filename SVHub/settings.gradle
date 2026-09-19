@@ -6,10 +6,6 @@ pluginManagement {
         }
         gradlePluginPortal()
         mavenLocal()
-        maven {
-            name = 'Quiet Loom'
-            url = 'https://repo.jpenilla.xyz/snapshots/'
-        }
     }
 }
 rootProject.name = 'SVHub'

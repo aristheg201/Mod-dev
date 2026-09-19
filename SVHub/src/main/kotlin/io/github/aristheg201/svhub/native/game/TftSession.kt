@@ -16,7 +16,10 @@ import io.github.aristheg201.svhub.native.game.tft.TftPlayerModifier
 import io.github.aristheg201.svhub.native.game.tft.TftPlayerModifierSet
 import java.util.UUID
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /** Server-authoritative TFT rules engine for Cobblemon. */
@@ -57,7 +60,7 @@ class TftSession(
     init {
         require(seats.size in 2..8) { "Pokémon TFT requires 2-8 trainers" }
         if (restoreState == null) {
-            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, bench = MutableList(benchSlots) { null }, shop = MutableList(shopSlots) { null }, tactician = resolveTactician(tacticianSelections[seat.id])) }
+            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, bench = MutableList(benchSlots) { null }, shop = MutableList(shopSlots) { null }, tactician = resolveTactician(tacticianSelections[seat.id]), arena = set.rules.defaultArena) }
             startPlanning(System.currentTimeMillis(), firstRound = true)
         } else {
             restoreSnapshot(restoreState)
@@ -104,6 +107,8 @@ class TftSession(
                     freeRerolls = player.freeRerolls,
                     draftPicked = player.draftPicked,
                     draftUnlockRemainingMs = (player.draftUnlockAt - nowMillis).coerceAtLeast(0L),
+                    carouselX = player.carouselX,
+                    carouselY = player.carouselY,
                     lastIncome = player.lastIncome,
                     lastInterest = player.lastInterest,
                     lastStreakGold = player.lastStreakGold,
@@ -111,11 +116,13 @@ class TftSession(
                     lastXpGranted = player.lastXpGranted,
                     lastLevelsGained = player.lastLevelsGained,
                     legacyIncomePending = player.legacyIncomePending,
-                    tactician = player.tactician
+                    tactician = player.tactician,
+                    arena = player.arena,
+                    specialRewards = player.specialRewards.toList()
                 )
             },
             draftOffers = draftOffers.map { offer ->
-                DraftSnapshot(offer.index, offer.unitId, offer.itemId, offer.takenBy)
+                DraftSnapshot(offer.index, offer.unitId, offer.itemId, offer.takenBy, offer.x, offer.y)
             },
             combats = combats.values.distinctBy { System.identityHashCode(it) }.map { match ->
                 MatchSnapshot(
@@ -199,6 +206,8 @@ class TftSession(
                 freeRerolls = p.freeRerolls.coerceIn(0, 100),
                 draftPicked = p.draftPicked,
                 draftUnlockAt = now + p.draftUnlockRemainingMs.coerceIn(0L, DRAFT_TOTAL_MS),
+                carouselX = p.carouselX.takeIf(Double::isFinite) ?: 0.0,
+                carouselY = p.carouselY.takeIf(Double::isFinite) ?: 0.0,
                 lastIncome = p.lastIncome.coerceAtLeast(0),
                 lastInterest = p.lastInterest.coerceAtLeast(0),
                 lastStreakGold = p.lastStreakGold.coerceAtLeast(0),
@@ -206,7 +215,9 @@ class TftSession(
                 lastXpGranted = if (saved.schema >= 2) p.lastXpGranted else 0,
                 lastLevelsGained = if (saved.schema >= 2) p.lastLevelsGained else 0,
                 legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT,
-                tactician = resolveTactician(p.tactician)
+                tactician = resolveTactician(p.tactician),
+                arena = p.arena.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena,
+                specialRewards = p.specialRewards.take(32).toMutableList()
             )
         }
 
@@ -218,7 +229,9 @@ class TftSession(
                     offer.index,
                     offer.unitId,
                     offer.itemId,
-                    offer.takenBy?.takeIf(players::containsKey)
+                    offer.takenBy?.takeIf(players::containsKey),
+                    offer.x.takeIf(Double::isFinite) ?: carouselOfferPosition(offer.index, saved.draftOffers.size).first,
+                    offer.y.takeIf(Double::isFinite) ?: carouselOfferPosition(offer.index, saved.draftOffers.size).second
                 )
             }
 
@@ -301,13 +314,18 @@ class TftSession(
             phase = phase.id,
             turn = "",
             status = status,
-            boardWidth = 7,
-            boardHeight = 8,
+            boardWidth = set.rules.boardColumns,
+            boardHeight = set.rules.boardRows * 2,
             board = board,
             cards = cards,
             actions = actions,
             fields = linkedMapOf(
                 "set" to set.id,
+                "boardColumns" to set.rules.boardColumns.toString(),
+                "boardRows" to set.rules.boardRows.toString(),
+                "shopSlots" to set.rules.shopSlots.toString(),
+                "benchSlots" to set.rules.benchSlots.toString(),
+                "arenaId" to observed.arena,
                 "tacticianEntity" to set.tacticians.firstOrNull { it.id == observed.tactician }?.entity.orEmpty(),
                 "tacticianId" to observed.tactician,
                 "scouting" to scouting.toString(),
@@ -342,11 +360,16 @@ class TftSession(
                 "selectedAugments" to encodeSelectedAugments(observed),
                 "augmentChoices" to encodeAugmentChoices(player),
                 "draft" to encodeDraft(player),
+                "carouselPosition" to "${player.carouselX},${player.carouselY}",
+                "carouselPicked" to player.draftPicked.toString(),
+                "carouselRevision" to revision.toString(),
+                "carouselCenterDecoration" to set.carousel.centerDecoration,
                 "opponent" to opponent,
                 "lastIncome" to player.lastIncome.toString(),
                 "lastInterest" to player.lastInterest.toString(),
                 "lastStreakGold" to player.lastStreakGold.toString(),
                 "freeRerolls" to player.freeRerolls.toString(),
+                "specialRewards" to player.specialRewards.joinToString(","),
                 "canEditBoard" to (phase == Phase.PLANNING && !player.eliminated && !scouting).toString()
             ),
             log = log.toList().takeLast(12),
@@ -372,7 +395,9 @@ class TftSession(
             "sell" -> sell(player, args)
             "equip_item" -> equipItem(player, args)
             "choose_augment" -> chooseAugment(player, args["id"])
-            "draft_pick" -> draftPick(player, args["index"]?.toIntOrNull())
+            "carousel_move" -> carouselMove(player, args)
+            "carousel_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
+            "draft_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
             "resign" -> resign(player)
             else -> NativeGameResult(false, message = "Unknown TFT action")
         }
@@ -555,12 +580,28 @@ class TftSession(
         return accept("Augment selected")
     }
 
-    private fun draftPick(player: PlayerState, index: Int?): NativeGameResult {
+    private fun carouselMove(player: PlayerState, args: Map<String, String>): NativeGameResult {
+        if (phase != Phase.DRAFT || player.draftPicked) return reject("Carousel movement is not active")
+        if (System.currentTimeMillis() < player.draftUnlockAt) return reject("Carousel release is locked")
+        val x = args["x"]?.toDoubleOrNull()?.takeIf(Double::isFinite) ?: return reject("Invalid carousel X")
+        val y = args["y"]?.toDoubleOrNull()?.takeIf(Double::isFinite) ?: return reject("Invalid carousel Y")
+        val dx = x - player.carouselX; val dy = y - player.carouselY
+        val step = sqrt(dx * dx + dy * dy)
+        if (step > set.carousel.maxMovePerIntent + 1.0e-6) return reject("Impossible carousel movement")
+        if (sqrt(x * x + y * y) > set.carousel.movementRadius) return reject("Carousel boundary exceeded")
+        player.carouselX = x; player.carouselY = y; revision++
+        return accept("Carousel movement accepted")
+    }
+
+    private fun carouselPick(player: PlayerState, index: Int?, expectedRevision: Long?): NativeGameResult {
         if (phase != Phase.DRAFT) return reject("Draft is not active")
+        if (expectedRevision == null || expectedRevision != revision) return reject("Stale carousel revision")
         if (player.draftPicked) return reject("Already drafted")
         if (System.currentTimeMillis() < player.draftUnlockAt) return reject("Draft pick is not unlocked yet")
         val offer = index?.let { draftOffers.getOrNull(it) } ?: return reject("Invalid draft offer")
         if (offer.takenBy != null) return reject("Offer already taken")
+        val dx = player.carouselX - offer.x; val dy = player.carouselY - offer.y
+        if (sqrt(dx * dx + dy * dy) > set.carousel.pickupRadius) return reject("Tactician is out of pickup range")
         val unit = newOwned(offer.unitId).also { it.items += offer.itemId }
         if (!addToBenchOrBoard(player, unit)) return reject("Bench is full")
         offer.takenBy = player.id; player.draftPicked = true; combineCopies(player, offer.unitId)
@@ -576,15 +617,27 @@ class TftSession(
 
     private fun startDraft(now: Long) {
         phase = Phase.DRAFT; combats.clear(); draftOffers.clear()
-        val alive = alivePlayers().sortedBy { it.hp }
-        alive.forEachIndexed { index, p -> p.draftPicked = false; p.draftUnlockAt = now + (index / 2) * DRAFT_WAVE_MS }
-        val offerCount = max(9, alive.size + 1)
+        val alive = when (set.carousel.releaseOrder) {
+            "highest_health_first" -> alivePlayers().sortedByDescending { it.hp }
+            "seat_order" -> alivePlayers()
+            "random_seeded" -> alivePlayers().shuffled(rng)
+            else -> alivePlayers().sortedBy { it.hp }
+        }
+        alive.forEachIndexed { index, p ->
+            p.draftPicked = false
+            p.draftUnlockAt = now + (index / set.carousel.releaseWaveSize) * set.carousel.releaseDelayMs
+            val angle = Math.PI * 2.0 * index / alive.size.coerceAtLeast(1)
+            p.carouselX = cos(angle) * set.carousel.spawnRadius
+            p.carouselY = sin(angle) * set.carousel.spawnRadius
+        }
+        val offerCount = max(set.carousel.offerCount, alive.size + 1)
         repeat(offerCount) { idx ->
             val unitId = pool.reserveForLevel(7) ?: return@repeat
             val item = set.components.randomOrNull(rng)?.id ?: ""
-            draftOffers += DraftOffer(idx, unitId, item)
+            val (x, y) = carouselOfferPosition(idx, offerCount)
+            draftOffers += DraftOffer(idx, unitId, item, x = x, y = y)
         }
-        phaseEndsAt = now + DRAFT_TOTAL_MS
+        phaseEndsAt = now + set.carousel.durationMs
         bump("${roundLabel()} shared draft")
     }
 
@@ -661,7 +714,8 @@ class TftSession(
                 if (outcome.winnerTeam == 0) {
                     onWin(a)
                     val drops = playerModifiers(a).apply(TftPlayerModifier.PVE_DROP_COUNT, match.pve.componentDrops.toDouble()).toInt()
-                    repeat(drops.coerceIn(0, 6)) { set.components.randomOrNull(rng)?.id?.let(a.itemBench::add) }
+                    if (match.pve.lootTable != null) settleLoot(a, match.pve.lootTable, match.pve.lootRolls, drops)
+                    else repeat(drops.coerceIn(0, 6)) { set.components.randomOrNull(rng)?.id?.let(a.itemBench::add) }
                 } else { onLoss(a); a.hp -= PVE_LOSS_DAMAGE }
                 healFromModifiers(a); if (a.hp <= 0) eliminated += a; return@forEach
             }
@@ -768,7 +822,7 @@ class TftSession(
     }
 
     private fun buildBoardView(player: PlayerState): List<String> {
-        val cells = MutableList(56) { "" }
+        val cells = MutableList(formationCells * 2) { "" }
         val match = combatFor(player.id)
         if (phase == Phase.COMBAT && match != null) {
             val viewerTeam = if (match.aId == player.id) 0 else 1
@@ -781,7 +835,7 @@ class TftSession(
         }
         player.board.forEach { (slot, unit) ->
             val def = unitDefs[unit.unitId] ?: return@forEach
-            val cell = 28 + slot
+            val cell = formationCells + slot
             if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.presentation.species, unit.star, "-1", "-1", "0", "0", "0", def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role, "", 0, 0L, 0L).joinToString("~")
         }
         return cells
@@ -910,8 +964,13 @@ class TftSession(
         val unlocked = System.currentTimeMillis() >= player.draftUnlockAt
         return draftOffers.joinToString(";") { offer ->
             val def = unitDefs[offer.unitId]
-            listOf(offer.index, offer.unitId, def?.presentation?.species ?: "", offer.itemId, offer.takenBy ?: "", if (unlocked) 1 else 0, def?.cost ?: 1, def?.traits?.joinToString(",") ?: "").joinToString("~")
+            listOf(offer.index, offer.unitId, def?.presentation?.species ?: "", offer.itemId, offer.takenBy ?: "", if (unlocked) 1 else 0, def?.cost ?: 1, def?.traits?.joinToString(",") ?: "", offer.x, offer.y, def?.presentation?.resolverAspects()?.joinToString(",") ?: "").joinToString("~")
         }
+    }
+
+    private fun carouselOfferPosition(index: Int, count: Int): Pair<Double, Double> {
+        val angle = Math.PI * 2.0 * index / count.coerceAtLeast(1) - Math.PI / 2.0
+        return cos(angle) * set.carousel.ringRadius to sin(angle) * set.carousel.ringRadius
     }
 
     private fun traitCounts(player: PlayerState): Map<String, Int> = player.board.values.distinctBy { it.unitId }.mapNotNull { unitDefs[it.unitId] }.flatMap { it.traits }.groupingBy { it }.eachCount()
@@ -944,6 +1003,26 @@ class TftSession(
         player.lastXpGranted = xp.granted; player.lastLevelsGained = xp.levelsGained
     }
 
+    private fun settleLoot(player: PlayerState, tableId: String, configuredRolls: Int, modifiedDrops: Int) {
+        val table = set.lootTables.firstOrNull { it.id == tableId } ?: return
+        val rolls = if (configuredRolls > 0) configuredRolls else modifiedDrops
+        repeat(rolls.coerceIn(0, 20)) {
+            val total = table.entries.sumOf { entry -> entry.weight }
+            var roll = rng.nextInt(total)
+            val entry = table.entries.first { candidate -> roll -= candidate.weight; roll < 0 }
+            when (entry.type) {
+                "gold" -> player.gold = (player.gold + entry.amount).coerceAtMost(MAX_GOLD)
+                "component" -> repeat(entry.amount) { entry.value?.takeIf { id -> set.components.any { c -> c.id == id } }?.let(player.itemBench::add) }
+                "full_item" -> repeat(entry.amount) { entry.value?.takeIf { id -> set.fullItems.any { f -> f.id == id } }?.let { player.itemBench += "full:$it" } }
+                "unit" -> repeat(entry.amount) { entry.value?.takeIf(unitDefs::containsKey)?.let { id -> if (!addToBenchOrBoard(player, newOwned(id))) pool.returnCopies(id, 1) } }
+                "xp" -> grantXp(player, entry.amount)
+                "free_reroll" -> player.freeRerolls = (player.freeRerolls + entry.amount).coerceAtMost(100)
+                "choice" -> player.specialRewards += "choice:${entry.choices.joinToString("|")}"
+                "special" -> player.specialRewards += (entry.value ?: "reward")
+            }
+        }
+    }
+
     private fun xpToNext(level: Int): Int = if (level >= progression.maxLevel) 0
         else progression.xpToNextByLevel.getValue(level.toString())
     private fun playerDamage(stage: Int, survivors: List<TftCombatUnit>): Int {
@@ -970,7 +1049,7 @@ class TftSession(
     private fun newOwned(unitId: String) = TftOwnedUnit("u${nextUnitSerial++}", unitId)
     private fun copiesForStar(star: Int) = when (star) { 2 -> 3; 3 -> 9; else -> 1 }
     private fun unpackItem(item: String): List<String> = when { item.startsWith("combo:") -> item.removePrefix("combo:").split('+').filter(String::isNotBlank); item.startsWith("full:") -> set.fullItems.firstOrNull { it.id == item.removePrefix("full:") }?.components.orEmpty(); else -> listOf(item) }
-    private fun rotateCell(cell: Int): Int = 55 - cell
+    private fun rotateCell(cell: Int): Int = formationCells * 2 - 1 - cell
     private fun accept(message: String) = NativeGameResult(true, true, message)
     private fun reject(message: String) = NativeGameResult(false, false, message)
     private fun bump(message: String) { revision++; if (message.isNotBlank()) log += message; while (log.size > 40) log.removeFirst() }
@@ -1015,6 +1094,8 @@ class TftSession(
         val freeRerolls: Int,
         val draftPicked: Boolean,
         val draftUnlockRemainingMs: Long,
+        val carouselX: Double = 0.0,
+        val carouselY: Double = 0.0,
         val lastIncome: Int,
         val lastInterest: Int,
         val lastStreakGold: Int,
@@ -1022,14 +1103,18 @@ class TftSession(
         val lastXpGranted: Int,
         val lastLevelsGained: Int,
         val legacyIncomePending: Boolean,
-        val tactician: String?
+        val tactician: String?,
+        val arena: String = "",
+        val specialRewards: List<String> = emptyList()
     )
     private data class BoardSnapshot(val slot: Int, val unit: TftOwnedUnit)
     private data class DraftSnapshot(
         val index: Int,
         val unitId: String,
         val itemId: String,
-        val takenBy: String?
+        val takenBy: String?,
+        val x: Double = Double.NaN,
+        val y: Double = Double.NaN
     )
     private data class MatchSnapshot(
         val aId: String,
@@ -1049,10 +1134,13 @@ class TftSession(
         val board: MutableMap<Int, TftOwnedUnit> = linkedMapOf(), val shop: MutableList<String?>,
         val itemBench: MutableList<String> = mutableListOf(), val augments: MutableList<String> = mutableListOf(),
         val augmentChoices: MutableList<String> = mutableListOf(), var freeRerolls: Int = 0, var draftPicked: Boolean = false,
-        var draftUnlockAt: Long = 0L, var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
-        var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false, var tactician: String = ""
+        var draftUnlockAt: Long = 0L, var carouselX: Double = 0.0, var carouselY: Double = 0.0,
+        var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
+        var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false,
+        var tactician: String = "", var arena: String = "kanto_stadium",
+        val specialRewards: MutableList<String> = mutableListOf()
     )
-    private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null)
+    private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null, val x: Double = 0.0, val y: Double = 0.0)
     private data class MatchCombat(val aId:String,val bId:String?,val opponentLabel:String,val engine:TftCombatEngine,val pve:TftPveRoundDefinition?=null,val ghostOwnerId:String?=null,var resolved:Boolean=false){fun opponentNameFor(viewer:String):String=when{pve!=null->"PvE";viewer==aId->opponentLabel;bId!=null&&viewer==bId->"Opponent";else->opponentLabel}}
     private enum class Phase(val id:String){DRAFT("draft"),PLANNING("planning"),COMBAT("combat"),POST_COMBAT("post"),FINISHED("finished")}
 
@@ -1075,6 +1163,6 @@ class TftSession(
 
     companion object {
         private const val MAX_GOLD=999
-        private const val PVE_LOSS_DAMAGE=5;private const val DRAW_DAMAGE=2;private const val DRAFT_WAVE_MS=1_500L;private const val DRAFT_TOTAL_MS=10_000L
+        private const val PVE_LOSS_DAMAGE=5;private const val DRAW_DAMAGE=2;private const val DRAFT_TOTAL_MS=120_000L
     }
 }

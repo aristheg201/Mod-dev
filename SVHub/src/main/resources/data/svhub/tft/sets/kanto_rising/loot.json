@@ -1,0 +1,23 @@
+[
+  {
+    "id": "standard_pve",
+    "entries": [
+      {"type": "gold", "weight": 32, "amount": 3},
+      {"type": "component", "weight": 18, "amount": 1, "value": "bf_sword"},
+      {"type": "component", "weight": 18, "amount": 1, "value": "recurve_bow"},
+      {"type": "component", "weight": 18, "amount": 1, "value": "tear_of_goddess"},
+      {"type": "xp", "weight": 8, "amount": 2},
+      {"type": "free_reroll", "weight": 6, "amount": 1}
+    ]
+  },
+  {
+    "id": "boss_cache",
+    "entries": [
+      {"type": "full_item", "weight": 30, "amount": 1, "value": "deathblade"},
+      {"type": "unit", "weight": 20, "amount": 1, "value": "fortune_gholdengo"},
+      {"type": "gold", "weight": 25, "amount": 12},
+      {"type": "choice", "weight": 15, "amount": 1, "choices": ["bf_sword", "recurve_bow", "needlessly_large_rod"]},
+      {"type": "special", "weight": 10, "amount": 1, "value": "jackpot"}
+    ]
+  }
+]

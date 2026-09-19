@@ -113,6 +113,9 @@ class TftCombatEngine(
     private val componentDefs = set.components.associateBy { it.id }
     private val augmentDefs = set.augments.associateBy { it.id }
     private val fullItemDefs = set.fullItems.associateBy { it.id }
+    private val boardColumns = set.rules.boardColumns
+    private val playerRows = set.rules.boardRows
+    private val combatRows = playerRows * 2
     val units = mutableListOf<TftCombatUnit>()
     var elapsedMs: Long = 0L
         private set
@@ -155,7 +158,7 @@ class TftCombatEngine(
                 definition = def,
                 star = saved.star.coerceIn(1, 3),
                 items = saved.items.toList(),
-                cell = saved.cell.coerceIn(0, BOARD_COLUMNS * BOARD_ROWS - 1),
+                cell = saved.cell.coerceIn(0, boardColumns * combatRows - 1),
                 maxHp = maxHp,
                 hp = saved.hp.coerceIn(0, maxHp),
                 maxMana = maxMana,
@@ -349,16 +352,14 @@ class TftCombatEngine(
         val winner = when { a.isNotEmpty() && b.isEmpty() -> 0; b.isNotEmpty() && a.isEmpty() -> 1; timeout -> { val ar = a.sumOf { it.hp.toDouble() / it.maxHp }; val br = b.sumOf { it.hp.toDouble() / it.maxHp }; when { ar > br + 0.01 -> 0; br > ar + 0.01 -> 1; else -> null } }; else -> null }
         result = TftCombatResult(winner, a, b, timeout)
     }
-    private fun formationToCombatCell(slot: Int, team: Int): Int { val col = slot % BOARD_COLUMNS; val row = (slot / BOARD_COLUMNS).coerceIn(0, 3); return if (team == 0) (row + 4) * BOARD_COLUMNS + col else (3 - row) * BOARD_COLUMNS + (BOARD_COLUMNS - 1 - col) }
-    private fun neighbors(cell: Int): List<Int> { val row = cell / BOARD_COLUMNS; val col = cell % BOARD_COLUMNS; val offsets = if (row and 1 == 0) EVEN_NEIGHBORS else ODD_NEIGHBORS; return offsets.mapNotNull { (dc, dr) -> val nc = col + dc; val nr = row + dr; if (nc in 0 until BOARD_COLUMNS && nr in 0 until BOARD_ROWS) nr * BOARD_COLUMNS + nc else null } }
-    private fun hexDistance(a: Int, b: Int): Int { val ar = a / BOARD_COLUMNS; val ac = a % BOARD_COLUMNS; val br = b / BOARD_COLUMNS; val bc = b % BOARD_COLUMNS; val aq = ac - (ar - (ar and 1)) / 2; val bq = bc - (br - (br and 1)) / 2; val ax = aq; val az = ar; val ay = -ax - az; val bx = bq; val bz = br; val by = -bx - bz; return maxOf(abs(ax - bx), abs(ay - by), abs(az - bz)) }
+    private fun formationToCombatCell(slot: Int, team: Int): Int { val col = slot % boardColumns; val row = (slot / boardColumns).coerceIn(0, playerRows - 1); return if (team == 0) (row + playerRows) * boardColumns + col else (playerRows - 1 - row) * boardColumns + (boardColumns - 1 - col) }
+    private fun neighbors(cell: Int): List<Int> { val row = cell / boardColumns; val col = cell % boardColumns; val offsets = if (row and 1 == 0) EVEN_NEIGHBORS else ODD_NEIGHBORS; return offsets.mapNotNull { (dc, dr) -> val nc = col + dc; val nr = row + dr; if (nc in 0 until boardColumns && nr in 0 until combatRows) nr * boardColumns + nc else null } }
+    private fun hexDistance(a: Int, b: Int): Int { val ar = a / boardColumns; val ac = a % boardColumns; val br = b / boardColumns; val bc = b % boardColumns; val aq = ac - (ar - (ar and 1)) / 2; val bq = bc - (br - (br and 1)) / 2; val ax = aq; val az = ar; val ay = -ax - az; val bx = bq; val bz = br; val by = -bx - bz; return maxOf(abs(ax - bx), abs(ay - by), abs(az - bz)) }
     private fun unpackRuntimeItem(item: String): List<String> = if (item.startsWith("combo:")) item.removePrefix("combo:").split('+').filter(String::isNotBlank) else listOf(item)
     private fun merge(target: MutableMap<String, Double>, source: Map<String, Double>, prefix: String = "") { source.forEach { (key, value) -> target[prefix + key] = (target[prefix + key] ?: 0.0) + value } }
     private fun Map<String, Double>.value(key: String) = this[key] ?: 0.0
 
     companion object {
-        const val BOARD_COLUMNS = 7
-        const val BOARD_ROWS = 8
         private const val OVERTIME_START_MS = 30_000L
         private val EVEN_NEIGHBORS = arrayOf(-1 to 0, 1 to 0, -1 to -1, 0 to -1, -1 to 1, 0 to 1)
         private val ODD_NEIGHBORS = arrayOf(-1 to 0, 1 to 0, 0 to -1, 1 to -1, 0 to 1, 1 to 1)

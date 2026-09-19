@@ -22,7 +22,20 @@ try:
         data[name] = json.loads(raw)
     if not isinstance(data['set.json'], dict):
         raise ValueError('set.json must contain the manifest object, not component definitions')
-    counts = {'units.json': 74, 'teams.json': 6, 'traits.json': 28, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7}
+    manifest = data['set.json']
+    required_round_types = {'pvp', 'pve', 'augment', 'carousel', 'boss'}
+    actual_round_types = {round_['type'] for round_ in manifest.get('roundSchedule', [])}
+    if not required_round_types <= actual_round_types:
+        raise ValueError(f'Missing scheduled round types: {sorted(required_round_types - actual_round_types)}')
+    carousel = manifest.get('carousel', {})
+    if carousel.get('offerCount', 0) < 2 or carousel.get('pickupRadius', 0) <= 0 or carousel.get('releaseWaveSize', 0) < 1:
+        raise ValueError('set.json: invalid physical carousel definition')
+    arenas = set(manifest.get('rules', {}).get('arenas', []))
+    for arena in arenas:
+        path = project / 'src/main/resources/assets/svhub/arenas' / f'{arena}.json'
+        if not path.is_file() or not isinstance(json.loads(path.read_text()), dict):
+            raise ValueError(f'Missing or invalid arena {arena}')
+    counts = {'units.json': 74, 'teams.json': 6, 'traits.json': 28, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7, 'loot.json': 2}
     for name, count in counts.items():
         if not isinstance(data[name], list) or len(data[name]) != count:
             raise ValueError(f'{name}: expected {count} reviewed definitions')
@@ -42,6 +55,9 @@ try:
         members = team['members'] + team.get('bench', [])
         if not all(member['unit'] in units for member in members):
             raise ValueError(f"Unknown unit in team {team['id']}")
+        arena = team.get('arena', '').removeprefix('svhub:')
+        if arena and arena not in arenas:
+            raise ValueError(f"Unknown arena in team {team['id']}: {arena}")
     required_teams = {'svhub:monsterverse', 'svhub:dc_universe', 'svhub:green_lantern_corps', 'svhub:than_tai', 'svhub:one_piece'}
     team_ids = {team['id'] for team in data['teams.json']}
     if not required_teams <= team_ids:

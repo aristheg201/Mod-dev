@@ -4,6 +4,7 @@ import io.github.aristheg201.svhub.api.HubIntegrationDescriptor
 import io.github.aristheg201.svhub.api.SVHubApi
 import io.github.aristheg201.svhub.command.NativeCommands
 import io.github.aristheg201.svhub.command.SVHubCommands
+import io.github.aristheg201.svhub.command.TftCommands
 import io.github.aristheg201.svhub.companion.VanillaCompanionService
 import io.github.aristheg201.svhub.content.HubStore
 import io.github.aristheg201.svhub.content.V011ContentPatch
@@ -35,7 +36,7 @@ object SVHub : ModInitializer {
         VanillaCompanionService.start(configRoot.resolve("companions.json"))
         NativePlatform.start(configRoot.resolve("native"))
         PokemonRuntimeInfoService.start()
-        SVHubNetwork.registerCommon(); NativePlatformNetwork.registerCommon(); SVHubCommands.register(); NativeCommands.register()
+        SVHubNetwork.registerCommon(); NativePlatformNetwork.registerCommon(); SVHubCommands.register(); NativeCommands.register(); TftCommands.register()
         ServerTickEvents.END_SERVER_TICK.register(VanillaCompanionService::tick); ServerTickEvents.END_SERVER_TICK.register(NativePlatform::tick)
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             SVHubRuntime.server = server

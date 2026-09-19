@@ -12,6 +12,7 @@ data class TftSetDefinition(
     val postCombatSeconds: Int = 4,
     val rules: TftRulesDefinition = TftRulesDefinition(),
     val roundSchedule: List<TftRoundDefinition> = emptyList(),
+    val carousel: TftCarouselDefinition = TftCarouselDefinition(),
     val maxLevel: Int = 10,
     val poolSizeByCost: Map<String, Int> = emptyMap(),
     val xpToNextByLevel: Map<String, Int> = emptyMap(),
@@ -26,14 +27,29 @@ data class TftSetDefinition(
     val components: List<TftItemComponentDefinition> = emptyList(),
     val fullItems: List<TftFullItemDefinition> = emptyList(),
     val augments: List<TftAugmentDefinition> = emptyList(),
-    val pveRounds: List<TftPveRoundDefinition> = emptyList()
+    val pveRounds: List<TftPveRoundDefinition> = emptyList(),
+    val lootTables: List<TftLootTableDefinition> = emptyList()
 )
 
-data class TftRulesDefinition(val shopSlots: Int = 5, val benchSlots: Int = 9, val boardColumns: Int = 7, val boardRows: Int = 4, val maxBoardCapacity: Int = 12) {
+data class TftRulesDefinition(val shopSlots: Int = 5, val benchSlots: Int = 9, val boardColumns: Int = 7, val boardRows: Int = 4, val maxBoardCapacity: Int = 12, val defaultArena: String = "kanto_stadium", val arenas: Set<String> = setOf("kanto_stadium")) {
     val formationCells: Int get() = boardColumns * boardRows
 }
 
 data class TftRoundDefinition(val label: String = "", val type: String = "pvp", val planningSeconds: Int? = null, val combatSeconds: Int? = null, val income: Boolean = true, val passiveXp: Boolean = true, val pve: String? = null)
+
+data class TftCarouselDefinition(
+    val offerCount: Int = 9,
+    val ringRadius: Double = 3.0,
+    val spawnRadius: Double = 5.0,
+    val pickupRadius: Double = 0.72,
+    val movementRadius: Double = 5.6,
+    val maxMovePerIntent: Double = 0.8,
+    val durationMs: Long = 18_000,
+    val releaseWaveSize: Int = 2,
+    val releaseDelayMs: Long = 1_500,
+    val releaseOrder: String = "lowest_health_first",
+    val centerDecoration: String = "minecraft:beacon"
+)
 
 data class TftShopOdds(val level: Int = 2, val odds: List<Int> = listOf(100, 0, 0, 0, 0))
 
@@ -181,8 +197,13 @@ data class TftAugmentDefinition(
 data class TftPveRoundDefinition(
     val round: String = "1-1",
     val enemies: List<TftPveEnemyDefinition> = emptyList(),
-    val componentDrops: Int = 1
+    val componentDrops: Int = 1,
+    val lootTable: String? = null,
+    val lootRolls: Int = 0
 )
+
+data class TftLootTableDefinition(val id: String = "", val entries: List<TftLootEntryDefinition> = emptyList())
+data class TftLootEntryDefinition(val type: String = "gold", val weight: Int = 1, val amount: Int = 1, val value: String? = null, val choices: List<String> = emptyList())
 
 data class TftPveEnemyDefinition(
     val unit: String = "",
@@ -207,11 +228,18 @@ object TftDefinitionValidator {
         require(set.planningSeconds in 1..600 && set.combatSeconds in 1..600 && set.postCombatSeconds in 1..60) { "Invalid TFT phase durations" }
         require(set.rules.shopSlots in 1..12 && set.rules.benchSlots in 1..24) { "set ${set.id}.rules inventory geometry is invalid" }
         require(set.rules.boardColumns in 2..12 && set.rules.boardRows in 2..8 && set.rules.maxBoardCapacity in 1..set.rules.formationCells) { "set ${set.id}.rules board geometry is invalid" }
+        require(set.rules.defaultArena in set.rules.arenas && set.rules.arenas.all { it.matches(Regex("^[a-z0-9_.-]{1,64}$")) }) { "set ${set.id}.rules arena registry is invalid" }
         require(set.roundSchedule.isNotEmpty()) { "set ${set.id}.roundSchedule is empty" }
         require(set.roundSchedule.map { it.label }.distinct().size == set.roundSchedule.size) { "set ${set.id}.roundSchedule has duplicate labels" }
         set.roundSchedule.forEachIndexed { index, round ->
             require(round.label.isNotBlank()) { "set ${set.id}.roundSchedule[$index].label is empty" }
             require(round.type in setOf("planning", "pvp", "pve", "augment", "carousel", "boss", "special")) { "set ${set.id}.roundSchedule[$index].type is invalid: ${round.type}" }
+        }
+        with(set.carousel) {
+            require(offerCount in 2..24 && ringRadius in 1.5..8.0 && spawnRadius > ringRadius) { "set ${set.id}.carousel ring geometry is invalid" }
+            require(pickupRadius in 0.25..2.0 && movementRadius >= spawnRadius && maxMovePerIntent in 0.1..2.0) { "set ${set.id}.carousel movement bounds are invalid" }
+            require(durationMs in 5_000..120_000 && releaseWaveSize in 1..8 && releaseDelayMs in 0..20_000) { "set ${set.id}.carousel release timing is invalid" }
+            require(releaseOrder in setOf("lowest_health_first", "highest_health_first", "seat_order", "random_seeded")) { "set ${set.id}.carousel.releaseOrder is invalid" }
         }
         require(set.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid TFT set id ${set.id}" }
         require(set.units.size >= 20) { "TFT set ${set.id} requires at least 20 units" }
@@ -278,6 +306,7 @@ object TftDefinitionValidator {
             require(team.synergyTrait == null || team.synergyTrait in traitIds) { "TFT team ${team.id}.synergyTrait is unknown" }
             require(team.augments.all(augmentIds::contains)) { "TFT team ${team.id}.augments contains an unknown augment" }
             require(team.tactician == null || team.tactician in tacticianIds) { "TFT team ${team.id}.tactician is unknown" }
+            require(team.arena == null || team.arena.removePrefix("svhub:") in set.rules.arenas) { "TFT team ${team.id}.arena is unknown" }
             val positioned = team.members + team.bench
             require(team.members.mapNotNull { it.slot }.distinct().size == team.members.mapNotNull { it.slot }.size) { "TFT team ${team.id}.members has duplicate board slots" }
             positioned.forEachIndexed { index, member ->
@@ -290,12 +319,23 @@ object TftDefinitionValidator {
         set.pveRounds.forEach { round ->
             require(round.enemies.isNotEmpty()) { "PvE round ${round.round} has no enemies" }
             require(round.componentDrops >= 0) { "PvE round ${round.round} has negative drops" }
+            require(round.lootRolls in 0..20) { "PvE round ${round.round}.lootRolls is invalid" }
             require(round.enemies.map { it.slot }.toSet().size == round.enemies.size) { "PvE round ${round.round} overlaps formation slots" }
             round.enemies.forEach { enemy ->
                 require(enemy.unit in unitIds) { "PvE round ${round.round} references unknown unit ${enemy.unit}" }
                 require(enemy.star in 1..3 && enemy.slot in 0 until set.rules.formationCells) { "PvE round ${round.round} has invalid star/slot" }
             }
         }
+        val lootIds = set.lootTables.map { it.id }.toSet()
+        require(lootIds.size == set.lootTables.size) { "Duplicate TFT loot table id" }
+        set.lootTables.forEach { table ->
+            require(table.id.matches(Regex("^[a-z0-9_.-]{1,64}$")) && table.entries.isNotEmpty()) { "Invalid TFT loot table ${table.id}" }
+            table.entries.forEachIndexed { index, entry ->
+                require(entry.type in setOf("gold", "component", "full_item", "unit", "xp", "free_reroll", "special", "choice") && entry.weight > 0 && entry.amount > 0) { "Loot ${table.id}.entries[$index] is invalid" }
+                require(entry.type !in setOf("component", "full_item", "unit") || !entry.value.isNullOrBlank()) { "Loot ${table.id}.entries[$index].value is required" }
+            }
+        }
+        set.pveRounds.forEach { require(it.lootTable == null || it.lootTable in lootIds) { "PvE round ${it.round}.lootTable is unknown" } }
         TftEffectValidator.validate(set)
         return set
     }
