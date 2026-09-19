@@ -187,7 +187,7 @@ class TftSetRegistryTest {
 
     @Test fun validatesNonDefaultGeometryAndDataDrivenSchedule() {
         val set = TftSetRegistry.bundled("kanto_rising")
-        val resized = set.copy(rules = TftRulesDefinition(shopSlots = 7, benchSlots = 12, boardColumns = 8, boardRows = 5, maxBoardCapacity = 14))
+        val resized = set.copy(rules = set.rules.copy(shopSlots = 7, benchSlots = 12, boardColumns = 8, boardRows = 5, maxBoardCapacity = 14))
         assertEquals(40, TftDefinitionValidator.validate(resized).rules.formationCells)
         assertEquals("pve", set.roundSchedule.first().type)
         assertTrue(set.roundSchedule.any { it.type == "augment" })
