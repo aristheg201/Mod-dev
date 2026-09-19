@@ -48,6 +48,23 @@ object RouteStatusRuntime {
     }
 }
 
+/** Generic deterministic weighted loot roller shared by route-style games. */
+object RouteLootRuntime {
+    data class Reward(val type:String,val id:String,val amount:Int)
+    fun roll(table:TdLootTable,nextInt:(Int)->Int):List<Reward> {
+        require(table.rolls > 0 && table.entries.isNotEmpty())
+        val total=table.entries.sumOf{it.weight}
+        require(total > 0)
+        return buildList {
+            repeat(table.rolls) {
+                var value=nextInt(total)
+                val entry=table.entries.first { candidate -> value-=candidate.weight; value<0 }
+                add(Reward(entry.type,entry.id,entry.amount))
+            }
+        }
+    }
+}
+
 /** Generic deterministic TriggerDefinition dispatcher for route-mode actors. */
 class RouteTriggerRuntime {
     data class State(val counts:Map<String,Int> = emptyMap(),val lastTick:Map<String,Long> = emptyMap(),val once:Set<String> = emptySet())
