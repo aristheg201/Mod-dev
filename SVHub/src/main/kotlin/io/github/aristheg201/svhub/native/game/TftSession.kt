@@ -117,6 +117,7 @@ class TftSession(
                     lastLevelsGained = player.lastLevelsGained,
                     legacyIncomePending = player.legacyIncomePending,
                     tactician = player.tactician,
+                    tacticianEmoteRemainingMs = (player.tacticianEmoteUntil - nowMillis).coerceAtLeast(0L),
                     arena = player.arena,
                     specialRewards = player.specialRewards.toList()
                 )
@@ -216,6 +217,7 @@ class TftSession(
                 lastLevelsGained = if (saved.schema >= 2) p.lastLevelsGained else 0,
                 legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT,
                 tactician = resolveTactician(p.tactician),
+                tacticianEmoteUntil = now + p.tacticianEmoteRemainingMs.coerceIn(0L, 10_000L),
                 arena = p.arena.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena,
                 specialRewards = p.specialRewards.take(32).toMutableList()
             )
@@ -1153,6 +1155,7 @@ class TftSession(
         val lastLevelsGained: Int,
         val legacyIncomePending: Boolean,
         val tactician: String?,
+        val tacticianEmoteRemainingMs: Long = 0L,
         val arena: String = "",
         val specialRewards: List<String> = emptyList()
     )
