@@ -14,6 +14,13 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import io.github.aristheg201.svhub.ui.SceneCameraPreset
 import io.github.aristheg201.svhub.ui.SceneVec3
+import io.github.aristheg201.svhub.ui.SceneTransform
+import io.github.aristheg201.svhub.ui.SceneNode
+import io.github.aristheg201.svhub.ui.SceneMeshNode
+import io.github.aristheg201.svhub.ui.SceneBlockModelNode
+import io.github.aristheg201.svhub.ui.SceneItemModelNode
+import io.github.aristheg201.svhub.ui.SceneInteractionSurface
+import io.github.aristheg201.svhub.ui.SVHubScene
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
@@ -27,7 +34,11 @@ data class MinecraftArenaProp(
     val item: String,
     val x: Float,
     val y: Float,
-    val scale: Float = 0.7f
+    val scale: Float = 0.7f,
+    val z:Float=0f,
+    val yaw:Float=0f,
+    val pitch:Float=0f,
+    val roll:Float=0f
 )
 
 data class ArenaPoint(val x: Float, val y: Float, val z: Float = 0f)
@@ -215,6 +226,10 @@ object MinecraftArenaRegistry {
                     x = runCatching { obj.get("x")?.asFloat ?: 0f }.getOrDefault(0f),
                     y = runCatching { obj.get("y")?.asFloat ?: 0f }.getOrDefault(0f),
                     scale = runCatching { obj.get("scale")?.asFloat ?: 0.7f }.getOrDefault(0.7f).coerceIn(0.25f, 1.8f)
+                    ,z=runCatching{obj.get("z")?.asFloat?:0f}.getOrDefault(0f)
+                    ,yaw=runCatching{obj.get("yaw")?.asFloat?:0f}.getOrDefault(0f)
+                    ,pitch=runCatching{obj.get("pitch")?.asFloat?:0f}.getOrDefault(0f)
+                    ,roll=runCatching{obj.get("roll")?.asFloat?:0f}.getOrDefault(0f)
                 )
             }.orEmpty().take(40),
             floorColor = color(root, "floorColor", 0xFF173530.toInt()),
@@ -288,8 +303,7 @@ object MinecraftArenaRegistry {
 }
 
 object MinecraftArenaRenderer {
-    internal data class CompiledProp(val stack:ItemStack,val x:Int,val y:Int,val pixels:Int,val depth:Double)
-    internal data class CompiledArenaScene(val props:List<CompiledProp>)
+    internal data class CompiledArenaScene(val scene:SVHubScene)
     private data class SceneKey(val definition:Int,val columns:Int,val rows:Int,val originX:Int,val originY:Int,val tileWidth:Int,val tileHeight:Int)
     private val compiledScenes=ConcurrentHashMap<SceneKey,CompiledArenaScene>()
     private val itemStacks=ConcurrentHashMap<String,ItemStack?>()
@@ -298,13 +312,15 @@ object MinecraftArenaRenderer {
     internal fun compiledScene(layout:PokemonSceneLayout,theme:MinecraftArenaDefinition):CompiledArenaScene{
         val key=SceneKey(System.identityHashCode(theme),layout.columns,layout.rows,layout.originX.roundToInt(),layout.originY.roundToInt(),layout.tileWidth,layout.tileHeight)
         return compiledScenes.computeIfAbsent(key){
-            val props=theme.props.mapIndexedNotNull{index,prop->
-                val stack=resolveStack(prop.item)?:return@mapIndexedNotNull null
-                val point=layout.project(prop.x,prop.y)
-                val size=(min(28,max(12,layout.tileWidth))*prop.scale).roundToInt().coerceIn(8,38)
-                CompiledProp(stack,point.x.roundToInt(),point.y.roundToInt()-size/3,size,30.0+point.y/8.0+index*.01)
-            }.sortedBy(CompiledProp::y)
-            CompiledArenaScene(props)
+            val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(theme.boardOrigin.x.toDouble(),theme.boardOrigin.y.toDouble(),theme.boardOrigin.z.toDouble())),SceneVec3(theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.depth.coerceAtLeast(1)*.12),theme.surface.ifBlank{"arena_floor"})
+            val props=theme.props.mapIndexed{index,prop->
+                val transform=SceneTransform(SceneVec3(prop.x.toDouble(),prop.y.toDouble(),prop.z.toDouble()),SceneVec3(prop.pitch.toDouble(),prop.yaw.toDouble(),prop.roll.toDouble()),SceneVec3(prop.scale.toDouble(),prop.scale.toDouble(),prop.scale.toDouble()))
+                val block=ResourceLocation.tryParse(prop.item)?.let(BuiltInRegistries.BLOCK::containsKey)==true
+                if(block)SceneBlockModelNode("prop:$index",transform,prop.item) else SceneItemModelNode("prop:$index",transform,prop.item)
+            }
+            val benches=theme.benchAnchors.mapIndexed{index,p->SceneMeshNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z.toDouble())),SceneVec3(.7,.7,.15),"bench")}
+            val interaction=SceneInteractionSurface("board",SceneVec3(theme.boardOrigin.x.toDouble(),theme.boardOrigin.y.toDouble(),theme.boardOrigin.z.toDouble()),theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.boardColumns,theme.boardRows)
+            CompiledArenaScene(SVHubScene("arena:${System.identityHashCode(theme)}",0,listOf(floor)+benches+props,listOf(interaction)))
         }
     }
     fun renderPresentation(gui:GuiGraphics,layout:PokemonSceneLayout,frame:ArenaPresentationFrame,phase:String){
@@ -471,7 +487,13 @@ object MinecraftArenaRenderer {
         theme: MinecraftArenaDefinition,
         seed: String
     ) {
-        compiledScene(layout,theme).props.forEach{prop->renderStack(gui,prop.stack,prop.x,prop.y,prop.pixels,prop.depth)}
+        // Temporary backend adapter: retained nodes remain in scene-space; only this traversal projects them.
+        compiledScene(layout,theme).scene.nodes.asSequence().filter{it.visible}.sortedBy{it.transform.position.y}.forEach{node->
+            val point=layout.project(node.transform.position.x.toFloat(),node.transform.position.y.toFloat())
+            val pixels=(min(28,max(12,layout.tileWidth))*node.transform.scale.x).roundToInt().coerceIn(8,38)
+            val asset=when(node){is SceneBlockModelNode->node.blockId;is SceneItemModelNode->node.itemId;else->return@forEach}
+            resolveStack(asset)?.let{renderStack(gui,it,point.x.roundToInt(),point.y.roundToInt()-pixels/3,pixels,30.0+point.y/8.0)}
+        }
     }
 
     private fun renderIntersectionGrid(gui: GuiGraphics, layout: PokemonSceneLayout, theme: MinecraftArenaDefinition) {

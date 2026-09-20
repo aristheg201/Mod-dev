@@ -436,6 +436,14 @@ if (boardSceneRenderer.includes('definition("ludo")')) failures.push("NativeBoar
 if (/minOf\(96|until 96/.test(boardSceneRenderer)) failures.push("NativeBoardSceneRenderer.kt: TD capacity must derive from board dimensions");
 if (read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt").includes("TABLE_UNO")) failures.push("CardTable3DRenderer.kt: shipped UNO theme must come from resources");
 
+const sceneCore = read("src/main/kotlin/io/github/aristheg201/svhub/ui/SVHubScene.kt");
+for (const forbidden of ["net.minecraft.world.level", "ServerLevel", "ClientLevel", "setBlock", "addFreshEntity", "spawnEntity"]) {
+  if (sceneCore.includes(forbidden)) failures.push(`SVHubScene.kt: scene-space core leaked Minecraft Level API ${forbidden}`);
+}
+for (const marker of ["SceneTransform", "SceneBlockModelNode", "SceneItemModelNode", "ScenePokemonNode", "SceneTacticianNode", "SVHubSceneCamera"]) {
+  if (!sceneCore.includes(marker)) failures.push(`SVHubScene.kt: missing retained scene capability ${marker}`);
+}
+
 if (failures.length) { console.error(failures.join("\n")); process.exit(1); }
 console.log(`Kotlin delimiter scan: ${kotlinFiles.length} files passed`);
 console.log("SVHub 0.4.5 structural QA passed (runtime/gameplay/visual verification is separate)");
