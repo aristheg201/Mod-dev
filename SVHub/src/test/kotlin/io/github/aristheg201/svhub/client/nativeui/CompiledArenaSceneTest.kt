@@ -6,8 +6,83 @@ import kotlin.test.Test
 import kotlin.test.assertNotEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertNotSame
+import io.github.aristheg201.svhub.ui.SceneMeshNode
+import io.github.aristheg201.svhub.ui.SceneVec3
+import io.github.aristheg201.svhub.ui.PerspectiveBoardTransform
 
 class CompiledArenaSceneTest {
+    @Test fun everyBundledArenaPassesTransactionalReloadValidation() {
+        java.nio.file.Files.list(java.nio.file.Path.of("src/main/resources/assets/svhub/arenas")).use { paths ->
+            paths.filter { it.toString().endsWith(".json") }.forEach { file ->
+                java.nio.file.Files.newBufferedReader(file).use { reader ->
+                    try { MinecraftArenaRegistry.parse(JsonParser.parseReader(reader).asJsonObject) }
+                    catch(failure:Exception) { throw AssertionError("Invalid bundled arena $file",failure) }
+                }
+            }
+        }
+    }
+
+    @Test fun malformedTransformsAndRegionsRejectTheDefinition() {
+        for(raw in listOf("{\"metadata\":{\"boardOrigin\":[0,0,\"NaN\"]}}","{\"metadata\":{\"tacticianRegion\":[1,1,0,0]}}","{\"metadata\":{\"benchAnchors\":[[0]]}}")) {
+            kotlin.test.assertFailsWith<IllegalArgumentException> { MinecraftArenaRegistry.parse(JsonParser.parseString(raw).asJsonObject) }
+        }
+    }
+
+    @Test fun authoredArenasFrameTheBoardAndEveryBenchSlot() {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island")) {
+            val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
+            for((w,h) in listOf(532 to 218,854 to 363,340 to 250)) {
+                val area=UiRect(102,40,w,h)
+                val preset=arena.camera(ArenaCameraRole.PREPARATION,io.github.aristheg201.svhub.ui.SceneCameras.TFT)
+                val framed=io.github.aristheg201.svhub.ui.SceneCameraFraming.board(preset,area,SceneVec3(0.0,0.0,0.0),7,8,arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) })
+                val camera=PerspectiveBoardTransform(area,framed.position,framed.target,framed.fov,framed.near,framed.far)
+                val points=listOf(SceneVec3(-.5,-.5,0.0),SceneVec3(6.5,-.5,0.0),SceneVec3(-.5,7.5,0.0),SceneVec3(6.5,7.5,0.0)).map { checkNotNull(camera.project(it)) }
+                val coverage=(points.maxOf { it.x }-points.minOf { it.x })/w
+                assertTrue(coverage in .65f.. .80001f,"$id $w x $h coverage=$coverage")
+                for(anchor in arena.benchAnchors) for(z in listOf(0.0,.9)) {
+                    val p=checkNotNull(camera.project(SceneVec3(anchor.x.toDouble(),anchor.y.toDouble(),anchor.z+z)))
+                    assertTrue(area.contains(p.x.toDouble(),p.y.toDouble()),"$id cropped bench at $anchor")
+                }
+            }
+        }
+    }
+    @Test fun floorSupportsAllCellCentersIncludingOffsetElevatedBoards() {
+        val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
+        for (origin in listOf(ArenaPoint(0f,0f),ArenaPoint(12f,-7f,3f))) {
+            val definition=MinecraftArenaDefinition(boardOrigin=origin)
+            val floor=MinecraftArenaRenderer.compiledScene(layout,definition).scene.nodes.filterIsInstance<SceneMeshNode>().first { it.id=="floor" }
+            repeat(56) { index ->
+                val point=definition.boardAnchor(index)
+                val local=floor.transform.inverse(SceneVec3(point.x.toDouble(),point.y.toDouble(),point.z.toDouble()))
+                assertTrue(local.x in -floor.size.x/2..floor.size.x/2)
+                assertTrue(local.y in -floor.size.y/2..floor.size.y/2)
+                assertEquals(floor.size.z/2,local.z,1e-6)
+            }
+        }
+    }
+
+    @Test fun authoredChangesAndResourceReloadInvalidateSceneButEqualDefinitionsReuseIt() {
+        val layout=PokemonSceneLayout(UiRect(0,0,320,180),7,8,160f,30f,28,14)
+        val definition=MinecraftArenaDefinition(id="retention")
+        val first=MinecraftArenaRenderer.compiledScene(layout,definition)
+        assertSame(first,MinecraftArenaRenderer.compiledScene(layout,definition.copy()))
+        assertNotSame(first,MinecraftArenaRenderer.compiledScene(layout,definition.copy(boardOrigin=ArenaPoint(1f,0f))))
+        assertNotSame(first,MinecraftArenaRenderer.compiledScene(layout,definition.copy(definitionRevision="2")))
+        MinecraftArenaRenderer.clearCompiledScenes()
+        assertNotSame(first,MinecraftArenaRenderer.compiledScene(layout,definition))
+    }
+
+    @Test fun perspectiveCullingNeverFallsBackToIsometricProjectionOrPicking() {
+        val camera=PerspectiveBoardTransform(UiRect(0,0,800,600),SceneVec3(0.0,0.0,10.0),SceneVec3(0.0,0.0,0.0),60.0,.1,5.0)
+        val layout=PokemonSceneLayout(camera.viewport,7,8,400f,30f,28,14,camera)
+        assertNull(layout.project(0f,0f))
+        assertNull(layout.project(0f,0f,11f))
+        assertNull(layout.pick(400.0,30.0))
+    }
+
     @Test fun staticArenaSceneIsRetainedForStableDefinitionAndLayout() {
         val definition = MinecraftArenaDefinition(props = emptyList())
         val layout = PokemonSceneLayout(UiRect(0, 0, 320, 180), 7, 8, 160f, 30f, 28, 14)

@@ -202,5 +202,11 @@
   "gui.svhub.uno.draw": "Chồng bài rút",
   "gui.svhub.uno.direction.clockwise": "Theo chiều kim đồng hồ",
   "gui.svhub.uno.direction.counterclockwise": "Ngược chiều kim đồng hồ",
-  "gui.svhub.cards.play_zone": "Khu vực đánh bài"
+  "gui.svhub.cards.play_zone": "Khu vực đánh bài",
+  "gui.svhub.tft.item.choose_slot": "Chọn ô trang bị",
+  "gui.svhub.tft.item.combine": "Ghép",
+  "gui.svhub.tft.item.equip": "Trang bị",
+  "gui.svhub.tft.item.unavailable": "Không khả dụng",
+  "gui.svhub.tft.carousel.locked": "Đang chờ lượt xuất phát",
+  "gui.svhub.tft.carousel.move": "Nhấp để di chuyển; nhấp Pokémon để đến gần và chọn"
 }

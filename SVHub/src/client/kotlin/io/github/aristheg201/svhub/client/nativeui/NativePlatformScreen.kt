@@ -38,6 +38,7 @@ class NativePlatformScreen(
 
     private val gson = Gson()
     private val controls = mutableListOf<Control>()
+    private val sceneInputs = mutableListOf<(Double, Double) -> Boolean>()
     private var selectedCell: Int? = null
     private var selectedSkin: String? = null
     private var selectedCompanion: String? = null
@@ -97,7 +98,7 @@ class NativePlatformScreen(
         applyState(merged, message)
     }
 
-    override fun init() { controls.clear() }
+    override fun init() { controls.clear(); sceneInputs.clear() }
 
     fun prepareForServerReplacement() { supersededByServer = true }
 
@@ -112,14 +113,18 @@ class NativePlatformScreen(
     override fun render(gui: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         currentGui = gui
         val baseLayout = NativeLayout.resolve(width, height)
-        val layout = if (module == "game") baseLayout.copy(
+        val tftGame=module=="game" && state.getAsJsonObject("view")?.str("gameId")=="tft"
+        val layout = if (tftGame) baseLayout.copy(
+            navigation=UiRect(0,0,0,0),content=UiRect(4,4,(width-8).coerceAtLeast(144),(height-8).coerceAtLeast(70)),verticalNavigation=false
+        ) else if (module == "game") baseLayout.copy(
             navigation = UiRect(0, 0, 0, 0),
             content = UiRect(8, 42, (width - 16).coerceAtLeast(144), (height - 50).coerceAtLeast(70)),
             verticalNavigation = false
         ) else baseLayout
         controls.clear()
+        sceneInputs.clear()
         drawBackground(gui)
-        drawHeader(gui, layout, mouseX, mouseY)
+        if(!tftGame) drawHeader(gui, layout, mouseX, mouseY)
         if (module != "game") drawNavigation(gui, layout, mouseX, mouseY)
         gui.fill(layout.content.x, layout.content.y, layout.content.right, layout.content.bottom, panel)
         gui.fill(layout.content.x, layout.content.y, layout.content.right, layout.content.y + 1, line)
@@ -437,6 +442,7 @@ class NativePlatformScreen(
                 hooks = TftGameRenderer.Hooks(
                     control = { rect, label, enabled, action -> addControl(rect, label, mouseX, mouseY, enabled = enabled, action = action) },
                     hit = { rect, action -> addHit(rect, action = action) },
+                    sceneInput = { handler -> sceneInputs += handler },
                     action = ::gameAct,
                     back = { intent("leave", JsonObject()) }
                 )
@@ -621,6 +627,7 @@ class NativePlatformScreen(
                 return true
             }
             controls.asReversed().firstOrNull{it.enabled&&it.rect.contains(mouseX,mouseY)}?.let{it.action();return true}
+            if (sceneInputs.asReversed().any { it(mouseX, mouseY) }) return true
             if(module=="game"){
                 val game=state.getAsJsonObject("view")?.str("gameId").orEmpty()
                 val projected=sceneFrame?.layout?.pick(mouseX,mouseY)

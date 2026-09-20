@@ -79,7 +79,8 @@ data class TftCarouselDefinition(
     val releaseWaveSize: Int = 2,
     val releaseDelayMs: Long = 1_500,
     val releaseOrder: String = "lowest_health_first",
-    val centerDecoration: String = "minecraft:beacon"
+    val centerDecoration: String = "minecraft:beacon",
+    val arenaId: String = "carousel_convergence"
 )
 
 data class TftShopOdds(val level: Int = 2, val odds: List<Int> = listOf(100, 0, 0, 0, 0))
@@ -277,6 +278,7 @@ object TftDefinitionValidator {
             require(round.type in setOf("planning", "pvp", "pve", "augment", "carousel", "boss", "special")) { "set ${set.id}.roundSchedule[$index].type is invalid: ${round.type}" }
         }
         with(set.carousel) {
+            require(arenaId.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "set ${set.id}.carousel.arenaId is invalid" }
             require(offerCount in 2..24 && ringRadius in 1.5..8.0 && spawnRadius > ringRadius) { "set ${set.id}.carousel ring geometry is invalid" }
             require(pickupRadius in 0.25..2.0 && movementRadius >= spawnRadius && maxMovePerIntent in 0.1..2.0) { "set ${set.id}.carousel movement bounds are invalid" }
             require(durationMs in 5_000..120_000 && releaseWaveSize in 1..8 && releaseDelayMs in 0..20_000) { "set ${set.id}.carousel release timing is invalid" }

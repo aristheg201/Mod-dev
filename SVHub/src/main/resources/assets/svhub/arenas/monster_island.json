@@ -1,541 +1,420 @@
 {
-  "style": "titan_island",
-  "surface": "tactical",
-  "depth": 7,
-  "detailEvery": 12,
-  "pathDetailEvery": 0,
-  "floor": [
-    "minecraft:magma_block",
-    "minecraft:basalt"
-  ],
-  "floorAlt": [
-    "minecraft:moss_carpet"
-  ],
-  "ally": [
-    "minecraft:azalea_leaves",
-    "minecraft:moss_carpet"
-  ],
-  "enemy": [
-    "minecraft:crimson_fungus",
-    "minecraft:nether_sprouts"
-  ],
-  "path": [],
-  "floorColor": "#263b28",
-  "floorAltColor": "#314a36",
-  "allyColor": "#263b28",
-  "enemyColor": "#83433a",
-  "pathColor": "#756e5f",
-  "pathAccentColor": "#b2a887",
-  "gridColor": "#80a08e",
-  "borderColor": "#3f4b40",
-  "edgeColor": "#172019",
-  "depthColor": "#172019",
-  "props": [
-    {
-      "item": "minecraft:campfire",
-      "x": -1.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:soul_campfire",
-      "x": 7.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:lantern",
-      "x": -0.85,
-      "y": 7.1,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:soul_lantern",
-      "x": 6.85,
-      "y": -0.15,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:bell",
-      "x": 3,
-      "y": 7.8,
-      "scale": 0.82
-    },
-    {
-      "item": "minecraft:respawn_anchor",
-      "x": 3,
-      "y": -0.95,
-      "scale": 0.82
-    }
-  ],
-  "metadata": {
-    "boardColumns": 7,
-    "boardRows": 8,
-    "benchSlots": 9,
-    "tacticianRegion": [
-      -1.0,
-      -1.0,
-      7.0,
-      8.0
-    ],
-    "camera": {
-      "spectator": [
-        3.0,
-        9.0,
-        12.0
-      ],
-      "scouting": [
-        3.0,
-        8.0,
-        10.0
-      ],
-      "carousel": [
-        3.0,
-        10.0,
-        13.0
-      ]
-    },
-    "lighting": "themed",
-    "ambientVfx": "titan_island",
-    "music": "minecraft:music.game",
-    "boardOrigin": [
-      0,
-      0,
-      0
-    ],
-    "boardAnchors": [
-      [
-        0,
-        0,
-        0
-      ],
-      [
-        1,
-        0,
-        0
-      ],
-      [
-        2,
-        0,
-        0
-      ],
-      [
-        3,
-        0,
-        0
-      ],
-      [
-        4,
-        0,
-        0
-      ],
-      [
-        5,
-        0,
-        0
-      ],
-      [
-        6,
-        0,
-        0
-      ],
-      [
-        0,
-        1,
-        0
-      ],
-      [
-        1,
-        1,
-        0
-      ],
-      [
-        2,
-        1,
-        0
-      ],
-      [
-        3,
-        1,
-        0
-      ],
-      [
-        4,
-        1,
-        0
-      ],
-      [
-        5,
-        1,
-        0
-      ],
-      [
-        6,
-        1,
-        0
-      ],
-      [
-        0,
-        2,
-        0
-      ],
-      [
-        1,
-        2,
-        0
-      ],
-      [
-        2,
-        2,
-        0
-      ],
-      [
-        3,
-        2,
-        0
-      ],
-      [
-        4,
-        2,
-        0
-      ],
-      [
-        5,
-        2,
-        0
-      ],
-      [
-        6,
-        2,
-        0
-      ],
-      [
-        0,
-        3,
-        0
-      ],
-      [
-        1,
-        3,
-        0
-      ],
-      [
-        2,
-        3,
-        0
-      ],
-      [
-        3,
-        3,
-        0
-      ],
-      [
-        4,
-        3,
-        0
-      ],
-      [
-        5,
-        3,
-        0
-      ],
-      [
-        6,
-        3,
-        0
-      ],
-      [
-        0,
-        4,
-        0
-      ],
-      [
-        1,
-        4,
-        0
-      ],
-      [
-        2,
-        4,
-        0
-      ],
-      [
-        3,
-        4,
-        0
-      ],
-      [
-        4,
-        4,
-        0
-      ],
-      [
-        5,
-        4,
-        0
-      ],
-      [
-        6,
-        4,
-        0
-      ],
-      [
-        0,
-        5,
-        0
-      ],
-      [
-        1,
-        5,
-        0
-      ],
-      [
-        2,
-        5,
-        0
-      ],
-      [
-        3,
-        5,
-        0
-      ],
-      [
-        4,
-        5,
-        0
-      ],
-      [
-        5,
-        5,
-        0
-      ],
-      [
-        6,
-        5,
-        0
-      ],
-      [
-        0,
-        6,
-        0
-      ],
-      [
-        1,
-        6,
-        0
-      ],
-      [
-        2,
-        6,
-        0
-      ],
-      [
-        3,
-        6,
-        0
-      ],
-      [
-        4,
-        6,
-        0
-      ],
-      [
-        5,
-        6,
-        0
-      ],
-      [
-        6,
-        6,
-        0
-      ],
-      [
-        0,
-        7,
-        0
-      ],
-      [
-        1,
-        7,
-        0
-      ],
-      [
-        2,
-        7,
-        0
-      ],
-      [
-        3,
-        7,
-        0
-      ],
-      [
-        4,
-        7,
-        0
-      ],
-      [
-        5,
-        7,
-        0
-      ],
-      [
-        6,
-        7,
-        0
-      ]
-    ],
-    "benchAnchors": [
-      [
-        0.25,
-        8.45,
-        0
-      ],
-      [
-        1.25,
-        8.45,
-        0
-      ],
-      [
-        2.25,
-        8.45,
-        0
-      ],
-      [
-        3.25,
-        8.45,
-        0
-      ],
-      [
-        4.25,
-        8.45,
-        0
-      ],
-      [
-        5.25,
-        8.45,
-        0
-      ],
-      [
-        6.25,
-        8.45,
-        0
-      ],
-      [
-        7.25,
-        8.45,
-        0
-      ],
-      [
-        8.25,
-        8.45,
-        0
-      ]
-    ],
-    "itemBenchAnchors": [
-      [
-        0.25,
-        9.15,
-        0
-      ],
-      [
-        1.25,
-        9.15,
-        0
-      ],
-      [
-        2.25,
-        9.15,
-        0
-      ],
-      [
-        3.25,
-        9.15,
-        0
-      ],
-      [
-        4.25,
-        9.15,
-        0
-      ],
-      [
-        5.25,
-        9.15,
-        0
-      ],
-      [
-        6.25,
-        9.15,
-        0
-      ],
-      [
-        7.25,
-        9.15,
-        0
-      ],
-      [
-        8.25,
-        9.15,
-        0
-      ]
-    ],
-    "tacticianSpawn": [
-      3.0,
-      3.5,
-      0
-    ],
-    "humanSpawn": [
-      3.5,
-      8.5,
-      0
-    ],
-    "opponentSpawn": [
-      3.5,
-      -0.5,
-      0
-    ],
-    "carouselCenter": [
-      3.5,
-      4.0,
-      0
-    ],
-    "arenaBounds": [
-      -1,
-      -1,
-      7,
-      9
-    ],
-    "lootAnchors": [
-      [
-        3.5,
-        4.0,
-        0
-      ]
-    ],
-    "combatStartVfx": "svhub:combat_start",
-    "victoryVfx": "svhub:victory",
-    "defeatVfx": "svhub:defeat",
-    "interactionRegions": [
-      {
-        "id": "board",
-        "bounds": [
-          0,
-          0,
-          6,
-          7
-        ],
-        "action": "place_unit"
-      },
-      {
-        "id": "bench",
-        "bounds": [
-          0,
-          8,
-          7,
-          9
-        ],
-        "action": "bench_unit"
-      }
-    ]
-  }
+    "style":  "titan_island",
+    "surface":  "tactical",
+    "depth":  6,
+    "detailEvery":  0,
+    "pathDetailEvery":  0,
+    "floor":  [
+                  "minecraft:moss_block"
+              ],
+    "floorAlt":  [
+                     "minecraft:rooted_dirt"
+                 ],
+    "ally":  [
+
+             ],
+    "enemy":  [
+
+              ],
+    "path":  [
+
+             ],
+    "floorColor":  "#526343",
+    "floorAltColor":  "#607650",
+    "allyColor":  "#263b28",
+    "enemyColor":  "#83433a",
+    "pathColor":  "#756e5f",
+    "pathAccentColor":  "#b2a887",
+    "gridColor":  "#80a08e",
+    "borderColor":  "#64744b",
+    "edgeColor":  "#172019",
+    "depthColor":  "#3b4137",
+    "props":  [
+                  {
+                      "yaw":  0,
+                      "y":  0.3,
+                      "z":  1,
+                      "x":  -1.3,
+                      "scale":  1.5,
+                      "item":  "minecraft:jungle_log"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  0.3,
+                      "z":  2.4,
+                      "x":  -1.3,
+                      "scale":  1.8,
+                      "item":  "minecraft:jungle_leaves"
+                  },
+                  {
+                      "yaw":  31,
+                      "y":  1.4000000000000001,
+                      "z":  1,
+                      "x":  7.7,
+                      "scale":  1.5,
+                      "item":  "minecraft:jungle_log"
+                  },
+                  {
+                      "yaw":  31,
+                      "y":  1.4000000000000001,
+                      "z":  2.4,
+                      "x":  7.7,
+                      "scale":  1.8,
+                      "item":  "minecraft:jungle_leaves"
+                  },
+                  {
+                      "yaw":  62,
+                      "y":  2.5,
+                      "z":  1,
+                      "x":  -1.3,
+                      "scale":  1.5,
+                      "item":  "minecraft:jungle_log"
+                  },
+                  {
+                      "yaw":  62,
+                      "y":  2.5,
+                      "z":  2.4,
+                      "x":  -1.3,
+                      "scale":  1.8,
+                      "item":  "minecraft:jungle_leaves"
+                  },
+                  {
+                      "yaw":  93,
+                      "y":  3.6,
+                      "z":  1,
+                      "x":  7.7,
+                      "scale":  1.5,
+                      "item":  "minecraft:jungle_log"
+                  },
+                  {
+                      "yaw":  93,
+                      "y":  3.6,
+                      "z":  2.4,
+                      "x":  7.7,
+                      "scale":  1.8,
+                      "item":  "minecraft:jungle_leaves"
+                  },
+                  {
+                      "yaw":  124,
+                      "y":  4.7,
+                      "z":  1,
+                      "x":  -1.3,
+                      "scale":  1.5,
+                      "item":  "minecraft:jungle_log"
+                  },
+                  {
+                      "yaw":  124,
+                      "y":  4.7,
+                      "z":  2.4,
+                      "x":  -1.3,
+                      "scale":  1.8,
+                      "item":  "minecraft:jungle_leaves"
+                  },
+                  {
+                      "yaw":  155,
+                      "y":  5.8,
+                      "z":  1,
+                      "x":  7.7,
+                      "scale":  1.5,
+                      "item":  "minecraft:jungle_log"
+                  },
+                  {
+                      "yaw":  155,
+                      "y":  5.8,
+                      "z":  2.4,
+                      "x":  7.7,
+                      "scale":  1.8,
+                      "item":  "minecraft:jungle_leaves"
+                  },
+                  {
+                      "yaw":  22,
+                      "y":  7.8,
+                      "z":  0.3,
+                      "x":  "-1.1",
+                      "scale":  1.2,
+                      "item":  "minecraft:mossy_cobblestone"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  7.8,
+                      "z":  0.3,
+                      "x":  7.2,
+                      "scale":  1.1,
+                      "item":  "minecraft:big_dripleaf"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  9,
+                      "z":  0.4,
+                      "x":  "-1.5",
+                      "scale":  1.4,
+                      "item":  "minecraft:flowering_azalea"
+                  },
+                  {
+                      "yaw":  30,
+                      "y":  "-1.2",
+                      "z":  0.45,
+                      "x":  5.4,
+                      "scale":  1.4,
+                      "item":  "minecraft:cobblestone"
+                  }
+              ],
+    "metadata":  {
+                     "boardColumns":  7,
+                     "boardRows":  8,
+                     "benchSlots":  9,
+                     "tacticianRegion":  [6.85, 5.7, 7.5, 7.6],
+                     "camera":  {
+                                    "spectator":  [-6, 19, 16],
+                                    "scouting":  [-3, 16, 13],
+                                    "carousel":  [3, 20, 21]
+                                },
+                     "lighting":  "themed",
+                     "ambientVfx":  "titan_island",
+                     "music":  "minecraft:music.game",
+                     "boardOrigin":  [0, 0, 0],
+                     "boardAnchors":  [
+                                          [0, 0, 0],
+                                          [1, 0, 0],
+                                          [2, 0, 0],
+                                          [3, 0, 0],
+                                          [4, 0, 0],
+                                          [5, 0, 0],
+                                          [6, 0, 0],
+                                          [0, 1, 0],
+                                          [1, 1, 0],
+                                          [2, 1, 0],
+                                          [3, 1, 0],
+                                          [4, 1, 0],
+                                          [5, 1, 0],
+                                          [6, 1, 0],
+                                          [0, 2, 0],
+                                          [1, 2, 0],
+                                          [2, 2, 0],
+                                          [3, 2, 0],
+                                          [4, 2, 0],
+                                          [5, 2, 0],
+                                          [6, 2, 0],
+                                          [0, 3, 0],
+                                          [1, 3, 0],
+                                          [2, 3, 0],
+                                          [3, 3, 0],
+                                          [4, 3, 0],
+                                          [5, 3, 0],
+                                          [6, 3, 0],
+                                          [0, 4, 0],
+                                          [1, 4, 0],
+                                          [2, 4, 0],
+                                          [3, 4, 0],
+                                          [4, 4, 0],
+                                          [5, 4, 0],
+                                          [6, 4, 0],
+                                          [0, 5, 0],
+                                          [1, 5, 0],
+                                          [2, 5, 0],
+                                          [3, 5, 0],
+                                          [4, 5, 0],
+                                          [5, 5, 0],
+                                          [6, 5, 0],
+                                          [0, 6, 0],
+                                          [1, 6, 0],
+                                          [2, 6, 0],
+                                          [3, 6, 0],
+                                          [4, 6, 0],
+                                          [5, 6, 0],
+                                          [6, 6, 0],
+                                          [0, 7, 0],
+                                          [1, 7, 0],
+                                          [2, 7, 0],
+                                          [3, 7, 0],
+                                          [4, 7, 0],
+                                          [5, 7, 0],
+                                          [6, 7, 0]
+                                      ],
+                     "benchAnchors":  [
+                                          [0, 8.52, 0.035],
+                                          [0.75, 8.485, 0.035],
+                                          [1.5, 8.45, 0.035],
+                                          [2.25, 8.415, 0.035],
+                                          [3, 8.38, 0.035],
+                                          [3.75, 8.345, 0.035],
+                                          [4.5, 8.31, 0.035],
+                                          [5.25, 8.275, 0.035],
+                                          [6, 8.24, 0.035]
+                                      ],
+                     "itemBenchAnchors":  [
+                                              [-0.1, 10.1, 0],
+                                              [0.69000000000000006, 10.059, 0],
+                                              [1.48, 10.017999999999999, 0],
+                                              [2.27, 9.977, 0],
+                                              [3.06, 9.936, 0],
+                                              [3.85, 9.895, 0],
+                                              [4.6400000000000006, 9.854, 0],
+                                              [5.4300000000000006, 9.8129999999999988, 0],
+                                              [6.2200000000000006, 9.772, 0]
+                                          ],
+                     "tacticianSpawn":  [7.15, 6.6, 0.1],
+                     "humanSpawn":  [7, 8.2, 0],
+                     "opponentSpawn":  [-1, -1.5, 0],
+                     "carouselCenter":  [2.6, 4, 0],
+                     "arenaBounds":  [-5, -5, 12, 12],
+                     "lootAnchors":  [
+                                         [3.5, 4.0, 0]
+                                     ],
+                     "combatStartVfx":  "svhub:combat_start",
+                     "victoryVfx":  "svhub:victory",
+                     "defeatVfx":  "svhub:defeat",
+                     "interactionRegions":  [
+
+                                            ],
+                     "cameraPresets":  {
+                                           "normal":  {
+                                                          "position":  [1.6, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "preparation":  {
+                                                               "position":  [1.6, 15, 9],
+                                                               "fov":  30,
+                                                               "transitionMs":  650,
+                                                               "far":  100,
+                                                               "near":  0.1,
+                                                               "target":  [3, 4, 0]
+                                                           },
+                                           "combat":  {
+                                                          "position":  [1.6, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "scouting":  {
+                                                            "position":  [1.6, 15, 9],
+                                                            "fov":  30,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 4, 0]
+                                                        },
+                                           "carousel":  {
+                                                            "position":  [3, 20, 21],
+                                                            "fov":  52,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [2.6, 4, 0]
+                                                        },
+                                           "pve_intro":  {
+                                                             "position":  [1.6, 15, 9],
+                                                             "fov":  30,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [3, 4, 0]
+                                                         },
+                                           "boss_intro":  {
+                                                              "position":  [1.6, 15, 9],
+                                                              "fov":  30,
+                                                              "transitionMs":  650,
+                                                              "far":  100,
+                                                              "near":  0.1,
+                                                              "target":  [3, 4, 0]
+                                                          },
+                                           "victory":  {
+                                                           "position":  [1.6, 15, 9],
+                                                           "fov":  30,
+                                                           "transitionMs":  650,
+                                                           "far":  100,
+                                                           "near":  0.1,
+                                                           "target":  [3, 4, 0]
+                                                       },
+                                           "defeat":  {
+                                                          "position":  [1.6, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "spectator":  {
+                                                             "position":  [1.6, 15, 9],
+                                                             "fov":  30,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [3, 4, 0]
+                                                         },
+                                           "arena_preview":  {
+                                                                 "position":  [1.6, 15, 9],
+                                                                 "fov":  30,
+                                                                 "transitionMs":  650,
+                                                                 "far":  100,
+                                                                 "near":  0.1,
+                                                                 "target":  [3, 4, 0]
+                                                             }
+                                       }
+                 },
+    "id":  "monster_island",
+    "geometry":  [
+                     {
+                         "position":  [3, 3.5, -1.4],
+                         "material":  "#4a5141",
+                         "rotation":  [0, 0, -5],
+                         "id":  "island-bedrock",
+                         "size":  [11, 14, 2.2]
+                     },
+                     {
+                         "position":  [-1.3, 4, -0.4],
+                         "material":  "#697957",
+                         "rotation":  [0, 8, -7],
+                         "id":  "western-bank",
+                         "size":  [2, 9, 1]
+                     },
+                     {
+                         "position":  [7.1, 3, -0.3],
+                         "material":  "#718059",
+                         "rotation":  [0, -6, 12],
+                         "id":  "eastern-bank",
+                         "size":  [1.8, 9, 1]
+                     },
+                     {
+                         "position":  [-3.1, 3, -0.75],
+                         "material":  "#387f91",
+                         "rotation":  [0, 0, -4],
+                         "id":  "water-channel",
+                         "size":  [1.2, 13, 0.08]
+                     },
+                     {
+                         "position":  [3, -2, 0.9],
+                         "material":  "#666f5c",
+                         "rotation":  [8, 0, -6],
+                         "id":  "north-ridge",
+                         "size":  [7, 1.8, 2.7]
+                     },
+                     {
+                         "position":  [7.8, -2.3, 2.1],
+                         "material":  "#4e5752",
+                         "rotation":  [4, 10, 18],
+                         "id":  "basalt-peak",
+                         "size":  [2.3, 2.6, 4.8]
+                     },
+                     {
+                         "position":  [7.3, 6.6, -0.2],
+                         "material":  "#8a9270",
+                         "rotation":  [0, 0, -12],
+                         "id":  "tactician-outcrop",
+                         "size":  [1.8, 2.8, 0.6]
+                     },
+                     {
+                         "position":  [3, 8.38, -0.15],
+                         "material":  "#65513b",
+                         "rotation":  [0, 0, -3],
+                         "id":  "fallen-log-bench",
+                         "size":  [8.2, 0.9, 0.35]
+                     }
+                 ]
 }

@@ -266,6 +266,28 @@ class TftSetRegistryTest {
         assertTrue(set.roundSchedule.any { it.type == "boss" })
     }
 
+    @Test fun explicitItemTargetsRejectStaleIdentityAndMalformedSlotsWithoutLoss() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val seats = listOf(NativeSeat("p1", "P1"), NativeSeat("p2", "P2"))
+        val initial = TftSession(seats, seed = 94L, definition = set)
+        assertTrue(initial.act("p1", "buy", mapOf("index" to "0")).accepted)
+        val snapshot = initial.snapshotState()
+        val player = snapshot.getAsJsonArray("players")[0].asJsonObject
+        player.add("itemBench", com.google.gson.JsonArray().apply { add("recurve_bow") })
+        player.getAsJsonArray("bench")[0].asJsonObject.add("items", com.google.gson.JsonArray().apply { add("bf_sword") })
+        val session = TftSession(seats, seed = 94L, definition = set, restoreState = snapshot)
+        val base = mapOf("item" to "0", "origin" to "bench", "index" to "0", "itemSlot" to "0")
+        val auditTime = System.currentTimeMillis()
+        val before = session.snapshotState(auditTime).toString()
+        for (extra in listOf(mapOf("instanceId" to "departed-unit"), mapOf("itemId" to "needlessly_large_rod"), mapOf("itemSlot" to "NaN"), mapOf("itemSlot" to "3"))) {
+            assertFalse(session.act("p1", "equip_item", base + extra).accepted)
+            assertEquals(before, session.snapshotState(auditTime).toString())
+        }
+        assertTrue(session.act("p1", "equip_item", base).accepted)
+        assertEquals("", session.viewFor("p1").fields.getValue("itemBench"))
+        assertTrue(session.viewFor("p1").fields.getValue("bench").contains("full:giant_slayer"))
+    }
+
     private fun inTempDirectory(block: (Path) -> Unit) {
         val root = Files.createTempDirectory("svhub-tft-regression-")
         try { block(root) } finally {

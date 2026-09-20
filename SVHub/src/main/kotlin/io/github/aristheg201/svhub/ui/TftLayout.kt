@@ -17,8 +17,8 @@ object TftLayoutResolver {
         val hudH = when (density) { UiDensity.COMPACT -> 22; UiDensity.REGULAR -> 30; UiDensity.WIDE -> 34 }.coerceAtMost(area.height / 3)
         val footerH = when (density) {
             UiDensity.COMPACT -> when { area.height < 135 -> 36; area.height < 190 -> 52; else -> 66 }
-            UiDensity.REGULAR -> 92
-            UiDensity.WIDE -> 108
+            UiDensity.REGULAR -> (area.height * .22f).toInt().coerceIn(64,92)
+            UiDensity.WIDE -> (area.height * .22f).toInt().coerceIn(78,108)
         }.coerceAtMost((area.height - hudH - gap - 36).coerceAtLeast(24))
         val leftW = when (density) { UiDensity.WIDE -> 126; UiDensity.REGULAR -> 92; UiDensity.COMPACT -> 0 }
             .coerceAtMost((area.width / 4).coerceAtLeast(0))

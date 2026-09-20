@@ -540,6 +540,7 @@
     }
   ],
   "carousel": {
+    "arenaId": "carousel_convergence",
     "offerCount": 9,
     "ringRadius": 3.0,
     "spawnRadius": 5.0,

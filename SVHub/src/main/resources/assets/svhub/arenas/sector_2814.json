@@ -1,541 +1,563 @@
 {
-  "style": "emerald_sector",
-  "surface": "tactical",
-  "depth": 7,
-  "detailEvery": 12,
-  "pathDetailEvery": 0,
-  "floor": [
-    "minecraft:sea_lantern",
-    "minecraft:emerald_block"
-  ],
-  "floorAlt": [
-    "minecraft:moss_carpet"
-  ],
-  "ally": [
-    "minecraft:azalea_leaves",
-    "minecraft:moss_carpet"
-  ],
-  "enemy": [
-    "minecraft:crimson_fungus",
-    "minecraft:nether_sprouts"
-  ],
-  "path": [],
-  "floorColor": "#153d32",
-  "floorAltColor": "#314a36",
-  "allyColor": "#153d32",
-  "enemyColor": "#287b5c",
-  "pathColor": "#756e5f",
-  "pathAccentColor": "#b2a887",
-  "gridColor": "#80a08e",
-  "borderColor": "#3f4b40",
-  "edgeColor": "#172019",
-  "depthColor": "#172019",
-  "props": [
-    {
-      "item": "minecraft:campfire",
-      "x": -1.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:soul_campfire",
-      "x": 7.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:lantern",
-      "x": -0.85,
-      "y": 7.1,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:soul_lantern",
-      "x": 6.85,
-      "y": -0.15,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:bell",
-      "x": 3,
-      "y": 7.8,
-      "scale": 0.82
-    },
-    {
-      "item": "minecraft:respawn_anchor",
-      "x": 3,
-      "y": -0.95,
-      "scale": 0.82
-    }
-  ],
-  "metadata": {
-    "boardColumns": 7,
-    "boardRows": 8,
-    "benchSlots": 9,
-    "tacticianRegion": [
-      -1.0,
-      -1.0,
-      7.0,
-      8.0
-    ],
-    "camera": {
-      "spectator": [
-        3.0,
-        9.0,
-        12.0
-      ],
-      "scouting": [
-        3.0,
-        8.0,
-        10.0
-      ],
-      "carousel": [
-        3.0,
-        10.0,
-        13.0
-      ]
-    },
-    "lighting": "themed",
-    "ambientVfx": "emerald_sector",
-    "music": "minecraft:music.game",
-    "boardOrigin": [
-      0,
-      0,
-      0
-    ],
-    "boardAnchors": [
-      [
-        0,
-        0,
-        0
-      ],
-      [
-        1,
-        0,
-        0
-      ],
-      [
-        2,
-        0,
-        0
-      ],
-      [
-        3,
-        0,
-        0
-      ],
-      [
-        4,
-        0,
-        0
-      ],
-      [
-        5,
-        0,
-        0
-      ],
-      [
-        6,
-        0,
-        0
-      ],
-      [
-        0,
-        1,
-        0
-      ],
-      [
-        1,
-        1,
-        0
-      ],
-      [
-        2,
-        1,
-        0
-      ],
-      [
-        3,
-        1,
-        0
-      ],
-      [
-        4,
-        1,
-        0
-      ],
-      [
-        5,
-        1,
-        0
-      ],
-      [
-        6,
-        1,
-        0
-      ],
-      [
-        0,
-        2,
-        0
-      ],
-      [
-        1,
-        2,
-        0
-      ],
-      [
-        2,
-        2,
-        0
-      ],
-      [
-        3,
-        2,
-        0
-      ],
-      [
-        4,
-        2,
-        0
-      ],
-      [
-        5,
-        2,
-        0
-      ],
-      [
-        6,
-        2,
-        0
-      ],
-      [
-        0,
-        3,
-        0
-      ],
-      [
-        1,
-        3,
-        0
-      ],
-      [
-        2,
-        3,
-        0
-      ],
-      [
-        3,
-        3,
-        0
-      ],
-      [
-        4,
-        3,
-        0
-      ],
-      [
-        5,
-        3,
-        0
-      ],
-      [
-        6,
-        3,
-        0
-      ],
-      [
-        0,
-        4,
-        0
-      ],
-      [
-        1,
-        4,
-        0
-      ],
-      [
-        2,
-        4,
-        0
-      ],
-      [
-        3,
-        4,
-        0
-      ],
-      [
-        4,
-        4,
-        0
-      ],
-      [
-        5,
-        4,
-        0
-      ],
-      [
-        6,
-        4,
-        0
-      ],
-      [
-        0,
-        5,
-        0
-      ],
-      [
-        1,
-        5,
-        0
-      ],
-      [
-        2,
-        5,
-        0
-      ],
-      [
-        3,
-        5,
-        0
-      ],
-      [
-        4,
-        5,
-        0
-      ],
-      [
-        5,
-        5,
-        0
-      ],
-      [
-        6,
-        5,
-        0
-      ],
-      [
-        0,
-        6,
-        0
-      ],
-      [
-        1,
-        6,
-        0
-      ],
-      [
-        2,
-        6,
-        0
-      ],
-      [
-        3,
-        6,
-        0
-      ],
-      [
-        4,
-        6,
-        0
-      ],
-      [
-        5,
-        6,
-        0
-      ],
-      [
-        6,
-        6,
-        0
-      ],
-      [
-        0,
-        7,
-        0
-      ],
-      [
-        1,
-        7,
-        0
-      ],
-      [
-        2,
-        7,
-        0
-      ],
-      [
-        3,
-        7,
-        0
-      ],
-      [
-        4,
-        7,
-        0
-      ],
-      [
-        5,
-        7,
-        0
-      ],
-      [
-        6,
-        7,
-        0
-      ]
-    ],
-    "benchAnchors": [
-      [
-        0.25,
-        8.45,
-        0
-      ],
-      [
-        1.25,
-        8.45,
-        0
-      ],
-      [
-        2.25,
-        8.45,
-        0
-      ],
-      [
-        3.25,
-        8.45,
-        0
-      ],
-      [
-        4.25,
-        8.45,
-        0
-      ],
-      [
-        5.25,
-        8.45,
-        0
-      ],
-      [
-        6.25,
-        8.45,
-        0
-      ],
-      [
-        7.25,
-        8.45,
-        0
-      ],
-      [
-        8.25,
-        8.45,
-        0
-      ]
-    ],
-    "itemBenchAnchors": [
-      [
-        0.25,
-        9.15,
-        0
-      ],
-      [
-        1.25,
-        9.15,
-        0
-      ],
-      [
-        2.25,
-        9.15,
-        0
-      ],
-      [
-        3.25,
-        9.15,
-        0
-      ],
-      [
-        4.25,
-        9.15,
-        0
-      ],
-      [
-        5.25,
-        9.15,
-        0
-      ],
-      [
-        6.25,
-        9.15,
-        0
-      ],
-      [
-        7.25,
-        9.15,
-        0
-      ],
-      [
-        8.25,
-        9.15,
-        0
-      ]
-    ],
-    "tacticianSpawn": [
-      3.0,
-      3.5,
-      0
-    ],
-    "humanSpawn": [
-      3.5,
-      8.5,
-      0
-    ],
-    "opponentSpawn": [
-      3.5,
-      -0.5,
-      0
-    ],
-    "carouselCenter": [
-      3.5,
-      4.0,
-      0
-    ],
-    "arenaBounds": [
-      -1,
-      -1,
-      7,
-      9
-    ],
-    "lootAnchors": [
-      [
-        3.5,
-        4.0,
-        0
-      ]
-    ],
-    "combatStartVfx": "svhub:combat_start",
-    "victoryVfx": "svhub:victory",
-    "defeatVfx": "svhub:defeat",
-    "interactionRegions": [
-      {
-        "id": "board",
-        "bounds": [
-          0,
-          0,
-          6,
-          7
-        ],
-        "action": "place_unit"
-      },
-      {
-        "id": "bench",
-        "bounds": [
-          0,
-          8,
-          7,
-          9
-        ],
-        "action": "bench_unit"
-      }
-    ]
-  }
+    "style":  "emerald_sector",
+    "surface":  "tactical",
+    "depth":  3,
+    "detailEvery":  0,
+    "pathDetailEvery":  0,
+    "floor":  [
+                  "minecraft:dark_prismarine"
+              ],
+    "floorAlt":  [
+                     "minecraft:prismarine"
+                 ],
+    "ally":  [
+
+             ],
+    "enemy":  [
+
+              ],
+    "path":  [
+
+             ],
+    "floorColor":  "#214c3d",
+    "floorAltColor":  "#295b48",
+    "allyColor":  "#153d32",
+    "enemyColor":  "#287b5c",
+    "pathColor":  "#756e5f",
+    "pathAccentColor":  "#b2a887",
+    "gridColor":  "#80a08e",
+    "borderColor":  "#80e9ad",
+    "edgeColor":  "#172019",
+    "depthColor":  "#102c30",
+    "props":  [
+                  {
+                      "yaw":  0,
+                      "y":  "-2",
+                      "z":  2.8,
+                      "x":  3,
+                      "scale":  1.25,
+                      "item":  "minecraft:sea_lantern"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  1,
+                      "z":  1,
+                      "x":  "-1.5",
+                      "scale":  1.3,
+                      "item":  "minecraft:end_rod"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  5,
+                      "z":  1,
+                      "x":  7.5,
+                      "scale":  1.3,
+                      "item":  "minecraft:end_rod"
+                  },
+                  {
+                      "yaw":  45,
+                      "y":  6.1,
+                      "z":  0.3,
+                      "x":  8.8,
+                      "scale":  1.4,
+                      "item":  "minecraft:prismarine_bricks"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  8.6,
+                      "z":  0.45,
+                      "x":  8.8,
+                      "scale":  0.9,
+                      "item":  "minecraft:beacon"
+                  }
+              ],
+    "metadata":  {
+                     "boardColumns":  7,
+                     "boardRows":  8,
+                     "benchSlots":  9,
+                     "tacticianRegion":  [6.85, 5.5, 7.5, 7.3],
+                     "camera":  {
+                                    "spectator":  [5, 20, 18],
+                                    "scouting":  [1, 18, 14],
+                                    "carousel":  [3, 19, 23]
+                                },
+                     "lighting":  "themed",
+                     "ambientVfx":  "emerald_sector",
+                     "music":  "minecraft:music.game",
+                     "boardOrigin":  [0, 0, 0],
+                     "boardAnchors":  [
+                                          [0, 0, 0],
+                                          [1, 0, 0],
+                                          [2, 0, 0],
+                                          [3, 0, 0],
+                                          [4, 0, 0],
+                                          [5, 0, 0],
+                                          [6, 0, 0],
+                                          [0, 1, 0],
+                                          [1, 1, 0],
+                                          [2, 1, 0],
+                                          [3, 1, 0],
+                                          [4, 1, 0],
+                                          [5, 1, 0],
+                                          [6, 1, 0],
+                                          [0, 2, 0],
+                                          [1, 2, 0],
+                                          [2, 2, 0],
+                                          [3, 2, 0],
+                                          [4, 2, 0],
+                                          [5, 2, 0],
+                                          [6, 2, 0],
+                                          [0, 3, 0],
+                                          [1, 3, 0],
+                                          [2, 3, 0],
+                                          [3, 3, 0],
+                                          [4, 3, 0],
+                                          [5, 3, 0],
+                                          [6, 3, 0],
+                                          [0, 4, 0],
+                                          [1, 4, 0],
+                                          [2, 4, 0],
+                                          [3, 4, 0],
+                                          [4, 4, 0],
+                                          [5, 4, 0],
+                                          [6, 4, 0],
+                                          [0, 5, 0],
+                                          [1, 5, 0],
+                                          [2, 5, 0],
+                                          [3, 5, 0],
+                                          [4, 5, 0],
+                                          [5, 5, 0],
+                                          [6, 5, 0],
+                                          [0, 6, 0],
+                                          [1, 6, 0],
+                                          [2, 6, 0],
+                                          [3, 6, 0],
+                                          [4, 6, 0],
+                                          [5, 6, 0],
+                                          [6, 6, 0],
+                                          [0, 7, 0],
+                                          [1, 7, 0],
+                                          [2, 7, 0],
+                                          [3, 7, 0],
+                                          [4, 7, 0],
+                                          [5, 7, 0],
+                                          [6, 7, 0]
+                                      ],
+                     "benchAnchors":  [
+                                          [0, 8.43, 0.035],
+                                          [0.75, 8.385, 0.035],
+                                          [1.5, 8.34, 0.035],
+                                          [2.25, 8.295, 0.035],
+                                          [3, 8.25, 0.035],
+                                          [3.75, 8.295, 0.035],
+                                          [4.5, 8.34, 0.035],
+                                          [5.25, 8.385, 0.035],
+                                          [6, 8.43, 0.035]
+                                      ],
+                     "itemBenchAnchors":  [
+                                              [-0.25, 10.52, 0],
+                                              [0.57, 10.39, 0],
+                                              [1.39, 10.26, 0],
+                                              [2.21, 10.13, 0],
+                                              [3.03, 10, 0],
+                                              [3.8499999999999996, 10.13, 0],
+                                              [4.67, 10.26, 0],
+                                              [5.4899999999999993, 10.39, 0],
+                                              [6.31, 10.52, 0]
+                                          ],
+                     "tacticianSpawn":  [7.15, 6.4, 0],
+                     "humanSpawn":  [3, 8.2, 0],
+                     "opponentSpawn":  [3, -2, 0],
+                     "carouselCenter":  [3, 4.2, 0],
+                     "arenaBounds":  [-3, -4, 12, 12],
+                     "lootAnchors":  [
+                                         [3.5, 4.0, 0]
+                                     ],
+                     "combatStartVfx":  "svhub:combat_start",
+                     "victoryVfx":  "svhub:victory",
+                     "defeatVfx":  "svhub:defeat",
+                     "interactionRegions":  [
+
+                                            ],
+                     "cameraPresets":  {
+                                           "normal":  {
+                                                          "position":  [3.1, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "preparation":  {
+                                                               "position":  [3.1, 15, 9],
+                                                               "fov":  30,
+                                                               "transitionMs":  650,
+                                                               "far":  100,
+                                                               "near":  0.1,
+                                                               "target":  [3, 4, 0]
+                                                           },
+                                           "combat":  {
+                                                          "position":  [3.1, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "scouting":  {
+                                                            "position":  [3.1, 15, 9],
+                                                            "fov":  30,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 4, 0]
+                                                        },
+                                           "carousel":  {
+                                                            "position":  [3, 19, 23],
+                                                            "fov":  52,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 4.2, 0]
+                                                        },
+                                           "pve_intro":  {
+                                                             "position":  [3.1, 15, 9],
+                                                             "fov":  30,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [3, 4, 0]
+                                                         },
+                                           "boss_intro":  {
+                                                              "position":  [3.1, 15, 9],
+                                                              "fov":  30,
+                                                              "transitionMs":  650,
+                                                              "far":  100,
+                                                              "near":  0.1,
+                                                              "target":  [3, 4, 0]
+                                                          },
+                                           "victory":  {
+                                                           "position":  [3.1, 15, 9],
+                                                           "fov":  30,
+                                                           "transitionMs":  650,
+                                                           "far":  100,
+                                                           "near":  0.1,
+                                                           "target":  [3, 4, 0]
+                                                       },
+                                           "defeat":  {
+                                                          "position":  [3.1, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "spectator":  {
+                                                             "position":  [3.1, 15, 9],
+                                                             "fov":  30,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [3, 4, 0]
+                                                         },
+                                           "arena_preview":  {
+                                                                 "position":  [3.1, 15, 9],
+                                                                 "fov":  30,
+                                                                 "transitionMs":  650,
+                                                                 "far":  100,
+                                                                 "near":  0.1,
+                                                                 "target":  [3, 4, 0]
+                                                             }
+                                       }
+                 },
+    "id":  "sector_2814",
+    "geometry":  [
+                     {
+                         "position":  [3, 3.5, -1.1],
+                         "material":  "#102c30",
+                         "rotation":  [0, 0, 8],
+                         "id":  "floating-core",
+                         "size":  [5.5, 6.5, 1.3]
+                     },
+                     {
+                         "position":  [-1.4, 3.5, -0.25],
+                         "material":  "#366b65",
+                         "rotation":  [0, 0, -8],
+                         "id":  "west-fin",
+                         "size":  [1.5, 8.8, 0.35]
+                     },
+                     {
+                         "position":  [7.4, 3.5, -0.25],
+                         "material":  "#366b65",
+                         "rotation":  [0, 0, 8],
+                         "id":  "east-fin",
+                         "size":  [1.5, 8.8, 0.35]
+                     },
+                     {
+                         "position":  [-0.8, 0, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-0",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 0, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-0",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 0, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-0",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 1, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-1",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 1, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-1",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 1, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-1",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 2, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-2",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 2, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-2",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 2, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-2",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 3, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-3",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 3, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-3",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 3, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-3",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 4, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-4",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 4, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-4",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 4, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-4",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 5, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-5",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 5, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-5",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 5, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-5",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 6, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-6",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 6, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-6",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 6, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-6",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [-0.8, 7, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-left-7",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [6.8, 7, 0.35],
+                         "material":  "#79efb8",
+                         "rotation":  [0, 0, 0],
+                         "id":  "energy-right-7",
+                         "size":  [0.1, 0.7, 0.65]
+                     },
+                     {
+                         "position":  [3, 7, -0.65],
+                         "material":  "#4a9b80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "underside-rib-7",
+                         "size":  [7.5, 0.12, 0.25]
+                     },
+                     {
+                         "position":  [1.5, -2, 1.4],
+                         "material":  "#70e5ad",
+                         "rotation":  [0, -12, 0],
+                         "id":  "portal-left",
+                         "size":  [0.45, 0.6, 3.6]
+                     },
+                     {
+                         "position":  [4.5, -2, 1.4],
+                         "material":  "#70e5ad",
+                         "rotation":  [0, 12, 0],
+                         "id":  "portal-right",
+                         "size":  [0.45, 0.6, 3.6]
+                     },
+                     {
+                         "position":  [3, -2, 3.1],
+                         "material":  "#b6ffd0",
+                         "rotation":  [0, 0, 0],
+                         "id":  "portal-crown",
+                         "size":  [3.7, 0.6, 0.4]
+                     },
+                     {
+                         "position":  [7.3, 6.4, -0.25],
+                         "material":  "#315e69",
+                         "rotation":  [0, 0, 15],
+                         "id":  "pilot-platform",
+                         "size":  [1.8, 2.8, 0.5]
+                     },
+                     {
+                         "position":  [6.9, 6.5, -0.2],
+                         "material":  "#5cb8a0",
+                         "rotation":  [0, 0, 0],
+                         "id":  "pilot-bridge",
+                         "size":  [1, 0.7, 0.4]
+                     },
+                     {
+                         "position":  [0, 8.43, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-0",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [0.75, 8.385, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-1",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [1.5, 8.34, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-2",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [2.25, 8.295, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-3",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [3, 8.25, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-4",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [3.75, 8.295, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-5",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [4.5, 8.34, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-6",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [5.25, 8.385, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-7",
+                         "size":  [0.72, 0.85, 0.6]
+                     },
+                     {
+                         "position":  [6, 8.43, -0.3],
+                         "material":  "#498d80",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-pod-8",
+                         "size":  [0.72, 0.85, 0.6]
+                     }
+                 ]
 }

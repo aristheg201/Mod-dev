@@ -1,541 +1,442 @@
 {
-  "style": "gotham_rooftops",
-  "surface": "tactical",
-  "depth": 7,
-  "detailEvery": 12,
-  "pathDetailEvery": 0,
-  "floor": [
-    "minecraft:deepslate_tiles",
-    "minecraft:lightning_rod"
-  ],
-  "floorAlt": [
-    "minecraft:moss_carpet"
-  ],
-  "ally": [
-    "minecraft:azalea_leaves",
-    "minecraft:moss_carpet"
-  ],
-  "enemy": [
-    "minecraft:crimson_fungus",
-    "minecraft:nether_sprouts"
-  ],
-  "path": [],
-  "floorColor": "#202838",
-  "floorAltColor": "#314a36",
-  "allyColor": "#202838",
-  "enemyColor": "#61405e",
-  "pathColor": "#756e5f",
-  "pathAccentColor": "#b2a887",
-  "gridColor": "#80a08e",
-  "borderColor": "#3f4b40",
-  "edgeColor": "#172019",
-  "depthColor": "#172019",
-  "props": [
-    {
-      "item": "minecraft:campfire",
-      "x": -1.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:soul_campfire",
-      "x": 7.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:lantern",
-      "x": -0.85,
-      "y": 7.1,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:soul_lantern",
-      "x": 6.85,
-      "y": -0.15,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:bell",
-      "x": 3,
-      "y": 7.8,
-      "scale": 0.82
-    },
-    {
-      "item": "minecraft:respawn_anchor",
-      "x": 3,
-      "y": -0.95,
-      "scale": 0.82
-    }
-  ],
-  "metadata": {
-    "boardColumns": 7,
-    "boardRows": 8,
-    "benchSlots": 9,
-    "tacticianRegion": [
-      -1.0,
-      -1.0,
-      7.0,
-      8.0
-    ],
-    "camera": {
-      "spectator": [
-        3.0,
-        9.0,
-        12.0
-      ],
-      "scouting": [
-        3.0,
-        8.0,
-        10.0
-      ],
-      "carousel": [
-        3.0,
-        10.0,
-        13.0
-      ]
-    },
-    "lighting": "themed",
-    "ambientVfx": "gotham_rooftops",
-    "music": "minecraft:music.game",
-    "boardOrigin": [
-      0,
-      0,
-      0
-    ],
-    "boardAnchors": [
-      [
-        0,
-        0,
-        0
-      ],
-      [
-        1,
-        0,
-        0
-      ],
-      [
-        2,
-        0,
-        0
-      ],
-      [
-        3,
-        0,
-        0
-      ],
-      [
-        4,
-        0,
-        0
-      ],
-      [
-        5,
-        0,
-        0
-      ],
-      [
-        6,
-        0,
-        0
-      ],
-      [
-        0,
-        1,
-        0
-      ],
-      [
-        1,
-        1,
-        0
-      ],
-      [
-        2,
-        1,
-        0
-      ],
-      [
-        3,
-        1,
-        0
-      ],
-      [
-        4,
-        1,
-        0
-      ],
-      [
-        5,
-        1,
-        0
-      ],
-      [
-        6,
-        1,
-        0
-      ],
-      [
-        0,
-        2,
-        0
-      ],
-      [
-        1,
-        2,
-        0
-      ],
-      [
-        2,
-        2,
-        0
-      ],
-      [
-        3,
-        2,
-        0
-      ],
-      [
-        4,
-        2,
-        0
-      ],
-      [
-        5,
-        2,
-        0
-      ],
-      [
-        6,
-        2,
-        0
-      ],
-      [
-        0,
-        3,
-        0
-      ],
-      [
-        1,
-        3,
-        0
-      ],
-      [
-        2,
-        3,
-        0
-      ],
-      [
-        3,
-        3,
-        0
-      ],
-      [
-        4,
-        3,
-        0
-      ],
-      [
-        5,
-        3,
-        0
-      ],
-      [
-        6,
-        3,
-        0
-      ],
-      [
-        0,
-        4,
-        0
-      ],
-      [
-        1,
-        4,
-        0
-      ],
-      [
-        2,
-        4,
-        0
-      ],
-      [
-        3,
-        4,
-        0
-      ],
-      [
-        4,
-        4,
-        0
-      ],
-      [
-        5,
-        4,
-        0
-      ],
-      [
-        6,
-        4,
-        0
-      ],
-      [
-        0,
-        5,
-        0
-      ],
-      [
-        1,
-        5,
-        0
-      ],
-      [
-        2,
-        5,
-        0
-      ],
-      [
-        3,
-        5,
-        0
-      ],
-      [
-        4,
-        5,
-        0
-      ],
-      [
-        5,
-        5,
-        0
-      ],
-      [
-        6,
-        5,
-        0
-      ],
-      [
-        0,
-        6,
-        0
-      ],
-      [
-        1,
-        6,
-        0
-      ],
-      [
-        2,
-        6,
-        0
-      ],
-      [
-        3,
-        6,
-        0
-      ],
-      [
-        4,
-        6,
-        0
-      ],
-      [
-        5,
-        6,
-        0
-      ],
-      [
-        6,
-        6,
-        0
-      ],
-      [
-        0,
-        7,
-        0
-      ],
-      [
-        1,
-        7,
-        0
-      ],
-      [
-        2,
-        7,
-        0
-      ],
-      [
-        3,
-        7,
-        0
-      ],
-      [
-        4,
-        7,
-        0
-      ],
-      [
-        5,
-        7,
-        0
-      ],
-      [
-        6,
-        7,
-        0
-      ]
-    ],
-    "benchAnchors": [
-      [
-        0.25,
-        8.45,
-        0
-      ],
-      [
-        1.25,
-        8.45,
-        0
-      ],
-      [
-        2.25,
-        8.45,
-        0
-      ],
-      [
-        3.25,
-        8.45,
-        0
-      ],
-      [
-        4.25,
-        8.45,
-        0
-      ],
-      [
-        5.25,
-        8.45,
-        0
-      ],
-      [
-        6.25,
-        8.45,
-        0
-      ],
-      [
-        7.25,
-        8.45,
-        0
-      ],
-      [
-        8.25,
-        8.45,
-        0
-      ]
-    ],
-    "itemBenchAnchors": [
-      [
-        0.25,
-        9.15,
-        0
-      ],
-      [
-        1.25,
-        9.15,
-        0
-      ],
-      [
-        2.25,
-        9.15,
-        0
-      ],
-      [
-        3.25,
-        9.15,
-        0
-      ],
-      [
-        4.25,
-        9.15,
-        0
-      ],
-      [
-        5.25,
-        9.15,
-        0
-      ],
-      [
-        6.25,
-        9.15,
-        0
-      ],
-      [
-        7.25,
-        9.15,
-        0
-      ],
-      [
-        8.25,
-        9.15,
-        0
-      ]
-    ],
-    "tacticianSpawn": [
-      3.0,
-      3.5,
-      0
-    ],
-    "humanSpawn": [
-      3.5,
-      8.5,
-      0
-    ],
-    "opponentSpawn": [
-      3.5,
-      -0.5,
-      0
-    ],
-    "carouselCenter": [
-      3.5,
-      4.0,
-      0
-    ],
-    "arenaBounds": [
-      -1,
-      -1,
-      7,
-      9
-    ],
-    "lootAnchors": [
-      [
-        3.5,
-        4.0,
-        0
-      ]
-    ],
-    "combatStartVfx": "svhub:combat_start",
-    "victoryVfx": "svhub:victory",
-    "defeatVfx": "svhub:defeat",
-    "interactionRegions": [
-      {
-        "id": "board",
-        "bounds": [
-          0,
-          0,
-          6,
-          7
-        ],
-        "action": "place_unit"
-      },
-      {
-        "id": "bench",
-        "bounds": [
-          0,
-          8,
-          7,
-          9
-        ],
-        "action": "bench_unit"
-      }
-    ]
-  }
+    "style":  "gotham_rooftops",
+    "surface":  "tactical",
+    "depth":  7,
+    "detailEvery":  0,
+    "pathDetailEvery":  0,
+    "floor":  [
+                  "minecraft:deepslate_tiles"
+              ],
+    "floorAlt":  [
+                     "minecraft:polished_deepslate"
+                 ],
+    "ally":  [
+
+             ],
+    "enemy":  [
+
+              ],
+    "path":  [
+
+             ],
+    "floorColor":  "#3c4859",
+    "floorAltColor":  "#455366",
+    "allyColor":  "#202838",
+    "enemyColor":  "#61405e",
+    "pathColor":  "#756e5f",
+    "pathAccentColor":  "#b2a887",
+    "gridColor":  "#80a08e",
+    "borderColor":  "#475463",
+    "edgeColor":  "#172019",
+    "depthColor":  "#121923",
+    "props":  [
+                  {
+                      "yaw":  0,
+                      "y":  "-5",
+                      "z":  1,
+                      "x":  -4,
+                      "scale":  1.2,
+                      "item":  "minecraft:iron_bars"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  "-5",
+                      "z":  3,
+                      "x":  0,
+                      "scale":  1.2,
+                      "item":  "minecraft:iron_bars"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  "-5",
+                      "z":  5,
+                      "x":  4,
+                      "scale":  1.2,
+                      "item":  "minecraft:iron_bars"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  "-5",
+                      "z":  1,
+                      "x":  8,
+                      "scale":  1.2,
+                      "item":  "minecraft:iron_bars"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  "-.1",
+                      "z":  0.55,
+                      "x":  7,
+                      "scale":  0.9,
+                      "item":  "minecraft:iron_trapdoor"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  "-1",
+                      "z":  2.4,
+                      "x":  7,
+                      "scale":  1.7,
+                      "item":  "minecraft:lightning_rod"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  7.7,
+                      "z":  0.5,
+                      "x":  "-1.3",
+                      "scale":  1,
+                      "item":  "minecraft:end_rod"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  7.7,
+                      "z":  0.5,
+                      "x":  7.3,
+                      "scale":  1,
+                      "item":  "minecraft:end_rod"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  2,
+                      "z":  0.4,
+                      "x":  7.1,
+                      "scale":  1,
+                      "item":  "minecraft:blast_furnace"
+                  },
+                  {
+                      "yaw":  0,
+                      "y":  3.2,
+                      "z":  0.4,
+                      "x":  7.1,
+                      "scale":  0.8,
+                      "item":  "minecraft:iron_block"
+                  }
+              ],
+    "metadata":  {
+                     "boardColumns":  7,
+                     "boardRows":  8,
+                     "benchSlots":  9,
+                     "tacticianRegion":  [-1.5, 5.2, -0.85, 7.8],
+                     "camera":  {
+                                    "spectator":  [11, 18, 16],
+                                    "scouting":  [8, 16, 13],
+                                    "carousel":  [3, 18, 19]
+                                },
+                     "lighting":  "themed",
+                     "ambientVfx":  "gotham_rooftops",
+                     "music":  "minecraft:music.game",
+                     "boardOrigin":  [0, 0, 0],
+                     "boardAnchors":  [
+                                          [0, 0, 0],
+                                          [1, 0, 0],
+                                          [2, 0, 0],
+                                          [3, 0, 0],
+                                          [4, 0, 0],
+                                          [5, 0, 0],
+                                          [6, 0, 0],
+                                          [0, 1, 0],
+                                          [1, 1, 0],
+                                          [2, 1, 0],
+                                          [3, 1, 0],
+                                          [4, 1, 0],
+                                          [5, 1, 0],
+                                          [6, 1, 0],
+                                          [0, 2, 0],
+                                          [1, 2, 0],
+                                          [2, 2, 0],
+                                          [3, 2, 0],
+                                          [4, 2, 0],
+                                          [5, 2, 0],
+                                          [6, 2, 0],
+                                          [0, 3, 0],
+                                          [1, 3, 0],
+                                          [2, 3, 0],
+                                          [3, 3, 0],
+                                          [4, 3, 0],
+                                          [5, 3, 0],
+                                          [6, 3, 0],
+                                          [0, 4, 0],
+                                          [1, 4, 0],
+                                          [2, 4, 0],
+                                          [3, 4, 0],
+                                          [4, 4, 0],
+                                          [5, 4, 0],
+                                          [6, 4, 0],
+                                          [0, 5, 0],
+                                          [1, 5, 0],
+                                          [2, 5, 0],
+                                          [3, 5, 0],
+                                          [4, 5, 0],
+                                          [5, 5, 0],
+                                          [6, 5, 0],
+                                          [0, 6, 0],
+                                          [1, 6, 0],
+                                          [2, 6, 0],
+                                          [3, 6, 0],
+                                          [4, 6, 0],
+                                          [5, 6, 0],
+                                          [6, 6, 0],
+                                          [0, 7, 0],
+                                          [1, 7, 0],
+                                          [2, 7, 0],
+                                          [3, 7, 0],
+                                          [4, 7, 0],
+                                          [5, 7, 0],
+                                          [6, 7, 0]
+                                      ],
+                     "benchAnchors":  [
+                                          [0, 8.35, 0.035],
+                                          [0.75, 8.35, 0.035],
+                                          [1.5, 8.35, 0.035],
+                                          [2.25, 8.35, 0.035],
+                                          [3, 8.35, 0.035],
+                                          [3.75, 8.35, 0.035],
+                                          [4.5, 8.35, 0.035],
+                                          [5.25, 8.35, 0.035],
+                                          [6, 8.35, 0.035]
+                                      ],
+                     "itemBenchAnchors":  [
+                                              [-0.1, 9.6, 0],
+                                              [0.68, 9.6, 0],
+                                              [1.46, 9.6, 0],
+                                              [2.2399999999999998, 9.6, 0],
+                                              [3.02, 9.6, 0],
+                                              [3.8000000000000003, 9.6, 0],
+                                              [4.58, 9.6, 0],
+                                              [5.36, 9.6, 0],
+                                              [6.1400000000000006, 9.6, 0]
+                                          ],
+                     "tacticianSpawn":  [-1.15, 6.8, 0],
+                     "humanSpawn":  [6.9, 8, 0],
+                     "opponentSpawn":  [6.9, -1.5, 0],
+                     "carouselCenter":  [3, 3.5, 0],
+                     "arenaBounds":  [-5, -6, 11, 11],
+                     "lootAnchors":  [
+                                         [3.5, 4.0, 0]
+                                     ],
+                     "combatStartVfx":  "svhub:combat_start",
+                     "victoryVfx":  "svhub:victory",
+                     "defeatVfx":  "svhub:defeat",
+                     "interactionRegions":  [
+
+                                            ],
+                     "cameraPresets":  {
+                                           "normal":  {
+                                                          "position":  [4.2, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "preparation":  {
+                                                               "position":  [4.2, 15, 9],
+                                                               "fov":  30,
+                                                               "transitionMs":  650,
+                                                               "far":  100,
+                                                               "near":  0.1,
+                                                               "target":  [3, 4, 0]
+                                                           },
+                                           "combat":  {
+                                                          "position":  [4.2, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "scouting":  {
+                                                            "position":  [4.2, 15, 9],
+                                                            "fov":  30,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 4, 0]
+                                                        },
+                                           "carousel":  {
+                                                            "position":  [3, 18, 19],
+                                                            "fov":  52,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 3.5, 0]
+                                                        },
+                                           "pve_intro":  {
+                                                             "position":  [4.2, 15, 9],
+                                                             "fov":  30,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [3, 4, 0]
+                                                         },
+                                           "boss_intro":  {
+                                                              "position":  [4.2, 15, 9],
+                                                              "fov":  30,
+                                                              "transitionMs":  650,
+                                                              "far":  100,
+                                                              "near":  0.1,
+                                                              "target":  [3, 4, 0]
+                                                          },
+                                           "victory":  {
+                                                           "position":  [4.2, 15, 9],
+                                                           "fov":  30,
+                                                           "transitionMs":  650,
+                                                           "far":  100,
+                                                           "near":  0.1,
+                                                           "target":  [3, 4, 0]
+                                                       },
+                                           "defeat":  {
+                                                          "position":  [4.2, 15, 9],
+                                                          "fov":  30,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [3, 4, 0]
+                                                      },
+                                           "spectator":  {
+                                                             "position":  [4.2, 15, 9],
+                                                             "fov":  30,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [3, 4, 0]
+                                                         },
+                                           "arena_preview":  {
+                                                                 "position":  [4.2, 15, 9],
+                                                                 "fov":  30,
+                                                                 "transitionMs":  650,
+                                                                 "far":  100,
+                                                                 "near":  0.1,
+                                                                 "target":  [3, 4, 0]
+                                                             }
+                                       }
+                 },
+    "id":  "gotham_rooftops",
+    "geometry":  [
+                     {
+                         "position":  [3, 3.7, -0.6],
+                         "material":  "#28313e",
+                         "rotation":  [0, 0, 0],
+                         "id":  "roof-deck",
+                         "size":  [10, 13, 1.1]
+                     },
+                     {
+                         "position":  [-1.8, 3.7, 0.25],
+                         "material":  "#536070",
+                         "rotation":  [0, 0, 0],
+                         "id":  "west-parapet",
+                         "size":  [0.35, 13, 0.7]
+                     },
+                     {
+                         "position":  [7.8, 3.7, 0.25],
+                         "material":  "#536070",
+                         "rotation":  [0, 0, 0],
+                         "id":  "east-parapet",
+                         "size":  [0.35, 13, 0.7]
+                     },
+                     {
+                         "position":  [3, -2.7, 0.25],
+                         "material":  "#536070",
+                         "rotation":  [0, 0, 0],
+                         "id":  "north-parapet",
+                         "size":  [10, 0.35, 0.7]
+                     },
+                     {
+                         "position":  [7, -1, 1.1],
+                         "material":  "#394a5d",
+                         "rotation":  [0, 0, 0],
+                         "id":  "access-tower",
+                         "size":  [1.2, 1.7, 2.2]
+                     },
+                     {
+                         "position":  [7, -1, 2.25],
+                         "material":  "#7b8995",
+                         "rotation":  [0, 0, 0],
+                         "id":  "access-roof",
+                         "size":  [1.55, 2, 0.2]
+                     },
+                     {
+                         "position":  [3, 8.35, -0.15],
+                         "material":  "#586878",
+                         "rotation":  [0, 0, 0],
+                         "id":  "bench-platform",
+                         "size":  [7.6, 1.15, 0.3]
+                     },
+                     {
+                         "position":  [-1.15, 6.5, -0.15],
+                         "material":  "#4c6174",
+                         "rotation":  [0, 0, 0],
+                         "id":  "tactician-walkway",
+                         "size":  [1.2, 3.8, 0.3]
+                     },
+                     {
+                         "position":  [-1.78, 6.5, 0.3],
+                         "material":  "#a4b8c6",
+                         "rotation":  [0, 0, 0],
+                         "id":  "walkway-rail",
+                         "size":  [0.1, 3.8, 0.6]
+                     },
+                     {
+                         "position":  [-0.8, -1.7, 0.4],
+                         "material":  "#687886",
+                         "rotation":  [0, 0, 0],
+                         "id":  "hvac-0",
+                         "size":  [1, 0.55, 0.8]
+                     },
+                     {
+                         "position":  [-4, -5, -1],
+                         "material":  "#152230",
+                         "rotation":  [0, 0, 0],
+                         "id":  "skyline-0",
+                         "size":  [2.2, 2.5, 4]
+                     },
+                     {
+                         "position":  [-0.8, -0.89999999999999991, 0.4],
+                         "material":  "#687886",
+                         "rotation":  [0, 0, 0],
+                         "id":  "hvac-1",
+                         "size":  [1, 0.55, 0.8]
+                     },
+                     {
+                         "position":  [0, -5, 0],
+                         "material":  "#152230",
+                         "rotation":  [0, 0, 0],
+                         "id":  "skyline-1",
+                         "size":  [2.2, 2.5, 6]
+                     },
+                     {
+                         "position":  [-0.8, -0.099999999999999867, 0.4],
+                         "material":  "#687886",
+                         "rotation":  [0, 0, 0],
+                         "id":  "hvac-2",
+                         "size":  [1, 0.55, 0.8]
+                     },
+                     {
+                         "position":  [4, -5, 1],
+                         "material":  "#152230",
+                         "rotation":  [0, 0, 0],
+                         "id":  "skyline-2",
+                         "size":  [2.2, 2.5, 8]
+                     },
+                     {
+                         "position":  [-0.8, 0.7000000000000004, 0.4],
+                         "material":  "#687886",
+                         "rotation":  [0, 0, 0],
+                         "id":  "hvac-3",
+                         "size":  [1, 0.55, 0.8]
+                     },
+                     {
+                         "position":  [8, -5, -1],
+                         "material":  "#152230",
+                         "rotation":  [0, 0, 0],
+                         "id":  "skyline-3",
+                         "size":  [2.2, 2.5, 4]
+                     },
+                     {
+                         "position":  [7.1, 4, 0.25],
+                         "material":  "#9badaf",
+                         "rotation":  [0, 0, 0],
+                         "id":  "service-pipe",
+                         "size":  [0.18, 6, 0.18]
+                     }
+                 ]
 }

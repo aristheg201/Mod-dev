@@ -20,6 +20,14 @@ import com.cobblemon.mod.common.client.render.models.blockbench.animation.Primar
 import com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation
 import com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockParticleKeyframe
 import com.cobblemon.mod.common.client.render.models.blockbench.repository.VaryingModelRepository
+import com.cobblemon.mod.common.client.render.models.blockbench.repository.RenderContext
+import com.cobblemon.mod.common.client.render.models.blockbench.PosableModel
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.texture.OverlayTexture
 import com.cobblemon.mod.common.entity.PoseType
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import com.mojang.blaze3d.systems.RenderSystem
@@ -28,13 +36,17 @@ import net.minecraft.resources.ResourceLocation
 import org.joml.Quaternionf
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.PI
+import io.github.aristheg201.svhub.ui.SceneActorFit
+import io.github.aristheg201.svhub.ui.SceneActorBounds
+import io.github.aristheg201.svhub.ui.UiRect
+import net.minecraft.client.Minecraft
 
 /**
  * Live Cobblemon model renderer for SVHub.
  *
- * Uses Cobblemon's actual profile-model pipeline, including current resource-pack
- * poser, texture, layers and profile transforms. The renderer never snapshots the
- * model through an auxiliary framebuffer, so it cannot poison the main GUI target.
+ * Uses Cobblemon's poser, texture, layers and animation state. HUD portraits use
+ * the provider's profile pipeline; scene actors use the world-model origin and
+ * SVHub's camera, transform and private render target.
  */
 data class CobblemonSceneParticleCue(
     val sourceEntityId: String,
@@ -98,11 +110,122 @@ object PokemonModelRenderer {
         val pendingSceneAnimations = ArrayDeque<SceneAnimationRequest>()
         val nativeParticleCues = ArrayDeque<CobblemonSceneParticleCue>()
         var lastRenderNanos: Long = System.nanoTime()
+        var scenePoser: PosableModel? = null
+        val sceneContext = RenderContext()
+        var sceneFit: SceneActorFit? = null
     }
 
     private val models = ConcurrentHashMap<ModelKey, LiveModel>()
     private val sceneModels = ConcurrentHashMap<SceneModelKey, LiveModel>()
     private val movePresentationCache = ConcurrentHashMap<String, MovePresentation>()
+    private val sceneFits = ConcurrentHashMap<ModelKey, SceneActorFit>()
+    private val previewBounds = ConcurrentHashMap<ModelKey, SceneActorBounds>()
+    private val failedModels = ConcurrentHashMap.newKeySet<ModelKey>()
+    private val logger = org.slf4j.LoggerFactory.getLogger("SVHub/PokemonModels")
+    data class SceneSizingDiagnostic(val instanceId:String,val species:String,val aspects:List<String>,val fit:SceneActorFit)
+    fun sceneSizingDiagnostics():List<SceneSizingDiagnostic> = sceneModels.mapNotNull { (key,live) ->
+        live.sceneFit?.let { SceneSizingDiagnostic(key.instanceId,key.species,key.aspects,it) }
+    }
+    fun sceneHeight(view: PokemonView, instanceId: String): Float =
+        sceneModels[SceneModelKey(instanceId,view.speciesId,view.aspects.sorted())]?.sceneFit?.height?.toFloat() ?: 1f
+
+    /** Provider model/poser/layers only: no profile camera, GUI scale or host entity dispatcher. */
+    fun renderEmbedded(view: PokemonView, instanceId: String, poses: PoseStack,
+                       buffers: MultiBufferSource, moving: Boolean): Boolean {
+        val key=key(view)
+        if(key in failedModels) return false
+        return try { renderEmbeddedModel(view,instanceId,poses,buffers,moving) }
+        catch(failure:Exception) {
+            if(failedModels.add(key)) logger.warn("Unable to render scene model {} with aspects {}",view.speciesId,view.aspects,failure)
+            false
+        }
+    }
+
+    /** Shop previews use the same animated model adapter, fitted to the available card. */
+    fun renderPreview(gui:GuiGraphics,view:PokemonView,instanceId:String,rect:UiRect):Boolean {
+        if(rect.width<8 || rect.height<8) return false
+        val key=key(view)
+        fun orient(poses:PoseStack) {
+            poses.mulPose(Axis.XP.rotationDegrees(70f))
+            poses.mulPose(Axis.ZP.rotationDegrees(-15f))
+        }
+        val bounds=previewBounds[key] ?: run {
+            val capture=SceneModelBounds()
+            val measure=PoseStack().also(::orient)
+            if(!renderEmbedded(view,instanceId,measure,MultiBufferSource { capture },false)) return false
+            capture.bounds().also { previewBounds[key]=it }
+        }
+        val scale=minOf((rect.width-4)/(bounds.max.x-bounds.min.x),(rect.height-4)/(bounds.max.y-bounds.min.y)).toFloat()
+        gui.flush()
+        gui.enableScissor(rect.x,rect.y,rect.right,rect.bottom)
+        val poses=gui.pose()
+        poses.pushPose()
+        try {
+            poses.translate(rect.x+rect.width*.5,rect.y+rect.height*.5,200.0)
+            poses.scale(scale,scale,-scale)
+            poses.translate(-(bounds.min.x+bounds.max.x)*.5,-(bounds.min.y+bounds.max.y)*.5,0.0)
+            orient(poses)
+            val buffers=Minecraft.getInstance().renderBuffers().bufferSource()
+            val rendered=renderEmbedded(view,instanceId,poses,buffers,false)
+            buffers.endBatch()
+            return rendered
+        } finally { poses.popPose();gui.disableScissor() }
+    }
+
+    private fun renderEmbeddedModel(view: PokemonView, instanceId: String, poses: PoseStack,
+                                   buffers: MultiBufferSource, moving: Boolean): Boolean {
+        val live=sceneModel(SceneModelKey(instanceId,view.speciesId,view.aspects.sorted()),view) ?: return false
+        val state=live.state
+        val species=live.pokemon.species.resourceIdentifier
+        state.currentAspects=live.pokemon.aspects
+        val model=live.scenePoser ?: VaryingModelRepository.getPoser(species,state).also { live.scenePoser=it }
+        state.currentModel=model
+        val now=System.nanoTime()
+        val delta=((now-live.lastRenderNanos).coerceAtLeast(0L)/50_000_000.0).toFloat().coerceIn(0f,1.5f)
+        live.lastRenderNanos=now
+        val context=live.sceneContext
+        val baseScale=live.pokemon.form.baseScale
+        context.put(RenderContext.SPECIES,species)
+        context.put(RenderContext.ASPECTS,live.pokemon.aspects)
+        context.put(RenderContext.SCALE,baseScale)
+        context.put(RenderContext.TEXTURE,VaryingModelRepository.getTextureNoSubstitute(species,state))
+        context.put(RenderContext.RENDER_STATE,RenderContext.RenderState.WORLD)
+        context.put(RenderContext.POSABLE_STATE,state)
+        context.put(RenderContext.DO_QUIRKS,true)
+        model.context=context
+        state.setPoseToFirstSuitable(resolveScenePoseType(live,moving))
+        state.updatePartialTicks(delta)
+        flushSceneAnimations(instanceId,live)
+        model.applyAnimations(null,state,0f,0f,0f,0f,0f)
+        val fit=live.sceneFit ?: sceneFits.getOrPut(key(view)) {
+            val capture=SceneModelBounds()
+            val measure=PoseStack()
+            measure.mulPose(Axis.XP.rotationDegrees(90f))
+            measure.scale(baseScale,-baseScale,-baseScale)
+            measure.translate(0.0,-1.5,0.0)
+            model.render(context,measure,capture,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,-1)
+            ScenePresentationSizing.profile().fit(capture.bounds())
+        }.also { live.sceneFit=it }
+        poses.pushPose()
+        try {
+            poses.translate(fit.offset.x,fit.offset.y,fit.offset.z)
+            poses.scale(fit.scale.toFloat(),fit.scale.toFloat(),fit.scale.toFloat())
+            // Cobblemon model bones use Y down; scene ground is XY and scene Z is up.
+            poses.mulPose(Axis.XP.rotationDegrees(90f))
+            poses.scale(baseScale,-baseScale,-baseScale)
+            // Living-model geometry uses a 24-pixel Y origin, as in the provider's
+            // world renderer. Omitting this translation sinks small species below the floor.
+            poses.translate(0.0,-1.5,0.0)
+            val texture=VaryingModelRepository.getTexture(species,state)
+            model.withLayerContext(buffers,state,VaryingModelRepository.getLayers(species,state)) {
+                model.render(context,poses,buffers.getBuffer(RenderType.entityCutoutNoCull(texture)),LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,-1)
+            }
+            return true
+        } finally {
+            model.setDefault()
+            poses.popPose()
+        }
+    }
 
     fun render(
         gui: GuiGraphics,
@@ -292,9 +415,9 @@ object PokemonModelRenderer {
      */
     private fun resolveScenePoseType(live: LiveModel, moving: Boolean): PoseType {
         live.state.currentAspects = live.pokemon.aspects
-        val model = runCatching {
+        val model = live.scenePoser ?: runCatching {
             VaryingModelRepository.getPoser(live.pokemon.species.resourceIdentifier, live.state)
-        }.getOrNull()
+        }.getOrNull()?.also { live.scenePoser=it }
         if (model != null) live.state.currentModel = model
 
         val suitable = model?.poses?.values.orEmpty().filter { pose ->
@@ -458,5 +581,5 @@ object PokemonModelRenderer {
 
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
     private fun degreesToRadians(value: Float): Float = (value * PI / 180.0).toFloat()
-    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear() }
+    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear(); sceneFits.clear(); previewBounds.clear(); failedModels.clear(); ScenePresentationSizing.clear() }
 }

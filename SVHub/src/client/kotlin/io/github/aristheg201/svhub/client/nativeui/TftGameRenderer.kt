@@ -9,12 +9,22 @@ import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.UiDensity
 import io.github.aristheg201.svhub.ui.UiRect
 import io.github.aristheg201.svhub.ui.TftLayoutResolver
+import io.github.aristheg201.svhub.ui.SceneTransform
+import io.github.aristheg201.svhub.ui.SceneVec3
+import io.github.aristheg201.svhub.ui.SceneItemModelNode
+import io.github.aristheg201.svhub.ui.SceneTacticianNode
+import io.github.aristheg201.svhub.ui.SceneCameraPreset
+import io.github.aristheg201.svhub.ui.SVHubSceneCamera
+import io.github.aristheg201.svhub.ui.SceneCameraFraming
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.language.I18n
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.item.ItemStack
+import net.minecraft.client.Minecraft
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
+import net.minecraft.sounds.SoundEvents
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -85,16 +95,53 @@ class TftUiState {
     private var traitCatalog: Map<String, TftTraitInfo> = emptyMap()
     private var itemStacks: Map<String, ItemStack> = emptyMap()
     private var itemDetails:Map<String,List<String>> = emptyMap()
+    private var itemRecipes: Map<String, String> = emptyMap()
     private var hoverTooltip: TftHoverTooltip? = null
     private var lastItemEventSerial:Long?=null
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
+    var selectedItemIdentity: String? = null
+    data class ItemTarget(val origin: String, val index: Int, val instanceId: String)
+    var itemTarget: ItemTarget? = null
+    var itemPage = 0
+    var carouselDestination: ArenaPoint? = null
+    var carouselOffer: Int? = null
+    var carouselLastIntentAt = 0L
+    var carouselLastPosition: String? = null
     private var tacticianPoint:ArenaPoint?=null
     private var tacticianAt=System.currentTimeMillis()
     private var tacticianState=TacticianPresentationState.IDLE
     private var tacticianStateSince=tacticianAt
+    private var cameraDestination:SceneCameraPreset?=null
+    private var cameraStart:SVHubSceneCamera?=null
+    private var cameraCurrent:SVHubSceneCamera?=null
+    private var cameraStartedAt=0L
+    private var framedSource: SceneCameraPreset?=null
+    private var framedArena: MinecraftArenaDefinition?=null
+    private var framedSize: Pair<Int,Int>?=null
+    private var framedPreset: SceneCameraPreset?=null
+    fun framedCamera(destination:SceneCameraPreset,arena:MinecraftArenaDefinition?,viewport:UiRect):SceneCameraPreset {
+        if(arena == null) return camera(destination)
+        val size=viewport.width to viewport.height
+        if(framedSource!=destination || framedArena !== arena || framedSize!=size) {
+            framedSource=destination;framedArena=arena;framedSize=size
+            framedPreset=SceneCameraFraming.board(destination,viewport,SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble()),arena.boardColumns,arena.boardRows,
+                arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) })
+        }
+        return camera(checkNotNull(framedPreset))
+    }
+    fun camera(destination:SceneCameraPreset,now:Long=System.currentTimeMillis()):SceneCameraPreset {
+        val target=SVHubSceneCamera(destination.position,destination.target,destination.fov,destination.near,destination.far)
+        if(cameraDestination != destination) {
+            cameraStart=cameraCurrent ?: target;cameraStartedAt=now;cameraDestination=destination
+        }
+        val t=if(destination.transitionMs==0L) 1.0 else ((now-cameraStartedAt).toDouble()/destination.transitionMs).coerceIn(0.0,1.0)
+        val sampled=(cameraStart ?: target).interpolate(target,t*t*(3-2*t))
+        cameraCurrent=sampled
+        return destination.copy(position=sampled.position,target=sampled.target,fov=sampled.fov,near=sampled.near,far=sampled.far)
+    }
     internal fun tacticianState()=tacticianState
     fun updateItems(raw: String) {
         if (raw == itemCatalogRaw) return
@@ -106,7 +153,7 @@ class TftUiState {
             val item = BuiltInRegistries.ITEM.getOptional(stackId).orElse(null) ?: return@mapNotNull null
             id to ItemStack(item)
         }?.toMap().orEmpty()
-        val recipes=root?.entrySet()?.mapNotNull{(id,value)->
+        itemRecipes=root?.entrySet()?.mapNotNull{(id,value)->
             val obj=runCatching{value.asJsonObject}.getOrNull()?:return@mapNotNull null
             val components=obj.get("components")?.asString.orEmpty().split(',').filter(String::isNotBlank)
             if(components.size==2)components.sorted().joinToString("+") to id else null
@@ -115,12 +162,15 @@ class TftUiState {
             val obj=value.asJsonObject;val lines=mutableListOf<String>()
             obj.get("effects")?.asString?.takeIf(String::isNotBlank)?.let{lines+=it}
             obj.get("components")?.asString?.takeIf(String::isNotBlank)?.let{lines+="Recipe: ${it.replace(',', '+')}"}
-            if(obj.get("kind")?.asString=="component")recipes.filterKeys{key->id in key.split('+')}.forEach{(key,result)->lines+="$key → $result"}
+            if(obj.get("kind")?.asString=="component")itemRecipes.filterKeys{key->id in key.split('+')}.forEach{(key,result)->lines+="$key → $result"}
             id to lines
         }.orEmpty()
     }
-    fun itemStack(id: String) = itemStacks[id.substringAfter(':').substringBefore('+')]?.copy()
+    fun itemStack(id: String) = itemStacks[id.substringAfter(':').substringBefore('+')]
     fun itemDetails(id:String)=itemDetails[id.substringAfter(':').substringBefore('+')].orEmpty()
+    fun recipe(first: String, second: String): String? =
+        if (first.startsWith("full:") || second.startsWith("full:")) null else itemRecipes[listOf(first, second).sorted().joinToString("+")]
+    fun clearItem() { selectedItem = null; selectedItemIdentity = null; itemTarget = null }
     fun observeItemEvent(serial:Long,encoded:String):SceneEffectSignal?{
         val previous=lastItemEventSerial
         lastItemEventSerial=maxOf(previous?:serial,serial)
@@ -345,6 +395,7 @@ object TftGameRenderer {
     data class Hooks(
         val control: (UiRect, String, Boolean, () -> Unit) -> Unit,
         val hit: (UiRect, () -> Unit) -> Unit,
+        val sceneInput: ((Double, Double) -> Boolean) -> Unit,
         val action: (String, Map<String, String>) -> Unit,
         val back: () -> Unit
     )
@@ -377,6 +428,7 @@ object TftGameRenderer {
         ui.updateCatalogs(fields.str("unitCatalog"), fields.str("traitCatalog"))
         ui.updateItems(fields.str("itemCatalog","{}"))
         val phase = view.str("phase")
+        if (phase != "draft") { ui.carouselDestination = null; ui.carouselOffer = null; ui.carouselLastPosition = null }
         val canEdit = fields.str("canEditBoard") == "true"
         val capabilities = fields.str("capabilities").split(',').filter(String::isNotBlank).toSet()
         val board = view.getAsJsonArray("board")
@@ -387,6 +439,7 @@ object TftGameRenderer {
         val players = parsePlayers(fields.str("players"))
         val traits = parseTraits(fields.str("traits"))
         val itemBench = fields.str("itemBench").split(',').filter(String::isNotBlank)
+        if (ui.selectedItem != null && (itemBench.getOrNull(ui.selectedItem!!) != ui.selectedItemIdentity || "CAN_EQUIP_ITEM" !in capabilities)) ui.clearItem()
         val augments = parseAugments(fields.str("augmentChoices"))
         val draft = parseDraft(fields.str("draft"))
 
@@ -405,6 +458,7 @@ object TftGameRenderer {
             "CAN_BUY_UNIT" in capabilities, "CAN_SELL" in capabilities, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
+        renderItemSlots(gui, font, resolved.board, fields, boardTokens, bench, itemBench, capabilities, ui, hooks, mouseX, mouseY)
         if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
         ui.tooltip()?.let { renderHoverTooltip(gui, font, area, it, mouseX, mouseY) }
     }
@@ -421,14 +475,15 @@ object TftGameRenderer {
         val goldValue = fields.int("gold")
         val streak = fields.int("streak")
         val timer = ((fields.long("phaseEndsAt") - System.currentTimeMillis()).coerceAtLeast(0L) + 999L) / 1000L
-        val title = if (density == UiDensity.COMPACT) "$round • Lv.$level • ${goldValue}g • HP $hp" else "${tr("gui.svhub.game.tft.title")}  •  $round  •  Lv.$level $xp/$xpNext XP  •  ${goldValue}g  •  HP $hp"
-        gui.drawString(font, fit(font, title, area.width - 118), area.x + 58, area.y + 7, text, true)
+        val title = if (density == UiDensity.COMPACT) "$round • Lv.$level • ${goldValue}g • HP $hp" else "${tr("gui.svhub.game.tft.title")}  •  $round"
+        val phaseWidth=if(density==UiDensity.COMPACT)60 else 100
+        gui.drawString(font, fit(font, title, area.width - phaseWidth - 70), area.x + 58, area.y + 7, text, true)
         if (density != UiDensity.COMPACT) {
-            val economy = "${tr("gui.svhub.tft.interest")}: ${fields.int("lastInterest")}  •  ${tr("gui.svhub.tft.streak")}: ${if (streak >= 0) "+$streak" else streak}"
+            val economy = "${goldValue}g  •  HP $hp  •  ${tr("gui.svhub.tft.interest")}: ${fields.int("lastInterest")}  •  ${tr("gui.svhub.tft.streak")}: ${if (streak >= 0) "+$streak" else streak}"
             gui.drawString(font, fit(font, economy, area.width - 180), area.x + 58, area.y + 19, muted, false)
         }
         val phaseText = when (phase) { "planning" -> tr("gui.svhub.tft.planning"); "combat" -> tr("gui.svhub.tft.combat"); "draft" -> tr("gui.svhub.tft.draft"); "post" -> tr("gui.svhub.tft.results"); else -> phase }
-        gui.drawString(font, "$phaseText ${if (timer > 0) "${timer}s" else ""}", area.right - 58, area.y + 7, if (phase == "combat") danger else gold, true)
+        gui.drawString(font, fit(font,"$phaseText ${if (timer > 0) "${timer}s" else ""}",phaseWidth-6), area.right - phaseWidth, area.y + 7, if (phase == "combat") danger else gold, true)
         if (density == UiDensity.WIDE) {
             val semanticStatus = when {
                 fields.str("eliminated") == "true" -> tr("gui.svhub.tft.eliminated")
@@ -498,9 +553,9 @@ object TftGameRenderer {
         val benchSlots = fields.int("benchSlots", 9).coerceIn(1, 24)
         val arenaId=fields.str("arenaId","tft")
         val arena=MinecraftArenaRegistry.definition(arenaId)
-        val cameraRole=when{phase=="draft"->ArenaCameraRole.CAROUSEL;fields.bool("scouting")->ArenaCameraRole.SCOUTING;else->ArenaCameraRole.NORMAL}
+        val cameraRole=when{phase=="draft"->ArenaCameraRole.CAROUSEL;fields.bool("scouting")->ArenaCameraRole.SCOUTING;fields.str("result").equals("Victory",true)->ArenaCameraRole.VICTORY;fields.bool("eliminated")->ArenaCameraRole.DEFEAT;phase=="combat"->ArenaCameraRole.COMBAT;else->ArenaCameraRole.PREPARATION}
         val presentation=ArenaPresentationRuntime.frame(arenaId,cameraRole,SceneCameras.TFT,phase,fields.str("result"))
-        val authoredCamera=presentation?.camera?:arena?.camera(cameraRole,SceneCameras.TFT)?:SceneCameras.TFT
+        val authoredCamera=ui.framedCamera(presentation?.camera?:arena?.camera(cameraRole,SceneCameras.TFT)?:SceneCameras.TFT,arena,rect.inset(4))
 
         val now = System.currentTimeMillis()
         val visibleUnits = if (phase == "combat") {
@@ -517,9 +572,10 @@ object TftGameRenderer {
                 label = shortUnit(unit.unitId),
                 boardX = arena?.boardAnchor(index)?.x ?: (index % columns).toFloat(),
                 boardY = arena?.boardAnchor(index)?.y ?: (index / columns).toFloat(),
+                elevation = arena?.boardAnchor(index)?.z ?: 0f,
                 team = unit.team,
                 yaw = if (unit.team == 0) 0f else 180f,
-                scale = if (unit.star >= 3) 1.03f else 0.90f,
+                scale = if (unit.star >= 3) 1.06f else 1f,
                 hp = unit.hp,
                 maxHp = unit.maxHp,
                 mana = unit.mana,
@@ -535,13 +591,18 @@ object TftGameRenderer {
                 label = shortUnit(unit.unitId),
                 boardX = arena?.benchAnchor(unit.index)?.x ?: unit.index * 0.75f,
                 boardY = arena?.benchAnchor(unit.index)?.y ?: combatRows + 0.8f,
+                elevation = arena?.benchAnchor(unit.index)?.z ?: 0f,
+                yaw = 180f,
                 scale = 0.65f,
                 star = unit.star
             )
         }
         val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
         val effectSignals=mutableListOf<SceneEffectSignal>()
-        ui.observeItemEvent(fields.long("itemEventSerial"),fields.str("lastItemEvent"))?.let(effectSignals::add)
+        ui.observeItemEvent(fields.long("itemEventSerial"),fields.str("lastItemEvent"))?.let {
+            effectSignals += it
+            Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.2f))
+        }
         val nativeAnimations=mutableListOf<SceneNativeAnimationSignal>()
         if(phase=="combat"){
             units.values.forEach { unit ->
@@ -571,6 +632,10 @@ object TftGameRenderer {
             (formationCells until formationCells * 2).toSet()
         } else emptySet()
 
+        val tacticianNode=arena?.let { definition ->
+            val pose=ui.tactician(definition.tacticianSpawn,definition.tacticianMovementBounds,fields.str("tacticianState","IDLE"))
+            SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble())),fields.str("tacticianEntity"),pose.state,fields.str("tacticianEntity").isNotBlank())
+        }
         val frame = PokemonScene3D.render(
             gui = gui,
             font = font,
@@ -589,24 +654,26 @@ object TftGameRenderer {
             arenaSeed = arenaSeed,
             platforms = (0 until benchSlots).map { index -> val anchor=arena?.benchAnchor(index);ScenePlatform(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f,
                 selected = ui.selectedOrigin == "bench" && ui.selectedIndex == index) },
-            extraRows = 2
+            extraRows = 2,
+            tactician = tacticianNode
         )
 
         presentation?.let { p ->
             MinecraftArenaRenderer.renderPresentation(gui,frame.layout,p,phase)
             p.interactionRegions.forEach { region ->
-                hooks.hit(MinecraftArenaRenderer.interactionRect(frame.layout,region)) {
-                    if(region.action.isNotBlank()) hooks.action(region.action,emptyMap())
+                hooks.sceneInput { x, y ->
+                    val camera = frame.layout.perspective
+                    val point = camera?.boardIntersection(x,y,arena?.boardOrigin?.z?.toDouble() ?: 0.0)
+                    val contains = point != null && point.x >= region.bounds.minX && point.x < region.bounds.maxX && point.y >= region.bounds.minY && point.y < region.bounds.maxY
+                    if (contains && region.action.isNotBlank()) hooks.action(region.action,emptyMap())
+                    contains
                 }
             }
         }
 
-        val tacticianEntity=fields.str("tacticianEntity")
-        if(tacticianEntity.isNotBlank()&&arena!=null){val target=fields.str("tacticianTarget").split(',').takeIf{it.size==2}?.let{parts->val x=parts[0].toFloatOrNull();val y=parts[1].toFloatOrNull();if(x!=null&&y!=null)ArenaPoint(x+arena.carouselCenter.x,y+arena.carouselCenter.y)else null}?:arena.tacticianSpawn;val pose=ui.tactician(target,arena.tacticianMovementBounds,fields.str("tacticianState","IDLE"));val point=frame.layout.project(pose.point.x,pose.point.y);val size=max(24,min(52,rect.width/10));VanillaCompanionModelRenderer.render(gui,tacticianEntity,point.x.roundToInt()-size/2,point.y.roundToInt()-size,point.x.roundToInt()+size/2,point.y.roundToInt(),pose.state in setOf("WALK","RUN","CAROUSEL_MOVEMENT"))}
-
         val benchByIndex = bench.associateBy { it.index }
         repeat(benchSlots) { index ->
-            val anchor=arena?.benchAnchor(index);val point = frame.layout.project(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f)
+            val anchor=arena?.benchAnchor(index);val point = frame.layout.project(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f, anchor?.z ?: 0f) ?: return@repeat
             val w = max(14, frame.layout.tileWidth * 2 / 3)
             val h = max(16, frame.layout.tileHeight * 2)
             val hit = UiRect(point.x.roundToInt() - w / 2, point.y.roundToInt() - h, w, h + 8)
@@ -615,8 +682,12 @@ object TftGameRenderer {
                 gui.fill(hit.x, hit.bottom - 2, hit.right, hit.bottom, accent)
                 if (unit != null) ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items))
             }
-            if (canEdit) hooks.hit(hit) {
+            fun selectBench() {
                 when {
+                    unit != null && ui.selectedItem != null -> {
+                        ui.clearUnit()
+                        ui.itemTarget = TftUiState.ItemTarget("bench", index, unit.instanceId)
+                    }
                     ui.selectedOrigin == "board" && ui.selectedIndex != null -> {
                         hooks.action("bench", mapOf("slot" to ui.selectedIndex.toString(), "bench" to index.toString()))
                         ui.clearUnit()
@@ -625,30 +696,44 @@ object TftGameRenderer {
                         if (ui.selectedIndex != index) hooks.action("swap_bench", mapOf("from" to ui.selectedIndex.toString(), "to" to index.toString()))
                         ui.clearUnit()
                     }
-                    unit != null && ui.selectedItem != null -> {
-                        hooks.action("equip_item", mapOf("item" to ui.selectedItem.toString(), "origin" to "bench", "index" to index.toString()))
-                        ui.selectedItem = null
-                    }
                     unit != null -> { ui.selectedOrigin = "bench"; ui.selectedIndex = index }
                 }
             }
+            if (canEdit) hooks.sceneInput { x,y ->
+                val position=anchor ?: ArenaPoint(index*.75f,combatRows+.8f)
+                val point=frame.layout.perspective?.boardIntersection(x,y,position.z.toDouble())
+                val inside=if(frame.layout.perspective != null) point != null && kotlin.math.abs(point.x-position.x)<=.4 && kotlin.math.abs(point.y-position.y)<=.4 else hit.contains(x,y)
+                if(inside) selectBench()
+                inside
+            }
         }
-        units.entries.firstOrNull { (index, _) -> frame.layout.hitBox(index).contains(mouseX.toDouble(), mouseY.toDouble()) }
-            ?.value?.let { unit ->
+        fun equippedIcons(instanceId:String, items:List<String>) {
+            if(items.isEmpty()) return
+            val point=frame.entityHeads["tft:$instanceId"] ?: return
+            gui.pose().pushPose()
+            try {
+                gui.pose().translate((point.x-items.size*5).toDouble(),(point.y+6).toDouble(),0.0)
+                gui.pose().scale(.6f,.6f,1f)
+                items.take(3).forEachIndexed { slot,item -> ui.itemStack(item)?.let { gui.renderItem(it,slot*17,0) } }
+            } finally { gui.pose().popPose() }
+        }
+        visibleUnits.values.forEach { equippedIcons(it.instanceId,it.items) }
+        bench.forEach { equippedIcons(it.instanceId,it.items) }
+        val hovered = frame.layout.pick(mouseX.toDouble(), mouseY.toDouble())
+        hovered?.let(units::get)?.let { unit ->
                 ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items, unit.hp, unit.maxHp, unit.mana, unit.maxMana))
             }
+        if (hovered != null && canEdit) MinecraftArenaRenderer.renderCellHighlight(gui,frame.layout,hovered,if(hovered >= formationCells) accent else danger,false)
 
         if (canEdit) {
-            for (index in formationCells until formationCells * 2) {
+            hooks.sceneInput { x, y ->
+                val index = frame.layout.pick(x,y) ?: return@sceneInput false
+                if (index !in formationCells until formationCells * 2) return@sceneInput false
                 val local = index - formationCells
                 val token = units[index]
-                hooks.hit(frame.layout.hitBox(index)) {
                     if (ui.selectedItem != null && token != null && token.team == 0) {
-                        hooks.action(
-                            "equip_item",
-                            mapOf("item" to ui.selectedItem.toString(), "origin" to "board", "index" to local.toString())
-                        )
-                        ui.selectedItem = null
+                        ui.clearUnit()
+                        ui.itemTarget = TftUiState.ItemTarget("board", local, token.instanceId)
                     } else if (ui.selectedOrigin == "bench" && ui.selectedIndex != null) {
                         hooks.action("deploy", mapOf("bench" to ui.selectedIndex.toString(), "slot" to local.toString()))
                         ui.clearUnit()
@@ -663,7 +748,7 @@ object TftGameRenderer {
                         ui.selectedOrigin = "board"
                         ui.selectedIndex = local
                     }
-                }
+                true
             }
         }
 
@@ -713,6 +798,11 @@ object TftGameRenderer {
         val benchW = (rect.width * 2 / 3).coerceAtLeast(90)
         val buttonX = rect.x + benchW + 7
         val buttonW = (rect.right - buttonX).coerceAtLeast(44)
+        val progressWidth=(benchW-12).coerceAtLeast(20)
+        gui.drawString(font,"Lv.${fields.int("level",2)}  •  ${fields.int("xp")}/${fields.int("xpNext")} XP",rect.x+5,rect.y+3,text,false)
+        gui.fill(rect.x+5,rect.y+benchH-5,rect.x+5+progressWidth,rect.y+benchH-3,line)
+        val progress=(fields.int("xp").toFloat()/fields.int("xpNext",1).coerceAtLeast(1)).coerceIn(0f,1f)
+        gui.fill(rect.x+5,rect.y+benchH-5,rect.x+5+(progressWidth*progress).toInt(),rect.y+benchH-3,accent)
         hooks.control(UiRect(buttonX, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.reroll"), view.actionEnabled("refresh")) { hooks.action("refresh", emptyMap()) }
         hooks.control(UiRect(buttonX + buttonW / 2 + 2, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.buy_xp"), view.actionEnabled("buy_xp")) { hooks.action("buy_xp", emptyMap()) }
 
@@ -733,10 +823,10 @@ object TftGameRenderer {
                     gui.drawCenteredString(font, fit(font, "${shortUnit(unit)} ${cost}g", cardRect.width - 6), cardRect.x + cardRect.width / 2, cardRect.y + 4, if (cost >= 4) gold else text)
                 } else {
                     val pv = pokemonView(species, card.getAsJsonObject("meta")?.str("aspects").orEmpty().split(',').filter(String::isNotBlank).toSet(), unit)
-                    if (pv != null && cardRect.width >= 42 && cardRect.height >= 42) {
-                        PokemonModelRenderer.render(gui, pv, cardRect.x + cardRect.width / 2, cardRect.y + cardRect.height / 2 + 6, min(54, cardRect.height), 0f, 0.6f, 35f)
+                    if (pv != null && cardRect.width >= 42 && cardRect.height >= 32) {
+                        PokemonModelRenderer.renderPreview(gui,pv,"tft:shop:$index",UiRect(cardRect.x+8,cardRect.y+15,cardRect.width-16,cardRect.height-27))
                     }
-                    gui.drawString(font, fit(font, unit, cardRect.width - 12), cardRect.x + 6, cardRect.y + 5, text, true)
+                    gui.drawString(font, fit(font, humanize(unit), cardRect.width - 12), cardRect.x + 6, cardRect.y + 5, text, true)
                     gui.drawString(font, "${cost}g", cardRect.x + 6, cardRect.bottom - 11, gold, true)
                 }
                 if (cardRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
@@ -749,10 +839,14 @@ object TftGameRenderer {
         }
 
         if (items.isNotEmpty()) {
-            val itemX = rect.right - min(160, rect.width / 2)
+            val itemX = rect.x + 3
             val itemY = rect.y - 18
-            items.take(8).forEachIndexed { index, item ->
-                val itemRect = UiRect(itemX + index * 18, itemY, 16, 15)
+            val pageSize = ((rect.width - 115) / 18).coerceIn(1, 12)
+            val pages = (items.size + pageSize - 1) / pageSize
+            ui.itemPage = ui.itemPage.coerceIn(0, pages - 1)
+            items.drop(ui.itemPage * pageSize).take(pageSize).forEachIndexed { offset, item ->
+                val index = ui.itemPage * pageSize + offset
+                val itemRect = UiRect(itemX + offset * 18, itemY, 16, 16)
                 gui.fill(itemRect.x, itemRect.y, itemRect.right, itemRect.bottom, if (ui.selectedItem == index) 0xFF544B28.toInt() else panel2)
                 val stack = ui.itemStack(item)
                 if (stack != null && !stack.isEmpty) gui.renderItem(stack, itemRect.x, itemRect.y)
@@ -760,7 +854,17 @@ object TftGameRenderer {
                 if (itemRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
                     ui.offerTooltip(TftHoverTooltip(humanize(item.substringAfter(':')), tr("gui.svhub.tft.tooltip.item"), listOf(item)+ui.itemDetails(item), gold))
                 }
-                hooks.hit(itemRect) { ui.selectedItem = if (ui.selectedItem == index) null else index }
+                hooks.hit(itemRect) {
+                    if (ui.selectedItem == index) ui.clearItem() else {
+                        ui.clearUnit(); ui.itemTarget = null
+                        ui.selectedItem = index; ui.selectedItemIdentity = item
+                    }
+                }
+            }
+            if (pages > 1) {
+                val x = itemX + pageSize * 18
+                hooks.control(UiRect(x, itemY, 18, 16), "‹", ui.itemPage > 0) { ui.itemPage-- }
+                hooks.control(UiRect(x + 20, itemY, 18, 16), "›", ui.itemPage + 1 < pages) { ui.itemPage++ }
             }
         }
 
@@ -768,6 +872,58 @@ object TftGameRenderer {
             val sellRect = UiRect(rect.right - 58, rect.y - 18, 56, 15)
             hooks.control(sellRect, tr("gui.svhub.tft.sell"), true) {
                 hooks.action("sell", mapOf("origin" to ui.selectedOrigin!!, "index" to ui.selectedIndex.toString())); ui.clearUnit()
+            }
+        }
+    }
+
+    private fun renderItemSlots(gui: GuiGraphics, font: Font, board: UiRect, fields: JsonObject,
+        units: Map<Int, UnitToken>, bench: List<BenchToken>, tray: List<String>, capabilities: Set<String>,
+        ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
+        val target = ui.itemTarget ?: return
+        val itemIndex = ui.selectedItem ?: return
+        val incoming = tray.getOrNull(itemIndex) ?: return
+        val unit = if (target.origin == "board") units[target.index + fields.int("boardColumns", 7) * fields.int("boardRows", 4)] else null
+        val benched = if (target.origin == "bench") bench.firstOrNull { it.index == target.index } else null
+        val identity = unit?.instanceId ?: benched?.instanceId
+        if (identity != target.instanceId || "CAN_EQUIP_ITEM" !in capabilities) { ui.itemTarget = null; return }
+        val equipped = unit?.items ?: benched?.items.orEmpty()
+        val width = min(282, board.width - 8).coerceAtLeast(100)
+        val root = UiRect(board.x + (board.width - width) / 2, board.y + 25, width, 102)
+        gui.fill(root.x, root.y, root.right, root.bottom, 0xF509151A.toInt())
+        gui.fill(root.x, root.y, root.right, root.y + 2, gold)
+        // Consume the panel background before registering its interactive children.
+        hooks.hit(root) {}
+        hooks.control(UiRect(root.right - 22, root.y + 4, 18, 16), "×", true) { ui.itemTarget = null }
+        gui.drawString(font, fit(font, tr("gui.svhub.tft.item.choose_slot"), width - 32), root.x + 7, root.y + 7, gold, false)
+        ui.itemStack(incoming)?.let { gui.renderItem(it, root.x + 7, root.y + 24) }
+        gui.drawString(font, fit(font, humanize(incoming.substringAfter(':')), width - 33), root.x + 28, root.y + 28, text, false)
+        val slotWidth = (width - 16) / 3
+        repeat(3) { slot ->
+            val current = equipped.getOrNull(slot)
+            val recipe = current?.let { ui.recipe(it, incoming) }
+            val combine = recipe != null && "CAN_COMBINE_ITEM" in capabilities
+            val append = current == null && slot == equipped.size &&
+                (incoming.startsWith("full:") || equipped.none { !it.startsWith("full:") })
+            val enabled = combine || append
+            val rect = UiRect(root.x + 6 + slot * slotWidth, root.y + 46, slotWidth - 3, 48)
+            gui.fill(rect.x, rect.y, rect.right, rect.bottom, if (enabled) 0xFF243A31.toInt() else panel2)
+            current?.let { ui.itemStack(it) }?.let { gui.renderItem(it, rect.x + 4, rect.y + 4) }
+            if (current == null) gui.drawString(font, "${slot + 1}", rect.x + 8, rect.y + 8, muted, false)
+            if (combine) {
+                gui.drawString(font, "→", rect.x + 23, rect.y + 8, gold, false)
+                ui.itemStack(recipe!!)?.let { gui.renderItem(it, rect.x + 35, rect.y + 4) }
+            }
+            val label = when { combine -> tr("gui.svhub.tft.item.combine"); append -> tr("gui.svhub.tft.item.equip"); current != null -> humanize(current.substringAfter(':')); else -> tr("gui.svhub.tft.item.unavailable") }
+            gui.drawString(font, fit(font, label, rect.width - 6), rect.x + 3, rect.y + 31, if (enabled) gold else muted, false)
+            if (rect.contains(mouseX.toDouble(), mouseY.toDouble())) {
+                val details = if (recipe != null) listOf("${humanize(current!!)} + ${humanize(incoming)} → ${humanize(recipe)}") + ui.itemDetails(recipe) else current?.let(ui::itemDetails).orEmpty()
+                ui.offerTooltip(TftHoverTooltip(label, lines = details, accent = if (enabled) gold else muted))
+            }
+            if (enabled) hooks.hit(rect) {
+                val args = mutableMapOf("item" to itemIndex.toString(), "origin" to target.origin, "index" to target.index.toString(), "instanceId" to target.instanceId, "itemId" to incoming)
+                if (combine) args["itemSlot"] = slot.toString()
+                hooks.action("equip_item", args)
+                ui.clearItem()
             }
         }
     }
@@ -815,45 +971,65 @@ object TftGameRenderer {
 
     private fun renderCarouselScene(gui: GuiGraphics, font: Font, board: UiRect, offers: List<DraftOffer>, fields: JsonObject,
         ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int, arenaSeed: String, revision: Long) {
+        val arenaId=fields.str("carouselArenaId", "carousel_convergence")
+        val arena=MinecraftArenaRegistry.definition(arenaId)
+        val center=arena?.carouselCenter?:ArenaPoint(0f,0f)
         val entities = offers.filter { it.takenBy.isBlank() }.map { offer -> PokemonSceneEntity(
             id = "carousel:${offer.index}", view = pokemonView(offer.species, offer.aspects, offer.unitId),
-            label = shortUnit(offer.unitId), boardX = offer.x + 5f, boardY = offer.y + 5f,
-            scale = 0.82f + offer.cost * 0.025f, star = 1, motionSerial = revision
+            label = shortUnit(offer.unitId), boardX = offer.x + center.x, boardY = offer.y + center.y,
+            scale = 0.82f + offer.cost * 0.025f, star = 1, elevation = center.z
         ) }
-        val arena=MinecraftArenaRegistry.definition(fields.str("arenaId", "tft"));val center=arena?.carouselCenter?:ArenaPoint(5f,5f)
-        val shifted=entities.map{it.copy(boardX=it.boardX-5f+center.x,boardY=it.boardY-5f+center.y)}
-        val frame = PokemonScene3D.render(gui, font, board.inset(4), 10, 10, shifted, ui.scene,
-            camera = arena?.camera(ArenaCameraRole.CAROUSEL,SceneCameras.TFT)?:SceneCameras.TFT, arenaId = fields.str("arenaId", "tft"), arenaSeed = "carousel:$arenaSeed", extraRows = 1)
-        gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), board.x + board.width / 2, board.y + 5, gold)
         val pos = fields.str("carouselPosition").split(',')
         val playerX = pos.getOrNull(0)?.toFloatOrNull() ?: 0f
         val playerY = pos.getOrNull(1)?.toFloatOrNull() ?: 0f
-        val target=arena?.tacticianMovementBounds?.clamp(ArenaPoint(playerX-5f+center.x,playerY-5f+center.y))?:ArenaPoint(playerX+5f,playerY+5f)
-        val tactician=ui.tactician(target,arena?.tacticianMovementBounds?:ArenaRegion(0f,0f,10f,10f),fields.str("tacticianState","CAROUSEL_MOVEMENT"))
-        val tacticianPoint = frame.layout.project(tactician.point.x,tactician.point.y)
-        val tacticianBox = max(22, min(48, board.width / 9))
-        VanillaCompanionModelRenderer.render(gui, fields.str("tacticianEntity"), tacticianPoint.x.roundToInt() - tacticianBox / 2,
-            tacticianPoint.y.roundToInt() - tacticianBox, tacticianPoint.x.roundToInt() + tacticianBox / 2,
-            tacticianPoint.y.roundToInt(), true)
+        val target=ArenaPoint(playerX+center.x,playerY+center.y,center.z)
+        val radius=fields.str("carouselMovementRadius").toFloatOrNull() ?: 5.6f
+        val carouselBounds=ArenaRegion(center.x-radius,center.y-radius,center.x+radius,center.y+radius)
+        val tactician=ui.tactician(target,carouselBounds,fields.str("tacticianState","CAROUSEL_MOVEMENT"))
+        val time=System.nanoTime()/1_000_000_000.0
+        val items=offers.filter { it.takenBy.isBlank() }.mapNotNull { offer ->
+            val stack=ui.itemStack(offer.item) ?: return@mapNotNull null
+            SceneItemModelNode("carousel:item:${offer.index}",SceneTransform(SceneVec3((offer.x+center.x).toDouble(),(offer.y+center.y).toDouble(),center.z+1.3+kotlin.math.sin(time*2+offer.index)*.08),SceneVec3(0.0,0.0,time*35%360),SceneVec3(.8,.8,.8)),BuiltInRegistries.ITEM.getKey(stack.item).toString())
+        }
+        val actor=SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble())),fields.str("tacticianEntity"),tactician.state)
+        val frame = PokemonScene3D.render(gui, font, board.inset(4), arena?.boardColumns ?: 12, arena?.boardRows ?: 12, entities, ui.scene,
+            camera = ui.camera(arena?.camera(ArenaCameraRole.CAROUSEL,SceneCameras.TFT)?:SceneCameras.TFT), arenaId = arenaId, arenaSeed = "carousel:$arenaSeed",sceneItems=items,tactician=actor)
+        gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), board.x + board.width / 2, board.y + 5, gold)
+        val now=System.currentTimeMillis()
+        val unlocked=now>=fields.long("carouselUnlockAt") && !fields.bool("carouselPicked")
+        val selectedOffer=ui.carouselOffer?.let { id -> offers.firstOrNull { it.index==id && it.takenBy.isBlank() } }
+        if(ui.carouselOffer != null && selectedOffer == null || fields.bool("carouselPicked")) { ui.carouselDestination=null;ui.carouselOffer=null }
+        val destination=selectedOffer?.let { ArenaPoint(it.x,it.y) } ?: ui.carouselDestination
+        if(destination != null && unlocked && now-ui.carouselLastIntentAt>=160 &&
+            (ui.carouselLastPosition!=fields.str("carouselPosition") || now-ui.carouselLastIntentAt>=600)) {
+            val dx=destination.x-playerX;val dy=destination.y-playerY
+            val distance=kotlin.math.hypot(dx.toDouble(),dy.toDouble()).toFloat()
+            val pickup=fields.str("carouselPickupRadius").toFloatOrNull() ?: .72f
+            if(selectedOffer != null && distance<=pickup) hooks.action("carousel_pick",mapOf("index" to selectedOffer.index.toString(),"revision" to revision.toString()))
+            else if(distance>.03f) {
+                val maxMove=fields.str("carouselMaxMove").toFloatOrNull() ?: .8f
+                val step=min(maxMove*.98f,distance)
+                hooks.action("carousel_move",mapOf("x" to (playerX+dx/distance*step).toString(),"y" to (playerY+dy/distance*step).toString()))
+            } else ui.carouselDestination=null
+            ui.carouselLastIntentAt=now;ui.carouselLastPosition=fields.str("carouselPosition")
+        }
+        if(unlocked) hooks.sceneInput { x,y ->
+            val point=frame.layout.perspective?.boardIntersection(x,y,center.z.toDouble()) ?: return@sceneInput false
+            val dx=(point.x-center.x).toFloat();val dy=(point.y-center.y).toFloat()
+            if(kotlin.math.hypot(dx.toDouble(),dy.toDouble())>radius) return@sceneInput false
+            ui.carouselDestination=ArenaPoint(dx,dy);ui.carouselOffer=null;true
+        }
         offers.filter { it.takenBy.isBlank() }.forEach { offer ->
-            val point = frame.layout.project(offer.x + 5f, offer.y + 5f)
-            val hit = UiRect(point.x.roundToInt() - 17, point.y.roundToInt() - 30, 34, 40)
-            val itemStack=ui.itemStack(offer.item)
-            if(itemStack!=null&&!itemStack.isEmpty){
-                val pose=gui.pose();pose.pushPose();pose.translate(point.x+5.0,point.y-17.0,1300.0);pose.scale(.82f,.82f,.82f);gui.renderItem(itemStack,0,0);pose.popPose()
-            }else gui.drawString(font,itemGlyph(offer.item),point.x.roundToInt()+7,point.y.roundToInt()-8,gold,true)
-            if (hit.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(unitTooltip(ui, offer.unitId, 1, listOf(offer.item)))
-            if (offer.unlocked && fields.str("carouselPicked") != "true") hooks.hit(hit) {
-                val dx = offer.x - playerX; val dy = offer.y - playerY
-                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-                if (distance <= 0.72f) hooks.action("carousel_pick", mapOf("index" to offer.index.toString(), "revision" to revision.toString()))
-                else {
-                    val step = min(0.8f, distance)
-                    hooks.action("carousel_move", mapOf("x" to (playerX + dx / distance * step).toString(), "y" to (playerY + dy / distance * step).toString()))
-                }
+            fun hit(x:Double,y:Double):Boolean {
+                val point=frame.layout.perspective?.boardIntersection(x,y,center.z.toDouble()) ?: return false
+                return kotlin.math.hypot(point.x-offer.x-center.x,point.y-offer.y-center.y)<=.6
+            }
+            if(hit(mouseX.toDouble(),mouseY.toDouble())) ui.offerTooltip(unitTooltip(ui,offer.unitId,1,listOf(offer.item)))
+            if(offer.unlocked && !fields.bool("carouselPicked")) hooks.sceneInput { x,y ->
+                if(!hit(x,y)) false else { ui.carouselOffer=offer.index;ui.carouselDestination=ArenaPoint(offer.x,offer.y);true }
             }
         }
-        if (!offers.any { it.unlocked }) gui.drawCenteredString(font, "Release wave incoming", board.x + board.width / 2, board.bottom - 18, muted)
+        gui.drawCenteredString(font, fit(font,tr(if(unlocked) "gui.svhub.tft.carousel.move" else "gui.svhub.tft.carousel.locked"),board.width-8), board.x + board.width / 2, board.bottom - 18, muted)
     }
 
     private fun renderCompactChips(gui: GuiGraphics, font: Font, area: UiRect, traits: List<TraitLine>, players: List<PlayerLine>, ui: TftUiState, mouseX: Int, mouseY: Int) {

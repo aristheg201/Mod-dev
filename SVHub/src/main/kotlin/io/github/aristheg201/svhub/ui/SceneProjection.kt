@@ -18,7 +18,8 @@ data class SceneCameraPreset(
     val target:SceneVec3=SceneVec3(3.0,3.5,0.0),
     val fov:Double=48.0,
     val near:Double=.1,
-    val far:Double=100.0
+    val far:Double=100.0,
+    val transitionMs:Long=450L
 ) {
     init {
         require(id.isNotBlank())
@@ -28,6 +29,9 @@ data class SceneCameraPreset(
         require(pitch in 0f..75f)
         require(modelZoom in 0.5f..1.5f)
         require(depthStride > 0.0)
+        require(transitionMs in 0L..10000L)
+        require(position.isFinite() && target.isFinite() && position != target)
+        require(fov.isFinite() && fov in 1.0..179.0 && near > 0.0 && far > near)
     }
 }
 
@@ -52,10 +56,13 @@ data class SceneProjectionMetrics(
     val camera: SceneCameraPreset,
     val perspective:PerspectiveBoardTransform?
 ) {
-    fun project(x: Float, y: Float): SceneProjectedPoint = perspective?.project(SceneVec3(x.toDouble(),y.toDouble(),0.0))?:SceneProjectedPoint(
+    fun project(x: Float, y: Float): SceneProjectedPoint? {
+        if (perspective != null) return perspective.project(SceneVec3(x.toDouble(),y.toDouble(),0.0))
+        return SceneProjectedPoint(
         originX + (x - y) * tileWidth * 0.5f,
         originY + (x + y) * tileHeight * 0.5f
     )
+    }
 
     fun depthFor(x: Float, y: Float): Double =
         camera.depthBase + (y * columns + x) * camera.depthStride

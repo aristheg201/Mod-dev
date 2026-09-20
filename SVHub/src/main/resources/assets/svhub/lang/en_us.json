@@ -202,5 +202,11 @@
   "gui.svhub.uno.draw": "Draw pile",
   "gui.svhub.uno.direction.clockwise": "Clockwise",
   "gui.svhub.uno.direction.counterclockwise": "Counter-clockwise",
-  "gui.svhub.cards.play_zone": "Play zone"
+  "gui.svhub.cards.play_zone": "Play zone",
+  "gui.svhub.tft.item.choose_slot": "Choose an item slot",
+  "gui.svhub.tft.item.combine": "Combine",
+  "gui.svhub.tft.item.equip": "Equip",
+  "gui.svhub.tft.item.unavailable": "Unavailable",
+  "gui.svhub.tft.carousel.locked": "Waiting for your release wave",
+  "gui.svhub.tft.carousel.move": "Click to move; click a Pokémon to approach and pick"
 }

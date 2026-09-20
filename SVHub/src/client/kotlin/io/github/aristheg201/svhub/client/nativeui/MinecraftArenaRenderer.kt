@@ -10,6 +10,7 @@ import net.minecraft.sounds.SoundSource
 import net.minecraft.util.RandomSource
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import io.github.aristheg201.svhub.ui.SceneCameraPreset
@@ -41,14 +42,17 @@ data class MinecraftArenaProp(
     val roll:Float=0f
 )
 
-data class ArenaPoint(val x: Float, val y: Float, val z: Float = 0f)
+data class ArenaPoint(val x: Float, val y: Float, val z: Float = 0f) {
+    init { require(x.isFinite() && y.isFinite() && z.isFinite()) { "Arena coordinates must be finite" } }
+}
 data class ArenaRegion(val minX: Float, val minY: Float, val maxX: Float, val maxY: Float) {
+    init { require(listOf(minX,minY,maxX,maxY).all(Float::isFinite) && minX<maxX && minY<maxY) { "Invalid arena region" } }
     fun clamp(point: ArenaPoint) = ArenaPoint(point.x.coerceIn(minX, maxX), point.y.coerceIn(minY, maxY), point.z)
     val center get() = ArenaPoint((minX + maxX) / 2f, (minY + maxY) / 2f)
 }
 data class ArenaCameraSet(val spectator: ArenaPoint, val scouting: ArenaPoint, val carousel: ArenaPoint)
 data class ArenaInteractionRegion(val id: String, val bounds: ArenaRegion, val action: String)
-enum class ArenaCameraRole { NORMAL, SPECTATOR, SCOUTING, CAROUSEL }
+enum class ArenaCameraRole { NORMAL, PREPARATION, COMBAT, SPECTATOR, SCOUTING, CAROUSEL, PVE_INTRO, BOSS_INTRO, VICTORY, DEFEAT, ARENA_PREVIEW }
 
 data class ArenaPresentationFrame(
     val arenaId:String,
@@ -103,6 +107,10 @@ object ArenaPresentationRuntime {
 }
 
 data class MinecraftArenaDefinition(
+    val id: String = "inline",
+    val definitionRevision: String = "0",
+    val geometry: List<SceneMeshNode> = emptyList(),
+    val cameraPresets: Map<ArenaCameraRole, SceneCameraPreset> = emptyMap(),
     val style: String = "terrain",
     val surface: String = "",
     val floor: List<String> = emptyList(),
@@ -150,9 +158,10 @@ data class MinecraftArenaDefinition(
     fun benchAnchor(index:Int):ArenaPoint = benchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.75f,boardOrigin.y+boardRows+.8f,boardOrigin.z)
     fun itemAnchor(index:Int):ArenaPoint = itemBenchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.6f,boardOrigin.y+boardRows+1.6f,boardOrigin.z)
     fun camera(role:ArenaCameraRole,fallback:SceneCameraPreset):SceneCameraPreset {
-        val point=when(role){ArenaCameraRole.NORMAL->cameras.spectator;ArenaCameraRole.SPECTATOR->cameras.spectator;ArenaCameraRole.SCOUTING->cameras.scouting;ArenaCameraRole.CAROUSEL->cameras.carousel}
+        cameraPresets[role]?.let { return it }
+        val point=when(role){ArenaCameraRole.SCOUTING->cameras.scouting;ArenaCameraRole.CAROUSEL->cameras.carousel;else->cameras.spectator}
         val span=max(1f,arenaBounds.maxY-arenaBounds.minY);val height=(point.z/span).coerceIn(.5f,1.25f)
-        return fallback.copy(id="${fallback.id}:${role.name.lowercase()}",tileScale=height,verticalScale=(point.y/span).coerceIn(.5f,1.25f),originBiasY=(point.y/(span+point.y.coerceAtLeast(0f))).coerceIn(0f,1f),pitch=(18f+point.z*2f).coerceIn(0f,75f),perspective=true,position=SceneVec3(point.x.toDouble(),-kotlin.math.abs(point.y.toDouble()),point.z.coerceAtLeast(2f).toDouble()),target=SceneVec3(arenaBounds.center.x.toDouble(),arenaBounds.center.y.toDouble(),boardOrigin.z.toDouble()))
+        return fallback.copy(id="${fallback.id}:${role.name.lowercase()}",tileScale=height,verticalScale=(point.y/span).coerceIn(.5f,1.25f),originBiasY=(point.y/(span+point.y.coerceAtLeast(0f))).coerceIn(0f,1f),pitch=(18f+point.z*2f).coerceIn(0f,75f),perspective=true,position=SceneVec3(point.x.toDouble(),point.y.toDouble(),point.z.coerceAtLeast(2f).toDouble()),target=SceneVec3(arenaBounds.center.x.toDouble(),arenaBounds.center.y.toDouble(),boardOrigin.z.toDouble()))
     }
     fun interactionAt(x:Float,y:Float):ArenaInteractionRegion?=interactionRegions.firstOrNull{x in it.bounds.minX..it.bounds.maxX&&y in it.bounds.minY..it.bounds.maxY}
     fun color(role: ArenaTileRole, alternate: Boolean): Int = when (role) {
@@ -187,22 +196,33 @@ data class MinecraftArenaDefinition(
 
 object MinecraftArenaRegistry {
     private val gson = Gson()
-    private val cache = ConcurrentHashMap<String, MinecraftArenaDefinition?>()
+    @Volatile private var cache: Map<String, MinecraftArenaDefinition> = emptyMap()
+    private val logger=org.slf4j.LoggerFactory.getLogger("SVHub/Arenas")
 
-    fun definition(arenaId: String): MinecraftArenaDefinition? =
-        cache.computeIfAbsent(arenaId, ::load)
+    fun definition(arenaId: String): MinecraftArenaDefinition? = cache[arenaId]
 
-    fun clear() { cache.clear(); MinecraftArenaRenderer.clearCompiledScenes() }
+    fun clear() { cache=emptyMap(); MinecraftArenaRenderer.clearCompiledScenes() }
 
-    private fun load(arenaId: String): MinecraftArenaDefinition? {
-        if (!arenaId.matches(Regex("^[a-z0-9_.-]{1,64}$"))) return null
-        val id = ResourceLocation.fromNamespaceAndPath("svhub", "arenas/$arenaId.json")
-        val resource = Minecraft.getInstance().resourceManager.getResource(id).orElse(null) ?: return null
-        return runCatching {
-            resource.open().bufferedReader().use { reader ->
-                parse(gson.fromJson(reader, JsonObject::class.java) ?: JsonObject())
+    /** Publish a whole validated generation; malformed resource packs retain the last valid one. */
+    fun reload(resources: ResourceManager): Boolean {
+        val next=linkedMapOf<String,MinecraftArenaDefinition>()
+        val failures=mutableListOf<String>()
+        resources.listResources("arenas") { it.namespace=="svhub" && it.path.endsWith(".json") }.forEach { (location,resource) ->
+            val id=location.path.removePrefix("arenas/").removeSuffix(".json")
+            try {
+                require(id.matches(Regex("^[a-z0-9_.-]{1,64}$")))
+                next[id]=resource.open().bufferedReader().use { parse(gson.fromJson(it,JsonObject::class.java)).copy(id=id) }
+            } catch(failure:Exception) {
+                failures+="$location: ${failure.message}"
             }
-        }.getOrNull()
+        }
+        if(failures.isNotEmpty()) {
+            logger.error("Arena reload rejected; keeping {} valid definitions: {}",cache.size,failures.joinToString("; "))
+            return false
+        }
+        cache=next.toMap()
+        MinecraftArenaRenderer.clearCompiledScenes()
+        return true
     }
 
     fun parse(root: JsonObject): MinecraftArenaDefinition {
@@ -210,6 +230,18 @@ object MinecraftArenaRegistry {
         val camera = metadata.getAsJsonObject("camera") ?: JsonObject()
         val bounds = region(metadata, "arenaBounds", region(metadata, "tacticianRegion", ArenaRegion(-1f,-1f,7f,8f)))
         return MinecraftArenaDefinition(
+            id = string(root,"id",string(root,"style","inline")),
+            definitionRevision = java.security.MessageDigest.getInstance("SHA-256").digest(root.toString().toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) },
+            geometry = root.getAsJsonArray("geometry")?.map { raw ->
+                val obj=raw.asJsonObject
+                fun vector(key:String,default:ArenaPoint)=point(obj,key,default).let { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) }
+                SceneMeshNode("structure:${string(obj,"id","")}",SceneTransform(vector("position",ArenaPoint(0f,0f)),vector("rotation",ArenaPoint(0f,0f)),vector("scale",ArenaPoint(1f,1f,1f))),vector("size",ArenaPoint(1f,1f,1f)),string(obj,"material","#52616b"))
+            }.orEmpty().also { require(it.size <= 512 && it.map(SceneMeshNode::id).distinct().size == it.size) },
+            cameraPresets = metadata.getAsJsonObject("cameraPresets")?.entrySet()?.associate { (name,raw) ->
+                val obj=raw.asJsonObject
+                val p=point(obj,"position",ArenaPoint(3f,15f,12f));val t=point(obj,"target",ArenaPoint(3f,3.5f))
+                ArenaCameraRole.valueOf(name.uppercase()) to SceneCameraPreset(id="${string(root,"style","arena")}:$name",perspective=true,position=SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z.toDouble()),target=SceneVec3(t.x.toDouble(),t.y.toDouble(),t.z.toDouble()),fov=obj.get("fov")?.asDouble?:48.0,near=obj.get("near")?.asDouble?:.1,far=obj.get("far")?.asDouble?:100.0,transitionMs=obj.get("transitionMs")?.asLong?:450L)
+            }.orEmpty(),
             style = string(root, "style", "terrain").take(32),
             surface = string(root, "surface", "").take(24),
             floor = strings(root, "floor"),
@@ -269,14 +301,18 @@ object MinecraftArenaRegistry {
 
     private fun point(root: JsonObject, key: String, fallback: ArenaPoint): ArenaPoint {
         val a=root.getAsJsonArray(key) ?: return fallback
-        return ArenaPoint(runCatching { a[0].asFloat }.getOrDefault(fallback.x),runCatching { a[1].asFloat }.getOrDefault(fallback.y),runCatching { a[2].asFloat }.getOrDefault(fallback.z))
+        require(a.size() in 2..3) { "$key must contain two or three coordinates" }
+        return ArenaPoint(a[0].asFloat,a[1].asFloat,if(a.size()==3)a[2].asFloat else fallback.z)
     }
-    private fun points(root:JsonObject,key:String)=root.getAsJsonArray(key)?.mapNotNull { raw ->
-        runCatching { val a=raw.asJsonArray;ArenaPoint(a[0].asFloat,a[1].asFloat,runCatching { a[2].asFloat }.getOrDefault(0f)) }.getOrNull()
+    private fun points(root:JsonObject,key:String)=root.getAsJsonArray(key)?.map { raw ->
+        val a=raw.asJsonArray
+        require(a.size() in 2..3) { "$key must contain coordinate vectors" }
+        ArenaPoint(a[0].asFloat,a[1].asFloat,if(a.size()==3)a[2].asFloat else 0f)
     }.orEmpty()
     private fun region(root:JsonObject,key:String,fallback:ArenaRegion):ArenaRegion {
         val a=root.getAsJsonArray(key)?:return fallback
-        return runCatching { ArenaRegion(a[0].asFloat,a[1].asFloat,a[2].asFloat,a[3].asFloat) }.getOrDefault(fallback)
+        require(a.size()==4) { "$key must contain four bounds" }
+        return ArenaRegion(a[0].asFloat,a[1].asFloat,a[2].asFloat,a[3].asFloat)
     }
 
     private fun strings(root: JsonObject, key: String): List<String> =
@@ -303,31 +339,38 @@ object MinecraftArenaRegistry {
 }
 
 object MinecraftArenaRenderer {
-    internal data class CompiledArenaScene(val scene:SVHubScene)
-    private data class SceneKey(val definition:Int,val resourceRevision:Long)
+    data class CompiledArenaScene(val scene:SVHubScene)
+    private data class SceneKey(val definition:MinecraftArenaDefinition,val resourceRevision:Long)
     private val compiledScenes=ConcurrentHashMap<SceneKey,CompiledArenaScene>()
     private val itemStacks=ConcurrentHashMap<String,ItemStack?>()
     private var resourceRevision=0L
 
-    fun clearCompiledScenes(){compiledScenes.clear();itemStacks.clear();resourceRevision++}
+    fun clearCompiledScenes(){compiledScenes.clear();itemStacks.clear();resourceRevision++;EmbeddedSceneRenderer.invalidate()}
     fun compiledScene(layout:PokemonSceneLayout,theme:MinecraftArenaDefinition):CompiledArenaScene{
-        val key=SceneKey(System.identityHashCode(theme),resourceRevision)
+        val key=SceneKey(theme,resourceRevision)
         return compiledScenes.computeIfAbsent(key){
-            val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(theme.boardOrigin.x.toDouble(),theme.boardOrigin.y.toDouble(),theme.boardOrigin.z.toDouble())),SceneVec3(theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.depth.coerceAtLeast(1)*.12),theme.surface.ifBlank{"arena_floor"})
+            val thickness=theme.depth.coerceAtLeast(1)*.12
+            val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(theme.boardOrigin.x+(theme.boardColumns-1)/2.0,theme.boardOrigin.y+(theme.boardRows-1)/2.0,theme.boardOrigin.z-thickness/2)),SceneVec3(theme.boardColumns.toDouble(),theme.boardRows.toDouble(),thickness),theme.surface.ifBlank{"arena_floor"})
             val props=theme.props.mapIndexed{index,prop->
-                val transform=SceneTransform(SceneVec3(prop.x.toDouble(),prop.y.toDouble(),prop.z.toDouble()),SceneVec3(prop.pitch.toDouble(),prop.yaw.toDouble(),prop.roll.toDouble()),SceneVec3(prop.scale.toDouble(),prop.scale.toDouble(),prop.scale.toDouble()))
+                val transform=SceneTransform(SceneVec3(prop.x.toDouble(),prop.y.toDouble(),prop.z.toDouble()),SceneVec3(prop.pitch.toDouble(),prop.roll.toDouble(),prop.yaw.toDouble()),SceneVec3(prop.scale.toDouble(),prop.scale.toDouble(),prop.scale.toDouble()))
                 val block=ResourceLocation.tryParse(prop.item)?.let(BuiltInRegistries.BLOCK::containsKey)==true
                 if(block)SceneBlockModelNode("prop:$index",transform,prop.item) else SceneItemModelNode("prop:$index",transform,prop.item)
             }
-            val benches=theme.benchAnchors.mapIndexed{index,p->SceneMeshNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z.toDouble())),SceneVec3(.7,.7,.15),"bench")}
-            val interaction=SceneInteractionSurface("board",SceneVec3(theme.boardOrigin.x.toDouble(),theme.boardOrigin.y.toDouble(),theme.boardOrigin.z.toDouble()),theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.boardColumns,theme.boardRows)
-            CompiledArenaScene(SVHubScene("arena:${System.identityHashCode(theme)}",0,listOf(floor)+benches+props,listOf(interaction)))
+            val benches=theme.benchAnchors.mapIndexed{index,p->SceneMeshNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z-.075)),SceneVec3(.7,.7,.15),"bench")}
+            val interaction=SceneInteractionSurface("board",SceneVec3(theme.boardOrigin.x-.5,theme.boardOrigin.y-.5,theme.boardOrigin.z.toDouble()),theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.boardColumns,theme.boardRows)
+            val tiles=if(theme.surfaceMode() in setOf(ArenaSurfaceMode.CHECKER,ArenaSurfaceMode.TACTICAL)) (0 until theme.boardColumns*theme.boardRows).map { index ->
+                val p=theme.boardAnchor(index);val color=if((index%theme.boardColumns+index/theme.boardColumns)%2==0) theme.floorColor else theme.floorAltColor
+                val width=if(theme.surfaceMode()==ArenaSurfaceMode.CHECKER) .995 else .96
+                SceneMeshNode("cell:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z+.006)),SceneVec3(width,width,.012),"#${Integer.toHexString(color)}")
+            } else emptyList()
+            CompiledArenaScene(SVHubScene("arena:${theme.id}:${theme.definitionRevision}",resourceRevision,listOf(floor)+theme.geometry+tiles+benches+props,listOf(interaction)))
         }
     }
     fun renderPresentation(gui:GuiGraphics,layout:PokemonSceneLayout,frame:ArenaPresentationFrame,phase:String){
+        if (layout.perspective != null) return // Embedded lighting and effects belong to the scene pass.
         val lightingAlpha=when(frame.lighting.lowercase()){"dark","night"->56;"bright","day"->10;"dramatic"->34;else->18}
         if(lightingAlpha>0){
-            val a=layout.project(-.7f,-.7f);val b=layout.project(layout.columns-.3f,layout.rows-.3f)
+            val a=layout.project(-.7f,-.7f) ?: return;val b=layout.project(layout.columns-.3f,layout.rows-.3f) ?: return
             val left=minOf(a.x,b.x).roundToInt();val right=maxOf(a.x,b.x).roundToInt()
             val top=minOf(a.y,b.y).roundToInt();val bottom=maxOf(a.y,b.y).roundToInt()
             if(right>left&&bottom>top)gui.fill(left,top,right,bottom,(lightingAlpha shl 24))
@@ -337,26 +380,27 @@ object MinecraftArenaRenderer {
             repeat(6){i->
                 val x=Math.floorMod(hash+i*31,layout.columns.coerceAtLeast(1)).toFloat()
                 val y=Math.floorMod(hash/31+i*17,layout.rows.coerceAtLeast(1)).toFloat()
-                val p=layout.project(x,y);gui.fill(p.x.roundToInt()-1,p.y.roundToInt()-1,p.x.roundToInt()+2,p.y.roundToInt()+2,0x88FFFFFF.toInt())
+                val p=layout.project(x,y) ?: return@repeat;gui.fill(p.x.roundToInt()-1,p.y.roundToInt()-1,p.x.roundToInt()+2,p.y.roundToInt()+2,0x88FFFFFF.toInt())
             }
         }
         if(frame.semanticVfx.isNotBlank()){
-            val center=layout.project((layout.columns-1)/2f,(layout.rows-1)/2f)
+            val center=layout.project((layout.columns-1)/2f,(layout.rows-1)/2f) ?: return
             val pulse=if(phase.equals("combat",true))10 else 14
             drawDiamondOutline(gui,center.x.roundToInt(),center.y.roundToInt(),pulse*2,pulse,0xCCFFFFFF.toInt())
         }
         frame.lootAnchors.forEachIndexed{index,anchor->
-            val p=layout.project(anchor.x,anchor.y)
+            val p=layout.project(anchor.x,anchor.y,anchor.z) ?: return@forEachIndexed
             val size=if(index%2==0)5 else 4
             fillDiamond(gui,p.x.roundToInt(),p.y.roundToInt(),size*2,size,0xB8E2BE62.toInt())
         }
     }
 
-    fun interactionRect(layout:PokemonSceneLayout,region:ArenaInteractionRegion):io.github.aristheg201.svhub.ui.UiRect{
-        val points=listOf(
+    fun interactionRect(layout:PokemonSceneLayout,region:ArenaInteractionRegion):io.github.aristheg201.svhub.ui.UiRect?{
+        val points=listOfNotNull(
             layout.project(region.bounds.minX,region.bounds.minY),layout.project(region.bounds.maxX,region.bounds.minY),
             layout.project(region.bounds.minX,region.bounds.maxY),layout.project(region.bounds.maxX,region.bounds.maxY)
         )
+        if (points.size != 4) return null
         val left=points.minOf{it.x}.roundToInt();val right=points.maxOf{it.x}.roundToInt()
         val top=points.minOf{it.y}.roundToInt();val bottom=points.maxOf{it.y}.roundToInt()
         return io.github.aristheg201.svhub.ui.UiRect(left,top,(right-left).coerceAtLeast(1),(bottom-top).coerceAtLeast(1))
@@ -403,7 +447,7 @@ object MinecraftArenaRenderer {
         index: Int,
         alternate: Boolean
     ) {
-        val p = layout.center(index)
+        val p = layout.center(index) ?: return
         val fill = if (alternate) theme.floorAltColor else theme.floorColor
         fillDiamond(gui, p.x.roundToInt(), p.y.roundToInt(), layout.tileWidth, layout.tileHeight, fill)
         drawDiamondOutline(gui, p.x.roundToInt(), p.y.roundToInt(), layout.tileWidth, layout.tileHeight, withAlpha(theme.gridColor, 190))
@@ -416,7 +460,7 @@ object MinecraftArenaRenderer {
         index: Int,
         alternate: Boolean
     ) {
-        val p = layout.center(index)
+        val p = layout.center(index) ?: return
         val width = max(8, (layout.tileWidth * 0.78f).roundToInt())
         val height = max(5, (layout.tileHeight * 0.76f).roundToInt())
         val fill = if (alternate) theme.floorAltColor else theme.pathAccentColor
@@ -439,7 +483,7 @@ object MinecraftArenaRenderer {
             drawLine(gui, a, b, theme.pathColor, outer)
             drawLine(gui, a, b, theme.pathAccentColor, inner)
         }
-        points.forEach { p ->
+        points.filterNotNull().forEach { p ->
             fillDiamond(gui, p.x.roundToInt(), p.y.roundToInt(), max(8, layout.tileWidth / 2), max(5, layout.tileHeight / 2), theme.pathAccentColor)
         }
     }
@@ -451,7 +495,15 @@ object MinecraftArenaRenderer {
         color: Int,
         strong: Boolean
     ) {
-        val p = layout.center(index)
+        val p = layout.center(index) ?: return
+        if(layout.perspective != null) {
+            val surface=layout.boardSurface
+            val x=(surface.origin.x+(index%layout.columns+.5)*surface.width/layout.columns).toFloat()
+            val y=(surface.origin.y+(index/layout.columns+.5)*surface.height/layout.rows).toFloat()
+            val margin=if(strong) .44f else .36f
+            fillQuad(gui,quad(layout,x-margin,y-margin,x+margin,y+margin,surface.origin.z.toFloat()),withAlpha(color,if(strong)185 else 100))
+            return
+        }
         val w = if (strong) max(10, (layout.tileWidth * 0.88f).roundToInt()) else max(9, (layout.tileWidth * 0.72f).roundToInt())
         val h = if (strong) max(6, (layout.tileHeight * 0.90f).roundToInt()) else max(5, (layout.tileHeight * 0.70f).roundToInt())
         fillDiamond(gui, p.x.roundToInt(), p.y.roundToInt(), w, h, withAlpha(color, if (strong) 185 else 120))
@@ -477,7 +529,7 @@ object MinecraftArenaRenderer {
         val palette = theme.palette(role, alternate)
         if (palette.isEmpty()) return
         val item = palette[Math.floorMod(hash ushr 3, palette.size)]
-        val point = layout.center(index)
+        val point = layout.center(index) ?: return
         val size = min(11, max(6, min(layout.tileWidth, layout.tileHeight * 2) / 2))
         renderItem(gui, item, point.x.roundToInt(), point.y.roundToInt() - max(1, layout.tileHeight / 8), size, 10.0)
     }
@@ -488,10 +540,10 @@ object MinecraftArenaRenderer {
         theme: MinecraftArenaDefinition,
         seed: String
     ) {
-        // Temporary backend adapter: retained nodes remain in scene-space; only this traversal projects them.
+        if(layout.perspective != null) { EmbeddedSceneRenderer.render(gui,layout,theme); return }
         compiledScene(layout,theme).scene.nodes.asSequence().filter{it.visible}.sortedBy{it.transform.position.y}.forEach{node->
             if(node is SceneMeshNode){renderMesh(gui,layout,node);return@forEach}
-            val point=layout.project(node.transform.position.x.toFloat(),node.transform.position.y.toFloat())
+            val point=layout.project(node.transform.position.x.toFloat(),node.transform.position.y.toFloat(),node.transform.position.z.toFloat()) ?: return@forEach
             val pixels=(min(28,max(12,layout.tileWidth))*node.transform.scale.x).roundToInt().coerceIn(8,38)
             val asset=when(node){is SceneBlockModelNode->node.blockId;is SceneItemModelNode->node.itemId;else->return@forEach}
             resolveStack(asset)?.let{renderStack(gui,it,point.x.roundToInt(),point.y.roundToInt()-pixels/3,pixels,30.0+point.y/8.0)}
@@ -499,10 +551,9 @@ object MinecraftArenaRenderer {
     }
 
     private fun renderMesh(gui:GuiGraphics,layout:PokemonSceneLayout,node:SceneMeshNode){
-        val p=node.transform.position;val s=node.size;val hx=s.x/2.0;val hy=s.y/2.0
-        fun point(x:Double,y:Double,z:Double):ScenePoint=layout.perspective?.project(SceneVec3(x,y,z))?.let{ScenePoint(it.x,it.y)}?:layout.project(x.toFloat(),y.toFloat()).let{ScenePoint(it.x,(it.y-z*layout.tileHeight).toFloat())}
-        val bottom=listOf(point(p.x-hx,p.y-hy,p.z),point(p.x+hx,p.y-hy,p.z),point(p.x+hx,p.y+hy,p.z),point(p.x-hx,p.y+hy,p.z))
-        val top=bottom.indices.map{index->val b=when(index){0->p.x-hx to p.y-hy;1->p.x+hx to p.y-hy;2->p.x+hx to p.y+hy;else->p.x-hx to p.y+hy};point(b.first,b.second,p.z+s.z)}
+        val projected=node.corners().map { layout.project(it.x.toFloat(),it.y.toFloat(),it.z.toFloat()) }
+        val bottom=projected.take(4)
+        val top=projected.drop(4)
         val color=when(node.material){"bench"->0xFF263F3B.toInt();else->0xFF263532.toInt()}
         for(i in bottom.indices)fillQuad(gui,listOf(bottom[i],bottom[(i+1)%4],top[(i+1)%4],top[i]),darken(color,.68f))
         fillQuad(gui,top,color)
@@ -521,16 +572,17 @@ object MinecraftArenaRenderer {
     private fun renderDiamondGrid(gui: GuiGraphics, layout: PokemonSceneLayout, theme: MinecraftArenaDefinition) {
         val color = withAlpha(theme.gridColor, 92)
         repeat(layout.columns * layout.rows) { index ->
-            val p = layout.center(index)
+            val p = layout.center(index) ?: return@repeat
             drawDiamondOutline(gui, p.x.roundToInt(), p.y.roundToInt(), layout.tileWidth, layout.tileHeight, color)
         }
     }
 
-    private fun quad(layout: PokemonSceneLayout, x0: Float, y0: Float, x1: Float, y1: Float): List<ScenePoint> =
-        listOf(layout.project(x0, y0), layout.project(x1, y0), layout.project(x1, y1), layout.project(x0, y1))
+    private fun quad(layout: PokemonSceneLayout, x0: Float, y0: Float, x1: Float, y1: Float, z: Float = 0f): List<ScenePoint> =
+        listOfNotNull(layout.project(x0, y0,z), layout.project(x1, y0,z), layout.project(x1, y1,z), layout.project(x0, y1,z)).takeIf { it.size == 4 }.orEmpty()
 
-    private fun fillQuad(gui: GuiGraphics, points: List<ScenePoint>, color: Int) {
-        if (points.size != 4) return
+    private fun fillQuad(gui: GuiGraphics, projected: List<ScenePoint?>, color: Int) {
+        if (projected.size != 4 || projected.any { it == null }) return
+        val points=projected.filterNotNull()
         val minY = points.minOf { it.y }.roundToInt()
         val maxY = points.maxOf { it.y }.roundToInt()
         for (y in minY..maxY) {
@@ -554,7 +606,8 @@ object MinecraftArenaRenderer {
         }
     }
 
-    private fun drawLine(gui: GuiGraphics, a: ScenePoint, b: ScenePoint, color: Int, thickness: Int) {
+    private fun drawLine(gui: GuiGraphics, a: ScenePoint?, b: ScenePoint?, color: Int, thickness: Int) {
+        if (a == null || b == null) return
         val dx = b.x - a.x
         val dy = b.y - a.y
         val steps = max(1, max(abs(dx), abs(dy)).roundToInt())

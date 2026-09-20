@@ -381,6 +381,9 @@ class TftSession(
                 "draft" to encodeDraft(player),
                 "carouselPosition" to "${player.carouselX},${player.carouselY}",
                 "carouselMaxMove" to set.carousel.maxMovePerIntent.toString(),
+                "carouselArenaId" to set.carousel.arenaId,
+                "carouselMovementRadius" to set.carousel.movementRadius.toString(),
+                "carouselUnlockAt" to player.draftUnlockAt.toString(),
                 "carouselPickupRadius" to set.carousel.pickupRadius.toString(),
                 "carouselPicked" to player.draftPicked.toString(),
                 "carouselRevision" to revision.toString(),
@@ -590,7 +593,10 @@ class TftSession(
         val origin = args["origin"] ?: return reject("Missing target origin")
         val unitIndex = args["index"]?.toIntOrNull() ?: return reject("Missing target")
         val unit = when (origin) { "bench" -> player.bench.getOrNull(unitIndex); "board" -> player.board[unitIndex]; else -> null } ?: return reject("Target unit not found")
+        if (args["instanceId"]?.let { it != unit.instanceId } == true || args["itemId"]?.let { it != item } == true) return reject("Item target changed")
         val requestedSlot=args["itemSlot"]?.toIntOrNull()
+        if (args.containsKey("itemSlot") && (requestedSlot == null || requestedSlot !in 0..2)) return reject("Invalid item slot")
+        if (item.startsWith("full:") && requestedSlot != null && requestedSlot != unit.items.size) return reject("Selected item slot is occupied")
         val componentSlots=unit.items.indices.filter{!unit.items[it].startsWith("full:")}
         val loose=if(item.startsWith("full:"))-1 else if(requestedSlot!=null){
             requestedSlot.takeIf{it in componentSlots&&itemRecipes.containsKey(listOf(unit.items[it],item).sorted().joinToString("+"))}?:return reject("Selected component has no valid recipe")

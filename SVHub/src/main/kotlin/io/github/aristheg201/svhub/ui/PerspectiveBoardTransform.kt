@@ -4,6 +4,7 @@ import kotlin.math.sqrt
 import kotlin.math.tan
 
 data class SceneVec3(val x:Double,val y:Double,val z:Double){
+    fun isFinite() = x.isFinite() && y.isFinite() && z.isFinite()
     operator fun plus(o:SceneVec3)=SceneVec3(x+o.x,y+o.y,z+o.z)
     operator fun minus(o:SceneVec3)=SceneVec3(x-o.x,y-o.y,z-o.z)
     operator fun times(v:Double)=SceneVec3(x*v,y*v,z*v)
@@ -15,12 +16,20 @@ data class SceneRay(val origin:SceneVec3,val direction:SceneVec3)
 
 /** Shared perspective projection and inverse ray used by both drawing and hit testing. */
 class PerspectiveBoardTransform(val viewport:UiRect,val position:SceneVec3,val target:SceneVec3,val fovDegrees:Double,val near:Double=.1,val far:Double=100.0){
+    init {
+        require(viewport.width > 0 && viewport.height > 0)
+        require(position.isFinite() && target.isFinite() && position != target)
+        require(fovDegrees.isFinite() && fovDegrees > 0.0 && fovDegrees < 180.0)
+        require(near.isFinite() && far.isFinite() && near > 0.0 && far > near)
+    }
     private val forward=(target-position).normalized()
-    private val right=forward.cross(SceneVec3(0.0,0.0,1.0)).normalized()
-    private val up=right.cross(forward).normalized()
+    private val referenceUp = if (kotlin.math.abs(forward.z) > .999) SceneVec3(0.0,1.0,0.0) else SceneVec3(0.0,0.0,1.0)
+    val right=forward.cross(referenceUp).normalized()
+    val up=right.cross(forward).normalized()
     private val aspect=viewport.width.toDouble()/viewport.height.coerceAtLeast(1)
-    private val tangent=tan(Math.toRadians(fovDegrees.coerceIn(20.0,100.0))/2.0)
+    private val tangent=tan(Math.toRadians(fovDegrees)/2.0)
     fun project(world:SceneVec3):SceneProjectedPoint?{
+        if (!world.isFinite()) return null
         val relative=world-position;val depth=relative.dot(forward)
         if(depth !in near..far)return null
         val nx=relative.dot(right)/(depth*tangent*aspect);val ny=relative.dot(up)/(depth*tangent)
@@ -32,8 +41,11 @@ class PerspectiveBoardTransform(val viewport:UiRect,val position:SceneVec3,val t
         return SceneRay(position,(forward+right*(nx*tangent*aspect)+up*(ny*tangent)).normalized())
     }
     fun boardIntersection(screenX:Double,screenY:Double,elevation:Double=0.0):SceneVec3?{
+        if (!screenX.isFinite() || !screenY.isFinite() || !elevation.isFinite() || !viewport.contains(screenX,screenY)) return null
         val ray=ray(screenX,screenY);if(kotlin.math.abs(ray.direction.z)<1e-9)return null
         val distance=(elevation-ray.origin.z)/ray.direction.z
-        return if(distance>=0.0)ray.origin+ray.direction*distance else null
+        if (distance < 0.0) return null
+        val point = ray.origin + ray.direction * distance
+        return point.takeIf { project(it) != null }
     }
 }

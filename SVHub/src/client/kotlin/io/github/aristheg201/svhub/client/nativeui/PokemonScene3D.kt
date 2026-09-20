@@ -3,6 +3,7 @@ package io.github.aristheg201.svhub.client.nativeui
 import com.cobblemon.mod.common.client.particle.BedrockParticleOptionsRepository
 import com.cobblemon.mod.common.util.getString
 import com.mojang.blaze3d.systems.RenderSystem
+import com.mojang.blaze3d.vertex.PoseStack
 import io.github.aristheg201.svhub.client.cobblemon.CobblemonSceneParticleCue
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
@@ -10,9 +11,19 @@ import io.github.aristheg201.svhub.ui.SceneCameraPreset
 import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.SceneProjection
 import io.github.aristheg201.svhub.ui.UiRect
+import io.github.aristheg201.svhub.ui.SceneTransform
+import io.github.aristheg201.svhub.ui.SceneVec3
+import io.github.aristheg201.svhub.ui.SceneItemModelNode
+import io.github.aristheg201.svhub.ui.SceneTacticianNode
+import io.github.aristheg201.svhub.ui.SceneEffectNode
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.texture.OverlayTexture
+import io.github.aristheg201.svhub.ui.PerspectiveBoardTransform
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -72,7 +83,8 @@ data class PokemonSceneEntity(
     val star: Int = 1,
     val motionSerial: Long = 0L,
     val motionFromX: Float? = null,
-    val motionFromY: Float? = null
+    val motionFromY: Float? = null,
+    val elevation: Float = 0f
 )
 
 class PokemonSceneState {
@@ -160,24 +172,22 @@ class PokemonSceneState {
 }
 
 data class PokemonSceneLayout(
-    val area: UiRect,val columns: Int,val rows: Int,val originX: Float,val originY: Float,val tileWidth: Int,val tileHeight: Int,val perspective:io.github.aristheg201.svhub.ui.PerspectiveBoardTransform?=null
+    val area: UiRect,val columns: Int,val rows: Int,val originX: Float,val originY: Float,val tileWidth: Int,val tileHeight: Int,val perspective:io.github.aristheg201.svhub.ui.PerspectiveBoardTransform?=null,
+    val boardSurface: io.github.aristheg201.svhub.ui.SceneInteractionSurface = io.github.aristheg201.svhub.ui.SceneInteractionSurface("board", io.github.aristheg201.svhub.ui.SceneVec3(-.5,-.5,0.0), columns.toDouble(), rows.toDouble(), columns, rows)
 ) {
-    fun project(x: Float, y: Float): ScenePoint = perspective?.project(io.github.aristheg201.svhub.ui.SceneVec3(x.toDouble(),y.toDouble(),0.0))?.let{ScenePoint(it.x,it.y)}?:ScenePoint(originX + (x-y)*tileWidth*0.5f, originY + (x+y)*tileHeight*0.5f)
-    fun center(index: Int): ScenePoint = project((index % columns).toFloat(), (index / columns).toFloat())
-    fun hitBox(index: Int): UiRect {
-        val point=center(index)
-        val width=max(18,(tileWidth*0.86f).roundToInt())
-        val height=max(16,(tileHeight*1.20f).roundToInt())
-        return UiRect((point.x-width/2f).roundToInt(),(point.y-height/2f).roundToInt(),width,height)
+    fun project(x: Float, y: Float, z: Float = 0f): ScenePoint? {
+        if (perspective != null) return perspective.project(io.github.aristheg201.svhub.ui.SceneVec3(x.toDouble(),y.toDouble(),z.toDouble()))?.let { ScenePoint(it.x,it.y) }
+        return ScenePoint(originX + (x-y)*tileWidth*0.5f, originY + (x+y)*tileHeight*0.5f - z*tileHeight)
     }
+    fun center(index: Int): ScenePoint? = project(
+        (boardSurface.origin.x + (index % columns + .5) * boardSurface.width / columns).toFloat(),
+        (boardSurface.origin.y + (index / columns + .5) * boardSurface.height / rows).toFloat(), boardSurface.origin.z.toFloat())
     fun pick(mouseX:Double,mouseY:Double):Int?{
-        perspective?.boardIntersection(mouseX,mouseY)?.let{hit->
-            val x=kotlin.math.round(hit.x).toInt();val y=kotlin.math.round(hit.y).toInt()
-            return if(x in 0 until columns&&y in 0 until rows)y*columns+x else null
-        }
+        if (!area.contains(mouseX,mouseY)) return null
+        if (perspective != null) return boardSurface.pick(perspective,mouseX,mouseY)
         var best:Int?=null;var bestDistance=Double.MAX_VALUE
         repeat(columns*rows){index->
-            val p=center(index)
+            val p=center(index) ?: return@repeat
             val nx=abs(mouseX-p.x)/max(9.0,tileWidth*0.72)
             val ny=abs(mouseY-p.y)/max(8.0,tileHeight*1.10)
             val distance=nx+ny
@@ -187,7 +197,7 @@ data class PokemonSceneLayout(
     }
 }
 
-data class PokemonSceneFrame(val layout: PokemonSceneLayout,val entityCenters: Map<String, ScenePoint>)
+data class PokemonSceneFrame(val layout: PokemonSceneLayout,val entityCenters: Map<String, ScenePoint>,val entityHeads: Map<String, ScenePoint>)
 
 object PokemonScene3D {
     fun render(
@@ -209,23 +219,27 @@ object PokemonScene3D {
         pathCells: Set<Int> = emptySet(),
         pathRoute: List<Int> = emptyList(),
         platforms: List<ScenePlatform> = emptyList(),
-        extraRows: Int = 0
+        extraRows: Int = 0,
+        sceneItems: List<SceneItemModelNode> = emptyList(),
+        tactician: SceneTacticianNode? = null
     ): PokemonSceneFrame {
         val metrics=SceneProjection.resolve(area,columns,rows + extraRows.coerceIn(0, 4),camera)
-        val layout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight,metrics.perspective)
+        val arena = arenaId?.let(MinecraftArenaRegistry::definition)
+        val baseLayout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight,metrics.perspective)
+        val layout=if(arena != null) baseLayout.copy(boardSurface=MinecraftArenaRenderer.compiledScene(baseLayout,arena).scene.interactions.first { it.id == "board" }) else baseLayout
         val activeIds=entities.mapTo(linkedSetOf()){it.id}
         state.prune(activeIds);PokemonModelRenderer.pruneScene(activeIds)
         val now=System.currentTimeMillis();state.observeEffects(effects,now)
+        val embedded=arena != null && layout.perspective != null
 
         gui.enableScissor(area.x,area.y,area.right,area.bottom)
-        val arena = arenaId?.let(MinecraftArenaRegistry::definition)
         val stableArenaSeed = if (arenaSeed.isNotBlank()) arenaSeed else arenaId.orEmpty()
-        if(arena!=null){
+        if(arena!=null && !embedded){
             MinecraftArenaRenderer.renderPathRoute(gui,layout,arena,pathRoute)
         }
-        for(row in 0 until rows)for(col in 0 until columns){
+        if(!embedded) for(row in 0 until rows)for(col in 0 until columns){
             val index=row*columns+col
-            val point=layout.project(col.toFloat(),row.toFloat())
+            val point=layout.center(index) ?: continue
             val alternate=((row+col) and 1)==1
             val role=when{
                 index in pathCells->ArenaTileRole.PATH
@@ -254,10 +268,10 @@ object PokemonScene3D {
                 MinecraftArenaRenderer.renderTile(gui,layout,arena,index,role,alternate,stableArenaSeed)
             }
         }
-        if(arena!=null)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
+        if(arena!=null && !embedded)MinecraftArenaRenderer.renderProps(gui,layout,arena,stableArenaSeed)
 
-        platforms.take(32).forEach { platform ->
-            val p = layout.project(platform.x, platform.y)
+        if(!embedded) platforms.take(32).forEach { platform ->
+            val p = layout.project(platform.x, platform.y) ?: return@forEach
             val color = if (platform.selected) SELECTED else if (platform.hovered) LEGAL else ALLY_B
             drawDiamond(gui, p.x.roundToInt(), p.y.roundToInt() + 3, max(12, layout.tileWidth * 2 / 3), max(7, layout.tileHeight), 0xFF101719.toInt(), GRID_LINE)
             drawDiamond(gui, p.x.roundToInt(), p.y.roundToInt(), max(12, layout.tileWidth * 2 / 3), max(7, layout.tileHeight), color, if (platform.hovered || platform.selected) GOLD else GRID_LINE)
@@ -288,18 +302,62 @@ object PokemonScene3D {
             }
         }
 
-        val positioned=entities.map{entity->
+        val positioned=entities.mapNotNull{entity->
             val logical=state.position(entity,now)
-            Triple(entity,logical,layout.project(logical.x,logical.y))
+            val point=layout.project(logical.x,logical.y,entity.elevation) ?: return@mapNotNull null
+            Triple(entity,logical,point)
         }.sortedWith(compareBy<Triple<PokemonSceneEntity,ScenePoint,ScenePoint>>{it.third.y}.thenBy{it.third.x}.thenBy{it.first.id})
         val centers=linkedMapOf<String,ScenePoint>()
+        val heads=linkedMapOf<String,ScenePoint>()
+        val renderedActors=hashSetOf<String>()
+        if (embedded) {
+            EmbeddedSceneRenderer.render(gui,layout,arena) { poses,buffers ->
+                EmbeddedSceneRenderer.renderCells(poses,arena,legalCells,0x454cc7b2)
+                EmbeddedSceneRenderer.renderCells(poses,arena,selectedCells,0x99e2be62.toInt())
+                positioned.forEach { (entity,logical,_) ->
+                    val view=entity.view ?: return@forEach
+                    poses.pushPose()
+                    try {
+                        EmbeddedSceneRenderer.applyTransform(poses,SceneTransform(SceneVec3(logical.x.toDouble(),logical.y.toDouble(),entity.elevation.toDouble()),SceneVec3(0.0,0.0,entity.yaw.toDouble()),SceneVec3(entity.scale.toDouble(),entity.scale.toDouble(),entity.scale.toDouble())))
+                        val moving=abs(logical.x-entity.boardX)>.025f || abs(logical.y-entity.boardY)>.025f
+                        if(PokemonModelRenderer.renderEmbedded(view,entity.id,poses,buffers,moving)) renderedActors+=entity.id
+                    } finally { poses.popPose() }
+                }
+                sceneItems.forEach { item ->
+                    if(item.visible) {
+                        poses.pushPose()
+                        try { EmbeddedSceneRenderer.applyTransform(poses,item.transform);EmbeddedSceneRenderer.renderItem(poses,item.itemId) }
+                        finally { poses.popPose() }
+                    }
+                }
+                tactician?.takeIf { it.visible }?.let { actor ->
+                    poses.pushPose()
+                    try { EmbeddedSceneRenderer.applyTransform(poses,actor.transform);VanillaCompanionModelRenderer.renderEmbedded(actor.id,actor.entityId,actor.animation,poses,buffers) }
+                    finally { poses.popPose() }
+                }
+                buffers.endBatch()
+                val coordinates=positioned.associate { (entity,point,_) -> entity.id to SceneVec3(point.x.toDouble(),point.y.toDouble(),entity.elevation.toDouble()) }
+                state.activeEffects(now).forEachIndexed { index,effect ->
+                    val from=coordinates[effect.sourceEntityId] ?: return@forEachIndexed
+                    val to=effect.targetEntityId?.let(coordinates::get) ?: from
+                    val point=if(effect.kind==SceneEffectKind.PROJECTILE) from+(to-from)*effect.progress.toDouble()+SceneVec3(0.0,0.0,.6) else to
+                    SceneEffectsRenderer.render(poses,SceneEffectNode("event:$index",SceneTransform(point),"svhub:${effect.kind.name.lowercase()}",now-(effect.progress*480).toLong()),now)
+                }
+                state.observeNativeParticles(PokemonModelRenderer.drainSceneParticleCues(activeIds),now)
+                renderNativeSceneParticles(poses,buffers,state.activeNativeParticles(now),coordinates,checkNotNull(layout.perspective))
+            }
+            MinecraftArenaRenderer.renderPathRoute(gui,layout,arena,pathRoute)
+        }
         positioned.forEachIndexed{order,(entity,logical,point)->
             centers[entity.id]=point
+            val right=layout.perspective?.right
+            val edge=right?.let { layout.project(logical.x+it.x.toFloat(),logical.y+it.y.toFloat(),entity.elevation+it.z.toFloat()) }
+            val cellPixels=if(edge!=null) kotlin.math.hypot(edge.x-point.x,edge.y-point.y).coerceIn(12f,64f) else layout.tileWidth.toFloat()
             val ring=if(entity.team==0)ALLY_RING else ENEMY_RING
-            drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(9,(layout.tileWidth*0.36f).roundToInt()),max(4,(layout.tileHeight*0.18f).roundToInt()),ring,ring)
+            if(!embedded) drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(9,(cellPixels*0.36f).roundToInt()),max(4,(layout.tileHeight*0.18f).roundToInt()),ring,ring)
             val modelSize=max(30,(layout.tileWidth*1.18f*entity.scale*camera.modelZoom).roundToInt()).coerceAtMost(108)
             val moving=abs(logical.x-entity.boardX)>0.025f||abs(logical.y-entity.boardY)>0.025f
-            val rendered=entity.view?.let{view->
+            val rendered=if(embedded) entity.id in renderedActors else entity.view?.let{view->
                 PokemonModelRenderer.renderScene(
                     gui = gui,
                     view = view,
@@ -315,9 +373,12 @@ object PokemonScene3D {
                 )
             }?:false
             if(!rendered){val label=font.plainSubstrByWidth(entity.label,max(16,layout.tileWidth-8));gui.drawCenteredString(font,label,point.x.roundToInt(),point.y.roundToInt()-4,TEXT)}
-            if(entity.star>1)gui.drawCenteredString(font,"★".repeat(entity.star.coerceIn(2,3)),point.x.roundToInt(),(point.y-layout.tileHeight*0.75f).roundToInt(),GOLD)
+            val height=entity.view?.let { PokemonModelRenderer.sceneHeight(it,entity.id) } ?: 1f
+            val head=if(embedded) layout.project(logical.x,logical.y,entity.elevation+height*entity.scale+.12f) ?: point else ScenePoint(point.x,point.y-layout.tileHeight*.75f)
+            heads[entity.id]=head
+            if(entity.star>1)gui.drawCenteredString(font,"★".repeat(entity.star.coerceIn(2,3)),head.x.roundToInt(),head.y.roundToInt()-9,GOLD)
             if(entity.maxHp>0){
-                val barW=max(12,(layout.tileWidth*0.62f).roundToInt());val x=point.x.roundToInt()-barW/2;val y=(point.y+layout.tileHeight*0.55f).roundToInt()
+                val barW=max(12,(cellPixels*.8f).roundToInt());val x=head.x.roundToInt()-barW/2;val y=head.y.roundToInt()
                 gui.fill(x,y,x+barW,y+3,BAR_BG)
                 val hpW=(barW*entity.hp.coerceIn(0,entity.maxHp)/entity.maxHp).coerceAtLeast(if(entity.hp>0)1 else 0)
                 gui.fill(x,y,x+hpW,y+2,if(entity.team==0)HP_ALLY else HP_ENEMY)
@@ -326,10 +387,41 @@ object PokemonScene3D {
         }
         val nativeParticleCues = PokemonModelRenderer.drainSceneParticleCues(activeIds)
         state.observeNativeParticles(nativeParticleCues, now)
-        renderEffects(gui,state.activeEffects(now),centers,layout.tileWidth,layout.tileHeight)
-        renderNativeParticles(gui,state.activeNativeParticles(now),centers,layout.tileWidth,layout.tileHeight)
+        if(!embedded) renderEffects(gui,state.activeEffects(now),centers,layout.tileWidth,layout.tileHeight)
+        if(!embedded) renderNativeParticles(gui,state.activeNativeParticles(now),centers,layout.tileWidth,layout.tileHeight)
         gui.disableScissor()
-        return PokemonSceneFrame(layout,centers)
+        return PokemonSceneFrame(layout,centers,heads)
+    }
+
+    private fun renderNativeSceneParticles(poses:PoseStack,buffers:MultiBufferSource,particles:List<ActiveNativeParticle>,
+        positions:Map<String,SceneVec3>,camera:PerspectiveBoardTransform) {
+        particles.forEach { active ->
+            val cue=active.cue
+            val source=positions[cue.sourceEntityId] ?: return@forEach
+            val target=cue.targetEntityId?.let(positions::get) ?: source
+            val id=ResourceLocation.tryParse(cue.effectId) ?: return@forEach
+            val particle=BedrockParticleOptionsRepository.getEffect(id)?.particle ?: return@forEach
+            val uv=particle.uvMode
+            val tw=uv.textureSizeX.coerceAtLeast(1);val th=uv.textureSizeY.coerceAtLeast(1)
+            val u=uv.startU.getString().toFloatOrNull()?.coerceIn(0f,tw-1f) ?: 0f
+            val v=uv.startV.getString().toFloatOrNull()?.coerceIn(0f,th-1f) ?: 0f
+            val w=uv.uSize.getString().toFloatOrNull()?.coerceIn(1f,tw-u) ?: min(8f,tw-u)
+            val h=uv.vSize.getString().toFloatOrNull()?.coerceIn(1f,th-v) ?: min(8f,th-v)
+            val buffer=buffers.getBuffer(RenderType.entityTranslucent(particle.texture))
+            val pose=poses.last()
+            repeat(4) { trail ->
+                val t=(active.progress-trail*.065f).coerceIn(0f,1f)
+                val center=source+(target-source)*t.toDouble()+SceneVec3(0.0,0.0,.6+t*.25)
+                val right=camera.right*(.16-trail*.02);val up=camera.up*(.16-trail*.02)
+                val corners=listOf(center-right-up,center+right-up,center+right+up,center-right+up)
+                val alpha=((1f-active.progress)*220).toInt().coerceIn(0,255)
+                corners.forEachIndexed { index,p ->
+                    buffer.addVertex(pose.pose(),p.x.toFloat(),p.y.toFloat(),p.z.toFloat()).setColor(255,255,255,alpha)
+                        .setUv((if(index==0 || index==3)u else u+w)/tw,(if(index<2)v+h else v)/th)
+                        .setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose,0f,0f,1f)
+                }
+            }
+        }
     }
 
     private fun renderEffects(gui:GuiGraphics,effects:List<ActiveSceneEffect>,centers:Map<String,ScenePoint>,tileW:Int,tileH:Int){

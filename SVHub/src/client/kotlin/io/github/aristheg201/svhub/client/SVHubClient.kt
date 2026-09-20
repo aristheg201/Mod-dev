@@ -43,7 +43,7 @@ object SVHubClient : ClientModInitializer {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
             override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath("svhub", "client_render_caches")
             override fun onResourceManagerReload(resourceManager: ResourceManager) {
-                PokemonModelRenderer.clear(); NativeGameVisualRegistry.clear(); MinecraftArenaRegistry.clear(); VanillaCompanionModelRenderer.clear(); PokemonInfoProvider.clear(); ClientPokemonRuntimeInfo.clear(); CobblemonWikiProvider.clearCaches(); GeneratedBackgroundRenderer.clear(); MiniMessageText.clear()
+                PokemonModelRenderer.clear(); NativeGameVisualRegistry.clear(); MinecraftArenaRegistry.reload(resourceManager); VanillaCompanionModelRenderer.clear(); PokemonInfoProvider.clear(); ClientPokemonRuntimeInfo.clear(); CobblemonWikiProvider.clearCaches(); GeneratedBackgroundRenderer.clear(); MiniMessageText.clear()
             }
         })
         ClientPlayNetworking.registerGlobalReceiver(HubHelloS2C.TYPE) { payload, context -> context.client().execute {
