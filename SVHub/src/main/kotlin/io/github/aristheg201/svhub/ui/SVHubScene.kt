@@ -23,7 +23,9 @@ data class SVHubScene(val id:String,val revision:Long,val nodes:List<SceneNode>,
 data class SVHubSceneCamera(val position:SceneVec3,val target:SceneVec3,val fov:Double,val near:Double,val far:Double){
     fun transform(viewport:UiRect)=PerspectiveBoardTransform(viewport,position,target,fov,near,far)
     fun interpolate(to:SVHubSceneCamera,progress:Double):SVHubSceneCamera{
-        val t=progress.coerceIn(0.0,1.0);fun mix(a:Double,b:Double)=a+(b-a)*t;fun vec(a:SceneVec3,b:SceneVec3)=SceneVec3(mix(a.x,b.x),mix(a.y,b.y),mix(a.z,b.z))
+        val t=progress.coerceIn(0.0,1.0)
+        fun mix(a:Double,b:Double)=a+(b-a)*t
+        fun vec(a:SceneVec3,b:SceneVec3)=SceneVec3(mix(a.x,b.x),mix(a.y,b.y),mix(a.z,b.z))
         return SVHubSceneCamera(vec(position,to.position),vec(target,to.target),mix(fov,to.fov),mix(near,to.near),mix(far,to.far))
     }
 }
