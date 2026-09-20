@@ -180,7 +180,7 @@ object MinecraftArenaRegistry {
     fun definition(arenaId: String): MinecraftArenaDefinition? =
         cache.computeIfAbsent(arenaId, ::load)
 
-    fun clear() = cache.clear()
+    fun clear() { cache.clear(); MinecraftArenaRenderer.clearCompiledScenes() }
 
     private fun load(arenaId: String): MinecraftArenaDefinition? {
         if (!arenaId.matches(Regex("^[a-z0-9_.-]{1,64}$"))) return null
@@ -287,6 +287,25 @@ object MinecraftArenaRegistry {
 }
 
 object MinecraftArenaRenderer {
+    internal data class CompiledProp(val stack:ItemStack,val x:Int,val y:Int,val pixels:Int,val depth:Double)
+    internal data class CompiledArenaScene(val props:List<CompiledProp>)
+    private data class SceneKey(val definition:Int,val columns:Int,val rows:Int,val originX:Int,val originY:Int,val tileWidth:Int,val tileHeight:Int)
+    private val compiledScenes=ConcurrentHashMap<SceneKey,CompiledArenaScene>()
+    private val itemStacks=ConcurrentHashMap<String,ItemStack?>()
+
+    fun clearCompiledScenes(){compiledScenes.clear();itemStacks.clear()}
+    internal fun compiledScene(layout:PokemonSceneLayout,theme:MinecraftArenaDefinition):CompiledArenaScene{
+        val key=SceneKey(System.identityHashCode(theme),layout.columns,layout.rows,layout.originX.roundToInt(),layout.originY.roundToInt(),layout.tileWidth,layout.tileHeight)
+        return compiledScenes.computeIfAbsent(key){
+            val props=theme.props.mapIndexedNotNull{index,prop->
+                val stack=resolveStack(prop.item)?:return@mapIndexedNotNull null
+                val point=layout.project(prop.x,prop.y)
+                val size=(min(28,max(12,layout.tileWidth))*prop.scale).roundToInt().coerceIn(8,38)
+                CompiledProp(stack,point.x.roundToInt(),point.y.roundToInt()-size/3,size,30.0+point.y/8.0+index*.01)
+            }.sortedBy(CompiledProp::y)
+            CompiledArenaScene(props)
+        }
+    }
     fun renderPresentation(gui:GuiGraphics,layout:PokemonSceneLayout,frame:ArenaPresentationFrame,phase:String){
         val lightingAlpha=when(frame.lighting.lowercase()){"dark","night"->56;"bright","day"->10;"dramatic"->34;else->18}
         if(lightingAlpha>0){
@@ -451,20 +470,7 @@ object MinecraftArenaRenderer {
         theme: MinecraftArenaDefinition,
         seed: String
     ) {
-        theme.props
-            .mapIndexed { index, prop -> Triple(index, prop, layout.project(prop.x, prop.y)) }
-            .sortedBy { it.third.y }
-            .forEach { (index, prop, point) ->
-                val size = (min(28, max(12, layout.tileWidth)) * prop.scale).roundToInt().coerceIn(8, 38)
-                renderItem(
-                    gui,
-                    prop.item,
-                    point.x.roundToInt(),
-                    point.y.roundToInt() - size / 3,
-                    size,
-                    30.0 + point.y / 8.0 + index * 0.01
-                )
-            }
+        compiledScene(layout,theme).props.forEach{prop->renderStack(gui,prop.stack,prop.x,prop.y,prop.pixels,prop.depth)}
     }
 
     private fun renderIntersectionGrid(gui: GuiGraphics, layout: PokemonSceneLayout, theme: MinecraftArenaDefinition) {
@@ -548,13 +554,18 @@ object MinecraftArenaRenderer {
     }
 
     private fun renderItem(gui: GuiGraphics, itemId: String, centerX: Int, centerY: Int, pixels: Int, depth: Double) {
-        val id = ResourceLocation.tryParse(itemId) ?: return
-        val optional = BuiltInRegistries.ITEM.getOptional(id)
-        if (optional.isEmpty) return
-        val item = optional.get()
-        if (item === Items.AIR) return
-        val stack = ItemStack(item)
-        if (stack.isEmpty) return
+        val stack=resolveStack(itemId)?:return
+        renderStack(gui,stack,centerX,centerY,pixels,depth)
+    }
+
+    private fun resolveStack(itemId:String):ItemStack?=itemStacks.computeIfAbsent(itemId){key->
+        val id=ResourceLocation.tryParse(key)?:return@computeIfAbsent null
+        val item=BuiltInRegistries.ITEM.getOptional(id).orElse(null)?:return@computeIfAbsent null
+        if(item===Items.AIR)return@computeIfAbsent null
+        ItemStack(item).takeUnless(ItemStack::isEmpty)
+    }
+
+    private fun renderStack(gui:GuiGraphics,stack:ItemStack,centerX:Int,centerY:Int,pixels:Int,depth:Double){
         val scale = (pixels / 16f).coerceIn(0.35f, 2.2f)
         val pose = gui.pose()
         pose.pushPose()
