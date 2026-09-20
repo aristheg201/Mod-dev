@@ -164,6 +164,19 @@ class TftSetRegistryTest {
         assertTrue(view.fields.getValue("bench").contains("bf_sword"))
     }
 
+    @Test fun fullThreeSlotsStillAllowInPlaceComponentCombination() {
+        val set=TftSetRegistry.bundled("kanto_rising");val seats=listOf(NativeSeat("p1","P1"),NativeSeat("p2","P2"))
+        val initial=TftSession(seats,seed=93L,definition=set);assertTrue(initial.act("p1","buy",mapOf("index" to "0")).accepted)
+        val snapshot=initial.snapshotState();val player=snapshot.getAsJsonArray("players")[0].asJsonObject
+        player.getAsJsonArray("bench")[0].asJsonObject.add("items",com.google.gson.JsonArray().apply{add("full:deathblade");add("full:warmogs_armor");add("bf_sword")})
+        player.add("itemBench",com.google.gson.JsonArray().apply{add("recurve_bow")})
+        val restored=TftSession(seats,seed=93L,definition=set,restoreState=snapshot)
+        assertTrue(restored.act("p1","equip_item",mapOf("item" to "0","origin" to "bench","index" to "0")).accepted)
+        val bench=restored.viewFor("p1").fields.getValue("bench")
+        assertTrue(bench.contains("full:giant_slayer"));assertFalse(bench.contains("bf_sword"))
+        assertEquals("",restored.viewFor("p1").fields.getValue("itemBench"))
+    }
+
     @Test fun malformedOverrideFallsBackWithoutOverwritingUserFile() = inTempDirectory { root ->
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")

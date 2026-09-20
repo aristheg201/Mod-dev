@@ -16,6 +16,13 @@ class CompiledArenaSceneTest {
         assertSame(first, second)
     }
 
+    @Test fun viewportAndCameraChangesReuseTheSameSceneSpaceCompilation() {
+        val definition=MinecraftArenaDefinition(props=emptyList())
+        val compact=PokemonSceneLayout(UiRect(0,0,320,180),7,8,160f,30f,28,14)
+        val wide=PokemonSceneLayout(UiRect(50,20,1280,720),7,8,640f,80f,72,36)
+        assertSame(MinecraftArenaRenderer.compiledScene(compact,definition),MinecraftArenaRenderer.compiledScene(wide,definition))
+    }
+
     @Test fun gothamAndSectorCompileFromMateriallyDifferentAuthoredScenes() {
         fun load(id: String): MinecraftArenaDefinition {
             val stream = checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))

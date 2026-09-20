@@ -118,6 +118,7 @@ class TftSession(
                     lastLevelsGained = player.lastLevelsGained,
                     legacyIncomePending = player.legacyIncomePending,
                     lastItemEvent = player.lastItemEvent,
+                    itemEventSerial = player.itemEventSerial,
                     tactician = player.tactician,
                     tacticianEmoteRemainingMs = (player.tacticianEmoteUntil - nowMillis).coerceAtLeast(0L),
                     arena = player.arena,
@@ -219,6 +220,7 @@ class TftSession(
                 lastLevelsGained = if (saved.schema >= 2) p.lastLevelsGained else 0,
                 legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT,
                 lastItemEvent = p.lastItemEvent.orEmpty(),
+                itemEventSerial = p.itemEventSerial.coerceAtLeast(0L),
                 tactician = resolveTactician(p.tactician),
                 tacticianEmoteUntil = now + p.tacticianEmoteRemainingMs.coerceIn(0L, 10_000L),
                 arena = p.arena.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena,
@@ -372,6 +374,7 @@ class TftSession(
                 "itemBench" to player.itemBench.joinToString(","),
                 "itemCatalog" to encodeItemCatalog(),
                 "lastItemEvent" to player.lastItemEvent,
+                "itemEventSerial" to player.itemEventSerial.toString(),
                 "augments" to player.augments.joinToString(","),
                 "selectedAugments" to encodeSelectedAugments(observed),
                 "augmentChoices" to encodeAugmentChoices(player),
@@ -587,8 +590,11 @@ class TftSession(
         val origin = args["origin"] ?: return reject("Missing target origin")
         val unitIndex = args["index"]?.toIntOrNull() ?: return reject("Missing target")
         val unit = when (origin) { "bench" -> player.bench.getOrNull(unitIndex); "board" -> player.board[unitIndex]; else -> null } ?: return reject("Target unit not found")
-        if (unit.items.size >= 3) return reject("Unit item slots are full")
-        val loose = if (item.startsWith("full:")) -1 else unit.items.indexOfFirst { !it.startsWith("full:") }
+        val requestedSlot=args["itemSlot"]?.toIntOrNull()
+        val componentSlots=unit.items.indices.filter{!unit.items[it].startsWith("full:")}
+        val loose=if(item.startsWith("full:"))-1 else if(requestedSlot!=null){
+            requestedSlot.takeIf{it in componentSlots&&itemRecipes.containsKey(listOf(unit.items[it],item).sorted().joinToString("+"))}?:return reject("Selected component has no valid recipe")
+        }else componentSlots.firstOrNull{itemRecipes.containsKey(listOf(unit.items[it],item).sorted().joinToString("+"))}?:-1
         if (loose >= 0) {
             if (!allowed(player,TftCapability.CAN_COMBINE_ITEM)) return reject("Combining is unavailable")
             val previous = unit.items[loose]
@@ -596,12 +602,16 @@ class TftSession(
             val recipe = itemRecipes[key] ?: return reject("No recipe for $previous + $item")
             player.itemBench.removeAt(itemIndex)
             unit.items[loose] = "full:${recipe.id}"
+            player.itemEventSerial++
             player.lastItemEvent = "combine:$previous+$item->${recipe.id}:${unit.instanceId}"
             bump("${player.name} combined ${recipe.id} on ${unit.unitId}")
             return accept("Combined ${recipe.name}")
         }
+        if(componentSlots.isNotEmpty()&&!item.startsWith("full:"))return reject("No compatible component recipe")
+        if (unit.items.size >= 3) return reject("Unit item slots are full")
         player.itemBench.removeAt(itemIndex)
         unit.items += item
+        player.itemEventSerial++
         player.lastItemEvent = "equip:$item:${unit.instanceId}"
         bump("${player.name} equipped $item on ${unit.unitId}")
         return accept("Item equipped")
@@ -1179,6 +1189,7 @@ class TftSession(
         val lastLevelsGained: Int,
         val legacyIncomePending: Boolean,
         val lastItemEvent: String? = null,
+        val itemEventSerial: Long = 0L,
         val tactician: String?,
         val tacticianEmoteRemainingMs: Long = 0L,
         val arena: String = "",
@@ -1214,7 +1225,7 @@ class TftSession(
         var draftUnlockAt: Long = 0L, var carouselX: Double = 0.0, var carouselY: Double = 0.0,
         var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
         var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false,
-        var tactician: String = "", var arena: String = "kanto_stadium", var tacticianEmoteUntil:Long=0L,var lastItemEvent:String="",
+        var tactician: String = "", var arena: String = "kanto_stadium", var tacticianEmoteUntil:Long=0L,var lastItemEvent:String="",var itemEventSerial:Long=0L,
         val specialRewards: MutableList<String> = mutableListOf()
     )
     private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null, val x: Double = 0.0, val y: Double = 0.0)

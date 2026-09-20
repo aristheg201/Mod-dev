@@ -221,7 +221,6 @@ object PokemonScene3D {
         val arena = arenaId?.let(MinecraftArenaRegistry::definition)
         val stableArenaSeed = if (arenaSeed.isNotBlank()) arenaSeed else arenaId.orEmpty()
         if(arena!=null){
-            MinecraftArenaRenderer.renderFoundation(gui,layout,arena,teamSplitRow)
             MinecraftArenaRenderer.renderPathRoute(gui,layout,arena,pathRoute)
         }
         for(row in 0 until rows)for(col in 0 until columns){

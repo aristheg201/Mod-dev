@@ -86,7 +86,7 @@ class TftUiState {
     private var itemStacks: Map<String, ItemStack> = emptyMap()
     private var itemDetails:Map<String,List<String>> = emptyMap()
     private var hoverTooltip: TftHoverTooltip? = null
-    private var lastItemEvent=""
+    private var lastItemEventSerial:Long?=null
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
@@ -121,11 +121,12 @@ class TftUiState {
     }
     fun itemStack(id: String) = itemStacks[id.substringAfter(':').substringBefore('+')]?.copy()
     fun itemDetails(id:String)=itemDetails[id.substringAfter(':').substringBefore('+')].orEmpty()
-    fun observeItemEvent(encoded:String):SceneEffectSignal?{
-        if(encoded.isBlank()||encoded==lastItemEvent)return null
-        lastItemEvent=encoded
+    fun observeItemEvent(serial:Long,encoded:String):SceneEffectSignal?{
+        val previous=lastItemEventSerial
+        lastItemEventSerial=maxOf(previous?:serial,serial)
+        if(previous==null||serial<=previous||encoded.isBlank())return null
         val instanceId=encoded.substringAfterLast(':').takeIf(String::isNotBlank)?:return null
-        return SceneEffectSignal("tft:item:$encoded",encoded.hashCode().toLong() and 0xffffffffL,SceneEffectKind.BURST,"tft:$instanceId","tft:$instanceId")
+        return SceneEffectSignal("tft:item:$serial",serial,SceneEffectKind.BURST,"tft:$instanceId","tft:$instanceId")
     }
     fun tactician(target:ArenaPoint,bounds:ArenaRegion,requested:String,now:Long=System.currentTimeMillis()):TacticianPose {
         val safe=bounds.clamp(target)
@@ -540,7 +541,7 @@ object TftGameRenderer {
         }
         val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
         val effectSignals=mutableListOf<SceneEffectSignal>()
-        ui.observeItemEvent(fields.str("lastItemEvent"))?.let(effectSignals::add)
+        ui.observeItemEvent(fields.long("itemEventSerial"),fields.str("lastItemEvent"))?.let(effectSignals::add)
         val nativeAnimations=mutableListOf<SceneNativeAnimationSignal>()
         if(phase=="combat"){
             units.values.forEach { unit ->

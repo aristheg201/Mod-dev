@@ -304,13 +304,14 @@ object MinecraftArenaRegistry {
 
 object MinecraftArenaRenderer {
     internal data class CompiledArenaScene(val scene:SVHubScene)
-    private data class SceneKey(val definition:Int,val columns:Int,val rows:Int,val originX:Int,val originY:Int,val tileWidth:Int,val tileHeight:Int)
+    private data class SceneKey(val definition:Int,val resourceRevision:Long)
     private val compiledScenes=ConcurrentHashMap<SceneKey,CompiledArenaScene>()
     private val itemStacks=ConcurrentHashMap<String,ItemStack?>()
+    private var resourceRevision=0L
 
-    fun clearCompiledScenes(){compiledScenes.clear();itemStacks.clear()}
+    fun clearCompiledScenes(){compiledScenes.clear();itemStacks.clear();resourceRevision++}
     internal fun compiledScene(layout:PokemonSceneLayout,theme:MinecraftArenaDefinition):CompiledArenaScene{
-        val key=SceneKey(System.identityHashCode(theme),layout.columns,layout.rows,layout.originX.roundToInt(),layout.originY.roundToInt(),layout.tileWidth,layout.tileHeight)
+        val key=SceneKey(System.identityHashCode(theme),resourceRevision)
         return compiledScenes.computeIfAbsent(key){
             val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(theme.boardOrigin.x.toDouble(),theme.boardOrigin.y.toDouble(),theme.boardOrigin.z.toDouble())),SceneVec3(theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.depth.coerceAtLeast(1)*.12),theme.surface.ifBlank{"arena_floor"})
             val props=theme.props.mapIndexed{index,prop->
@@ -489,11 +490,22 @@ object MinecraftArenaRenderer {
     ) {
         // Temporary backend adapter: retained nodes remain in scene-space; only this traversal projects them.
         compiledScene(layout,theme).scene.nodes.asSequence().filter{it.visible}.sortedBy{it.transform.position.y}.forEach{node->
+            if(node is SceneMeshNode){renderMesh(gui,layout,node);return@forEach}
             val point=layout.project(node.transform.position.x.toFloat(),node.transform.position.y.toFloat())
             val pixels=(min(28,max(12,layout.tileWidth))*node.transform.scale.x).roundToInt().coerceIn(8,38)
             val asset=when(node){is SceneBlockModelNode->node.blockId;is SceneItemModelNode->node.itemId;else->return@forEach}
             resolveStack(asset)?.let{renderStack(gui,it,point.x.roundToInt(),point.y.roundToInt()-pixels/3,pixels,30.0+point.y/8.0)}
         }
+    }
+
+    private fun renderMesh(gui:GuiGraphics,layout:PokemonSceneLayout,node:SceneMeshNode){
+        val p=node.transform.position;val s=node.size;val hx=s.x/2.0;val hy=s.y/2.0
+        fun point(x:Double,y:Double,z:Double):ScenePoint=layout.perspective?.project(SceneVec3(x,y,z))?.let{ScenePoint(it.x,it.y)}?:layout.project(x.toFloat(),y.toFloat()).let{ScenePoint(it.x,(it.y-z*layout.tileHeight).toFloat())}
+        val bottom=listOf(point(p.x-hx,p.y-hy,p.z),point(p.x+hx,p.y-hy,p.z),point(p.x+hx,p.y+hy,p.z),point(p.x-hx,p.y+hy,p.z))
+        val top=bottom.indices.map{index->val b=when(index){0->p.x-hx to p.y-hy;1->p.x+hx to p.y-hy;2->p.x+hx to p.y+hy;else->p.x-hx to p.y+hy};point(b.first,b.second,p.z+s.z)}
+        val color=when(node.material){"bench"->0xFF263F3B.toInt();else->0xFF263532.toInt()}
+        for(i in bottom.indices)fillQuad(gui,listOf(bottom[i],bottom[(i+1)%4],top[(i+1)%4],top[i]),darken(color,.68f))
+        fillQuad(gui,top,color)
     }
 
     private fun renderIntersectionGrid(gui: GuiGraphics, layout: PokemonSceneLayout, theme: MinecraftArenaDefinition) {

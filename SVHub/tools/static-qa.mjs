@@ -159,7 +159,7 @@ if (skinService.includes("givepokemonother")) failures.push("NativeSkinService.k
 for (const marker of ["lastRoll", "requestId", "DURATION_MS", "u * u * u * u * u"]) {
   if (!gachaRenderer.includes(marker)) failures.push(`GachaRouletteRenderer.kt: missing authoritative roulette marker ${marker}`);
 }
-for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride", "arenaId", "MinecraftArenaRenderer.renderTile", "MinecraftArenaRenderer.renderFoundation", "pathRoute", "moving = moving"]) {
+for (const marker of ["PokemonSceneState", "PokemonSceneEntity", "project(", "pruneScene", "motionSerial", "SceneEffectSignal", "SceneEffectKind.PROJECTILE", "camera: SceneCameraPreset", "renderEffects", "depthStride", "arenaId", "MinecraftArenaRenderer.renderTile", "MinecraftArenaRenderer.renderProps", "pathRoute", "moving = moving"]) {
   if (!sceneRenderer.includes(marker)) failures.push(`PokemonScene3D.kt: missing shared scene marker ${marker}`);
 }
 for (const marker of ["MinecraftArenaRegistry", "BuiltInRegistries.ITEM.getOptional", "assets/svhub/arenas", "ArenaTileRole.PATH"]) {

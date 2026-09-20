@@ -2,6 +2,8 @@ package io.github.aristheg201.svhub.client.nativeui
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class TftPresentationStateTest {
     private val bounds=ArenaRegion(-10f,-10f,10f,10f)
@@ -25,5 +27,14 @@ class TftPresentationStateTest {
         assertEquals("PICKUP_REACTION",ui.tactician(ArenaPoint(0f,0f),bounds,"PICKUP_REACTION",t+1_300).state)
         assertEquals("VICTORY",ui.tactician(ArenaPoint(0f,0f),bounds,"VICTORY",t+2_300).state)
         assertEquals("VICTORY",ui.tactician(ArenaPoint(0f,0f),bounds,"IDLE",t+9_000).state)
+    }
+
+    @Test fun restoredItemEventEstablishesBaselineAndOnlyNewSerialPlays(){
+        val ui=TftUiState()
+        assertNull(ui.observeItemEvent(7,"combine:a+b->c:u1"))
+        assertNull(ui.observeItemEvent(7,"combine:a+b->c:u1"))
+        val next=assertNotNull(ui.observeItemEvent(8,"combine:a+b->c:u1"))
+        assertEquals(8,next.serial)
+        assertNull(ui.observeItemEvent(8,"combine:a+b->c:u1"))
     }
 }
