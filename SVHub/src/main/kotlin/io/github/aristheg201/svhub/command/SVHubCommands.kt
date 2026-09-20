@@ -6,6 +6,7 @@ import io.github.aristheg201.svhub.SVHubRuntime
 import io.github.aristheg201.svhub.network.SVHubNetwork
 import io.github.aristheg201.svhub.native.NativeArcadeService
 import io.github.aristheg201.svhub.native.NativeGameEngineRuntime
+import io.github.aristheg201.svhub.native.network.NativePlatformNetwork
 import io.github.aristheg201.svhub.native.NativeBotRuntime
 import io.github.aristheg201.svhub.permission.SVHubPermissions
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -94,6 +95,7 @@ object SVHubCommands {
                             .then(Commands.literal("arcade").executes { ctx -> val m=NativeArcadeService.metrics();ctx.source.sendSuccess({Component.literal("arcade=${m.activeArcade} tft=${m.activeTft} td=${m.activeTd} humans=${m.humans} bots=${m.bots} disconnected=${m.disconnectedHumans}")},false);1 }
                                 .then(Commands.literal("matches").executes { ctx -> val m=NativeGameEngineRuntime.metrics();ctx.source.sendSuccess({Component.literal("sessions=${m.sessions} perSessionQueues=${m.sessionQueueDepths}")},false);1 })
                                 .then(Commands.literal("async").executes { ctx -> val e=NativeGameEngineRuntime.metrics();val b=NativeBotRuntime.metrics();ctx.source.sendSuccess({Component.literal("workerQueue=${e.workerQueueDepth} avgUs=${e.averageLatencyMicros} maxUs=${e.maxLatencyMicros} staleBot=${e.staleBotResults} botQueue=${b.queueDepth} botAvgUs=${b.averageDecisionMicros} botMaxUs=${b.maxDecisionMicros}")},false);1 })
+                                .then(Commands.literal("network").executes { ctx -> val n=NativePlatformNetwork.metrics();ctx.source.sendSuccess({Component.literal("subscriptions=${n.subscriptions} sent=${n.sentPackets} suppressed=${n.suppressedPackets} bytes=${n.sentBytes} packetsPerSecond=${n.packetsPerSecond} bytesPerSecond=${n.bytesPerSecond}")},false);1 })
                                 .then(Commands.literal("matchmaking").executes { ctx -> val m=NativeArcadeService.metrics();ctx.source.sendSuccess({Component.literal("queues=${m.matchmakingQueues} collectionRemainingMs=${m.matchmakingWaitMs}")},false);1 })
                             )
                     )

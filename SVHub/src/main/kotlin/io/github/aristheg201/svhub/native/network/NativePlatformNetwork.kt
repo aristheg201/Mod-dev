@@ -12,7 +12,7 @@ import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 object NativePlatformNetwork{
- private data class Subscription(val module:String,val viewId:String)
+ private data class Subscription(val module:String,val viewId:String,val replication:NativeReplicationTracker=NativeReplicationTracker())
  private val gson=Gson();private val openViews=ConcurrentHashMap<UUID,Subscription>();private val lastIntentAt=ConcurrentHashMap<UUID,Long>();private val pendingTftPreview=ConcurrentHashMap<String,UUID>()
  fun registerCommon(){
   PayloadTypeRegistry.playS2C().register(NativeOpenS2C.TYPE,NativeOpenS2C.CODEC)
@@ -46,7 +46,13 @@ object NativePlatformNetwork{
   }}
  }
  fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();openViews[player.uuid]=Subscription(module,viewId);lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeOpenS2C(module,gson.toJson(state),viewId,previous?.viewId.orEmpty()));return viewId}
- fun sendState(player:ServerPlayer,module:String,state:JsonObject,message:String=""){val sub=openViews[player.uuid]?:return;if(sub.module!=module)return;ServerPlayNetworking.send(player,NativeStateS2C(module,gson.toJson(state),message.take(512),sub.viewId))}
+ fun sendState(player:ServerPlayer,module:String,state:JsonObject,message:String=""){
+  val sub=openViews[player.uuid]?:return
+  if(sub.module!=module)return
+  val stateJson=gson.toJson(state);val safeMessage=message.take(512)
+  if(!sub.replication.shouldSend("$stateJson\u0000$safeMessage"))return
+  ServerPlayNetworking.send(player,NativeStateS2C(module,stateJson,safeMessage,sub.viewId))
+ }
  fun sendClose(player:ServerPlayer,reason:String=""){val sub=openViews.remove(player.uuid)?:return;lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeCloseS2C(sub.viewId,reason.take(512)))}
  fun requestTftPreview(player:ServerPlayer,label:String,species:String,aspects:Set<String>,semantic:String):String{
   val requestId=UUID.randomUUID().toString()
@@ -56,6 +62,11 @@ object NativePlatformNetwork{
  }
  fun currentModule(id:UUID):String?=openViews[id]?.module
  fun currentViewId(id:UUID):String?=openViews[id]?.viewId
+ data class Metrics(val subscriptions:Int,val sentPackets:Long,val suppressedPackets:Long,val sentBytes:Long,val packetsPerSecond:Long,val bytesPerSecond:Long)
+ fun metrics():Metrics{
+  val values=openViews.values.map{it.replication.metrics()}
+  return Metrics(values.size,values.sumOf{it.sentPackets},values.sumOf{it.suppressedPackets},values.sumOf{it.sentBytes},values.sumOf{it.packetsPerSecond},values.sumOf{it.bytesPerSecond})
+ }
  fun close(id:UUID,expectedViewId:String?=null):Boolean{val sub=openViews[id]?:return false;if(expectedViewId!=null&&sub.viewId!=expectedViewId)return false;val removed=openViews.remove(id,sub);if(removed)lastIntentAt.remove(id);return removed}
  private val ID=Regex("^[a-z0-9_.:-]{1,48}$")
 }
