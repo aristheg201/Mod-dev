@@ -12,6 +12,7 @@ class NativeReplicationTracker(private val clock: () -> Long = System::currentTi
         val sentBytes: Long,
         val packetsPerSecond: Long,
         val bytesPerSecond: Long
+        ,val fullSnapshots:Long=0,val deltaPackets:Long=0,val componentsReplicated:Long=0,val replicationFlushes:Long=0,val noOpFlushes:Long=0,val averageDeltaBytes:Long=0,val maximumDeltaBytes:Long=0
     )
 
     private var lastPayload: String? = null
@@ -23,6 +24,11 @@ class NativeReplicationTracker(private val clock: () -> Long = System::currentTi
     private var windowBytes = 0L
     private var lastPacketsPerSecond = 0L
     private var lastBytesPerSecond = 0L
+    private var fullSnapshots=0L;private var deltaPackets=0L;private var componentsReplicated=0L;private var replicationFlushes=0L;private var noOpFlushes=0L;private var deltaBytes=0L;private var maximumDeltaBytes=0L
+
+    @Synchronized fun recordFull(serializedBytes:Long){fullSnapshots++;sentPackets++;sentBytes+=serializedBytes;windowPackets++;windowBytes+=serializedBytes;rollWindow(clock())}
+    @Synchronized fun recordDelta(serializedBytes:Long,components:Int){replicationFlushes++;deltaPackets++;componentsReplicated+=components;deltaBytes+=serializedBytes;maximumDeltaBytes=maxOf(maximumDeltaBytes,serializedBytes);sentPackets++;sentBytes+=serializedBytes;windowPackets++;windowBytes+=serializedBytes;rollWindow(clock())}
+    @Synchronized fun recordNoOp(){replicationFlushes++;noOpFlushes++;suppressedPackets++;rollWindow(clock())}
 
     @Synchronized
     fun shouldSend(payload: String): Boolean {
@@ -44,7 +50,7 @@ class NativeReplicationTracker(private val clock: () -> Long = System::currentTi
     @Synchronized
     fun metrics(): Metrics {
         rollWindow(clock())
-        return Metrics(sentPackets, suppressedPackets, sentBytes, lastPacketsPerSecond, lastBytesPerSecond)
+        return Metrics(sentPackets, suppressedPackets, sentBytes, lastPacketsPerSecond, lastBytesPerSecond,fullSnapshots,deltaPackets,componentsReplicated,replicationFlushes,noOpFlushes,if(deltaPackets==0L)0 else deltaBytes/deltaPackets,maximumDeltaBytes)
     }
 
     private fun rollWindow(now: Long) {

@@ -3,6 +3,8 @@ package io.github.aristheg201.svhub.client.nativeui
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.native.network.NativeJsonDelta
+import io.github.aristheg201.svhub.native.network.NativeJsonPatch
 import io.github.aristheg201.svhub.client.gui.SVHubScreen
 import io.github.aristheg201.svhub.native.network.NativeCloseC2S
 import io.github.aristheg201.svhub.native.network.NativeIntentC2S
@@ -88,6 +90,11 @@ class NativePlatformScreen(
             message.startsWith("gui.") -> tr(message)
             else -> message
         }
+    }
+    fun applyDelta(patch: NativeJsonPatch, message: String) {
+        val merged = state.deepCopy()
+        NativeJsonDelta.apply(merged, patch)
+        applyState(merged, message)
     }
 
     override fun init() { controls.clear() }

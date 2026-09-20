@@ -12,11 +12,12 @@ import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 object NativePlatformNetwork{
- private data class Subscription(val module:String,val viewId:String,val replication:NativeReplicationTracker=NativeReplicationTracker())
+ private data class Subscription(val module:String,val viewId:String,val replication:NativeReplicationTracker=NativeReplicationTracker(),var state:JsonObject=JsonObject())
  private val gson=Gson();private val openViews=ConcurrentHashMap<UUID,Subscription>();private val lastIntentAt=ConcurrentHashMap<UUID,Long>();private val pendingTftPreview=ConcurrentHashMap<String,UUID>()
  fun registerCommon(){
   PayloadTypeRegistry.playS2C().register(NativeOpenS2C.TYPE,NativeOpenS2C.CODEC)
   PayloadTypeRegistry.playS2C().register(NativeStateS2C.TYPE,NativeStateS2C.CODEC)
+  PayloadTypeRegistry.playS2C().register(NativeDeltaS2C.TYPE,NativeDeltaS2C.CODEC)
   PayloadTypeRegistry.playS2C().register(NativeCloseS2C.TYPE,NativeCloseS2C.CODEC)
   PayloadTypeRegistry.playC2S().register(NativeIntentC2S.TYPE,NativeIntentC2S.CODEC)
   PayloadTypeRegistry.playC2S().register(NativeCloseC2S.TYPE,NativeCloseC2S.CODEC)
@@ -45,13 +46,15 @@ object NativePlatformNetwork{
    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(payload.message.take(4096)))
   }}
  }
- fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();openViews[player.uuid]=Subscription(module,viewId);lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeOpenS2C(module,gson.toJson(state),viewId,previous?.viewId.orEmpty()));return viewId}
+ fun sendOpen(player:ServerPlayer,module:String,state:JsonObject):String{val previous=openViews[player.uuid];val viewId=UUID.randomUUID().toString();val json=gson.toJson(state);val tracker=NativeReplicationTracker();tracker.recordFull(utf8Length(json));openViews[player.uuid]=Subscription(module,viewId,tracker,state.deepCopy());lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeOpenS2C(module,json,viewId,previous?.viewId.orEmpty()));return viewId}
  fun sendState(player:ServerPlayer,module:String,state:JsonObject,message:String=""){
   val sub=openViews[player.uuid]?:return
   if(sub.module!=module)return
-  val stateJson=gson.toJson(state);val safeMessage=message.take(512)
-  if(!sub.replication.shouldSend("$stateJson\u0000$safeMessage"))return
-  ServerPlayNetworking.send(player,NativeStateS2C(module,stateJson,safeMessage,sub.viewId))
+  val patch=NativeJsonDelta.diff(sub.state,state);val safeMessage=message.take(512)
+  if(patch.isEmpty&&safeMessage.isEmpty()){sub.replication.recordNoOp();return}
+  val changed=gson.toJson(patch.changed);val removed=patch.removed.joinToString("\u0000")
+  sub.state=state.deepCopy();sub.replication.recordDelta(utf8Length(changed)+utf8Length(removed)+utf8Length(safeMessage),countLeaves(patch.changed)+patch.removed.size)
+  ServerPlayNetworking.send(player,NativeDeltaS2C(module,changed,removed,safeMessage,sub.viewId))
  }
  fun sendClose(player:ServerPlayer,reason:String=""){val sub=openViews.remove(player.uuid)?:return;lastIntentAt.remove(player.uuid);ServerPlayNetworking.send(player,NativeCloseS2C(sub.viewId,reason.take(512)))}
  fun requestTftPreview(player:ServerPlayer,label:String,species:String,aspects:Set<String>,semantic:String):String{
@@ -62,11 +65,14 @@ object NativePlatformNetwork{
  }
  fun currentModule(id:UUID):String?=openViews[id]?.module
  fun currentViewId(id:UUID):String?=openViews[id]?.viewId
- data class Metrics(val subscriptions:Int,val sentPackets:Long,val suppressedPackets:Long,val sentBytes:Long,val packetsPerSecond:Long,val bytesPerSecond:Long)
+ data class Metrics(val subscriptions:Int,val sentPackets:Long,val suppressedPackets:Long,val serializedPayloadBytes:Long,val packetsPerSecond:Long,val bytesPerSecond:Long,val fullSnapshots:Long,val deltaPackets:Long,val componentsReplicated:Long,val replicationFlushes:Long,val noOpFlushes:Long,val averageDeltaBytes:Long,val maximumDeltaBytes:Long)
  fun metrics():Metrics{
   val values=openViews.values.map{it.replication.metrics()}
-  return Metrics(values.size,values.sumOf{it.sentPackets},values.sumOf{it.suppressedPackets},values.sumOf{it.sentBytes},values.sumOf{it.packetsPerSecond},values.sumOf{it.bytesPerSecond})
+  val deltas=values.sumOf{it.deltaPackets};val deltaBytes=values.sumOf{it.averageDeltaBytes*it.deltaPackets}
+  return Metrics(values.size,values.sumOf{it.sentPackets},values.sumOf{it.suppressedPackets},values.sumOf{it.sentBytes},values.sumOf{it.packetsPerSecond},values.sumOf{it.bytesPerSecond},values.sumOf{it.fullSnapshots},deltas,values.sumOf{it.componentsReplicated},values.sumOf{it.replicationFlushes},values.sumOf{it.noOpFlushes},if(deltas==0L)0 else deltaBytes/deltas,values.maxOfOrNull{it.maximumDeltaBytes}?:0)
  }
  fun close(id:UUID,expectedViewId:String?=null):Boolean{val sub=openViews[id]?:return false;if(expectedViewId!=null&&sub.viewId!=expectedViewId)return false;val removed=openViews.remove(id,sub);if(removed)lastIntentAt.remove(id);return removed}
  private val ID=Regex("^[a-z0-9_.:-]{1,48}$")
+ private fun countLeaves(value:com.google.gson.JsonElement):Int=if(value.isJsonObject)value.asJsonObject.entrySet().sumOf{countLeaves(it.value)} else 1
+ private fun utf8Length(value:String):Long{var bytes=0L;var i=0;while(i<value.length){val c=value[i];bytes+=when{c.code<=0x7f->1;c.code<=0x7ff->2;c.isHighSurrogate()&&i+1<value.length&&value[i+1].isLowSurrogate()->{i++;4};else->3};i++};return bytes}
 }

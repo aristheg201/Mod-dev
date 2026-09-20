@@ -6,6 +6,9 @@ import io.github.aristheg201.svhub.native.network.NativeCloseC2S
 import io.github.aristheg201.svhub.native.network.NativeCloseS2C
 import io.github.aristheg201.svhub.native.network.NativeOpenS2C
 import io.github.aristheg201.svhub.native.network.NativeStateS2C
+import io.github.aristheg201.svhub.native.network.NativeDeltaS2C
+import io.github.aristheg201.svhub.native.network.NativeJsonDelta
+import io.github.aristheg201.svhub.native.network.NativeJsonPatch
 import io.github.aristheg201.svhub.native.network.NativeTftPreviewS2C
 import io.github.aristheg201.svhub.native.network.NativeTftPreviewResultC2S
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
@@ -55,6 +58,16 @@ object NativePlatformClient {
             context.client().execute {
                 val current = Minecraft.getInstance().screen
                 if (current is NativePlatformScreen && current.viewId == payload.viewId && current.module == payload.module) current.applyState(decode(payload.state), payload.message)
+            }
+        }
+        ClientPlayNetworking.registerGlobalReceiver(NativeDeltaS2C.TYPE) { payload, context ->
+            context.client().execute {
+                val current = Minecraft.getInstance().screen
+                if (current is NativePlatformScreen && current.viewId == payload.viewId && current.module == payload.module) {
+                    val changed = decode(payload.changed)
+                    val removed = payload.removed.split('\u0000').filter(String::isNotEmpty)
+                    current.applyDelta(NativeJsonPatch(changed, removed), payload.message)
+                }
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(NativeCloseS2C.TYPE) { payload, context ->
