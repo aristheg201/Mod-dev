@@ -191,3 +191,67 @@ jobs:
             SVHub/build/libs/fabric.mod.built.json
             SVHub/build/test-results/verifyPackagedTft/*.xml
           if-no-files-found: error
+
+
+  visual-smoke:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SVHub
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Install headless OpenGL runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri
+
+      - name: Boot Minecraft and capture TFT scenes
+        env:
+          SVHUB_VISUAL_SMOKE: '1'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 300s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon runClient
+
+      - name: Verify visual evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Screenshots:"
+          find run/screenshots -maxdepth 1 -type f -name 'svhub-tft-*.png' -print 2>/dev/null || true
+          count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-tft-*.png' 2>/dev/null | wc -l)"
+          test "$count" -eq 4
+          test -f run/logs/latest.log
+          if grep -Eiq 'Exception in thread|Caused by:|Crash report|Rendering screen|OpenGL error' run/logs/latest.log; then
+            echo 'Runtime log contains a crash/render error marker' >&2
+            grep -Ein 'Exception in thread|Caused by:|Crash report|Rendering screen|OpenGL error' run/logs/latest.log | tail -n 80 >&2
+            exit 1
+          fi
+
+      - name: Upload TFT visual smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SVHub-TFT-visual-smoke
+          path: |
+            SVHub/run/screenshots/svhub-tft-*.png
+            SVHub/run/logs/latest.log
+            SVHub/run/crash-reports/**
+          if-no-files-found: warn
