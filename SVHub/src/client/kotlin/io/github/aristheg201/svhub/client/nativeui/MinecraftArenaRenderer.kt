@@ -310,7 +310,7 @@ object MinecraftArenaRenderer {
     private var resourceRevision=0L
 
     fun clearCompiledScenes(){compiledScenes.clear();itemStacks.clear();resourceRevision++}
-    internal fun compiledScene(layout:PokemonSceneLayout,theme:MinecraftArenaDefinition):CompiledArenaScene{
+    fun compiledScene(layout:PokemonSceneLayout,theme:MinecraftArenaDefinition):CompiledArenaScene{
         val key=SceneKey(System.identityHashCode(theme),resourceRevision)
         return compiledScenes.computeIfAbsent(key){
             val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(theme.boardOrigin.x.toDouble(),theme.boardOrigin.y.toDouble(),theme.boardOrigin.z.toDouble())),SceneVec3(theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.depth.coerceAtLeast(1)*.12),theme.surface.ifBlank{"arena_floor"})
