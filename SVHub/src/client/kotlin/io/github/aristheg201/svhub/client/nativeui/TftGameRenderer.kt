@@ -13,6 +13,8 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.language.I18n
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.item.ItemStack
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -78,8 +80,10 @@ class TftUiState {
     private val deadSince = linkedMapOf<String, Long>()
     private var unitCatalogRaw = ""
     private var traitCatalogRaw = ""
+    private var itemCatalogRaw = ""
     private var unitCatalog: Map<String, TftUnitInfo> = emptyMap()
     private var traitCatalog: Map<String, TftTraitInfo> = emptyMap()
+    private var itemStacks: Map<String, ItemStack> = emptyMap()
     private var hoverTooltip: TftHoverTooltip? = null
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
@@ -90,6 +94,18 @@ class TftUiState {
     private var tacticianState=TacticianPresentationState.IDLE
     private var tacticianStateSince=tacticianAt
     internal fun tacticianState()=tacticianState
+    fun updateItems(raw: String) {
+        if (raw == itemCatalogRaw) return
+        itemCatalogRaw = raw
+        val root = runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull()
+        itemStacks = root?.entrySet()?.mapNotNull { (id, value) ->
+            val rawStack = runCatching { value.asJsonObject.get("stack")?.asString }.getOrNull() ?: return@mapNotNull null
+            val stackId = ResourceLocation.tryParse(rawStack) ?: return@mapNotNull null
+            val item = BuiltInRegistries.ITEM.getOptional(stackId).orElse(null) ?: return@mapNotNull null
+            id to ItemStack(item)
+        }?.toMap().orEmpty()
+    }
+    fun itemStack(id: String) = itemStacks[id.substringAfter(':').substringBefore('+')]?.copy()
     fun tactician(target:ArenaPoint,bounds:ArenaRegion,requested:String,now:Long=System.currentTimeMillis()):TacticianPose {
         val safe=bounds.clamp(target)
         val previous=tacticianPoint?:safe
@@ -337,8 +353,10 @@ object TftGameRenderer {
         val fields = view.getAsJsonObject("fields") ?: JsonObject()
         ui.beginFrame()
         ui.updateCatalogs(fields.str("unitCatalog"), fields.str("traitCatalog"))
+        ui.updateItems(fields.str("itemCatalog","{}"))
         val phase = view.str("phase")
         val canEdit = fields.str("canEditBoard") == "true"
+        val capabilities = fields.str("capabilities").split(',').filter(String::isNotBlank).toSet()
         val board = view.getAsJsonArray("board")
         val boardTokens = if (board == null) emptyMap() else (0 until board.size()).mapNotNull { index ->
             parseUnit(board[index].asString)?.let { index to it }
@@ -361,7 +379,8 @@ object TftGameRenderer {
             renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
         }
         renderAugmentHud(gui, font, resolved.board, fields, ui, mouseX, mouseY, hooks)
-        renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit, ui, hooks, mouseX, mouseY)
+        renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit,
+            "CAN_BUY_UNIT" in capabilities, "CAN_SELL" in capabilities, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
         if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
@@ -670,7 +689,7 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
+    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, canBuy:Boolean,canSell:Boolean,ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
         val benchH = if (density == UiDensity.COMPACT) 18 else 22
         val shopY = rect.y + benchH + if (density == UiDensity.COMPACT) 1 else 3
@@ -707,7 +726,9 @@ object TftGameRenderer {
                 if (cardRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
                     ui.offerTooltip(unitTooltip(ui, unit, 1, emptyList()))
                 }
-                if (canEdit) hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'))) }
+                if (canBuy && card.getAsJsonObject("meta")?.str("enabled") == "true") {
+                    hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'))) }
+                }
             }
         }
 
@@ -717,7 +738,9 @@ object TftGameRenderer {
             items.take(8).forEachIndexed { index, item ->
                 val itemRect = UiRect(itemX + index * 18, itemY, 16, 15)
                 gui.fill(itemRect.x, itemRect.y, itemRect.right, itemRect.bottom, if (ui.selectedItem == index) 0xFF544B28.toInt() else panel2)
-                gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
+                val stack = ui.itemStack(item)
+                if (stack != null && !stack.isEmpty) gui.renderItem(stack, itemRect.x, itemRect.y)
+                else gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
                 if (itemRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
                     ui.offerTooltip(TftHoverTooltip(humanize(item.substringAfter(':')), tr("gui.svhub.tft.tooltip.item"), listOf(item), gold))
                 }
@@ -725,7 +748,7 @@ object TftGameRenderer {
             }
         }
 
-        if (canEdit && ui.selectedOrigin != null && ui.selectedIndex != null) {
+        if (canSell && ui.selectedOrigin != null && ui.selectedIndex != null) {
             val sellRect = UiRect(rect.right - 58, rect.y - 18, 56, 15)
             hooks.control(sellRect, tr("gui.svhub.tft.sell"), true) {
                 hooks.action("sell", mapOf("origin" to ui.selectedOrigin!!, "index" to ui.selectedIndex.toString())); ui.clearUnit()

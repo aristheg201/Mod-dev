@@ -1,1 +1,66 @@
-[{"id":"bf_sword","name":"BF Sword","effects":{"attack_pct":0.1}},{"id":"recurve_bow","name":"Recurve Bow","effects":{"attack_speed_pct":0.1}},{"id":"needlessly_large_rod","name":"Needlessly Large Rod","effects":{"ability_power_pct":0.1}},{"id":"chain_vest","name":"Chain Vest","effects":{"defense":20}},{"id":"negatron_cloak","name":"Negatron Cloak","effects":{"spdef":20}},{"id":"giants_belt","name":"Giant's Belt","effects":{"hp_pct":0.12}},{"id":"tear_of_goddess","name":"Tear of the Goddess","effects":{"mana_start":15}},{"id":"sparring_gloves","name":"Sparring Gloves","effects":{"crit_chance":0.1}}]
+[
+  {
+    "id": "bf_sword",
+    "name": "BF Sword",
+    "effects": {
+      "attack_pct": 0.1
+    },
+    "stack": "minecraft:iron_sword"
+  },
+  {
+    "id": "recurve_bow",
+    "name": "Recurve Bow",
+    "effects": {
+      "attack_speed_pct": 0.1
+    },
+    "stack": "minecraft:bow"
+  },
+  {
+    "id": "needlessly_large_rod",
+    "name": "Needlessly Large Rod",
+    "effects": {
+      "ability_power_pct": 0.1
+    },
+    "stack": "minecraft:blaze_rod"
+  },
+  {
+    "id": "chain_vest",
+    "name": "Chain Vest",
+    "effects": {
+      "defense": 20
+    },
+    "stack": "minecraft:iron_chestplate"
+  },
+  {
+    "id": "negatron_cloak",
+    "name": "Negatron Cloak",
+    "effects": {
+      "spdef": 20
+    },
+    "stack": "minecraft:leather_chestplate"
+  },
+  {
+    "id": "giants_belt",
+    "name": "Giant's Belt",
+    "effects": {
+      "hp_pct": 0.12
+    },
+    "stack": "minecraft:leather"
+  },
+  {
+    "id": "tear_of_goddess",
+    "name": "Tear of the Goddess",
+    "effects": {
+      "mana_start": 15
+    },
+    "stack": "minecraft:ghast_tear"
+  },
+  {
+    "id": "sparring_gloves",
+    "name": "Sparring Gloves",
+    "effects": {
+      "crit_chance": 0.1
+    },
+    "stack": "minecraft:leather"
+  }
+]

@@ -220,7 +220,45 @@
       "sector_2814",
       "grand_line",
       "celestial_vault"
-    ]
+    ],
+    "phaseCapabilities": {
+      "planning": [
+        "CAN_BUY_UNIT",
+        "CAN_REROLL",
+        "CAN_BUY_XP",
+        "CAN_SELL",
+        "CAN_MOVE_BOARD_UNIT",
+        "CAN_MOVE_BENCH_UNIT",
+        "CAN_EQUIP_ITEM",
+        "CAN_COMBINE_ITEM",
+        "CAN_SCOUT",
+        "CAN_EMOTE",
+        "CAN_OPEN_SHOP",
+        "CAN_INTERACT_BENCH"
+      ],
+      "combat": [
+        "CAN_BUY_UNIT",
+        "CAN_REROLL",
+        "CAN_BUY_XP",
+        "CAN_SELL",
+        "CAN_SCOUT",
+        "CAN_EMOTE",
+        "CAN_OPEN_SHOP"
+      ],
+      "post": [
+        "CAN_BUY_UNIT",
+        "CAN_REROLL",
+        "CAN_BUY_XP",
+        "CAN_SCOUT",
+        "CAN_EMOTE",
+        "CAN_OPEN_SHOP"
+      ],
+      "draft": [
+        "CAN_CAROUSEL_PICK",
+        "CAN_EMOTE"
+      ],
+      "finished": []
+    }
   },
   "roundSchedule": [
     {

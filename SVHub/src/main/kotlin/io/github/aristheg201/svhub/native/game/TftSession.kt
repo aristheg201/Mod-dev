@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.native.game.tft.TftCombatEngine
 import io.github.aristheg201.svhub.native.game.tft.TftCombatSnapshot
 import io.github.aristheg201.svhub.native.game.tft.TftCombatUnit
+import io.github.aristheg201.svhub.native.game.tft.TftCapability
 import io.github.aristheg201.svhub.native.game.tft.TftDefinitionValidator
 import io.github.aristheg201.svhub.native.game.tft.TftOwnedUnit
 import io.github.aristheg201.svhub.native.game.tft.TftPveRoundDefinition
@@ -273,7 +274,7 @@ class TftSession(
         val observed = scoutTargets[viewerId]?.let(players::get) ?: player
         val scouting = observed.id != player.id
         val board = buildBoardView(observed)
-        val shopEnabled = phase == Phase.PLANNING && !player.eliminated
+        val shopEnabled = allowed(player, TftCapability.CAN_OPEN_SHOP)
         val cards = player.shop.mapIndexedNotNull { index, unitId ->
             val def = unitId?.let(unitDefs::get) ?: return@mapIndexedNotNull null
             NativeCardView(
@@ -384,7 +385,8 @@ class TftSession(
                 "lastStreakGold" to player.lastStreakGold.toString(),
                 "freeRerolls" to player.freeRerolls.toString(),
                 "specialRewards" to player.specialRewards.joinToString(","),
-                "canEditBoard" to (phase == Phase.PLANNING && !player.eliminated && !scouting).toString()
+                "canEditBoard" to (canEditBoard(player) && !scouting).toString(),
+                "capabilities" to capabilities(player).joinToString(",", transform = TftCapability::name)
             ),
             log = log.toList().takeLast(12),
             revision = revision,
@@ -394,7 +396,11 @@ class TftSession(
     }
 
     override fun act(viewerId: String, action: String, args: Map<String, String>): NativeGameResult {
-        if (action == "scout") return scout(viewerId, args["target"])
+        if (action == "scout") {
+            val player = players[viewerId] ?: return reject("Spectator")
+            if (!allowed(player, TftCapability.CAN_SCOUT)) return reject("Scouting is unavailable")
+            return scout(viewerId, args["target"])
+        }
         if (finished) return NativeGameResult(false, message = "Game finished")
         val player = players[viewerId] ?: return NativeGameResult(false, message = "Spectator")
         if (player.eliminated) return NativeGameResult(false, message = "Trainer eliminated")
@@ -412,7 +418,11 @@ class TftSession(
             "carousel_move" -> carouselMove(player, args)
             "carousel_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
             "draft_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
-            "tactician_emote" -> { player.tacticianEmoteUntil=System.currentTimeMillis()+2_000L;bump("${player.name} emotes");accept("Tactician emote") }
+            "tactician_emote" -> if (!allowed(player, TftCapability.CAN_EMOTE)) reject("Emotes are unavailable") else {
+                player.tacticianEmoteUntil = System.currentTimeMillis() + 2_000L
+                bump("${player.name} emotes")
+                accept("Tactician emote")
+            }
             "resign" -> resign(player)
             else -> NativeGameResult(false, message = "Unknown TFT action")
         }
@@ -461,7 +471,7 @@ class TftSession(
     }
 
     private fun buy(player: PlayerState, index: Int?): NativeGameResult {
-        if (phase != Phase.PLANNING) return reject("Shop is closed during combat")
+        if (!allowed(player,TftCapability.CAN_BUY_UNIT)) return reject("Buying is unavailable")
         val i = index ?: return reject("Missing shop slot")
         val unitId = player.shop.getOrNull(i) ?: return reject("Shop slot empty")
         val def = unitDefs[unitId] ?: return reject("Unit definition missing")
@@ -476,7 +486,7 @@ class TftSession(
     }
 
     private fun refresh(player: PlayerState): NativeGameResult {
-        if (phase != Phase.PLANNING) return reject("Shop is closed")
+        if (!allowed(player,TftCapability.CAN_REROLL)) return reject("Rerolling is unavailable")
         val cost = refreshCost(player)
         if (player.gold < cost) return reject("Not enough gold")
         player.gold -= cost
@@ -487,7 +497,7 @@ class TftSession(
     }
 
     private fun buyXp(player: PlayerState): NativeGameResult {
-        if (phase != Phase.PLANNING || player.level >= progression.maxLevel) return reject("Cannot buy XP")
+        if (!allowed(player,TftCapability.CAN_BUY_XP) || player.level >= progression.maxLevel) return reject("Cannot buy XP")
         val modifiers = playerModifiers(player)
         val goldCost = modifiers.apply(TftPlayerModifier.XP_PURCHASE_COST, progression.buyXp.goldCost.toDouble()).toInt().coerceAtLeast(0)
         if (player.gold < goldCost) return reject("Not enough gold")
@@ -499,7 +509,7 @@ class TftSession(
     }
 
     private fun deploy(player: PlayerState, benchIndex: Int?, slot: Int?): NativeGameResult {
-        if (!canEditBoard(player)) return reject("Board is locked")
+        if (!allowed(player,TftCapability.CAN_MOVE_BOARD_UNIT)) return reject("Board is locked")
         val bi = benchIndex ?: return reject("Missing bench slot")
         val target = slot ?: return reject("Missing board slot")
         if (target !in 0 until formationCells) return reject("Invalid board slot")
@@ -513,7 +523,7 @@ class TftSession(
     }
 
     private fun move(player: PlayerState, from: Int?, to: Int?): NativeGameResult {
-        if (!canEditBoard(player)) return reject("Board is locked")
+        if (!allowed(player,TftCapability.CAN_MOVE_BOARD_UNIT)) return reject("Board is locked")
         val a = from ?: return reject("Missing source")
         val b = to ?: return reject("Missing destination")
         if (a !in 0 until formationCells || b !in 0 until formationCells) return reject("Invalid board slot")
@@ -526,7 +536,7 @@ class TftSession(
     }
 
     private fun bench(player: PlayerState, slot: Int?, destination: Int?): NativeGameResult {
-        if (!canEditBoard(player)) return reject("Board is locked")
+        if (!allowed(player,TftCapability.CAN_INTERACT_BENCH)) return reject("Board is locked")
         val source = slot ?: return reject("Missing board slot")
         val unit = player.board[source] ?: return reject("Board slot empty")
         val empty = destination ?: player.bench.indexOfFirst { it == null }
@@ -539,7 +549,7 @@ class TftSession(
     }
 
     private fun swapBench(player: PlayerState, from: Int?, to: Int?): NativeGameResult {
-        if (!canEditBoard(player)) return reject("Board is locked")
+        if (!allowed(player,TftCapability.CAN_MOVE_BENCH_UNIT)) return reject("Board is locked")
         val a = from ?: return reject("Missing source")
         val b = to ?: return reject("Missing destination")
         if (a !in player.bench.indices || b !in player.bench.indices) return reject("Invalid bench slot")
@@ -550,7 +560,7 @@ class TftSession(
     }
 
     private fun sell(player: PlayerState, args: Map<String, String>): NativeGameResult {
-        if (!canEditBoard(player)) return reject("Cannot sell during combat")
+        if (!allowed(player,TftCapability.CAN_SELL)) return reject("Selling is unavailable")
         val origin = args["origin"] ?: return reject("Missing origin")
         val index = args["index"]?.toIntOrNull() ?: return reject("Missing unit slot")
         val unit = when (origin) {
@@ -568,7 +578,7 @@ class TftSession(
     }
 
     private fun equipItem(player: PlayerState, args: Map<String, String>): NativeGameResult {
-        if (!canEditBoard(player)) return reject("Cannot equip during combat")
+        if (!allowed(player,TftCapability.CAN_EQUIP_ITEM)) return reject("Equipping is unavailable")
         val itemIndex = args["item"]?.toIntOrNull() ?: return reject("Missing item")
         val item = player.itemBench.getOrNull(itemIndex) ?: return reject("Item not found")
         val origin = args["origin"] ?: return reject("Missing target origin")
@@ -1002,7 +1012,10 @@ class TftSession(
     )
     private fun refreshCost(player: PlayerState) = if (player.freeRerolls > 0) 0 else
         playerModifiers(player).apply(TftPlayerModifier.SHOP_REFRESH_COST, 2.0).toInt().coerceAtLeast(0)
-    private fun canEditBoard(player: PlayerState) = phase == Phase.PLANNING && !player.eliminated
+    private fun capabilities(player: PlayerState): Set<TftCapability> =
+        if (finished || player.eliminated) emptySet() else set.rules.phaseCapabilities[phase.id].orEmpty()
+    private fun allowed(player: PlayerState, capability: TftCapability) = capability in capabilities(player)
+    private fun canEditBoard(player: PlayerState) = allowed(player, TftCapability.CAN_MOVE_BOARD_UNIT)
     private fun unitCap(player: PlayerState) = playerModifiers(player)
         .apply(TftPlayerModifier.BOARD_CAPACITY, player.level.toDouble()).toInt().coerceIn(1, set.rules.maxBoardCapacity)
 
@@ -1075,6 +1088,7 @@ class TftSession(
             add(component.id,JsonObject().apply {
                 addProperty("kind","component")
                 addProperty("name",component.name)
+                addProperty("stack",component.stack)
                 addProperty("effects",component.effects.entries.joinToString(","){"${it.key}=${it.value}"})
             })
         }
@@ -1082,6 +1096,7 @@ class TftSession(
             add(item.id,JsonObject().apply {
                 addProperty("kind","full")
                 addProperty("name",item.name)
+                addProperty("stack",item.stack)
                 addProperty("components",item.components.joinToString(","))
                 addProperty("effects",item.effects.entries.joinToString(","){"${it.key}=${it.value}"})
             })

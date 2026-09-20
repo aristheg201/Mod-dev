@@ -106,6 +106,27 @@ class TftSetRegistryTest {
         )
     }
 
+    @Test fun normalCombatKeepsConfiguredShopEconomyAuthoritative() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val seats = (1..2).map { NativeSeat("p$it", "P$it") }
+        fun combat(): TftSession {
+            val session = TftSession(seats, seed = 71L, definition = set)
+            session.tick(System.currentTimeMillis() + set.planningSeconds * 1_000L + 100L)
+            assertEquals("combat", session.viewFor("p1").phase)
+            return session
+        }
+        val buy = combat()
+        val view = buy.viewFor("p1")
+        val affordable = view.cards.indexOfFirst { it.value <= view.fields.getValue("gold").toInt() }
+        assertTrue(affordable >= 0)
+        assertTrue(buy.act("p1", "buy", mapOf("index" to affordable.toString())).accepted)
+        assertTrue(combat().act("p1","refresh",emptyMap()).accepted)
+        assertTrue(combat().act("p1","buy_xp",emptyMap()).accepted)
+        val combatView = combat().viewFor("p1")
+        assertTrue("CAN_OPEN_SHOP" in combatView.fields.getValue("capabilities"))
+        assertEquals("true", combatView.cards.first().meta["enabled"])
+    }
+
     @Test fun malformedOverrideFallsBackWithoutOverwritingUserFile() = inTempDirectory { root ->
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")

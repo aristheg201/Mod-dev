@@ -42,8 +42,28 @@ data class TftBotStrategyDefinition(
 )
 data class TftBotTransitionRule(val phase:String="early",val minimumLevel:Int=1,val maximumLevel:Int=10,val team:String="",val minimumCopies:Int=0,val maximumContested:Int=99)
 
-data class TftRulesDefinition(val shopSlots: Int = 5, val benchSlots: Int = 9, val boardColumns: Int = 7, val boardRows: Int = 4, val maxBoardCapacity: Int = 12, val defaultArena: String = "kanto_stadium", val arenas: Set<String> = setOf("kanto_stadium")) {
+enum class TftCapability {
+    CAN_BUY_UNIT, CAN_REROLL, CAN_BUY_XP, CAN_SELL, CAN_MOVE_BOARD_UNIT,
+    CAN_MOVE_BENCH_UNIT, CAN_EQUIP_ITEM, CAN_COMBINE_ITEM, CAN_SCOUT,
+    CAN_CAROUSEL_PICK, CAN_EMOTE, CAN_OPEN_SHOP, CAN_INTERACT_BENCH
+}
+
+data class TftRulesDefinition(val shopSlots: Int = 5, val benchSlots: Int = 9, val boardColumns: Int = 7, val boardRows: Int = 4, val maxBoardCapacity: Int = 12, val defaultArena: String = "kanto_stadium", val arenas: Set<String> = setOf("kanto_stadium"), val phaseCapabilities: Map<String, Set<TftCapability>> = defaultTftCapabilities()) {
     val formationCells: Int get() = boardColumns * boardRows
+}
+
+private fun defaultTftCapabilities(): Map<String, Set<TftCapability>> {
+    val economy = setOf(TftCapability.CAN_BUY_UNIT, TftCapability.CAN_REROLL, TftCapability.CAN_BUY_XP,
+        TftCapability.CAN_OPEN_SHOP, TftCapability.CAN_SCOUT, TftCapability.CAN_EMOTE)
+    return mapOf(
+        "planning" to economy + setOf(TftCapability.CAN_SELL, TftCapability.CAN_MOVE_BOARD_UNIT,
+            TftCapability.CAN_MOVE_BENCH_UNIT, TftCapability.CAN_EQUIP_ITEM, TftCapability.CAN_COMBINE_ITEM,
+            TftCapability.CAN_INTERACT_BENCH),
+        "combat" to economy + TftCapability.CAN_SELL,
+        "post" to economy,
+        "draft" to setOf(TftCapability.CAN_CAROUSEL_PICK, TftCapability.CAN_EMOTE),
+        "finished" to emptySet()
+    )
 }
 
 data class TftRoundDefinition(val label: String = "", val type: String = "pvp", val planningSeconds: Int? = null, val combatSeconds: Int? = null, val income: Boolean = true, val passiveXp: Boolean = true, val pve: String? = null)
@@ -181,6 +201,7 @@ data class TftTraitTier(
 data class TftItemComponentDefinition(
     val id: String = "",
     val name: String = "",
+    val stack: String = "",
     val effects: Map<String, Double> = emptyMap(),
     val triggers: List<TriggerDefinition> = emptyList()
 )
@@ -188,6 +209,7 @@ data class TftItemComponentDefinition(
 data class TftFullItemDefinition(
     val id: String = "",
     val name: String = "",
+    val stack: String = "",
     val components: List<String> = emptyList(),
     val effects: Map<String, Double> = emptyMap(),
     val triggers: List<TriggerDefinition> = emptyList()
@@ -247,6 +269,7 @@ object TftDefinitionValidator {
         require(set.rules.shopSlots in 1..12 && set.rules.benchSlots in 1..24) { "set ${set.id}.rules inventory geometry is invalid" }
         require(set.rules.boardColumns in 2..12 && set.rules.boardRows in 2..8 && set.rules.maxBoardCapacity in 1..set.rules.formationCells) { "set ${set.id}.rules board geometry is invalid" }
         require(set.rules.defaultArena in set.rules.arenas && set.rules.arenas.all { it.matches(Regex("^[a-z0-9_.-]{1,64}$")) }) { "set ${set.id}.rules arena registry is invalid" }
+        require(setOf("planning","combat","post","draft","finished").all(set.rules.phaseCapabilities::containsKey)) { "set ${set.id}.rules.phaseCapabilities must define every phase" }
         require(set.roundSchedule.isNotEmpty()) { "set ${set.id}.roundSchedule is empty" }
         require(set.roundSchedule.map { it.label }.distinct().size == set.roundSchedule.size) { "set ${set.id}.roundSchedule has duplicate labels" }
         set.roundSchedule.forEachIndexed { index, round ->
@@ -294,6 +317,7 @@ object TftDefinitionValidator {
         }
         val componentIds = set.components.map { it.id }.toSet()
         require(componentIds.size == set.components.size) { "Duplicate TFT component id" }
+        set.components.forEach { require(it.stack.matches(Regex("^[a-z0-9_.-]+:[a-z0-9_./-]+$"))) { "Component ${it.id}.stack must reference a registry item" } }
         require(set.fullItems.map { it.id }.toSet().size == set.fullItems.size) { "Duplicate TFT full item id" }
         require(set.fullItems.map { it.components.sorted().joinToString("+") }.toSet().size == set.fullItems.size) { "Duplicate TFT full item recipe" }
         set.augments.forEach { augment ->
@@ -305,6 +329,7 @@ object TftDefinitionValidator {
             }
         }
         set.fullItems.forEach { item ->
+            require(item.stack.matches(Regex("^[a-z0-9_.-]+:[a-z0-9_./-]+$"))) { "Full item ${item.id}.stack must reference a registry item" }
             require(item.components.size == 2) { "Full item ${item.id} must have exactly two components" }
             require(item.components.all(componentIds::contains)) { "Full item ${item.id} references unknown components" }
         }
