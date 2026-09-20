@@ -610,13 +610,6 @@ object TftGameRenderer {
                 }
             }
         }
-        val tactician = fields.str("tacticianEntity")
-        if (tactician.isNotBlank()) {
-            val box = min(64, max(24, rect.width / 7))
-            VanillaCompanionModelRenderer.render(gui, tactician, rect.right - box - 4, rect.bottom - box - 4,
-                rect.right - 4, rect.bottom - 4, true)
-        }
-
         units.entries.firstOrNull { (index, _) -> frame.layout.hitBox(index).contains(mouseX.toDouble(), mouseY.toDouble()) }
             ?.value?.let { unit ->
                 ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items, unit.hp, unit.maxHp, unit.mana, unit.maxMana))
@@ -822,7 +815,10 @@ object TftGameRenderer {
         offers.filter { it.takenBy.isBlank() }.forEach { offer ->
             val point = frame.layout.project(offer.x + 5f, offer.y + 5f)
             val hit = UiRect(point.x.roundToInt() - 17, point.y.roundToInt() - 30, 34, 40)
-            gui.drawString(font, itemGlyph(offer.item), point.x.roundToInt() + 7, point.y.roundToInt() - 8, gold, true)
+            val itemStack=ui.itemStack(offer.item)
+            if(itemStack!=null&&!itemStack.isEmpty){
+                val pose=gui.pose();pose.pushPose();pose.translate(point.x+5.0,point.y-17.0,1300.0);pose.scale(.82f,.82f,.82f);gui.renderItem(itemStack,0,0);pose.popPose()
+            }else gui.drawString(font,itemGlyph(offer.item),point.x.roundToInt()+7,point.y.roundToInt()-8,gold,true)
             if (hit.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(unitTooltip(ui, offer.unitId, 1, listOf(offer.item)))
             if (offer.unlocked && fields.str("carouselPicked") != "true") hooks.hit(hit) {
                 val dx = offer.x - playerX; val dy = offer.y - playerY

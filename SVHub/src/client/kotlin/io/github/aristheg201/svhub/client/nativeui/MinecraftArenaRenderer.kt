@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import io.github.aristheg201.svhub.ui.SceneCameraPreset
+import io.github.aristheg201.svhub.ui.SceneVec3
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
@@ -140,7 +141,7 @@ data class MinecraftArenaDefinition(
     fun camera(role:ArenaCameraRole,fallback:SceneCameraPreset):SceneCameraPreset {
         val point=when(role){ArenaCameraRole.NORMAL->cameras.spectator;ArenaCameraRole.SPECTATOR->cameras.spectator;ArenaCameraRole.SCOUTING->cameras.scouting;ArenaCameraRole.CAROUSEL->cameras.carousel}
         val span=max(1f,arenaBounds.maxY-arenaBounds.minY);val height=(point.z/span).coerceIn(.5f,1.25f)
-        return fallback.copy(id="${fallback.id}:${role.name.lowercase()}",tileScale=height,verticalScale=(point.y/span).coerceIn(.5f,1.25f),originBiasY=(point.y/(span+point.y.coerceAtLeast(0f))).coerceIn(0f,1f),pitch=(18f+point.z*2f).coerceIn(0f,75f))
+        return fallback.copy(id="${fallback.id}:${role.name.lowercase()}",tileScale=height,verticalScale=(point.y/span).coerceIn(.5f,1.25f),originBiasY=(point.y/(span+point.y.coerceAtLeast(0f))).coerceIn(0f,1f),pitch=(18f+point.z*2f).coerceIn(0f,75f),perspective=true,position=SceneVec3(point.x.toDouble(),-kotlin.math.abs(point.y.toDouble()),point.z.coerceAtLeast(2f).toDouble()),target=SceneVec3(arenaBounds.center.x.toDouble(),arenaBounds.center.y.toDouble(),boardOrigin.z.toDouble()))
     }
     fun interactionAt(x:Float,y:Float):ArenaInteractionRegion?=interactionRegions.firstOrNull{x in it.bounds.minX..it.bounds.maxX&&y in it.bounds.minY..it.bounds.maxY}
     fun color(role: ArenaTileRole, alternate: Boolean): Int = when (role) {

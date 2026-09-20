@@ -12,7 +12,13 @@ data class SceneCameraPreset(
     val pitch: Float = 34f,
     val modelZoom: Float = 1f,
     val depthBase: Double = 1000.0,
-    val depthStride: Double = 3.0
+    val depthStride: Double = 3.0,
+    val perspective:Boolean=false,
+    val position:SceneVec3=SceneVec3(3.0,-7.0,9.0),
+    val target:SceneVec3=SceneVec3(3.0,3.5,0.0),
+    val fov:Double=48.0,
+    val near:Double=.1,
+    val far:Double=100.0
 ) {
     init {
         require(id.isNotBlank())
@@ -30,7 +36,7 @@ object SceneCameras {
     val XIANGQI = SceneCameraPreset("xiangqi", tileScale = 0.94f, verticalScale = 0.94f, originBiasY = 0.30f, pitch = 32f, modelZoom = 0.94f)
     val LANE = SceneCameraPreset("lane", tileScale = 0.88f, verticalScale = 0.90f, originBiasY = 0.27f, pitch = 30f, modelZoom = 0.92f)
     val LUDO = SceneCameraPreset("ludo", tileScale = 0.92f, verticalScale = 1.0f, originBiasY = 0.31f, pitch = 33f, modelZoom = 0.92f)
-    val TFT = SceneCameraPreset("tft", tileScale = 0.94f, verticalScale = 0.92f, originBiasY = 0.27f, pitch = 31f, modelZoom = 0.95f, depthStride = 4.0)
+    val TFT = SceneCameraPreset("tft", tileScale = 0.94f, verticalScale = 0.92f, originBiasY = 0.27f, pitch = 31f, modelZoom = 0.95f, depthStride = 4.0,perspective=true)
 }
 
 data class SceneProjectedPoint(val x: Float, val y: Float)
@@ -43,9 +49,10 @@ data class SceneProjectionMetrics(
     val originY: Float,
     val tileWidth: Int,
     val tileHeight: Int,
-    val camera: SceneCameraPreset
+    val camera: SceneCameraPreset,
+    val perspective:PerspectiveBoardTransform?
 ) {
-    fun project(x: Float, y: Float): SceneProjectedPoint = SceneProjectedPoint(
+    fun project(x: Float, y: Float): SceneProjectedPoint = perspective?.project(SceneVec3(x.toDouble(),y.toDouble(),0.0))?:SceneProjectedPoint(
         originX + (x - y) * tileWidth * 0.5f,
         originY + (x + y) * tileHeight * 0.5f
     )
@@ -72,7 +79,8 @@ object SceneProjection {
             originY = area.y + max(tileH / 2f + 5f, (area.height - boardHeight) * camera.originBiasY),
             tileWidth = tileW,
             tileHeight = tileH,
-            camera = camera
+            camera = camera,
+            perspective = camera.takeIf{it.perspective}?.let{PerspectiveBoardTransform(area,it.position,it.target,it.fov,it.near,it.far)}
         )
     }
 }

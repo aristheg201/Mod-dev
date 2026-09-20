@@ -160,9 +160,9 @@ class PokemonSceneState {
 }
 
 data class PokemonSceneLayout(
-    val area: UiRect,val columns: Int,val rows: Int,val originX: Float,val originY: Float,val tileWidth: Int,val tileHeight: Int
+    val area: UiRect,val columns: Int,val rows: Int,val originX: Float,val originY: Float,val tileWidth: Int,val tileHeight: Int,val perspective:io.github.aristheg201.svhub.ui.PerspectiveBoardTransform?=null
 ) {
-    fun project(x: Float, y: Float): ScenePoint = ScenePoint(originX + (x-y)*tileWidth*0.5f, originY + (x+y)*tileHeight*0.5f)
+    fun project(x: Float, y: Float): ScenePoint = perspective?.project(io.github.aristheg201.svhub.ui.SceneVec3(x.toDouble(),y.toDouble(),0.0))?.let{ScenePoint(it.x,it.y)}?:ScenePoint(originX + (x-y)*tileWidth*0.5f, originY + (x+y)*tileHeight*0.5f)
     fun center(index: Int): ScenePoint = project((index % columns).toFloat(), (index / columns).toFloat())
     fun hitBox(index: Int): UiRect {
         val point=center(index)
@@ -171,6 +171,10 @@ data class PokemonSceneLayout(
         return UiRect((point.x-width/2f).roundToInt(),(point.y-height/2f).roundToInt(),width,height)
     }
     fun pick(mouseX:Double,mouseY:Double):Int?{
+        perspective?.boardIntersection(mouseX,mouseY)?.let{hit->
+            val x=kotlin.math.round(hit.x).toInt();val y=kotlin.math.round(hit.y).toInt()
+            return if(x in 0 until columns&&y in 0 until rows)y*columns+x else null
+        }
         var best:Int?=null;var bestDistance=Double.MAX_VALUE
         repeat(columns*rows){index->
             val p=center(index)
@@ -208,7 +212,7 @@ object PokemonScene3D {
         extraRows: Int = 0
     ): PokemonSceneFrame {
         val metrics=SceneProjection.resolve(area,columns,rows + extraRows.coerceIn(0, 4),camera)
-        val layout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight)
+        val layout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight,metrics.perspective)
         val activeIds=entities.mapTo(linkedSetOf()){it.id}
         state.prune(activeIds);PokemonModelRenderer.pruneScene(activeIds)
         val now=System.currentTimeMillis();state.observeEffects(effects,now)
