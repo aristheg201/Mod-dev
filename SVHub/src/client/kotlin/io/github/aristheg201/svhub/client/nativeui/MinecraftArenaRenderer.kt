@@ -383,7 +383,15 @@ object MinecraftArenaRenderer {
         return compiledScenes.computeIfAbsent(key){
             val thickness=theme.depth.coerceAtLeast(1)*.12
             val logical=theme.logicalBoardBounds
-            val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(logical.center.x.toDouble(),logical.center.y.toDouble(),theme.boardOrigin.z-thickness/2)),SceneVec3((logical.maxX-logical.minX).toDouble(),(logical.maxY-logical.minY).toDouble(),thickness),theme.surface.ifBlank{"arena_floor"})
+            // Textured battlefields are backed by real block-model terrain. Keeping the
+            // legacy colored floor coplanar with it causes z-fighting and visually
+            // reintroduces the old flat-board layer.
+            val floor=if(theme.texturedBattlefield) null else SceneMeshNode(
+                "floor",
+                SceneTransform(SceneVec3(logical.center.x.toDouble(),logical.center.y.toDouble(),theme.boardOrigin.z-thickness/2)),
+                SceneVec3((logical.maxX-logical.minX).toDouble(),(logical.maxY-logical.minY).toDouble(),thickness),
+                theme.surface.ifBlank{"arena_floor"}
+            )
             val props=theme.props.mapIndexed{index,prop->
                 val transform=SceneTransform(SceneVec3(prop.x.toDouble(),prop.y.toDouble(),prop.z.toDouble()),SceneVec3(prop.pitch.toDouble(),prop.roll.toDouble(),prop.yaw.toDouble()),SceneVec3(prop.scale.toDouble(),prop.scale.toDouble(),prop.scale.toDouble()))
                 val block=ResourceLocation.tryParse(prop.item)?.let(BuiltInRegistries.BLOCK::containsKey)==true
@@ -424,7 +432,7 @@ object MinecraftArenaRenderer {
                     }
                 }
             }
-            CompiledArenaScene(SVHubScene("arena:${theme.id}:${theme.definitionRevision}",resourceRevision,listOf(floor)+terrain+structures+tiles+benches+props,listOf(interaction)))
+            CompiledArenaScene(SVHubScene("arena:${theme.id}:${theme.definitionRevision}",resourceRevision,listOfNotNull(floor)+terrain+structures+tiles+benches+props,listOf(interaction)))
         }
     }
     fun renderPresentation(gui:GuiGraphics,layout:PokemonSceneLayout,frame:ArenaPresentationFrame,phase:String){

@@ -31,7 +31,9 @@ object EmbeddedSceneRenderer {
     private data class Mesh(val buffer: VertexBuffer, val bounds: FloatArray,val blockAtlas:Boolean=false)
     private data class BlockAsset(val state: BlockState, val model: BakedModel, val tint: Int)
     private data class ItemAsset(val stack: ItemStack, val model: BakedModel)
-    private val meshes = linkedMapOf<SVHubScene, List<Mesh>>()
+    /** Avoid hashing the retained node graph on every render-frame cache lookup. */
+    private data class MeshCacheKey(val sceneId: String, val revision: Long)
+    private val meshes = linkedMapOf<MeshCacheKey, List<Mesh>>()
     private val blocks = hashMapOf<String, BlockAsset?>()
     private val items = hashMapOf<String, ItemAsset?>()
     private var target: TextureTarget? = null
@@ -76,7 +78,8 @@ object EmbeddedSceneRenderer {
             RenderSystem.setProjectionMatrix(projection,VertexSorting.DISTANCE_TO_ORIGIN)
             modelView.identity(); RenderSystem.applyModelViewMatrix()
             val frustum=FrustumIntersection(Matrix4f(projection).mul(view))
-            val staticMeshes=meshes.getOrPut(scene) { compileMeshes(scene,theme) }
+            val meshKey=MeshCacheKey(scene.id,scene.revision)
+            val staticMeshes=meshes.getOrPut(meshKey) { compileMeshes(scene,theme) }
             val meshShader=GameRenderer.getPositionColorShader() ?: return
             staticMeshes.forEach { mesh ->
                 val b=mesh.bounds

@@ -391,8 +391,11 @@ for (const locale of ["en_us", "vi_vn"]) {
   for (const key of requiredMessageKeys) if (!(key in lang)) failures.push(`${locale}: missing system message key ${key}`);
 }
 
-for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"', "observeCombat", "SceneCameras.TFT", "effects = effectSignals", "unitCatalog", "traitCatalog", "unitTooltip", "traitTooltip", "renderHoverTooltip", 'arenaId = fields.str("arenaId"']) {
+for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render", "renderTraits", "renderPlayers", "renderBoard", "renderFooter", 'hooks.action("refresh"', 'hooks.action("buy_xp"', 'hooks.action("sell"', 'hooks.action("equip_item"', "observeCombat", "SceneCameras.TFT", "effects = effectSignals", "unitCatalog", "traitCatalog", "unitTooltip", "traitTooltip", "renderHoverTooltip"]) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing ${marker}`);
+}
+if (!/arenaId\s*=\s*fields\.str\("arenaId"/.test(tftRenderer)) {
+  failures.push("TftGameRenderer.kt: missing arenaId state mapping");
 }
 for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone", "encodeUnitCatalog(observed, includeShop = !scouting)", "encodeTraitCatalog(observed, includeShop = !scouting)", "abilityName", "teamEffects"]) {
   if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing render metadata marker ${marker}`);

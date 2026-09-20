@@ -10,6 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertNotSame
 import io.github.aristheg201.svhub.ui.SceneMeshNode
+import io.github.aristheg201.svhub.ui.SceneBlockModelNode
 import io.github.aristheg201.svhub.ui.SceneVec3
 import io.github.aristheg201.svhub.ui.PerspectiveBoardTransform
 
@@ -63,6 +64,19 @@ class CompiledArenaSceneTest {
             }
         }
     }
+    @Test fun texturedBattlefieldsDoNotRetainTheLegacyFlatFloor() {
+        val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island")) {
+            val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
+                MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject)
+            }
+            assertTrue(arena.texturedBattlefield,"$id must stay on the textured battlefield pipeline")
+            val nodes=MinecraftArenaRenderer.compiledScene(layout,arena).scene.nodes
+            assertTrue(nodes.none { it is SceneMeshNode && it.id=="floor" },"$id retained the legacy coplanar floor mesh")
+            assertTrue(nodes.any { it is SceneBlockModelNode && it.id.startsWith("terrain:") },"$id must compile real block-model terrain")
+        }
+    }
+
     @Test fun floorSupportsAllCellCentersIncludingOffsetElevatedBoards() {
         val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
         for (origin in listOf(ArenaPoint(0f,0f),ArenaPoint(12f,-7f,3f))) {
