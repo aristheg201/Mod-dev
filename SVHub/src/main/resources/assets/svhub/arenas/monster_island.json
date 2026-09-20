@@ -5,10 +5,13 @@
     "detailEvery":  0,
     "pathDetailEvery":  0,
     "floor":  [
+                  "minecraft:moss_block",
+                  "minecraft:grass_block",
                   "minecraft:moss_block"
               ],
     "floorAlt":  [
-                     "minecraft:rooted_dirt"
+                     "minecraft:rooted_dirt",
+                     "minecraft:mossy_cobblestone"
                  ],
     "ally":  [
 
@@ -30,140 +33,13 @@
     "edgeColor":  "#172019",
     "depthColor":  "#3b4137",
     "props":  [
-                  {
-                      "yaw":  0,
-                      "y":  0.3,
-                      "z":  1,
-                      "x":  -1.3,
-                      "scale":  1.5,
-                      "item":  "minecraft:jungle_log"
-                  },
-                  {
-                      "yaw":  0,
-                      "y":  0.3,
-                      "z":  2.4,
-                      "x":  -1.3,
-                      "scale":  1.8,
-                      "item":  "minecraft:jungle_leaves"
-                  },
-                  {
-                      "yaw":  31,
-                      "y":  1.4000000000000001,
-                      "z":  1,
-                      "x":  7.7,
-                      "scale":  1.5,
-                      "item":  "minecraft:jungle_log"
-                  },
-                  {
-                      "yaw":  31,
-                      "y":  1.4000000000000001,
-                      "z":  2.4,
-                      "x":  7.7,
-                      "scale":  1.8,
-                      "item":  "minecraft:jungle_leaves"
-                  },
-                  {
-                      "yaw":  62,
-                      "y":  2.5,
-                      "z":  1,
-                      "x":  -1.3,
-                      "scale":  1.5,
-                      "item":  "minecraft:jungle_log"
-                  },
-                  {
-                      "yaw":  62,
-                      "y":  2.5,
-                      "z":  2.4,
-                      "x":  -1.3,
-                      "scale":  1.8,
-                      "item":  "minecraft:jungle_leaves"
-                  },
-                  {
-                      "yaw":  93,
-                      "y":  3.6,
-                      "z":  1,
-                      "x":  7.7,
-                      "scale":  1.5,
-                      "item":  "minecraft:jungle_log"
-                  },
-                  {
-                      "yaw":  93,
-                      "y":  3.6,
-                      "z":  2.4,
-                      "x":  7.7,
-                      "scale":  1.8,
-                      "item":  "minecraft:jungle_leaves"
-                  },
-                  {
-                      "yaw":  124,
-                      "y":  4.7,
-                      "z":  1,
-                      "x":  -1.3,
-                      "scale":  1.5,
-                      "item":  "minecraft:jungle_log"
-                  },
-                  {
-                      "yaw":  124,
-                      "y":  4.7,
-                      "z":  2.4,
-                      "x":  -1.3,
-                      "scale":  1.8,
-                      "item":  "minecraft:jungle_leaves"
-                  },
-                  {
-                      "yaw":  155,
-                      "y":  5.8,
-                      "z":  1,
-                      "x":  7.7,
-                      "scale":  1.5,
-                      "item":  "minecraft:jungle_log"
-                  },
-                  {
-                      "yaw":  155,
-                      "y":  5.8,
-                      "z":  2.4,
-                      "x":  7.7,
-                      "scale":  1.8,
-                      "item":  "minecraft:jungle_leaves"
-                  },
-                  {
-                      "yaw":  22,
-                      "y":  7.8,
-                      "z":  0.3,
-                      "x":  "-1.1",
-                      "scale":  1.2,
-                      "item":  "minecraft:mossy_cobblestone"
-                  },
-                  {
-                      "yaw":  0,
-                      "y":  7.8,
-                      "z":  0.3,
-                      "x":  7.2,
-                      "scale":  1.1,
-                      "item":  "minecraft:big_dripleaf"
-                  },
-                  {
-                      "yaw":  0,
-                      "y":  9,
-                      "z":  0.4,
-                      "x":  "-1.5",
-                      "scale":  1.4,
-                      "item":  "minecraft:flowering_azalea"
-                  },
-                  {
-                      "yaw":  30,
-                      "y":  "-1.2",
-                      "z":  0.45,
-                      "x":  5.4,
-                      "scale":  1.4,
-                      "item":  "minecraft:cobblestone"
-                  }
+
               ],
     "metadata":  {
                      "boardColumns":  7,
                      "boardRows":  8,
                      "benchSlots":  9,
-                     "tacticianRegion":  [6.85, 5.7, 7.5, 7.6],
+                     "tacticianRegion":  [11.219999999999999, 5.27, 12.059999999999999, 6.63],
                      "camera":  {
                                     "spectator":  [-6, 19, 16],
                                     "scouting":  [-3, 16, 13],
@@ -175,89 +51,89 @@
                      "boardOrigin":  [0, 0, 0],
                      "boardAnchors":  [
                                           [0, 0, 0],
-                                          [1, 0, 0],
-                                          [2, 0, 0],
+                                          [1.5, 0, 0],
                                           [3, 0, 0],
-                                          [4, 0, 0],
-                                          [5, 0, 0],
+                                          [4.5, 0, 0],
                                           [6, 0, 0],
-                                          [0, 1, 0],
-                                          [1, 1, 0],
-                                          [2, 1, 0],
-                                          [3, 1, 0],
-                                          [4, 1, 0],
-                                          [5, 1, 0],
-                                          [6, 1, 0],
-                                          [0, 2, 0],
-                                          [1, 2, 0],
-                                          [2, 2, 0],
-                                          [3, 2, 0],
-                                          [4, 2, 0],
-                                          [5, 2, 0],
-                                          [6, 2, 0],
-                                          [0, 3, 0],
-                                          [1, 3, 0],
-                                          [2, 3, 0],
-                                          [3, 3, 0],
-                                          [4, 3, 0],
-                                          [5, 3, 0],
-                                          [6, 3, 0],
-                                          [0, 4, 0],
-                                          [1, 4, 0],
-                                          [2, 4, 0],
-                                          [3, 4, 0],
-                                          [4, 4, 0],
-                                          [5, 4, 0],
-                                          [6, 4, 0],
-                                          [0, 5, 0],
-                                          [1, 5, 0],
-                                          [2, 5, 0],
-                                          [3, 5, 0],
-                                          [4, 5, 0],
-                                          [5, 5, 0],
-                                          [6, 5, 0],
-                                          [0, 6, 0],
-                                          [1, 6, 0],
-                                          [2, 6, 0],
-                                          [3, 6, 0],
-                                          [4, 6, 0],
-                                          [5, 6, 0],
-                                          [6, 6, 0],
-                                          [0, 7, 0],
-                                          [1, 7, 0],
-                                          [2, 7, 0],
-                                          [3, 7, 0],
-                                          [4, 7, 0],
-                                          [5, 7, 0],
-                                          [6, 7, 0]
+                                          [7.5, 0, 0],
+                                          [9, 0, 0],
+                                          [0, 0.85, 0],
+                                          [1.5, 0.85, 0],
+                                          [3, 0.85, 0],
+                                          [4.5, 0.85, 0],
+                                          [6, 0.85, 0],
+                                          [7.5, 0.85, 0],
+                                          [9, 0.85, 0],
+                                          [0, 1.7, 0],
+                                          [1.5, 1.7, 0],
+                                          [3, 1.7, 0],
+                                          [4.5, 1.7, 0],
+                                          [6, 1.7, 0],
+                                          [7.5, 1.7, 0],
+                                          [9, 1.7, 0],
+                                          [0, 2.55, 0],
+                                          [1.5, 2.55, 0],
+                                          [3, 2.55, 0],
+                                          [4.5, 2.55, 0],
+                                          [6, 2.55, 0],
+                                          [7.5, 2.55, 0],
+                                          [9, 2.55, 0],
+                                          [0, 3.4, 0],
+                                          [1.5, 3.4, 0],
+                                          [3, 3.4, 0],
+                                          [4.5, 3.4, 0],
+                                          [6, 3.4, 0],
+                                          [7.5, 3.4, 0],
+                                          [9, 3.4, 0],
+                                          [0, 4.25, 0],
+                                          [1.5, 4.25, 0],
+                                          [3, 4.25, 0],
+                                          [4.5, 4.25, 0],
+                                          [6, 4.25, 0],
+                                          [7.5, 4.25, 0],
+                                          [9, 4.25, 0],
+                                          [0, 5.1, 0],
+                                          [1.5, 5.1, 0],
+                                          [3, 5.1, 0],
+                                          [4.5, 5.1, 0],
+                                          [6, 5.1, 0],
+                                          [7.5, 5.1, 0],
+                                          [9, 5.1, 0],
+                                          [0, 5.95, 0],
+                                          [1.5, 5.95, 0],
+                                          [3, 5.95, 0],
+                                          [4.5, 5.95, 0],
+                                          [6, 5.95, 0],
+                                          [7.5, 5.95, 0],
+                                          [9, 5.95, 0]
                                       ],
                      "benchAnchors":  [
-                                          [0, 8.52, 0.035],
-                                          [0.75, 8.485, 0.035],
-                                          [1.5, 8.45, 0.035],
-                                          [2.25, 8.415, 0.035],
-                                          [3, 8.38, 0.035],
-                                          [3.75, 8.345, 0.035],
-                                          [4.5, 8.31, 0.035],
-                                          [5.25, 8.275, 0.035],
-                                          [6, 8.24, 0.035]
+                                          [0.036, 7.6075, 0.045],
+                                          [1.152, 7.6075, 0.045],
+                                          [2.268, 7.6075, 0.045],
+                                          [3.384, 7.6075, 0.045],
+                                          [4.5, 7.6075, 0.045],
+                                          [5.616, 7.6075, 0.045],
+                                          [6.732, 7.6075, 0.045],
+                                          [7.848, 7.6075, 0.045],
+                                          [8.964, 7.6075, 0.045]
                                       ],
                      "itemBenchAnchors":  [
-                                              [-0.1, 10.1, 0],
-                                              [0.69000000000000006, 10.059, 0],
-                                              [1.48, 10.017999999999999, 0],
-                                              [2.27, 9.977, 0],
-                                              [3.06, 9.936, 0],
-                                              [3.85, 9.895, 0],
-                                              [4.6400000000000006, 9.854, 0],
-                                              [5.4300000000000006, 9.8129999999999988, 0],
-                                              [6.2200000000000006, 9.772, 0]
+                                              [0.036, 8.245, 0.15],
+                                              [1.152, 8.245, 0.15],
+                                              [2.268, 8.245, 0.15],
+                                              [3.384, 8.245, 0.15],
+                                              [4.5, 8.245, 0.15],
+                                              [5.616, 8.245, 0.15],
+                                              [6.732, 8.245, 0.15],
+                                              [7.848, 8.245, 0.15],
+                                              [8.964, 8.245, 0.15]
                                           ],
-                     "tacticianSpawn":  [7.15, 6.6, 0.1],
-                     "humanSpawn":  [7, 8.2, 0],
-                     "opponentSpawn":  [-1, -1.5, 0],
+                     "tacticianSpawn":  [11.639999999999999, 5.95, 0],
+                     "humanSpawn":  [4.5, 5.95, 0],
+                     "opponentSpawn":  [4.5, 0, 0],
                      "carouselCenter":  [2.6, 4, 0],
-                     "arenaBounds":  [-5, -5, 12, 12],
+                     "arenaBounds":  [-8.4, -8.5, 18, 10.2],
                      "lootAnchors":  [
                                          [3.5, 4.0, 0]
                                      ],
@@ -269,36 +145,36 @@
                                             ],
                      "cameraPresets":  {
                                            "normal":  {
-                                                          "position":  [1.6, 15, 9],
-                                                          "fov":  30,
+                                                          "position":  [3.84, 12.75, 9.35],
+                                                          "fov":  42,
                                                           "transitionMs":  650,
                                                           "far":  100,
                                                           "near":  0.1,
-                                                          "target":  [3, 4, 0]
+                                                          "target":  [4.5, 2.295, 0.255]
                                                       },
                                            "preparation":  {
-                                                               "position":  [1.6, 15, 9],
-                                                               "fov":  30,
+                                                               "position":  [3.84, 12.75, 9.35],
+                                                               "fov":  42,
                                                                "transitionMs":  650,
                                                                "far":  100,
                                                                "near":  0.1,
-                                                               "target":  [3, 4, 0]
+                                                               "target":  [4.5, 2.295, 0.255]
                                                            },
                                            "combat":  {
-                                                          "position":  [1.6, 15, 9],
-                                                          "fov":  30,
+                                                          "position":  [3.84, 12.75, 9.9449999999999985],
+                                                          "fov":  42,
                                                           "transitionMs":  650,
                                                           "far":  100,
                                                           "near":  0.1,
-                                                          "target":  [3, 4, 0]
+                                                          "target":  [4.5, 2.295, 0.255]
                                                       },
                                            "scouting":  {
-                                                            "position":  [1.6, 15, 9],
-                                                            "fov":  30,
+                                                            "position":  [3.84, 12.75, 9.35],
+                                                            "fov":  42,
                                                             "transitionMs":  650,
                                                             "far":  100,
                                                             "near":  0.1,
-                                                            "target":  [3, 4, 0]
+                                                            "target":  [4.5, 2.295, 0.255]
                                                         },
                                            "carousel":  {
                                                             "position":  [3, 20, 21],
@@ -309,112 +185,264 @@
                                                             "target":  [2.6, 4, 0]
                                                         },
                                            "pve_intro":  {
-                                                             "position":  [1.6, 15, 9],
-                                                             "fov":  30,
+                                                             "position":  [3.84, 12.75, 9.35],
+                                                             "fov":  42,
                                                              "transitionMs":  650,
                                                              "far":  100,
                                                              "near":  0.1,
-                                                             "target":  [3, 4, 0]
+                                                             "target":  [4.5, 2.295, 0.255]
                                                          },
                                            "boss_intro":  {
-                                                              "position":  [1.6, 15, 9],
-                                                              "fov":  30,
+                                                              "position":  [3.84, 12.75, 9.35],
+                                                              "fov":  39,
                                                               "transitionMs":  650,
                                                               "far":  100,
                                                               "near":  0.1,
-                                                              "target":  [3, 4, 0]
+                                                              "target":  [4.5, 2.295, 0.255]
                                                           },
                                            "victory":  {
-                                                           "position":  [1.6, 15, 9],
-                                                           "fov":  30,
+                                                           "position":  [4.6800000000000006, 12.75, 9.35],
+                                                           "fov":  39,
                                                            "transitionMs":  650,
                                                            "far":  100,
                                                            "near":  0.1,
-                                                           "target":  [3, 4, 0]
+                                                           "target":  [4.5, 2.295, 0.255]
                                                        },
                                            "defeat":  {
-                                                          "position":  [1.6, 15, 9],
-                                                          "fov":  30,
+                                                          "position":  [3.24, 12.75, 9.35],
+                                                          "fov":  44,
                                                           "transitionMs":  650,
                                                           "far":  100,
                                                           "near":  0.1,
-                                                          "target":  [3, 4, 0]
+                                                          "target":  [4.5, 2.295, 0.255]
                                                       },
                                            "spectator":  {
-                                                             "position":  [1.6, 15, 9],
-                                                             "fov":  30,
+                                                             "position":  [3.84, 12.75, 10.37],
+                                                             "fov":  42,
                                                              "transitionMs":  650,
                                                              "far":  100,
                                                              "near":  0.1,
-                                                             "target":  [3, 4, 0]
+                                                             "target":  [4.5, 2.295, 0.255]
                                                          },
                                            "arena_preview":  {
-                                                                 "position":  [1.6, 15, 9],
-                                                                 "fov":  30,
+                                                                 "position":  [3.84, 12.75, 9.35],
+                                                                 "fov":  42,
                                                                  "transitionMs":  650,
                                                                  "far":  100,
                                                                  "near":  0.1,
-                                                                 "target":  [3, 4, 0]
+                                                                 "target":  [4.5, 2.295, 0.255]
                                                              }
-                                       }
+                                       },
+                     "cellSize":  [1.5, 0.85, 1],
+                     "logicalBoardBounds":  [-0.75, -0.425, 9.75, 6.375],
+                     "battlefieldBounds":  [-1.68, -1.02, 10.68, 6.9699999999999989],
+                     "environmentBounds":  [-8.4, -8.5, 18, 10.2]
                  },
     "id":  "monster_island",
     "geometry":  [
                      {
-                         "position":  [3, 3.5, -1.4],
-                         "material":  "#4a5141",
-                         "rotation":  [0, 0, -5],
-                         "id":  "island-bedrock",
-                         "size":  [11, 14, 2.2]
+                         "id":  "island-ground",
+                         "material":  "minecraft:stone",
+                         "position":  [
+                                          4.5,
+                                          2.975,
+                                          "-.8"
+                                      ],
+                         "size":  [14.16, 9.18, 1.55],
+                         "rotation":  [0, 0, 0]
                      },
                      {
-                         "position":  [-1.3, 4, -0.4],
-                         "material":  "#697957",
-                         "rotation":  [0, 8, -7],
-                         "id":  "western-bank",
-                         "size":  [2, 9, 1]
+                         "id":  "shoreline",
+                         "material":  "minecraft:light_blue_stained_glass",
+                         "position":  [
+                                          4.5,
+                                          2.975,
+                                          "-1.6"
+                                      ],
+                         "size":  [20.4, 12.75, 0.65],
+                         "rotation":  [
+                                          0,
+                                          0,
+                                          "-4"
+                                      ]
                      },
                      {
-                         "position":  [7.1, 3, -0.3],
-                         "material":  "#718059",
-                         "rotation":  [0, -6, 12],
-                         "id":  "eastern-bank",
-                         "size":  [1.8, 9, 1]
+                         "id":  "natural-bank--2.3",
+                         "material":  "minecraft:mossy_cobblestone",
+                         "position":  [
+                                          -2.76,
+                                          1.275,
+                                          "-.4"
+                                      ],
+                         "size":  [2.64, 4.93, 0.75],
+                         "rotation":  [0, 0, -12]
                      },
                      {
-                         "position":  [-3.1, 3, -0.75],
-                         "material":  "#387f91",
-                         "rotation":  [0, 0, -4],
-                         "id":  "water-channel",
-                         "size":  [1.2, 13, 0.08]
+                         "id":  "natural-bank-9.8",
+                         "material":  "minecraft:mossy_cobblestone",
+                         "position":  [
+                                          11.76,
+                                          3.57,
+                                          "-.4"
+                                      ],
+                         "size":  [2.76, 5.185, 0.75],
+                         "rotation":  [0, 0, 14]
                      },
                      {
-                         "position":  [3, -2, 0.9],
-                         "material":  "#666f5c",
-                         "rotation":  [8, 0, -6],
-                         "id":  "north-ridge",
-                         "size":  [7, 1.8, 2.7]
+                         "id":  "natural-bank-1.1",
+                         "material":  "minecraft:mossy_cobblestone",
+                         "position":  [
+                                          1.32,
+                                          -1.87,
+                                          "-.4"
+                                      ],
+                         "size":  [6.24, 1.9549999999999998, 0.75],
+                         "rotation":  [0, 0, 8]
                      },
                      {
-                         "position":  [7.8, -2.3, 2.1],
-                         "material":  "#4e5752",
-                         "rotation":  [4, 10, 18],
-                         "id":  "basalt-peak",
-                         "size":  [2.3, 2.6, 4.8]
+                         "id":  "natural-bank-6.2",
+                         "material":  "minecraft:mossy_cobblestone",
+                         "position":  [
+                                          7.4399999999999995,
+                                          -1.785,
+                                          "-.4"
+                                      ],
+                         "size":  [5.76, 2.04, 0.75],
+                         "rotation":  [0, 0, -10]
                      },
                      {
-                         "position":  [7.3, 6.6, -0.2],
-                         "material":  "#8a9270",
-                         "rotation":  [0, 0, -12],
-                         "id":  "tactician-outcrop",
-                         "size":  [1.8, 2.8, 0.6]
+                         "id":  "tree-trunk--3.25",
+                         "material":  "minecraft:jungle_log",
+                         "position":  [-3.9, -1.275, 1.35],
+                         "size":  [0.78, 0.5525, 2.7],
+                         "rotation":  [0, 0, 0]
                      },
                      {
-                         "position":  [3, 8.38, -0.15],
-                         "material":  "#65513b",
-                         "rotation":  [0, 0, -3],
+                         "id":  "tree-canopy--3.25",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [-3.9, -1.275, 2.7],
+                         "size":  [3.36, 2.21, 1.25],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-crown--3.25",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [-3.9, -1.275, 3.45],
+                         "size":  [2.16, 1.4449999999999998, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-trunk-10.8",
+                         "material":  "minecraft:jungle_log",
+                         "position":  [12.96, -1.02, 1.35],
+                         "size":  [0.78, 0.5525, 2.7],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-canopy-10.8",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [12.96, -1.02, 2.7],
+                         "size":  [3.36, 2.21, 1.25],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-crown-10.8",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [12.96, -1.02, 3.45],
+                         "size":  [2.16, 1.4449999999999998, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-trunk--3.6",
+                         "material":  "minecraft:jungle_log",
+                         "position":  [-4.32, 2.72, 1.35],
+                         "size":  [0.78, 0.5525, 2.7],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-canopy--3.6",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [-4.32, 2.72, 2.7],
+                         "size":  [3.36, 2.21, 1.25],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-crown--3.6",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [-4.32, 2.72, 3.45],
+                         "size":  [2.16, 1.4449999999999998, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-trunk-11.1",
+                         "material":  "minecraft:jungle_log",
+                         "position":  [13.319999999999999, 2.8899999999999997, 1.35],
+                         "size":  [0.78, 0.5525, 2.7],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-canopy-11.1",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [13.319999999999999, 2.8899999999999997, 2.7],
+                         "size":  [3.36, 2.21, 1.25],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tree-crown-11.1",
+                         "material":  "minecraft:jungle_leaves",
+                         "position":  [13.319999999999999, 2.8899999999999997, 3.45],
+                         "size":  [2.16, 1.4449999999999998, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "ridge-1",
+                         "material":  "minecraft:andesite",
+                         "position":  [1.2, -2.72, 1.1],
+                         "size":  [2.88, 1.615, 2.2],
+                         "rotation":  [0, 0, 8]
+                     },
+                     {
+                         "id":  "ridge-3.8",
+                         "material":  "minecraft:andesite",
+                         "position":  [4.56, -3.145, 1.65],
+                         "size":  [2.88, 1.615, 3.3],
+                         "rotation":  [0, 0, 8]
+                     },
+                     {
+                         "id":  "ridge-6.5",
+                         "material":  "minecraft:andesite",
+                         "position":  [7.8, -2.8049999999999997, 1.3],
+                         "size":  [2.88, 1.615, 2.6],
+                         "rotation":  [0, 0, 8]
+                     },
+                     {
                          "id":  "fallen-log-bench",
-                         "size":  [8.2, 0.9, 0.35]
+                         "material":  "minecraft:oak_log",
+                         "position":  [
+                                          4.5,
+                                          7.607499999999999,
+                                          "-.22"
+                                      ],
+                         "size":  [11.4, 0.8075, 0.4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tactician-outcrop",
+                         "material":  "minecraft:mossy_cobblestone",
+                         "position":  [
+                                          11.639999999999999,
+                                          5.95,
+                                          "-.2"
+                                      ],
+                         "size":  [1.74, 2.04, 0.4],
+                         "rotation":  [
+                                          0,
+                                          0,
+                                          "-8"
+                                      ]
                      }
-                 ]
+                 ],
+    "texturedBattlefield":  true,
+    "benchMaterial":  "minecraft:oak_planks",
+    "backgroundColor":  "#86bfc1"
 }

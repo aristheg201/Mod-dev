@@ -28,7 +28,7 @@ import kotlin.math.roundToInt
 
 /** Worldless 3D viewport. Geometry, model transforms, camera and depth belong to SVHub. */
 object EmbeddedSceneRenderer {
-    private data class Mesh(val buffer: VertexBuffer, val bounds: FloatArray)
+    private data class Mesh(val buffer: VertexBuffer, val bounds: FloatArray,val blockAtlas:Boolean=false)
     private data class BlockAsset(val state: BlockState, val model: BakedModel, val tint: Int)
     private data class ItemAsset(val stack: ItemStack, val model: BakedModel)
     private val meshes = linkedMapOf<SVHubScene, List<Mesh>>()
@@ -63,7 +63,7 @@ object EmbeddedSceneRenderer {
             val surface = target?.also { if (it.width != width || it.height != height) it.resize(width,height,Minecraft.ON_OSX) }
                 ?: TextureTarget(width,height,true,Minecraft.ON_OSX).also { target=it }
             RenderSystem.disableScissor()
-            surface.setClearColor(.035f,.06f,.075f,1f)
+            surface.setClearColor((theme.backgroundColor ushr 16 and 255)/255f,(theme.backgroundColor ushr 8 and 255)/255f,(theme.backgroundColor and 255)/255f,1f)
             surface.clear(Minecraft.ON_OSX)
             surface.bindWrite(true)
             RenderSystem.enableDepthTest(); RenderSystem.depthMask(true); RenderSystem.depthFunc(GL11.GL_LEQUAL)
@@ -81,14 +81,17 @@ object EmbeddedSceneRenderer {
             staticMeshes.forEach { mesh ->
                 val b=mesh.bounds
                 if (frustum.testAab(b[0],b[1],b[2],b[3],b[4],b[5])) {
+                    val renderType=if(mesh.blockAtlas) RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS) else null
+                    renderType?.setupRenderState()
                     mesh.buffer.bind()
-                    mesh.buffer.drawWithShader(view,projection,meshShader)
+                    mesh.buffer.drawWithShader(view,projection,if(mesh.blockAtlas) checkNotNull(RenderSystem.getShader()) else meshShader)
+                    renderType?.clearRenderState()
                 }
             }
             VertexBuffer.unbind()
             val poses=PoseStack().also { it.mulPose(view) }
             for (node in scene.nodes) {
-                if (!node.visible || node is SceneMeshNode) continue
+                if (!node.visible || node is SceneMeshNode || node is SceneBlockModelNode) continue
                 val position=node.transform.position
                 val radius=(maxOf(kotlin.math.abs(node.transform.scale.x),kotlin.math.abs(node.transform.scale.y),kotlin.math.abs(node.transform.scale.z))*2).toFloat()
                 if (!frustum.testSphere(position.x.toFloat(),position.y.toFloat(),position.z.toFloat(),radius)) continue
@@ -138,17 +141,23 @@ object EmbeddedSceneRenderer {
     }
 
     private fun renderBlock(poses: PoseStack, id: String) {
-        val client=Minecraft.getInstance()
-        val asset=blocks.getOrPut(id) {
+        val asset=blockAsset(id) ?: return
+        renderBlock(poses,asset,buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)))
+    }
+
+    private fun blockAsset(id:String):BlockAsset? = blocks.getOrPut(id) {
+            val client=Minecraft.getInstance()
             val key=ResourceLocation.tryParse(id) ?: return@getOrPut null
             val block=BuiltInRegistries.BLOCK.getOptional(key).orElse(null) ?: return@getOrPut null
             val state=block.defaultBlockState()
             BlockAsset(state,client.blockRenderer.getBlockModel(state),client.blockColors.getColor(state,null,null,0))
-        } ?: return
+        }
+
+    private fun renderBlock(poses:PoseStack,asset:BlockAsset,vertices:VertexConsumer) {
         poses.mulPose(Axis.XP.rotationDegrees(90f))
         poses.translate(-.5,0.0,-.5)
         val tint=asset.tint
-        client.blockRenderer.modelRenderer.renderModel(poses.last(),buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)),asset.state,asset.model,(tint ushr 16 and 255)/255f,(tint ushr 8 and 255)/255f,(tint and 255)/255f,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY)
+        Minecraft.getInstance().blockRenderer.modelRenderer.renderModel(poses.last(),vertices,asset.state,asset.model,(tint ushr 16 and 255)/255f,(tint ushr 8 and 255)/255f,(tint and 255)/255f,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY)
     }
 
     fun renderItem(poses: PoseStack, id: String) {
@@ -174,10 +183,11 @@ object EmbeddedSceneRenderer {
             val matrix=poses.last().pose()
             for(index in cells) {
                 val p=theme.boardAnchor(index)
-                builder.addVertex(matrix,p.x-.47f,p.y-.47f,p.z+.018f).setColor(color)
-                builder.addVertex(matrix,p.x+.47f,p.y-.47f,p.z+.018f).setColor(color)
-                builder.addVertex(matrix,p.x+.47f,p.y+.47f,p.z+.018f).setColor(color)
-                builder.addVertex(matrix,p.x-.47f,p.y+.47f,p.z+.018f).setColor(color)
+                val dx=theme.cellSize.x*.47f;val dy=theme.cellSize.y*.47f
+                builder.addVertex(matrix,p.x-dx,p.y-dy,p.z+.018f).setColor(color)
+                builder.addVertex(matrix,p.x+dx,p.y-dy,p.z+.018f).setColor(color)
+                builder.addVertex(matrix,p.x+dx,p.y+dy,p.z+.018f).setColor(color)
+                builder.addVertex(matrix,p.x-dx,p.y+dy,p.z+.018f).setColor(color)
             }
             BufferUploader.drawWithShader(builder.buildOrThrow())
         } finally { RenderSystem.depthMask(true);RenderSystem.disableBlend() }
@@ -185,7 +195,7 @@ object EmbeddedSceneRenderer {
 
     private fun compileMeshes(scene: SVHubScene, theme: MinecraftArenaDefinition): List<Mesh> {
         while(meshes.size >= 8) meshes.remove(meshes.keys.first())?.forEach { it.buffer.close() }
-        return scene.nodes.filterIsInstance<SceneMeshNode>().filter { it.visible }.groupBy { it.material }.map { (material,nodes) ->
+        val colored=scene.nodes.filterIsInstance<SceneMeshNode>().filter { it.visible }.groupBy { it.material }.map { (material,nodes) ->
             val allCorners=nodes.map { it.corners() }
             val base=material.removePrefix("#").toLongOrNull(16)?.let { (it or 0xff000000L).toInt() }
                 ?: if(material=="bench") theme.borderColor else theme.floorColor
@@ -201,6 +211,22 @@ object EmbeddedSceneRenderer {
             val corners=allCorners.flatten()
             Mesh(buffer,floatArrayOf(corners.minOf{it.x}.toFloat(),corners.minOf{it.y}.toFloat(),corners.minOf{it.z}.toFloat(),corners.maxOf{it.x}.toFloat(),corners.maxOf{it.y}.toFloat(),corners.maxOf{it.z}.toFloat()))
         }
+        val blockNodes=scene.nodes.filterIsInstance<SceneBlockModelNode>().filter { it.visible }
+        if(blockNodes.isEmpty()) return colored
+        val builder=Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,DefaultVertexFormat.NEW_ENTITY)
+        val poses=PoseStack()
+        val bounds=ArrayList<SceneVec3>(blockNodes.size*8)
+        blockNodes.forEach { node ->
+            val asset=blockAsset(node.blockId) ?: return@forEach
+            poses.pushPose()
+            try { applyTransform(poses,node.transform);renderBlock(poses,asset,builder) }
+            finally { poses.popPose() }
+            for(x in listOf(-.5,.5)) for(y in listOf(-.5,.5)) for(z in listOf(0.0,1.0)) bounds+=node.transform.apply(SceneVec3(x,y,z))
+        }
+        val data=builder.build() ?: return colored
+        val buffer=VertexBuffer(VertexBuffer.Usage.STATIC)
+        buffer.bind();buffer.upload(data);VertexBuffer.unbind()
+        return colored+Mesh(buffer,floatArrayOf(bounds.minOf { it.x }.toFloat(),bounds.minOf { it.y }.toFloat(),bounds.minOf { it.z }.toFloat(),bounds.maxOf { it.x }.toFloat(),bounds.maxOf { it.y }.toFloat(),bounds.maxOf { it.z }.toFloat()),true)
     }
 
     private class HostState {

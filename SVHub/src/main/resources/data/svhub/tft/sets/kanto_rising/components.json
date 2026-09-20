@@ -1,66 +1,66 @@
 [
-  {
-    "id": "bf_sword",
-    "name": "BF Sword",
-    "effects": {
-      "attack_pct": 0.1
+    {
+        "id":  "bf_sword",
+        "name":  "Muscle Band",
+        "effects":  {
+                        "attack_pct":  0.1
+                    },
+        "stack":  "cobblemon:muscle_band"
     },
-    "stack": "minecraft:iron_sword"
-  },
-  {
-    "id": "recurve_bow",
-    "name": "Recurve Bow",
-    "effects": {
-      "attack_speed_pct": 0.1
+    {
+        "id":  "recurve_bow",
+        "name":  "Choice Scarf",
+        "effects":  {
+                        "attack_speed_pct":  0.1
+                    },
+        "stack":  "cobblemon:choice_scarf"
     },
-    "stack": "minecraft:bow"
-  },
-  {
-    "id": "needlessly_large_rod",
-    "name": "Needlessly Large Rod",
-    "effects": {
-      "ability_power_pct": 0.1
+    {
+        "id":  "needlessly_large_rod",
+        "name":  "Twisted Spoon",
+        "effects":  {
+                        "ability_power_pct":  0.1
+                    },
+        "stack":  "cobblemon:twisted_spoon"
     },
-    "stack": "minecraft:blaze_rod"
-  },
-  {
-    "id": "chain_vest",
-    "name": "Chain Vest",
-    "effects": {
-      "defense": 20
+    {
+        "id":  "chain_vest",
+        "name":  "Metal Coat",
+        "effects":  {
+                        "defense":  20
+                    },
+        "stack":  "cobblemon:metal_coat"
     },
-    "stack": "minecraft:iron_chestplate"
-  },
-  {
-    "id": "negatron_cloak",
-    "name": "Negatron Cloak",
-    "effects": {
-      "spdef": 20
+    {
+        "id":  "negatron_cloak",
+        "name":  "Resist Feather",
+        "effects":  {
+                        "spdef":  20
+                    },
+        "stack":  "cobblemon:resist_feather"
     },
-    "stack": "minecraft:leather_chestplate"
-  },
-  {
-    "id": "giants_belt",
-    "name": "Giant's Belt",
-    "effects": {
-      "hp_pct": 0.12
+    {
+        "id":  "giants_belt",
+        "name":  "Power Weight",
+        "effects":  {
+                        "hp_pct":  0.12
+                    },
+        "stack":  "cobblemon:power_weight"
     },
-    "stack": "minecraft:leather"
-  },
-  {
-    "id": "tear_of_goddess",
-    "name": "Tear of the Goddess",
-    "effects": {
-      "mana_start": 15
+    {
+        "id":  "tear_of_goddess",
+        "name":  "Mystic Water",
+        "effects":  {
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:mystic_water"
     },
-    "stack": "minecraft:ghast_tear"
-  },
-  {
-    "id": "sparring_gloves",
-    "name": "Sparring Gloves",
-    "effects": {
-      "crit_chance": 0.1
-    },
-    "stack": "minecraft:leather"
-  }
+    {
+        "id":  "sparring_gloves",
+        "name":  "Razor Claw",
+        "effects":  {
+                        "crit_chance":  0.1
+                    },
+        "stack":  "cobblemon:razor_claw"
+    }
 ]

@@ -44,6 +44,12 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${providers.gradleProperty("fabric_version").get()}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${providers.gradleProperty("fabric_kotlin_version").get()}")
     modImplementation("com.cobblemon:fabric:${providers.gradleProperty("cobblemon_version").get()}")
+    // Equipment assets are resolved through the live item registry; these mods are
+    // external runtime dependencies, never bundled into the SVHub JAR.
+    modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:TKdAixuR")
+    modRuntimeOnly("maven.modrinth:accessories:Xlt4eWBe") // Fabric 1.1.0-beta.53
+    modRuntimeOnly("maven.modrinth:owo-lib:JB1fLQnc") // Fabric 0.12.15.4
+    modRuntimeOnly("maven.modrinth:architectury-api:Pzc2FP5K") // Fabric 13.0.11
     modCompileOnly("me.lucko:fabric-permissions-api:0.3.1")
 
     // Fabric-native Placeholder API. JIJ it so SVHub formatting works without

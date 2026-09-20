@@ -32,7 +32,11 @@ Yêu cầu:
 - Fabric Loader >= 0.18.4
 - Fabric API
 - Fabric Language Kotlin
-- Cobblemon >= 1.8.0
+- Cobblemon >= 1.8.1
+- Cobblemon: Mega Showdown 1.2.0 cho Cobblemon 1.8.1 / Minecraft 1.21.1
+- Architectury API, Accessories và owo-lib theo dependency của Mega Showdown
+
+TFT dùng block model của Minecraft cho sân đấu và item registry của Cobblemon / Mega Showdown cho trang bị. Các mod cung cấp asset phải được cài riêng ở client và server; SVHub không đóng gói lại asset của chúng.
 
 SVHub phải có ở **cả client và server**.
 

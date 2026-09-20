@@ -34,14 +34,28 @@ class CompiledArenaSceneTest {
     @Test fun authoredArenasFrameTheBoardAndEveryBenchSlot() {
         for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
-            for((w,h) in listOf(532 to 218,854 to 363,340 to 250)) {
+            for((w,h) in listOf(632 to 270,952 to 414,340 to 250)) {
                 val area=UiRect(102,40,w,h)
                 val preset=arena.camera(ArenaCameraRole.PREPARATION,io.github.aristheg201.svhub.ui.SceneCameras.TFT)
-                val framed=io.github.aristheg201.svhub.ui.SceneCameraFraming.board(preset,area,SceneVec3(0.0,0.0,0.0),7,8,arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) })
+                val framed=io.github.aristheg201.svhub.ui.SceneCameraFraming.board(preset,area,SceneVec3(0.0,0.0,0.0),7,8,arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) },cellSize=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),1.0))
                 val camera=PerspectiveBoardTransform(area,framed.position,framed.target,framed.fov,framed.near,framed.far)
-                val points=listOf(SceneVec3(-.5,-.5,0.0),SceneVec3(6.5,-.5,0.0),SceneVec3(-.5,7.5,0.0),SceneVec3(6.5,7.5,0.0)).map { checkNotNull(camera.project(it)) }
+                val b=arena.logicalBoardBounds
+                val points=listOf(SceneVec3(b.minX.toDouble(),b.minY.toDouble(),0.0),SceneVec3(b.maxX.toDouble(),b.minY.toDouble(),0.0),SceneVec3(b.minX.toDouble(),b.maxY.toDouble(),0.0),SceneVec3(b.maxX.toDouble(),b.maxY.toDouble(),0.0)).map { checkNotNull(camera.project(it)) }
                 val coverage=(points.maxOf { it.x }-points.minOf { it.x })/w
                 assertTrue(coverage in .65f.. .80001f,"$id $w x $h coverage=$coverage")
+                val direction=(framed.position-framed.target).normalized()
+                assertTrue(direction.z in .5.. .85,"$id must retain a rear-elevated camera")
+                assertTrue(kotlin.math.abs(points[3].x-points[2].x)>kotlin.math.abs(points[1].x-points[0].x)*1.15,"$id must show perspective depth")
+                val field=checkNotNull(arena.battlefieldBounds)
+                assertTrue(field.minX<=b.minX-.5f && field.maxX>=b.maxX+.5f && field.minY<=b.minY-.5f && field.maxY>=b.maxY+.5f)
+                val obstacles=arena.geometry.map { it.id to io.github.aristheg201.svhub.ui.SceneBounds.enclosing(it.corners()) }.filter { it.second.max.z>.15 }
+                obstacles.forEach { (name,box) ->
+                    assertTrue(box.max.x<field.minX || box.min.x>field.maxX || box.max.y<field.minY || box.min.y>field.maxY,"$id $name encroaches on battlefield safety margin")
+                    repeat(56) { index ->
+                        val p=arena.boardAnchor(index)
+                        for(z in listOf(.1,.65,1.5)) assertTrue(!box.blocksSegment(framed.position,SceneVec3(p.x.toDouble(),p.y.toDouble(),z)),"$id $name obscures cell $index at height $z")
+                    }
+                }
                 for(anchor in arena.benchAnchors) for(z in listOf(0.0,.9)) {
                     val p=checkNotNull(camera.project(SceneVec3(anchor.x.toDouble(),anchor.y.toDouble(),anchor.z+z)))
                     assertTrue(area.contains(p.x.toDouble(),p.y.toDouble()),"$id cropped bench at $anchor")
@@ -105,10 +119,10 @@ class CompiledArenaSceneTest {
         }
         val gotham = load("gotham_rooftops")
         val sector = load("sector_2814")
-        assertNotEquals(gotham.props.map { it.item to (it.x to it.y) }, sector.props.map { it.item to (it.x to it.y) })
+        assertNotEquals(gotham.geometry, sector.geometry)
         assertNotEquals(gotham.cameras, sector.cameras)
         assertNotEquals(gotham.tacticianMovementBounds, sector.tacticianMovementBounds)
         assertNotEquals(gotham.benchAnchors, sector.benchAnchors)
-        assertTrue(gotham.props.isNotEmpty() && sector.props.isNotEmpty())
+        assertTrue(gotham.geometry.isNotEmpty() && sector.geometry.isNotEmpty())
     }
 }

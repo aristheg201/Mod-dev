@@ -94,6 +94,7 @@ class TftUiState {
     private var unitCatalog: Map<String, TftUnitInfo> = emptyMap()
     private var traitCatalog: Map<String, TftTraitInfo> = emptyMap()
     private var itemStacks: Map<String, ItemStack> = emptyMap()
+    private var itemNames: Map<String,String> = emptyMap()
     private var itemDetails:Map<String,List<String>> = emptyMap()
     private var itemRecipes: Map<String, String> = emptyMap()
     private var hoverTooltip: TftHoverTooltip? = null
@@ -128,7 +129,7 @@ class TftUiState {
         if(framedSource!=destination || framedArena !== arena || framedSize!=size) {
             framedSource=destination;framedArena=arena;framedSize=size
             framedPreset=SceneCameraFraming.board(destination,viewport,SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble()),arena.boardColumns,arena.boardRows,
-                arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) })
+                arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) },cellSize=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble()))
         }
         return camera(checkNotNull(framedPreset))
     }
@@ -147,6 +148,7 @@ class TftUiState {
         if (raw == itemCatalogRaw) return
         itemCatalogRaw = raw
         val root = runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull()
+        itemNames=root?.entrySet()?.associate { (id,value) -> id to (value.asJsonObject.get("name")?.asString ?: id) }.orEmpty()
         itemStacks = root?.entrySet()?.mapNotNull { (id, value) ->
             val rawStack = runCatching { value.asJsonObject.get("stack")?.asString }.getOrNull() ?: return@mapNotNull null
             val stackId = ResourceLocation.tryParse(rawStack) ?: return@mapNotNull null
@@ -161,12 +163,13 @@ class TftUiState {
         itemDetails=root?.entrySet()?.associate{(id,value)->
             val obj=value.asJsonObject;val lines=mutableListOf<String>()
             obj.get("effects")?.asString?.takeIf(String::isNotBlank)?.let{lines+=it}
-            obj.get("components")?.asString?.takeIf(String::isNotBlank)?.let{lines+="Recipe: ${it.replace(',', '+')}"}
-            if(obj.get("kind")?.asString=="component")itemRecipes.filterKeys{key->id in key.split('+')}.forEach{(key,result)->lines+="$key → $result"}
+            obj.get("components")?.asString?.takeIf(String::isNotBlank)?.let{lines+="Recipe: ${it.split(',').joinToString(" + ",transform=::itemName)}"}
+            if(obj.get("kind")?.asString=="component")itemRecipes.filterKeys{key->id in key.split('+')}.forEach{(key,result)->lines+="${key.split('+').joinToString(" + ",transform=::itemName)} → ${itemName(result)}"}
             id to lines
         }.orEmpty()
     }
     fun itemStack(id: String) = itemStacks[id.substringAfter(':').substringBefore('+')]
+    fun itemName(id:String)=itemNames[id.substringAfter(':').substringBefore('+')] ?: id
     fun itemDetails(id:String)=itemDetails[id.substringAfter(':').substringBefore('+')].orEmpty()
     fun recipe(first: String, second: String): String? =
         if (first.startsWith("full:") || second.startsWith("full:")) null else itemRecipes[listOf(first, second).sorted().joinToString("+")]
@@ -445,14 +448,14 @@ object TftGameRenderer {
 
         val resolved = TftLayoutResolver.resolve(area, density)
 
-        renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
-        resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
-        resolved.players?.let { renderPlayers(gui, font, it, players, hooks) }
         if (phase == "draft" && draft.isNotEmpty()) {
             renderCarouselScene(gui, font, resolved.board, draft, fields, ui, hooks, mouseX, mouseY, view.str("sessionId"), view.long("revision"))
         } else {
             renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
         }
+        renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
+        resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
+        resolved.players?.let { renderPlayers(gui, font, it, players, hooks) }
         renderAugmentHud(gui, font, resolved.board, fields, ui, mouseX, mouseY, hooks)
         renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit,
             "CAN_BUY_UNIT" in capabilities, "CAN_SELL" in capabilities, ui, hooks, mouseX, mouseY)
@@ -495,7 +498,8 @@ object TftGameRenderer {
     }
 
     private fun renderTraits(gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>, mouseX: Int, mouseY: Int, ui: TftUiState) {
-        gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
+        if(traits.isEmpty()) return
+        gui.fill(rect.x, rect.y, rect.right, rect.y+20,0xC0101B1F.toInt())
         gui.drawString(font, tr("gui.svhub.tft.traits"), rect.x + 7, rect.y + 7, muted, true)
         var y = rect.y + 23
         traits.take(10).forEach { trait ->
@@ -515,7 +519,7 @@ object TftGameRenderer {
     }
 
     private fun renderPlayers(gui: GuiGraphics, font: Font, rect: UiRect, players: List<PlayerLine>, hooks: Hooks) {
-        gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
+        gui.fill(rect.x, rect.y, rect.right, rect.y+20,0xC0101B1F.toInt())
         gui.drawString(font, tr("gui.svhub.tft.players"), rect.x + 7, rect.y + 7, muted, true)
         var y = rect.y + 23
         players.take(8).forEachIndexed { index, p ->
@@ -852,7 +856,7 @@ object TftGameRenderer {
                 if (stack != null && !stack.isEmpty) gui.renderItem(stack, itemRect.x, itemRect.y)
                 else gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
                 if (itemRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                    ui.offerTooltip(TftHoverTooltip(humanize(item.substringAfter(':')), tr("gui.svhub.tft.tooltip.item"), listOf(item)+ui.itemDetails(item), gold))
+                    ui.offerTooltip(TftHoverTooltip(ui.itemName(item), tr("gui.svhub.tft.tooltip.item"), ui.itemDetails(item), gold))
                 }
                 hooks.hit(itemRect) {
                     if (ui.selectedItem == index) ui.clearItem() else {
@@ -896,7 +900,7 @@ object TftGameRenderer {
         hooks.control(UiRect(root.right - 22, root.y + 4, 18, 16), "×", true) { ui.itemTarget = null }
         gui.drawString(font, fit(font, tr("gui.svhub.tft.item.choose_slot"), width - 32), root.x + 7, root.y + 7, gold, false)
         ui.itemStack(incoming)?.let { gui.renderItem(it, root.x + 7, root.y + 24) }
-        gui.drawString(font, fit(font, humanize(incoming.substringAfter(':')), width - 33), root.x + 28, root.y + 28, text, false)
+        gui.drawString(font, fit(font, ui.itemName(incoming), width - 33), root.x + 28, root.y + 28, text, false)
         val slotWidth = (width - 16) / 3
         repeat(3) { slot ->
             val current = equipped.getOrNull(slot)
@@ -913,10 +917,10 @@ object TftGameRenderer {
                 gui.drawString(font, "→", rect.x + 23, rect.y + 8, gold, false)
                 ui.itemStack(recipe!!)?.let { gui.renderItem(it, rect.x + 35, rect.y + 4) }
             }
-            val label = when { combine -> tr("gui.svhub.tft.item.combine"); append -> tr("gui.svhub.tft.item.equip"); current != null -> humanize(current.substringAfter(':')); else -> tr("gui.svhub.tft.item.unavailable") }
+            val label = when { combine -> tr("gui.svhub.tft.item.combine"); append -> tr("gui.svhub.tft.item.equip"); current != null -> ui.itemName(current); else -> tr("gui.svhub.tft.item.unavailable") }
             gui.drawString(font, fit(font, label, rect.width - 6), rect.x + 3, rect.y + 31, if (enabled) gold else muted, false)
             if (rect.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                val details = if (recipe != null) listOf("${humanize(current!!)} + ${humanize(incoming)} → ${humanize(recipe)}") + ui.itemDetails(recipe) else current?.let(ui::itemDetails).orEmpty()
+                val details = if (recipe != null) listOf("${ui.itemName(current!!)} + ${ui.itemName(incoming)} → ${ui.itemName(recipe)}") + ui.itemDetails(recipe) else current?.let(ui::itemDetails).orEmpty()
                 ui.offerTooltip(TftHoverTooltip(label, lines = details, accent = if (enabled) gold else muted))
             }
             if (enabled) hooks.hit(rect) {
@@ -934,7 +938,7 @@ object TftGameRenderer {
         val maxWidth = max(30, min(120, (board.width - 12) / 3))
         selected?.take(3)?.forEachIndexed { index, value ->
             val augment = value.asJsonObject
-            val rect = UiRect(board.x + 4 + index * maxWidth, board.y + 3, maxWidth - 3, 17)
+            val rect = UiRect(board.x + 4 + index * maxWidth, board.y + 36, maxWidth - 3, 17)
             gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel2)
             gui.fill(rect.x, rect.bottom - 2, rect.right, rect.bottom, gold)
             gui.drawString(font, fit(font, augment.str("name"), rect.width - 6), rect.x + 3, rect.y + 4, gold, false)

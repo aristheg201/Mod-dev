@@ -129,12 +129,18 @@ data class MinecraftArenaDefinition(
     val borderColor: Int = 0xFF2A3433.toInt(),
     val edgeColor: Int = 0xFF101719.toInt(),
     val depthColor: Int = 0xFF101719.toInt(),
+    val backgroundColor: Int = 0xFF162637.toInt(),
     val depth: Int = 2,
     val detailEvery: Int = 0,
     val pathDetailEvery: Int = 0
     ,val boardColumns: Int = 7
     ,val boardRows: Int = 8
     ,val boardOrigin: ArenaPoint = ArenaPoint(0f, 0f)
+    ,val cellSize: ArenaPoint = ArenaPoint(1f,1f,1f)
+    ,val battlefieldBounds: ArenaRegion? = null
+    ,val environmentBounds: ArenaRegion? = null
+    ,val texturedBattlefield: Boolean = false
+    ,val benchMaterial: String = "minecraft:stone_bricks"
     ,val boardAnchors: List<ArenaPoint> = emptyList()
     ,val benchAnchors: List<ArenaPoint> = emptyList()
     ,val itemBenchAnchors: List<ArenaPoint> = emptyList()
@@ -154,7 +160,24 @@ data class MinecraftArenaDefinition(
     ,val defeatVfx: String = ""
     ,val interactionRegions: List<ArenaInteractionRegion> = emptyList()
 ) {
-    fun boardAnchor(index:Int):ArenaPoint = boardAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+(index%boardColumns),boardOrigin.y+(index/boardColumns),boardOrigin.z)
+    val logicalBoardBounds get()=ArenaRegion(boardOrigin.x-cellSize.x*.5f,boardOrigin.y-cellSize.y*.5f,
+        boardOrigin.x+(boardColumns-.5f)*cellSize.x,boardOrigin.y+(boardRows-.5f)*cellSize.y)
+    init {
+        if(texturedBattlefield) {
+            val field=requireNotNull(battlefieldBounds) { "Textured arenas require battlefieldBounds" }
+            val environment=requireNotNull(environmentBounds) { "Textured arenas require environmentBounds" }
+            val board=logicalBoardBounds
+            require(field.minX<=board.minX-.5f && field.minY<=board.minY-.5f && field.maxX>=board.maxX+.5f && field.maxY>=board.maxY+.5f) { "Battlefield must leave safety margin around logical cells" }
+            require(environment.minX<=field.minX && environment.minY<=field.minY && environment.maxX>=field.maxX && environment.maxY>=field.maxY)
+            geometry.forEach { node ->
+                val bounds=io.github.aristheg201.svhub.ui.SceneBounds.enclosing(node.corners())
+                if(bounds.max.z>boardOrigin.z+.15) require(bounds.max.x<field.minX || bounds.min.x>field.maxX || bounds.max.y<field.minY || bounds.min.y>field.maxY) {
+                    "Scenery ${node.id} encroaches on battlefield safety margin"
+                }
+            }
+        }
+    }
+    fun boardAnchor(index:Int):ArenaPoint = boardAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+(index%boardColumns)*cellSize.x,boardOrigin.y+(index/boardColumns)*cellSize.y,boardOrigin.z)
     fun benchAnchor(index:Int):ArenaPoint = benchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.75f,boardOrigin.y+boardRows+.8f,boardOrigin.z)
     fun itemAnchor(index:Int):ArenaPoint = itemBenchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.6f,boardOrigin.y+boardRows+1.6f,boardOrigin.z)
     fun camera(role:ArenaCameraRole,fallback:SceneCameraPreset):SceneCameraPreset {
@@ -218,6 +241,9 @@ object MinecraftArenaRegistry {
         }
         if(failures.isNotEmpty()) {
             logger.error("Arena reload rejected; keeping {} valid definitions: {}",cache.size,failures.joinToString("; "))
+            // Definitions survive, but atlas UVs and baked provider models belong to
+            // the new resource generation and must still be rebuilt.
+            MinecraftArenaRenderer.clearCompiledScenes()
             return false
         }
         cache=next.toMap()
@@ -274,11 +300,17 @@ object MinecraftArenaRegistry {
             borderColor = color(root, "borderColor", 0xFF2A3433.toInt()),
             edgeColor = color(root, "edgeColor", 0xFF101719.toInt()),
             depthColor = color(root, "depthColor", 0xFF101719.toInt()),
+            backgroundColor = color(root,"backgroundColor",0xFF162637.toInt()),
             depth = int(root, "depth", 2).coerceIn(0, 10),
             detailEvery = int(root, "detailEvery", 0).coerceIn(0, 32),
             pathDetailEvery = int(root, "pathDetailEvery", 0).coerceIn(0, 32),
             boardColumns = int(metadata, "boardColumns", 7).coerceIn(2, 16),
             boardRows = int(metadata, "boardRows", 8).coerceIn(2, 16),
+            cellSize = point(metadata,"cellSize",ArenaPoint(1f,1f,1f)).also { require(it.x>0 && it.y>0 && it.z>0) },
+            battlefieldBounds = metadata.get("battlefieldBounds")?.let { region(metadata,"battlefieldBounds",bounds) },
+            environmentBounds = metadata.get("environmentBounds")?.let { region(metadata,"environmentBounds",bounds) },
+            texturedBattlefield = root.get("texturedBattlefield")?.asBoolean ?: false,
+            benchMaterial = string(root,"benchMaterial","minecraft:stone_bricks"),
             boardOrigin = point(metadata, "boardOrigin", ArenaPoint(0f,0f)),
             boardAnchors = points(metadata, "boardAnchors"),
             benchAnchors = points(metadata, "benchAnchors"),
@@ -350,20 +382,49 @@ object MinecraftArenaRenderer {
         val key=SceneKey(theme,resourceRevision)
         return compiledScenes.computeIfAbsent(key){
             val thickness=theme.depth.coerceAtLeast(1)*.12
-            val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(theme.boardOrigin.x+(theme.boardColumns-1)/2.0,theme.boardOrigin.y+(theme.boardRows-1)/2.0,theme.boardOrigin.z-thickness/2)),SceneVec3(theme.boardColumns.toDouble(),theme.boardRows.toDouble(),thickness),theme.surface.ifBlank{"arena_floor"})
+            val logical=theme.logicalBoardBounds
+            val floor=SceneMeshNode("floor",SceneTransform(SceneVec3(logical.center.x.toDouble(),logical.center.y.toDouble(),theme.boardOrigin.z-thickness/2)),SceneVec3((logical.maxX-logical.minX).toDouble(),(logical.maxY-logical.minY).toDouble(),thickness),theme.surface.ifBlank{"arena_floor"})
             val props=theme.props.mapIndexed{index,prop->
                 val transform=SceneTransform(SceneVec3(prop.x.toDouble(),prop.y.toDouble(),prop.z.toDouble()),SceneVec3(prop.pitch.toDouble(),prop.roll.toDouble(),prop.yaw.toDouble()),SceneVec3(prop.scale.toDouble(),prop.scale.toDouble(),prop.scale.toDouble()))
                 val block=ResourceLocation.tryParse(prop.item)?.let(BuiltInRegistries.BLOCK::containsKey)==true
                 if(block)SceneBlockModelNode("prop:$index",transform,prop.item) else SceneItemModelNode("prop:$index",transform,prop.item)
             }
-            val benches=theme.benchAnchors.mapIndexed{index,p->SceneMeshNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z-.075)),SceneVec3(.7,.7,.15),"bench")}
-            val interaction=SceneInteractionSurface("board",SceneVec3(theme.boardOrigin.x-.5,theme.boardOrigin.y-.5,theme.boardOrigin.z.toDouble()),theme.boardColumns.toDouble(),theme.boardRows.toDouble(),theme.boardColumns,theme.boardRows)
-            val tiles=if(theme.surfaceMode() in setOf(ArenaSurfaceMode.CHECKER,ArenaSurfaceMode.TACTICAL)) (0 until theme.boardColumns*theme.boardRows).map { index ->
+            val benches=theme.benchAnchors.mapIndexed{index,p->
+                if(theme.texturedBattlefield) SceneBlockModelNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z-.18),scale=SceneVec3(.82,.76,.18)),theme.benchMaterial)
+                else SceneMeshNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z-.075)),SceneVec3(.7,.7,.15),"bench")
+            }
+            val interaction=SceneInteractionSurface("board",SceneVec3(logical.minX.toDouble(),logical.minY.toDouble(),theme.boardOrigin.z.toDouble()),(logical.maxX-logical.minX).toDouble(),(logical.maxY-logical.minY).toDouble(),theme.boardColumns,theme.boardRows)
+            val tiles=if(!theme.texturedBattlefield && theme.surfaceMode() in setOf(ArenaSurfaceMode.CHECKER,ArenaSurfaceMode.TACTICAL)) (0 until theme.boardColumns*theme.boardRows).map { index ->
                 val p=theme.boardAnchor(index);val color=if((index%theme.boardColumns+index/theme.boardColumns)%2==0) theme.floorColor else theme.floorAltColor
                 val width=if(theme.surfaceMode()==ArenaSurfaceMode.CHECKER) .995 else .96
                 SceneMeshNode("cell:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z+.006)),SceneVec3(width,width,.012),"#${Integer.toHexString(color)}")
             } else emptyList()
-            CompiledArenaScene(SVHubScene("arena:${theme.id}:${theme.definitionRevision}",resourceRevision,listOf(floor)+theme.geometry+tiles+benches+props,listOf(interaction)))
+            val terrain=if(theme.texturedBattlefield) {
+                val bounds=theme.battlefieldBounds ?: logical
+                val palette=theme.floor.ifEmpty { listOf("minecraft:stone_bricks") }
+                val alternate=theme.floorAlt.ifEmpty { palette }
+                val width=bounds.maxX-bounds.minX;val height=bounds.maxY-bounds.minY
+                val columns=kotlin.math.ceil(width.toDouble()).toInt();val rows=kotlin.math.ceil(height.toDouble()).toInt()
+                (0 until columns*rows).map { index ->
+                    val x=index%columns;val y=index/columns
+                    val dx=minOf(1f,width-x);val dy=minOf(1f,height-y)
+                    val material=if(Math.floorMod(x*31+y*17,11)<2) alternate[(x+y)%alternate.size] else palette[(x*7+y*3)%palette.size]
+                    SceneBlockModelNode("terrain:$index",SceneTransform(SceneVec3(bounds.minX+x+dx*.5,bounds.minY+y+dy*.5,theme.boardOrigin.z-1.0),scale=SceneVec3(dx.toDouble(),dy.toDouble(),1.0)),material)
+                }
+            } else emptyList()
+            val structures=theme.geometry.flatMap { node ->
+                if(!node.material.contains(':')) listOf(node) else {
+                    val nx=kotlin.math.ceil(node.size.x).toInt();val ny=kotlin.math.ceil(node.size.y).toInt();val nz=kotlin.math.ceil(node.size.z).toInt()
+                    require(nx.toLong()*ny*nz<=8192) { "Structure ${node.id} has too many blocks" }
+                    (0 until nx*ny*nz).map { index ->
+                        val x=index%nx;val y=index/nx%ny;val z=index/(nx*ny)
+                        val dx=minOf(1.0,node.size.x-x);val dy=minOf(1.0,node.size.y-y);val dz=minOf(1.0,node.size.z-z)
+                        val point=node.transform.apply(SceneVec3(-node.size.x*.5+x+dx*.5,-node.size.y*.5+y+dy*.5,-node.size.z*.5+z))
+                        SceneBlockModelNode("${node.id}:$index",SceneTransform(point,node.transform.rotationDegrees,SceneVec3(dx*node.transform.scale.x,dy*node.transform.scale.y,dz*node.transform.scale.z)),node.material)
+                    }
+                }
+            }
+            CompiledArenaScene(SVHubScene("arena:${theme.id}:${theme.definitionRevision}",resourceRevision,listOf(floor)+terrain+structures+tiles+benches+props,listOf(interaction)))
         }
     }
     fun renderPresentation(gui:GuiGraphics,layout:PokemonSceneLayout,frame:ArenaPresentationFrame,phase:String){
@@ -501,7 +562,8 @@ object MinecraftArenaRenderer {
             val x=(surface.origin.x+(index%layout.columns+.5)*surface.width/layout.columns).toFloat()
             val y=(surface.origin.y+(index/layout.columns+.5)*surface.height/layout.rows).toFloat()
             val margin=if(strong) .44f else .36f
-            fillQuad(gui,quad(layout,x-margin,y-margin,x+margin,y+margin,surface.origin.z.toFloat()),withAlpha(color,if(strong)185 else 100))
+            val dx=(margin*surface.width/layout.columns).toFloat();val dy=(margin*surface.height/layout.rows).toFloat()
+            fillQuad(gui,quad(layout,x-dx,y-dy,x+dx,y+dy,surface.origin.z.toFloat()),withAlpha(color,if(strong)185 else 100))
             return
         }
         val w = if (strong) max(10, (layout.tileWidth * 0.88f).roundToInt()) else max(9, (layout.tileWidth * 0.72f).roundToInt())

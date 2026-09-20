@@ -10,6 +10,14 @@ import java.nio.file.Path
 import kotlin.test.*
 
 class TftSetRegistryTest {
+    @Test fun bundledEquipmentUsesPokemonProviderAssetsAndKeepsRecipeIdentities() {
+        val set=TftSetRegistry.bundled("kanto_rising")
+        val stacks=set.components.map { it.stack }+set.fullItems.map { it.stack }
+        assertTrue(stacks.all { it.startsWith("cobblemon:") || it.startsWith("mega_showdown:") })
+        assertTrue(stacks.any { it.startsWith("mega_showdown:") })
+        assertEquals("cobblemon:muscle_band",set.components.single { it.id=="bf_sword" }.stack)
+        assertEquals("cobblemon:choice_band",set.fullItems.single { it.id=="deathblade" }.stack)
+    }
     @Test fun bundledSetLoadsAllOriginalContent() {
         val set = TftSetRegistry.bundled("kanto_rising")
         assertEquals(74, set.units.size)

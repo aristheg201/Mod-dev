@@ -1,470 +1,470 @@
 [
-  {
-    "id": "deathblade",
-    "name": "Deathblade",
-    "components": [
-      "bf_sword",
-      "bf_sword"
-    ],
-    "effects": {
-      "attack_pct": 0.32
+    {
+        "id":  "deathblade",
+        "name":  "Choice Band",
+        "components":  [
+                           "bf_sword",
+                           "bf_sword"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.32
+                    },
+        "stack":  "cobblemon:choice_band"
     },
-    "stack": "minecraft:diamond_sword"
-  },
-  {
-    "id": "giant_slayer",
-    "name": "Giant Slayer",
-    "components": [
-      "bf_sword",
-      "recurve_bow"
-    ],
-    "effects": {
-      "attack_pct": 0.18,
-      "attack_speed_pct": 0.1
+    {
+        "id":  "giant_slayer",
+        "name":  "Expert Belt",
+        "components":  [
+                           "bf_sword",
+                           "recurve_bow"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.18,
+                        "attack_speed_pct":  0.1
+                    },
+        "stack":  "cobblemon:expert_belt"
     },
-    "stack": "minecraft:crossbow"
-  },
-  {
-    "id": "hextech_gunblade",
-    "name": "Hextech Gunblade",
-    "components": [
-      "bf_sword",
-      "needlessly_large_rod"
-    ],
-    "effects": {
-      "attack_pct": 0.1,
-      "ability_power_pct": 0.1
+    {
+        "id":  "hextech_gunblade",
+        "name":  "Shell Bell",
+        "components":  [
+                           "bf_sword",
+                           "needlessly_large_rod"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "ability_power_pct":  0.1
+                    },
+        "stack":  "cobblemon:shell_bell"
     },
-    "stack": "minecraft:golden_sword"
-  },
-  {
-    "id": "edge_of_night",
-    "name": "Edge of Night",
-    "components": [
-      "bf_sword",
-      "chain_vest"
-    ],
-    "effects": {
-      "attack_pct": 0.1,
-      "defense": 20
+    {
+        "id":  "edge_of_night",
+        "name":  "Focus Band",
+        "components":  [
+                           "bf_sword",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "defense":  20
+                    },
+        "stack":  "cobblemon:focus_band"
     },
-    "stack": "minecraft:shield"
-  },
-  {
-    "id": "bloodthirster",
-    "name": "Bloodthirster",
-    "components": [
-      "bf_sword",
-      "negatron_cloak"
-    ],
-    "effects": {
-      "attack_pct": 0.18,
-      "spdef": 20,
-      "hp_pct": 0.08
+    {
+        "id":  "bloodthirster",
+        "name":  "Life Orb",
+        "components":  [
+                           "bf_sword",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.18,
+                        "spdef":  20,
+                        "hp_pct":  0.08
+                    },
+        "stack":  "cobblemon:life_orb"
     },
-    "stack": "minecraft:iron_sword"
-  },
-  {
-    "id": "steraks_gage",
-    "name": "Sterak's Gage",
-    "components": [
-      "bf_sword",
-      "giants_belt"
-    ],
-    "effects": {
-      "attack_pct": 0.1,
-      "hp_pct": 0.12
+    {
+        "id":  "steraks_gage",
+        "name":  "Focus Sash",
+        "components":  [
+                           "bf_sword",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "cobblemon:focus_sash"
     },
-    "stack": "minecraft:totem_of_undying"
-  },
-  {
-    "id": "spear_of_shojin",
-    "name": "Spear of Shojin",
-    "components": [
-      "bf_sword",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "attack_pct": 0.1,
-      "mana_start": 15,
-      "mana_on_attack": 5
+    {
+        "id":  "spear_of_shojin",
+        "name":  "Quick Claw",
+        "components":  [
+                           "bf_sword",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "mana_start":  15,
+                        "mana_on_attack":  5
+                    },
+        "stack":  "cobblemon:quick_claw"
     },
-    "stack": "minecraft:trident"
-  },
-  {
-    "id": "infinity_edge",
-    "name": "Infinity Edge",
-    "components": [
-      "bf_sword",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "attack_pct": 0.1,
-      "crit_chance": 0.25,
-      "crit_multiplier": 0.25
+    {
+        "id":  "infinity_edge",
+        "name":  "Razor Fang",
+        "components":  [
+                           "bf_sword",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "crit_chance":  0.25,
+                        "crit_multiplier":  0.25
+                    },
+        "stack":  "cobblemon:razor_fang"
     },
-    "stack": "minecraft:netherite_sword"
-  },
-  {
-    "id": "rapid_firecannon",
-    "name": "Rapid Firecannon",
-    "components": [
-      "recurve_bow",
-      "recurve_bow"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.3,
-      "range": 1
+    {
+        "id":  "rapid_firecannon",
+        "name":  "Wide Lens",
+        "components":  [
+                           "recurve_bow",
+                           "recurve_bow"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.3,
+                        "range":  1
+                    },
+        "stack":  "cobblemon:wide_lens"
     },
-    "stack": "minecraft:bow"
-  },
-  {
-    "id": "guinsoos_rageblade",
-    "name": "Guinsoo's Rageblade",
-    "components": [
-      "recurve_bow",
-      "needlessly_large_rod"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.28,
-      "ability_power_pct": 0.1
+    {
+        "id":  "guinsoos_rageblade",
+        "name":  "Metronome",
+        "components":  [
+                           "recurve_bow",
+                           "needlessly_large_rod"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.28,
+                        "ability_power_pct":  0.1
+                    },
+        "stack":  "cobblemon:metronome"
     },
-    "stack": "minecraft:blaze_rod"
-  },
-  {
-    "id": "titans_resolve",
-    "name": "Titan's Resolve",
-    "components": [
-      "recurve_bow",
-      "chain_vest"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.1,
-      "defense": 32,
-      "attack_pct": 0.08
+    {
+        "id":  "titans_resolve",
+        "name":  "Assault Vest",
+        "components":  [
+                           "recurve_bow",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "defense":  32,
+                        "attack_pct":  0.08
+                    },
+        "stack":  "cobblemon:assault_vest"
     },
-    "stack": "minecraft:iron_chestplate"
-  },
-  {
-    "id": "runaans_hurricane",
-    "name": "Runaan's Hurricane",
-    "components": [
-      "recurve_bow",
-      "negatron_cloak"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.1,
-      "spdef": 20
+    {
+        "id":  "runaans_hurricane",
+        "name":  "Flyinium Z",
+        "components":  [
+                           "recurve_bow",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "spdef":  20
+                    },
+        "stack":  "mega_showdown:flyinium_z"
     },
-    "stack": "minecraft:crossbow"
-  },
-  {
-    "id": "nashors_tooth",
-    "name": "Nashor's Tooth",
-    "components": [
-      "recurve_bow",
-      "giants_belt"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.1,
-      "hp_pct": 0.12
+    {
+        "id":  "nashors_tooth",
+        "name":  "Beedrillite",
+        "components":  [
+                           "recurve_bow",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "mega_showdown:beedrillite"
     },
-    "stack": "minecraft:golden_hoe"
-  },
-  {
-    "id": "statikk_shiv",
-    "name": "Statikk Shiv",
-    "components": [
-      "recurve_bow",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.1,
-      "mana_start": 15
+    {
+        "id":  "statikk_shiv",
+        "name":  "Magnet",
+        "components":  [
+                           "recurve_bow",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:magnet"
     },
-    "stack": "minecraft:lightning_rod"
-  },
-  {
-    "id": "last_whisper",
-    "name": "Last Whisper",
-    "components": [
-      "recurve_bow",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "attack_speed_pct": 0.1,
-      "crit_chance": 0.18,
-      "attack_pct": 0.06
+    {
+        "id":  "last_whisper",
+        "name":  "Scope Lens",
+        "components":  [
+                           "recurve_bow",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "crit_chance":  0.18,
+                        "attack_pct":  0.06
+                    },
+        "stack":  "cobblemon:scope_lens"
     },
-    "stack": "minecraft:spyglass"
-  },
-  {
-    "id": "rabadons_deathcap",
-    "name": "Rabadon's Deathcap",
-    "components": [
-      "needlessly_large_rod",
-      "needlessly_large_rod"
-    ],
-    "effects": {
-      "ability_power_pct": 0.4
+    {
+        "id":  "rabadons_deathcap",
+        "name":  "Choice Specs",
+        "components":  [
+                           "needlessly_large_rod",
+                           "needlessly_large_rod"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.4
+                    },
+        "stack":  "cobblemon:choice_specs"
     },
-    "stack": "minecraft:golden_helmet"
-  },
-  {
-    "id": "crownguard",
-    "name": "Crownguard",
-    "components": [
-      "needlessly_large_rod",
-      "chain_vest"
-    ],
-    "effects": {
-      "ability_power_pct": 0.18,
-      "defense": 20,
-      "hp_pct": 0.08
+    {
+        "id":  "crownguard",
+        "name":  "Gardevoirite",
+        "components":  [
+                           "needlessly_large_rod",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.18,
+                        "defense":  20,
+                        "hp_pct":  0.08
+                    },
+        "stack":  "mega_showdown:gardevoirite"
     },
-    "stack": "minecraft:shield"
-  },
-  {
-    "id": "ionic_spark",
-    "name": "Ionic Spark",
-    "components": [
-      "needlessly_large_rod",
-      "negatron_cloak"
-    ],
-    "effects": {
-      "ability_power_pct": 0.18,
-      "spdef": 30
+    {
+        "id":  "ionic_spark",
+        "name":  "Electrium Z",
+        "components":  [
+                           "needlessly_large_rod",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.18,
+                        "spdef":  30
+                    },
+        "stack":  "mega_showdown:electrium_z"
     },
-    "stack": "minecraft:lightning_rod"
-  },
-  {
-    "id": "morellonomicon",
-    "name": "Morellonomicon",
-    "components": [
-      "needlessly_large_rod",
-      "giants_belt"
-    ],
-    "effects": {
-      "ability_power_pct": 0.1,
-      "hp_pct": 0.12
+    {
+        "id":  "morellonomicon",
+        "name":  "Firium Z",
+        "components":  [
+                           "needlessly_large_rod",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.1,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "mega_showdown:firium_z"
     },
-    "stack": "minecraft:magma_cream"
-  },
-  {
-    "id": "archangels_staff",
-    "name": "Archangel's Staff",
-    "components": [
-      "needlessly_large_rod",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "ability_power_pct": 0.1,
-      "mana_start": 15
+    {
+        "id":  "archangels_staff",
+        "name":  "Wise Glasses",
+        "components":  [
+                           "needlessly_large_rod",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.1,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:wise_glasses"
     },
-    "stack": "minecraft:enchanted_book"
-  },
-  {
-    "id": "jeweled_gauntlet",
-    "name": "Jeweled Gauntlet",
-    "components": [
-      "needlessly_large_rod",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "ability_power_pct": 0.2,
-      "crit_chance": 0.22
+    {
+        "id":  "jeweled_gauntlet",
+        "name":  "Alakazite",
+        "components":  [
+                           "needlessly_large_rod",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.2,
+                        "crit_chance":  0.22
+                    },
+        "stack":  "mega_showdown:alakazite"
     },
-    "stack": "minecraft:golden_axe"
-  },
-  {
-    "id": "bramble_vest",
-    "name": "Bramble Vest",
-    "components": [
-      "chain_vest",
-      "chain_vest"
-    ],
-    "effects": {
-      "defense": 60
+    {
+        "id":  "bramble_vest",
+        "name":  "Rocky Helmet",
+        "components":  [
+                           "chain_vest",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "defense":  60
+                    },
+        "stack":  "cobblemon:rocky_helmet"
     },
-    "stack": "minecraft:iron_chestplate"
-  },
-  {
-    "id": "gargoyle_stoneplate",
-    "name": "Gargoyle Stoneplate",
-    "components": [
-      "chain_vest",
-      "negatron_cloak"
-    ],
-    "effects": {
-      "defense": 32,
-      "spdef": 32
+    {
+        "id":  "gargoyle_stoneplate",
+        "name":  "Eviolite",
+        "components":  [
+                           "chain_vest",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "defense":  32,
+                        "spdef":  32
+                    },
+        "stack":  "cobblemon:eviolite"
     },
-    "stack": "minecraft:stone"
-  },
-  {
-    "id": "sunfire_cape",
-    "name": "Sunfire Cape",
-    "components": [
-      "chain_vest",
-      "giants_belt"
-    ],
-    "effects": {
-      "defense": 20,
-      "hp_pct": 0.12
+    {
+        "id":  "sunfire_cape",
+        "name":  "Red Orb",
+        "components":  [
+                           "chain_vest",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "defense":  20,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "mega_showdown:red_orb"
     },
-    "stack": "minecraft:lava_bucket"
-  },
-  {
-    "id": "protectors_vow",
-    "name": "Protector's Vow",
-    "components": [
-      "chain_vest",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "defense": 20,
-      "mana_start": 15
+    {
+        "id":  "protectors_vow",
+        "name":  "Light Clay",
+        "components":  [
+                           "chain_vest",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "defense":  20,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:light_clay"
     },
-    "stack": "minecraft:shield"
-  },
-  {
-    "id": "steadfast_heart",
-    "name": "Steadfast Heart",
-    "components": [
-      "chain_vest",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "defense": 20,
-      "crit_chance": 0.1
+    {
+        "id":  "steadfast_heart",
+        "name":  "Steelixite",
+        "components":  [
+                           "chain_vest",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "defense":  20,
+                        "crit_chance":  0.1
+                    },
+        "stack":  "mega_showdown:steelixite"
     },
-    "stack": "minecraft:heart_of_the_sea"
-  },
-  {
-    "id": "dragons_claw",
-    "name": "Dragon's Claw",
-    "components": [
-      "negatron_cloak",
-      "negatron_cloak"
-    ],
-    "effects": {
-      "spdef": 65
+    {
+        "id":  "dragons_claw",
+        "name":  "Dragon Fang",
+        "components":  [
+                           "negatron_cloak",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "spdef":  65
+                    },
+        "stack":  "cobblemon:dragon_fang"
     },
-    "stack": "minecraft:dragon_breath"
-  },
-  {
-    "id": "evenshroud",
-    "name": "Evenshroud",
-    "components": [
-      "negatron_cloak",
-      "giants_belt"
-    ],
-    "effects": {
-      "spdef": 20,
-      "hp_pct": 0.12
+    {
+        "id":  "evenshroud",
+        "name":  "Black Glasses",
+        "components":  [
+                           "negatron_cloak",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "spdef":  20,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "cobblemon:black_glasses"
     },
-    "stack": "minecraft:chainmail_chestplate"
-  },
-  {
-    "id": "adaptive_helm",
-    "name": "Adaptive Helm",
-    "components": [
-      "negatron_cloak",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "spdef": 20,
-      "mana_start": 15
+    {
+        "id":  "adaptive_helm",
+        "name":  "Safety Goggles",
+        "components":  [
+                           "negatron_cloak",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "spdef":  20,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:safety_goggles"
     },
-    "stack": "minecraft:turtle_helmet"
-  },
-  {
-    "id": "quicksilver",
-    "name": "Quicksilver",
-    "components": [
-      "negatron_cloak",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "spdef": 20,
-      "crit_chance": 0.1,
-      "attack_speed_pct": 0.08
+    {
+        "id":  "quicksilver",
+        "name":  "Clear Amulet",
+        "components":  [
+                           "negatron_cloak",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "spdef":  20,
+                        "crit_chance":  0.1,
+                        "attack_speed_pct":  0.08
+                    },
+        "stack":  "cobblemon:clear_amulet"
     },
-    "stack": "minecraft:milk_bucket"
-  },
-  {
-    "id": "warmogs_armor",
-    "name": "Warmog's Armor",
-    "components": [
-      "giants_belt",
-      "giants_belt"
-    ],
-    "effects": {
-      "hp_pct": 0.42
+    {
+        "id":  "warmogs_armor",
+        "name":  "Leftovers",
+        "components":  [
+                           "giants_belt",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "hp_pct":  0.42
+                    },
+        "stack":  "cobblemon:leftovers"
     },
-    "stack": "minecraft:golden_apple"
-  },
-  {
-    "id": "redemption",
-    "name": "Redemption",
-    "components": [
-      "giants_belt",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "hp_pct": 0.12,
-      "mana_start": 15
+    {
+        "id":  "redemption",
+        "name":  "Soothe Bell",
+        "components":  [
+                           "giants_belt",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "hp_pct":  0.12,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:soothe_bell"
     },
-    "stack": "minecraft:potion"
-  },
-  {
-    "id": "guardbreaker",
-    "name": "Guardbreaker",
-    "components": [
-      "giants_belt",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "hp_pct": 0.12,
-      "crit_chance": 0.1
+    {
+        "id":  "guardbreaker",
+        "name":  "Lucarionite",
+        "components":  [
+                           "giants_belt",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "hp_pct":  0.12,
+                        "crit_chance":  0.1
+                    },
+        "stack":  "mega_showdown:lucarionite"
     },
-    "stack": "minecraft:amethyst_shard"
-  },
-  {
-    "id": "blue_buff",
-    "name": "Blue Buff",
-    "components": [
-      "tear_of_goddess",
-      "tear_of_goddess"
-    ],
-    "effects": {
-      "mana_start": 50
+    {
+        "id":  "blue_buff",
+        "name":  "Blue Orb",
+        "components":  [
+                           "tear_of_goddess",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "mana_start":  50
+                    },
+        "stack":  "mega_showdown:blue_orb"
     },
-    "stack": "minecraft:lapis_lazuli"
-  },
-  {
-    "id": "hand_of_justice",
-    "name": "Hand of Justice",
-    "components": [
-      "tear_of_goddess",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "mana_start": 15,
-      "crit_chance": 0.1
+    {
+        "id":  "hand_of_justice",
+        "name":  "Lucky Egg",
+        "components":  [
+                           "tear_of_goddess",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "mana_start":  15,
+                        "crit_chance":  0.1
+                    },
+        "stack":  "cobblemon:lucky_egg"
     },
-    "stack": "minecraft:rabbit_foot"
-  },
-  {
-    "id": "thiefs_gloves",
-    "name": "Thief's Gloves",
-    "components": [
-      "sparring_gloves",
-      "sparring_gloves"
-    ],
-    "effects": {
-      "crit_chance": 0.2
-    },
-    "stack": "minecraft:bundle"
-  }
+    {
+        "id":  "thiefs_gloves",
+        "name":  "Kings Rock",
+        "components":  [
+                           "sparring_gloves",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "crit_chance":  0.2
+                    },
+        "stack":  "cobblemon:kings_rock"
+    }
 ]

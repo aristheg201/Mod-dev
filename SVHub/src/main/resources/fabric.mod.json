@@ -24,7 +24,8 @@
     "fabricloader": ">=0.18.4",
     "fabric-api": "*",
     "fabric-language-kotlin": "*",
-    "cobblemon": ">=1.8.1"
+    "cobblemon": ">=1.8.1",
+    "mega_showdown": ">=1.2.0"
   },
   "suggests": {
     "fabric-permissions-api-v0": "*",
