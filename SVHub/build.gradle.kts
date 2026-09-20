@@ -33,6 +33,7 @@ repositories {
     maven("https://repo.lucko.me")
     maven("https://maven.pokeskies.com/releases/")
     maven("https://maven.nucleoid.xyz/") { name = "Nucleoid" }
+    maven("https://maven.wispforest.io/releases/")
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
 }
@@ -48,7 +49,11 @@ dependencies {
     // external runtime dependencies, never bundled into the SVHub JAR.
     modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:TKdAixuR")
     modRuntimeOnly("maven.modrinth:accessories:Xlt4eWBe") // Fabric 1.1.0-beta.53
-    modRuntimeOnly("maven.modrinth:owo-lib:JB1fLQnc") // Fabric 0.12.15.4
+    // Use Wisp Forest's Maven here instead of Modrinth Maven. The creator POM
+    // carries owo's required standalone Endec runtime dependencies; Modrinth's
+    // Maven artifact does not expose those transitively and runClient crashes
+    // before Minecraft initializes with NoClassDefFoundError: MapCarrier.
+    modRuntimeOnly("io.wispforest:owo-lib:0.12.15.4+1.21")
     modRuntimeOnly("maven.modrinth:architectury-api:Pzc2FP5K") // Fabric 13.0.11
     modCompileOnly("me.lucko:fabric-permissions-api:0.3.1")
 
