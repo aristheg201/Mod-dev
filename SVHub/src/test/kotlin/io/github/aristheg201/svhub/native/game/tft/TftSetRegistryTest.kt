@@ -127,6 +127,43 @@ class TftSetRegistryTest {
         assertEquals("true", combatView.cards.first().meta["enabled"])
     }
 
+    @Test fun componentCombinationIsAtomicAndPersistsAsCompletedItem() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val seats = listOf(NativeSeat("p1", "P1"), NativeSeat("p2", "P2"))
+        val initial = TftSession(seats, seed = 91L, definition = set)
+        assertTrue(initial.act("p1", "buy", mapOf("index" to "0")).accepted)
+        val snapshot = initial.snapshotState()
+        val player = snapshot.getAsJsonArray("players")[0].asJsonObject
+        player.add("itemBench", com.google.gson.JsonArray().apply { add("bf_sword");add("recurve_bow") })
+        val restored = TftSession(seats, seed = 91L, definition = set, restoreState = snapshot)
+
+        assertTrue(restored.act("p1", "equip_item", mapOf("item" to "0", "origin" to "bench", "index" to "0")).accepted)
+        val combined = restored.act("p1", "equip_item", mapOf("item" to "0", "origin" to "bench", "index" to "0"))
+        assertTrue(combined.accepted)
+        val view = restored.viewFor("p1")
+        assertTrue(view.fields.getValue("bench").contains("full:giant_slayer"))
+        assertTrue(view.fields.getValue("lastItemEvent").startsWith("combine:bf_sword+recurve_bow->giant_slayer:"))
+
+        val recovered = NativeGameRestorer.restore("tft", seats, restored.sessionId, restored.snapshotState())
+        assertTrue(recovered.viewFor("p1").fields.getValue("bench").contains("full:giant_slayer"))
+    }
+
+    @Test fun missingRecipeRejectsWithoutDestroyingEitherComponent() {
+        val bundled = TftSetRegistry.bundled("kanto_rising")
+        val set = bundled.copy(fullItems = bundled.fullItems.filterNot { it.components.toSet() == setOf("bf_sword", "recurve_bow") })
+        val seats = listOf(NativeSeat("p1", "P1"), NativeSeat("p2", "P2"))
+        val initial = TftSession(seats, seed = 92L, definition = set)
+        assertTrue(initial.act("p1", "buy", mapOf("index" to "0")).accepted)
+        val snapshot = initial.snapshotState()
+        snapshot.getAsJsonArray("players")[0].asJsonObject.add("itemBench", com.google.gson.JsonArray().apply { add("bf_sword");add("recurve_bow") })
+        val restored = TftSession(seats, seed = 92L, definition = set, restoreState = snapshot)
+        assertTrue(restored.act("p1", "equip_item", mapOf("item" to "0", "origin" to "bench", "index" to "0")).accepted)
+        assertFalse(restored.act("p1", "equip_item", mapOf("item" to "0", "origin" to "bench", "index" to "0")).accepted)
+        val view = restored.viewFor("p1")
+        assertEquals("recurve_bow", view.fields.getValue("itemBench"))
+        assertTrue(view.fields.getValue("bench").contains("bf_sword"))
+    }
+
     @Test fun malformedOverrideFallsBackWithoutOverwritingUserFile() = inTempDirectory { root ->
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")

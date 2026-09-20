@@ -84,7 +84,9 @@ class TftUiState {
     private var unitCatalog: Map<String, TftUnitInfo> = emptyMap()
     private var traitCatalog: Map<String, TftTraitInfo> = emptyMap()
     private var itemStacks: Map<String, ItemStack> = emptyMap()
+    private var itemDetails:Map<String,List<String>> = emptyMap()
     private var hoverTooltip: TftHoverTooltip? = null
+    private var lastItemEvent=""
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
@@ -104,8 +106,27 @@ class TftUiState {
             val item = BuiltInRegistries.ITEM.getOptional(stackId).orElse(null) ?: return@mapNotNull null
             id to ItemStack(item)
         }?.toMap().orEmpty()
+        val recipes=root?.entrySet()?.mapNotNull{(id,value)->
+            val obj=runCatching{value.asJsonObject}.getOrNull()?:return@mapNotNull null
+            val components=obj.get("components")?.asString.orEmpty().split(',').filter(String::isNotBlank)
+            if(components.size==2)components.sorted().joinToString("+") to id else null
+        }?.toMap().orEmpty()
+        itemDetails=root?.entrySet()?.associate{(id,value)->
+            val obj=value.asJsonObject;val lines=mutableListOf<String>()
+            obj.get("effects")?.asString?.takeIf(String::isNotBlank)?.let{lines+=it}
+            obj.get("components")?.asString?.takeIf(String::isNotBlank)?.let{lines+="Recipe: ${it.replace(',', '+')}"}
+            if(obj.get("kind")?.asString=="component")recipes.filterKeys{key->id in key.split('+')}.forEach{(key,result)->lines+="$key → $result"}
+            id to lines
+        }.orEmpty()
     }
     fun itemStack(id: String) = itemStacks[id.substringAfter(':').substringBefore('+')]?.copy()
+    fun itemDetails(id:String)=itemDetails[id.substringAfter(':').substringBefore('+')].orEmpty()
+    fun observeItemEvent(encoded:String):SceneEffectSignal?{
+        if(encoded.isBlank()||encoded==lastItemEvent)return null
+        lastItemEvent=encoded
+        val instanceId=encoded.substringAfterLast(':').takeIf(String::isNotBlank)?:return null
+        return SceneEffectSignal("tft:item:$encoded",encoded.hashCode().toLong() and 0xffffffffL,SceneEffectKind.BURST,"tft:$instanceId","tft:$instanceId")
+    }
     fun tactician(target:ArenaPoint,bounds:ArenaRegion,requested:String,now:Long=System.currentTimeMillis()):TacticianPose {
         val safe=bounds.clamp(target)
         val previous=tacticianPoint?:safe
@@ -519,6 +540,7 @@ object TftGameRenderer {
         }
         val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
         val effectSignals=mutableListOf<SceneEffectSignal>()
+        ui.observeItemEvent(fields.str("lastItemEvent"))?.let(effectSignals::add)
         val nativeAnimations=mutableListOf<SceneNativeAnimationSignal>()
         if(phase=="combat"){
             units.values.forEach { unit ->
@@ -735,7 +757,7 @@ object TftGameRenderer {
                 if (stack != null && !stack.isEmpty) gui.renderItem(stack, itemRect.x, itemRect.y)
                 else gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
                 if (itemRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                    ui.offerTooltip(TftHoverTooltip(humanize(item.substringAfter(':')), tr("gui.svhub.tft.tooltip.item"), listOf(item), gold))
+                    ui.offerTooltip(TftHoverTooltip(humanize(item.substringAfter(':')), tr("gui.svhub.tft.tooltip.item"), listOf(item)+ui.itemDetails(item), gold))
                 }
                 hooks.hit(itemRect) { ui.selectedItem = if (ui.selectedItem == index) null else index }
             }
