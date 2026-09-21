@@ -81,7 +81,10 @@ internal data class TftHoverTooltip(
 enum class TacticianPresentationState { IDLE,WALK,RUN,EMOTE,ROUND_START,VICTORY,DEFEAT,CAROUSEL_MOVEMENT,PICKUP_REACTION }
 
 class TftUiState {
-    data class TacticianPose(val point:ArenaPoint,val state:String)
+    data class TacticianPose(val point:ArenaPoint,val state:String,val yaw:Float)
+    var tacticianDestination: Pair<Double,Double>? = null
+    var tacticianLastIntentAt: Long = 0L
+    var tacticianLastPosition: String? = null
     private data class CombatCounters(val targetId:String?, val casts:Int, val damageDone:Long, val healingDone:Long, val alive:Boolean)
     internal data class CombatPresentation(
         val effects: List<SceneEffectSignal>,
@@ -117,6 +120,7 @@ class TftUiState {
     private var tacticianAt=System.currentTimeMillis()
     private var tacticianState=TacticianPresentationState.IDLE
     private var tacticianStateSince=tacticianAt
+    private var tacticianYaw=0f
     private var cameraDestination:SceneCameraPreset?=null
     private var cameraStart:SVHubSceneCamera?=null
     private var cameraCurrent:SVHubSceneCamera?=null
@@ -206,17 +210,18 @@ class TftUiState {
         val step=(elapsed/1000f*speed).coerceAtMost(distance)
         val next=if(distance<=.001f)safe else bounds.clamp(ArenaPoint(previous.x+(safe.x-previous.x)/distance*step,previous.y+(safe.y-previous.y)/distance*step,safe.z))
         val movement=when{distance>2f->TacticianPresentationState.RUN;distance>.05f->TacticianPresentationState.WALK;else->null}
+        if(distance>.01f) tacticianYaw=Math.toDegrees(kotlin.math.atan2((safe.y-previous.y).toDouble(),(safe.x-previous.x).toDouble())).toFloat()
         val holdMs=when(tacticianState){TacticianPresentationState.EMOTE->1200L;TacticianPresentationState.ROUND_START->900L;TacticianPresentationState.PICKUP_REACTION->900L;TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT->Long.MAX_VALUE;else->0L}
         val nextState=when{
             tacticianState in setOf(TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT)->tacticianState
-            movement!=null&&requestedState !in setOf(TacticianPresentationState.EMOTE,TacticianPresentationState.ROUND_START,TacticianPresentationState.PICKUP_REACTION,TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT)->movement
+            movement!=null&&requestedState !in setOf(TacticianPresentationState.VICTORY,TacticianPresentationState.DEFEAT)->movement
             now-tacticianStateSince<holdMs->tacticianState
             else->requestedState
         }
         if(nextState!=tacticianState){tacticianState=nextState;tacticianStateSince=now}
         tacticianPoint=next
         tacticianAt=now
-        return TacticianPose(next,tacticianState.name)
+        return TacticianPose(next,tacticianState.name,tacticianYaw)
     }
 
     fun clearUnit() { selectedOrigin = null; selectedIndex = null }
@@ -666,13 +671,22 @@ object TftGameRenderer {
         } else emptySet()
 
         val tacticianNode=arena?.let { definition ->
-            val pose=ui.tactician(definition.tacticianSpawn,definition.tacticianMovementBounds,fields.str("tacticianState","IDLE"))
+            val position=fields.str("tacticianPosition").split(',')
+            val u=position.getOrNull(0)?.toDoubleOrNull()?.coerceIn(0.0,1.0) ?: .5
+            val v=position.getOrNull(1)?.toDoubleOrNull()?.coerceIn(0.0,1.0) ?: .5
+            val bounds=definition.tacticianMovementBounds
+            val target=ArenaPoint(
+                (bounds.minX+(bounds.maxX-bounds.minX)*u).toFloat(),
+                (bounds.minY+(bounds.maxY-bounds.minY)*v).toFloat(),
+                definition.tacticianSpawn.z
+            )
+            val pose=ui.tactician(target,bounds,fields.str("tacticianState","IDLE"))
             val tacticianScale=fields.double("tacticianScale",1.0).coerceIn(.2,3.0)
             val pokemonSpecies=fields.str("tacticianSpecies")
             val pokemonAspects=fields.str("tacticianAspects").split(',').filter(String::isNotBlank).toSet()
             SceneTacticianNode(
                 id="tft:tactician",
-                transform=SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),
+                transform=SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble()),SceneVec3(0.0,0.0,pose.yaw.toDouble()),SceneVec3(tacticianScale,tacticianScale,tacticianScale)),
                 entityId=fields.str("tacticianEntity"),
                 animation=pose.state,
                 pokemonSpecies=pokemonSpecies,
@@ -728,6 +742,44 @@ object TftGameRenderer {
                     contains
                 }
             }
+        }
+
+        if(arena!=null && fields.bool("tacticianCanMove")) {
+            val bounds=arena.tacticianMovementBounds
+            val raw=fields.str("tacticianPosition")
+            val parts=raw.split(',')
+            val currentU=parts.getOrNull(0)?.toDoubleOrNull()?.coerceIn(0.0,1.0) ?: .5
+            val currentV=parts.getOrNull(1)?.toDoubleOrNull()?.coerceIn(0.0,1.0) ?: .5
+            val destination=ui.tacticianDestination
+            val now=System.currentTimeMillis()
+            if(destination!=null && now-ui.tacticianLastIntentAt>=150 &&
+                (ui.tacticianLastPosition!=raw || now-ui.tacticianLastIntentAt>=550)) {
+                val du=destination.first-currentU
+                val dv=destination.second-currentV
+                val distance=kotlin.math.hypot(du,dv)
+                if(distance<=.012) {
+                    ui.tacticianDestination=null
+                } else {
+                    val step=min(.21,distance)
+                    hooks.action("tactician_move",mapOf(
+                        "u" to (currentU+du/distance*step).coerceIn(0.0,1.0).toString(),
+                        "v" to (currentV+dv/distance*step).coerceIn(0.0,1.0).toString()
+                    ))
+                    ui.tacticianLastIntentAt=now
+                    ui.tacticianLastPosition=raw
+                }
+            }
+            hooks.sceneInput { x,y ->
+                val point=frame.layout.perspective?.boardIntersection(x,y,arena.boardOrigin.z.toDouble())
+                    ?: return@sceneInput false
+                if(point.x<bounds.minX || point.x>bounds.maxX || point.y<bounds.minY || point.y>bounds.maxY) return@sceneInput false
+                val u=((point.x-bounds.minX)/(bounds.maxX-bounds.minX)).coerceIn(0.0,1.0)
+                val v=((point.y-bounds.minY)/(bounds.maxY-bounds.minY)).coerceIn(0.0,1.0)
+                ui.tacticianDestination=u to v
+                true
+            }
+        } else if(phase=="draft" || fields.bool("scouting")) {
+            ui.tacticianDestination=null
         }
 
         val benchByIndex = bench.associateBy { it.index }
@@ -1050,7 +1102,7 @@ object TftGameRenderer {
         val tacticianSpecies=fields.str("tacticianSpecies")
         val actor=SceneTacticianNode(
             id="tft:tactician",
-            transform=SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),
+            transform=SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble()),SceneVec3(0.0,0.0,tactician.yaw.toDouble()),SceneVec3(tacticianScale,tacticianScale,tacticianScale)),
             entityId=fields.str("tacticianEntity"),
             animation=tactician.state,
             pokemonSpecies=tacticianSpecies,

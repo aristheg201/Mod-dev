@@ -221,19 +221,19 @@ jobs:
           echo "Screenshots:"
           find run/screenshots -maxdepth 1 -type f -name 'svhub-tft-*.png' -print
           count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' | wc -l)"
-          test "$count" -eq 9
+          test "$count" -eq 10
           test -f run/logs/latest.log
           for arena in monster_island gotham_rooftops sector_2814 kanto_stadium; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-$arena.png with 12 actors" run/logs/latest.log
           done
-          for scenario in planning pve; do
+          for scenario in planning pve tactician_move; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-ui-$scenario.png with " run/logs/latest.log
           done
           for game in chess tower_defense tft; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-result-$game.png" run/logs/latest.log
           done
           python3 tools/verify-visual-smoke.py run/screenshots/svhub-*.png
-          grep -Fq '[SVHub Visual Smoke] completed 9 captures; stopping client' run/logs/latest.log
+          grep -Fq '[SVHub Visual Smoke] completed 10 captures; stopping client' run/logs/latest.log
           # Headless Linux may log non-fatal narrator (missing flite) and audio
           # initialization errors. The runClient task and all four framebuffer
           # captures already succeeded, so only treat actual Minecraft/render

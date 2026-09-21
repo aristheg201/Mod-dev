@@ -17,7 +17,10 @@ class TftPresentationStateTest {
         assertEquals("IDLE",ui.tactician(ArenaPoint(0f,0f),bounds,"IDLE",t+1_000).state)
         val running=ui.tactician(ArenaPoint(5f,0f),bounds,"IDLE",t+1_100)
         assertEquals("RUN",running.state)
-        assertEquals("WALK",ui.tactician(ArenaPoint(running.point.x+.1f,0f),bounds,"IDLE",t+1_150).state)
+        assertEquals(0f,running.yaw,0.01f)
+        val walking=ui.tactician(ArenaPoint(running.point.x,running.point.y+1f),bounds,"ROUND_START",t+1_150)
+        assertEquals("WALK",walking.state)
+        assertEquals(90f,walking.yaw,0.5f)
     }
 
     @Test fun emotePickupAndTerminalStatesAreExplicit(){

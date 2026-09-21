@@ -42,6 +42,19 @@ class TftArenaStateTest {
         assertTrue(view.board.all(String::isBlank))
     }
 
+    @Test fun tacticianMovementIsBoundedAuthoritativeAndRecoverySafe() {
+        val session=create()
+        assertEquals("0.5,0.5",session.viewFor("a").fields["tacticianPosition"])
+        assertEquals("true",session.viewFor("a").fields["tacticianCanMove"])
+        assertFalse(session.act("a","tactician_move",mapOf("u" to "1.1","v" to ".5")).accepted)
+        assertFalse(session.act("a","tactician_move",mapOf("u" to ".9","v" to ".9")).accepted)
+        assertTrue(session.act("a","tactician_move",mapOf("u" to ".65","v" to ".60")).accepted)
+        assertEquals("0.65,0.6",session.viewFor("a").fields["tacticianPosition"])
+        val restored=NativeGameRestorer.restore("tft",seats,session.sessionId,session.snapshotState())
+        assertEquals("0.65,0.6",restored.viewFor("a").fields["tacticianPosition"])
+        assertEquals("true",restored.viewFor("a").fields["tacticianCanMove"])
+    }
+
     @Test fun authoritativeTacticianEmoteSurvivesRecoveryAndRemainsPresentationOnly() {
         val session=create();val before=session.snapshotState().get("poolCounts")
         assertTrue(session.act("a","tactician_emote",emptyMap()).accepted)

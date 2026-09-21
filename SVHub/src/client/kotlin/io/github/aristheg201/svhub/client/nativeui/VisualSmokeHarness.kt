@@ -29,7 +29,7 @@ object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium")
-    private val uiScenarios = listOf("planning", "pve")
+    private val uiScenarios = listOf("planning", "pve", "tactician_move")
     private val resultScenarios = listOf("chess", "tower_defense", "tft")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
@@ -144,7 +144,8 @@ object VisualSmokeHarness {
         val prefix = "tft:visual-ui-" + scenario + ":"
         val resolvedActors = PokemonModelRenderer.sceneSizingDiagnostics()
             .count { it.instanceId.startsWith(prefix) }
-        if (!capturedCurrent && stableTicks >= 70 && active.fixtureReady && resolvedActors >= EXPECTED_ACTORS) {
+        val captureAt=if(scenario=="tactician_move")8 else 70
+        if (!capturedCurrent && stableTicks >= captureAt && active.fixtureReady && resolvedActors >= EXPECTED_ACTORS) {
             capturedCurrent = true
             val fileName = "svhub-tft-ui-" + scenario + ".png"
             Screenshot.grab(client.gameDirectory, fileName, client.mainRenderTarget) { message ->
@@ -252,10 +253,11 @@ object VisualSmokeHarness {
         )
     }
     private class TftUiVisualSmokeScreen(val scenario: String) : Screen(Component.literal("SVHub TFT UI Visual Smoke")) {
-        private val ui = TftUiState()
+        private val ui = TftUiState().also { if(scenario=="tactician_move") it.tacticianDestination=.92 to .25 }
         private val view = fixtureView(scenario)
         private var rendered = false
-        val fixtureReady get() = rendered
+        private var movementObserved = false
+        val fixtureReady get() = rendered && (scenario!="tactician_move" || movementObserved)
 
         override fun isPauseScreen(): Boolean = false
 
@@ -275,16 +277,22 @@ object VisualSmokeHarness {
                     hit = { _, _ -> },
                     sceneInput = { _ -> },
                     dropInput = { _ -> },
-                    action = { _, _ -> },
+                    action = { action, args ->
+                        if(scenario=="tactician_move" && action=="tactician_move") {
+                            view.getAsJsonObject("fields")?.addProperty("tacticianPosition",args.getValue("u")+","+args.getValue("v"))
+                        }
+                    },
                     back = {}
                 )
             )
+            movementObserved = movementObserved || ui.tacticianState() in setOf(TacticianPresentationState.WALK,TacticianPresentationState.RUN)
             rendered = true
         }
 
         companion object {
             fun fixtureView(scenario: String): JsonObject {
                 val pve = scenario == "pve"
+                val moving = scenario == "tactician_move"
                 val fields = JsonObject().apply {
                     addProperty("set", "visual_smoke")
                     addProperty("participantId", "visual")
@@ -299,6 +307,8 @@ object VisualSmokeHarness {
                     addProperty("tacticianId", if (pve) "svhub:green_lantern_mewtwo" else "svhub:pikachu")
                     addProperty("tacticianScale", if (pve) "0.72" else "0.70")
                     addProperty("tacticianState", if (pve) "round_start" else "idle")
+                    addProperty("tacticianPosition", if(moving) "0.08,0.75" else "0.5,0.5")
+                    addProperty("tacticianCanMove", (!pve).toString())
                     addProperty("scouting", "false")
                     addProperty("round", if (pve) "1-1" else "2-2")
                     addProperty("roundType", if (pve) "pve" else "pvp")

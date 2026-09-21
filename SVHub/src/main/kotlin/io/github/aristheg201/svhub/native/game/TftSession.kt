@@ -73,7 +73,7 @@ class TftSession(
 
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(
-            schema = 2,
+            schema = 3,
             setDefinition = set,
             phase = phase.name,
             roundIndex = roundIndex,
@@ -110,6 +110,8 @@ class TftSession(
                     draftUnlockRemainingMs = (player.draftUnlockAt - nowMillis).coerceAtLeast(0L),
                     carouselX = player.carouselX,
                     carouselY = player.carouselY,
+                    tacticianU = player.tacticianU,
+                    tacticianV = player.tacticianV,
                     lastIncome = player.lastIncome,
                     lastInterest = player.lastInterest,
                     lastStreakGold = player.lastStreakGold,
@@ -145,7 +147,7 @@ class TftSession(
 
     private fun restoreSnapshot(state: JsonObject) {
         val saved = NativeGamePersistence.fromJson(state, Snapshot::class.java)
-        require(saved.schema in 1..2) { "Unsupported TFT session snapshot schema " + saved.schema }
+        require(saved.schema in 1..3) { "Unsupported TFT session snapshot schema " + saved.schema }
         require(saved.setDefinition.id == set.id) { "TFT set mismatch during recovery" }
         require(saved.players.map { it.id }.toSet() == seats.map { it.id }.toSet()) {
             "TFT recovery seat mismatch"
@@ -212,6 +214,8 @@ class TftSession(
                 draftUnlockAt = now + p.draftUnlockRemainingMs.coerceIn(0L, DRAFT_TOTAL_MS),
                 carouselX = p.carouselX.takeIf(Double::isFinite) ?: 0.0,
                 carouselY = p.carouselY.takeIf(Double::isFinite) ?: 0.0,
+                tacticianU = if(saved.schema>=3) p.tacticianU.takeIf(Double::isFinite)?.coerceIn(0.0,1.0) ?: .5 else .5,
+                tacticianV = if(saved.schema>=3) p.tacticianV.takeIf(Double::isFinite)?.coerceIn(0.0,1.0) ?: .5 else .5,
                 lastIncome = p.lastIncome.coerceAtLeast(0),
                 lastInterest = p.lastInterest.coerceAtLeast(0),
                 lastStreakGold = p.lastStreakGold.coerceAtLeast(0),
@@ -350,6 +354,8 @@ class TftSession(
                 "tacticianVfx" to observedTactician?.cosmeticVfx.orEmpty(),
                 "tacticianState" to when { observed.eliminated -> "defeat"; finished && winner==observed.id -> "victory"; finished -> "defeat"; System.currentTimeMillis()<observed.tacticianEmoteUntil -> "emote"; phase==Phase.DRAFT && observed.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
                 "tacticianTarget" to if(phase==Phase.DRAFT) "${observed.carouselX},${observed.carouselY}" else "",
+                "tacticianPosition" to "${observed.tacticianU},${observed.tacticianV}",
+                "tacticianCanMove" to (phase!=Phase.DRAFT && !player.eliminated && !finished && !scouting).toString(),
                 "tacticianPresentationOnly" to "true",
                 "scouting" to scouting.toString(),
                 "scoutTarget" to observed.id,
@@ -455,6 +461,7 @@ class TftSession(
             "carousel_move" -> carouselMove(player, args)
             "carousel_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
             "draft_pick" -> carouselPick(player, args["index"]?.toIntOrNull(), args["revision"]?.toLongOrNull())
+            "tactician_move" -> tacticianMove(player,args)
             "tactician_emote" -> if (!allowed(player, TftCapability.CAN_EMOTE)) reject("Emotes are unavailable") else {
                 player.tacticianEmoteUntil = System.currentTimeMillis() + 2_000L
                 bump("${player.name} emotes")
@@ -463,6 +470,19 @@ class TftSession(
             "resign" -> resign(player)
             else -> NativeGameResult(false, message = "Unknown TFT action")
         }
+    }
+
+    private fun tacticianMove(player:PlayerState,args:Map<String,String>):NativeGameResult {
+        if(phase==Phase.DRAFT) return reject("Use carousel movement during draft")
+        val u=args["u"]?.toDoubleOrNull()?.takeIf(Double::isFinite) ?: return reject("Invalid tactician X")
+        val v=args["v"]?.toDoubleOrNull()?.takeIf(Double::isFinite) ?: return reject("Invalid tactician Y")
+        if(u !in 0.0..1.0 || v !in 0.0..1.0) return reject("Tactician destination is outside staging")
+        val distance=kotlin.math.hypot(u-player.tacticianU,v-player.tacticianV)
+        if(distance>TACTICIAN_MAX_NORMALIZED_MOVE+1.0e-6) return reject("Tactician movement step is too large")
+        player.tacticianU=u
+        player.tacticianV=v
+        revision++
+        return accept("Tactician moved")
     }
 
     private fun scout(viewerId: String, target: String?): NativeGameResult {
@@ -1220,6 +1240,8 @@ class TftSession(
         val draftUnlockRemainingMs: Long,
         val carouselX: Double = 0.0,
         val carouselY: Double = 0.0,
+        val tacticianU: Double = .5,
+        val tacticianV: Double = .5,
         val lastIncome: Int,
         val lastInterest: Int,
         val lastStreakGold: Int,
@@ -1262,6 +1284,7 @@ class TftSession(
         val itemBench: MutableList<String> = mutableListOf(), val augments: MutableList<String> = mutableListOf(),
         val augmentChoices: MutableList<String> = mutableListOf(), var freeRerolls: Int = 0, var draftPicked: Boolean = false,
         var draftUnlockAt: Long = 0L, var carouselX: Double = 0.0, var carouselY: Double = 0.0,
+        var tacticianU:Double=.5,var tacticianV:Double=.5,
         var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
         var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false,
         var tactician: String = "", var arena: String = "kanto_stadium", var tacticianEmoteUntil:Long=0L,var lastItemEvent:String="",var itemEventSerial:Long=0L,
@@ -1291,5 +1314,6 @@ class TftSession(
     companion object {
         private const val MAX_GOLD=999
         private const val PVE_LOSS_DAMAGE=5;private const val DRAW_DAMAGE=2;private const val DRAFT_TOTAL_MS=120_000L
+        private const val TACTICIAN_MAX_NORMALIZED_MOVE=.22
     }
 }
