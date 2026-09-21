@@ -11,6 +11,9 @@ class TftProgressionTest {
     private fun create(set: TftSetDefinition = base) = TftSession(seats, 724L, definition = set)
     private fun restore(state: JsonObject) = NativeGameRestorer.restore("tft", seats, "test", state)
     private fun fields(s: NativeGameSession) = s.viewFor("a").fields
+    private fun pvpFirst() = base.copy(roundSchedule = base.roundSchedule.mapIndexed { index, round ->
+        if (index == 0) round.copy(type = "pvp", pve = null) else round
+    })
 
     /** Empty boards finish naturally on the first combat step in PvP and PvE. */
     private fun finishRound(s: NativeGameSession): Long {
@@ -38,7 +41,7 @@ class TftProgressionTest {
     }
 
     @Test fun passiveXpAfterPvpExactlyOnce() {
-        val s = create(base.copy(pveRounds = emptyList()))
+        val s = create(pvpFirst())
         val now = finishRound(s)
         val expected = fields(s).filterKeys { it in setOf("xp", "level", "gold", "settledRound") }
         repeat(10) { s.tick(now + 100); s.viewFor("a") }
@@ -129,7 +132,7 @@ class TftProgressionTest {
     }
 
     @Test fun completedRoundBeforeCarouselReceivesIncomeAndXp() {
-        val state = create(base.copy(pveRounds = emptyList())).snapshotState()
+        val state = create(pvpFirst()).snapshotState()
         state.addProperty("roundIndex", 5) // 2-3; next round is shared draft 2-4.
         val s = restore(state); finishRound(s)
         val gold = fields(s)["gold"]
