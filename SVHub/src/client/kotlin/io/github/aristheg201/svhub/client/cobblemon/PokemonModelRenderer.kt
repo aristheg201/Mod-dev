@@ -141,35 +141,23 @@ object PokemonModelRenderer {
         }
     }
 
-    /** Shop previews use the same animated model adapter, fitted to the available card. */
+    /**
+     * Premium card/skin preview. Use Cobblemon's profile pose pipeline instead of
+     * the world scene poser so malformed custom aspects cannot surface as bind/T-pose.
+     */
     fun renderPreview(gui:GuiGraphics,view:PokemonView,instanceId:String,rect:UiRect):Boolean {
         if(rect.width<8 || rect.height<8) return false
-        val key=key(view)
-        fun orient(poses:PoseStack) {
-            poses.mulPose(Axis.XP.rotationDegrees(70f))
-            poses.mulPose(Axis.ZP.rotationDegrees(-15f))
-        }
-        val bounds=previewBounds[key] ?: run {
-            val capture=SceneModelBounds()
-            val measure=PoseStack().also(::orient)
-            if(!renderEmbedded(view,instanceId,measure,MultiBufferSource { capture },false)) return false
-            capture.bounds().also { previewBounds[key]=it }
-        }
-        val scale=minOf((rect.width-4)/(bounds.max.x-bounds.min.x),(rect.height-4)/(bounds.max.y-bounds.min.y)).toFloat()
-        gui.flush()
-        gui.enableScissor(rect.x,rect.y,rect.right,rect.bottom)
-        val poses=gui.pose()
-        poses.pushPose()
-        try {
-            poses.translate(rect.x+rect.width*.5,rect.y+rect.height*.5,200.0)
-            poses.scale(scale,scale,-scale)
-            poses.translate(-(bounds.min.x+bounds.max.x)*.5,-(bounds.min.y+bounds.max.y)*.5,0.0)
-            orient(poses)
-            val buffers=Minecraft.getInstance().renderBuffers().bufferSource()
-            val rendered=renderEmbedded(view,instanceId,poses,buffers,false)
-            buffers.endBatch()
-            return rendered
-        } finally { poses.popPose();gui.disableScissor() }
+        val size=minOf(rect.width,rect.height).coerceAtLeast(24)
+        return render(
+            gui=gui,
+            view=view,
+            centerX=rect.x+rect.width/2,
+            centerY=rect.y+rect.height/2+size/5,
+            size=size,
+            yaw=165f,
+            zoom=1.0f,
+            pitch=10f
+        )
     }
 
     private fun renderEmbeddedModel(view: PokemonView, instanceId: String, poses: PoseStack,
