@@ -109,7 +109,8 @@ object TftSetRegistry {
             components = resourceList("$root/components.json", object : TypeToken<List<TftItemComponentDefinition>>() {}),
             fullItems = resourceList("$root/full_items.json", object : TypeToken<List<TftFullItemDefinition>>() {}),
             augments = resourceList("$root/augments.json", object : TypeToken<List<TftAugmentDefinition>>() {}),
-            pveRounds = resourceList("$root/pve.json", object : TypeToken<List<TftPveRoundDefinition>>() {}),
+            pveRounds = resourceList("$root/pve.json", object : TypeToken<List<TftPveRoundDefinition>>() {}) +
+                optionalResourceList("$root/bosses.json", object : TypeToken<List<TftPveRoundDefinition>>() {}),
             lootTables = resourceList("$root/loot.json", object : TypeToken<List<TftLootTableDefinition>>() {})
         ))
     }
