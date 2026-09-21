@@ -6,7 +6,6 @@ import io.github.aristheg201.svhub.native.game.NativeSeat
 import io.github.aristheg201.svhub.native.game.TftSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
@@ -35,6 +34,27 @@ class TftRuntimeIntegrityTest {
         session.tick(draftEnd + 1)
         assertEquals("planning", session.viewFor("a").phase)
         assertEquals("2-5", session.viewFor("a").fields["round"])
+    }
+
+    @Test
+    fun `scheduled augment round offers three unique choices from its authored tier`() {
+        val initial = TftSession(seats, 96L, definition = base)
+        val saved = initial.snapshotState()
+        saved.addProperty("phase", "POST_COMBAT")
+        saved.addProperty("roundIndex", base.roundSchedule.indexOfFirst { it.label == "1-3" })
+        saved.addProperty("phaseRemainingMs", 0)
+        saved.add("combats", JsonArray())
+
+        val session = restore(saved)
+        session.tick(System.currentTimeMillis() + 1)
+        assertEquals("2-1", session.viewFor("a").fields["round"])
+        val choices = session.viewFor("a").fields.getValue("augmentChoices").split(';').filter(String::isNotBlank)
+        assertEquals(3, choices.size)
+        assertEquals(3, choices.map { it.substringBefore('~') }.toSet().size)
+        assertTrue(choices.all { raw ->
+            val parts = raw.split('~')
+            base.augments.single { it.id == parts[0] }.tier == "Silver" && parts.getOrNull(5) == "Silver"
+        })
     }
 
     @Test
