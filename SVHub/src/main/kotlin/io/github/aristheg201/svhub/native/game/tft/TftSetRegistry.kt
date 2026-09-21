@@ -51,7 +51,7 @@ object TftSetRegistry {
     fun reload(): Result<TftSetDefinition> = runCatching {
         val bundled = bundled("kanto_rising")
         val path = overrideFile
-        val candidate = if (path != null && Files.isRegularFile(path)) loadOverrideOrBundled(path, bundled) else bundled
+        val candidate = if (path != null && Files.isRegularFile(path)) loadOverrideOrBundled(path, bundled, allowStartupFallback = false) else bundled
         current = candidate
         logger.info("Reloaded TFT set {}: {} units, {} traits, {} augments", candidate.id, candidate.units.size, candidate.traits.size, candidate.augments.size)
         candidate
@@ -109,11 +109,18 @@ object TftSetRegistry {
         }
     }
 
-    private fun loadOverrideOrBundled(path: Path, bundled: TftSetDefinition): TftSetDefinition = try {
+    private fun loadOverrideOrBundled(
+        path: Path,
+        bundled: TftSetDefinition,
+        allowStartupFallback: Boolean = true
+    ): TftSetDefinition = try {
         val candidate = Files.newBufferedReader(path, Charsets.UTF_8).use { reader ->
             TftDefinitionValidator.validate(decodeSet(reader, path.toString()))
         }
         if (candidate.id == bundled.id && contentShape(candidate) != contentShape(bundled)) {
+            require(allowStartupFallback) {
+                "$path: stale built-in override cannot replace the published TFT set; use a distinct id for a custom roster"
+            }
             logger.warn(
                 "Ignoring stale built-in TFT override {}: override={} bundled={}. The file is preserved; use a distinct set id for intentional custom rosters.",
                 path,
@@ -123,6 +130,9 @@ object TftSetRegistry {
             bundled
         } else candidate
     } catch (error: Exception) {
+        // Startup may recover from an invalid file. A live reload must fail and
+        // keep the exact published object, never silently substitute a bundle.
+        if (!allowStartupFallback) throw error
         logger.error("Invalid TFT override {}; keeping the file unchanged and loading the bundled set", path, error)
         bundled
     }
