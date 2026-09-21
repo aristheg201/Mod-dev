@@ -408,13 +408,27 @@ class TftSession(
                 "lastStreakGold" to player.lastStreakGold.toString(),
                 "freeRerolls" to player.freeRerolls.toString(),
                 "specialRewards" to player.specialRewards.joinToString(","),
+                "result" to when { !finished -> ""; winner==player.id -> "Victory"; else -> "Defeat" },
                 "canEditBoard" to (canEditBoard(player) && !scouting).toString(),
                 "capabilities" to capabilities(player).joinToString(",", transform = TftCapability::name)
             ),
             log = log.toList().takeLast(12),
             revision = revision,
             finished = finished,
-            winner = winner?.let { id -> seats.firstOrNull { it.id == id }?.name }
+            winner = winner?.let { id -> seats.firstOrNull { it.id == id }?.name },
+            resultPresentation = if(!finished) null else NativeGameResultPresentation(
+                outcome = if(winner==player.id)"victory" else "defeat",
+                reason = when(player.placement){1->"first";2,3->"top_three";else->"placement"},
+                backdrop = "tft",
+                stats = listOf(
+                    NativeResultLine("placement",(player.placement?:8).toString()),
+                    NativeResultLine("level",player.level.toString()),
+                    NativeResultLine("health",player.hp.coerceAtLeast(0).toString()),
+                    NativeResultLine("gold",player.gold.toString())
+                ),
+                rewards = listOf(NativeResultLine("match_reward")),
+                progression = listOf(NativeResultLine("placement",(player.placement?:8).toString()))
+            )
         )
     }
 

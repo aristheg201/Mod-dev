@@ -16,7 +16,58 @@ class TowerDefenseSession(
     private var gold=definition.startingGold;private var lives=definition.startingLives;private var wave=0;private var running=false;private var waveStartPending=false;private var spawnCooldown=0;private var revision=0L;private var result:String?=null;private var winner:String?=null;private var lastStepAt=System.currentTimeMillis();private var logicalTick=0L;private var nextEnemyId=1;private val log=ArrayDeque<String>()
     init{require(seats.isNotEmpty());TowerDefenseDefinitions.validate(definition);restoreState?.let(::restoreSnapshot)}
     override val finished get()=result!=null;override val winnerSeatId get()=winner
-    override fun viewFor(viewerId:String):NativeGameView{val board=MutableList(definition.width*definition.height){""};definition.path.forEachIndexed{i,p->board[p]=when(i){0->"path:start";definition.path.lastIndex->"path:goal";else->"path"}};towers.forEach{(s,t)->val d=towersById[t.type];board[s]="tower:${t.type}:${t.level}:${t.fireSerial}:${t.targetEnemyId?:-1}:${d?.moveId.orEmpty()}:${d?.animationSemantic.orEmpty()}"};enemies.sortedBy{it.progress}.forEach{e->val s=definition.path[e.progress.toInt().coerceIn(0,definition.path.lastIndex)];board[s]="enemy:${e.id}:${e.kind}:${e.hp.coerceAtLeast(0)}:${e.maxHp}:${e.progress}"};return NativeGameView(sessionId,gameId,"Pokémon Tower Defense",if(finished)"finished" else if(running)"wave" else "prepare","Wave $wave",result?:if(running)"${enemies.size+spawnQueue.size} enemies remaining" else "Prepare your defense",definition.width,definition.height,board,towersById.values.map{d->NativeCardView(d.id,d.name,"${d.cost}g • DMG ${d.damage} • Range ${d.range}",d.element.lowercase(),d.cost,mapOf("species" to d.species,"targetMode" to d.targetMode))},listOf(NativeActionView("start_wave","Bắt đầu wave ${wave+1}",enabled=!finished&&!running),NativeActionView("resign","Kết thúc",enabled=!finished)),linkedMapOf("gold" to "$gold","lives" to "$lives","wave" to "$wave","running" to "$running","path" to definition.path.joinToString(","),"definition" to definition.id,"enemyEncoding" to "v2","towerEncoding" to "v2","rewards" to rewardLog.joinToString(",")),log.toList().takeLast(14),revision,finished,winner?.let{w->seats.firstOrNull{it.id==w}?.name})}
+    override fun viewFor(viewerId:String):NativeGameView {
+        val board=MutableList(definition.width*definition.height){""}
+        definition.path.forEachIndexed { i,p ->
+            board[p]=when(i){0->"path:start";definition.path.lastIndex->"path:goal";else->"path"}
+        }
+        towers.forEach { (slot,tower) ->
+            val def=towersById[tower.type]
+            board[slot]="tower:${tower.type}:${tower.level}:${tower.fireSerial}:${tower.targetEnemyId?:-1}:${def?.moveId.orEmpty()}:${def?.animationSemantic.orEmpty()}"
+        }
+        enemies.sortedBy { it.progress }.forEach { enemy ->
+            val slot=definition.path[enemy.progress.toInt().coerceIn(0,definition.path.lastIndex)]
+            board[slot]="enemy:${enemy.id}:${enemy.kind}:${enemy.hp.coerceAtLeast(0)}:${enemy.maxHp}:${enemy.progress}"
+        }
+        val cards=towersById.values.map { def ->
+            NativeCardView(
+                def.id,def.name,"${def.cost}g • DMG ${def.damage} • Range ${def.range}",def.element.lowercase(),def.cost,
+                mapOf("species" to def.species,"targetMode" to def.targetMode)
+            )
+        }
+        val actions=listOf(
+            NativeActionView("start_wave","Bắt đầu wave ${wave+1}",enabled=!finished&&!running),
+            NativeActionView("resign","Kết thúc",enabled=!finished)
+        )
+        val resultView=if(!finished) null else NativeGameResultPresentation(
+            outcome=if(winner==viewerId)"victory" else "defeat",
+            reason=if(winner==viewerId)"defense_complete" else "defense_failed",
+            backdrop="tower_defense",
+            stats=listOf(
+                NativeResultLine("wave",wave.toString()),
+                NativeResultLine("lives",lives.coerceAtLeast(0).toString()),
+                NativeResultLine("gold",gold.toString()),
+                NativeResultLine("towers",towers.size.toString())
+            ),
+            rewards=listOf(NativeResultLine("loot_count",rewardLog.size.toString())),
+            progression=listOf(NativeResultLine("waves_cleared",wave.toString()))
+        )
+        return NativeGameView(
+            sessionId,gameId,"Pokémon Tower Defense",if(finished)"finished" else if(running)"wave" else "prepare",
+            "Wave $wave",
+            result?:if(running)"${enemies.size+spawnQueue.size} enemies remaining" else "Prepare your defense",
+            definition.width,definition.height,board,cards,actions,
+            linkedMapOf(
+                "gold" to "$gold","lives" to "$lives","wave" to "$wave","running" to "$running",
+                "path" to definition.path.joinToString(","),"definition" to definition.id,
+                "enemyEncoding" to "v2","towerEncoding" to "v2","rewards" to rewardLog.joinToString(",")
+            ),
+            log.toList().takeLast(14),revision,finished,
+            winner?.let { id -> seats.firstOrNull { it.id==id }?.name },
+            resultView
+        )
+    }
+
     override fun act(viewerId:String,action:String,args:Map<String,String>):NativeGameResult{if(viewerId !in seats.map{it.id})return NativeGameResult(false,message="Spectator");if(finished)return NativeGameResult(false,message="Game finished");return when(action){"start_wave"->startWave();"deploy"->deploy(args["type"],args["slot"]?.toIntOrNull());"upgrade"->upgrade(args["slot"]?.toIntOrNull());"sell"->sell(args["slot"]?.toIntOrNull());"resign"->{finish("Defense ended",null);NativeGameResult(true,true,"Ended")};else->NativeGameResult(false,message="Unknown TD action")}}
     override fun tick(nowMillis:Long):Boolean{if(!running||finished){lastStepAt=nowMillis;return false};val elapsed=(nowMillis-lastStepAt).coerceIn(0,1000);if(elapsed<definition.simulationStepMs)return false;repeat((elapsed/definition.simulationStepMs).toInt().coerceIn(1,4)){step()};lastStepAt=nowMillis;return true}
     override fun snapshotState(nowMillis:Long)=NativeGamePersistence.toJson(Snapshot(towers.toMap(),enemies.toList(),spawnQueue.toList(),gold,lives,wave,running,spawnCooldown,revision,result,winner,nextEnemyId,log.toList(),rng.state,logicalTick,triggerRuntime.snapshot(),settledRewards.toSet(),rewardLog.toList(),waveStartPending))

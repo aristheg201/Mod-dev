@@ -427,6 +427,10 @@ class NativePlatformScreen(
     private fun renderGame(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
         val view=state.getAsJsonObject("view")?:return
         val gameId=view.str("gameId")
+        if(view.bool("finished") && view.getAsJsonObject("resultPresentation")!=null){
+            renderGameResult(gui,layout,view,mouseX,mouseY)
+            return
+        }
         if(gameId=="tft"){
             sceneFrame=null
             boardRect=UiRect(0,0,0,0)
@@ -583,6 +587,42 @@ class NativePlatformScreen(
                     val card=unoPendingCard?:return@addControl
                     unoPendingCard=null
                     gameAct("play",mapOf("index" to card,"color" to color))
+                }
+            }
+        }
+    }
+
+    private fun renderGameResult(gui:GuiGraphics,layout:NativeLayout,view:JsonObject,mouseX:Int,mouseY:Int){
+        val gameId=view.str("gameId")
+        sceneFrame=null
+        boardRect=UiRect(0,0,0,0)
+        boardW=0
+        boardH=0
+        ArcadeResultRenderer.render(
+            gui=gui,
+            font=font,
+            area=layout.content.inset(if(gameId=="tft")0 else 8),
+            view=view,
+            hooks=ArcadeResultRenderer.Hooks(
+                control={rect,label,enabled,action->addControl(rect,label,mouseX,mouseY,enabled=enabled,action=action)},
+                continueAction={intent("leave",JsonObject())},
+                rematch={intent("rematch",JsonObject())},
+                exit={onClose()}
+            )
+        ){sceneArea->
+            when {
+                gameId=="tft" -> TftGameRenderer.render(
+                    gui=gui,font=font,area=sceneArea,density=UiDensity.WIDE,view=view,ui=tftUi,mouseX=-10,mouseY=-10,
+                    hooks=TftGameRenderer.Hooks(
+                        control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={}
+                    )
+                )
+                NativeBoardSceneRenderer.supports(gameId) -> {
+                    NativeBoardSceneRenderer.render(gui,font,sceneArea.inset(4),view,boardSceneUi,null)
+                }
+                else -> {
+                    gui.fill(sceneArea.x,sceneArea.y,sceneArea.right,sceneArea.bottom,panelAlt)
+                    NativePixelArt.icon(gui,gameId,sceneArea.x+sceneArea.width/2-18,sceneArea.y+sceneArea.height/2-18,36,gameColor(gameId))
                 }
             }
         }

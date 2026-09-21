@@ -84,7 +84,19 @@ class ChessSession(
             log = log.toList().takeLast(12),
             revision = revision,
             finished = finished,
-            winner = winner?.let { id -> seats.firstOrNull { it.id == id }?.name }
+            winner = winner?.let { id -> seats.firstOrNull { it.id == id }?.name },
+            resultPresentation = if(!finished) null else NativeGameResultPresentation(
+                outcome = when { winner == viewerId -> "victory"; winner == null -> "draw"; else -> "defeat" },
+                reason = chessResultReason(),
+                backdrop = "chess",
+                stats = listOf(
+                    NativeResultLine("moves",(fullmove-1).coerceAtLeast(0).toString()),
+                    NativeResultLine("white_clock",(whiteClock.coerceAtLeast(0L)/1000L).toString()),
+                    NativeResultLine("black_clock",(blackClock.coerceAtLeast(0L)/1000L).toString())
+                ),
+                rewards = listOf(NativeResultLine("match_reward")),
+                progression = listOf(NativeResultLine("match_complete"))
+            )
         )
     }
 
@@ -168,6 +180,21 @@ class ChessSession(
         moveSerial = s.moveSerial.coerceAtLeast(0L)
         rng.restore(s.rngState)
         lastClockAt = System.currentTimeMillis()
+    }
+
+    private fun chessResultReason():String {
+        val text=result.orEmpty().lowercase()
+        return when {
+            "checkmate" in text -> "checkmate"
+            "stalemate" in text -> "stalemate"
+            "repetition" in text || "threefold" in text -> "repetition"
+            "50" in text || "fifty" in text -> "fifty_move"
+            "insufficient" in text -> "insufficient_material"
+            "time" in text -> "timeout"
+            "resign" in text -> "resign"
+            "agreement" in text -> "draw_agreement"
+            else -> if(winner==null) "draw" else "complete"
+        }
     }
 
     private fun maybeRunBot() {

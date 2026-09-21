@@ -214,9 +214,22 @@ object NativeArcadeService {
         disconnectedUntil.remove(player.uuid)
         val sid = active.remove(player.uuid) ?: return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
         val handle = sessions[sid]
-        meta[sid]?.forfeited?.add(player.uuid)
-        handle?.submitAction(player.uuid.toString(), "resign", emptyMap(), bot = false)
+        if(handle != null && !handle.finished) {
+            meta[sid]?.forfeited?.add(player.uuid)
+            handle.submitAction(player.uuid.toString(), "resign", emptyMap(), bot = false)
+        }
         return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
+    }
+
+    fun rematch(player: ServerPlayer): Result {
+        val sid=active[player.uuid] ?: return Result(false,"gui.svhub.arcade.no_active")
+        val handle=sessions[sid] ?: return Result(false,"gui.svhub.arcade.no_active")
+        if(!handle.finished) return Result(false,"gui.svhub.result.rematch_unavailable")
+        val mode=meta[sid]?.mode ?: return Result(false,"gui.svhub.result.rematch_unavailable")
+        val gameId=handle.gameId
+        active.remove(player.uuid)
+        disconnectedUntil.remove(player.uuid)
+        return start(player,gameId,mode)
     }
 
     fun activeGameId(id: UUID): String? = active[id]?.let(sessions::get)?.gameId

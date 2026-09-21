@@ -122,6 +122,7 @@ const spawnEcologyRenderer = read("src/client/kotlin/io/github/aristheg201/svhub
 const tftRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/TftGameRenderer.kt");
 const cardTableRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CardTable3DRenderer.kt");
 const companionRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VanillaCompanionModelRenderer.kt");
+const resultRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/ArcadeResultRenderer.kt");
 const arcadeService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeService.kt");
 const arcadeLifecyclePolicy = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeLifecyclePolicy.kt");
 const sessionStore = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeSessionStore.kt");
@@ -276,6 +277,16 @@ for (const marker of ["PokemonModelRenderer.renderScene", "Axis.ZP.rotationDegre
 }
 if (cardTableRenderer.includes("active.uppercase()")) failures.push("CardTable3DRenderer.kt: UNO active color is still rendered raw");
 if (!tftRenderer.includes('tr("gui.svhub.game.tft.title")')) failures.push("TftGameRenderer.kt: TFT title is still hardcoded");
+for (const marker of ["resultPresentation", "ArcadeResultRenderer.render", 'intent("rematch"']) {
+  if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing shared result presentation marker ${marker}`);
+}
+for (const marker of ["resultPresentation", "continueAction", "rematch", "backdrop", "renderSection"]) {
+  if (!resultRenderer.includes(marker)) failures.push(`ArcadeResultRenderer.kt: missing result pipeline marker ${marker}`);
+}
+for (const [name, source] of [["ChessSession.kt", read("src/main/kotlin/io/github/aristheg201/svhub/native/game/ChessSession.kt")], ["TowerDefenseSession.kt", towerDefenseCore], ["TftSession.kt", tftSessionCore]]) {
+  if (!source.includes("NativeGameResultPresentation(")) failures.push(`${name}: missing game-specific result payload`);
+}
+
 for (const marker of ["InventoryScreen.renderEntityInInventoryFollowsMouse", "BuiltInRegistries.ENTITY_TYPE", "LivingEntity"]) {
   if (!companionRenderer.includes(marker)) failures.push(`VanillaCompanionModelRenderer.kt: missing ${marker}`);
 }

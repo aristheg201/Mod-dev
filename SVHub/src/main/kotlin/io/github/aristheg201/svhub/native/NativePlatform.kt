@@ -150,6 +150,13 @@ object NativePlatform {
 
     private fun handleGame(player: ServerPlayer, action: String, data: JsonObject): String {
         if (action == "leave") { val r = NativeArcadeService.leave(player); NativePlatformNetwork.sendOpen(player, "arcade", NativeArcadeService.lobbyState(player)); return r.message }
+        if (action == "rematch") {
+            val r=NativeArcadeService.rematch(player)
+            val next=gameState(player)
+            if(next.get("empty")?.asBoolean==false) NativePlatformNetwork.sendOpen(player,"game",next)
+            else NativePlatformNetwork.sendOpen(player,"arcade",NativeArcadeService.lobbyState(player))
+            return r.message
+        }
         if (action != "act") return "gui.svhub.error.invalid_action"
         val args = linkedMapOf<String, String>()
         data.getAsJsonObject("args")?.entrySet()?.forEach { (k, v) -> if (k.length <= 32) args[k] = runCatching { v.asString }.getOrDefault("").take(128) }
