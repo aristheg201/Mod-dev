@@ -6,9 +6,8 @@ import io.github.aristheg201.svhub.ui.UiRect
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.language.I18n
-import kotlin.math.min
 
-/** Shared end-of-game presentation. Games provide semantic payload; this owns layout and actions. */
+/** Shared end-of-game presentation. Games provide semantic payload; this screen owns every pixel in its area. */
 object ArcadeResultRenderer {
     data class Hooks(
         val control:(UiRect,String,Boolean,()->Unit)->Unit,
@@ -17,43 +16,39 @@ object ArcadeResultRenderer {
         val exit:()->Unit
     )
 
-    fun render(
-        gui:GuiGraphics,
-        font:Font,
-        area:UiRect,
-        view:JsonObject,
-        hooks:Hooks,
-        backdrop:(UiRect)->Unit
-    ) {
-        val result=view.getAsJsonObject("resultPresentation") ?: return
+    fun render(gui:GuiGraphics,font:Font,area:UiRect,view:JsonObject,hooks:Hooks,backdrop:(UiRect)->Unit) {
+        val result=view.getAsJsonObject("resultPresentation")?:return
         val gameId=view.str("gameId","arcade")
         val accent=gameAccent(gameId)
-        val sceneHeight=(area.height*.58f).toInt().coerceIn(80,(area.height-92).coerceAtLeast(80))
-        val scene=UiRect(area.x,area.y,area.width,sceneHeight)
-        backdrop(scene)
+        gui.fill(area.x,area.y,area.right,area.bottom,0xFF050B0E.toInt())
 
-        // Common cinematic result layer. The live final scene remains visible behind it.
-        gui.fill(scene.x,scene.y,scene.right,scene.y+2,accent)
-        gui.fill(scene.x,scene.bottom-34,scene.right,scene.bottom,0xD90A1114.toInt())
+        val margin=6
+        val controlsH=27
+        val sceneHeight=(area.height*54/100).coerceIn(78,(area.height-108).coerceAtLeast(78))
+        val scene=UiRect(area.x+margin,area.y+margin,(area.width-margin*2).coerceAtLeast(80),sceneHeight)
+        gui.fill(scene.x,scene.y,scene.right,scene.bottom,0xFF081217.toInt())
+        backdrop(scene)
+        gui.fill(scene.x,scene.y,scene.right,scene.y+3,accent)
+        gui.fill(scene.x,scene.bottom-40,scene.right,scene.bottom,0xE4070E12.toInt())
+
         val outcome=result.str("outcome","complete")
         val outcomeText=trOr("gui.svhub.result."+outcome,outcome.replaceFirstChar(Char::uppercase))
-        gui.drawCenteredString(font,outcomeText,scene.x+scene.width/2,scene.bottom-28,if(outcome=="defeat")0xFFE36C5C.toInt() else 0xFFE2BE62.toInt())
+        gui.drawCenteredString(font,outcomeText,scene.x+scene.width/2,scene.bottom-32,if(outcome=="defeat")0xFFE36C5C.toInt() else 0xFFE2BE62.toInt())
         val reason=result.str("reason","complete")
-        gui.drawCenteredString(font,trOr("gui.svhub.result.reason."+reason,tr("gui.svhub.result.complete")),scene.x+scene.width/2,scene.bottom-15,0xFFF2F6F4.toInt())
+        gui.drawCenteredString(font,trOr("gui.svhub.result.reason."+reason,tr("gui.svhub.result.complete")),scene.x+scene.width/2,scene.bottom-18,0xFFF2F6F4.toInt())
 
-        val panelTop=scene.bottom+4
-        val controlsH=25
+        val panelTop=scene.bottom+6
         val panelBottom=area.bottom-controlsH-5
         val panelH=(panelBottom-panelTop).coerceAtLeast(44)
-        gui.fill(area.x,panelTop,area.right,panelBottom,0xF0111C20.toInt())
-
+        gui.fill(area.x+margin,panelTop,area.right-margin,panelBottom,0xF0101B1F.toInt())
         val gap=5
-        val columnW=((area.width-gap*4)/3).coerceAtLeast(70)
-        renderSection(gui,font,UiRect(area.x+gap,panelTop+5,columnW,panelH-10),tr("gui.svhub.result.stats"),result.getAsJsonArray("stats"),"metric",accent)
-        renderSection(gui,font,UiRect(area.x+gap*2+columnW,panelTop+5,columnW,panelH-10),tr("gui.svhub.result.rewards"),result.getAsJsonArray("rewards"),"reward",0xFFE2BE62.toInt())
-        renderSection(gui,font,UiRect(area.x+gap*3+columnW*2,panelTop+5,columnW,panelH-10),tr("gui.svhub.result.progress"),result.getAsJsonArray("progression"),"progress",0xFF4CC7B2.toInt())
+        val contentW=area.width-margin*2
+        val columnW=((contentW-gap*4)/3).coerceAtLeast(64)
+        renderSection(gui,font,UiRect(area.x+margin+gap,panelTop+5,columnW,panelH-10),tr("gui.svhub.result.stats"),result.getAsJsonArray("stats"),"metric",accent)
+        renderSection(gui,font,UiRect(area.x+margin+gap*2+columnW,panelTop+5,columnW,panelH-10),tr("gui.svhub.result.rewards"),result.getAsJsonArray("rewards"),"reward",0xFFE2BE62.toInt())
+        renderSection(gui,font,UiRect(area.x+margin+gap*3+columnW*2,panelTop+5,columnW,panelH-10),tr("gui.svhub.result.progress"),result.getAsJsonArray("progression"),"progress",0xFF4CC7B2.toInt())
 
-        val y=area.bottom-controlsH
+        val y=area.bottom-controlsH+2
         val buttonGap=4
         val buttonW=((area.width-buttonGap*4)/3).coerceAtLeast(52)
         hooks.control(UiRect(area.x+buttonGap,y,buttonW,20),tr("gui.svhub.result.continue"),true,hooks.continueAction)
@@ -62,16 +57,17 @@ object ArcadeResultRenderer {
     }
 
     private fun renderSection(gui:GuiGraphics,font:Font,rect:UiRect,title:String,lines:JsonArray?,kind:String,accent:Int){
-        gui.fill(rect.x,rect.y,rect.right,rect.bottom,0xD918272B.toInt())
+        gui.fill(rect.x,rect.y,rect.right,rect.bottom,0xE018272B.toInt())
         gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,accent)
+        gui.fill(rect.x,rect.y,rect.right,rect.y+1,accent)
         gui.drawString(font,title,rect.x+8,rect.y+6,0xFFF2F6F4.toInt(),true)
-        val entries=lines?.let { array -> (0 until array.size()).mapNotNull { runCatching { array[it].asJsonObject }.getOrNull() } }.orEmpty()
+        val entries=lines?.let{array->(0 until array.size()).mapNotNull{runCatching{array[it].asJsonObject}.getOrNull()}}.orEmpty()
         if(entries.isEmpty()){
             gui.drawString(font,tr("gui.svhub.result.none"),rect.x+8,rect.y+21,0xFF91A6A1.toInt(),false)
             return
         }
         var y=rect.y+21
-        entries.take(4).forEach { line ->
+        entries.take(4).forEach{line->
             val key=line.str("key")
             val value=line.str("value")
             val label=trOr("gui.svhub.result."+kind+"."+key,humanize(key))

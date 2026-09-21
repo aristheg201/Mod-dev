@@ -688,7 +688,8 @@ class NativePlatformScreen(
                     gui=gui,font=font,area=sceneArea,density=UiDensity.WIDE,view=view,ui=tftUi,mouseX=-10,mouseY=-10,
                     hooks=TftGameRenderer.Hooks(
                         control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={}
-                    )
+                    ),
+                    sceneOnly=true
                 )
                 NativeBoardSceneRenderer.supports(gameId) -> {
                     NativeBoardSceneRenderer.render(gui,font,sceneArea.inset(4),view,boardSceneUi,null)

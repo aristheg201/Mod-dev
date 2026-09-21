@@ -619,7 +619,8 @@ object VisualSmokeHarness {
                 when(scenario) {
                     "tft"->TftGameRenderer.render(
                         gui=gui,font=font,area=scene,density=UiDensity.WIDE,view=view,ui=tftUi,mouseX=-10,mouseY=-10,
-                        hooks=TftGameRenderer.Hooks(control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={})
+                        hooks=TftGameRenderer.Hooks(control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={}),
+                        sceneOnly=true
                     )
                     else->NativeBoardSceneRenderer.render(gui,font,scene.inset(4),view,boardUi,null)
                 }

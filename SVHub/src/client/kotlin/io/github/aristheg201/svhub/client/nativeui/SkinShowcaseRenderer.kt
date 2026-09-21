@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation
 import kotlin.math.max
 import kotlin.math.min
 
-/** Premium skin preview stage backed by real GUI art and the live Cobblemon resolver. */
+/** Premium skin preview stage with procedural art and the live Cobblemon resolver. */
 object SkinShowcaseRenderer {
     data class Skin(
         val id:String,
@@ -22,51 +22,69 @@ object SkinShowcaseRenderer {
         val owned:Boolean
     )
 
-    private val BACKGROUND=ResourceLocation.fromNamespaceAndPath("svhub","textures/gui/generated/home_bg.png")
-    private val FRAME=ResourceLocation.fromNamespaceAndPath("svhub","textures/gui/generated/pixel_frame.png")
-    private val SPARKLES=ResourceLocation.fromNamespaceAndPath("svhub","textures/gui/generated/sparkle_strip.png")
-
     fun render(gui:GuiGraphics,font:Font,rect:UiRect,skin:Skin):Boolean {
         if(rect.width<120||rect.height<84)return false
-        gui.fill(rect.x,rect.y,rect.right,rect.bottom,0xFF070C10.toInt())
-        gui.blit(BACKGROUND,rect.x,rect.y,rect.width,rect.height,0f,0f,512,288,512,288)
-
         val accent=rarityColor(skin.rarity)
-        val frameW=min(rect.width-18,max(96,rect.height*5/4))
-        val frameH=rect.height-18
+        val accentRgb=accent and 0x00FFFFFF
+        gui.fill(rect.x,rect.y,rect.right,rect.bottom,0xFF050A0E.toInt())
+        gui.fill(rect.x+2,rect.y+2,rect.right-2,rect.bottom-2,0xFF09151B.toInt())
+
+        repeat(6){index->
+            val inset=6+index*5
+            if(rect.width>inset*2&&rect.height>inset*2+24){
+                val alpha=(22-index*2).coerceAtLeast(8)
+                gui.fill(rect.x+inset,rect.y+inset,rect.right-inset,rect.bottom-26-inset/2,(alpha shl 24) or accentRgb)
+            }
+        }
+        val horizonY=rect.y+rect.height*58/100
+        gui.fill(rect.x+10,horizonY,rect.right-10,horizonY+1,(0x66 shl 24) or accentRgb)
+        gui.fill(rect.x+22,horizonY+5,rect.right-22,horizonY+6,(0x33 shl 24) or accentRgb)
+
+        val frameW=min(rect.width-20,max(104,rect.height*5/4))
+        val frameH=(rect.height-38).coerceAtLeast(48)
         val frameX=rect.x+(rect.width-frameW)/2
         val frameY=rect.y+7
-        gui.blit(FRAME,frameX,frameY,frameW,frameH,0f,0f,64,64,64,64)
+        gui.fill(frameX,frameY,frameX+frameW,frameY+2,accent)
+        gui.fill(frameX,frameY,frameX+2,frameY+frameH,accent)
+        gui.fill(frameX+frameW-2,frameY,frameX+frameW,frameY+frameH,accent)
+        gui.fill(frameX,frameY+frameH-2,frameX+frameW,frameY+frameH,accent)
+        val corner=7
+        gui.fill(frameX,frameY,frameX+corner,frameY+4,0xFFF2F6F4.toInt())
+        gui.fill(frameX+frameW-corner,frameY,frameX+frameW,frameY+4,0xFFF2F6F4.toInt())
+        gui.fill(frameX,frameY+frameH-4,frameX+corner,frameY+frameH,0xFFF2F6F4.toInt())
+        gui.fill(frameX+frameW-corner,frameY+frameH-4,frameX+frameW,frameY+frameH,0xFFF2F6F4.toInt())
 
-        // Animated authored sparkle texture plus a restrained spotlight/pedestal.
-        val sparkleOffset=((System.currentTimeMillis()/45L)%960L).toInt()
-        val sparkleW=min(rect.width-20,320)
-        gui.blit(SPARKLES,rect.x+(rect.width-sparkleW)/2,rect.y+5,sparkleW,20,sparkleOffset.toFloat(),0f,sparkleW,64,1024,64)
-        repeat(8){i->
-            val t=(System.currentTimeMillis()/55L+i*97L)%1000L
-            val px=rect.x+8+((t*(31+i*7))%(rect.width-16).coerceAtLeast(1)).toInt()
-            val py=rect.y+10+((t*(17+i*11))%(rect.height-34).coerceAtLeast(1)).toInt()
-            val a=(90+(i%3)*45).coerceAtMost(220)
-            gui.fill(px,py,px+2,py+2,(a shl 24) or (accent and 0x00FFFFFF))
+        val now=System.currentTimeMillis()
+        val seed=skin.id.hashCode()
+        repeat(12){i->
+            val spanX=(rect.width-28).coerceAtLeast(1)
+            val spanY=(frameH-22).coerceAtLeast(1)
+            val t=(now/45L+i*83L+seed.toLong()*17L)
+            val px=rect.x+14+Math.floorMod((t*(23+i*5)).toInt(),spanX)
+            val py=rect.y+10+Math.floorMod((t*(13+i*7)).toInt(),spanY)
+            val size=if(i%4==0)3 else 2
+            val alpha=if(i%3==0)0xCC else 0x88
+            gui.fill(px,py,px+size,py+size,(alpha shl 24) or accentRgb)
         }
 
-        val pedestalW=min(118,frameW-18).coerceAtLeast(54)
-        val pedestalY=rect.bottom-28
-        gui.fill(rect.x+rect.width/2-pedestalW/2,pedestalY,rect.x+rect.width/2+pedestalW/2,pedestalY+7,0xD018272B.toInt())
-        gui.fill(rect.x+rect.width/2-pedestalW/2+8,pedestalY+7,rect.x+rect.width/2+pedestalW/2-8,pedestalY+11,0xB00A1114.toInt())
-        gui.fill(rect.x+rect.width/2-pedestalW/2,pedestalY,rect.x+rect.width/2+pedestalW/2,pedestalY+2,accent)
+        val pedestalW=min(132,frameW-22).coerceAtLeast(62)
+        val pedestalX=rect.x+rect.width/2-pedestalW/2
+        val pedestalY=frameY+frameH-15
+        gui.fill(pedestalX,pedestalY,pedestalX+pedestalW,pedestalY+5,0xEE1A2A30.toInt())
+        gui.fill(pedestalX+8,pedestalY+5,pedestalX+pedestalW-8,pedestalY+10,0xD00A1114.toInt())
+        gui.fill(pedestalX,pedestalY,pedestalX+pedestalW,pedestalY+2,accent)
 
-        val modelRect=UiRect(frameX+12,frameY+12,(frameW-24).coerceAtLeast(32),(frameH-43).coerceAtLeast(38))
+        val modelRect=UiRect(frameX+10,frameY+8,(frameW-20).coerceAtLeast(34),(frameH-24).coerceAtLeast(36))
         val view=pokemonView(skin)
         val rendered=view!=null&&PokemonModelRenderer.renderPreview(gui,view,"skin-showcase:"+skin.id,modelRect)
-        if(!rendered) {
-            NativePixelArt.icon(gui,"skins",rect.x+rect.width/2-18,rect.y+rect.height/2-22,36,accent)
-        }
+        if(!rendered) NativePixelArt.icon(gui,"skins",rect.x+rect.width/2-18,rect.y+rect.height/2-22,36,accent)
 
+        gui.fill(rect.x+3,rect.bottom-25,rect.right-3,rect.bottom-3,0xE6070D11.toInt())
+        gui.fill(rect.x+3,rect.bottom-25,rect.right-3,rect.bottom-23,accent)
         val title=font.plainSubstrByWidth(skin.name,(rect.width-30).coerceAtLeast(40))
-        gui.drawCenteredString(font,title,rect.x+rect.width/2,rect.bottom-15,0xFFF2F6F4.toInt())
+        gui.drawCenteredString(font,title,rect.x+rect.width/2,rect.bottom-19,0xFFF2F6F4.toInt())
         val sub=(skin.rarity.ifBlank{"Skin"})+" • "+skin.source
-        gui.drawCenteredString(font,font.plainSubstrByWidth(sub,(rect.width-30).coerceAtLeast(40)),rect.x+rect.width/2,rect.bottom-6,accent)
+        gui.drawCenteredString(font,font.plainSubstrByWidth(sub,(rect.width-30).coerceAtLeast(40)),rect.x+rect.width/2,rect.bottom-9,accent)
         return rendered
     }
 

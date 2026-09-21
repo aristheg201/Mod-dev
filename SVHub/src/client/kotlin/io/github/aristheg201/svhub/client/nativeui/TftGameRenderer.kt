@@ -446,48 +446,65 @@ object TftGameRenderer {
         ui: TftUiState,
         mouseX: Int,
         mouseY: Int,
-        hooks: Hooks
+        hooks: Hooks,
+        sceneOnly: Boolean = false
     ) {
-        gui.fill(area.x, area.y, area.right, area.bottom, bg)
-        val fields = view.getAsJsonObject("fields") ?: JsonObject()
+        gui.fill(area.x,area.y,area.right,area.bottom,bg)
+        val fields=view.getAsJsonObject("fields")?:JsonObject()
         ui.beginFrame()
-        ui.updateCatalogs(fields.str("unitCatalog"), fields.str("traitCatalog"))
+        ui.updateCatalogs(fields.str("unitCatalog"),fields.str("traitCatalog"))
         ui.updateItems(fields.str("itemCatalog","{}"))
-        val phase = view.str("phase")
-        if (phase != "draft") { ui.carouselDestination = null; ui.carouselOffer = null; ui.carouselLastPosition = null }
-        val canEdit = fields.str("canEditBoard") == "true"
-        val capabilities = fields.str("capabilities").split(',').filter(String::isNotBlank).toSet()
-        val board = view.getAsJsonArray("board")
-        val boardTokens = if (board == null) emptyMap() else (0 until board.size()).mapNotNull { index ->
-            parseUnit(board[index].asString)?.let { index to it }
-        }.toMap()
-        val bench = parseBench(fields.str("bench"))
-        val players = parsePlayers(fields.str("players"))
-        val traits = parseTraits(fields.str("traits"))
-        val itemBench = fields.str("itemBench").split(',').filter(String::isNotBlank)
-        if (ui.selectedItem != null && (itemBench.getOrNull(ui.selectedItem!!) != ui.selectedItemIdentity || "CAN_EQUIP_ITEM" !in capabilities)) ui.clearItem()
-        val augments = parseAugments(fields.str("augmentChoices"))
-        val draft = parseDraft(fields.str("draft"))
+        val phase=view.str("phase")
+        if(phase!="draft"){ui.carouselDestination=null;ui.carouselOffer=null;ui.carouselLastPosition=null}
+        val canEdit=fields.str("canEditBoard")=="true"
+        val capabilities=fields.str("capabilities").split(',').filter(String::isNotBlank).toSet()
+        val board=view.getAsJsonArray("board")
+        val boardTokens=if(board==null)emptyMap() else (0 until board.size()).mapNotNull{index->parseUnit(board[index].asString)?.let{index to it}}.toMap()
+        val bench=parseBench(fields.str("bench"))
+        val players=parsePlayers(fields.str("players"))
+        val traits=parseTraits(fields.str("traits"))
+        val itemBench=fields.str("itemBench").split(',').filter(String::isNotBlank)
+        if(ui.selectedItem!=null&&(itemBench.getOrNull(ui.selectedItem!!)!=ui.selectedItemIdentity||"CAN_EQUIP_ITEM" !in capabilities))ui.clearItem()
+        val augments=parseAugments(fields.str("augmentChoices"))
+        val draft=parseDraft(fields.str("draft"))
+        val resolved=TftLayoutResolver.resolve(area,density)
+        val passive=Hooks(control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={})
 
-        val resolved = TftLayoutResolver.resolve(area, density)
-
-        if (phase == "draft" && draft.isNotEmpty()) {
-            renderCarouselScene(gui, font, resolved.board, draft, fields, ui, hooks, mouseX, mouseY, view.str("sessionId"), view.long("revision"))
-        } else {
-            renderBoard(gui, font, resolved.board, boardTokens, bench, itemBench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+        if(sceneOnly){
+            val stage=area.inset(if(area.width>=300)4 else 2)
+            if(phase=="draft"&&draft.isNotEmpty()) renderCarouselScene(gui,font,stage,draft,fields,ui,passive,mouseX,mouseY,view.str("sessionId"),view.long("revision"))
+            else renderBoard(gui,font,stage,boardTokens,bench,itemBench,fields,phase,false,ui,passive,mouseX,mouseY,view.str("sessionId"),false)
+            return
         }
-        renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
-        resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
-        resolved.players?.let { renderPlayers(gui, font, it, players, hooks) }
-        resolved.itemRail?.let { renderItemRail(gui, font, it, itemBench, capabilities, ui, hooks, mouseX, mouseY) }
-        renderAugmentHud(gui, font, resolved.board, fields, ui, mouseX, mouseY, hooks)
-        renderFooter(gui, font, resolved.footer, density, view, fields, bench, canEdit,
-            "CAN_BUY_UNIT" in capabilities, "CAN_SELL" in capabilities, ui, hooks, mouseX, mouseY)
 
-        if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
-        if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks, mouseX, mouseY)
-        if (ui.isItemDragging()) renderDraggedItem(gui, ui, itemBench, mouseX, mouseY)
-        ui.tooltip()?.let { renderHoverTooltip(gui, font, area, it, mouseX, mouseY) }
+        if(augments.isNotEmpty()){
+            val stage=area.inset(if(density==UiDensity.COMPACT)2 else 5)
+            renderBoard(gui,font,stage,boardTokens,bench,itemBench,fields,phase,false,ui,passive,mouseX,mouseY,view.str("sessionId"),false)
+            renderAugmentOverlay(gui,font,area,augments,hooks,mouseX,mouseY)
+            return
+        }
+
+        if(phase=="draft"&&draft.isNotEmpty()){
+            val header=UiRect(area.x,area.y,area.width,if(density==UiDensity.COMPACT)22 else 30)
+            gui.fill(header.x,header.y,header.right,header.bottom,panel)
+            gui.fill(header.x,header.bottom-2,header.right,header.bottom,gold)
+            hooks.control(UiRect(header.x+4,header.y+4,48,(header.height-8).coerceAtLeast(14)),"‹",true,hooks.back)
+            gui.drawCenteredString(font,fit(font,tr("gui.svhub.tft.shared_draft"),header.width-120),header.x+header.width/2,header.y+7,text)
+            val stage=UiRect(area.x+4,header.bottom+4,(area.width-8).coerceAtLeast(60),(area.bottom-header.bottom-8).coerceAtLeast(40))
+            renderCarouselScene(gui,font,stage,draft,fields,ui,hooks,mouseX,mouseY,view.str("sessionId"),view.long("revision"))
+            return
+        }
+
+        renderBoard(gui,font,resolved.board,boardTokens,bench,itemBench,fields,phase,canEdit,ui,hooks,mouseX,mouseY,view.str("sessionId"))
+        renderHud(gui,font,resolved.hud,fields,phase,view.str("status"),density,hooks,mouseX,mouseY)
+        resolved.traits?.let{renderTraits(gui,font,it,traits,mouseX,mouseY,ui)}
+        resolved.players?.let{renderPlayers(gui,font,it,players,hooks)}
+        resolved.itemRail?.let{renderItemRail(gui,font,it,itemBench,capabilities,ui,hooks,mouseX,mouseY)}
+        renderAugmentHud(gui,font,resolved.board,fields,ui,mouseX,mouseY,hooks)
+        renderFooter(gui,font,resolved.footer,density,view,fields,bench,canEdit,"CAN_BUY_UNIT" in capabilities,"CAN_SELL" in capabilities,ui,hooks,mouseX,mouseY)
+        if(density==UiDensity.COMPACT&&area.height>=150)renderCompactChips(gui,font,resolved.board,traits,players,ui,mouseX,mouseY)
+        if(ui.isItemDragging())renderDraggedItem(gui,ui,itemBench,mouseX,mouseY)
+        ui.tooltip()?.let{renderHoverTooltip(gui,font,area,it,mouseX,mouseY)}
     }
 
     private fun renderHud(gui: GuiGraphics, font: Font, area: UiRect, fields: JsonObject, phase: String, status: String, density: UiDensity, hooks: Hooks, mouseX: Int, mouseY: Int) {
@@ -572,7 +589,8 @@ object TftGameRenderer {
         hooks: Hooks,
         mouseX: Int,
         mouseY: Int,
-        arenaSeed: String
+        arenaSeed: String,
+        showBoardLabel: Boolean = true
     ) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, 0xFF0D171A.toInt())
         val columns = fields.int("boardColumns", 7).coerceIn(2, 12)
@@ -893,13 +911,15 @@ object TftGameRenderer {
             submitItemDrop(ui,tray,"board",index-formationCells,token.instanceId,hooks)
         }
 
-        gui.drawCenteredString(
-            font,
-            if (phase == "combat") tr("gui.svhub.tft.enemy_board") else tr("gui.svhub.tft.enemy_side"),
-            rect.x + rect.width / 2,
-            rect.y + 3,
-            muted
-        )
+        if(showBoardLabel) {
+            gui.drawCenteredString(
+                font,
+                if (phase == "combat") tr("gui.svhub.tft.enemy_board") else tr("gui.svhub.tft.enemy_side"),
+                rect.x + rect.width / 2,
+                rect.y + 3,
+                muted
+            )
+        }
     }
 
     private fun renderUnit(gui: GuiGraphics, font: Font, cell: UiRect, unit: UnitToken, clip: UiRect) {
@@ -1070,36 +1090,31 @@ object TftGameRenderer {
     }
 
     private fun renderAugmentOverlay(
-        gui:GuiGraphics,font:Font,board:UiRect,choices:List<AugmentChoice>,hooks:Hooks,mouseX:Int,mouseY:Int
+        gui:GuiGraphics,font:Font,area:UiRect,choices:List<AugmentChoice>,hooks:Hooks,mouseX:Int,mouseY:Int
     ) {
-        // Selection is its own presentation state: dim the live arena and place
-        // three large animated cards in the foreground.
-        gui.fill(board.x,board.y,board.right,board.bottom,0xB8000000.toInt())
-        val width=min(board.width-20,540).coerceAtLeast(180)
-        val height=min(board.height-18,176).coerceAtLeast(96)
-        val root=UiRect(board.x+(board.width-width)/2,board.y+(board.height-height)/2,width,height)
-        gui.fill(root.x,root.y,root.right,root.bottom,0xED0A1114.toInt())
+        gui.fill(area.x,area.y,area.right,area.bottom,0xD4000000.toInt())
+        val width=min(area.width-24,720).coerceAtLeast(190)
+        val height=min(area.height-24,286).coerceAtLeast(118)
+        val root=UiRect(area.x+(area.width-width)/2,area.y+(area.height-height)/2,width,height)
+        gui.fill(root.x,root.y,root.right,root.bottom,0xF2071014.toInt())
         gui.fill(root.x,root.y,root.right,root.y+3,gold)
-        gui.drawCenteredString(font,tr("gui.svhub.tft.choose_augment"),root.x+root.width/2,root.y+9,text)
-
+        gui.drawCenteredString(font,tr("gui.svhub.tft.choose_augment"),root.x+root.width/2,root.y+11,text)
         val visible=choices.take(3)
-        val gap=7
-        val cardW=((root.width-16-gap*(visible.size-1))/visible.size.coerceAtLeast(1)).coerceAtLeast(48)
-        val pulse=((kotlin.math.sin(System.nanoTime()/350_000_000.0)+1.0)*18).toInt()
-        visible.forEachIndexed { index,choice ->
-            val base=UiRect(root.x+8+index*(cardW+gap),root.y+28,cardW,root.height-37)
+        val gap=9
+        val cardW=((root.width-22-gap*(visible.size-1))/visible.size.coerceAtLeast(1)).coerceAtLeast(52)
+        val cardTop=root.y+31
+        val cardH=(root.bottom-cardTop-9).coerceAtLeast(72)
+        visible.forEachIndexed{index,choice->
+            val base=UiRect(root.x+11+index*(cardW+gap),cardTop,cardW,cardH)
             val hovered=base.contains(mouseX.toDouble(),mouseY.toDouble())
-            val rect=if(hovered)UiRect(base.x-2,base.y-3,base.width+4,base.height+3) else base
-            val edge=if(hovered)0xFFEBD57A.toInt() else 0xFF4CC7B2.toInt()
-            gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(hovered)0xFF213238.toInt() else panel2)
-            gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,edge)
-            gui.fill(rect.x,rect.y,rect.right,rect.y+2,(0xC0+pulse.coerceAtMost(0x3F) shl 24) or (edge and 0x00FFFFFF))
-            val runeY=rect.y+10
-            NativePixelArt.icon(gui,"tft",rect.x+rect.width/2-10,runeY,20,edge)
-            gui.drawCenteredString(font,fit(font,choice.name,rect.width-10),rect.x+rect.width/2,rect.y+35,gold)
-            drawWrapped(gui,font,choice.description,rect.x+7,rect.y+50,rect.width-14,5,muted)
-            gui.drawCenteredString(font,tr("gui.svhub.tft.augment.confirm"),rect.x+rect.width/2,rect.bottom-13,if(hovered)gold else muted)
-            hooks.hit(rect){hooks.action("choose_augment",mapOf("id" to choice.id))}
+            val edge=if(hovered)0xFFEBD57A.toInt() else accent
+            gui.fill(base.x,base.y,base.right,base.bottom,if(hovered)0xFF213238.toInt() else panel2)
+            gui.fill(base.x,base.y,base.x+3,base.bottom,edge)
+            NativePixelArt.icon(gui,"tft",base.x+base.width/2-11,base.y+10,22,edge)
+            gui.drawCenteredString(font,fit(font,choice.name,base.width-12),base.x+base.width/2,base.y+39,gold)
+            drawWrapped(gui,font,choice.description,base.x+8,base.y+55,base.width-16,6,muted)
+            gui.drawCenteredString(font,tr("gui.svhub.tft.augment.confirm"),base.x+base.width/2,base.bottom-14,if(hovered)gold else text)
+            hooks.hit(base){hooks.action("choose_augment",mapOf("id" to choice.id))}
         }
     }
 
