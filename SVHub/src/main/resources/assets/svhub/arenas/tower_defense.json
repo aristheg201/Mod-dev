@@ -70,5 +70,25 @@
       "y": 6.9,
       "scale": 0.95
     }
-  ]
+  ],
+  "metadata": {
+    "boardColumns": 12,
+    "boardRows": 8,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "cellSize": [
+      1,
+      1,
+      1
+    ],
+    "arenaBounds": [
+      -1,
+      -1,
+      12,
+      8
+    ]
+  }
 }

@@ -177,6 +177,23 @@ data class MinecraftArenaDefinition(
             }
         }
     }
+    /**
+     * Legacy non-TFT arenas predate authoritative board metadata. Their bundled
+     * definitions used the generic 7x8 defaults, while the live games expose
+     * different logical sizes (Chess 8x8, Xiangqi 9x10, TD data-defined).
+     *
+     * If an arena does not author explicit per-cell anchors, the game view owns
+     * the logical board dimensions. This keeps mesh generation, projection and
+     * picking on the exact same grid. Authored-path arenas such as Ludo retain
+     * their own anchor topology.
+     */
+    fun forBoardDimensions(columns:Int,rows:Int):MinecraftArenaDefinition {
+        val cols=columns.coerceIn(2,16)
+        val rowsSafe=rows.coerceIn(2,16)
+        if(boardAnchors.isNotEmpty() || (boardColumns==cols && boardRows==rowsSafe)) return this
+        return copy(boardColumns=cols,boardRows=rowsSafe)
+    }
+
     fun boardAnchor(index:Int):ArenaPoint = boardAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+(index%boardColumns)*cellSize.x,boardOrigin.y+(index/boardColumns)*cellSize.y,boardOrigin.z)
     fun benchAnchor(index:Int):ArenaPoint = benchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.75f,boardOrigin.y+boardRows+.8f,boardOrigin.z)
     fun itemAnchor(index:Int):ArenaPoint = itemBenchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.6f,boardOrigin.y+boardRows+1.6f,boardOrigin.z)

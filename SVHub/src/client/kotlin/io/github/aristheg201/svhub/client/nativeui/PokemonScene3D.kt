@@ -226,7 +226,7 @@ object PokemonScene3D {
         showUnitOverlays: Boolean = true
     ): PokemonSceneFrame {
         val metrics=SceneProjection.resolve(area,columns,rows + extraRows.coerceIn(0, 4),camera)
-        val arena = arenaId?.let(MinecraftArenaRegistry::definition)
+        val arena = arenaId?.let(MinecraftArenaRegistry::definition)?.forBoardDimensions(columns,rows)
         val baseLayout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight,metrics.perspective)
         val layout=if(arena != null) baseLayout.copy(boardSurface=MinecraftArenaRenderer.compiledScene(baseLayout,arena).scene.interactions.first { it.id == "board" }) else baseLayout
         val activeIds=entities.mapTo(linkedSetOf()){it.id}
