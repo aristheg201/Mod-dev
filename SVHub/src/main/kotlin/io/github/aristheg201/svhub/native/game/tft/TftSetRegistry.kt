@@ -29,25 +29,8 @@ object TftSetRegistry {
         overrideFile = override
         val bundled = bundled("kanto_rising")
         val usingOverride = Files.isRegularFile(override)
-        val loaded = if (usingOverride) {
-            try {
-                Files.newBufferedReader(override, Charsets.UTF_8).use { reader ->
-                    TftDefinitionValidator.validate(decodeSet(reader, override.toString()))
-                }
-            } catch (error: Exception) {
-                logger.error("Invalid TFT override {}; keeping the file unchanged and loading the bundled set", override, error)
-                bundled
-            }
-        } else bundled
+        val loaded = if (usingOverride) loadOverrideOrBundled(override, bundled) else bundled
         current = loaded
-        if (usingOverride && loaded.id == bundled.id && contentShape(loaded) != contentShape(bundled)) {
-            logger.warn(
-                "TFT active-set override {} masks bundled content: override={} bundled={}. Remove or update the override to use the new roster/traits/augments.",
-                override,
-                contentShape(loaded),
-                contentShape(bundled)
-            )
-        }
         logger.info(
             "Loaded TFT set {} from {}: {} units, {} traits, {} augments, {} components, {} recipes",
             loaded.id,
@@ -66,10 +49,9 @@ object TftSetRegistry {
     /** Parse, resolve, validate and only then atomically publish. Existing sessions retain their pinned set object. */
     @Synchronized
     fun reload(): Result<TftSetDefinition> = runCatching {
+        val bundled = bundled("kanto_rising")
         val path = overrideFile
-        val candidate = if (path != null && Files.isRegularFile(path)) {
-            Files.newBufferedReader(path, Charsets.UTF_8).use { TftDefinitionValidator.validate(decodeSet(it, path.toString())) }
-        } else bundled("kanto_rising")
+        val candidate = if (path != null && Files.isRegularFile(path)) loadOverrideOrBundled(path, bundled) else bundled
         current = candidate
         logger.info("Reloaded TFT set {}: {} units, {} traits, {} augments", candidate.id, candidate.units.size, candidate.traits.size, candidate.augments.size)
         candidate
@@ -127,8 +109,26 @@ object TftSetRegistry {
         }
     }
 
+    private fun loadOverrideOrBundled(path: Path, bundled: TftSetDefinition): TftSetDefinition = try {
+        val candidate = Files.newBufferedReader(path, Charsets.UTF_8).use { reader ->
+            TftDefinitionValidator.validate(decodeSet(reader, path.toString()))
+        }
+        if (candidate.id == bundled.id && contentShape(candidate) != contentShape(bundled)) {
+            logger.warn(
+                "Ignoring stale built-in TFT override {}: override={} bundled={}. The file is preserved; use a distinct set id for intentional custom rosters.",
+                path,
+                contentShape(candidate),
+                contentShape(bundled)
+            )
+            bundled
+        } else candidate
+    } catch (error: Exception) {
+        logger.error("Invalid TFT override {}; keeping the file unchanged and loading the bundled set", path, error)
+        bundled
+    }
+
     private fun contentShape(set: TftSetDefinition): String =
-        "units=${set.units.size},traits=${set.traits.size},augments=${set.augments.size},teams=${set.teams.size},items=${set.fullItems.size}"
+        "units=${set.units.size},traits=${set.traits.size},augments=${set.augments.size},teams=${set.teams.size},pve=${set.pveRounds.size},items=${set.fullItems.size}"
 
     private fun <T> resourceList(path: String, token: TypeToken<List<T>>): List<T> = open(path).use { reader ->
         val json = readJson(reader, path)
