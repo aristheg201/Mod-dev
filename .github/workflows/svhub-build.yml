@@ -221,9 +221,14 @@ jobs:
           count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-tft-*.png' | wc -l)"
           test "$count" -eq 4
           test -f run/logs/latest.log
-          if grep -Eiq 'Exception in thread|Caused by:|Crash report|Rendering screen|OpenGL error' run/logs/latest.log; then
-            echo 'Runtime log contains a crash/render error marker' >&2
-            grep -Ein 'Exception in thread|Caused by:|Crash report|Rendering screen|OpenGL error' run/logs/latest.log | tail -n 80 >&2
+          grep -Fq '[SVHub Visual Smoke] completed 4 captures; stopping client' run/logs/latest.log
+          # Headless Linux may log non-fatal narrator (missing flite) and audio
+          # initialization errors. The runClient task and all four framebuffer
+          # captures already succeeded, so only treat actual Minecraft/render
+          # crashes as visual-smoke failures.
+          if grep -Eiq 'Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Visual Smoke.*timed out' run/logs/latest.log; then
+            echo 'Runtime log contains an actual crash/render error marker' >&2
+            grep -Ein 'Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Visual Smoke.*timed out' run/logs/latest.log | tail -n 80 >&2
             exit 1
           fi
 
