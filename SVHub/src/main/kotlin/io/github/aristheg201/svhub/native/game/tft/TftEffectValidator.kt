@@ -2,9 +2,24 @@ package io.github.aristheg201.svhub.native.game.tft
 
 import io.github.aristheg201.svhub.engine.*
 
-/** Validates every graph before a definition can become visible to a match. */
+/** Validates every graph and scheduled runtime reference before a definition can become visible to a match. */
 internal object TftEffectValidator {
     fun validate(set: TftSetDefinition) {
+        val encounterIds = set.pveRounds.map { it.round }.toSet()
+        set.roundSchedule.forEach { round ->
+            when (round.type) {
+                "pve", "boss" -> {
+                    val reference = round.pve ?: round.label
+                    require(reference in encounterIds) {
+                        "round ${round.label}: ${round.type} encounter is not authored: $reference"
+                    }
+                }
+                else -> require(round.pve == null) {
+                    "round ${round.label}: only pve/boss rounds may reference a PvE encounter"
+                }
+            }
+        }
+
         val runtime = BattleRuntime(BattleBoard(1, 1, false, emptySet()),
             BattleRuntime.Limits(12, 4096, 1024, 2048, 128), 0L,
             { _, _, _, _, _ -> error("Validation cannot spawn units") }, set.effectGraphs)
