@@ -39,6 +39,7 @@ object EmbeddedSceneRenderer {
     private var target: TextureTarget? = null
     @Volatile private var invalidated=false
     private val buffers by lazy { MultiBufferSource.immediate(ByteBufferBuilder(1024 * 1024)) }
+    private val itemBuffers by lazy { MultiBufferSource.immediate(ByteBufferBuilder(256 * 1024)) }
     fun invalidate() { invalidated=true }
 
     fun clear() {
@@ -172,7 +173,8 @@ object EmbeddedSceneRenderer {
             ItemAsset(stack,client.itemRenderer.getModel(stack,null,null,0))
         } ?: return
         poses.mulPose(Axis.XP.rotationDegrees(90f))
-        client.itemRenderer.render(asset.stack,ItemDisplayContext.GROUND,false,poses,buffers,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,asset.model)
+        client.itemRenderer.render(asset.stack,ItemDisplayContext.GROUND,false,poses,itemBuffers,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,asset.model)
+        itemBuffers.endBatch()
     }
 
     /**
