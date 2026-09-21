@@ -312,6 +312,7 @@ object PokemonScene3D {
         val renderedActors=hashSetOf<String>()
         if (embedded) {
             EmbeddedSceneRenderer.render(gui,layout,arena) { poses,buffers ->
+                EmbeddedSceneRenderer.renderBoardGrid(poses,arena)
                 EmbeddedSceneRenderer.renderCells(poses,arena,legalCells,0x454cc7b2)
                 EmbeddedSceneRenderer.renderCells(poses,arena,selectedCells,0x99e2be62.toInt())
                 positioned.forEach { (entity,logical,_) ->

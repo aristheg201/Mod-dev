@@ -175,6 +175,44 @@ object EmbeddedSceneRenderer {
         client.itemRenderer.render(asset.stack,ItemDisplayContext.GROUND,false,poses,buffers,LightTexture.FULL_BRIGHT,OverlayTexture.NO_OVERLAY,asset.model)
     }
 
+    /**
+     * Persistent logical-cell grid for textured TFT battlefields.
+     * The grid uses the exact same board anchors/cellSize as actors and picking,
+     * so a Pokemon standing on an anchor is visibly centered in its cell.
+     */
+    fun renderBoardGrid(poses:PoseStack,theme:MinecraftArenaDefinition) {
+        if(!theme.texturedBattlefield) return
+        RenderSystem.enableBlend();RenderSystem.defaultBlendFunc()
+        RenderSystem.depthMask(false)
+        try {
+            RenderSystem.setShader(GameRenderer::getPositionColorShader)
+            val builder=Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,DefaultVertexFormat.POSITION_COLOR)
+            val matrix=poses.last().pose()
+            val color=(0x66 shl 24) or (theme.gridColor and 0x00FFFFFF)
+            val halfLine=(minOf(theme.cellSize.x,theme.cellSize.y)*.018f).coerceIn(.008f,.022f)
+            val dx=theme.cellSize.x*.49f
+            val dy=theme.cellSize.y*.49f
+            val z=theme.boardOrigin.z+.014f
+            repeat(theme.boardColumns*theme.boardRows) { index ->
+                val p=theme.boardAnchor(index)
+                fun quad(x0:Float,y0:Float,x1:Float,y1:Float) {
+                    builder.addVertex(matrix,x0,y0,z).setColor(color)
+                    builder.addVertex(matrix,x1,y0,z).setColor(color)
+                    builder.addVertex(matrix,x1,y1,z).setColor(color)
+                    builder.addVertex(matrix,x0,y1,z).setColor(color)
+                }
+                quad(p.x-dx,p.y-dy-halfLine,p.x+dx,p.y-dy+halfLine)
+                quad(p.x-dx,p.y+dy-halfLine,p.x+dx,p.y+dy+halfLine)
+                quad(p.x-dx-halfLine,p.y-dy,p.x-dx+halfLine,p.y+dy)
+                quad(p.x+dx-halfLine,p.y-dy,p.x+dx+halfLine,p.y+dy)
+            }
+            BufferUploader.drawWithShader(builder.buildOrThrow())
+        } finally {
+            RenderSystem.depthMask(true)
+            RenderSystem.disableBlend()
+        }
+    }
+
     /** Board highlights share scene depth, so they cannot paint over an actor. */
     fun renderCells(poses:PoseStack,theme:MinecraftArenaDefinition,cells:Set<Int>,color:Int) {
         if(cells.isEmpty()) return

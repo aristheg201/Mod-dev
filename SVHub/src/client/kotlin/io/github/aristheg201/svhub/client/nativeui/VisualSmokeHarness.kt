@@ -1,5 +1,8 @@
 package io.github.aristheg201.svhub.client.nativeui
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
+import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameraFraming
 import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.SceneVec3
@@ -10,13 +13,13 @@ import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 
 /**
  * Headless/CI visual smoke harness for the embedded TFT scene.
  *
- * This never inserts blocks/entities into ClientLevel. It opens a normal Screen,
- * renders the same retained SVHub scene path used by TFT, captures the main
- * framebuffer, then exits the client so GitHub Actions can inspect the images.
+ * The smoke scene intentionally contains real Cobblemon actors on both board and
+ * bench. A screenshot without resolved actors is a failed smoke test, not a pass.
  */
 object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
@@ -69,15 +72,24 @@ object VisualSmokeHarness {
         }
 
         stableTicks++
-        if (!capturedCurrent && stableTicks >= 30) {
+        val resolvedActors = PokemonModelRenderer.sceneSizingDiagnostics()
+            .count { it.instanceId.startsWith("visual:$arenaId:") }
+        if (!capturedCurrent && stableTicks >= 70 && resolvedActors >= active.expectedActors) {
             capturedCurrent = true
             val fileName = "svhub-tft-$arenaId.png"
             Screenshot.grab(client.gameDirectory, fileName, client.mainRenderTarget) { message ->
-                System.out.println("[SVHub Visual Smoke] captured $fileName :: ${message.string}")
+                System.out.println("[SVHub Visual Smoke] captured $fileName with $resolvedActors actors :: ${message.string}")
             }
         }
 
-        if (capturedCurrent && stableTicks >= 50) {
+        if (!capturedCurrent && stableTicks > 240) {
+            throw IllegalStateException(
+                "SVHub visual smoke timed out waiting for Cobblemon actors in $arenaId: " +
+                    "$resolvedActors/${active.expectedActors} resolved"
+            )
+        }
+
+        if (capturedCurrent && stableTicks >= 95) {
             arenaIndex++
             stableTicks = 0
             capturedCurrent = false
@@ -86,6 +98,8 @@ object VisualSmokeHarness {
 
     private class ArenaVisualSmokeScreen(val arenaId: String) : Screen(Component.literal("SVHub Visual Smoke")) {
         private val scene = PokemonSceneState()
+        private var cachedEntities: List<PokemonSceneEntity>? = null
+        val expectedActors get() = cachedEntities?.size ?: 0
 
         override fun isPauseScreen(): Boolean = false
 
@@ -97,6 +111,8 @@ object VisualSmokeHarness {
                 return
             }
 
+            val entities = cachedEntities ?: smokeEntities(arena).also { cachedEntities = it }
+            gui.fill(0, 0, width, height, arena.backgroundColor)
             val area = UiRect(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
             val authored = arena.camera(ArenaCameraRole.PREPARATION, SceneCameras.TFT)
             val framed = SceneCameraFraming.board(
@@ -115,15 +131,92 @@ object VisualSmokeHarness {
                 area = area,
                 columns = arena.boardColumns,
                 rows = arena.boardRows,
-                entities = emptyList(),
+                entities = entities,
                 state = scene,
+                teamSplitRow = arena.boardRows / 2,
                 camera = framed,
                 arenaId = arenaId,
                 arenaSeed = "visual-smoke:$arenaId"
             )
 
-            gui.fill(6, 6, 178, 23, 0xB0000000.toInt())
-            gui.drawString(font, "SVHub TFT · $arenaId", 11, 11, 0xFFFFFFFF.toInt(), true)
+            gui.fill(6, 6, 250, 25, 0xC0000000.toInt())
+            gui.drawString(
+                font,
+                "SVHub TFT · $arenaId · actors ${PokemonModelRenderer.sceneSizingDiagnostics().count { it.instanceId.startsWith("visual:$arenaId:") }}/${entities.size}",
+                11,
+                11,
+                0xFFFFFFFF.toInt(),
+                true
+            )
+        }
+
+        private fun smokeEntities(arena: MinecraftArenaDefinition): List<PokemonSceneEntity> {
+            val boardSpecies = listOf(
+                "cobblemon:bulbasaur",
+                "cobblemon:pikachu",
+                "cobblemon:gengar",
+                "cobblemon:machamp",
+                "cobblemon:charmander",
+                "cobblemon:snorlax",
+                "cobblemon:onix",
+                "cobblemon:vaporeon"
+            )
+            val rows = listOf(1, 1, 2, 2, arena.boardRows - 3, arena.boardRows - 3, arena.boardRows - 2, arena.boardRows - 2)
+            val cols = listOf(1, arena.boardColumns - 2, 2, arena.boardColumns - 3, 1, arena.boardColumns - 2, 2, arena.boardColumns - 3)
+            val board = boardSpecies.mapIndexedNotNull { index, speciesId ->
+                val cell = rows[index].coerceIn(0, arena.boardRows - 1) * arena.boardColumns +
+                    cols[index].coerceIn(0, arena.boardColumns - 1)
+                val anchor = arena.boardAnchor(cell)
+                val view = pokemonView(speciesId) ?: return@mapIndexedNotNull null
+                val team = if (cell / arena.boardColumns < arena.boardRows / 2) 1 else 0
+                PokemonSceneEntity(
+                    id = "visual:$arenaId:board:$index",
+                    view = view,
+                    label = view.displayName,
+                    boardX = anchor.x,
+                    boardY = anchor.y,
+                    elevation = anchor.z,
+                    team = team,
+                    yaw = if (team == 0) 180f else 0f,
+                    hp = 82,
+                    maxHp = 100,
+                    mana = 38,
+                    maxMana = 100,
+                    star = if (index == 1 || index == 5) 3 else 1
+                )
+            }
+
+            val benchSpecies = listOf("cobblemon:eevee", "cobblemon:lucario", "cobblemon:charizard", "cobblemon:lapras")
+            val bench = benchSpecies.mapIndexedNotNull { index, speciesId ->
+                val anchor = arena.benchAnchor(index + 2)
+                val view = pokemonView(speciesId) ?: return@mapIndexedNotNull null
+                PokemonSceneEntity(
+                    id = "visual:$arenaId:bench:$index",
+                    view = view,
+                    label = view.displayName,
+                    boardX = anchor.x,
+                    boardY = anchor.y,
+                    elevation = anchor.z,
+                    yaw = 180f,
+                    scale = .65f,
+                    star = 1
+                )
+            }
+            return board + bench
+        }
+
+        private fun pokemonView(speciesId: String): PokemonView? {
+            val id = ResourceLocation.tryParse(speciesId) ?: return null
+            val species = PokemonSpecies.getByIdentifier(id) ?: return null
+            return PokemonView(
+                key = speciesId,
+                route = "",
+                speciesId = speciesId,
+                aspects = emptySet(),
+                displayName = species.translatedName.string,
+                dexNumber = species.nationalPokedexNumber,
+                fakemon = false
+            )
         }
     }
 }
