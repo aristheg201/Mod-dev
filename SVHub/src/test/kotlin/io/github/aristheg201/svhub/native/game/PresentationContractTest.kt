@@ -51,9 +51,11 @@ class PresentationContractTest {
         assertTrue(towerParts.size >= 5, "Expected tower:<type>:<level>:<fireSerial>:<targetEnemyId>")
         assertTrue(towerParts[3].toLong() > 0L)
         assertTrue(towerParts[4].toInt() > 0)
-        val token = view.board.firstOrNull { it.startsWith("enemy:") }
+        val token = view.board.asSequence()
+            .flatMap { it.split(',').asSequence() }
+            .firstOrNull { it.startsWith("enemy:") }
         assertTrue(token != null, "Expected at least one spawned enemy token")
-        val parts = token!!.substringBefore(',').split(':')
+        val parts = token!!.split(':')
         assertTrue(parts.size >= 6, "Expected enemy:<id>:<kind>:<hp>:<maxHp>:<progress>")
         assertTrue(parts[1].toIntOrNull() != null)
         val hp = parts[3].toInt()

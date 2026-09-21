@@ -25,7 +25,9 @@ class TftOverrideCompatibilityTest {
         assertEquals(bundled.augments.size, TftSetRegistry.active().augments.size)
         assertEquals(bundled.units.size, TftSetRegistry.active().units.size)
         assertTrue(Files.readString(path).contains("stale_extra_augment"), "The user's stale file must remain untouched")
-        assertEquals(bundled.augments.size, TftSetRegistry.reload().getOrThrow().augments.size)
+        val publishedBeforeReload = TftSetRegistry.active()
+        assertTrue(TftSetRegistry.reload().isFailure, "Live reload must reject a stale built-in override")
+        assertTrue(publishedBeforeReload === TftSetRegistry.active(), "Rejected live reload must retain the published snapshot")
     }
 
     @Test
