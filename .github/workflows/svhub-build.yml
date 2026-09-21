@@ -198,6 +198,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri
 
+      - name: Download Minecraft client assets
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+        run: gradle --no-daemon downloadAssets
+
       - name: Boot Minecraft and capture TFT scenes
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         env:
