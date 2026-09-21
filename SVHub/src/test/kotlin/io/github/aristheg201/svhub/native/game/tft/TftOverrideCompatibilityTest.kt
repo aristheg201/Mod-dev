@@ -25,6 +25,7 @@ class TftOverrideCompatibilityTest {
         assertEquals(bundled.augments.size, TftSetRegistry.active().augments.size)
         assertEquals(bundled.units.size, TftSetRegistry.active().units.size)
         assertTrue(Files.readString(path).contains("stale_extra_augment"), "The user's stale file must remain untouched")
+        assertEquals(bundled.augments.size, TftSetRegistry.reload().getOrThrow().augments.size)
     }
 
     @Test
@@ -43,6 +44,7 @@ class TftOverrideCompatibilityTest {
 
         assertEquals("custom_roster", TftSetRegistry.active().id)
         assertEquals(bundled.augments.size + 1, TftSetRegistry.active().augments.size)
+        assertEquals("custom_roster", TftSetRegistry.reload().getOrThrow().id)
     }
 
     private fun inTempDirectory(block: (Path) -> Unit) {
