@@ -26,7 +26,7 @@ class TftSetRegistryTest {
         assertEquals(8, set.components.size)
         assertEquals(36, set.fullItems.size)
         assertEquals(32, set.augments.size)
-        assertEquals(7, set.pveRounds.size)
+        assertEquals(9, set.pveRounds.size)
         assertEquals((2..10).toSet(), set.shopOdds.map { it.level }.toSet())
         assertTrue(set.units.any { it.id == "ho_oh" })
         val actual = set.fullItems.map { it.components.sorted() }.toSet()
@@ -66,7 +66,7 @@ class TftSetRegistryTest {
         val origin = TftSetRegistry::class.java.protectionDomain.codeSource.location
         assertTrue(origin.path.substringAfterLast('/').startsWith("SVHub-fabric-"), origin.toString())
         assertTrue(origin.path.endsWith(".jar"), origin.toString())
-        for (name in listOf("set", "units", "teams", "traits", "components", "full_items", "augments", "pve")) {
+        for (name in listOf("set", "units", "teams", "traits", "components", "full_items", "augments", "pve", "bosses")) {
             val url = assertNotNull(TftSetRegistry::class.java.getResource("/data/svhub/tft/sets/kanto_rising/$name.json"))
             assertEquals("jar", url.protocol)
             assertEquals(origin, (url.openConnection() as JarURLConnection).jarFileURL)
