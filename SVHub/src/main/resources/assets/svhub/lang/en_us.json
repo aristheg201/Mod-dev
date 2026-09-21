@@ -137,7 +137,7 @@
   "message.svhub.profile_loading": "SVHub is loading your collection.",
   "gui.svhub.profile.loading": "Your collection is still loading.",
   "gui.svhub.error.no_action": "No action is available here.",
-  "gui.svhub.error.invalid_module": "Invalid module.",
+  "gui.svhub.error.invalid_module": "That section is unavailable.",
   "gui.svhub.error.invalid_action": "Invalid action.",
   "gui.svhub.companion.selected": "Companion selected.",
   "gui.svhub.companion.invalid": "Invalid companion.",

@@ -50,6 +50,37 @@ for (const locale of ["en_us", "vi_vn"]) {
   if (missing.length) failures.push(`${locale}: missing ${missing.join(", ")}`);
   else console.log(`${locale}: ${translationKeys.length}/${translationKeys.length} native UI translation calls covered`);
 }
+
+// Player-facing strings must describe the game, never the implementation.
+// Keep this list deliberately value-only: technical localization keys may retain
+// stable ids while anything the player can read is rejected at build time.
+const playerFacingTechnicalBanlist = [
+  "server authoritative",
+  "authoritative server",
+  "backend",
+  "runtime",
+  "provider",
+  "snapshot",
+  "replication",
+  "capability",
+  "definition",
+  "fallback",
+  "module",
+  "session",
+  "worker"
+];
+for (const locale of ["en_us", "vi_vn"]) {
+  const file = path.join(root, `src/main/resources/assets/svhub/lang/${locale}.json`);
+  const lang = JSON.parse(fs.readFileSync(file, "utf8"));
+  for (const [key, value] of Object.entries(lang)) {
+    const rendered = String(value).toLowerCase();
+    for (const forbidden of playerFacingTechnicalBanlist) {
+      if (rendered.includes(forbidden)) {
+        failures.push(`${locale}:${key}: player-facing text contains banned technical term "${forbidden}"`);
+      }
+    }
+  }
+}
 const properties = fs.readFileSync(path.join(root, "gradle.properties"), "utf8");
 const metadata = fs.readFileSync(path.join(root, "src/main/resources/fabric.mod.json"), "utf8");
 if (!/^mod_version=0\.4\.5\s*$/m.test(properties)) failures.push("gradle.properties: expected mod_version=0.4.5");

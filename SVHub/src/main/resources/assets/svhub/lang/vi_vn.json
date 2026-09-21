@@ -137,7 +137,7 @@
   "message.svhub.profile_loading": "SVHub đang tải bộ sưu tập của bạn.",
   "gui.svhub.profile.loading": "Bộ sưu tập vẫn đang tải.",
   "gui.svhub.error.no_action": "Không có thao tác ở đây.",
-  "gui.svhub.error.invalid_module": "Module không hợp lệ.",
+  "gui.svhub.error.invalid_module": "Mục này không khả dụng.",
   "gui.svhub.error.invalid_action": "Thao tác không hợp lệ.",
   "gui.svhub.companion.selected": "Đã chọn Linh Thú.",
   "gui.svhub.companion.invalid": "Linh Thú không hợp lệ.",
