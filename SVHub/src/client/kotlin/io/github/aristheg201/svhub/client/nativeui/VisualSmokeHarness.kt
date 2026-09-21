@@ -30,6 +30,7 @@ object VisualSmokeHarness {
     private const val EXPECTED_ACTORS = 12
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium")
     private val uiScenarios = listOf("planning", "pve")
+    private val resultScenarios = listOf("chess", "tower_defense", "tft")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
         "cobblemon:charmander", "cobblemon:snorlax", "cobblemon:onix", "cobblemon:vaporeon",
@@ -40,6 +41,7 @@ object VisualSmokeHarness {
     private var enabled = false
     private var arenaIndex = 0
     private var uiScenarioIndex = 0
+    private var resultScenarioIndex = 0
     private var stableTicks = 0
     private var bootTicks = 0
     private var finalWaitTicks = 0
@@ -124,13 +126,7 @@ object VisualSmokeHarness {
 
     private fun tickUiScenario(client: Minecraft) {
         if (uiScenarioIndex >= uiScenarios.size) {
-            finalWaitTicks++
-            if (finalWaitTicks >= 40) {
-                val total = arenas.size + uiScenarios.size
-                System.out.println("[SVHub Visual Smoke] completed " + total + " captures; stopping client")
-                enabled = false
-                client.stop()
-            }
+            tickResultScenario(client)
             return
         }
 
@@ -167,6 +163,42 @@ object VisualSmokeHarness {
             uiScenarioIndex++
             stableTicks = 0
             capturedCurrent = false
+        }
+    }
+
+    private fun tickResultScenario(client:Minecraft) {
+        if(resultScenarioIndex>=resultScenarios.size) {
+            finalWaitTicks++
+            if(finalWaitTicks>=40) {
+                val total=arenas.size+uiScenarios.size+resultScenarios.size
+                System.out.println("[SVHub Visual Smoke] completed "+total+" captures; stopping client")
+                enabled=false
+                client.stop()
+            }
+            return
+        }
+        val scenario=resultScenarios[resultScenarioIndex]
+        val active=client.screen as? ResultVisualSmokeScreen
+        if(active?.scenario!=scenario) {
+            stableTicks=0
+            capturedCurrent=false
+            client.setScreen(ResultVisualSmokeScreen(scenario))
+            System.out.println("[SVHub Visual Smoke] opened result scenario "+scenario)
+            return
+        }
+        stableTicks++
+        if(!capturedCurrent && stableTicks>=60 && active.fixtureReady) {
+            capturedCurrent=true
+            val fileName="svhub-result-"+scenario+".png"
+            Screenshot.grab(client.gameDirectory,fileName,client.mainRenderTarget){message->
+                System.out.println("[SVHub Visual Smoke] captured "+fileName+" :: "+message.string)
+            }
+        }
+        if(!capturedCurrent && stableTicks>500) throw IllegalStateException("SVHub result smoke timed out in "+scenario)
+        if(capturedCurrent && stableTicks>=85) {
+            resultScenarioIndex++
+            stableTicks=0
+            capturedCurrent=false
         }
     }
 
@@ -251,7 +283,7 @@ object VisualSmokeHarness {
         }
 
         companion object {
-            private fun fixtureView(scenario: String): JsonObject {
+            fun fixtureView(scenario: String): JsonObject {
                 val pve = scenario == "pve"
                 val fields = JsonObject().apply {
                     addProperty("set", "visual_smoke")
@@ -467,6 +499,106 @@ object VisualSmokeHarness {
                         })
                     })
                 }
+            }
+        }
+    }
+
+    private class ResultVisualSmokeScreen(val scenario:String):Screen(Component.literal("SVHub Result Visual Smoke")) {
+        private val tftUi=TftUiState()
+        private val boardUi=NativeBoardSceneUiState()
+        private val view=resultFixture(scenario)
+        private var rendered=false
+        val fixtureReady get()=rendered
+
+        override fun isPauseScreen():Boolean=false
+
+        override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
+            val area=UiRect(0,0,width.coerceAtLeast(1),height.coerceAtLeast(1))
+            ArcadeResultRenderer.render(
+                gui=gui,font=font,area=area,view=view,
+                hooks=ArcadeResultRenderer.Hooks(
+                    control={_,_,_,_->},continueAction={},rematch={},exit={}
+                )
+            ){scene->
+                when(scenario) {
+                    "tft"->TftGameRenderer.render(
+                        gui=gui,font=font,area=scene,density=UiDensity.WIDE,view=view,ui=tftUi,mouseX=-10,mouseY=-10,
+                        hooks=TftGameRenderer.Hooks(control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={})
+                    )
+                    else->NativeBoardSceneRenderer.render(gui,font,scene.inset(4),view,boardUi,null)
+                }
+            }
+            rendered=true
+        }
+
+        companion object {
+            private fun resultFixture(gameId:String):JsonObject {
+                if(gameId=="tft") {
+                    val view=TftUiVisualSmokeScreen.fixtureView("planning")
+                    view.addProperty("finished",true)
+                    view.addProperty("phase","finished")
+                    view.addProperty("winner","Aris")
+                    view.getAsJsonObject("fields").apply {
+                        addProperty("result","Victory")
+                        addProperty("tacticianState","victory")
+                        addProperty("canEditBoard","false")
+                    }
+                    view.add("resultPresentation",presentation("victory","first","tft",
+                        listOf("placement" to "1","level" to "8","health" to "42","gold" to "51"),
+                        listOf("match_reward" to ""),
+                        listOf("placement" to "1")))
+                    return view
+                }
+
+                val chess=gameId=="chess"
+                val board=if(chess) chessBoard() else tdBoard()
+                val fields=JsonObject().apply {
+                    if(chess) {
+                        addProperty("you","white");addProperty("white","Aris");addProperty("black","Rival")
+                        addProperty("whiteClockMs","82100");addProperty("blackClockMs","0")
+                        addProperty("legalMoves","");addProperty("lastMoveFrom","g7");addProperty("lastMoveTo","g8")
+                    } else {
+                        addProperty("gold","132");addProperty("lives","7");addProperty("wave","20");addProperty("running","false")
+                        addProperty("path","0,1,2,3,11,19,27,35,43,51,59,60,61,62,63")
+                    }
+                }
+                return JsonObject().apply {
+                    addProperty("sessionId","visual-result-"+gameId)
+                    addProperty("gameId",gameId)
+                    addProperty("title",if(chess)"Pokémon Chess" else "Pokémon Tower Defense")
+                    addProperty("phase","finished")
+                    addProperty("status",if(chess)"Checkmate" else "Victory")
+                    addProperty("finished",true)
+                    addProperty("winner","Aris")
+                    addProperty("boardWidth",8);addProperty("boardHeight",8)
+                    add("board",board);add("cards",JsonArray());add("actions",JsonArray());add("fields",fields)
+                    add("resultPresentation",if(chess)
+                        presentation("victory","checkmate","chess",
+                            listOf("moves" to "38","white_clock" to "82","black_clock" to "0"),
+                            listOf("match_reward" to ""),listOf("match_complete" to ""))
+                        else presentation("victory","defense_complete","tower_defense",
+                            listOf("wave" to "20","lives" to "7","gold" to "132","towers" to "8"),
+                            listOf("loot_count" to "5"),listOf("waves_cleared" to "20")))
+                }
+            }
+
+            private fun presentation(outcome:String,reason:String,backdrop:String,stats:List<Pair<String,String>>,rewards:List<Pair<String,String>>,progress:List<Pair<String,String>>)=JsonObject().apply {
+                addProperty("outcome",outcome);addProperty("reason",reason);addProperty("backdrop",backdrop);addProperty("canRematch",true)
+                fun lines(values:List<Pair<String,String>>)=JsonArray().apply { values.forEach { (key,value)->add(JsonObject().apply{addProperty("key",key);addProperty("value",value)}) } }
+                add("stats",lines(stats));add("rewards",lines(rewards));add("progression",lines(progress))
+            }
+
+            private fun chessBoard()=JsonArray().apply {
+                val cells=MutableList(64){""}
+                mapOf(4 to "k",6 to "R",7 to "K",52 to "P",60 to "r").forEach{(i,p)->cells[i]=p}
+                cells.forEach{add(it)}
+            }
+            private fun tdBoard()=JsonArray().apply {
+                val cells=MutableList(64){""}
+                listOf(0,1,2,3,11,19,27,35,43,51,59,60,61,62,63).forEachIndexed{i,slot->cells[slot]=when(i){0->"path:start";14->"path:goal";else->"path"}}
+                cells[18]="tower:pikachu:3:4:-1:thunderbolt:ATTACK_SPECIAL"
+                cells[26]="tower:charizard:2:3:-1:flamethrower:ATTACK_SPECIAL"
+                cells.forEach{add(it)}
             }
         }
     }
