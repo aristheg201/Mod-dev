@@ -2,10 +2,10 @@
   "id": "ultra_lab",
   "style": "ultra_lab",
   "surface": "tactical",
-  "depth": 2,
-  "detailEvery": 0,
+  "depth": 4,
+  "detailEvery": 4,
   "pathDetailEvery": 0,
-  "texturedBattlefield": false,
+  "texturedBattlefield": true,
   "floor": [
     "minecraft:smooth_quartz"
   ],
@@ -190,13 +190,13 @@
     "camera": {
       "spectator": [
         4.5,
-        14,
-        12
+        15.5,
+        13.5
       ],
       "scouting": [
-        8,
-        12,
-        9
+        7.4,
+        13.6,
+        11.7
       ],
       "carousel": [
         4.5,
@@ -208,15 +208,15 @@
       "normal": {
         "position": [
           4.5,
-          14.2,
-          10.4
+          15,
+          12.8
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 43,
+        "fov": 44,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
@@ -224,15 +224,15 @@
       "preparation": {
         "position": [
           4.5,
-          14.2,
-          10.4
+          15,
+          12.8
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 43,
+        "fov": 44,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
@@ -240,15 +240,15 @@
       "combat": {
         "position": [
           4.5,
-          13.7,
-          11.1
+          14.4,
+          13.4
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
@@ -352,8 +352,8 @@
       "spectator": {
         "position": [
           4.5,
-          14,
-          12
+          15.5,
+          13.5
         ],
         "target": [
           4.5,
@@ -368,72 +368,46 @@
       "arena_preview": {
         "position": [
           4.5,
-          14.5,
-          11
+          15.8,
+          13.2
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 46,
+        "fov": 44,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
       }
-    }
+    },
+    "battlefieldBounds": [
+      -1.35,
+      -0.95,
+      10.35,
+      6.95
+    ],
+    "environmentBounds": [
+      -6,
+      -5,
+      15,
+      11
+    ]
   },
   "geometry": [
-    {
-      "id": "lab-ally-platform",
-      "material": "minecraft:iron_block",
-      "position": [
-        4.5,
-        7.65,
-        -0.35
-      ],
-      "size": [
-        12,
-        1,
-        0.6
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "lab-enemy-platform",
-      "material": "minecraft:polished_deepslate",
-      "position": [
-        4.5,
-        -1.65,
-        -0.35
-      ],
-      "size": [
-        12,
-        1,
-        0.6
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
     {
       "id": "left-lab-wall",
       "material": "minecraft:smooth_quartz",
       "position": [
-        -3.8,
+        -3.5,
         2.9,
-        1.6
+        1.7
       ],
       "size": [
-        1.2,
-        8,
-        3.6
+        1,
+        7.4,
+        3.4
       ],
       "rotation": [
         0,
@@ -445,13 +419,146 @@
       "id": "right-lab-wall",
       "material": "minecraft:smooth_quartz",
       "position": [
-        12.8,
+        12.5,
         2.9,
-        1.6
+        1.7
       ],
       "size": [
-        1.2,
-        8,
+        1,
+        7.4,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-lab-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        -2.82,
+        2.9,
+        1.9
+      ],
+      "size": [
+        0.22,
+        5.3,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-lab-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        11.82,
+        2.9,
+        1.9
+      ],
+      "size": [
+        0.22,
+        5.3,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-console",
+      "material": "minecraft:polished_deepslate",
+      "position": [
+        -2.75,
+        1,
+        0.7
+      ],
+      "size": [
+        0.8,
+        1.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-console-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        -2.72,
+        1,
+        1.45
+      ],
+      "size": [
+        0.3,
+        1.1,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-console",
+      "material": "minecraft:polished_deepslate",
+      "position": [
+        11.75,
+        4.8,
+        0.7
+      ],
+      "size": [
+        0.8,
+        1.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-console-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        11.72,
+        4.8,
+        1.45
+      ],
+      "size": [
+        0.3,
+        1.1,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "far-lab-wall",
+      "material": "minecraft:iron_block",
+      "position": [
+        4.5,
+        -3.25,
+        1.8
+      ],
+      "size": [
+        11.8,
+        0.55,
         3.6
       ],
       "rotation": [
@@ -461,55 +568,17 @@
       ]
     },
     {
-      "id": "left-window",
+      "id": "far-lab-window",
       "material": "minecraft:cyan_stained_glass",
-      "position": [
-        -3.15,
-        2.9,
-        1.8
-      ],
-      "size": [
-        0.2,
-        5.5,
-        2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "right-window",
-      "material": "minecraft:cyan_stained_glass",
-      "position": [
-        12.15,
-        2.9,
-        1.8
-      ],
-      "size": [
-        0.2,
-        5.5,
-        2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "enemy-lab-header",
-      "material": "minecraft:iron_block",
       "position": [
         4.5,
-        -2,
-        3
+        -2.92,
+        1.95
       ],
       "size": [
-        10,
-        0.9,
-        0.7
+        7,
+        0.18,
+        2.35
       ],
       "rotation": [
         0,
@@ -518,17 +587,17 @@
       ]
     },
     {
-      "id": "enemy-lab-light",
+      "id": "far-lab-light",
       "material": "minecraft:sea_lantern",
       "position": [
         4.5,
-        -1.95,
-        2.4
+        -2.78,
+        3.25
       ],
       "size": [
-        5,
-        0.3,
-        0.35
+        6,
+        0.18,
+        0.3
       ],
       "rotation": [
         0,
@@ -537,35 +606,16 @@
       ]
     },
     {
-      "id": "ally-lab-header",
+      "id": "bench-trim",
       "material": "minecraft:iron_block",
       "position": [
         4.5,
-        8.05,
-        2.2
+        8.65,
+        -0.6
       ],
       "size": [
-        8,
-        0.8,
-        0.55
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "ally-lab-light",
-      "material": "minecraft:sea_lantern",
-      "position": [
-        4.5,
-        7.98,
-        1.75
-      ],
-      "size": [
-        4.2,
-        0.25,
+        11.5,
+        0.35,
         0.3
       ],
       "rotation": [

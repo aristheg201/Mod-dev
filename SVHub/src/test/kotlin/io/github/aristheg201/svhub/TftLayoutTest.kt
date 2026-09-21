@@ -8,6 +8,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class TftLayoutTest {
+    private fun overlaps(a:UiRect,b:UiRect)=a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y
+
     @Test
     fun `TFT presentation stays inside required logical viewports`() {
         listOf(320 to 180, 426 to 240, 640 to 360, 960 to 540).forEach { (width, height) ->
@@ -28,6 +30,11 @@ class TftLayoutTest {
             assertTrue(itemRail.y >= tft.hud.bottom, "$width x $height item rail overlaps HUD: $itemRail")
             assertTrue(itemRail.bottom <= tft.footer.y, "$width x $height item rail overlaps footer: $itemRail")
             tft.players?.let { players -> assertTrue(itemRail.y >= players.bottom, "$width x $height item rail overlaps player list") }
+            assertTrue(!overlaps(tft.board,tft.hud),"$width x $height board overlaps HUD")
+            assertTrue(!overlaps(tft.board,tft.footer),"$width x $height board overlaps footer")
+            tft.traits?.let { assertTrue(!overlaps(tft.board,it),"$width x $height board overlaps traits") }
+            tft.players?.let { assertTrue(!overlaps(tft.board,it),"$width x $height board overlaps players") }
+            assertTrue(!overlaps(tft.board,itemRail),"$width x $height board overlaps item rail")
         }
     }
 }

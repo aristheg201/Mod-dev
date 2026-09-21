@@ -3,9 +3,9 @@
   "style": "ancient_ruins",
   "surface": "tactical",
   "depth": 4,
-  "detailEvery": 0,
+  "detailEvery": 4,
   "pathDetailEvery": 0,
-  "texturedBattlefield": false,
+  "texturedBattlefield": true,
   "floor": [
     "minecraft:cut_sandstone"
   ],
@@ -190,13 +190,13 @@
     "camera": {
       "spectator": [
         4.5,
-        14,
-        12
+        15.5,
+        13.5
       ],
       "scouting": [
-        8,
-        12,
-        9
+        7.4,
+        13.6,
+        11.7
       ],
       "carousel": [
         4.5,
@@ -208,15 +208,15 @@
       "normal": {
         "position": [
           4.5,
-          13.3,
-          9.7
+          15,
+          12.8
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 42,
+        "fov": 44,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
@@ -224,15 +224,15 @@
       "preparation": {
         "position": [
           4.5,
-          13.3,
-          9.7
+          15,
+          12.8
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 42,
+        "fov": 44,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
@@ -240,15 +240,15 @@
       "combat": {
         "position": [
           4.5,
-          12.8,
-          10.399999999999999
+          14.4,
+          13.4
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
@@ -352,8 +352,8 @@
       "spectator": {
         "position": [
           4.5,
-          14,
-          12
+          15.5,
+          13.5
         ],
         "target": [
           4.5,
@@ -368,34 +368,65 @@
       "arena_preview": {
         "position": [
           4.5,
-          14.5,
-          11
+          15.8,
+          13.2
         ],
         "target": [
           4.5,
           2.8,
           0.2
         ],
-        "fov": 46,
+        "fov": 44,
         "near": 0.1,
         "far": 100,
         "transitionMs": 650
       }
-    }
+    },
+    "battlefieldBounds": [
+      -1.35,
+      -0.95,
+      10.35,
+      6.95
+    ],
+    "environmentBounds": [
+      -6,
+      -5,
+      15,
+      11
+    ]
   },
   "geometry": [
     {
-      "id": "ally-ruin-step",
+      "id": "left-ruin-wall",
+      "material": "minecraft:mossy_stone_bricks",
+      "position": [
+        -3.5,
+        3,
+        0.65
+      ],
+      "size": [
+        2,
+        5.5,
+        1.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-ruin-wall",
       "material": "minecraft:cut_sandstone",
       "position": [
-        4.5,
-        7.65,
-        -0.4
+        12.5,
+        3,
+        0.65
       ],
       "size": [
-        12.4,
-        1.2,
-        0.7
+        2,
+        5.5,
+        1.3
       ],
       "rotation": [
         0,
@@ -404,74 +435,36 @@
       ]
     },
     {
-      "id": "enemy-ruin-step",
-      "material": "minecraft:mossy_stone_bricks",
+      "id": "left-broken-column-a",
+      "material": "minecraft:chiseled_sandstone",
       "position": [
-        4.5,
-        -1.55,
-        -0.4
+        -3.1,
+        0.5,
+        2
       ],
       "size": [
-        12.4,
-        1.2,
-        0.7
+        1.1,
+        1.1,
+        4
       ],
       "rotation": [
         0,
         0,
-        0
+        -6
       ]
     },
     {
-      "id": "broken-column-a",
-      "material": "minecraft:chiseled_sandstone",
+      "id": "left-broken-column-b",
+      "material": "minecraft:mossy_stone_bricks",
       "position": [
-        -2.7,
-        0.2,
-        1.4
+        -3.2,
+        5.2,
+        1.35
       ],
       "size": [
         1.3,
         1.3,
-        3.5
-      ],
-      "rotation": [
-        0,
-        0,
-        -7
-      ]
-    },
-    {
-      "id": "broken-column-b",
-      "material": "minecraft:chiseled_sandstone",
-      "position": [
-        -3.3,
-        5.8,
-        0.8
-      ],
-      "size": [
-        1.5,
-        1.5,
-        2.1
-      ],
-      "rotation": [
-        0,
-        0,
-        9
-      ]
-    },
-    {
-      "id": "broken-column-c",
-      "material": "minecraft:mossy_stone_bricks",
-      "position": [
-        11.9,
-        0.9,
-        1
-      ],
-      "size": [
-        1.5,
-        1.5,
-        2.6
+        2.7
       ],
       "rotation": [
         0,
@@ -480,36 +473,55 @@
       ]
     },
     {
-      "id": "broken-column-d",
+      "id": "right-broken-column-a",
       "material": "minecraft:mossy_stone_bricks",
       "position": [
-        12.5,
-        5.5,
-        1.6
+        12.1,
+        0.8,
+        1.5
       ],
       "size": [
         1.2,
         1.2,
-        4
+        3
       ],
       "rotation": [
         0,
         0,
-        -10
+        5
       ]
     },
     {
-      "id": "enemy-arch-left",
-      "material": "minecraft:cut_sandstone",
+      "id": "right-broken-column-b",
+      "material": "minecraft:chiseled_sandstone",
       "position": [
-        0.5,
-        -2,
-        1.6
+        12.2,
+        5.3,
+        2.1
       ],
       "size": [
-        1.2,
-        1.2,
-        4
+        1,
+        1,
+        4.2
+      ],
+      "rotation": [
+        0,
+        0,
+        -7
+      ]
+    },
+    {
+      "id": "far-temple-left",
+      "material": "minecraft:cut_sandstone",
+      "position": [
+        -0.8,
+        -3.1,
+        2.2
+      ],
+      "size": [
+        1.1,
+        0.9,
+        4.4
       ],
       "rotation": [
         0,
@@ -518,17 +530,17 @@
       ]
     },
     {
-      "id": "enemy-arch-right",
+      "id": "far-temple-right",
       "material": "minecraft:cut_sandstone",
       "position": [
-        8.5,
-        -2,
-        1.6
+        9.8,
+        -3.1,
+        2.2
       ],
       "size": [
-        1.2,
-        1.2,
-        4
+        1.1,
+        0.9,
+        4.4
       ],
       "rotation": [
         0,
@@ -537,16 +549,16 @@
       ]
     },
     {
-      "id": "enemy-arch-top",
+      "id": "far-temple-lintel",
       "material": "minecraft:chiseled_sandstone",
       "position": [
         4.5,
-        -2,
-        3.1
+        -3.1,
+        4.15
       ],
       "size": [
-        9.2,
-        1,
+        12,
+        0.8,
         0.7
       ],
       "rotation": [
@@ -556,17 +568,36 @@
       ]
     },
     {
-      "id": "ruin-beacon-left",
+      "id": "far-temple-relic",
+      "material": "minecraft:gold_block",
+      "position": [
+        4.5,
+        -3.48,
+        2.25
+      ],
+      "size": [
+        1.2,
+        0.22,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-ruin-beacon",
       "material": "minecraft:glowstone",
       "position": [
         -2.7,
-        3,
-        0.7
+        3.1,
+        2.55
       ],
       "size": [
-        0.65,
-        0.65,
-        0.65
+        0.6,
+        0.6,
+        0.6
       ],
       "rotation": [
         0,
@@ -575,17 +606,36 @@
       ]
     },
     {
-      "id": "ruin-beacon-right",
+      "id": "right-ruin-beacon",
       "material": "minecraft:glowstone",
       "position": [
         11.7,
-        3.4,
-        0.7
+        3.1,
+        2.55
       ],
       "size": [
-        0.65,
-        0.65,
-        0.65
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "bench-trim",
+      "material": "minecraft:chiseled_sandstone",
+      "position": [
+        4.5,
+        8.65,
+        -0.58
+      ],
+      "size": [
+        11.5,
+        0.38,
+        0.32
       ],
       "rotation": [
         0,

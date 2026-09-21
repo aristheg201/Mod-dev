@@ -33,7 +33,7 @@ class CompiledArenaSceneTest {
     }
 
     @Test fun authoredArenasFrameTheBoardAndEveryBenchSlot() {
-        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island")) {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
             for((w,h) in listOf(632 to 270,952 to 414,340 to 250)) {
                 val area=UiRect(102,40,w,h)
@@ -66,7 +66,7 @@ class CompiledArenaSceneTest {
     }
     @Test fun texturedBattlefieldsDoNotRetainTheLegacyFlatFloor() {
         val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
-        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island")) {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
                 MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject)
             }

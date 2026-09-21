@@ -238,6 +238,11 @@ jobs:
             grep -Fq "[SVHub Visual Smoke] captured svhub-store-$scenario.png" run/logs/latest.log
           done
           python3 tools/verify-visual-smoke.py run/screenshots/svhub-*.png
+          if grep -Eiq 'Failed to load texture: svhub:|Could not load image[^[:cntrl:]]*svhub:|PNG not supported|unknown PNG chunk type' run/logs/latest.log; then
+            echo 'SVHub texture decode/load failure detected in visual smoke' >&2
+            grep -Ein 'Failed to load texture: svhub:|Could not load image[^[:cntrl:]]*svhub:|PNG not supported|unknown PNG chunk type' run/logs/latest.log | tail -n 80 >&2
+            exit 1
+          fi
           grep -Fq '[SVHub Visual Smoke] completed 25 captures; stopping client' run/logs/latest.log
           # Headless Linux may log non-fatal narrator (missing flite) and audio
           # initialization errors. The runClient task and all four framebuffer
