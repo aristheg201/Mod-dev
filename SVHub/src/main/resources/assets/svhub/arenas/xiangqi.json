@@ -6,7 +6,138 @@
   "pathDetailEvery": 0,
   "backgroundColor": "#1a100b",
   "geometry": [
-    {"id":"game_table","position":[4,4.5,-0.42],"size":[10.2,11.2,0.64],"material":"#1a100b"}
+    {
+      "id": "xiangqi_court",
+      "position": [
+        4,
+        4.5,
+        -0.52
+      ],
+      "size": [
+        10.4,
+        11.4,
+        0.76
+      ],
+      "material": "#392519"
+    },
+    {
+      "id": "river",
+      "position": [
+        4,
+        4.5,
+        0.035
+      ],
+      "size": [
+        9,
+        0.88,
+        0.055
+      ],
+      "material": "#315f6b"
+    },
+    {
+      "id": "north_rail",
+      "position": [
+        4,
+        -0.72,
+        0.12
+      ],
+      "size": [
+        9.8,
+        0.24,
+        0.26
+      ],
+      "material": "#845536"
+    },
+    {
+      "id": "south_rail",
+      "position": [
+        4,
+        9.72,
+        0.12
+      ],
+      "size": [
+        9.8,
+        0.24,
+        0.26
+      ],
+      "material": "#845536"
+    },
+    {
+      "id": "red_palace_a",
+      "position": [
+        4,
+        1,
+        0.05
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "size": [
+        4,
+        0.08,
+        0.05
+      ],
+      "material": "#d45248"
+    },
+    {
+      "id": "red_palace_b",
+      "position": [
+        4,
+        1,
+        0.05
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "size": [
+        4,
+        0.08,
+        0.05
+      ],
+      "material": "#d45248"
+    },
+    {
+      "id": "black_palace_a",
+      "position": [
+        4,
+        8,
+        0.05
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "size": [
+        4,
+        0.08,
+        0.05
+      ],
+      "material": "#27211e"
+    },
+    {
+      "id": "black_palace_b",
+      "position": [
+        4,
+        8,
+        0.05
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "size": [
+        4,
+        0.08,
+        0.05
+      ],
+      "material": "#27211e"
+    }
   ],
   "floor": [
     "minecraft:bamboo_planks"
@@ -67,7 +198,19 @@
   ],
   "metadata": {
     "cameraPresets": {
-      "normal": {"position":[4,13.8,11.7],"target":[4,4.5,0],"fov":44}
+      "normal": {
+        "position": [
+          4,
+          13.8,
+          11.7
+        ],
+        "target": [
+          4,
+          4.5,
+          0
+        ],
+        "fov": 44
+      }
     },
     "boardColumns": 9,
     "boardRows": 10,

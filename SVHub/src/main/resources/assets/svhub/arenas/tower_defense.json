@@ -6,7 +6,118 @@
   "pathDetailEvery": 0,
   "backgroundColor": "#0e1b12",
   "geometry": [
-    {"id":"game_table","position":[5.5,3.5,-0.55],"size":[13.5,9.5,0.9],"material":"#0e1b12"}
+    {
+      "id": "td_terrain",
+      "position": [
+        5.5,
+        3.5,
+        -0.62
+      ],
+      "size": [
+        13.8,
+        9.8,
+        1
+      ],
+      "material": "#17311e"
+    },
+    {
+      "id": "north_bank",
+      "position": [
+        5.5,
+        -0.68,
+        0.06
+      ],
+      "size": [
+        13,
+        0.72,
+        0.5
+      ],
+      "material": "#2f5734"
+    },
+    {
+      "id": "south_bank",
+      "position": [
+        5.5,
+        7.68,
+        0.06
+      ],
+      "size": [
+        13,
+        0.72,
+        0.5
+      ],
+      "material": "#2f5734"
+    },
+    {
+      "id": "spawn_gate_left",
+      "position": [
+        -0.68,
+        0.35,
+        0.58
+      ],
+      "size": [
+        0.48,
+        0.45,
+        1.4
+      ],
+      "material": "#695e50"
+    },
+    {
+      "id": "spawn_gate_right",
+      "position": [
+        -0.68,
+        1.65,
+        0.58
+      ],
+      "size": [
+        0.48,
+        0.45,
+        1.4
+      ],
+      "material": "#695e50"
+    },
+    {
+      "id": "spawn_gate_top",
+      "position": [
+        -0.68,
+        1,
+        1.18
+      ],
+      "size": [
+        0.48,
+        1.75,
+        0.26
+      ],
+      "material": "#857763"
+    },
+    {
+      "id": "core_plinth",
+      "position": [
+        10,
+        3,
+        0.02
+      ],
+      "size": [
+        1.38,
+        1.38,
+        0.28
+      ],
+      "material": "#8b8065"
+    },
+    {
+      "id": "core_beacon",
+      "position": [
+        10,
+        3,
+        0.56
+      ],
+      "size": [
+        0.44,
+        0.44,
+        0.92
+      ],
+      "material": "#e0c76f"
+    }
   ],
   "floor": [
     "minecraft:oak_sapling",
@@ -77,7 +188,19 @@
   ],
   "metadata": {
     "cameraPresets": {
-      "normal": {"position":[5.5,13.2,11.5],"target":[5.5,3.5,0],"fov":49}
+      "normal": {
+        "position": [
+          5.5,
+          13.2,
+          11.5
+        ],
+        "target": [
+          5.5,
+          3.5,
+          0
+        ],
+        "fov": 49
+      }
     },
     "boardColumns": 12,
     "boardRows": 8,

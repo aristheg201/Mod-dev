@@ -6,7 +6,104 @@
   "pathDetailEvery": 0,
   "backgroundColor": "#0f1115",
   "geometry": [
-    {"id":"game_table","position":[3.5,3.5,-0.48],"size":[9.35,9.35,0.72],"material":"#0f1115"}
+    {
+      "id": "chess_plinth",
+      "position": [
+        3.5,
+        3.5,
+        -0.58
+      ],
+      "size": [
+        9.7,
+        9.7,
+        0.82
+      ],
+      "material": "#101318"
+    },
+    {
+      "id": "chess_frame_n",
+      "position": [
+        3.5,
+        -0.72,
+        0.1
+      ],
+      "size": [
+        9.35,
+        0.28,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "chess_frame_s",
+      "position": [
+        3.5,
+        7.72,
+        0.1
+      ],
+      "size": [
+        9.35,
+        0.28,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "chess_frame_w",
+      "position": [
+        -0.72,
+        3.5,
+        0.1
+      ],
+      "size": [
+        0.28,
+        8.7,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "chess_frame_e",
+      "position": [
+        7.72,
+        3.5,
+        0.1
+      ],
+      "size": [
+        0.28,
+        8.7,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "white_clock",
+      "position": [
+        3.5,
+        8.45,
+        0.22
+      ],
+      "size": [
+        2.5,
+        0.62,
+        0.42
+      ],
+      "material": "#e5ddc9"
+    },
+    {
+      "id": "black_clock",
+      "position": [
+        3.5,
+        -1.45,
+        0.22
+      ],
+      "size": [
+        2.5,
+        0.62,
+        0.42
+      ],
+      "material": "#252b31"
+    }
   ],
   "floor": [
     "minecraft:smooth_quartz"
@@ -67,7 +164,19 @@
   ],
   "metadata": {
     "cameraPresets": {
-      "normal": {"position":[3.5,11.6,10.4],"target":[3.5,3.45,0],"fov":43}
+      "normal": {
+        "position": [
+          3.5,
+          11.6,
+          10.4
+        ],
+        "target": [
+          3.5,
+          3.45,
+          0
+        ],
+        "fov": 43
+      }
     },
     "boardColumns": 8,
     "boardRows": 8,
