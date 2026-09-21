@@ -12,6 +12,10 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.ConnectScreen
+import net.minecraft.client.gui.screens.TitleScreen
+import net.minecraft.client.multiplayer.ServerData
+import net.minecraft.client.multiplayer.resolver.ServerAddress
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
@@ -32,6 +36,7 @@ object VisualSmokeHarness {
     private var bootTicks = 0
     private var finalWaitTicks = 0
     private var capturedCurrent = false
+    private var connectRequested = false
 
     fun register() {
         if (System.getenv(ENV) != "1") return
@@ -43,6 +48,25 @@ object VisualSmokeHarness {
     private fun tick(client: Minecraft) {
         if (!enabled) return
         bootTicks++
+
+        // Cobblemon species are datapack/server data, not client resource data.
+        // A title-screen-only client can load models/posers but cannot construct
+        // RenderablePokemon instances. The visual smoke therefore joins the
+        // dedicated localhost fixture server before opening the embedded scene.
+        if (client.connection == null || client.level == null) {
+            if (!connectRequested && bootTicks >= 20) {
+                connectRequested = true
+                val address = ServerAddress("127.0.0.1", 25565)
+                val data = ServerData("SVHub Visual Smoke", "127.0.0.1:25565", ServerData.Type.OTHER)
+                val parent = client.screen ?: TitleScreen()
+                System.out.println("[SVHub Visual Smoke] connecting to fixture server 127.0.0.1:25565")
+                ConnectScreen.startConnecting(parent, client, address, data, false, null)
+            }
+            if (bootTicks > 1200) {
+                throw IllegalStateException("SVHub visual smoke timed out joining the fixture server")
+            }
+            return
+        }
 
         if (arenaIndex >= arenas.size) {
             finalWaitTicks++
