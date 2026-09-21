@@ -10,7 +10,6 @@ import io.github.aristheg201.svhub.native.game.tft.TftOwnedUnit
 import io.github.aristheg201.svhub.native.game.tft.TftPveRoundDefinition
 import io.github.aristheg201.svhub.native.game.tft.TftSetDefinition
 import io.github.aristheg201.svhub.native.game.tft.TftSetRegistry
-import io.github.aristheg201.svhub.native.game.tft.TftTraitTier
 import io.github.aristheg201.svhub.native.game.tft.TftProgression
 import io.github.aristheg201.svhub.native.game.tft.TftProgressionDefinition
 import io.github.aristheg201.svhub.native.game.tft.TftPlayerModifier
@@ -62,7 +61,16 @@ class TftSession(
     init {
         require(seats.size in 2..8) { "Pokémon TFT requires 2-8 trainers" }
         if (restoreState == null) {
-            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, bench = MutableList(benchSlots) { null }, shop = MutableList(shopSlots) { null }, tactician = resolveTactician(tacticianSelections[seat.id]), arena = arenaSelections[seat.id]?.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena) }
+            seats.forEach { seat ->
+                players[seat.id] = PlayerState(
+                    seat.id,
+                    seat.name,
+                    bench = MutableList(benchSlots) { null },
+                    shop = MutableList(shopSlots) { null },
+                    tactician = resolveTactician(tacticianSelections[seat.id]),
+                    arena = arenaSelections[seat.id]?.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena
+                )
+            }
             startPlanning(System.currentTimeMillis(), firstRound = true)
         } else {
             restoreSnapshot(restoreState)
@@ -193,6 +201,9 @@ class TftSession(
                 val id = shop[index]
                 if (id != null && id !in unitDefs) shop[index] = null
             }
+            val restoredAugments = p.augments.filter(augmentDefs::containsKey).distinct()
+            val restoredChoices = p.augmentChoices.filter(augmentDefs::containsKey).distinct()
+                .filterNot(restoredAugments::contains)
 
             players[p.id] = PlayerState(
                 id = p.id,
@@ -210,8 +221,8 @@ class TftSession(
                 board = board,
                 shop = shop,
                 itemBench = p.itemBench.take(128).toMutableList(),
-                augments = p.augments.filter(augmentDefs::containsKey).toMutableList(),
-                augmentChoices = p.augmentChoices.filter(augmentDefs::containsKey).toMutableList(),
+                augments = restoredAugments.toMutableList(),
+                augmentChoices = restoredChoices.toMutableList(),
                 freeRerolls = p.freeRerolls.coerceIn(0, 100),
                 draftPicked = p.draftPicked,
                 draftUnlockAt = now + p.draftUnlockRemainingMs.coerceIn(0L, DRAFT_TOTAL_MS),
@@ -312,7 +323,7 @@ class TftSession(
         }
         val actions = buildList {
             val refreshGold = refreshCost(player)
-            val xpGold = playerModifiers(player).apply(TftPlayerModifier.XP_PURCHASE_COST, progression.buyXp.goldCost.toDouble()).toInt().coerceAtLeast(0)
+            val xpGold = buyXpCost(player)
             add(NativeActionView("refresh", "Refresh", "${refreshGold}g", shopEnabled && player.gold >= refreshGold))
             add(NativeActionView("buy_xp", "Buy XP", "${xpGold}g", shopEnabled && player.gold >= xpGold && player.level < progression.maxLevel))
             add(NativeActionView("resign", "Resign", "", !finished && !player.eliminated))
@@ -383,8 +394,8 @@ class TftSession(
                 "levelsGained" to player.lastLevelsGained.toString(),
                 "settledRound" to player.lastSettledRound.toString(),
                 "shopOdds" to set.shopOdds.first { it.level == player.level }.odds.joinToString(","),
-                "buyXpCost" to progression.buyXp.goldCost.toString(),
-                "buyXpAmount" to progression.buyXp.xpGranted.toString(),
+                "buyXpCost" to buyXpCost(player).toString(),
+                "buyXpAmount" to buyXpAmount(player).toString(),
                 "unitCap" to unitCap(player).toString(),
                 "boardCount" to player.board.size.toString(),
                 "streak" to player.streak.toString(),
@@ -514,7 +525,12 @@ class TftSession(
         lastTickAt = nowMillis
         var changed = false
         when (phase) {
-            Phase.DRAFT -> if (nowMillis >= phaseEndsAt) { autoResolveDraft(); startPlanning(nowMillis, false); changed = true }
+            Phase.DRAFT -> if (nowMillis >= phaseEndsAt) {
+                autoResolveDraft()
+                roundIndex++
+                if (!finished) startPlanning(nowMillis, false)
+                changed = true
+            }
             Phase.PLANNING -> if (nowMillis >= phaseEndsAt) { autoChooseAugments(); startCombat(nowMillis); changed = true }
             Phase.COMBAT -> {
                 val unique = combats.values.distinctBy { System.identityHashCode(it) }
@@ -562,11 +578,9 @@ class TftSession(
 
     private fun buyXp(player: PlayerState): NativeGameResult {
         if (!allowed(player,TftCapability.CAN_BUY_XP) || player.level >= progression.maxLevel) return reject("Cannot buy XP")
-        val modifiers = playerModifiers(player)
-        val goldCost = modifiers.apply(TftPlayerModifier.XP_PURCHASE_COST, progression.buyXp.goldCost.toDouble()).toInt().coerceAtLeast(0)
+        val goldCost = buyXpCost(player)
         if (player.gold < goldCost) return reject("Not enough gold")
-        val amount = modifiers.apply(TftPlayerModifier.XP_PURCHASE_AMOUNT, progression.buyXp.xpGranted.toDouble()).toInt()
-        grantXp(player, amount)
+        grantXp(player, buyXpAmount(player))
         player.gold -= goldCost
         bump("${player.name} bought XP")
         return accept("XP purchased")
@@ -628,11 +642,16 @@ class TftSession(
         val origin = args["origin"] ?: return reject("Missing origin")
         val index = args["index"]?.toIntOrNull() ?: return reject("Missing unit slot")
         val unit = when (origin) {
-            "bench" -> player.bench.getOrNull(index)?.also { player.bench[index] = null }
-            "board" -> player.board.remove(index)
+            "bench" -> player.bench.getOrNull(index)
+            "board" -> player.board[index]
             else -> null
         } ?: return reject("Unit not found")
+        if (args["instanceId"]?.let { it != unit.instanceId } == true) return reject("Unit target changed")
         val def = unitDefs[unit.unitId] ?: return reject("Unit definition missing")
+        when (origin) {
+            "bench" -> player.bench[index] = null
+            "board" -> player.board.remove(index)
+        }
         val copies = copiesForStar(unit.star)
         player.gold = (player.gold + def.cost * copies).coerceAtMost(MAX_GOLD)
         pool.returnCopies(unit.unitId, copies)
@@ -681,7 +700,10 @@ class TftSession(
     private fun chooseAugment(player: PlayerState, id: String?): NativeGameResult {
         if (phase != Phase.PLANNING || player.augmentChoices.isEmpty()) return reject("No augment choice")
         val chosen = id?.takeIf(player.augmentChoices::contains) ?: return reject("Invalid augment")
-        player.augments += chosen; player.augmentChoices.clear(); bump("${player.name} chose $chosen")
+        if (chosen in player.augments) return reject("Augment already owned")
+        player.augments += chosen
+        player.augmentChoices.clear()
+        bump("${player.name} chose $chosen")
         return accept("Augment selected")
     }
 
@@ -767,7 +789,8 @@ class TftSession(
                 val eligible = set.augments.filter { it.id !in owned && (tier == null || it.tier == tier) }
                 player.augmentChoices += eligible.shuffled(rng).take(3).map { it.id }
             }
-            player.freeRerolls = playerModifiers(player).value(TftPlayerModifier.FREE_REFRESH_COUNT).toInt().coerceAtLeast(0)
+            val authoredFreeRerolls = playerModifiers(player).value(TftPlayerModifier.FREE_REFRESH_COUNT).toInt().coerceAtLeast(0)
+            player.freeRerolls = maxOf(player.freeRerolls, authoredFreeRerolls)
             rerollShop(player)
         }
         phaseEndsAt = now + set.planningSeconds.coerceIn(10, 90) * 1_000L
@@ -821,37 +844,43 @@ class TftSession(
             if (match.pve != null) {
                 if (outcome.winnerTeam == 0) {
                     onWin(a)
-                    val drops = playerModifiers(a).apply(TftPlayerModifier.PVE_DROP_COUNT, match.pve.componentDrops.toDouble()).toInt()
-                    val presentationLoot=if (match.pve.lootTable != null) {
-                        settleLoot(a, match.pve.lootTable, match.pve.lootRolls, drops)
+                    val baseDrops = match.pve.componentDrops.coerceAtLeast(0)
+                    val drops = playerModifiers(a).apply(TftPlayerModifier.PVE_DROP_COUNT, baseDrops.toDouble()).toInt().coerceAtLeast(0)
+                    val presentationLoot = if (match.pve.lootTable != null) {
+                        settleLoot(a, match.pve.lootTable, match.pve.lootRolls, baseDrops) +
+                            grantRandomComponents(a, (drops - baseDrops).coerceAtLeast(0))
                     } else {
-                        buildList {
-                            repeat(drops.coerceIn(0,6)) {
-                                set.components.randomOrNull(rng)?.id?.let { id -> a.itemBench.add(id);add(id) }
-                            }
-                        }
+                        grantRandomComponents(a, drops)
                     }
                     a.lastPveLoot.clear()
                     a.lastPveLoot.addAll(presentationLoot.take(12))
                     a.pveLootSerial++
-                } else { onLoss(a); a.hp -= PVE_LOSS_DAMAGE }
-                healFromModifiers(a); if (a.hp <= 0) eliminated += a; return@forEach
+                } else {
+                    onLoss(a)
+                    a.hp -= PVE_LOSS_DAMAGE
+                }
+                if (a.hp <= 0) eliminated += a else healFromModifiers(a)
+                return@forEach
             }
             val b = match.bId?.let(players::get)
             if (b == null) {
-                when (outcome.winnerTeam) { 0 -> onWin(a); 1 -> { onLoss(a); a.hp -= playerDamage(stageNumber(), outcome.survivingTeam1) }; else -> { a.streak = 0; a.hp -= DRAW_DAMAGE } }
-                healFromModifiers(a); if (a.hp <= 0) eliminated += a; return@forEach
+                when (outcome.winnerTeam) {
+                    0 -> onWin(a)
+                    1 -> { onLoss(a); a.hp -= playerDamage(stageNumber(), outcome.survivingTeam1) }
+                    else -> { a.streak = 0; a.hp -= DRAW_DAMAGE }
+                }
+                if (a.hp <= 0) eliminated += a else healFromModifiers(a)
+                return@forEach
             }
             when (outcome.winnerTeam) {
                 0 -> { onWin(a); onLoss(b); b.hp -= playerDamage(stageNumber(), outcome.survivingTeam0) }
                 1 -> { onWin(b); onLoss(a); a.hp -= playerDamage(stageNumber(), outcome.survivingTeam1) }
                 else -> { a.streak = 0; b.streak = 0; a.hp -= DRAW_DAMAGE; b.hp -= DRAW_DAMAGE }
             }
-            healFromModifiers(a); healFromModifiers(b); if (a.hp <= 0) eliminated += a; if (b.hp <= 0) eliminated += b
+            if (a.hp <= 0) eliminated += a else healFromModifiers(a)
+            if (b.hp <= 0) eliminated += b else healFromModifiers(b)
         }
         eliminatePlayers(eliminated.distinctBy { it.id })
-        // Result, damage and elimination precede all economic grants. Commit the
-        // round marker with the same snapshot as gold/XP before any next-round shop.
         val participants = unique.flatMap { listOfNotNull(it.aId, it.bId) }.toSet()
         val roundType = if (unique.any { it.pve != null }) "pve" else "pvp"
         alivePlayers().filter { it.id in participants }.forEach { settleRound(it, roundType) }
@@ -888,7 +917,10 @@ class TftSession(
 
     private fun onWin(player: PlayerState) { player.lastOutcome = 1; player.streak = if (player.streak >= 0) player.streak + 1 else 1 }
     private fun onLoss(player: PlayerState) { player.lastOutcome = -1; player.streak = if (player.streak <= 0) player.streak - 1 else -1 }
-    private fun healFromModifiers(player: PlayerState) { val heal = playerModifiers(player).value(TftPlayerModifier.POST_ROUND_HEAL).toInt(); if (heal > 0) player.hp = (player.hp + heal).coerceAtMost(100) }
+    private fun healFromModifiers(player: PlayerState) {
+        val heal = playerModifiers(player).value(TftPlayerModifier.POST_ROUND_HEAL).toInt()
+        if (heal > 0 && player.hp > 0) player.hp = (player.hp + heal).coerceAtMost(100)
+    }
 
     private fun rerollShop(player: PlayerState) {
         player.shop.forEach { unit -> if (unit != null) pool.returnCopies(unit, 1) }
@@ -910,10 +942,10 @@ class TftSession(
                 val refs = unitLocations(player).filter { it.unit.unitId == unitId && it.unit.star == star }.take(3)
                 if (refs.size < 3) break
                 val primary = refs.firstOrNull { it.origin == "board" } ?: refs.first()
-                val keptItems = primary.unit.items.toMutableList()
-                refs.drop(1).flatMap { it.unit.items }.forEach { item -> if (keptItems.size < 3) keptItems += item else player.itemBench += unpackItem(item) }
+                val (keptItems, overflow) = mergeUpgradeItems(refs.flatMap { it.unit.items })
+                player.itemBench += overflow
                 refs.forEach { removeLocation(player, it) }
-                val upgraded = TftOwnedUnit(primary.unit.instanceId, unitId, star + 1, keptItems)
+                val upgraded = TftOwnedUnit(primary.unit.instanceId, unitId, star + 1, keptItems.toMutableList())
                 if (primary.origin == "board" && primary.index !in player.board) player.board[primary.index] = upgraded
                 else {
                     val empty = player.bench.indexOfFirst { it == null }
@@ -925,6 +957,27 @@ class TftSession(
                 bump("${player.name}: $unitId -> ${star + 1}★")
             }
         }
+    }
+
+    private fun mergeUpgradeItems(raw: List<String>): Pair<List<String>, List<String>> {
+        val kept = mutableListOf<String>()
+        val overflow = mutableListOf<String>()
+        raw.flatMap(::unpackItem).forEach { item ->
+            if (!item.startsWith("full:")) {
+                val combineAt = kept.indices.firstOrNull { index ->
+                    val existing = kept[index]
+                    !existing.startsWith("full:") && itemRecipes.containsKey(listOf(existing, item).sorted().joinToString("+"))
+                }
+                if (combineAt != null) {
+                    val existing = kept[combineAt]
+                    val recipe = itemRecipes.getValue(listOf(existing, item).sorted().joinToString("+"))
+                    kept[combineAt] = "full:${recipe.id}"
+                    return@forEach
+                }
+            }
+            if (kept.size < 3) kept += item else overflow += item
+        }
+        return kept to overflow
     }
 
     private fun addToBenchOrBoard(player: PlayerState, unit: TftOwnedUnit): Boolean {
@@ -1120,6 +1173,10 @@ class TftSession(
     )
     private fun refreshCost(player: PlayerState) = if (player.freeRerolls > 0) 0 else
         playerModifiers(player).apply(TftPlayerModifier.SHOP_REFRESH_COST, 2.0).toInt().coerceAtLeast(0)
+    private fun buyXpCost(player: PlayerState) = playerModifiers(player)
+        .apply(TftPlayerModifier.XP_PURCHASE_COST, progression.buyXp.goldCost.toDouble()).toInt().coerceAtLeast(0)
+    private fun buyXpAmount(player: PlayerState) = playerModifiers(player)
+        .apply(TftPlayerModifier.XP_PURCHASE_AMOUNT, progression.buyXp.xpGranted.toDouble()).toInt().coerceAtLeast(1)
     private fun capabilities(player: PlayerState): Set<TftCapability> =
         if (finished || player.eliminated) emptySet() else set.rules.phaseCapabilities[phase.id].orEmpty()
     private fun allowed(player: PlayerState, capability: TftCapability) = capability in capabilities(player)
@@ -1129,28 +1186,46 @@ class TftSession(
 
     private fun settleRound(player: PlayerState, roundType: String) {
         if (player.lastSettledRound >= roundIndex) return
+        val round = roundDefinition()
         val modifiers = playerModifiers(player)
-        val amount = TftProgression.passiveAmount(progression, roundType,
-            modifiers.value(TftPlayerModifier.XP_GAIN_FLAT), modifiers.value(TftPlayerModifier.XP_GAIN_MULTIPLIER))
-        // Validate arithmetic before mutating currency. No callbacks or I/O may
-        // observe half a settlement on the session actor.
+        val amount = if (round.passiveXp) TftProgression.passiveAmount(
+            progression,
+            roundType,
+            modifiers.value(TftPlayerModifier.XP_GAIN_FLAT),
+            modifiers.value(TftPlayerModifier.XP_GAIN_MULTIPLIER)
+        ) else 0
         val xp = TftProgression.grant(progression, player.level, player.xp, amount)
-        grantIncome(player)
+        if (round.income) {
+            grantIncome(player)
+        } else {
+            player.lastIncome = 0
+            player.lastInterest = 0
+            player.lastStreakGold = 0
+        }
         player.level = xp.level; player.xp = xp.xp
         player.lastXpGranted = xp.granted; player.lastLevelsGained = xp.levelsGained
         player.lastSettledRound = roundIndex
     }
 
     private fun grantXp(player: PlayerState, amount: Int) {
-        val xp = TftProgression.grant(progression, player.level, player.xp, amount)
+        val xp = TftProgression.grant(progression, player.level, player.xp, amount.coerceAtLeast(0))
         player.level = xp.level; player.xp = xp.xp
         player.lastXpGranted = xp.granted; player.lastLevelsGained = xp.levelsGained
     }
 
-    private fun settleLoot(player: PlayerState, tableId: String, configuredRolls: Int, modifiedDrops: Int):List<String> {
+    private fun grantRandomComponents(player: PlayerState, count: Int): List<String> = buildList {
+        repeat(count.coerceIn(0, 6)) {
+            set.components.randomOrNull(rng)?.id?.let { id ->
+                player.itemBench += id
+                add(id)
+            }
+        }
+    }
+
+    private fun settleLoot(player: PlayerState, tableId: String, configuredRolls: Int, fallbackRolls: Int):List<String> {
         val table = set.lootTables.firstOrNull { it.id == tableId } ?: return emptyList()
         val presented=mutableListOf<String>()
-        val rolls = if (configuredRolls > 0) configuredRolls else modifiedDrops
+        val rolls = if (configuredRolls > 0) configuredRolls else fallbackRolls
         repeat(rolls.coerceIn(0, 20)) {
             val total = table.entries.sumOf { entry -> entry.weight }
             var roll = rng.nextInt(total)
@@ -1193,7 +1268,13 @@ class TftSession(
         return (base + units).coerceAtLeast(1)
     }
     private fun streakGold(streak: Int): Int = when (abs(streak)) { in 0..1 -> 0; 2, 3 -> 1; 4 -> 2; else -> 3 }
-    private fun autoChooseAugments() { alivePlayers().forEach { player -> if (player.augmentChoices.isNotEmpty()) { player.augments += player.augmentChoices.random(rng); player.augmentChoices.clear() } } }
+    private fun autoChooseAugments() {
+        alivePlayers().forEach { player ->
+            val available = player.augmentChoices.filterNot(player.augments::contains)
+            if (available.isNotEmpty()) player.augments += available.random(rng)
+            player.augmentChoices.clear()
+        }
+    }
     private fun roundDefinition() = set.roundSchedule[roundIndex.coerceAtMost(set.roundSchedule.lastIndex)]
     private fun pveDefinition(label: String): TftPveRoundDefinition? = roundDefinition().pve?.let { ref -> set.pveRounds.firstOrNull { it.round == ref } } ?: set.pveRounds.firstOrNull { it.round == label }
     private fun isAugmentRound(label: String) = roundDefinition().type == "augment"
@@ -1245,7 +1326,11 @@ class TftSession(
     private fun newOwned(unitId: String) = TftOwnedUnit("u${nextUnitSerial++}", unitId)
     private fun countCopies(player:PlayerState,unitId:String)=unitLocations(player).filter{it.unit.unitId==unitId}.sumOf{copiesForStar(it.unit.star)}
     private fun copiesForStar(star: Int) = when (star) { 2 -> 3; 3 -> 9; else -> 1 }
-    private fun unpackItem(item: String): List<String> = when { item.startsWith("combo:") -> item.removePrefix("combo:").split('+').filter(String::isNotBlank); item.startsWith("full:") -> set.fullItems.firstOrNull { it.id == item.removePrefix("full:") }?.components.orEmpty(); else -> listOf(item) }
+    /** Legacy combo identities are unpacked; authored completed items stay completed. */
+    private fun unpackItem(item: String): List<String> = when {
+        item.startsWith("combo:") -> item.removePrefix("combo:").split('+').filter(String::isNotBlank)
+        else -> listOf(item)
+    }
     private fun rotateCell(cell: Int): Int = formationCells * 2 - 1 - cell
     private fun accept(message: String) = NativeGameResult(true, true, message)
     private fun reject(message: String) = NativeGameResult(false, false, message)
