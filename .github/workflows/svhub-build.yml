@@ -221,6 +221,10 @@ jobs:
           count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-tft-*.png' | wc -l)"
           test "$count" -eq 4
           test -f run/logs/latest.log
+          for arena in monster_island gotham_rooftops sector_2814 kanto_stadium; do
+            grep -Fq "[SVHub Visual Smoke] captured svhub-tft-$arena.png with 12 actors" run/logs/latest.log
+          done
+          python3 tools/verify-visual-smoke.py run/screenshots/svhub-tft-*.png
           grep -Fq '[SVHub Visual Smoke] completed 4 captures; stopping client' run/logs/latest.log
           # Headless Linux may log non-fatal narrator (missing flite) and audio
           # initialization errors. The runClient task and all four framebuffer

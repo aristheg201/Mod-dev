@@ -23,6 +23,7 @@ import net.minecraft.resources.ResourceLocation
  */
 object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
+    private const val EXPECTED_ACTORS = 12
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium")
 
     private var enabled = false
@@ -74,7 +75,7 @@ object VisualSmokeHarness {
         stableTicks++
         val resolvedActors = PokemonModelRenderer.sceneSizingDiagnostics()
             .count { it.instanceId.startsWith("visual:$arenaId:") }
-        if (!capturedCurrent && stableTicks >= 70 && resolvedActors >= active.expectedActors) {
+        if (!capturedCurrent && stableTicks >= 70 && active.fixtureReady && resolvedActors >= EXPECTED_ACTORS) {
             capturedCurrent = true
             val fileName = "svhub-tft-$arenaId.png"
             Screenshot.grab(client.gameDirectory, fileName, client.mainRenderTarget) { message ->
@@ -82,10 +83,10 @@ object VisualSmokeHarness {
             }
         }
 
-        if (!capturedCurrent && stableTicks > 240) {
+        if (!capturedCurrent && stableTicks > 600) {
             throw IllegalStateException(
                 "SVHub visual smoke timed out waiting for Cobblemon actors in $arenaId: " +
-                    "$resolvedActors/${active.expectedActors} resolved"
+                    "$resolvedActors/$EXPECTED_ACTORS resolved; fixtureReady=${active.fixtureReady}"
             )
         }
 
@@ -99,7 +100,7 @@ object VisualSmokeHarness {
     private class ArenaVisualSmokeScreen(val arenaId: String) : Screen(Component.literal("SVHub Visual Smoke")) {
         private val scene = PokemonSceneState()
         private var cachedEntities: List<PokemonSceneEntity>? = null
-        val expectedActors get() = cachedEntities?.size ?: 0
+        val fixtureReady get() = cachedEntities?.size == EXPECTED_ACTORS
 
         override fun isPauseScreen(): Boolean = false
 
@@ -111,7 +112,10 @@ object VisualSmokeHarness {
                 return
             }
 
-            val entities = cachedEntities ?: smokeEntities(arena).also { cachedEntities = it }
+            val entities = cachedEntities ?: smokeEntities(arena).takeIf { it.size == EXPECTED_ACTORS }?.also {
+                cachedEntities = it
+                System.out.println("[SVHub Visual Smoke] fixture ready $arenaId with ${it.size} Pokemon")
+            }.orEmpty()
             gui.fill(0, 0, width, height, arena.backgroundColor)
             val area = UiRect(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
             val authored = arena.camera(ArenaCameraRole.PREPARATION, SceneCameras.TFT)
@@ -142,7 +146,7 @@ object VisualSmokeHarness {
             gui.fill(6, 6, 250, 25, 0xC0000000.toInt())
             gui.drawString(
                 font,
-                "SVHub TFT · $arenaId · actors ${PokemonModelRenderer.sceneSizingDiagnostics().count { it.instanceId.startsWith("visual:$arenaId:") }}/${entities.size}",
+                "SVHub TFT · $arenaId · actors ${PokemonModelRenderer.sceneSizingDiagnostics().count { it.instanceId.startsWith("visual:$arenaId:") }}/$EXPECTED_ACTORS",
                 11,
                 11,
                 0xFFFFFFFF.toInt(),
