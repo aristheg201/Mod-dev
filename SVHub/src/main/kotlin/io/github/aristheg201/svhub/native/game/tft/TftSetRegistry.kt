@@ -27,18 +27,37 @@ object TftSetRegistry {
         Files.createDirectories(configRoot)
         val override = configRoot.resolve("active-set.json")
         overrideFile = override
-        val loaded = if (Files.isRegularFile(override)) {
+        val bundled = bundled("kanto_rising")
+        val usingOverride = Files.isRegularFile(override)
+        val loaded = if (usingOverride) {
             try {
                 Files.newBufferedReader(override, Charsets.UTF_8).use { reader ->
                     TftDefinitionValidator.validate(decodeSet(reader, override.toString()))
                 }
             } catch (error: Exception) {
                 logger.error("Invalid TFT override {}; keeping the file unchanged and loading the bundled set", override, error)
-                bundled("kanto_rising")
+                bundled
             }
-        } else bundled("kanto_rising")
+        } else bundled
         current = loaded
-        logger.info("Loaded TFT set {}: {} units, {} traits, {} components, {} recipes", loaded.id, loaded.units.size, loaded.traits.size, loaded.components.size, loaded.fullItems.size)
+        if (usingOverride && loaded.id == bundled.id && contentShape(loaded) != contentShape(bundled)) {
+            logger.warn(
+                "TFT active-set override {} masks bundled content: override={} bundled={}. Remove or update the override to use the new roster/traits/augments.",
+                override,
+                contentShape(loaded),
+                contentShape(bundled)
+            )
+        }
+        logger.info(
+            "Loaded TFT set {} from {}: {} units, {} traits, {} augments, {} components, {} recipes",
+            loaded.id,
+            if (usingOverride && loaded !== bundled) override else "bundled resources",
+            loaded.units.size,
+            loaded.traits.size,
+            loaded.augments.size,
+            loaded.components.size,
+            loaded.fullItems.size
+        )
     }
 
     @Synchronized
@@ -52,6 +71,7 @@ object TftSetRegistry {
             Files.newBufferedReader(path, Charsets.UTF_8).use { TftDefinitionValidator.validate(decodeSet(it, path.toString())) }
         } else bundled("kanto_rising")
         current = candidate
+        logger.info("Reloaded TFT set {}: {} units, {} traits, {} augments", candidate.id, candidate.units.size, candidate.traits.size, candidate.augments.size)
         candidate
     }
 
@@ -105,6 +125,9 @@ object TftSetRegistry {
             throw IllegalArgumentException("$source: invalid TFT set field types", error)
         }
     }
+
+    private fun contentShape(set: TftSetDefinition): String =
+        "units=${set.units.size},traits=${set.traits.size},augments=${set.augments.size},teams=${set.teams.size},items=${set.fullItems.size}"
 
     private fun <T> resourceList(path: String, token: TypeToken<List<T>>): List<T> = open(path).use { reader ->
         val json = readJson(reader, path)
