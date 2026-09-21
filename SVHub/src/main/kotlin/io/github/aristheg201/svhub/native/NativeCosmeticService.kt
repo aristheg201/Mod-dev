@@ -47,6 +47,25 @@ object NativeCosmeticService {
         require(offers.any { it.kind == CosmeticKind.ARENA && it.id == set.rules.defaultArena && it.price.signum() == 0 })
         require(offers.any { it.kind == CosmeticKind.TACTICIAN && it.id == set.defaultTactician && it.price.signum() == 0 })
     }
+
+    fun verifyProvider() {
+        val status = economy.status()
+        when {
+            status.ready -> SVHub.LOGGER.info(
+                "BEconomy integration ready via {} (BeastCoin={}, HunterCoin={})",
+                status.providerClass, status.beastCoin, status.hunterCoin
+            )
+            status.available -> SVHub.LOGGER.error(
+                "BEconomy provider {} resolved but required currencies are not ready: {}",
+                status.providerClass, status.detail
+            )
+            else -> SVHub.LOGGER.warn(
+                "BEconomy integration unavailable; paid cosmetics and BeastCoin rewards stay disabled until the provider is ready: {}",
+                status.detail
+            )
+        }
+    }
+
     fun recover(player: UUID, done: () -> Unit = {}) {
         purchases.migrate(player) { result ->
             if (result == StoreResult.GRANTED || result == StoreResult.OWNED) purchases.recover(player, done)

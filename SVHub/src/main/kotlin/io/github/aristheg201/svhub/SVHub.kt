@@ -10,6 +10,7 @@ import io.github.aristheg201.svhub.content.HubStore
 import io.github.aristheg201.svhub.content.V011ContentPatch
 import io.github.aristheg201.svhub.content.V020ContentPatch
 import io.github.aristheg201.svhub.content.V030ContentPatch
+import io.github.aristheg201.svhub.native.NativeCosmeticService
 import io.github.aristheg201.svhub.native.NativePlatform
 import io.github.aristheg201.svhub.native.network.NativePlatformNetwork
 import io.github.aristheg201.svhub.server.PokemonRuntimeInfoService
@@ -40,6 +41,9 @@ object SVHub : ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(VanillaCompanionService::tick); ServerTickEvents.END_SERVER_TICK.register(NativePlatform::tick)
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             SVHubRuntime.server = server
+            // Run after SERVER_STARTED listeners have returned so BEconomy gets its own
+            // lifecycle callback first regardless of mod initialization order.
+            server.execute { NativeCosmeticService.verifyProvider() }
             SVHubRuntime.store.initializeAsync().whenComplete { snapshot, error -> server.execute {
                 if (error != null) { LOGGER.error("Unable to load SVHub content; keeping safe defaults", error); return@execute }
                 var candidate=snapshot.content;var changed=false

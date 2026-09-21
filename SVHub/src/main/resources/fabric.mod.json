@@ -29,7 +29,8 @@
   },
   "suggests": {
     "fabric-permissions-api-v0": "*",
-    "skiesskins": ">=1.1.0"
+    "skiesskins": ">=1.1.0",
+    "beconomy": "*"
   },
   "icon": "assets/svhub/icon.png",
   "mixins": [
