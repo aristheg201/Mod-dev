@@ -251,5 +251,6 @@
   "gui.svhub.result.reward.loot_count": "Vật phẩm rơi",
   "gui.svhub.result.progress.match_complete": "Đã ghi nhận trận",
   "gui.svhub.result.progress.waves_cleared": "Đợt đã vượt",
-  "gui.svhub.result.progress.placement": "Thứ hạng cuối"
+  "gui.svhub.result.progress.placement": "Thứ hạng cuối",
+  "gui.svhub.tft.augment.confirm": "Chọn"
 }

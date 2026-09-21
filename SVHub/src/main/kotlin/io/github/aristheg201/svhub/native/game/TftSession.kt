@@ -73,7 +73,7 @@ class TftSession(
 
     override fun snapshotState(nowMillis: Long): JsonObject = NativeGamePersistence.toJson(
         Snapshot(
-            schema = 3,
+            schema = 4,
             setDefinition = set,
             phase = phase.name,
             roundIndex = roundIndex,
@@ -121,6 +121,8 @@ class TftSession(
                     legacyIncomePending = player.legacyIncomePending,
                     lastItemEvent = player.lastItemEvent,
                     itemEventSerial = player.itemEventSerial,
+                    lastPveLoot = player.lastPveLoot.toList(),
+                    pveLootSerial = player.pveLootSerial,
                     tactician = player.tactician,
                     tacticianEmoteRemainingMs = (player.tacticianEmoteUntil - nowMillis).coerceAtLeast(0L),
                     arena = player.arena,
@@ -147,7 +149,7 @@ class TftSession(
 
     private fun restoreSnapshot(state: JsonObject) {
         val saved = NativeGamePersistence.fromJson(state, Snapshot::class.java)
-        require(saved.schema in 1..3) { "Unsupported TFT session snapshot schema " + saved.schema }
+        require(saved.schema in 1..4) { "Unsupported TFT session snapshot schema " + saved.schema }
         require(saved.setDefinition.id == set.id) { "TFT set mismatch during recovery" }
         require(saved.players.map { it.id }.toSet() == seats.map { it.id }.toSet()) {
             "TFT recovery seat mismatch"
@@ -225,6 +227,8 @@ class TftSession(
                 legacyIncomePending = if (saved.schema >= 2) p.legacyIncomePending else phase == Phase.POST_COMBAT,
                 lastItemEvent = p.lastItemEvent.orEmpty(),
                 itemEventSerial = p.itemEventSerial.coerceAtLeast(0L),
+                lastPveLoot = if(saved.schema>=4) p.lastPveLoot.take(12).toMutableList() else mutableListOf(),
+                pveLootSerial = if(saved.schema>=4) p.pveLootSerial.coerceAtLeast(0L) else 0L,
                 tactician = resolveTactician(p.tactician),
                 tacticianEmoteUntil = now + p.tacticianEmoteRemainingMs.coerceIn(0L, 10_000L),
                 arena = p.arena.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena,
@@ -395,6 +399,8 @@ class TftSession(
                 "itemCatalog" to encodeItemCatalog(),
                 "lastItemEvent" to player.lastItemEvent,
                 "itemEventSerial" to player.itemEventSerial.toString(),
+                "pveLoot" to player.lastPveLoot.joinToString(","),
+                "pveLootSerial" to player.pveLootSerial.toString(),
                 "augments" to player.augments.joinToString(","),
                 "selectedAugments" to encodeSelectedAugments(observed),
                 "augmentChoices" to encodeAugmentChoices(player),
@@ -752,6 +758,7 @@ class TftSession(
     private fun startPlanning(now: Long, firstRound: Boolean) {
         phase = Phase.PLANNING; combats.clear()
         alivePlayers().forEach { player ->
+            player.lastPveLoot.clear()
             if (player.legacyIncomePending) { grantIncome(player); player.legacyIncomePending = false }
             if (isAugmentRound(roundLabel()) && player.augmentChoices.isEmpty()) {
                 val owned = player.augments.toSet()
@@ -812,8 +819,18 @@ class TftSession(
                 if (outcome.winnerTeam == 0) {
                     onWin(a)
                     val drops = playerModifiers(a).apply(TftPlayerModifier.PVE_DROP_COUNT, match.pve.componentDrops.toDouble()).toInt()
-                    if (match.pve.lootTable != null) settleLoot(a, match.pve.lootTable, match.pve.lootRolls, drops)
-                    else repeat(drops.coerceIn(0, 6)) { set.components.randomOrNull(rng)?.id?.let(a.itemBench::add) }
+                    val presentationLoot=if (match.pve.lootTable != null) {
+                        settleLoot(a, match.pve.lootTable, match.pve.lootRolls, drops)
+                    } else {
+                        buildList {
+                            repeat(drops.coerceIn(0,6)) {
+                                set.components.randomOrNull(rng)?.id?.let { id -> a.itemBench.add(id);add(id) }
+                            }
+                        }
+                    }
+                    a.lastPveLoot.clear()
+                    a.lastPveLoot.addAll(presentationLoot.take(12))
+                    a.pveLootSerial++
                 } else { onLoss(a); a.hp -= PVE_LOSS_DAMAGE }
                 healFromModifiers(a); if (a.hp <= 0) eliminated += a; return@forEach
             }
@@ -1113,24 +1130,42 @@ class TftSession(
         player.lastXpGranted = xp.granted; player.lastLevelsGained = xp.levelsGained
     }
 
-    private fun settleLoot(player: PlayerState, tableId: String, configuredRolls: Int, modifiedDrops: Int) {
-        val table = set.lootTables.firstOrNull { it.id == tableId } ?: return
+    private fun settleLoot(player: PlayerState, tableId: String, configuredRolls: Int, modifiedDrops: Int):List<String> {
+        val table = set.lootTables.firstOrNull { it.id == tableId } ?: return emptyList()
+        val presented=mutableListOf<String>()
         val rolls = if (configuredRolls > 0) configuredRolls else modifiedDrops
         repeat(rolls.coerceIn(0, 20)) {
             val total = table.entries.sumOf { entry -> entry.weight }
             var roll = rng.nextInt(total)
             val entry = table.entries.first { candidate -> roll -= candidate.weight; roll < 0 }
             when (entry.type) {
-                "gold" -> player.gold = (player.gold + entry.amount).coerceAtMost(MAX_GOLD)
-                "component" -> repeat(entry.amount) { entry.value?.takeIf { id -> set.components.any { c -> c.id == id } }?.let(player.itemBench::add) }
-                "full_item" -> repeat(entry.amount) { entry.value?.takeIf { id -> set.fullItems.any { f -> f.id == id } }?.let { player.itemBench += "full:$it" } }
-                "unit" -> repeat(entry.amount) { entry.value?.takeIf(unitDefs::containsKey)?.let { id -> if (!addToBenchOrBoard(player, newOwned(id))) pool.returnCopies(id, 1) } }
-                "xp" -> grantXp(player, entry.amount)
-                "free_reroll" -> player.freeRerolls = (player.freeRerolls + entry.amount).coerceAtMost(100)
-                "choice" -> player.specialRewards += "choice:${entry.choices.joinToString("|")}"
-                "special" -> player.specialRewards += (entry.value ?: "reward")
+                "gold" -> {
+                    player.gold = (player.gold + entry.amount).coerceAtMost(MAX_GOLD)
+                    repeat(entry.amount.coerceAtMost(3)){presented+="loot:gold"}
+                }
+                "component" -> repeat(entry.amount) {
+                    entry.value?.takeIf { id -> set.components.any { c -> c.id == id } }?.let { id ->
+                        player.itemBench.add(id);presented+=id
+                    }
+                }
+                "full_item" -> repeat(entry.amount) {
+                    entry.value?.takeIf { id -> set.fullItems.any { f -> f.id == id } }?.let { id ->
+                        val item="full:$id";player.itemBench+=item;presented+=item
+                    }
+                }
+                "unit" -> repeat(entry.amount) {
+                    entry.value?.takeIf(unitDefs::containsKey)?.let { id ->
+                        if (!addToBenchOrBoard(player, newOwned(id))) pool.returnCopies(id, 1)
+                        presented+="loot:unit"
+                    }
+                }
+                "xp" -> { grantXp(player, entry.amount);presented+="loot:xp" }
+                "free_reroll" -> { player.freeRerolls = (player.freeRerolls + entry.amount).coerceAtMost(100);presented+="loot:reroll" }
+                "choice" -> { player.specialRewards += "choice:${entry.choices.joinToString("|")}";presented+="loot:special" }
+                "special" -> { player.specialRewards += (entry.value ?: "reward");presented+="loot:special" }
             }
         }
+        return presented
     }
 
     private fun xpToNext(level: Int): Int = if (level >= progression.maxLevel) 0
@@ -1251,6 +1286,8 @@ class TftSession(
         val legacyIncomePending: Boolean,
         val lastItemEvent: String? = null,
         val itemEventSerial: Long = 0L,
+        val lastPveLoot: List<String> = emptyList(),
+        val pveLootSerial: Long = 0L,
         val tactician: String?,
         val tacticianEmoteRemainingMs: Long = 0L,
         val arena: String = "",
@@ -1288,6 +1325,7 @@ class TftSession(
         var lastIncome: Int = 0, var lastInterest: Int = 0, var lastStreakGold: Int = 0,
         var lastSettledRound: Int = -1, var lastXpGranted: Int = 0, var lastLevelsGained: Int = 0, var legacyIncomePending: Boolean = false,
         var tactician: String = "", var arena: String = "kanto_stadium", var tacticianEmoteUntil:Long=0L,var lastItemEvent:String="",var itemEventSerial:Long=0L,
+        val lastPveLoot:MutableList<String> = mutableListOf(),var pveLootSerial:Long=0L,
         val specialRewards: MutableList<String> = mutableListOf()
     )
     private data class DraftOffer(val index: Int, val unitId: String, val itemId: String, var takenBy: String? = null, val x: Double = 0.0, val y: Double = 0.0)

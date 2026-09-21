@@ -281,6 +281,12 @@ if (!tftRenderer.includes('tr("gui.svhub.game.tft.title")')) failures.push("TftG
 for (const marker of ["resultPresentation", "ArcadeResultRenderer.render", 'intent("rematch"']) {
   if (!screen.includes(marker)) failures.push(`NativePlatformScreen.kt: missing shared result presentation marker ${marker}`);
 }
+for (const marker of ['"pveLoot"', '"pveLootSerial"', "pveLootSerial++", "lastPveLoot"]) {
+  if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing authoritative PvE loot presentation marker ${marker}`);
+}
+for (const marker of ["pveLootModelId", "renderAugmentOverlay", "gui.fill(board.x,board.y,board.right,board.bottom", "tft:pve-loot:"]) {
+  if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing scene presentation marker ${marker}`);
+}
 for (const marker of ["PokemonModelRenderer.renderPreview", "home_bg.png", "pixel_frame.png", "sparkle_strip.png", "skin.aspect"]) {
   if (!skinShowcase.includes(marker)) failures.push(`SkinShowcaseRenderer.kt: missing premium showcase marker ${marker}`);
 }

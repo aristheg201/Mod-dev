@@ -485,7 +485,7 @@ object TftGameRenderer {
             "CAN_BUY_UNIT" in capabilities, "CAN_SELL" in capabilities, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
-        if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
+        if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks, mouseX, mouseY)
         if (ui.isItemDragging()) renderDraggedItem(gui, ui, itemBench, mouseX, mouseY)
         ui.tooltip()?.let { renderHoverTooltip(gui, font, area, it, mouseX, mouseY) }
     }
@@ -694,9 +694,26 @@ object TftGameRenderer {
                 visible=fields.str("tacticianEntity").isNotBlank()||pokemonSpecies.isNotBlank()
             )
         }
-        val pveLootNodes=if(phase=="combat"&&fields.bool("pveActive")) arena?.lootAnchors.orEmpty().mapIndexed { index,anchor ->
-            val yaw=((System.nanoTime()/35_000_000L+index*19)%360L).toDouble()
-            SceneItemModelNode("tft:pve-loot:"+index,SceneTransform(SceneVec3(anchor.x.toDouble(),anchor.y.toDouble(),anchor.z.toDouble()+.35),SceneVec3(0.0,0.0,yaw),SceneVec3(.72,.72,.72)),"minecraft:chest")
+        val pveLootTokens=fields.str("pveLoot").split(',').filter(String::isNotBlank)
+        val pveLootNodes=if(pveLootTokens.isNotEmpty()) {
+            val anchors=arena?.lootAnchors.orEmpty().ifEmpty { listOf(ArenaPoint(3.5f,4f,0f)) }
+            pveLootTokens.take(12).mapIndexedNotNull { index,token ->
+                val itemId=pveLootModelId(ui,token) ?: return@mapIndexedNotNull null
+                val base=anchors[index%anchors.size]
+                val ring=index/anchors.size
+                val dx=((ring%3)-1)*.32
+                val dy=((ring/3)%3-1)*.24
+                val yaw=((System.nanoTime()/35_000_000L+index*29)%360L).toDouble()
+                SceneItemModelNode(
+                    "tft:pve-loot:"+fields.long("pveLootSerial")+":"+index,
+                    SceneTransform(
+                        SceneVec3((base.x+dx).toDouble(),(base.y+dy).toDouble(),base.z.toDouble()+.38+kotlin.math.sin(System.nanoTime()/700_000_000.0+index)*.08),
+                        SceneVec3(0.0,0.0,yaw),
+                        SceneVec3(.78,.78,.78)
+                    ),
+                    itemId
+                )
+            }
         } else emptyList()
         val frame = PokemonScene3D.render(
             gui = gui,
@@ -1052,24 +1069,49 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderAugmentOverlay(gui: GuiGraphics, font: Font, board: UiRect, choices: List<AugmentChoice>, hooks: Hooks) {
-        val width = min(board.width - 16, 420)
-        val height = min(board.height - 12, 112)
-        val root = UiRect(board.x + (board.width - width) / 2, board.y + (board.height - height) / 2, width, height)
-        gui.fill(root.x, root.y, root.right, root.bottom, 0xF20C1518.toInt())
-        gui.fill(root.x, root.y, root.right, root.y + 3, gold)
-        gui.drawCenteredString(font, tr("gui.svhub.tft.choose_augment"), root.x + root.width / 2, root.y + 8, text)
-        val gap = 5
-        val cardW = (root.width - 12 - gap * (choices.size - 1)) / choices.size.coerceAtLeast(1)
-        choices.take(3).forEachIndexed { index, choice ->
-            val rect = UiRect(root.x + 6 + index * (cardW + gap), root.y + 24, cardW, root.height - 30)
-            gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel2)
-            gui.fill(rect.x, rect.y, rect.x + 3, rect.bottom, accent)
-            gui.drawCenteredString(font, fit(font, choice.name, rect.width - 8), rect.x + rect.width / 2, rect.y + 8, gold)
-            drawWrapped(gui, font, choice.description, rect.x + 6, rect.y + 23, rect.width - 12, 3, muted)
-            hooks.hit(rect) { hooks.action("choose_augment", mapOf("id" to choice.id)) }
+    private fun renderAugmentOverlay(
+        gui:GuiGraphics,font:Font,board:UiRect,choices:List<AugmentChoice>,hooks:Hooks,mouseX:Int,mouseY:Int
+    ) {
+        // Selection is its own presentation state: dim the live arena and place
+        // three large animated cards in the foreground.
+        gui.fill(board.x,board.y,board.right,board.bottom,0xB8000000.toInt())
+        val width=min(board.width-20,540).coerceAtLeast(180)
+        val height=min(board.height-18,176).coerceAtLeast(96)
+        val root=UiRect(board.x+(board.width-width)/2,board.y+(board.height-height)/2,width,height)
+        gui.fill(root.x,root.y,root.right,root.bottom,0xED0A1114.toInt())
+        gui.fill(root.x,root.y,root.right,root.y+3,gold)
+        gui.drawCenteredString(font,tr("gui.svhub.tft.choose_augment"),root.x+root.width/2,root.y+9,text)
+
+        val visible=choices.take(3)
+        val gap=7
+        val cardW=((root.width-16-gap*(visible.size-1))/visible.size.coerceAtLeast(1)).coerceAtLeast(48)
+        val pulse=((kotlin.math.sin(System.nanoTime()/350_000_000.0)+1.0)*18).toInt()
+        visible.forEachIndexed { index,choice ->
+            val base=UiRect(root.x+8+index*(cardW+gap),root.y+28,cardW,root.height-37)
+            val hovered=base.contains(mouseX.toDouble(),mouseY.toDouble())
+            val rect=if(hovered)UiRect(base.x-2,base.y-3,base.width+4,base.height+3) else base
+            val edge=if(hovered)0xFFEBD57A.toInt() else 0xFF4CC7B2.toInt()
+            gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(hovered)0xFF213238.toInt() else panel2)
+            gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,edge)
+            gui.fill(rect.x,rect.y,rect.right,rect.y+2,(0xC0+pulse.coerceAtMost(0x3F) shl 24) or (edge and 0x00FFFFFF))
+            val runeY=rect.y+10
+            NativePixelArt.icon(gui,"tft",rect.x+rect.width/2-10,runeY,20,edge)
+            gui.drawCenteredString(font,fit(font,choice.name,rect.width-10),rect.x+rect.width/2,rect.y+35,gold)
+            drawWrapped(gui,font,choice.description,rect.x+7,rect.y+50,rect.width-14,5,muted)
+            gui.drawCenteredString(font,tr("gui.svhub.tft.augment.confirm"),rect.x+rect.width/2,rect.bottom-13,if(hovered)gold else muted)
+            hooks.hit(rect){hooks.action("choose_augment",mapOf("id" to choice.id))}
         }
     }
+
+    private fun pveLootModelId(ui:TftUiState,token:String):String? = when(token) {
+        "loot:gold"->"minecraft:gold_ingot"
+        "loot:xp"->"minecraft:experience_bottle"
+        "loot:reroll"->"minecraft:emerald"
+        "loot:unit"->"minecraft:egg"
+        "loot:special"->"minecraft:chest"
+        else->ui.itemStack(token)?.let { BuiltInRegistries.ITEM.getKey(it.item).toString() }
+    }
+
 
     private fun renderCarouselScene(gui: GuiGraphics, font: Font, board: UiRect, offers: List<DraftOffer>, fields: JsonObject,
         ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int, arenaSeed: String, revision: Long) {

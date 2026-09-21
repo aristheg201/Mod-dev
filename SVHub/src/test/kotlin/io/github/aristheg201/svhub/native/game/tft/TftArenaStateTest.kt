@@ -96,6 +96,22 @@ class TftArenaStateTest {
         assertEquals(1.75,catalog.getAsJsonObject(shop.meta.getValue("unit")).get("scale").asDouble)
     }
 
+    @Test fun pveLootPresentationSurvivesSchemaFourRecovery() {
+        val session=create()
+        val saved=session.snapshotState()
+        saved.addProperty("schema",4)
+        saved.getAsJsonArray("players").forEach { raw ->
+            raw.asJsonObject.add("lastPveLoot",JsonParser.parseString("""["sword","loot:gold","loot:xp"]""").asJsonArray)
+            raw.asJsonObject.addProperty("pveLootSerial",7L)
+        }
+        val restored=NativeGameRestorer.restore("tft",seats,session.sessionId,saved)
+        assertEquals("sword,loot:gold,loot:xp",restored.viewFor("a").fields["pveLoot"])
+        assertEquals("7",restored.viewFor("a").fields["pveLootSerial"])
+        val roundTrip=restored.snapshotState()
+        assertEquals(4,roundTrip.get("schema").asInt)
+        assertEquals(7L,roundTrip.getAsJsonArray("players")[0].asJsonObject.get("pveLootSerial").asLong)
+    }
+
     @Test fun pveEncounterSemanticsAreExplicitForPresentation() {
         val s=create()
         val planning=s.viewFor("a")

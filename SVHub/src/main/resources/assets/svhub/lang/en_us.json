@@ -251,5 +251,6 @@
   "gui.svhub.result.reward.loot_count": "Loot drops",
   "gui.svhub.result.progress.match_complete": "Match recorded",
   "gui.svhub.result.progress.waves_cleared": "Waves cleared",
-  "gui.svhub.result.progress.placement": "Final placement"
+  "gui.svhub.result.progress.placement": "Final placement",
+  "gui.svhub.tft.augment.confirm": "Choose"
 }

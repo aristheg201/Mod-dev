@@ -29,7 +29,7 @@ object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins")
-    private val uiScenarios = listOf("planning", "pve", "tactician_move")
+    private val uiScenarios = listOf("planning", "carousel", "augment", "pve", "pve_loot", "boss", "tactician_move")
     private val resultScenarios = listOf("chess", "tower_defense", "tft")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
@@ -142,11 +142,12 @@ object VisualSmokeHarness {
         }
 
         stableTicks++
-        val prefix = "tft:visual-ui-" + scenario + ":"
-        val resolvedActors = PokemonModelRenderer.sceneSizingDiagnostics()
-            .count { it.instanceId.startsWith(prefix) }
+        val diagnostics=PokemonModelRenderer.sceneSizingDiagnostics()
+        val resolvedActors = if(scenario=="carousel") diagnostics.count { it.instanceId.startsWith("carousel:") }
+            else diagnostics.count { it.instanceId.startsWith("tft:visual-ui-" + scenario + ":") }
+        val requiredActors=if(scenario=="carousel")8 else EXPECTED_ACTORS
         val captureAt=if(scenario=="tactician_move")8 else 70
-        if (!capturedCurrent && stableTicks >= captureAt && active.fixtureReady && resolvedActors >= EXPECTED_ACTORS) {
+        if (!capturedCurrent && stableTicks >= captureAt && active.fixtureReady && resolvedActors >= requiredActors) {
             capturedCurrent = true
             val fileName = "svhub-tft-ui-" + scenario + ".png"
             Screenshot.grab(client.gameDirectory, fileName, client.mainRenderTarget) { message ->
@@ -317,7 +318,11 @@ object VisualSmokeHarness {
 
         companion object {
             fun fixtureView(scenario: String): JsonObject {
-                val pve = scenario == "pve"
+                val pve = scenario == "pve" || scenario == "boss"
+                val boss = scenario == "boss"
+                val loot = scenario == "pve_loot"
+                val augment = scenario == "augment"
+                val carousel = scenario == "carousel"
                 val moving = scenario == "tactician_move"
                 val fields = JsonObject().apply {
                     addProperty("set", "visual_smoke")
@@ -332,17 +337,19 @@ object VisualSmokeHarness {
                     addProperty("tacticianAspects", if (pve) "greenlantern" else "")
                     addProperty("tacticianId", if (pve) "svhub:green_lantern_mewtwo" else "svhub:pikachu")
                     addProperty("tacticianScale", if (pve) "0.72" else "0.70")
-                    addProperty("tacticianState", if (pve) "round_start" else "idle")
+                    addProperty("tacticianState", when { carousel->"carousel_movement";pve->"round_start";else->"idle" })
                     addProperty("tacticianPosition", if(moving) "0.08,0.75" else "0.5,0.5")
-                    addProperty("tacticianCanMove", (!pve).toString())
+                    addProperty("tacticianCanMove", (!pve&&!carousel&&!augment).toString())
                     addProperty("scouting", "false")
-                    addProperty("round", if (pve) "1-1" else "2-2")
-                    addProperty("roundType", if (pve) "pve" else "pvp")
+                    addProperty("round", when { boss->"5-3";loot->"1-1";carousel->"2-4";augment->"2-1";pve->"1-1";else->"2-2" })
+                    addProperty("roundType", when { boss->"boss";carousel->"carousel";augment->"augment";pve||loot->"pve";else->"pvp" })
                     addProperty("pveActive", pve.toString())
-                    addProperty("pveRound", if (pve) "1-1" else "")
+                    addProperty("pveRound", if (pve) if(boss)"5-3" else "1-1" else "")
                     addProperty("pveComponentDrops", if (pve) "2" else "0")
                     addProperty("pveLootTable", if (pve) "opening_cache" else "")
-                    addProperty("bossRound", "false")
+                    addProperty("bossRound", boss.toString())
+                    addProperty("pveLoot", if(loot)"sword,rod,loot:gold,loot:xp,full:rapid_fire" else "")
+                    addProperty("pveLootSerial", if(loot)"1" else "0")
                     addProperty("roundIndex", if (pve) "0" else "4")
                     addProperty("phaseEndsAt", (System.currentTimeMillis() + 120_000L).toString())
                     addProperty("gold", "36")
@@ -361,9 +368,17 @@ object VisualSmokeHarness {
                     addProperty("itemCatalog", itemCatalog())
                     addProperty("lastItemEvent", "")
                     addProperty("itemEventSerial", "0")
-                    addProperty("selectedAugments", selectedAugments())
-                    addProperty("augmentChoices", "")
-                    addProperty("draft", "")
+                    addProperty("selectedAugments", if(augment)"[]" else selectedAugments())
+                    addProperty("augmentChoices", if(augment)"power_surge~Power Surge~Gain attack power;swift_steps~Swift Steps~Gain attack speed;second_wind~Second Wind~Heal after combat" else "")
+                    addProperty("draft", if(carousel)draftPayload() else "")
+                    addProperty("carouselArenaId","carousel_convergence")
+                    addProperty("carouselPosition","0.0,0.0")
+                    addProperty("carouselMaxMove","0.8")
+                    addProperty("carouselMovementRadius","5.6")
+                    addProperty("carouselUnlockAt",(System.currentTimeMillis()-1000L).toString())
+                    addProperty("carouselPickupRadius","0.72")
+                    addProperty("carouselPicked","false")
+                    addProperty("carouselCenterDecoration","minecraft:beacon")
                     addProperty("opponent", if (pve) "Wild Pokémon" else "Rival")
                     addProperty("canEditBoard", (!pve).toString())
                     addProperty("capabilities", if (pve)
@@ -374,8 +389,8 @@ object VisualSmokeHarness {
                 return JsonObject().apply {
                     addProperty("sessionId", "visual-ui-" + scenario)
                     addProperty("gameId", "tft")
-                    addProperty("phase", if (pve) "combat" else "planning")
-                    addProperty("status", if (pve) "1-1 • PvE" else "2-2 • Planning")
+                    addProperty("phase", when { carousel->"draft";pve->"combat";loot->"post";else->"planning" })
+                    addProperty("status", when { carousel->"2-4 • Shared Draft";boss->"5-3 • Boss";pve->"1-1 • PvE";loot->"1-1 • Loot";augment->"2-1 • Augment";else->"2-2 • Planning" })
                     add("board", boardPayload(scenario))
                     add("cards", shopCards())
                     add("actions", JsonArray().apply {
@@ -387,6 +402,15 @@ object VisualSmokeHarness {
                     addProperty("finished", false)
                 }
             }
+
+            private fun draftPayload():String =
+                (0 until 8).joinToString(";") { index ->
+                    val angle=2.0*Math.PI*index/8.0
+                    val x=kotlin.math.cos(angle).toFloat()*3.0f
+                    val y=kotlin.math.sin(angle).toFloat()*3.0f
+                    listOf(index,"unit_"+index,VisualSmokeHarness.smokeSpecies[index],
+                        listOf("sword","rod","tear","vest")[index%4],"",1,1+index%5,"guardian",x,y,"",1.0).joinToString("~")
+                }
 
             private fun boardPayload(scenario: String): JsonArray {
                 val pve = scenario == "pve"
