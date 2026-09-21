@@ -46,6 +46,35 @@ class TftArenaStateTest {
         assertEquals("minecraft:fox", s.viewFor("a").fields["tacticianEntity"])
     }
 
+    @Test fun authoredPokemonScaleSurvivesShopBenchAndBoardPresentation() {
+        val scaled=set.copy(units=set.units.map { unit -> unit.copy(pokemon=unit.presentation.copy(scale=1.75)) })
+        val s=TftSession(seats,seed=913,definition=scaled)
+        val shop=s.viewFor("a").cards.first()
+        assertEquals("1.75",shop.meta["scale"])
+        assertTrue(s.act("a","buy",mapOf("index" to shop.id.substringAfter(':'))).accepted)
+        val bench=s.viewFor("a").fields.getValue("bench").split('~')
+        assertEquals(1.75,bench[9].toDouble())
+        assertTrue(s.act("a","deploy",mapOf("bench" to bench[0],"slot" to "0")).accepted)
+        val board=s.viewFor("a").board[scaled.rules.formationCells].split('~')
+        assertEquals(1.75,board[18].toDouble())
+        val catalog=JsonParser.parseString(s.viewFor("a").fields.getValue("unitCatalog")).asJsonObject
+        assertEquals(1.75,catalog.getAsJsonObject(shop.meta.getValue("unit")).get("scale").asDouble)
+    }
+
+    @Test fun pveEncounterSemanticsAreExplicitForPresentation() {
+        val s=create()
+        val planning=s.viewFor("a")
+        assertEquals("pve",planning.fields["roundType"])
+        assertEquals("false",planning.fields["pveActive"])
+        assertTrue(s.tick(planning.fields.getValue("phaseEndsAt").toLong()+1))
+        val combat=s.viewFor("a")
+        assertEquals("combat",combat.phase)
+        assertEquals("true",combat.fields["pveActive"])
+        assertEquals("1-1",combat.fields["pveRound"])
+        assertTrue(combat.fields.getValue("pveComponentDrops").toInt()>=0)
+        assertEquals("false",combat.fields["bossRound"])
+    }
+
     @Test fun scoutingRejectsForeignViewerAndForeignSessionTarget() {
         val s = create()
         assertFalse(s.act("stranger", "scout", mapOf("target" to "a")).accepted)

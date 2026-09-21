@@ -33,6 +33,7 @@ internal data class TftUnitInfo(
     val id: String,
     val name: String,
     val species: String,
+    val scale: Double,
     val cost: Int,
     val role: String,
     val traits: List<String>,
@@ -255,6 +256,7 @@ class TftUiState {
                 id = id,
                 name = obj.str("name", id),
                 species = obj.str("species"),
+                scale = obj.double("scale", 1.0),
                 cost = obj.int("cost", 1),
                 role = obj.str("role"),
                 traits = obj.str("traits").split(',').filter(String::isNotBlank),
@@ -401,13 +403,14 @@ object TftGameRenderer {
         val casts: Int,
         val damageDone: Long,
         val healingDone: Long,
-        val alive: Boolean
+        val alive: Boolean,
+        val scale: Float
     )
-    private data class BenchToken(val index: Int, val instanceId: String, val unitId: String, val species: String, val star: Int, val aspects: Set<String>, val items: List<String>)
+    private data class BenchToken(val index: Int, val instanceId: String, val unitId: String, val species: String, val star: Int, val aspects: Set<String>, val items: List<String>, val scale: Float)
     private data class PlayerLine(val id: String, val name: String, val hp: Int, val level: Int, val placement: Int, val eliminated: Boolean)
     private data class TraitLine(val id: String, val name: String, val count: Int, val active: Int, val next: Int, val description: String)
     private data class AugmentChoice(val id: String, val name: String, val description: String)
-    private data class DraftOffer(val index: Int, val unitId: String, val species: String, val item: String, val takenBy: String, val unlocked: Boolean, val cost: Int, val x: Float, val y: Float, val aspects: Set<String>)
+    private data class DraftOffer(val index: Int, val unitId: String, val species: String, val item: String, val takenBy: String, val unlocked: Boolean, val cost: Int, val x: Float, val y: Float, val aspects: Set<String>, val scale: Float)
 
     data class Hooks(
         val control: (UiRect, String, Boolean, () -> Unit) -> Unit,
@@ -574,7 +577,16 @@ object TftGameRenderer {
         val benchSlots = fields.int("benchSlots", 9).coerceIn(1, 24)
         val arenaId=fields.str("arenaId","tft")
         val arena=MinecraftArenaRegistry.definition(arenaId)
-        val cameraRole=when{phase=="draft"->ArenaCameraRole.CAROUSEL;fields.bool("scouting")->ArenaCameraRole.SCOUTING;fields.str("result").equals("Victory",true)->ArenaCameraRole.VICTORY;fields.bool("eliminated")->ArenaCameraRole.DEFEAT;phase=="combat"->ArenaCameraRole.COMBAT;else->ArenaCameraRole.PREPARATION}
+        val cameraRole=when{
+            phase=="draft"->ArenaCameraRole.CAROUSEL
+            fields.bool("scouting")->ArenaCameraRole.SCOUTING
+            fields.str("result").equals("Victory",true)->ArenaCameraRole.VICTORY
+            fields.bool("eliminated")->ArenaCameraRole.DEFEAT
+            phase=="combat"&&fields.bool("bossRound")->ArenaCameraRole.BOSS_INTRO
+            phase=="combat"&&fields.bool("pveActive")->ArenaCameraRole.PVE_INTRO
+            phase=="combat"->ArenaCameraRole.COMBAT
+            else->ArenaCameraRole.PREPARATION
+        }
         val presentation=ArenaPresentationRuntime.frame(arenaId,cameraRole,SceneCameras.TFT,phase,fields.str("result"))
         val authoredCamera=ui.framedCamera(presentation?.camera?:arena?.camera(cameraRole,SceneCameras.TFT)?:SceneCameras.TFT,arena,rect.inset(4))
 
@@ -596,7 +608,7 @@ object TftGameRenderer {
                 elevation = arena?.boardAnchor(index)?.z ?: 0f,
                 team = unit.team,
                 yaw = if (unit.team == 0) 0f else 180f,
-                scale = if (unit.star >= 3) 1.06f else 1f,
+                scale = unit.scale * (if (unit.star >= 3) 1.06f else 1f),
                 hp = unit.hp,
                 maxHp = unit.maxHp,
                 mana = unit.mana,
@@ -614,7 +626,7 @@ object TftGameRenderer {
                 boardY = arena?.benchAnchor(unit.index)?.y ?: combatRows + 0.8f,
                 elevation = arena?.benchAnchor(unit.index)?.z ?: 0f,
                 yaw = 180f,
-                scale = 0.65f,
+                scale = unit.scale * 0.65f,
                 star = unit.star
             )
         }
@@ -655,8 +667,13 @@ object TftGameRenderer {
 
         val tacticianNode=arena?.let { definition ->
             val pose=ui.tactician(definition.tacticianSpawn,definition.tacticianMovementBounds,fields.str("tacticianState","IDLE"))
-            SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble())),fields.str("tacticianEntity"),pose.state,fields.str("tacticianEntity").isNotBlank())
+            val tacticianScale=fields.double("tacticianScale",1.0).coerceIn(.2,3.0)
+            SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),fields.str("tacticianEntity"),pose.state,fields.str("tacticianEntity").isNotBlank())
         }
+        val pveLootNodes=if(phase=="combat"&&fields.bool("pveActive")) arena?.lootAnchors.orEmpty().mapIndexed { index,anchor ->
+            val yaw=((System.nanoTime()/35_000_000L+index*19)%360L).toDouble()
+            SceneItemModelNode("tft:pve-loot:"+index,SceneTransform(SceneVec3(anchor.x.toDouble(),anchor.y.toDouble(),anchor.z.toDouble()+.35),SceneVec3(0.0,0.0,yaw),SceneVec3(.72,.72,.72)),"minecraft:chest")
+        } else emptyList()
         val frame = PokemonScene3D.render(
             gui = gui,
             font = font,
@@ -676,8 +693,19 @@ object TftGameRenderer {
             platforms = (0 until benchSlots).map { index -> val anchor=arena?.benchAnchor(index);ScenePlatform(anchor?.x?:index * 0.75f, anchor?.y?:combatRows + 0.8f,
                 selected = ui.selectedOrigin == "bench" && ui.selectedIndex == index) },
             extraRows = 2,
+            sceneItems = pveLootNodes,
             tactician = tacticianNode
         )
+
+        if(phase=="combat"&&fields.bool("pveActive")) {
+            val label=(if(fields.bool("bossRound")) "BOSS • " else "PvE • ")+fields.str("round")
+            val drops=fields.int("pveComponentDrops")
+            val bannerW=min(190,rect.width-20).coerceAtLeast(80)
+            val bannerX=rect.x+(rect.width-bannerW)/2
+            gui.fill(bannerX,rect.y+18,bannerX+bannerW,rect.y+36,0xD00A1114.toInt())
+            gui.fill(bannerX,rect.y+18,bannerX+bannerW,rect.y+20,if(fields.bool("bossRound"))danger else gold)
+            gui.drawCenteredString(font,fit(font,if(drops>0) label+" • loot "+drops else label,bannerW-8),bannerX+bannerW/2,rect.y+24,text)
+        }
 
         presentation?.let { p ->
             MinecraftArenaRenderer.renderPresentation(gui,frame.layout,p,phase)
@@ -989,7 +1017,7 @@ object TftGameRenderer {
         val entities = offers.filter { it.takenBy.isBlank() }.map { offer -> PokemonSceneEntity(
             id = "carousel:${offer.index}", view = pokemonView(offer.species, offer.aspects, offer.unitId),
             label = shortUnit(offer.unitId), boardX = offer.x + center.x, boardY = offer.y + center.y,
-            scale = 0.82f + offer.cost * 0.025f, star = 1, elevation = center.z
+            scale = offer.scale * (0.82f + offer.cost * 0.025f), star = 1, elevation = center.z
         ) }
         val pos = fields.str("carouselPosition").split(',')
         val playerX = pos.getOrNull(0)?.toFloatOrNull() ?: 0f
@@ -999,11 +1027,17 @@ object TftGameRenderer {
         val carouselBounds=ArenaRegion(center.x-radius,center.y-radius,center.x+radius,center.y+radius)
         val tactician=ui.tactician(target,carouselBounds,fields.str("tacticianState","CAROUSEL_MOVEMENT"))
         val time=System.nanoTime()/1_000_000_000.0
-        val items=offers.filter { it.takenBy.isBlank() }.mapNotNull { offer ->
-            val stack=ui.itemStack(offer.item) ?: return@mapNotNull null
-            SceneItemModelNode("carousel:item:${offer.index}",SceneTransform(SceneVec3((offer.x+center.x).toDouble(),(offer.y+center.y).toDouble(),center.z+1.3+kotlin.math.sin(time*2+offer.index)*.08),SceneVec3(0.0,0.0,time*35%360),SceneVec3(.8,.8,.8)),BuiltInRegistries.ITEM.getKey(stack.item).toString())
+        val items=buildList {
+            fields.str("carouselCenterDecoration").takeIf(String::isNotBlank)?.let { decoration ->
+                add(SceneItemModelNode("carousel:center",SceneTransform(SceneVec3(center.x.toDouble(),center.y.toDouble(),center.z.toDouble()+.35),SceneVec3(0.0,0.0,time*18%360),SceneVec3(1.15,1.15,1.15)),decoration))
+            }
+            offers.filter { it.takenBy.isBlank() }.mapNotNullTo(this) { offer ->
+                val stack=ui.itemStack(offer.item) ?: return@mapNotNullTo null
+                SceneItemModelNode("carousel:item:"+offer.index,SceneTransform(SceneVec3((offer.x+center.x).toDouble(),(offer.y+center.y).toDouble(),center.z+1.3+kotlin.math.sin(time*2+offer.index)*.08),SceneVec3(0.0,0.0,time*35%360),SceneVec3(.8,.8,.8)),BuiltInRegistries.ITEM.getKey(stack.item).toString())
+            }
         }
-        val actor=SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble())),fields.str("tacticianEntity"),tactician.state)
+        val tacticianScale=fields.double("tacticianScale",1.0).coerceIn(.2,3.0)
+        val actor=SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),fields.str("tacticianEntity"),tactician.state)
         val frame = PokemonScene3D.render(gui, font, board.inset(4), arena?.boardColumns ?: 12, arena?.boardRows ?: 12, entities, ui.scene,
             camera = ui.camera(arena?.camera(ArenaCameraRole.CAROUSEL,SceneCameras.TFT)?:SceneCameras.TFT), arenaId = arenaId, arenaSeed = "carousel:$arenaSeed",sceneItems=items,tactician=actor)
         gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), board.x + board.width / 2, board.y + 5, gold)
@@ -1203,13 +1237,14 @@ object TftGameRenderer {
             p.getOrNull(14)?.toIntOrNull() ?: 0,
             p.getOrNull(15)?.toLongOrNull() ?: 0L,
             p.getOrNull(16)?.toLongOrNull() ?: 0L,
-            p.getOrNull(17) != "0"
+            p.getOrNull(17) != "0",
+            p.getOrNull(18)?.toFloatOrNull()?.coerceIn(.1f,8f) ?: 1f
         )
     }
 
     private fun parseBench(raw: String): List<BenchToken> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
         val p = value.split('~'); if (p.size < 5) return@mapNotNull null
-        BenchToken(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4].toIntOrNull() ?: 1, p.getOrNull(5).orEmpty().split(',').filter(String::isNotBlank).toSet(), p.getOrNull(6).orEmpty().split(',').filter(String::isNotBlank))
+        BenchToken(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4].toIntOrNull() ?: 1, p.getOrNull(5).orEmpty().split(',').filter(String::isNotBlank).toSet(), p.getOrNull(6).orEmpty().split(',').filter(String::isNotBlank), p.getOrNull(9)?.toFloatOrNull()?.coerceIn(.1f,8f) ?: 1f)
     }
 
     private fun parsePlayers(raw: String): List<PlayerLine> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
@@ -1231,7 +1266,8 @@ object TftGameRenderer {
         val p = value.split('~'); if (p.size < 6) return@mapNotNull null
         DraftOffer(p[0].toIntOrNull() ?: return@mapNotNull null, p[1], p[2], p[3], p[4], p[5] == "1",
             p.getOrNull(6)?.toIntOrNull() ?: 1, p.getOrNull(8)?.toFloatOrNull() ?: 0f,
-            p.getOrNull(9)?.toFloatOrNull() ?: 0f, p.getOrNull(10)?.split(',')?.filter(String::isNotBlank)?.toSet().orEmpty())
+            p.getOrNull(9)?.toFloatOrNull() ?: 0f, p.getOrNull(10)?.split(',')?.filter(String::isNotBlank)?.toSet().orEmpty(),
+            p.getOrNull(11)?.toFloatOrNull()?.coerceIn(.1f,8f) ?: 1f)
     }
 
     private fun JsonObject.actionEnabled(id: String): Boolean = getAsJsonArray("actions")?.let { arr ->

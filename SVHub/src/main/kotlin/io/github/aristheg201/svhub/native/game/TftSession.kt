@@ -291,6 +291,7 @@ class TftSession(
                     "unit" to def.id,
                     "species" to def.presentation.species,
                     "aspects" to def.presentation.resolverAspects().joinToString(","),
+                    "scale" to def.presentation.scale.toString(),
                     "traits" to def.traits.joinToString(","),
                     "role" to def.role,
                     "team" to def.team,
@@ -307,8 +308,11 @@ class TftSession(
             add(NativeActionView("buy_xp", "Buy XP", "${xpGold}g", shopEnabled && player.gold >= xpGold && player.level < progression.maxLevel))
             add(NativeActionView("resign", "Resign", "", !finished && !player.eliminated))
         }
-        val active = combatFor(player.id)
-        val opponent = active?.opponentNameFor(player.id).orEmpty()
+        val active = combatFor(observed.id)
+        val opponent = active?.opponentNameFor(observed.id).orEmpty()
+        val round = roundDefinition()
+        val activePve = active?.pve
+        val observedTactician = set.tacticians.firstOrNull { it.id == observed.tactician }
         val status = when {
             finished -> result.orEmpty()
             player.eliminated -> "Eliminated • #${player.placement ?: "?"}"
@@ -338,15 +342,22 @@ class TftSession(
                 "shopSlots" to set.rules.shopSlots.toString(),
                 "benchSlots" to set.rules.benchSlots.toString(),
                 "arenaId" to observed.arena,
-                "tacticianEntity" to set.tacticians.firstOrNull { it.id == observed.tactician }?.entity.orEmpty(),
+                "tacticianEntity" to observedTactician?.entity.orEmpty(),
                 "tacticianId" to observed.tactician,
-                "tacticianState" to when { player.eliminated -> "defeat"; finished && winner==player.id -> "victory"; finished -> "defeat"; System.currentTimeMillis()<player.tacticianEmoteUntil -> "emote"; phase==Phase.DRAFT && player.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
-                "tacticianTarget" to if(phase==Phase.DRAFT) "${player.carouselX},${player.carouselY}" else "",
+                "tacticianScale" to (observedTactician?.scale ?: 1.0).toString(),
+                "tacticianState" to when { observed.eliminated -> "defeat"; finished && winner==observed.id -> "victory"; finished -> "defeat"; System.currentTimeMillis()<observed.tacticianEmoteUntil -> "emote"; phase==Phase.DRAFT && observed.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
+                "tacticianTarget" to if(phase==Phase.DRAFT) "${observed.carouselX},${observed.carouselY}" else "",
                 "tacticianPresentationOnly" to "true",
                 "scouting" to scouting.toString(),
                 "scoutTarget" to observed.id,
                 "scoutName" to observed.name,
                 "round" to roundLabel(),
+                "roundType" to round.type,
+                "pveActive" to (activePve != null).toString(),
+                "pveRound" to activePve?.round.orEmpty(),
+                "pveComponentDrops" to (activePve?.componentDrops ?: 0).toString(),
+                "pveLootTable" to activePve?.lootTable.orEmpty(),
+                "bossRound" to (round.type == "boss").toString(),
                 "roundIndex" to roundIndex.toString(),
                 "phaseEndsAt" to phaseEndsAt.toString(),
                 "gold" to player.gold.toString(),
@@ -886,7 +897,7 @@ class TftSession(
         player.board.forEach { (slot, unit) ->
             val def = unitDefs[unit.unitId] ?: return@forEach
             val cell = formationCells + slot
-            if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.presentation.species, unit.star, "-1", "-1", "0", "0", "0", def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role, "", 0, 0L, 0L).joinToString("~")
+            if (cell in cells.indices) cells[cell] = listOf(unit.instanceId, unit.unitId, def.presentation.species, unit.star, "-1", "-1", "0", "0", "0", def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role, "", 0, 0L, 0L, 1, def.presentation.scale).joinToString("~")
         }
         return cells
     }
@@ -895,13 +906,13 @@ class TftSession(
         unit.instanceId, unit.definition.id, unit.definition.presentation.species, unit.star, unit.hp, unit.maxHp,
         unit.mana, unit.maxMana, relativeTeam, unit.definition.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","),
         unit.definition.cost, unit.definition.role, unit.targetId.orEmpty(), unit.casts, unit.damageDone, unit.healingDone,
-        if (unit.alive) 1 else 0
+        if (unit.alive) 1 else 0, unit.definition.presentation.scale
     ).joinToString("~")
 
     private fun encodeBench(player: PlayerState): String = player.bench.mapIndexedNotNull { index, unit ->
         unit ?: return@mapIndexedNotNull null
         val def = unitDefs[unit.unitId] ?: return@mapIndexedNotNull null
-        listOf(index, unit.instanceId, unit.unitId, def.presentation.species, unit.star, def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role).joinToString("~")
+        listOf(index, unit.instanceId, unit.unitId, def.presentation.species, unit.star, def.presentation.resolverAspects().joinToString(","), unit.items.joinToString(","), def.cost, def.role, def.presentation.scale).joinToString("~")
     }.joinToString(";")
 
     private fun encodePublicContestedUnits(viewerId:String):String = players.values.asSequence()
@@ -939,6 +950,7 @@ class TftSession(
                 add(def.id, JsonObject().apply {
                     addProperty("name", def.id.replace('_', ' ').replaceFirstChar { it.uppercase() }.take(96))
                     addProperty("species", def.presentation.species.take(160))
+                    addProperty("scale", def.presentation.scale)
                     addProperty("cost", def.cost)
                     addProperty("role", def.role.take(64))
                     addProperty("traits", def.traits.joinToString(",").take(512))
@@ -1022,7 +1034,7 @@ class TftSession(
         val unlocked = System.currentTimeMillis() >= player.draftUnlockAt
         return draftOffers.joinToString(";") { offer ->
             val def = unitDefs[offer.unitId]
-            listOf(offer.index, offer.unitId, def?.presentation?.species ?: "", offer.itemId, offer.takenBy ?: "", if (unlocked) 1 else 0, def?.cost ?: 1, def?.traits?.joinToString(",") ?: "", offer.x, offer.y, def?.presentation?.resolverAspects()?.joinToString(",") ?: "").joinToString("~")
+            listOf(offer.index, offer.unitId, def?.presentation?.species ?: "", offer.itemId, offer.takenBy ?: "", if (unlocked) 1 else 0, def?.cost ?: 1, def?.traits?.joinToString(",") ?: "", offer.x, offer.y, def?.presentation?.resolverAspects()?.joinToString(",") ?: "", def?.presentation?.scale ?: 1.0).joinToString("~")
         }
     }
 
