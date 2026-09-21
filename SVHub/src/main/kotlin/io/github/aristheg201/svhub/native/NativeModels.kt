@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.native
 
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.native.store.CosmeticAccount
 
 data class NativeSkin(
     val id: String,
@@ -34,24 +35,23 @@ object NativeSkinCatalog {
 data class NativeGameStats(var played: Int = 0, var wins: Int = 0, var losses: Int = 0, var draws: Int = 0)
 
 data class NativeProfile(
-    var schema: Int = 3,
+    var schema: Int = 4,
     var revision: Long = 0L,
     var arcadeTokens: Long = 0L,
     var gachaTickets: Int = 0,
     var pity: MutableMap<String, Int> = linkedMapOf(),
     var stats: MutableMap<String, NativeGameStats> = linkedMapOf(),
     var appliedTransactions: MutableMap<String, Long> = linkedMapOf(),
-    var lastUpdatedEpochMs: Long = System.currentTimeMillis()
+    var lastUpdatedEpochMs: Long = System.currentTimeMillis(),
+    var cosmetics: CosmeticAccount = CosmeticAccount()
 ) {
     fun balance(currency: String): Long = when (currency.lowercase()) {
-        "arcade" -> arcadeTokens
         "ticket" -> gachaTickets.toLong()
         else -> 0L
     }
     fun debit(currency: String, amount: Long): Boolean {
         if (amount < 0 || balance(currency) < amount) return false
         when (currency.lowercase()) {
-            "arcade" -> arcadeTokens -= amount
             "ticket" -> gachaTickets = (gachaTickets - amount.toInt()).coerceAtLeast(0)
             else -> return false
         }
@@ -60,7 +60,6 @@ data class NativeProfile(
     fun credit(currency: String, amount: Long) {
         if (amount <= 0) return
         when (currency.lowercase()) {
-            "arcade" -> arcadeTokens = (arcadeTokens + amount).coerceAtMost(MAX_BALANCE)
             "ticket" -> gachaTickets = (gachaTickets + amount.toInt()).coerceAtMost(1_000_000)
             else -> return
         }

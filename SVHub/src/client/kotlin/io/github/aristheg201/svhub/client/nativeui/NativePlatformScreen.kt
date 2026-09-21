@@ -37,6 +37,7 @@ class NativePlatformScreen(
     )
 
     private val gson = Gson()
+    private val storeUi = CosmeticStoreUi()
     private val controls = mutableListOf<Control>()
     private val sceneInputs = mutableListOf<(Double, Double) -> Boolean>()
     private val itemDropInputs = mutableListOf<(Double, Double) -> Boolean>()
@@ -138,6 +139,10 @@ class NativePlatformScreen(
             "dashboard" -> renderDashboard(gui, layout, mouseX, mouseY)
             "gacha" -> renderGacha(gui, layout, mouseX, mouseY)
             "skins" -> renderSkins(gui, layout, mouseX, mouseY)
+            "store" -> CosmeticStoreRenderer.render(gui, font, layout.content.inset(8), state, storeUi, CosmeticStoreRenderer.Hooks(
+                control = { rect, label, enabled, active, action -> addControl(rect, label, mouseX, mouseY, active = active, enabled = enabled, action = action) },
+                intent = ::intent
+            ))
             "arcade" -> renderArcade(gui, layout, mouseX, mouseY)
             "companions" -> renderCompanions(gui, layout, mouseX, mouseY)
             "wallet" -> renderWallet(gui, layout)
@@ -172,14 +177,15 @@ class NativePlatformScreen(
     private fun drawNavigation(gui: GuiGraphics, layout: NativeLayout, mouseX: Int, mouseY: Int) {
         val entries = listOf(
             "dashboard" to "gui.svhub.nav.home", "gacha" to "gui.svhub.nav.gacha", "skins" to "gui.svhub.nav.skins",
-            "arcade" to "gui.svhub.nav.arcade", "companions" to "gui.svhub.nav.arena"
+            "arcade" to "gui.svhub.nav.arcade", "store" to "gui.svhub.nav.store", "companions" to "gui.svhub.nav.arena"
         )
         if (layout.verticalNavigation) {
             gui.fill(layout.navigation.x, layout.navigation.y, layout.navigation.right, layout.navigation.bottom, 0xE6111C20.toInt())
             var y = layout.navigation.y + 7
             entries.forEach { (id, key) ->
-                addControl(UiRect(layout.navigation.x + 5, y, layout.navigation.width - 10, 34), tr(key), mouseX, mouseY, id, id == module) { open(id) }
-                y += 39
+                val h = ((layout.navigation.height - 48) / entries.size).coerceIn(18, 39)
+                addControl(UiRect(layout.navigation.x + 5, y, layout.navigation.width - 10, h - 3), tr(key), mouseX, mouseY, id, id == module) { open(id) }
+                y += h
             }
             addControl(UiRect(layout.navigation.x + 5, layout.navigation.bottom - 39, layout.navigation.width - 10, 32), tr("gui.svhub.nav.wallet"), mouseX, mouseY, "wallet", module == "wallet") { open("wallet") }
         } else {
@@ -201,7 +207,8 @@ class NativePlatformScreen(
             Triple("skins", tr("gui.svhub.nav.skins"), "${state.num("ownedSkins")} ${tr("gui.svhub.owned")}"),
             Triple("arcade", tr("gui.svhub.nav.arcade"), "${state.num("gameCount")} ${tr("gui.svhub.games")}"),
             Triple("companions", tr("gui.svhub.nav.arena"), tr("gui.svhub.arena.ready")),
-            Triple("wallet", tr("gui.svhub.nav.wallet"), "${wallet?.num("arcade") ?: 0} ${tr("gui.svhub.token")}")
+            Triple("store", tr("gui.svhub.nav.store"), tr("gui.svhub.store.preview")),
+            Triple("wallet", tr("gui.svhub.nav.wallet"), "${wallet?.str("BeastCoin", "—") ?: "—"} BeastCoin")
         )
         val ultraCompact = area.height < 130
         val cols = when { ultraCompact -> 3; layout.density == UiDensity.WIDE -> 3; else -> 2 }
@@ -479,7 +486,16 @@ class NativePlatformScreen(
         }
     }
 
-    private fun renderWallet(gui:GuiGraphics,layout:NativeLayout){val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet");drawBalance(gui,area.x,area.y,area.width,"wallet",tr("gui.svhub.token"),wallet?.num("arcade")?:0,accent);drawBalance(gui,area.x,area.y+44,area.width,"gacha",tr("gui.svhub.ticket"),wallet?.num("ticket")?:0,gold)}
+    private fun renderWallet(gui:GuiGraphics,layout:NativeLayout){
+        val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet")
+        listOf("BeastCoin", "HunterCoin").forEachIndexed { index, currency ->
+            val y=area.y+index*44
+            gui.fill(area.x,y,area.right,y+36,panelAlt)
+            gui.drawString(font,currency,area.x+12,y+6,muted,false)
+            gui.drawString(font,wallet?.str(currency,"—")?:"—",area.x+12,y+21,gold,true)
+        }
+        drawBalance(gui,area.x,area.y+88,area.width,"gacha",tr("gui.svhub.ticket"),wallet?.num("ticket")?:0,gold)
+    }
 
     private fun renderGame(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
         val view=state.getAsJsonObject("view")?:return

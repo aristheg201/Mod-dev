@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.SVHub
 import io.github.aristheg201.svhub.SVHubRuntime
 import io.github.aristheg201.svhub.util.AtomicFiles
+import io.github.aristheg201.svhub.native.store.CosmeticAccount
 import net.minecraft.server.level.ServerPlayer
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,7 +53,10 @@ object NativeProfileStore {
         val pool = io ?: return
         try {
             pool.execute {
-                val profile = load(id)
+                val profile = runCatching { load(id) }.getOrElse {
+                    SVHub.LOGGER.error("Native profile load failed; refusing to replace existing entitlements for {}", id, it)
+                    return@execute
+                }
                 val server = SVHubRuntime.server ?: return@execute
                 server.execute {
                     val live = server.playerList.getPlayer(id)
@@ -102,6 +106,15 @@ object NativeProfileStore {
     }
 
     fun hasTransaction(id: UUID, transactionId: String): Boolean = profiles[id]?.appliedTransactions?.containsKey(transactionId) == true
+
+    fun mutateDurable(id: UUID, mutation: (NativeProfile) -> Unit, completion: () -> Unit) {
+        val p = requireNotNull(profiles[id]) { "Profile must be loaded" }
+        mutation(p)
+        p.revision = nextRevision(p.revision)
+        p.touch()
+        addWaiter(id, Waiter(p.revision, DurableMutationResult.APPLIED) { completion() })
+        scheduleSave(id, snapshot(p))
+    }
 
     fun isTransactionDurable(id: UUID, transactionId: String): Boolean {
         val revision = profiles[id]?.appliedTransactions?.get(transactionId) ?: return false
@@ -153,7 +166,7 @@ object NativeProfileStore {
         return runCatching {
             val o = gson.fromJson(Files.readString(path), JsonObject::class.java) ?: return@runCatching NativeProfile()
             val p = NativeProfile(
-                schema = 3,
+                schema = 4,
                 revision = o.number("revision"),
                 arcadeTokens = o.number("arcadeTokens"),
                 gachaTickets = o.number("gachaTickets").toInt(),
@@ -168,16 +181,18 @@ object NativeProfileStore {
             o.getAsJsonObject("appliedTransactions")?.entrySet()?.forEach { (k, v) ->
                 runCatching { v.asLong }.getOrNull()?.takeIf { it > 0L }?.let { p.appliedTransactions[k.take(160)] = it }
             }
+            if (o.has("cosmetics")) p.cosmetics = requireNotNull(gson.fromJson(o.get("cosmetics"), CosmeticAccount::class.java))
+            require(p.cosmetics.schema == 1) { "Unsupported cosmetics schema" }
             p
-        }.onFailure { SVHub.LOGGER.warn("Unable to load native profile {}", id, it) }.getOrDefault(NativeProfile())
+        }.getOrThrow()
     }
 
     private fun snapshot(p: NativeProfile) = NativeProfile(
-        schema = 3, revision = p.revision, arcadeTokens = p.arcadeTokens, gachaTickets = p.gachaTickets,
+        schema = 4, revision = p.revision, arcadeTokens = p.arcadeTokens, gachaTickets = p.gachaTickets,
         pity = p.pity.toMutableMap(),
         stats = p.stats.mapValuesTo(linkedMapOf()) { (_, s) -> NativeGameStats(s.played, s.wins, s.losses, s.draws) },
         appliedTransactions = p.appliedTransactions.toMutableMap(),
-        lastUpdatedEpochMs = p.lastUpdatedEpochMs
+        lastUpdatedEpochMs = p.lastUpdatedEpochMs, cosmetics = p.cosmetics.copyDeep()
     )
 
     private fun scheduleSave(id: UUID, profileSnapshot: NativeProfile) {
@@ -245,7 +260,7 @@ object NativeProfileStore {
     }
 
     private fun sanitize(p: NativeProfile): NativeProfile {
-        p.schema = 3
+        p.schema = 4
         p.revision = p.revision.coerceAtLeast(0L)
         p.arcadeTokens = p.arcadeTokens.coerceIn(0, NativeProfile.MAX_BALANCE)
         p.gachaTickets = p.gachaTickets.coerceIn(0, 1_000_000)

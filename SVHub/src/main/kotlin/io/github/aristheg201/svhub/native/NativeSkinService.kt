@@ -27,7 +27,7 @@ object NativeSkinService {
     }
 
     internal fun skinJson(skin:NativeSkin,owned:Set<String>)=JsonObject().apply{addProperty("id",skin.id);addProperty("name",skin.name);addProperty("species",skin.species);addProperty("aspect",skin.aspect);addProperty("source",skin.source);addProperty("rarity",skin.rarity);addProperty("perfectIvs",skin.perfectIvs);addProperty("owned",skin.id in owned)}
-    internal fun walletJson(p:NativeProfile)=JsonObject().apply{addProperty("arcade",p.arcadeTokens);addProperty("ticket",p.gachaTickets);addProperty("skinEconomy","SkiesSkins/BECONOMY")}
+    internal fun walletJson(p:NativeProfile)=JsonObject().apply{addProperty("ticket",p.gachaTickets)}
 
     internal fun bonusPokemonUuidForRequest(requestId:String):UUID =
         UUID.nameUUIDFromBytes(("svhub:gacha-bonus:"+requestId).toByteArray(StandardCharsets.UTF_8))

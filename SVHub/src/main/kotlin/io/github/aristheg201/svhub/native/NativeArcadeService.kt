@@ -340,7 +340,10 @@ object NativeArcadeService {
         "chess" -> ChessSession(seats); "xiangqi" -> XiangqiSession(seats); "ludo" -> LudoSession(seats)
         "uno" -> UnoSession(seats); "pokecards" -> CardDuelSession(seats); "tft" -> TftSession(seats, tacticianSelections = seats.mapNotNull { seat ->
             val playerId = runCatching { UUID.fromString(seat.id) }.getOrNull() ?: return@mapNotNull null
-            io.github.aristheg201.svhub.companion.VanillaCompanionService.selectedFor(playerId)?.let { seat.id to it }
+            NativeCosmeticService.selectedTactician(playerId)?.let { seat.id to it }
+        }.toMap(), arenaSelections = seats.mapNotNull { seat ->
+            val playerId = runCatching { UUID.fromString(seat.id) }.getOrNull() ?: return@mapNotNull null
+            NativeCosmeticService.selectedArena(playerId)?.let { seat.id to it }
         }.toMap())
         "tower_defense" -> TowerDefenseSession(seats); else -> error("Unknown native game $id")
     }

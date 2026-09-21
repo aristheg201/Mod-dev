@@ -16,6 +16,7 @@ object NativePlatform {
     private val pendingOpen = ConcurrentHashMap<UUID, String>()
     fun start(root: Path) {
         NativeProfileStore.start(root.resolve("profiles"))
+        NativeCosmeticService.start(root.resolve("cosmetic-store.json"))
         NativeArcadeService.start(root.resolve("arcade"))
         NativeGachaTransactionService.start(root.resolve("gacha"))
     }
@@ -23,7 +24,7 @@ object NativePlatform {
         SkiesSkinsBridge.invalidate()
         NativeProfileStore.onJoin(player) { live ->
             NativeArcadeService.onReconnect(live)
-            NativeRewardService.recoverPlayer(live.uuid)
+            NativeCosmeticService.recover(live.uuid) { NativeRewardService.recoverPlayer(live.uuid) }
             NativeGachaService.recoverPlayer(live)
             pendingOpen.remove(live.uuid)?.let { requested -> open(live, requested) }
         }
@@ -76,6 +77,7 @@ object NativePlatform {
         return when (module) {
             "gacha" -> handleGacha(player, action, data)
             "skins" -> handleSkins(player, action, data)
+            "store" -> NativeCosmeticService.handle(player, action, data)
             "arcade" -> handleArcade(player, action, data)
             "game" -> handleGame(player, action, data)
             "companions" -> handleCompanions(player, action, data)
@@ -89,6 +91,7 @@ object NativePlatform {
     }
     fun state(player: ServerPlayer, module: String): JsonObject = when (module) {
         "gacha" -> NativeGachaService.state(player); "skins" -> NativeSkinService.state(player); "arcade" -> NativeArcadeService.lobbyState(player)
+        "store" -> NativeCosmeticService.state(player)
         "game" -> gameState(player); "companions" -> companionState(player); "wallet" -> walletState(player); else -> dashboardState(player)
     }
     fun refresh(player: ServerPlayer, module: String) = NativePlatformNetwork.sendState(player, module, state(player, module))
@@ -182,16 +185,19 @@ object NativePlatform {
 
     private fun dashboardState(player: ServerPlayer) = JsonObject().apply {
         addProperty("module", "dashboard"); addProperty("skinBackend", "SkiesSkins"); addProperty("skinBackendReady", SkiesSkinsBridge.available())
-        add("wallet", NativeSkinService.walletJson(NativeProfileStore.get(player.uuid) ?: NativeProfile())); addProperty("ownedSkins", SkiesSkinsBridge.ownedCount(player)); addProperty("skinTotal", NativeSkinCatalog.all.size); addProperty("gameCount", NativeArcadeService.games.size)
-        add("features", JsonArray().also { a -> listOf("gacha", "skins", "companions", "arcade", "wallet").forEach(a::add) })
+        add("wallet", playerWallet(player)); addProperty("ownedSkins", SkiesSkinsBridge.ownedCount(player)); addProperty("skinTotal", NativeSkinCatalog.all.size); addProperty("gameCount", NativeArcadeService.games.size)
+        add("features", JsonArray().also { a -> listOf("gacha", "skins", "companions", "arcade", "store", "wallet").forEach(a::add) })
     }
-    private fun walletState(player: ServerPlayer) = JsonObject().apply { val p = NativeProfileStore.get(player.uuid) ?: NativeProfile(); addProperty("module", "wallet"); add("wallet", NativeSkinService.walletJson(p)); addProperty("ownedSkins", SkiesSkinsBridge.ownedCount(player)); addProperty("skinBackend", "SkiesSkins") }
+    private fun playerWallet(player: ServerPlayer) = NativeSkinService.walletJson(NativeProfileStore.get(player.uuid) ?: NativeProfile()).apply {
+        NativeCosmeticService.balances(player.uuid).entrySet().forEach { (key, value) -> add(key, value) }
+    }
+    private fun walletState(player: ServerPlayer) = JsonObject().apply { addProperty("module", "wallet"); add("wallet", playerWallet(player)); addProperty("ownedSkins", SkiesSkinsBridge.ownedCount(player)); addProperty("skinBackend", "SkiesSkins") }
     private fun companionState(player: ServerPlayer) = JsonObject().apply {
         addProperty("module", "companions"); addProperty("selected", VanillaCompanionService.selectedFor(player.uuid).orEmpty())
         add("companions", JsonArray().also { a -> COMPANIONS.forEach { (id, name) -> a.add(JsonObject().apply { addProperty("id", id); addProperty("name", name); CompanionArena.roster[id]?.let { fighter -> addProperty("hp", fighter.maxHp); addProperty("power", fighter.power); addProperty("guard", fighter.guard); addProperty("speed", fighter.speed) } }) } })
         CompanionArena.appendState(player.uuid, this)
     }
     private fun gameState(player: ServerPlayer) = NativeArcadeService.gameState(player)
-    private val MODULES = setOf("dashboard", "gacha", "skins", "companions", "arcade", "game", "wallet")
+    private val MODULES = setOf("dashboard", "gacha", "skins", "store", "companions", "arcade", "game", "wallet")
     private val COMPANIONS = linkedMapOf("allay" to "Allay", "axolotl" to "Axolotl", "bee" to "Bee", "cat" to "Cat", "fox" to "Fox", "frog" to "Frog", "parrot" to "Parrot", "rabbit" to "Rabbit", "wolf" to "Wolf", "armadillo" to "Armadillo", "sniffer" to "Sniffer")
 }

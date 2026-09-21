@@ -30,7 +30,8 @@ class TftSession(
     override val sessionId: String = NativeIds.session("tft"),
     definition: TftSetDefinition = TftSetRegistry.active(),
     private val restoreState: JsonObject? = null,
-    tacticianSelections: Map<String, String> = emptyMap()
+    tacticianSelections: Map<String, String> = emptyMap(),
+    arenaSelections: Map<String, String> = emptyMap()
 ) : NativeGameSession {
     override val gameId: String = "tft"
     private val set = TftDefinitionValidator.validate(TftSetRegistry.migrateDefinition(definition))
@@ -61,7 +62,7 @@ class TftSession(
     init {
         require(seats.size in 2..8) { "Pokémon TFT requires 2-8 trainers" }
         if (restoreState == null) {
-            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, bench = MutableList(benchSlots) { null }, shop = MutableList(shopSlots) { null }, tactician = resolveTactician(tacticianSelections[seat.id]), arena = set.rules.defaultArena) }
+            seats.forEach { seat -> players[seat.id] = PlayerState(seat.id, seat.name, bench = MutableList(benchSlots) { null }, shop = MutableList(shopSlots) { null }, tactician = resolveTactician(tacticianSelections[seat.id]), arena = arenaSelections[seat.id]?.takeIf { it in set.rules.arenas } ?: set.rules.defaultArena) }
             startPlanning(System.currentTimeMillis(), firstRound = true)
         } else {
             restoreSnapshot(restoreState)

@@ -107,9 +107,10 @@ object NativeRewardService {
             val id = runCatching { UUID.fromString(entry.playerId) }.getOrNull() ?: return@forEach
             if (NativeProfileStore.get(id) == null) return@forEach
             val tx = "reward:${record.sessionId}"
+            if (NativeProfileStore.hasTransaction(id, tx)) { tryFinalize(record); return@forEach }
+            NativeCosmeticService.reward(id, tx, if (entry.eligible) entry.arcadeTokens else 0L) {
             NativeProfileStore.mutateDurableOnce(id, tx, mutation = { profile ->
                 if (entry.eligible) {
-                    profile.credit("arcade", entry.arcadeTokens)
                     profile.credit("ticket", entry.gachaTickets.toLong())
                 }
                 val stats = profile.stats.getOrPut(record.gameId) { NativeGameStats() }
@@ -123,6 +124,8 @@ object NativeRewardService {
             }) { result ->
                 if (result == DurableMutationResult.APPLIED && entry.eligible && (entry.arcadeTokens > 0 || entry.gachaTickets > 0)) notifyReward(id, entry)
                 tryFinalize(record)
+                recoverPlayer(id)
+            }
             }
         }
         tryFinalize(record)
