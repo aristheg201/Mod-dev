@@ -763,7 +763,9 @@ class TftSession(
             if (player.legacyIncomePending) { grantIncome(player); player.legacyIncomePending = false }
             if (isAugmentRound(roundLabel()) && player.augmentChoices.isEmpty()) {
                 val owned = player.augments.toSet()
-                player.augmentChoices += set.augments.filterNot { it.id in owned }.shuffled(rng).take(3).map { it.id }
+                val tier = roundDefinition().augmentTier
+                val eligible = set.augments.filter { it.id !in owned && (tier == null || it.tier == tier) }
+                player.augmentChoices += eligible.shuffled(rng).take(3).map { it.id }
             }
             player.freeRerolls = playerModifiers(player).value(TftPlayerModifier.FREE_REFRESH_COUNT).toInt().coerceAtLeast(0)
             rerollShop(player)
@@ -1074,14 +1076,28 @@ class TftSession(
             add(JsonObject().apply {
                 addProperty("id", id); addProperty("name", def.name); addProperty("tier", def.tier)
                 addProperty("description", def.description)
-                addProperty("mechanic", (def.effects.entries.map { (key, value) -> "$key: $value" } +
-                    def.playerModifiers.entries.map { (key, value) -> "${key.name.lowercase()}: $value" }).joinToString(" • "))
+                val mechanic = buildList {
+                    def.effects.forEach { (key, value) -> add(key + ": " + value) }
+                    def.traitEffects.orEmpty().forEach { (trait, effects) ->
+                        effects.forEach { (key, value) -> add(trait + "." + key + ": " + value) }
+                    }
+                    def.playerModifiers.forEach { (key, value) -> add(key.name.lowercase() + ": " + value) }
+                }
+                addProperty("mechanic", mechanic.joinToString(" • "))
             })
         }
     }.toString()
 
     private fun encodeAugmentChoices(player: PlayerState): String = player.augmentChoices.joinToString(";") { id ->
-        val def = augmentDefs[id]; listOf(id, def?.name ?: id, def?.description ?: "", def?.aiWeight ?: 50).joinToString("~")
+        val def = augmentDefs[id]
+        listOf(
+            id,
+            def?.name ?: id,
+            def?.description ?: "",
+            def?.aiWeight ?: 50,
+            def?.tags.orEmpty().joinToString(","),
+            def?.tier ?: "Gold"
+        ).joinToString("~")
     }
 
     private fun encodeDraft(player: PlayerState): String {

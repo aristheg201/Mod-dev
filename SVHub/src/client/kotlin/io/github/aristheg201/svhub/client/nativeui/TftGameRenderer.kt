@@ -415,7 +415,7 @@ object TftGameRenderer {
     private data class BenchToken(val index: Int, val instanceId: String, val unitId: String, val species: String, val star: Int, val aspects: Set<String>, val items: List<String>, val scale: Float)
     private data class PlayerLine(val id: String, val name: String, val hp: Int, val level: Int, val placement: Int, val eliminated: Boolean)
     private data class TraitLine(val id: String, val name: String, val count: Int, val active: Int, val next: Int, val description: String)
-    private data class AugmentChoice(val id: String, val name: String, val description: String)
+    private data class AugmentChoice(val id: String, val name: String, val description: String, val tier: String)
     private data class DraftOffer(val index: Int, val unitId: String, val species: String, val item: String, val takenBy: String, val unlocked: Boolean, val cost: Int, val x: Float, val y: Float, val aspects: Set<String>, val scale: Float)
 
     data class Hooks(
@@ -1133,7 +1133,9 @@ object TftGameRenderer {
             } finally { gui.pose().popPose() }
             val nameY=base.y+iconSize+17
             gui.drawCenteredString(font,fit(font,choice.name,base.width-12),base.x+base.width/2,nameY,gold)
-            drawWrapped(gui,font,choice.description,base.x+8,nameY+16,base.width-16,((base.bottom-nameY-48)/10).coerceIn(1,6),muted)
+            val tierColor=when(choice.tier){"Prismatic"->0xFFC98AF2.toInt();"Gold"->gold;else->accent}
+            gui.drawCenteredString(font,fit(font,choice.tier,base.width-12),base.x+base.width/2,nameY+11,tierColor)
+            drawWrapped(gui,font,choice.description,base.x+8,nameY+24,base.width-16,((base.bottom-nameY-56)/10).coerceIn(1,6),muted)
             NativeControlRenderer.draw(gui,font,UiRect(base.x+8,base.bottom-27,base.width-16,20),
                 tr("gui.svhub.tft.augment.confirm"),mouseX,mouseY,active=hovered)
             hooks.hit(base){hooks.action("choose_augment",mapOf("id" to choice.id))}
@@ -1414,7 +1416,7 @@ object TftGameRenderer {
 
     private fun parseAugments(raw: String): List<AugmentChoice> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->
         val p = value.split('~'); if (p.isEmpty()) return@mapNotNull null
-        AugmentChoice(p[0], p.getOrNull(1).orEmpty().ifBlank { p[0] }, p.getOrNull(2).orEmpty())
+        AugmentChoice(p[0], p.getOrNull(1).orEmpty().ifBlank { p[0] }, p.getOrNull(2).orEmpty(), p.getOrNull(5).orEmpty().ifBlank { "Gold" })
     }
 
     private fun parseDraft(raw: String): List<DraftOffer> = raw.split(';').filter(String::isNotBlank).mapNotNull { value ->

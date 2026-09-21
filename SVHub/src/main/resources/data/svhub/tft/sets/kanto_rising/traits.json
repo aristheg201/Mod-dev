@@ -847,5 +847,197 @@
         }
       }
     ]
+  },
+  {
+    "id": "bug",
+    "name": "Bug",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Bug units gain 10% Attack Speed.",
+        "effects": {
+          "attack_speed_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Bug units gain 22% Attack Speed and 8% Crit.",
+        "effects": {
+          "attack_speed_pct": 0.22,
+          "crit_chance": 0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Bug units gain 35% Attack Speed and 15% Crit; the team gains 8% Attack Speed.",
+        "effects": {
+          "attack_speed_pct": 0.35,
+          "crit_chance": 0.15
+        },
+        "teamEffects": {
+          "attack_speed_pct": 0.08
+        }
+      }
+    ]
+  },
+  {
+    "id": "poison",
+    "name": "Poison",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Poison units gain 12% Ability Power.",
+        "effects": {
+          "ability_power_pct": 0.12
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Poison units gain 25% Ability Power and 8% Crit.",
+        "effects": {
+          "ability_power_pct": 0.25,
+          "crit_chance": 0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Poison units gain 40% Ability Power and 15% Crit; the team gains 10% Ability Power.",
+        "effects": {
+          "ability_power_pct": 0.4,
+          "crit_chance": 0.15
+        },
+        "teamEffects": {
+          "ability_power_pct": 0.1
+        }
+      }
+    ]
+  },
+  {
+    "id": "ground",
+    "name": "Ground",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Ground units gain 15 Armor and 8% HP.",
+        "effects": {
+          "defense": 15,
+          "hp_pct": 0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Ground units gain 35 Armor and 15% HP.",
+        "effects": {
+          "defense": 35,
+          "hp_pct": 0.15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 6,
+        "description": "Ground units gain 55 Armor and 24% HP; the team gains 10 Armor.",
+        "effects": {
+          "defense": 55,
+          "hp_pct": 0.24
+        },
+        "teamEffects": {
+          "defense": 10
+        }
+      }
+    ]
+  },
+  {
+    "id": "ice",
+    "name": "Ice",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Ice units gain 15 Sp.Def and 10% Ability Power.",
+        "effects": {
+          "spdef": 15,
+          "ability_power_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Ice units gain 35 Sp.Def, 22% Ability Power and 10 starting mana.",
+        "effects": {
+          "spdef": 35,
+          "ability_power_pct": 0.22,
+          "mana_start": 10
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 5,
+        "description": "Ice units gain 55 Sp.Def, 35% Ability Power and 20 starting mana; the team gains 10 Sp.Def.",
+        "effects": {
+          "spdef": 55,
+          "ability_power_pct": 0.35,
+          "mana_start": 20
+        },
+        "teamEffects": {
+          "spdef": 10
+        }
+      }
+    ]
+  },
+  {
+    "id": "support",
+    "name": "Support",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Supports gain 10 starting mana and 15 Sp.Def.",
+        "effects": {
+          "mana_start": 10,
+          "spdef": 15
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Supports gain 20 starting mana and 30 Sp.Def; the team gains 10 Armor and Sp.Def.",
+        "effects": {
+          "mana_start": 20,
+          "spdef": 30
+        },
+        "teamEffects": {
+          "defense": 10,
+          "spdef": 10
+        }
+      }
+    ]
+  },
+  {
+    "id": "bruiser",
+    "name": "Bruiser",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Bruisers gain 12% HP and 10% Attack.",
+        "effects": {
+          "hp_pct": 0.12,
+          "attack_pct": 0.1
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 3,
+        "description": "Bruisers gain 25% HP, 18% Attack and 20 Armor.",
+        "effects": {
+          "hp_pct": 0.25,
+          "attack_pct": 0.18,
+          "defense": 20
+        },
+        "teamEffects": {}
+      }
+    ]
   }
 ]

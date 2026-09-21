@@ -20,18 +20,45 @@ class TftSetRegistryTest {
     }
     @Test fun bundledSetLoadsAllOriginalContent() {
         val set = TftSetRegistry.bundled("kanto_rising")
-        assertEquals(74, set.units.size)
+        assertEquals(84, set.units.size)
         assertEquals(6, set.teams.size)
-        assertEquals(28, set.traits.size)
+        assertEquals(34, set.traits.size)
         assertEquals(8, set.components.size)
         assertEquals(36, set.fullItems.size)
-        assertEquals(9, set.augments.size)
+        assertEquals(32, set.augments.size)
         assertEquals(7, set.pveRounds.size)
         assertEquals((2..10).toSet(), set.shopOdds.map { it.level }.toSet())
         assertTrue(set.units.any { it.id == "ho_oh" })
         val actual = set.fullItems.map { it.components.sorted() }.toSet()
         val expected = set.components.flatMap { a -> set.components.map { b -> listOf(a.id, b.id).sorted() } }.toSet()
         assertEquals(expected, actual, "Every unordered component pair must have a recipe")
+    }
+
+    @Test fun expandedPokemonTraitsAndTieredAugmentsAreFullyConnected() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        val pokemonTypes = setOf(
+            "normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison", "ground",
+            "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"
+        )
+        val traitIds = set.traits.map { it.id }.toSet()
+        assertTrue(pokemonTypes.all(traitIds::contains))
+        assertTrue(setOf("support", "bruiser").all(traitIds::contains))
+        assertEquals(emptySet(), traitIds - set.units.flatMap { it.traits }.toSet())
+
+        val roleTrait = mapOf(
+            "guardian" to "guardian", "caster" to "caster", "striker" to "striker",
+            "ranger" to "ranger", "support" to "support", "fighter" to "bruiser"
+        )
+        assertTrue(set.units.all { unit -> roleTrait[unit.role]?.let(unit.traits::contains) ?: true })
+        val unitIds = set.units.map { it.id }.toSet()
+        assertTrue(setOf("weedle", "diglett", "swinub", "beedrill", "sneasel", "froslass", "toxtricity", "mamoswine", "nidoking", "articuno").all(unitIds::contains))
+
+        assertEquals(mapOf("Silver" to 10, "Gold" to 14, "Prismatic" to 8), set.augments.groupingBy { it.tier }.eachCount())
+        assertTrue(set.augments.all { it.tags.orEmpty().isNotEmpty() })
+        assertTrue(set.augments.flatMap { it.traitEffects.orEmpty().keys }.all(traitIds::contains))
+        assertEquals("Silver", set.roundSchedule.single { it.label == "2-1" }.augmentTier)
+        assertEquals("Gold", set.roundSchedule.single { it.label == "3-2" }.augmentTier)
+        assertEquals("Prismatic", set.roundSchedule.single { it.label == "4-2" }.augmentTier)
     }
 
     @Test fun finalJarGateLoadsClassesAndResourcesFromTheSameJar() {
@@ -189,7 +216,7 @@ class TftSetRegistryTest {
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")
         TftSetRegistry.start(root)
-        assertEquals(74, TftSetRegistry.active().units.size)
+        assertEquals(84, TftSetRegistry.active().units.size)
         assertEquals("[]", Files.readString(path))
     }
 

@@ -6,7 +6,12 @@
     "effects": {
       "hp_pct": 0.12
     },
-    "aiWeight": 75
+    "aiWeight": 75,
+    "tier": "Silver",
+    "tags": [
+      "combat",
+      "survivability"
+    ]
   },
   {
     "id": "high_voltage",
@@ -15,7 +20,12 @@
     "effects": {
       "attack_speed_pct": 0.15
     },
-    "aiWeight": 75
+    "aiWeight": 75,
+    "tier": "Silver",
+    "tags": [
+      "combat",
+      "tempo"
+    ]
   },
   {
     "id": "arcane_mastery",
@@ -24,7 +34,12 @@
     "effects": {
       "ability_power_pct": 0.22
     },
-    "aiWeight": 75
+    "aiWeight": 75,
+    "tier": "Silver",
+    "tags": [
+      "combat",
+      "spell"
+    ]
   },
   {
     "id": "rich_get_richer",
@@ -34,7 +49,12 @@
     "aiWeight": 92,
     "playerModifiers": {
       "INTEREST_CAP": 7
-    }
+    },
+    "tier": "Gold",
+    "tags": [
+      "economy",
+      "interest"
+    ]
   },
   {
     "id": "tiny_titans",
@@ -44,7 +64,12 @@
     "aiWeight": 60,
     "playerModifiers": {
       "POST_ROUND_HEAL": 2
-    }
+    },
+    "tier": "Silver",
+    "tags": [
+      "survivability",
+      "trainer"
+    ]
   },
   {
     "id": "shopping_spree",
@@ -54,7 +79,12 @@
     "aiWeight": 70,
     "playerModifiers": {
       "FREE_REFRESH_COUNT": 1
-    }
+    },
+    "tier": "Silver",
+    "tags": [
+      "economy",
+      "shop"
+    ]
   },
   {
     "id": "level_up",
@@ -64,7 +94,12 @@
     "aiWeight": 88,
     "playerModifiers": {
       "XP_PURCHASE_AMOUNT": 2
-    }
+    },
+    "tier": "Gold",
+    "tags": [
+      "economy",
+      "progression"
+    ]
   },
   {
     "id": "new_recruit",
@@ -74,7 +109,12 @@
     "aiWeight": 100,
     "playerModifiers": {
       "BOARD_CAPACITY": 1
-    }
+    },
+    "tier": "Prismatic",
+    "tags": [
+      "board",
+      "tempo"
+    ]
   },
   {
     "id": "item_grab_bag",
@@ -84,6 +124,416 @@
     "aiWeight": 82,
     "playerModifiers": {
       "PVE_DROP_COUNT": 1
-    }
+    },
+    "tier": "Gold",
+    "tags": [
+      "economy",
+      "loot"
+    ]
+  },
+  {
+    "id": "iron_hide",
+    "name": "Iron Hide",
+    "description": "Your team gains 20 Armor and 20 Sp.Def.",
+    "effects": {
+      "defense": 20,
+      "spdef": 20
+    },
+    "aiWeight": 72,
+    "tier": "Silver",
+    "tags": [
+      "combat",
+      "survivability"
+    ]
+  },
+  {
+    "id": "quick_focus",
+    "name": "Quick Focus",
+    "description": "Your team gains 8% Attack Speed and 8% Crit.",
+    "effects": {
+      "attack_speed_pct": 0.08,
+      "crit_chance": 0.08
+    },
+    "aiWeight": 74,
+    "tier": "Silver",
+    "tags": [
+      "combat",
+      "tempo"
+    ]
+  },
+  {
+    "id": "battle_meditation",
+    "name": "Battle Meditation",
+    "description": "Your team starts combat with 20 additional mana.",
+    "effects": {
+      "mana_start": 20
+    },
+    "aiWeight": 76,
+    "tier": "Silver",
+    "tags": [
+      "combat",
+      "spell"
+    ]
+  },
+  {
+    "id": "field_medic",
+    "name": "Field Medic",
+    "description": "Your team gains 6% maximum HP and heals 1 Trainer HP after combat.",
+    "effects": {
+      "hp_pct": 0.06
+    },
+    "playerModifiers": {
+      "POST_ROUND_HEAL": 1
+    },
+    "aiWeight": 68,
+    "tier": "Silver",
+    "tags": [
+      "survivability",
+      "support"
+    ]
+  },
+  {
+    "id": "steady_income",
+    "name": "Steady Income",
+    "description": "Gain 1 additional gold whenever round income is granted.",
+    "effects": {},
+    "playerModifiers": {
+      "INCOME_FLAT": 1
+    },
+    "aiWeight": 80,
+    "tier": "Silver",
+    "tags": [
+      "economy",
+      "income"
+    ]
+  },
+  {
+    "id": "swarm_tactics",
+    "name": "Swarm Tactics",
+    "description": "Bug units gain 18% Attack Speed and 8% Crit.",
+    "effects": {},
+    "traitEffects": {
+      "bug": {
+        "attack_speed_pct": 0.18,
+        "crit_chance": 0.08
+      }
+    },
+    "aiWeight": 84,
+    "tier": "Gold",
+    "tags": [
+      "bug",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "venomous_edge",
+    "name": "Venomous Edge",
+    "description": "Poison units gain 25% Ability Power and 10% Crit.",
+    "effects": {},
+    "traitEffects": {
+      "poison": {
+        "ability_power_pct": 0.25,
+        "crit_chance": 0.1
+      }
+    },
+    "aiWeight": 84,
+    "tier": "Gold",
+    "tags": [
+      "poison",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "earthen_bulwark",
+    "name": "Earthen Bulwark",
+    "description": "Ground units gain 20% HP and 25 Armor.",
+    "effects": {},
+    "traitEffects": {
+      "ground": {
+        "hp_pct": 0.2,
+        "defense": 25
+      }
+    },
+    "aiWeight": 84,
+    "tier": "Gold",
+    "tags": [
+      "ground",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "absolute_zero",
+    "name": "Absolute Zero",
+    "description": "Ice units gain 25% Ability Power, 25 Sp.Def and 10 starting mana.",
+    "effects": {},
+    "traitEffects": {
+      "ice": {
+        "ability_power_pct": 0.25,
+        "spdef": 25,
+        "mana_start": 10
+      }
+    },
+    "aiWeight": 86,
+    "tier": "Gold",
+    "tags": [
+      "ice",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "support_network",
+    "name": "Support Network",
+    "description": "Support units gain 20 starting mana and 25 Sp.Def.",
+    "effects": {},
+    "traitEffects": {
+      "support": {
+        "mana_start": 20,
+        "spdef": 25
+      }
+    },
+    "aiWeight": 82,
+    "tier": "Gold",
+    "tags": [
+      "support",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "bruiser_code",
+    "name": "Bruiser Code",
+    "description": "Bruisers gain 18% HP, 15% Attack and 15 Armor.",
+    "effects": {},
+    "traitEffects": {
+      "bruiser": {
+        "hp_pct": 0.18,
+        "attack_pct": 0.15,
+        "defense": 15
+      }
+    },
+    "aiWeight": 82,
+    "tier": "Gold",
+    "tags": [
+      "bruiser",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "titan_awakening",
+    "name": "Titan Awakening",
+    "description": "MonsterVerse units gain 18% HP, 12% Attack and 2 mana per attack.",
+    "effects": {},
+    "traitEffects": {
+      "monsterverse": {
+        "hp_pct": 0.18,
+        "attack_pct": 0.12,
+        "mana_on_attack": 2
+      }
+    },
+    "aiWeight": 92,
+    "tier": "Gold",
+    "tags": [
+      "monsterverse",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "worlds_finest",
+    "name": "World's Finest",
+    "description": "DC Universe units gain 10% HP, 15% Ability Power and 10 Armor/Sp.Def.",
+    "effects": {},
+    "traitEffects": {
+      "dc_universe": {
+        "hp_pct": 0.1,
+        "ability_power_pct": 0.15,
+        "defense": 10,
+        "spdef": 10
+      }
+    },
+    "aiWeight": 92,
+    "tier": "Gold",
+    "tags": [
+      "dc_universe",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "willpower_constructs",
+    "name": "Willpower Constructs",
+    "description": "Green Lantern units gain 22% Ability Power, 10% HP and 10 starting mana.",
+    "effects": {},
+    "traitEffects": {
+      "green_lantern": {
+        "ability_power_pct": 0.22,
+        "hp_pct": 0.1,
+        "mana_start": 10
+      }
+    },
+    "aiWeight": 92,
+    "tier": "Gold",
+    "tags": [
+      "green_lantern",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "jackpot_protocol",
+    "name": "Jackpot Protocol",
+    "description": "Fortune units gain 10% HP and 2 mana per attack; gain 1 additional round-income gold.",
+    "effects": {},
+    "traitEffects": {
+      "fortune": {
+        "hp_pct": 0.1,
+        "mana_on_attack": 2
+      }
+    },
+    "playerModifiers": {
+      "INCOME_FLAT": 1
+    },
+    "aiWeight": 95,
+    "tier": "Gold",
+    "tags": [
+      "fortune",
+      "economy",
+      "trait"
+    ]
+  },
+  {
+    "id": "nakama_resolve",
+    "name": "Nakama Resolve",
+    "description": "Straw Hat units gain 12% HP, 10% Attack and 10% Ability Power.",
+    "effects": {},
+    "traitEffects": {
+      "straw_hat": {
+        "hp_pct": 0.12,
+        "attack_pct": 0.1,
+        "ability_power_pct": 0.1
+      }
+    },
+    "aiWeight": 92,
+    "tier": "Gold",
+    "tags": [
+      "straw_hat",
+      "combat",
+      "trait"
+    ]
+  },
+  {
+    "id": "crown_of_command",
+    "name": "Crown of Command",
+    "description": "Your team size is increased by 2.",
+    "effects": {},
+    "playerModifiers": {
+      "BOARD_CAPACITY": 2
+    },
+    "aiWeight": 108,
+    "tier": "Prismatic",
+    "tags": [
+      "board",
+      "tempo"
+    ]
+  },
+  {
+    "id": "transcendent_offense",
+    "name": "Transcendent Offense",
+    "description": "Your team gains 25% Attack and 35% Ability Power.",
+    "effects": {
+      "attack_pct": 0.25,
+      "ability_power_pct": 0.35
+    },
+    "aiWeight": 105,
+    "tier": "Prismatic",
+    "tags": [
+      "combat",
+      "damage"
+    ]
+  },
+  {
+    "id": "singularity_drive",
+    "name": "Singularity Drive",
+    "description": "Your team gains 30% Attack Speed and 5 mana per attack.",
+    "effects": {
+      "attack_speed_pct": 0.3,
+      "mana_on_attack": 5
+    },
+    "aiWeight": 105,
+    "tier": "Prismatic",
+    "tags": [
+      "combat",
+      "tempo"
+    ]
+  },
+  {
+    "id": "fortress_protocol",
+    "name": "Fortress Protocol",
+    "description": "Your team gains 30% maximum HP and 30 Armor/Sp.Def.",
+    "effects": {
+      "hp_pct": 0.3,
+      "defense": 30,
+      "spdef": 30
+    },
+    "aiWeight": 105,
+    "tier": "Prismatic",
+    "tags": [
+      "combat",
+      "survivability"
+    ]
+  },
+  {
+    "id": "golden_engine",
+    "name": "Golden Engine",
+    "description": "Gain 2 additional round-income gold and raise maximum interest to 8.",
+    "effects": {},
+    "playerModifiers": {
+      "INCOME_FLAT": 2,
+      "INTEREST_CAP": 8
+    },
+    "aiWeight": 112,
+    "tier": "Prismatic",
+    "tags": [
+      "economy",
+      "income"
+    ]
+  },
+  {
+    "id": "master_trainer",
+    "name": "Master Trainer",
+    "description": "Buying XP grants 8 XP instead of 4 and completed rounds grant 2 additional XP.",
+    "effects": {},
+    "playerModifiers": {
+      "XP_PURCHASE_AMOUNT": 4,
+      "XP_GAIN_FLAT": 2
+    },
+    "aiWeight": 110,
+    "tier": "Prismatic",
+    "tags": [
+      "economy",
+      "progression"
+    ]
+  },
+  {
+    "id": "treasure_vault",
+    "name": "Treasure Vault",
+    "description": "PvE rounds drop two extra components and your first refresh each round is free.",
+    "effects": {},
+    "playerModifiers": {
+      "PVE_DROP_COUNT": 2,
+      "FREE_REFRESH_COUNT": 1
+    },
+    "aiWeight": 106,
+    "tier": "Prismatic",
+    "tags": [
+      "economy",
+      "loot",
+      "shop"
+    ]
   }
 ]

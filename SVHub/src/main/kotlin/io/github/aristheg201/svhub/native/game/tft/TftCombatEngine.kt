@@ -295,13 +295,26 @@ class TftCombatEngine(
             merge(teamEffects, tier.teamEffects)
         }
         val augmentEffects = mutableMapOf<String, Double>()
-        augments.mapNotNull(augmentDefs::get).forEach { merge(augmentEffects, it.effects) }
+        val augmentTraitEffects = mutableMapOf<String, Double>()
+        augments.mapNotNull(augmentDefs::get).forEach { augment ->
+            merge(augmentEffects, augment.effects)
+            augment.traitEffects.orEmpty().forEach { (trait, authored) ->
+                merge(augmentTraitEffects, authored, prefix = "$trait|")
+            }
+        }
 
         return board.entries.sortedBy { it.key }.mapNotNull { (slot, owned) ->
             val def = unitDefs[owned.unitId] ?: return@mapNotNull null
             val effects = mutableMapOf<String, Double>()
             merge(effects, teamEffects); merge(effects, augmentEffects)
-            def.traits.forEach { trait -> activeTraitEffects.filterKeys { it.startsWith("$trait|") }.forEach { (key, value) -> effects[key.substringAfter('|')] = (effects[key.substringAfter('|')] ?: 0.0) + value } }
+            def.traits.forEach { trait ->
+                activeTraitEffects.filterKeys { it.startsWith("$trait|") }.forEach { (key, value) ->
+                    effects[key.substringAfter('|')] = (effects[key.substringAfter('|')] ?: 0.0) + value
+                }
+                augmentTraitEffects.filterKeys { it.startsWith("$trait|") }.forEach { (key, value) ->
+                    effects[key.substringAfter('|')] = (effects[key.substringAfter('|')] ?: 0.0) + value
+                }
+            }
             owned.items.forEach { item ->
                 if (item.startsWith("full:")) fullItemDefs[item.removePrefix("full:")]?.let { merge(effects, it.effects) }
                 else unpackRuntimeItem(item).forEach { component -> componentDefs[component]?.let { merge(effects, it.effects) } }

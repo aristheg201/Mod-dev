@@ -191,7 +191,7 @@ object TftBotPlanner {
 
     private fun roleScore(role: String): Int = when (role.lowercase()) {
         "guardian", "tank" -> 12
-        "caster", "ranger" -> 10
+        "caster", "ranger", "support" -> 10
         "striker", "fighter" -> 9
         else -> 5
     }

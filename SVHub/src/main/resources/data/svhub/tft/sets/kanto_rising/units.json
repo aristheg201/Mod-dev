@@ -20,7 +20,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "thunder_shock",
@@ -43,7 +43,8 @@
     "traits": [
       "kanto",
       "normal",
-      "eeveelution"
+      "eeveelution",
+      "bruiser"
     ],
     "role": "fighter",
     "stats": {
@@ -57,7 +58,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "swift",
@@ -81,7 +82,8 @@
       "kanto",
       "grass",
       "starter",
-      "caster"
+      "caster",
+      "poison"
     ],
     "role": "caster",
     "stats": {
@@ -95,7 +97,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "vine_whip",
@@ -133,7 +135,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "ember",
@@ -171,7 +173,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "water_gun",
@@ -194,7 +196,8 @@
     "traits": [
       "kanto",
       "ghost",
-      "caster"
+      "caster",
+      "poison"
     ],
     "role": "caster",
     "stats": {
@@ -208,7 +211,7 @@
       "manaMax": 65,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "night_shade",
@@ -245,7 +248,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "karate_chop",
@@ -268,7 +271,8 @@
     "traits": [
       "kanto",
       "rock",
-      "guardian"
+      "guardian",
+      "ground"
     ],
     "role": "guardian",
     "stats": {
@@ -282,7 +286,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "rock_throw",
@@ -305,7 +309,8 @@
     "traits": [
       "kanto",
       "flying",
-      "ranger"
+      "ranger",
+      "normal"
     ],
     "role": "ranger",
     "stats": {
@@ -319,7 +324,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "gust",
@@ -355,7 +360,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "force_palm",
@@ -392,7 +397,7 @@
       "manaMax": 75,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "psybeam",
@@ -415,7 +420,8 @@
     "traits": [
       "kanto",
       "ghost",
-      "caster"
+      "caster",
+      "poison"
     ],
     "role": "caster",
     "stats": {
@@ -429,7 +435,7 @@
       "manaMax": 65,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "shadow_ball",
@@ -466,7 +472,7 @@
       "manaMax": 75,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "flame_wheel",
@@ -504,7 +510,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "confusion",
@@ -542,7 +548,7 @@
       "manaMax": 75,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "electro_ball",
@@ -565,7 +571,8 @@
     "traits": [
       "kanto",
       "flying",
-      "striker"
+      "striker",
+      "bug"
     ],
     "role": "striker",
     "stats": {
@@ -579,7 +586,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "x_scissor",
@@ -602,7 +609,8 @@
     "traits": [
       "kanto",
       "dragon",
-      "pseudo"
+      "pseudo",
+      "bruiser"
     ],
     "role": "fighter",
     "stats": {
@@ -616,7 +624,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dragon_rage",
@@ -653,7 +661,7 @@
       "manaMax": 75,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "aura_sphere",
@@ -690,7 +698,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "moonblast",
@@ -713,7 +721,8 @@
     "traits": [
       "kanto",
       "ghost",
-      "caster"
+      "caster",
+      "poison"
     ],
     "role": "caster",
     "stats": {
@@ -727,7 +736,7 @@
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "shadow_burst",
@@ -764,7 +773,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "flare_blitz",
@@ -802,7 +811,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "aqua_ring",
@@ -834,13 +843,13 @@
       "attackDamage": 72,
       "defense": 35,
       "specialDefense": 42,
-      "attackSpeed": 1.0,
+      "attackSpeed": 1,
       "range": 4,
       "manaStart": 0,
       "manaMax": 70,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "thunderbolt",
@@ -878,7 +887,7 @@
       "manaMax": 80,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fire_fang",
@@ -916,7 +925,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dragon_pulse",
@@ -954,7 +963,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "meteor_mash",
@@ -977,7 +986,8 @@
     "traits": [
       "dragon",
       "pseudo",
-      "striker"
+      "striker",
+      "ground"
     ],
     "role": "striker",
     "stats": {
@@ -991,7 +1001,7 @@
       "manaMax": 75,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dragon_claw",
@@ -1030,7 +1040,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "inferno_blast",
@@ -1068,7 +1078,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "hydro_pump",
@@ -1092,7 +1102,8 @@
       "kanto",
       "grass",
       "starter",
-      "caster"
+      "caster",
+      "poison"
     ],
     "role": "caster",
     "stats": {
@@ -1106,7 +1117,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "solar_beam",
@@ -1144,7 +1155,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "outrage",
@@ -1182,7 +1193,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "stone_edge",
@@ -1220,7 +1231,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "meteor_crash",
@@ -1243,7 +1254,8 @@
     "traits": [
       "dragon",
       "pseudo",
-      "striker"
+      "striker",
+      "ground"
     ],
     "role": "striker",
     "stats": {
@@ -1257,7 +1269,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "earth_rush",
@@ -1295,7 +1307,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "draco_dive",
@@ -1332,7 +1344,7 @@
       "manaMax": 110,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "body_slam",
@@ -1370,7 +1382,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "psystrike",
@@ -1408,7 +1420,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dragon_ascent",
@@ -1446,7 +1458,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "behemoth_blade",
@@ -1485,7 +1497,7 @@
       "manaMax": 110,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "origin_pulse",
@@ -1509,7 +1521,8 @@
       "fire",
       "rock",
       "legendary",
-      "guardian"
+      "guardian",
+      "ground"
     ],
     "role": "guardian",
     "stats": {
@@ -1523,7 +1536,7 @@
       "manaMax": 110,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "precipice_blades",
@@ -1561,7 +1574,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "aeroblast",
@@ -1599,7 +1612,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "sacred_fire",
@@ -1625,7 +1638,10 @@
     },
     "cost": 5,
     "traits": [
-      "monsterverse"
+      "monsterverse",
+      "guardian",
+      "rock",
+      "dark"
     ],
     "role": "guardian",
     "stats": {
@@ -1639,7 +1655,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "mv_godzilla_ability",
@@ -1669,7 +1685,10 @@
     },
     "cost": 5,
     "traits": [
-      "monsterverse"
+      "monsterverse",
+      "caster",
+      "dark",
+      "dragon"
     ],
     "role": "caster",
     "stats": {
@@ -1683,7 +1702,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "mv_ghidorah_ability",
@@ -1697,7 +1716,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -1715,7 +1734,9 @@
     },
     "cost": 4,
     "traits": [
-      "monsterverse"
+      "monsterverse",
+      "striker",
+      "grass"
     ],
     "role": "striker",
     "stats": {
@@ -1729,7 +1750,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "mv_kong_ability",
@@ -1759,7 +1780,10 @@
     },
     "cost": 3,
     "traits": [
-      "monsterverse"
+      "monsterverse",
+      "support",
+      "bug",
+      "fire"
     ],
     "role": "support",
     "stats": {
@@ -1773,7 +1797,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "mv_mothra_ability",
@@ -1803,7 +1827,10 @@
     },
     "cost": 2,
     "traits": [
-      "monsterverse"
+      "monsterverse",
+      "striker",
+      "rock",
+      "flying"
     ],
     "role": "striker",
     "stats": {
@@ -1817,7 +1844,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "mv_rodan_ability",
@@ -1847,7 +1874,9 @@
     },
     "cost": 1,
     "traits": [
-      "dc_universe"
+      "dc_universe",
+      "ranger",
+      "grass"
     ],
     "role": "ranger",
     "stats": {
@@ -1861,7 +1890,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dc_red_hood_ability",
@@ -1892,7 +1921,9 @@
     },
     "cost": 2,
     "traits": [
-      "dc_universe"
+      "dc_universe",
+      "striker",
+      "water"
     ],
     "role": "striker",
     "stats": {
@@ -1906,7 +1937,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dc_robin_ability",
@@ -1937,7 +1968,10 @@
     },
     "cost": 3,
     "traits": [
-      "dc_universe"
+      "dc_universe",
+      "striker",
+      "fighting",
+      "steel"
     ],
     "role": "striker",
     "stats": {
@@ -1951,7 +1985,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dc_nightwing_ability",
@@ -1982,7 +2016,10 @@
     },
     "cost": 4,
     "traits": [
-      "dc_universe"
+      "dc_universe",
+      "ranger",
+      "water",
+      "dark"
     ],
     "role": "ranger",
     "stats": {
@@ -1996,7 +2033,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dc_batman_ability",
@@ -2027,7 +2064,10 @@
     },
     "cost": 4,
     "traits": [
-      "dc_universe"
+      "dc_universe",
+      "caster",
+      "grass",
+      "dark"
     ],
     "role": "caster",
     "stats": {
@@ -2041,7 +2081,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dc_joker_ability",
@@ -2055,7 +2095,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -2073,7 +2113,10 @@
     },
     "cost": 5,
     "traits": [
-      "dc_universe"
+      "dc_universe",
+      "guardian",
+      "bug",
+      "fighting"
     ],
     "role": "guardian",
     "stats": {
@@ -2087,7 +2130,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "dc_superman_ability",
@@ -2117,7 +2160,10 @@
     },
     "cost": 4,
     "traits": [
-      "green_lantern"
+      "green_lantern",
+      "support",
+      "psychic",
+      "legendary"
     ],
     "role": "support",
     "stats": {
@@ -2131,7 +2177,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "gl_mewtwo_ability",
@@ -2160,7 +2206,10 @@
     },
     "cost": 5,
     "traits": [
-      "green_lantern"
+      "green_lantern",
+      "striker",
+      "psychic",
+      "legendary"
     ],
     "role": "striker",
     "stats": {
@@ -2174,7 +2223,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "gl_mewtwo_x_ability",
@@ -2203,7 +2252,10 @@
     },
     "cost": 5,
     "traits": [
-      "green_lantern"
+      "green_lantern",
+      "caster",
+      "psychic",
+      "legendary"
     ],
     "role": "caster",
     "stats": {
@@ -2217,7 +2269,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "gl_mewtwo_y_ability",
@@ -2231,7 +2283,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [],
@@ -2244,7 +2296,9 @@
     },
     "cost": 1,
     "traits": [
-      "fortune"
+      "fortune",
+      "ranger",
+      "normal"
     ],
     "role": "ranger",
     "stats": {
@@ -2258,7 +2312,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fortune_meowth_ability",
@@ -2285,7 +2339,9 @@
     },
     "cost": 1,
     "traits": [
-      "fortune"
+      "fortune",
+      "ranger",
+      "electric"
     ],
     "role": "ranger",
     "stats": {
@@ -2299,7 +2355,7 @@
       "manaMax": 85,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fortune_pikachu_ability",
@@ -2326,7 +2382,9 @@
     },
     "cost": 2,
     "traits": [
-      "fortune"
+      "fortune",
+      "guardian",
+      "normal"
     ],
     "role": "guardian",
     "stats": {
@@ -2340,7 +2398,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fortune_greedent_ability",
@@ -2367,7 +2425,9 @@
     },
     "cost": 3,
     "traits": [
-      "fortune"
+      "fortune",
+      "striker",
+      "normal"
     ],
     "role": "striker",
     "stats": {
@@ -2381,7 +2441,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fortune_persian_ability",
@@ -2408,7 +2468,11 @@
     },
     "cost": 4,
     "traits": [
-      "fortune"
+      "fortune",
+      "caster",
+      "fire",
+      "dark",
+      "legendary"
     ],
     "role": "caster",
     "stats": {
@@ -2422,7 +2486,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fortune_chiyu_ability",
@@ -2436,7 +2500,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -2451,7 +2515,10 @@
     },
     "cost": 5,
     "traits": [
-      "fortune"
+      "fortune",
+      "caster",
+      "steel",
+      "ghost"
     ],
     "role": "caster",
     "stats": {
@@ -2465,7 +2532,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "fortune_gholdengo_ability",
@@ -2479,7 +2546,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -2497,7 +2564,9 @@
     },
     "cost": 4,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "striker",
+      "normal"
     ],
     "role": "striker",
     "stats": {
@@ -2511,7 +2580,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_luffy_ability",
@@ -2541,7 +2610,10 @@
     },
     "cost": 4,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "striker",
+      "grass",
+      "starter"
     ],
     "role": "striker",
     "stats": {
@@ -2555,7 +2627,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_zoro_ability",
@@ -2585,7 +2657,9 @@
     },
     "cost": 3,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "caster",
+      "grass"
     ],
     "role": "caster",
     "stats": {
@@ -2599,7 +2673,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_nami_ability",
@@ -2613,7 +2687,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -2631,7 +2705,11 @@
     },
     "cost": 4,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "striker",
+      "fire",
+      "fighting",
+      "starter"
     ],
     "role": "striker",
     "stats": {
@@ -2645,7 +2723,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_sanji_ability",
@@ -2675,7 +2753,10 @@
     },
     "cost": 3,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "caster",
+      "psychic",
+      "fairy"
     ],
     "role": "caster",
     "stats": {
@@ -2689,7 +2770,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_robin_ability",
@@ -2703,7 +2784,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -2721,7 +2802,10 @@
     },
     "cost": 3,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "ranger",
+      "bug",
+      "fighting"
     ],
     "role": "ranger",
     "stats": {
@@ -2735,7 +2819,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_usopp_ability",
@@ -2765,7 +2849,9 @@
     },
     "cost": 3,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "guardian",
+      "fighting"
     ],
     "role": "guardian",
     "stats": {
@@ -2779,7 +2865,7 @@
       "manaMax": 95,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_franky_ability",
@@ -2809,7 +2895,10 @@
     },
     "cost": 4,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "caster",
+      "fire",
+      "ghost"
     ],
     "role": "caster",
     "stats": {
@@ -2823,7 +2912,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_brook_ability",
@@ -2837,7 +2926,7 @@
       "stunMs": 900,
       "dash": 0,
       "effects": {
-        "burn_ms": 2500.0
+        "burn_ms": 2500
       }
     },
     "tags": [
@@ -2855,7 +2944,10 @@
     },
     "cost": 4,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "guardian",
+      "water",
+      "starter"
     ],
     "role": "guardian",
     "stats": {
@@ -2869,7 +2961,7 @@
       "manaMax": 100,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_jinbe_ability",
@@ -2899,7 +2991,10 @@
     },
     "cost": 2,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "support",
+      "normal",
+      "psychic"
     ],
     "role": "support",
     "stats": {
@@ -2913,7 +3008,7 @@
       "manaMax": 90,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_chopper_ability",
@@ -2943,7 +3038,9 @@
     },
     "cost": 5,
     "traits": [
-      "straw_hat"
+      "straw_hat",
+      "support",
+      "water"
     ],
     "role": "support",
     "stats": {
@@ -2957,7 +3054,7 @@
       "manaMax": 105,
       "critChance": 0.25,
       "critMultiplier": 1.4,
-      "moveSpeed": 1.0
+      "moveSpeed": 1
     },
     "ability": {
       "id": "op_sunny_ability",
@@ -2976,5 +3073,400 @@
       "straw_hat_crew"
     ],
     "team": "straw_hat"
+  },
+  {
+    "id": "weedle",
+    "pokemon": {
+      "species": "cobblemon:weedle"
+    },
+    "cost": 1,
+    "traits": [
+      "kanto",
+      "bug",
+      "poison",
+      "ranger"
+    ],
+    "role": "ranger",
+    "stats": {
+      "hp": 480,
+      "attackDamage": 42,
+      "defense": 18,
+      "specialDefense": 20,
+      "attackSpeed": 0.78,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 65,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "poison_sting",
+      "name": "Poison Sting",
+      "target": "lowest_hp_enemy",
+      "damageType": "magic",
+      "damage": 135,
+      "heal": 0,
+      "shield": 0,
+      "radius": 0,
+      "stunMs": 250,
+      "dash": 0,
+      "effects": {}
+    }
+  },
+  {
+    "id": "diglett",
+    "pokemon": {
+      "species": "cobblemon:diglett"
+    },
+    "cost": 1,
+    "traits": [
+      "kanto",
+      "ground",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 560,
+      "attackDamage": 55,
+      "defense": 22,
+      "specialDefense": 20,
+      "attackSpeed": 0.78,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 70,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "dig_strike",
+      "name": "Dig Strike",
+      "target": "farthest_enemy",
+      "damageType": "physical",
+      "damage": 155,
+      "heal": 0,
+      "shield": 0,
+      "radius": 0,
+      "stunMs": 0,
+      "dash": 1,
+      "effects": {}
+    }
+  },
+  {
+    "id": "swinub",
+    "pokemon": {
+      "species": "cobblemon:swinub"
+    },
+    "cost": 1,
+    "traits": [
+      "ice",
+      "ground",
+      "bruiser"
+    ],
+    "role": "fighter",
+    "stats": {
+      "hp": 680,
+      "attackDamage": 58,
+      "defense": 35,
+      "specialDefense": 30,
+      "attackSpeed": 0.65,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 80,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "powder_charge",
+      "name": "Powder Charge",
+      "target": "current",
+      "damageType": "physical",
+      "damage": 165,
+      "heal": 0,
+      "shield": 60,
+      "radius": 0,
+      "stunMs": 300,
+      "dash": 0,
+      "effects": {}
+    }
+  },
+  {
+    "id": "beedrill",
+    "pokemon": {
+      "species": "cobblemon:beedrill"
+    },
+    "cost": 2,
+    "traits": [
+      "kanto",
+      "bug",
+      "poison",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 700,
+      "attackDamage": 72,
+      "defense": 30,
+      "specialDefense": 30,
+      "attackSpeed": 0.85,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 70,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "twin_needle",
+      "name": "Twin Needle",
+      "target": "lowest_hp_enemy",
+      "damageType": "physical",
+      "damage": 230,
+      "heal": 0,
+      "shield": 0,
+      "radius": 0,
+      "stunMs": 0,
+      "dash": 1,
+      "effects": {}
+    }
+  },
+  {
+    "id": "sneasel",
+    "pokemon": {
+      "species": "cobblemon:sneasel"
+    },
+    "cost": 2,
+    "traits": [
+      "dark",
+      "ice",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 680,
+      "attackDamage": 78,
+      "defense": 28,
+      "specialDefense": 30,
+      "attackSpeed": 0.9,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 65,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "ice_shard",
+      "name": "Ice Shard",
+      "target": "lowest_hp_enemy",
+      "damageType": "physical",
+      "damage": 245,
+      "heal": 0,
+      "shield": 0,
+      "radius": 0,
+      "stunMs": 250,
+      "dash": 1,
+      "effects": {}
+    }
+  },
+  {
+    "id": "froslass",
+    "pokemon": {
+      "species": "cobblemon:froslass"
+    },
+    "cost": 3,
+    "traits": [
+      "ice",
+      "ghost",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 760,
+      "attackDamage": 62,
+      "defense": 35,
+      "specialDefense": 50,
+      "attackSpeed": 0.8,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 75,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "frost_veil",
+      "name": "Frost Veil",
+      "target": "lowest_hp_enemy",
+      "damageType": "magic",
+      "damage": 320,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 500,
+      "dash": 0,
+      "effects": {}
+    }
+  },
+  {
+    "id": "toxtricity",
+    "pokemon": {
+      "species": "cobblemon:toxtricity"
+    },
+    "cost": 3,
+    "traits": [
+      "electric",
+      "poison",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 820,
+      "attackDamage": 72,
+      "defense": 40,
+      "specialDefense": 45,
+      "attackSpeed": 0.78,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 80,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "overdrive",
+      "name": "Overdrive",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 340,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 350,
+      "dash": 0,
+      "effects": {}
+    }
+  },
+  {
+    "id": "mamoswine",
+    "pokemon": {
+      "species": "cobblemon:mamoswine"
+    },
+    "cost": 4,
+    "traits": [
+      "ice",
+      "ground",
+      "guardian"
+    ],
+    "role": "guardian",
+    "stats": {
+      "hp": 1450,
+      "attackDamage": 95,
+      "defense": 85,
+      "specialDefense": 60,
+      "attackSpeed": 0.62,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "glacial_crash",
+      "name": "Glacial Crash",
+      "target": "current",
+      "damageType": "physical",
+      "damage": 420,
+      "heal": 0,
+      "shield": 220,
+      "radius": 1,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {}
+    }
+  },
+  {
+    "id": "nidoking",
+    "pokemon": {
+      "species": "cobblemon:nidoking"
+    },
+    "cost": 4,
+    "traits": [
+      "kanto",
+      "poison",
+      "ground",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 1250,
+      "attackDamage": 108,
+      "defense": 70,
+      "specialDefense": 55,
+      "attackSpeed": 0.78,
+      "range": 2,
+      "manaStart": 0,
+      "manaMax": 90,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "earth_power",
+      "name": "Earth Power",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 480,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 500,
+      "dash": 1,
+      "effects": {}
+    }
+  },
+  {
+    "id": "articuno",
+    "pokemon": {
+      "species": "cobblemon:articuno"
+    },
+    "cost": 5,
+    "traits": [
+      "kanto",
+      "ice",
+      "flying",
+      "legendary",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1250,
+      "attackDamage": 100,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "absolute_blizzard",
+      "name": "Absolute Blizzard",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 650,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {}
+    }
   }
 ]

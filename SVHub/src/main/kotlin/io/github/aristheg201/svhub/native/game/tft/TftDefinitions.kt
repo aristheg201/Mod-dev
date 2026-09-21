@@ -66,7 +66,7 @@ private fun defaultTftCapabilities(): Map<String, Set<TftCapability>> {
     )
 }
 
-data class TftRoundDefinition(val label: String = "", val type: String = "pvp", val planningSeconds: Int? = null, val combatSeconds: Int? = null, val income: Boolean = true, val passiveXp: Boolean = true, val pve: String? = null)
+data class TftRoundDefinition(val label: String = "", val type: String = "pvp", val planningSeconds: Int? = null, val combatSeconds: Int? = null, val income: Boolean = true, val passiveXp: Boolean = true, val pve: String? = null, val augmentTier: String? = null)
 
 data class TftCarouselDefinition(
     val offerCount: Int = 9,
@@ -231,6 +231,10 @@ data class TftAugmentDefinition(
     val description: String = "",
     val effects: Map<String, Double> = emptyMap(),
     val playerModifiers: Map<TftPlayerModifier, Double> = emptyMap(),
+    /** Nullable only so old recovery snapshots deserialize safely. Bundled content always authors tags. */
+    val tags: Set<String>? = null,
+    /** Extra combat stats applied only to units carrying the referenced trait. */
+    val traitEffects: Map<String, Map<String, Double>>? = null,
     /** Data-driven bot preference. Gameplay never branches on augment ids. */
     val aiWeight: Int = 50,
     val tier: String = "Gold",
@@ -261,6 +265,7 @@ object TftDefinitionValidator {
         require(set.name.isNotBlank()) { "TFT set name is empty" }
         val progression = set.progression ?: TftProgressionDefinition(maxLevel = set.maxLevel, xpToNextByLevel = set.xpToNextByLevel)
         progression.validate("set ${set.id}.progression")
+        val validAugmentTiers = setOf("Silver", "Gold", "Prismatic")
         require(set.tacticians.map { it.id }.distinct().size == set.tacticians.size) { "set ${set.id}.tacticians: duplicate id" }
         require(set.botStrategies.map { it.id }.distinct().size == set.botStrategies.size) { "set ${set.id}.botStrategies: duplicate id" }
         val teamDefinitionIds=set.teams.map{it.id}.toSet()
@@ -293,6 +298,8 @@ object TftDefinitionValidator {
         set.roundSchedule.forEachIndexed { index, round ->
             require(round.label.isNotBlank()) { "set ${set.id}.roundSchedule[$index].label is empty" }
             require(round.type in setOf("planning", "pvp", "pve", "augment", "carousel", "boss", "special")) { "set ${set.id}.roundSchedule[$index].type is invalid: ${round.type}" }
+            require(round.augmentTier == null || round.augmentTier in validAugmentTiers) { "Invalid augment tier " + round.augmentTier + " at round " + round.label }
+            require(round.type == "augment" || round.augmentTier == null) { "Only augment rounds may declare augmentTier: " + round.label }
         }
         with(set.carousel) {
             require(arenaId.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "set ${set.id}.carousel.arenaId is invalid" }
@@ -320,6 +327,9 @@ object TftDefinitionValidator {
             val unknown = unit.traits.filterNot(traitIds::contains)
             require(unknown.isEmpty()) { "TFT unit ${unit.id} references unknown traits $unknown" }
         }
+        val usedTraitIds = set.units.flatMap { it.traits }.toSet()
+        val unusedTraitIds = traitIds - usedTraitIds
+        require(unusedTraitIds.isEmpty()) { "TFT set declares unused traits: " + unusedTraitIds.sorted() }
         require(set.shopOdds.map { it.level }.toSet().size == set.shopOdds.size) { "Duplicate TFT shop odds level" }
         for (level in 2..progression.maxLevel) {
             require(set.shopOdds.any { it.level == level }) { "Missing TFT shop odds for level $level" }
@@ -333,6 +343,8 @@ object TftDefinitionValidator {
         set.traits.forEach { trait ->
             require(trait.id.matches(Regex("^[a-z0-9_.-]{1,64}$"))) { "Invalid trait id ${trait.id}" }
             require(trait.tiers.zipWithNext().all { it.first.threshold < it.second.threshold }) { "Trait ${trait.id} tiers must be ascending" }
+            require(trait.tiers.isNotEmpty() && trait.tiers.all { it.threshold > 0 }) { "Trait has no valid tiers: " + trait.id }
+            require(trait.tiers.all { tier -> (tier.effects.values + tier.teamEffects.values).all { it.isFinite() } }) { "Trait has non-finite effects: " + trait.id }
         }
         val componentIds = set.components.map { it.id }.toSet()
         require(componentIds.size == set.components.size) { "Duplicate TFT component id" }
@@ -340,11 +352,24 @@ object TftDefinitionValidator {
         require(set.fullItems.map { it.id }.toSet().size == set.fullItems.size) { "Duplicate TFT full item id" }
         require(set.fullItems.map { it.components.sorted().joinToString("+") }.toSet().size == set.fullItems.size) { "Duplicate TFT full item recipe" }
         set.augments.forEach { augment ->
+            require(augment.id.matches(Regex("^[a-z0-9_.-]{1,64}$")) && augment.name.isNotBlank()) { "Invalid augment " + augment.id }
+            require(augment.tier in validAugmentTiers) { "Invalid augment tier for " + augment.id + ": " + augment.tier }
+            require(augment.effects.values.all { it.isFinite() }) { "Augment has non-finite global effects: " + augment.id }
+            require(augment.tags.orEmpty().all { it.matches(Regex("^[a-z0-9_.-]{1,64}$")) }) { "Augment has invalid tags: " + augment.id }
+            augment.traitEffects.orEmpty().forEach { (trait, effects) ->
+                require(trait in traitIds) { "Augment " + augment.id + " references unknown trait " + trait }
+                require(effects.values.all { it.isFinite() }) { "Augment " + augment.id + " has non-finite trait effects" }
+            }
             require(augment.aiWeight in 0..1000) { "Augment ${augment.id} aiWeight out of range" }
             augment.playerModifiers.forEach { (capability, value) ->
                 require(value.isFinite() && value in capability.minimum..capability.maximum) {
                     "Augment ${augment.id}.playerModifiers.$capability is out of range"
                 }
+            }
+        }
+        set.roundSchedule.filter { it.type == "augment" && it.augmentTier != null }.forEach { round ->
+            require(set.augments.count { it.tier == round.augmentTier } >= 3) {
+                "Augment round " + round.label + " requires at least three " + round.augmentTier + " augments"
             }
         }
         set.fullItems.forEach { item ->

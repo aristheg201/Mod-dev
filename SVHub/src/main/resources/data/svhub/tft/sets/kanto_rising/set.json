@@ -386,7 +386,8 @@
       "label": "2-1",
       "type": "augment",
       "income": true,
-      "passiveXp": false
+      "passiveXp": false,
+      "augmentTier": "Silver"
     },
     {
       "label": "2-2",
@@ -435,7 +436,8 @@
       "label": "3-2",
       "type": "augment",
       "income": true,
-      "passiveXp": false
+      "passiveXp": false,
+      "augmentTier": "Gold"
     },
     {
       "label": "3-3",
@@ -478,7 +480,8 @@
       "label": "4-2",
       "type": "augment",
       "income": true,
-      "passiveXp": false
+      "passiveXp": false,
+      "augmentTier": "Prismatic"
     },
     {
       "label": "4-3",

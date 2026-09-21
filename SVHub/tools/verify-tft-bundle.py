@@ -35,12 +35,41 @@ try:
         path = project / 'src/main/resources/assets/svhub/arenas' / f'{arena}.json'
         if not path.is_file() or not isinstance(json.loads(path.read_text()), dict):
             raise ValueError(f'Missing or invalid arena {arena}')
-    counts = {'units.json': 74, 'teams.json': 6, 'traits.json': 28, 'components.json': 8, 'full_items.json': 36, 'augments.json': 9, 'pve.json': 7, 'loot.json': 2}
+    counts = {'units.json': 84, 'teams.json': 6, 'traits.json': 34, 'components.json': 8, 'full_items.json': 36, 'augments.json': 32, 'pve.json': 7, 'loot.json': 2}
     for name, count in counts.items():
         if not isinstance(data[name], list) or len(data[name]) != count:
             raise ValueError(f'{name}: expected {count} reviewed definitions')
     units = {v['id'] for v in data['units.json']}
     traits = {v['id'] for v in data['traits.json']}
+    pokemon_types = {'normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'}
+    if not pokemon_types <= traits:
+        raise ValueError(f'Missing Pokemon type traits: {sorted(pokemon_types - traits)}')
+    used_traits = {trait for unit in data['units.json'] for trait in unit.get('traits', [])}
+    if traits - used_traits:
+        raise ValueError(f'Unused TFT traits: {sorted(traits - used_traits)}')
+    role_traits = {'guardian':'guardian','caster':'caster','striker':'striker','ranger':'ranger','support':'support','fighter':'bruiser'}
+    for unit in data['units.json']:
+        expected = role_traits.get(unit.get('role', ''))
+        if expected and expected not in unit.get('traits', []):
+            raise ValueError(f"Unit {unit['id']} is missing class trait {expected}")
+    tiers = {'Silver': 0, 'Gold': 0, 'Prismatic': 0}
+    for augment in data['augments.json']:
+        tier = augment.get('tier', 'Gold')
+        if tier not in tiers:
+            raise ValueError(f"Invalid augment tier {tier} for {augment['id']}")
+        tiers[tier] += 1
+        if not augment.get('tags'):
+            raise ValueError(f"Augment {augment['id']} has no bot/content tags")
+        for trait in augment.get('traitEffects', {}):
+            if trait not in traits:
+                raise ValueError(f"Augment {augment['id']} references unknown trait {trait}")
+    if tiers != {'Silver': 10, 'Gold': 14, 'Prismatic': 8}:
+        raise ValueError(f'Unexpected augment tier distribution: {tiers}')
+    for round_ in manifest.get('roundSchedule', []):
+        if round_.get('type') == 'augment':
+            tier = round_.get('augmentTier')
+            if not tier or tiers.get(tier, 0) < 3:
+                raise ValueError(f"Augment round {round_.get('label')} has invalid tier pool {tier}")
     components = {v['id'] for v in data['components.json']}
     for unit in data['units.json']:
         if not set(unit['traits']) <= traits:
