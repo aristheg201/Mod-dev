@@ -24,10 +24,10 @@ object ArcadeResultRenderer {
 
         val margin=6
         val controlsH=27
-        val sceneHeight=(area.height*54/100).coerceIn(78,(area.height-108).coerceAtLeast(78))
+        val sceneHeight=(area.height-120).coerceAtLeast(50)
         val scene=UiRect(area.x+margin,area.y+margin,(area.width-margin*2).coerceAtLeast(80),sceneHeight)
         gui.fill(scene.x,scene.y,scene.right,scene.bottom,0xFF081217.toInt())
-        backdrop(scene)
+        backdrop(UiRect(scene.x,scene.y,scene.width,(scene.height-42).coerceAtLeast(8)))
         gui.fill(scene.x,scene.y,scene.right,scene.y+3,accent)
         gui.fill(scene.x,scene.bottom-40,scene.right,scene.bottom,0xE4070E12.toInt())
 

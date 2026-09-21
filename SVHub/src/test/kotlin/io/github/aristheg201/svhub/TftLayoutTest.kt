@@ -10,6 +10,25 @@ import kotlin.test.assertTrue
 class TftLayoutTest {
     private fun overlaps(a:UiRect,b:UiRect)=a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y
 
+    @Test fun `phase title and board controls never intersect gameplay or HUD`() {
+        listOf(320 to 180,426 to 240,640 to 360,960 to 540).forEach { (width,height) ->
+            listOf(false,true).forEach { boss ->
+                val area=UiRect(4,4,width-8,height-8)
+                val layout=TftLayoutResolver.resolve(area,NativeLayout.resolve(width,height).density,true,boss)
+                val banner=assertNotNull(layout.phaseBanner)
+                assertTrue(banner.height>=30,"Phase title needs its own row at $width x $height")
+                assertTrue(!overlaps(banner,layout.board))
+                assertTrue(!overlaps(banner,layout.hud))
+                assertTrue(layout.board.height>=24)
+                val rects=layout.allRects()
+                rects.forEachIndexed { i,a ->
+                    assertTrue(a.x>=area.x && a.y>=area.y && a.right<=area.right && a.bottom<=area.bottom)
+                    rects.drop(i+1).forEach { b -> assertTrue(!overlaps(a,b),"$a intersects $b") }
+                }
+            }
+        }
+    }
+
     @Test
     fun `TFT presentation stays inside required logical viewports`() {
         listOf(320 to 180, 426 to 240, 640 to 360, 960 to 540).forEach { (width, height) ->

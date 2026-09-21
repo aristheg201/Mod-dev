@@ -7,7 +7,8 @@ data class TftResolvedLayout(
     val players: UiRect?,
     val itemRail: UiRect?,
     val board: UiRect,
-    val footer: UiRect
+    val footer: UiRect,
+    val phaseBanner: UiRect? = null
 ) {
     fun allRects(): List<UiRect> = buildList {
         add(hud)
@@ -15,12 +16,13 @@ data class TftResolvedLayout(
         players?.let(::add)
         itemRail?.let(::add)
         add(board)
+        phaseBanner?.let(::add)
         add(footer)
     }
 }
 
 object TftLayoutResolver {
-    fun resolve(area: UiRect, density: UiDensity): TftResolvedLayout {
+    fun resolve(area: UiRect, density: UiDensity, phasePresentation: Boolean = false, boss: Boolean = false): TftResolvedLayout {
         val gap=if(density==UiDensity.COMPACT)2 else 6
         val hudH=when(density){UiDensity.COMPACT->22;UiDensity.REGULAR->30;UiDensity.WIDE->34}.coerceAtMost(area.height/3)
         val footerH=when(density){
@@ -51,10 +53,12 @@ object TftLayoutResolver {
         val leftReserve=if(traits!=null)leftW+gap else 0
         val rightReserve=if(players!=null||itemRail!=null)rightW+gap else 0
         val boardX=area.x+leftReserve
-        val boardY=sideTop
         val boardRight=(area.right-rightReserve).coerceAtLeast(boardX+40)
+        val bannerH = minOf(if(phasePresentation) { if(boss)40 else 36 } else 20, (sideH - gap - 24).coerceAtLeast(0))
+        val banner = if(bannerH >= 14) UiRect(boardX,sideTop,boardRight-boardX,bannerH) else null
+        val boardY=banner?.let{it.bottom+gap}?:sideTop
         val boardBottom=sideBottom.coerceAtLeast(boardY+24)
         val board=UiRect(boardX,boardY,(boardRight-boardX).coerceAtLeast(40),(boardBottom-boardY).coerceAtLeast(24))
-        return TftResolvedLayout(hud,traits,players,itemRail,board,footer)
+        return TftResolvedLayout(hud,traits,players,itemRail,board,footer,banner)
     }
 }

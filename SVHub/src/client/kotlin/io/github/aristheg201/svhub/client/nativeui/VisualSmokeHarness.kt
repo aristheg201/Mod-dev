@@ -62,6 +62,7 @@ object VisualSmokeHarness {
     private fun tick(client: Minecraft) {
         if (!enabled) return
         bootTicks++
+        if (bootTicks == 1) { client.options.guiScale().set(2); client.resizeDisplay() }
 
         prepareSyntheticSpecies()
         if (!syntheticSpeciesReady) {
@@ -247,7 +248,7 @@ object VisualSmokeHarness {
             return
         }
         stableTicks++
-        val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:green_lantern_mewtwo" else "store:svhub:pikachu"
+        val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:shiny_mewtwo" else "store:svhub:pikachu"
         val resolved=PokemonModelRenderer.sceneSizingDiagnostics().any{it.instanceId==expectedActor}
         if(!capturedCurrent && stableTicks>=55 && active.fixtureReady && resolved) {
             capturedCurrent=true
@@ -330,13 +331,13 @@ object VisualSmokeHarness {
                 gui = gui,
                 font = font,
                 area = area,
-                density = UiDensity.WIDE,
+                density = io.github.aristheg201.svhub.ui.NativeLayout.resolve(width,height).density,
                 view = view,
                 ui = ui,
                 mouseX = mouseX,
                 mouseY = mouseY,
                 hooks = TftGameRenderer.Hooks(
-                    control = { _, _, _, _ -> },
+                    control = { rect, label, enabled, _ -> NativeControlRenderer.draw(gui,font,rect,label,mouseX,mouseY,enabled=enabled) },
                     hit = { _, _ -> },
                     sceneInput = { _ -> },
                     dropInput = { _ -> },
@@ -370,8 +371,8 @@ object VisualSmokeHarness {
                     addProperty("arenaId", "kanto_stadium")
                     addProperty("tacticianEntity", "")
                     addProperty("tacticianSpecies", if (pve) "cobblemon:mewtwo" else "cobblemon:pikachu")
-                    addProperty("tacticianAspects", if (pve) "greenlantern" else "")
-                    addProperty("tacticianId", if (pve) "svhub:green_lantern_mewtwo" else "svhub:pikachu")
+                    addProperty("tacticianAspects", if (pve) "shiny" else "")
+                    addProperty("tacticianId", if (pve) "svhub:shiny_mewtwo" else "svhub:pikachu")
                     addProperty("tacticianScale", if (pve) "0.72" else "0.70")
                     addProperty("tacticianState", when { carousel->"carousel_movement";pve->"round_start";else->"idle" })
                     addProperty("tacticianPosition", if(moving) "0.08,0.75" else "0.5,0.5")
@@ -610,10 +611,11 @@ object VisualSmokeHarness {
 
         override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
             val area=UiRect(0,0,width.coerceAtLeast(1),height.coerceAtLeast(1))
+            var drawnControls=0
             ArcadeResultRenderer.render(
                 gui=gui,font=font,area=area,view=view,
                 hooks=ArcadeResultRenderer.Hooks(
-                    control={_,_,_,_->},continueAction={},rematch={},exit={}
+                    control={rect,label,enabled,_->NativeControlRenderer.draw(gui,font,rect,label,mouseX,mouseY,enabled=enabled);drawnControls++},continueAction={},rematch={},exit={}
                 )
             ){scene->
                 when(scenario) {
@@ -625,6 +627,7 @@ object VisualSmokeHarness {
                     else->NativeBoardSceneRenderer.render(gui,font,scene.inset(4),view,boardUi,null)
                 }
             }
+            check(drawnControls==3){"Result smoke must render Continue, Rematch and Exit"}
             rendered=true
         }
 
@@ -705,14 +708,15 @@ object VisualSmokeHarness {
         val fixtureReady get()=rendered
         override fun isPauseScreen():Boolean=false
         override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
+            gui.fill(0,0,width,height,0xFF060D11.toInt())
             val rect=UiRect(10,10,(width-20).coerceAtLeast(140),(height-20).coerceAtLeast(100))
             SkinShowcaseRenderer.render(
                 gui,font,rect,
                 SkinShowcaseRenderer.Skin(
                     id="visual-skin",
-                    name="Green Lantern Mewtwo",
+                    name="Shiny Mewtwo",
                     species="cobblemon:mewtwo",
-                    aspect="greenlantern",
+                    aspect="shiny",
                     source="Showcase",
                     rarity="Legendary",
                     owned=true
@@ -725,7 +729,7 @@ object VisualSmokeHarness {
     private class StoreVisualSmokeScreen(val scenario:String):Screen(Component.literal("SVHub Store Visual Smoke")) {
         private val ui=CosmeticStoreUi().also { state ->
             state.kind=if(scenario.startsWith("tactician"))"TACTICIAN" else "ARENA"
-            state.selected=if(state.kind=="TACTICIAN")"svhub:green_lantern_mewtwo" else "dragon_shrine"
+            state.selected=if(state.kind=="TACTICIAN")"svhub:shiny_mewtwo" else "dragon_shrine"
         }
         private val state=fixture(scenario)
         private var rendered=false
@@ -734,14 +738,17 @@ object VisualSmokeHarness {
         override fun isPauseScreen():Boolean=false
 
         override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
+            gui.fill(0,0,width,height,0xFF060D11.toInt())
             val area=UiRect(8,8,(width-16).coerceAtLeast(220),(height-16).coerceAtLeast(150))
+            var drawnControls=0
             CosmeticStoreRenderer.render(
                 gui,font,area,state,ui,
                 CosmeticStoreRenderer.Hooks(
-                    control={_,_,_,_,_->},
+                    control={rect,label,enabled,active,_->NativeControlRenderer.draw(gui,font,rect,label,mouseX,mouseY,active=active,enabled=enabled);drawnControls++},
                     intent={_,_->}
                 )
             )
+            check(drawnControls>=6){"Store smoke must render navigation, tabs, offers and purchase/equip controls"}
             rendered=true
         }
 
@@ -752,7 +759,7 @@ object VisualSmokeHarness {
                 val equipped=scenario.endsWith("equipped")
                 addProperty("module","store")
                 addProperty("arena",if(!tactician&&equipped)"dragon_shrine" else "kanto_stadium")
-                addProperty("tactician",if(tactician&&equipped)"svhub:green_lantern_mewtwo" else "svhub:pikachu")
+                addProperty("tactician",if(tactician&&equipped)"svhub:shiny_mewtwo" else "svhub:pikachu")
                 add("balances",JsonObject().apply {
                     addProperty("BeastCoin","2000")
                     addProperty("HunterCoin","2000")
@@ -762,8 +769,8 @@ object VisualSmokeHarness {
                     add(storeOffer("ARENA","dragon_shrine","1000","BeastCoin",!tactician&&owned,!tactician&&equipped))
                     add(storeOffer("TACTICIAN","svhub:pikachu","0","HunterCoin",true,tactician&&!equipped,
                         name="Pikachu",species="cobblemon:pikachu",scale=.70))
-                    add(storeOffer("TACTICIAN","svhub:green_lantern_mewtwo","300","HunterCoin",tactician&&owned,tactician&&equipped,
-                        name="Green Lantern Mewtwo",species="cobblemon:mewtwo",aspects="greenlantern",scale=.72))
+                    add(storeOffer("TACTICIAN","svhub:shiny_mewtwo","300","HunterCoin",tactician&&owned,tactician&&equipped,
+                        name="Shiny Mewtwo",species="cobblemon:mewtwo",aspects="shiny",scale=.72))
                 })
             }
 

@@ -18,6 +18,9 @@ base.archivesName.set(providers.gradleProperty("mod_name").get())
 // same deployable JAR instead of compiling client classes and dropping them.
 loom {
     splitEnvironmentSourceSets()
+    if (System.getenv("SVHUB_VISUAL_SMOKE") == "1") {
+        runs.named("client") { programArgs("--width", "1280", "--height", "720") }
+    }
     mods {
         create(modId) {
             sourceSet(sourceSets.main.get())

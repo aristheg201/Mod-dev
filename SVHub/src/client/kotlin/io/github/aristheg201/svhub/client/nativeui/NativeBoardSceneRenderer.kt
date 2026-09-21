@@ -191,7 +191,8 @@ object NativeBoardSceneRenderer {
             camera = SceneCameras.BOARD,
             nativeAnimations = nativeAnimations,
             arenaId = "chess",
-            arenaSeed = view.str("sessionId")
+            arenaSeed = view.str("sessionId"),
+            showUnitOverlays = view.get("finished")?.asBoolean != true
         )
         return NativeBoardSceneResult(frame, legalCells)
     }
@@ -290,7 +291,8 @@ object NativeBoardSceneRenderer {
             camera = SceneCameras.XIANGQI,
             nativeAnimations = nativeAnimations,
             arenaId = "xiangqi",
-            arenaSeed = view.str("sessionId")
+            arenaSeed = view.str("sessionId"),
+            showUnitOverlays = view.get("finished")?.asBoolean != true
         )
         return NativeBoardSceneResult(frame, legalCells)
     }
@@ -357,7 +359,8 @@ object NativeBoardSceneRenderer {
             arenaId = "tower_defense",
             arenaSeed = view.str("sessionId"),
             pathCells = path.toSet(),
-            pathRoute = path
+            pathRoute = path,
+            showUnitOverlays = view.get("finished")?.asBoolean != true
         )
         return NativeBoardSceneResult(frame, emptySet())
     }
@@ -414,7 +417,8 @@ object NativeBoardSceneRenderer {
                 val point = arena.boardAnchor(index)
                 point.y.toInt() * arena.boardColumns + point.x.toInt()
             }.toSet(),
-            pathRoute = arena.boardAnchors.map { point -> point.y.toInt() * arena.boardColumns + point.x.toInt() }
+            pathRoute = arena.boardAnchors.map { point -> point.y.toInt() * arena.boardColumns + point.x.toInt() },
+            showUnitOverlays = view.get("finished")?.asBoolean != true
         )
         return NativeBoardSceneResult(frame, emptySet())
     }

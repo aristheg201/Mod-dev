@@ -1,4 +1,7 @@
 {
+  "gui.svhub.tft.pve_round": "Wild encounter",
+  "gui.svhub.tft.boss_round": "Boss encounter",
+  "gui.svhub.tft.loot_ready": "Rewards collected",
   "gui.svhub.all": "All",
   "gui.svhub.filter.all": "All",
   "gui.svhub.arcade.title": "Choose a game and mode",

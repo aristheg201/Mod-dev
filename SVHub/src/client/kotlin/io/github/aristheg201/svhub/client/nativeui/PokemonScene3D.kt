@@ -222,7 +222,8 @@ object PokemonScene3D {
         platforms: List<ScenePlatform> = emptyList(),
         extraRows: Int = 0,
         sceneItems: List<SceneItemModelNode> = emptyList(),
-        tactician: SceneTacticianNode? = null
+        tactician: SceneTacticianNode? = null,
+        showUnitOverlays: Boolean = true
     ): PokemonSceneFrame {
         val metrics=SceneProjection.resolve(area,columns,rows + extraRows.coerceIn(0, 4),camera)
         val arena = arenaId?.let(MinecraftArenaRegistry::definition)
@@ -411,8 +412,8 @@ object PokemonScene3D {
             val height=entity.view?.let { PokemonModelRenderer.sceneHeight(it,entity.id) } ?: 1f
             val head=if(embedded) layout.project(logical.x,logical.y,entity.elevation+height*entity.scale+.12f) ?: point else ScenePoint(point.x,point.y-layout.tileHeight*.75f)
             heads[entity.id]=head
-            if(entity.star>1)gui.drawCenteredString(font,"★".repeat(entity.star.coerceIn(2,3)),head.x.roundToInt(),head.y.roundToInt()-9,GOLD)
-            if(entity.maxHp>0){
+            if(showUnitOverlays && entity.star>1)gui.drawCenteredString(font,"★".repeat(entity.star.coerceIn(2,3)),head.x.roundToInt(),head.y.roundToInt()-9,GOLD)
+            if(showUnitOverlays && entity.maxHp>0){
                 val barW=max(12,(cellPixels*.8f).roundToInt());val x=head.x.roundToInt()-barW/2;val y=head.y.roundToInt()
                 gui.fill(x,y,x+barW,y+3,BAR_BG)
                 val hpW=(barW*entity.hp.coerceIn(0,entity.maxHp)/entity.maxHp).coerceAtLeast(if(entity.hp>0)1 else 0)

@@ -2,5 +2,6 @@
 .kotlin/
 build/
 run/
+run-store-smoke/
 .idea/
 *.iml

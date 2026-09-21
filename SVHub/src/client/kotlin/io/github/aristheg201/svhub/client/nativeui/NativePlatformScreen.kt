@@ -116,7 +116,8 @@ class NativePlatformScreen(
         currentGui = gui
         val baseLayout = NativeLayout.resolve(width, height)
         val tftGame=module=="game" && state.getAsJsonObject("view")?.str("gameId")=="tft"
-        val layout = if (tftGame) baseLayout.copy(
+        val fullScreen=tftGame || module=="store"
+        val layout = if (fullScreen) baseLayout.copy(
             navigation=UiRect(0,0,0,0),content=UiRect(4,4,(width-8).coerceAtLeast(144),(height-8).coerceAtLeast(70)),verticalNavigation=false
         ) else if (module == "game") baseLayout.copy(
             navigation = UiRect(0, 0, 0, 0),
@@ -127,8 +128,8 @@ class NativePlatformScreen(
         sceneInputs.clear()
         itemDropInputs.clear()
         drawBackground(gui)
-        if(!tftGame) drawHeader(gui, layout, mouseX, mouseY)
-        if (module != "game") drawNavigation(gui, layout, mouseX, mouseY)
+        if(!fullScreen) drawHeader(gui, layout, mouseX, mouseY)
+        if (module != "game" && !fullScreen) drawNavigation(gui, layout, mouseX, mouseY)
         gui.fill(layout.content.x, layout.content.y, layout.content.right, layout.content.bottom, panel)
         gui.fill(layout.content.x, layout.content.y, layout.content.right, layout.content.y + 1, line)
         clip = layout.content
@@ -726,7 +727,11 @@ class NativePlatformScreen(
     private fun drawModuleCard(gui:GuiGraphics,rect:UiRect,id:String,title:String,value:String,mouseX:Int,mouseY:Int,action:()->Unit){val hovered=rect.contains(mouseX.toDouble(),mouseY.toDouble());gui.fill(rect.x,rect.y+if(hovered)1 else 2,rect.right,rect.bottom,if(hovered)0xFF203438.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,if(hovered)gold else accent);if(rect.height<32){NativePixelArt.icon(gui,id,rect.x+7,rect.y+4,14,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-31),rect.x+26,rect.y+8,text,true)}else{NativePixelArt.icon(gui,id,rect.x+11,rect.y+10,24,if(hovered)gold else accent);gui.drawString(font,fit(title,rect.width-50),rect.x+43,rect.y+9,text,true);gui.drawString(font,fit(value,rect.width-50),rect.x+43,rect.y+25,muted,false)};addHit(rect,action=action)}
     private fun drawBalance(gui:GuiGraphics,x:Int,y:Int,width:Int,icon:String,label:String,value:Int,color:Int){gui.fill(x,y,x+width,y+36,panelAlt);gui.fill(x,y,x+4,y+36,color);NativePixelArt.icon(gui,icon,x+12,y+8,20,color);gui.drawString(font,label,x+42,y+7,muted,false);gui.drawString(font,value.toString(),x+42,y+20,text,true)}
     private fun drawNotice(gui:GuiGraphics,layout:NativeLayout){if(notice.isBlank())return;val value=fit(notice,(layout.content.width-20).coerceAtLeast(80));val w=(font.width(value)+20).coerceAtMost(layout.content.width);val x=layout.content.x+(layout.content.width-w)/2;val y=layout.content.bottom-23;gui.fill(x,y,x+w,y+19,0xEE1C2B2E.toInt());gui.fill(x,y,x+3,y+19,gold);gui.drawCenteredString(font,value,x+w/2,y+6,text)}
-    private fun addControl(rect:UiRect,label:String,mouseX:Int,mouseY:Int,icon:String?=null,active:Boolean=false,enabled:Boolean=true,action:()->Unit){if(!visible(rect))return;val hovered=enabled&&rect.contains(mouseX.toDouble(),mouseY.toDouble());val fill=when{!enabled->0xFF141C1E.toInt();active->0xFF21443E.toInt();hovered->0xFF213338.toInt();else->panelAlt};val border=if(active)accent else if(hovered)gold else line;currentGui?.let{gui->gui.fill(rect.x,rect.y,rect.right,rect.bottom,fill);gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,border);icon?.let{NativePixelArt.icon(gui,it,rect.x+6,rect.y+(rect.height-16)/2,16,if(active)accent else muted)};val textX=rect.x+if(icon==null)7 else 27;if(label.isNotBlank())gui.drawString(font,fit(label,rect.width-(textX-rect.x)-5),textX,rect.y+(rect.height-8)/2,if(enabled)text else muted,false)};controls+=Control(rect,label,icon,active,enabled,action)}
+    private fun addControl(rect:UiRect,label:String,mouseX:Int,mouseY:Int,icon:String?=null,active:Boolean=false,enabled:Boolean=true,action:()->Unit){
+        if(!visible(rect))return
+        currentGui?.let { NativeControlRenderer.draw(it,font,rect,label,mouseX,mouseY,icon,active,enabled) }
+        controls+=Control(rect,label,icon,active,enabled,action)
+    }
     private fun addHit(rect:UiRect,label:String="",action:()->Unit){if(visible(rect))controls+=Control(rect,label,action=action)}
     private fun visible(rect:UiRect):Boolean{val c=clip?:return rect.right>0&&rect.x<width&&rect.bottom>0&&rect.y<height;return rect.right>c.x&&rect.x<c.right&&rect.bottom>c.y&&rect.y<c.bottom}
     override fun mouseClicked(mouseX:Double,mouseY:Double,button:Int):Boolean{

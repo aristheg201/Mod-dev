@@ -1,15 +1,20 @@
 package io.github.aristheg201.svhub.client.nativeui
 
 import com.google.gson.JsonObject
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
+import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.*
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.language.I18n
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 
 class CosmeticStoreUi {
     var kind = "ARENA"
     var selected = ""
+    var page = 0
     val scene = PokemonSceneState()
     val requests = mutableMapOf<String, String>()
 }
@@ -29,12 +34,14 @@ object CosmeticStoreRenderer {
         gui.fill(area.x,area.y,area.right,area.bottom,0xFF060D11.toInt())
         gui.fill(area.x,area.y,area.right,area.y+42,panel)
         gui.fill(area.x,area.y,area.right,area.y+2,teal)
-        gui.drawString(font,text("preview"),area.x+10,area.y+9,textColor,true)
+        hooks.control(UiRect(area.x+6,area.y+5,68,16),"‹ "+I18n.get("gui.svhub.nav.store"),true,false){
+            hooks.intent("open",JsonObject().apply{addProperty("module","dashboard")})
+        }
 
         val beast="BeastCoin  "+balances.str("BeastCoin","—")
         val hunter="HunterCoin  "+balances.str("HunterCoin","—")
         val wallet=hunter+"    "+beast
-        val walletText=font.plainSubstrByWidth(wallet,(area.width*58/100).coerceAtLeast(80))
+        val walletText=font.plainSubstrByWidth(wallet,(area.width-92).coerceAtLeast(80))
         gui.drawString(font,walletText,area.right-font.width(walletText)-10,area.y+9,gold,true)
 
         val tabY=area.y+22
@@ -43,6 +50,7 @@ object CosmeticStoreRenderer {
             hooks.control(UiRect(area.x+8+index*(tabWidth+6),tabY,tabWidth,18),text(label),true,ui.kind==kind){
                 ui.kind=kind
                 ui.selected=""
+                ui.page=0
             }
         }
 
@@ -59,24 +67,32 @@ object CosmeticStoreRenderer {
         gui.fill(listRect.x,listRect.y,listRect.x+2,listRect.bottom,teal)
 
         val rowGap=4
-        val rowHeight=((listRect.height-10-rowGap*(offers.size-1).coerceAtLeast(0))/offers.size.coerceAtLeast(1)).coerceIn(24,36)
-        offers.forEachIndexed{index,offer->
+        val needsPages=offers.size*28>listRect.height-10
+        val pageSize=if(needsPages)((listRect.height-34)/28).coerceAtLeast(1) else offers.size.coerceAtLeast(1)
+        val pages=(offers.size+pageSize-1)/pageSize
+        ui.page=ui.page.coerceIn(0,(pages-1).coerceAtLeast(0))
+        val rowHeight=if(needsPages)24 else ((listRect.height-10-rowGap*(offers.size-1).coerceAtLeast(0))/offers.size.coerceAtLeast(1)).coerceIn(24,36)
+        offers.drop(ui.page*pageSize).take(pageSize).forEachIndexed{index,offer->
             val y=listRect.y+5+index*(rowHeight+rowGap)
             if(y+rowHeight>listRect.bottom-4)return@forEachIndexed
             val selected=offer==chosen
             val owned=offer.bool("owned")
             val equipped=offer.bool("equipped")
             val rect=UiRect(listRect.x+5,y,listRect.width-10,rowHeight)
-            gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selected)0xFF20383A.toInt() else panel2)
-            gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,if(equipped)gold else if(selected)teal else 0xFF33464B.toInt())
             val status=when{equipped->" ✓";owned->" •";else->""}
             hooks.control(rect,name(offer)+status,true,selected){ui.selected=offer.str("id")}
+        }
+        if(needsPages){
+            val y=listRect.bottom-23
+            hooks.control(UiRect(listRect.x+5,y,24,18),"‹",ui.page>0,false){ui.page--}
+            hooks.control(UiRect(listRect.right-29,y,24,18),"›",ui.page+1<pages,false){ui.page++}
+            gui.drawCenteredString(font,"${ui.page+1}/$pages",listRect.x+listRect.width/2,y+5,textColor)
         }
 
         val previewX=listRect.right+8
         val previewW=(area.right-previewX-8).coerceAtLeast(74)
-        val infoH=52
-        val stageH=(bodyH-infoH-6).coerceAtLeast(54)
+        val infoH=68
+        val stageH=(bodyH-infoH-6).coerceAtLeast(20)
         val stage=UiRect(previewX,bodyTop,previewW,stageH)
         gui.fill(stage.x,stage.y,stage.right,stage.bottom,0xFF081217.toInt())
         gui.fill(stage.x,stage.y,stage.right,stage.y+2,teal)
@@ -85,7 +101,15 @@ object CosmeticStoreRenderer {
 
         val arenaId=if(ui.kind=="ARENA")chosen.str("id") else state.str("arena","kanto_stadium")
         val arena=MinecraftArenaRegistry.definition(arenaId)
-        if(arena!=null){
+        val speciesId=ResourceLocation.tryParse(chosen.str("species"))
+        val species=speciesId?.let(PokemonSpecies::getByIdentifier)
+        if(ui.kind=="TACTICIAN"&&species!=null){
+            val aspects=chosen.str("aspects").split(',').filter(String::isNotBlank).toSet()
+            val view=PokemonView(chosen.str("id"),"",speciesId.toString(),aspects,name(chosen),species.nationalPokedexNumber,false)
+            val modelRect=UiRect(stage.x+12,stage.y+26,(stage.width-24).coerceAtLeast(12),(stage.height-36).coerceAtLeast(12))
+            gui.fill(stage.x+stage.width/4,stage.bottom-9,stage.right-stage.width/4,stage.bottom-6,teal)
+            PokemonModelRenderer.renderPreview(gui,view,"store:"+chosen.str("id"),modelRect)
+        }else if(arena!=null){
             val sceneRect=stage.inset(5)
             val origin=SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble())
             val cell=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble())
@@ -123,13 +147,13 @@ object CosmeticStoreRenderer {
         val owned=chosen.bool("owned")
         val equipped=chosen.bool("equipped")
         val stateLabel=when{equipped->text("equipped");owned->text("owned");else->chosen.str("price")+" "+chosen.str("currency")}
-        gui.drawString(font,font.plainSubstrByWidth(name(chosen),(info.width-112).coerceAtLeast(30)),info.x+10,info.y+8,textColor,true)
-        gui.drawString(font,font.plainSubstrByWidth(stateLabel,(info.width-112).coerceAtLeast(30)),info.x+10,info.y+23,if(owned)teal else gold,false)
+        gui.drawString(font,font.plainSubstrByWidth(name(chosen),(info.width-20).coerceAtLeast(12)),info.x+10,info.y+7,textColor,true)
+        gui.drawString(font,font.plainSubstrByWidth(stateLabel,(info.width-20).coerceAtLeast(12)),info.x+10,info.y+20,if(owned)teal else gold,false)
 
-        val actionW=(info.width*38/100).coerceIn(78,150).coerceAtMost(info.width-18)
-        val actionX=info.right-actionW-8
+        val actionW=info.width-16
+        val actionX=info.x+8
         val buttonLabel=if(equipped)text("equipped") else if(owned)text("equip") else I18n.get("gui.svhub.store.buy",chosen.str("price"),chosen.str("currency"))
-        hooks.control(UiRect(actionX,info.y+9,actionW,(info.height-18).coerceAtLeast(22)),buttonLabel,!equipped,equipped){
+        hooks.control(UiRect(actionX,info.bottom-28,actionW,22),buttonLabel,!equipped,equipped){
             val key=ui.kind+":"+ui.selected
             hooks.intent(if(owned)"equip" else "buy",JsonObject().apply{
                 addProperty("kind",ui.kind)
