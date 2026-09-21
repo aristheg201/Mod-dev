@@ -3,6 +3,7 @@ package io.github.aristheg201.svhub.native.game.tft
 import java.net.JarURLConnection
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -24,6 +25,14 @@ class TftBossRoundTest {
         }
         assertTrue(set.pveRounds.single { it.round == "6-7" }.enemies.any { it.unit == "mv_godzilla" && it.star == 3 })
         assertTrue(set.pveRounds.single { it.round == "7-7" }.enemies.any { it.unit == "mv_ghidorah" && it.star == 3 })
+    }
+
+    @Test
+    fun `validator rejects boss schedule when its encounter is missing`() {
+        val set = TftSetRegistry.bundled("kanto_rising")
+        assertFailsWith<IllegalArgumentException> {
+            TftDefinitionValidator.validate(set.copy(pveRounds = set.pveRounds.filterNot { it.round == "6-7" }))
+        }
     }
 
     @Test
