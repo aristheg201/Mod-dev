@@ -6,7 +6,8 @@ enum class TftPlayerModifier(
     val minimum: Double = -100_000.0,
     val maximum: Double = 100_000.0
 ) {
-    PLAYER_RESOURCE_FLAT,
+    /** Reserved capabilities stay authorable only at zero until runtime consumers exist. */
+    PLAYER_RESOURCE_FLAT(minimum = 0.0, maximum = 0.0),
     INCOME_FLAT,
     INCOME_MULTIPLIER(minimum = -1.0, maximum = 100.0),
     INTEREST_CAP(Stacking.MAX, minimum = 0.0),
@@ -19,9 +20,9 @@ enum class TftPlayerModifier(
     BOARD_CAPACITY,
     PVE_DROP_COUNT,
     POST_ROUND_HEAL,
-    PLAYER_DAMAGE_FLAT,
-    LOOT_MULTIPLIER(minimum = 0.0, maximum = 100.0),
-    SHOP_ODDS_SHIFT;
+    PLAYER_DAMAGE_FLAT(minimum = 0.0, maximum = 0.0),
+    LOOT_MULTIPLIER(minimum = 0.0, maximum = 0.0),
+    SHOP_ODDS_SHIFT(minimum = 0.0, maximum = 0.0);
 
     enum class Stacking { ADD, MAX }
 }
@@ -43,6 +44,9 @@ class TftPlayerModifierSet private constructor(private val values: Map<TftPlayer
             sources.forEach { source ->
                 source.forEach { (capability, amount) ->
                     require(amount.isFinite()) { "Player modifier $capability must be finite" }
+                    require(amount in capability.minimum..capability.maximum) {
+                        "Player modifier $capability is outside the implemented range"
+                    }
                     compiled[capability] = when (capability.stacking) {
                         TftPlayerModifier.Stacking.ADD -> (compiled[capability] ?: 0.0) + amount
                         TftPlayerModifier.Stacking.MAX -> maxOf(compiled[capability] ?: capability.minimum, amount)
