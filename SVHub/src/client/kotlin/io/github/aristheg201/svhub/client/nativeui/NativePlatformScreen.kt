@@ -254,15 +254,72 @@ class NativePlatformScreen(
     }
 
     private fun renderSkins(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val area=layout.content.inset(8);val source=state.str("source","all");val page=state.num("page",0);val pages=state.num("pages",1)
+        val area=layout.content.inset(8)
+        val source=state.str("source","all")
+        val page=state.num("page",0)
+        val pages=state.num("pages",1)
+        val skins=state.getAsJsonArray("skins")?:JsonArray()
+
         gui.drawString(font,"${tr("gui.svhub.owned")}: ${state.num("ownedCount")}  •  ${page+1}/$pages",area.x,area.y,muted,false)
         val tabs=listOf("all" to "gui.svhub.filter.all","dbz" to "DBZ","naruto" to "Naruto","pokelegends" to "PokeLegends")
-        val tabGap=3;val tabW=(area.width-tabGap*(tabs.size-1))/tabs.size
-        tabs.forEachIndexed{index,(id,label)->addControl(UiRect(area.x+index*(tabW+tabGap),area.y+18,tabW,20),if(label.startsWith("gui."))tr(label) else label,mouseX,mouseY,active=source==id){intent("source",json("source" to id,"page" to 0))}}
-        val skins=state.getAsJsonArray("skins")?:JsonArray();val cols=when{area.width>=650->4;area.width>=430->3;else->2};val gap=5;val cellW=(area.width-gap*(cols-1))/cols;val cellH=36
-        val visibleCount=min(skins.size(),24);val rows=(visibleCount+cols-1)/cols
-        moduleContentHeight=maxOf(moduleContentHeight,area.y+45+rows*(cellH+gap)+8-layout.content.y)
-        repeat(visibleCount){i->val e=skins[i].asJsonObject;val row=i/cols;val col=i%cols;val rect=UiRect(area.x+col*(cellW+gap),area.y+45+row*(cellH+gap)-moduleScroll,cellW,cellH);val owned=e.bool("owned");gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(selectedSkin==e.str("id"))0xFF21443E.toInt() else panelAlt);gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,if(owned)accent else muted);gui.drawString(font,fit(e.str("name",e.str("id")),rect.width-14),rect.x+9,rect.y+8,text,false);gui.drawString(font,if(owned)tr("gui.svhub.owned") else e.str("rarity"),rect.x+9,rect.y+21,if(owned)accent else muted,false);addHit(rect){selectedSkin=e.str("id")}}
+        val tabGap=3
+        val tabW=(area.width-tabGap*(tabs.size-1))/tabs.size
+        tabs.forEachIndexed{index,(id,label)->
+            addControl(
+                UiRect(area.x+index*(tabW+tabGap),area.y+18,tabW,20),
+                if(label.startsWith("gui."))tr(label) else label,
+                mouseX,mouseY,active=source==id
+            ){intent("source",json("source" to id,"page" to 0))}
+        }
+
+        val entries=(0 until min(skins.size(),24)).map{skins[it].asJsonObject}
+        val selected=entries.firstOrNull{it.str("id")==selectedSkin} ?: entries.firstOrNull()
+        if(selected!=null) selectedSkin=selected.str("id")
+
+        val stageTop=area.y+43
+        val stageH=(area.height*44/100).coerceIn(104,190)
+        val stage=UiRect(area.x,stageTop,area.width,stageH)
+        if(selected!=null){
+            SkinShowcaseRenderer.render(
+                gui,font,stage,
+                SkinShowcaseRenderer.Skin(
+                    id=selected.str("id"),
+                    name=selected.str("name",selected.str("id")),
+                    species=selected.str("species"),
+                    aspect=selected.str("aspect"),
+                    source=selected.str("source"),
+                    rarity=selected.str("rarity"),
+                    owned=selected.bool("owned")
+                )
+            )
+        }else{
+            gui.fill(stage.x,stage.y,stage.right,stage.bottom,panelAlt)
+            NativePixelArt.icon(gui,"skins",stage.x+stage.width/2-18,stage.y+stage.height/2-18,36,accent)
+            gui.drawCenteredString(font,tr("gui.svhub.not_found"),stage.x+stage.width/2,stage.bottom-18,muted)
+        }
+
+        val listTop=stage.bottom+7
+        val cols=when{area.width>=650->4;area.width>=430->3;else->2}
+        val gap=5
+        val cellW=(area.width-gap*(cols-1))/cols
+        val cellH=40
+        val rows=(entries.size+cols-1)/cols
+        moduleContentHeight=maxOf(moduleContentHeight,listTop+rows*(cellH+gap)+10-layout.content.y)
+
+        entries.forEachIndexed{i,e->
+            val row=i/cols
+            val col=i%cols
+            val rect=UiRect(area.x+col*(cellW+gap),listTop+row*(cellH+gap)-moduleScroll,cellW,cellH)
+            val owned=e.bool("owned")
+            val active=e.str("id")==selectedSkin
+            val rarity=SkinShowcaseRenderer.rarityColor(e.str("rarity"))
+            gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(active)0xFF21443E.toInt() else panelAlt)
+            gui.fill(rect.x,rect.y,rect.x+3,rect.bottom,if(active)gold else rarity)
+            gui.drawString(font,fit(e.str("name",e.str("id")),rect.width-14),rect.x+9,rect.y+7,text,active)
+            val subtitle=if(owned)tr("gui.svhub.owned") else e.str("rarity")
+            gui.drawString(font,fit(subtitle,rect.width-14),rect.x+9,rect.y+23,if(owned)accent else rarity,false)
+            addHit(rect){selectedSkin=e.str("id")}
+        }
     }
 
     private fun renderArcade(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){

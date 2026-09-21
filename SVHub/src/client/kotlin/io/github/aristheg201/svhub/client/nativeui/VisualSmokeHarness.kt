@@ -42,6 +42,7 @@ object VisualSmokeHarness {
     private var arenaIndex = 0
     private var uiScenarioIndex = 0
     private var resultScenarioIndex = 0
+    private var showcaseCaptured = false
     private var stableTicks = 0
     private var bootTicks = 0
     private var finalWaitTicks = 0
@@ -169,13 +170,7 @@ object VisualSmokeHarness {
 
     private fun tickResultScenario(client:Minecraft) {
         if(resultScenarioIndex>=resultScenarios.size) {
-            finalWaitTicks++
-            if(finalWaitTicks>=40) {
-                val total=arenas.size+uiScenarios.size+resultScenarios.size
-                System.out.println("[SVHub Visual Smoke] completed "+total+" captures; stopping client")
-                enabled=false
-                client.stop()
-            }
+            tickSkinShowcase(client)
             return
         }
         val scenario=resultScenarios[resultScenarioIndex]
@@ -200,6 +195,37 @@ object VisualSmokeHarness {
             resultScenarioIndex++
             stableTicks=0
             capturedCurrent=false
+        }
+    }
+
+    private fun tickSkinShowcase(client:Minecraft) {
+        if(showcaseCaptured) {
+            finalWaitTicks++
+            if(finalWaitTicks>=40) {
+                val total=arenas.size+uiScenarios.size+resultScenarios.size+1
+                System.out.println("[SVHub Visual Smoke] completed "+total+" captures; stopping client")
+                enabled=false
+                client.stop()
+            }
+            return
+        }
+        val active=client.screen as? SkinShowcaseVisualSmokeScreen
+        if(active==null) {
+            stableTicks=0
+            client.setScreen(SkinShowcaseVisualSmokeScreen())
+            System.out.println("[SVHub Visual Smoke] opened skin showcase")
+            return
+        }
+        stableTicks++
+        val resolved=PokemonModelRenderer.sceneSizingDiagnostics().any{it.instanceId=="skin-showcase:visual-skin"}
+        if(stableTicks>=60 && active.fixtureReady && resolved) {
+            showcaseCaptured=true
+            Screenshot.grab(client.gameDirectory,"svhub-skin-showcase.png",client.mainRenderTarget){message->
+                System.out.println("[SVHub Visual Smoke] captured svhub-skin-showcase.png :: "+message.string)
+            }
+            stableTicks=0
+        } else if(stableTicks>600) {
+            throw IllegalStateException("SVHub skin showcase smoke timed out: resolved="+resolved+" fixtureReady="+active.fixtureReady)
         }
     }
 
@@ -610,6 +636,28 @@ object VisualSmokeHarness {
                 cells[26]="tower:charizard:2:3:-1:flamethrower:ATTACK_SPECIAL"
                 cells.forEach{add(it)}
             }
+        }
+    }
+
+    private class SkinShowcaseVisualSmokeScreen:Screen(Component.literal("SVHub Skin Showcase Visual Smoke")) {
+        private var rendered=false
+        val fixtureReady get()=rendered
+        override fun isPauseScreen():Boolean=false
+        override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
+            val rect=UiRect(10,10,(width-20).coerceAtLeast(140),(height-20).coerceAtLeast(100))
+            SkinShowcaseRenderer.render(
+                gui,font,rect,
+                SkinShowcaseRenderer.Skin(
+                    id="visual-skin",
+                    name="Green Lantern Mewtwo",
+                    species="cobblemon:mewtwo",
+                    aspect="greenlantern",
+                    source="Showcase",
+                    rarity="Legendary",
+                    owned=true
+                )
+            )
+            rendered=true
         }
     }
 
