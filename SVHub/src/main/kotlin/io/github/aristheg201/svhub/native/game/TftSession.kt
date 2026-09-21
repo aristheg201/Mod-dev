@@ -1189,11 +1189,12 @@ class TftSession(
     private fun combatFor(id: String) = combats[id]
     private fun snapshotBoard(player: PlayerState) = player.board.mapValues { (_, unit) -> unit.copy(items = unit.items.toMutableList()) }
     private fun resolveTactician(selection: String?): String {
-        val requestedEntity = selection?.let { if (':' in it) it else "minecraft:$it" }
+        val requested = selection?.takeIf(String::isNotBlank) ?: return set.defaultTactician
+        val requestedEntity = if (':' in requested) requested else "minecraft:$requested"
         return set.tacticians.firstOrNull { tactician ->
-            tactician.id == selection ||
+            tactician.id == requested ||
                 tactician.entity == requestedEntity ||
-                tactician.presentation?.species == selection
+                tactician.presentation?.species == requested
         }?.id ?: set.defaultTactician
     }
 
