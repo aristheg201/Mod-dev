@@ -10,7 +10,10 @@ class TftCarouselTest {
     private val seats = listOf(NativeSeat("a", "A"), NativeSeat("b", "B"))
     private fun carousel(): TftSession {
         val base = TftSetRegistry.bundled("kanto_rising")
-        val session = TftSession(seats, seed = 4401L, definition = base.copy(pveRounds = emptyList()))
+        val pvpFirst = base.copy(roundSchedule = base.roundSchedule.mapIndexed { index, round ->
+            if (index == 0) round.copy(type = "pvp", pve = null) else round
+        })
+        val session = TftSession(seats, seed = 4401L, definition = pvpFirst)
         val planningEnd = session.viewFor("a").fields.getValue("phaseEndsAt").toLong()
         session.tick(planningEnd + 1); session.tick(planningEnd + 51)
         val state = session.snapshotState()
