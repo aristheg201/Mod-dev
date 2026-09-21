@@ -76,7 +76,13 @@ object SkinShowcaseRenderer {
 
         val modelRect=UiRect(frameX+10,frameY+8,(frameW-20).coerceAtLeast(34),(frameH-24).coerceAtLeast(36))
         val view=pokemonView(skin)
-        val rendered=view!=null&&PokemonModelRenderer.renderPreview(gui,view,"skin-showcase:"+skin.id,modelRect)
+        val previewSize=min(modelRect.width,modelRect.height).coerceAtLeast(34)
+        val rendered=view!=null&&PokemonModelRenderer.render(
+            gui,view,
+            modelRect.x+modelRect.width/2,
+            modelRect.y+modelRect.height/2+previewSize/5,
+            previewSize,165f,1.0f,10f
+        )
         if(!rendered) NativePixelArt.icon(gui,"skins",rect.x+rect.width/2-18,rect.y+rect.height/2-22,36,accent)
 
         gui.fill(rect.x+3,rect.bottom-25,rect.right-3,rect.bottom-3,0xE6070D11.toInt())

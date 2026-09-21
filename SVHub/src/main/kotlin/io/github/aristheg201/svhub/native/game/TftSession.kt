@@ -441,8 +441,13 @@ class TftSession(
             finished = finished,
             winner = winner?.let { id -> seats.firstOrNull { it.id == id }?.name },
             resultPresentation = if(!finished) null else NativeGameResultPresentation(
-                outcome = if(winner==player.id)"victory" else "defeat",
-                reason = when(player.placement){1->"first";2,3->"top_three";else->"placement"},
+                outcome = when(player.placement){
+                    1 -> "top_1"
+                    2 -> "top_2"
+                    3 -> "top_3"
+                    else -> if(winner==player.id)"victory" else "defeat"
+                },
+                reason = when(player.placement){1->"first";2->"second";3->"third";else->"placement"},
                 backdrop = "tft",
                 stats = listOf(
                     NativeResultLine("placement",(player.placement?:8).toString()),

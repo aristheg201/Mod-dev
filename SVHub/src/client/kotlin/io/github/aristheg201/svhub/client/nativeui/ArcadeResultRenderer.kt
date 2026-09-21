@@ -33,7 +33,7 @@ object ArcadeResultRenderer {
 
         val outcome=result.str("outcome","complete")
         val outcomeText=trOr("gui.svhub.result."+outcome,outcome.replaceFirstChar(Char::uppercase))
-        gui.drawCenteredString(font,outcomeText,scene.x+scene.width/2,scene.bottom-32,if(outcome=="defeat")0xFFE36C5C.toInt() else 0xFFE2BE62.toInt())
+        gui.drawCenteredString(font,outcomeText,scene.x+scene.width/2,scene.bottom-32,outcomeColor(outcome))
         val reason=result.str("reason","complete")
         gui.drawCenteredString(font,trOr("gui.svhub.result.reason."+reason,tr("gui.svhub.result.complete")),scene.x+scene.width/2,scene.bottom-18,0xFFF2F6F4.toInt())
 
@@ -78,6 +78,13 @@ object ArcadeResultRenderer {
         }
     }
 
+    private fun outcomeColor(outcome:String)=when(outcome){
+        "defeat"->0xFFE36C5C.toInt()
+        "top_2"->0xFFD7DEE5.toInt()
+        "top_3"->0xFFD38B5D.toInt()
+        "draw"->0xFF91A6A1.toInt()
+        else->0xFFE2BE62.toInt()
+    }
     private fun gameAccent(id:String)=when(id){
         "chess"->0xFFE4D9BE.toInt()
         "tower_defense"->0xFF80B56B.toInt()

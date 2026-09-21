@@ -27,12 +27,20 @@ class TowerDefenseSession(
         }
         enemies.sortedBy { it.progress }.forEach { enemy ->
             val slot=definition.path[enemy.progress.toInt().coerceIn(0,definition.path.lastIndex)]
-            board[slot]="enemy:${enemy.id}:${enemy.kind}:${enemy.hp.coerceAtLeast(0)}:${enemy.maxHp}:${enemy.progress}"
+            val encoded="enemy:${enemy.id}:${enemy.kind}:${enemy.hp.coerceAtLeast(0)}:${enemy.maxHp}:${enemy.progress}"
+            board[slot]=sequenceOf(board[slot],encoded).filter(String::isNotBlank).joinToString(",")
         }
         val cards=towersById.values.map { def ->
             NativeCardView(
                 def.id,def.name,"${def.cost}g • DMG ${def.damage} • Range ${def.range}",def.element.lowercase(),def.cost,
-                mapOf("species" to def.species,"targetMode" to def.targetMode)
+                mapOf(
+                    "species" to def.species,
+                    "targetMode" to def.targetMode,
+                    "damage" to def.damage.toString(),
+                    "range" to def.range.toString(),
+                    "element" to def.element,
+                    "maxLevel" to (def.upgrades.maxOfOrNull { it.level } ?: 1).toString()
+                )
             )
         }
         val actions=listOf(
@@ -59,7 +67,7 @@ class TowerDefenseSession(
             definition.width,definition.height,board,cards,actions,
             linkedMapOf(
                 "gold" to "$gold","lives" to "$lives","wave" to "$wave","running" to "$running",
-                "path" to definition.path.joinToString(","),"definition" to definition.id,
+                "path" to definition.path.joinToString(","),"buildZones" to definition.buildZones.joinToString(","),"definition" to definition.id,
                 "enemyEncoding" to "v2","towerEncoding" to "v2","rewards" to rewardLog.joinToString(",")
             ),
             log.toList().takeLast(14),revision,finished,

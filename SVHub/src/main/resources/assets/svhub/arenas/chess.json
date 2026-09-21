@@ -4,6 +4,10 @@
   "depth": 7,
   "detailEvery": 0,
   "pathDetailEvery": 0,
+  "backgroundColor": "#0f1115",
+  "geometry": [
+    {"id":"game_table","position":[3.5,3.5,-0.48],"size":[9.35,9.35,0.72],"material":"#0f1115"}
+  ],
   "floor": [
     "minecraft:smooth_quartz"
   ],
@@ -62,6 +66,9 @@
     }
   ],
   "metadata": {
+    "cameraPresets": {
+      "normal": {"position":[3.5,11.6,10.4],"target":[3.5,3.45,0],"fov":43}
+    },
     "boardColumns": 8,
     "boardRows": 8,
     "boardOrigin": [

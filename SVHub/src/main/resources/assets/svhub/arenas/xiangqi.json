@@ -4,6 +4,10 @@
   "depth": 6,
   "detailEvery": 0,
   "pathDetailEvery": 0,
+  "backgroundColor": "#1a100b",
+  "geometry": [
+    {"id":"game_table","position":[4,4.5,-0.42],"size":[10.2,11.2,0.64],"material":"#1a100b"}
+  ],
   "floor": [
     "minecraft:bamboo_planks"
   ],
@@ -62,6 +66,9 @@
     }
   ],
   "metadata": {
+    "cameraPresets": {
+      "normal": {"position":[4,13.8,11.7],"target":[4,4.5,0],"fov":44}
+    },
     "boardColumns": 9,
     "boardRows": 10,
     "boardOrigin": [

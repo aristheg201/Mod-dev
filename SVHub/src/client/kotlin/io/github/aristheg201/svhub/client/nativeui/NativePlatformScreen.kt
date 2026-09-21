@@ -569,7 +569,10 @@ class NativePlatformScreen(
                 }
             }
         }else if(NativeBoardSceneRenderer.supports(gameId)){
-            val rendered=NativeBoardSceneRenderer.render(gui,font,sceneArea,view,boardSceneUi,selectedCell)
+            val rendered=NativeBoardSceneRenderer.render(
+                gui,font,sceneArea,view,boardSceneUi,selectedCell,
+                placementMode = gameId=="tower_defense" && selectedTowerType!=null
+            )
             sceneFrame=rendered?.frame
             boardRect=sceneArea
             cellSize=0
@@ -751,25 +754,34 @@ class NativePlatformScreen(
             controls.asReversed().firstOrNull{it.enabled&&it.rect.contains(mouseX,mouseY)}?.let{it.action();return true}
             if (sceneInputs.asReversed().any { it(mouseX, mouseY) }) return true
             if(module=="game"){
-                val game=state.getAsJsonObject("view")?.str("gameId").orEmpty()
+                val view=state.getAsJsonObject("view")
+                val game=view?.str("gameId").orEmpty()
                 val projected=sceneFrame?.layout?.pick(mouseX,mouseY)
-                if(projected!=null){
+                if(projected!=null && view!=null){
                     when(game){
                         "chess","xiangqi"->{
+                            val sources=NativeBoardSystems.sourceCells(game,view)
                             val first=selectedCell
-                            if(first==null) selectedCell=projected
-                            else if(first==projected) selectedCell=null
-                            else{
-                                selectedCell=null
-                                gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,projected)))
+                            when {
+                                first==null && projected in sources -> selectedCell=projected
+                                first==projected -> selectedCell=null
+                                first!=null && projected in NativeBoardSystems.legalTargets(game,view,first) -> {
+                                    selectedCell=null
+                                    gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,projected)))
+                                }
+                                projected in sources -> selectedCell=projected
+                                else -> selectedCell=null
                             }
                         }
                         "tower_defense"->{
                             val tower=selectedTowerType
                             if(tower!=null){
-                                selectedTowerType=null
-                                selectedCell=projected
-                                gameAct("deploy",mapOf("type" to tower,"slot" to projected.toString()))
+                                val valid=NativeBoardSystems.legalTargets(game,view,selectedCell,placementMode=true)
+                                if(projected in valid){
+                                    selectedCell=projected
+                                    gameAct("deploy",mapOf("type" to tower,"slot" to projected.toString()))
+                                    selectedTowerType=null
+                                } else selectedCell=projected
                             }else selectedCell=projected
                         }
                         "ludo"->selectedCell=projected

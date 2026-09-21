@@ -70,9 +70,7 @@ class NativeBoardSceneUiState {
 }
 
 object NativeBoardSceneRenderer {
-    private val supported = setOf("chess", "xiangqi", "tower_defense", "ludo")
-
-    fun supports(gameId: String): Boolean = gameId in supported
+    fun supports(gameId: String): Boolean = NativeBoardSystems.supports(gameId)
 
     fun render(
         gui: GuiGraphics,
@@ -80,14 +78,15 @@ object NativeBoardSceneRenderer {
         area: UiRect,
         view: JsonObject,
         ui: NativeBoardSceneUiState,
-        selectedCell: Int?
+        selectedCell: Int?,
+        placementMode: Boolean = false
     ): NativeBoardSceneResult? {
         val gameId = view.str("gameId")
-        if (gameId !in supported) return null
+        if (!NativeBoardSystems.supports(gameId)) return null
         return when (gameId) {
             "chess" -> renderChess(gui, font, area, view, ui, selectedCell)
             "xiangqi" -> renderXiangqi(gui, font, area, view, ui, selectedCell)
-            "tower_defense" -> renderTowerDefense(gui, font, area, view, ui, selectedCell)
+            "tower_defense" -> renderTowerDefense(gui, font, area, view, ui, selectedCell, placementMode)
             "ludo" -> renderLudo(gui, font, area, view, ui.scene(gameId), selectedCell)
             else -> null
         }
@@ -108,8 +107,7 @@ object NativeBoardSceneRenderer {
         val lastFrom = chessIndex(fields.str("lastMoveFrom"))
         val lastTo = chessIndex(fields.str("lastMoveTo"))
         val auxFrom=chessIndex(fields.str("lastAuxMoveFrom"));val auxTo=chessIndex(fields.str("lastAuxMoveTo"))
-        val legalMoves = parseLegalMoves(fields.str("legalMoves"), ::chessIndex)
-        val legalCells = if (selectedCell == null) emptySet() else legalMoves[selectedCell].orEmpty()
+        val legalCells = NativeBoardSystems.legalTargets("chess", view, selectedCell)
         val selected = selectedCell?.let(::setOf).orEmpty()
         val entities = mutableListOf<PokemonSceneEntity>()
         val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
@@ -188,7 +186,7 @@ object NativeBoardSceneRenderer {
             state = scene,
             selectedCells = selected,
             legalCells = legalCells,
-            camera = SceneCameras.BOARD,
+            camera = NativeBoardSystems.camera("chess", view, SceneCameras.BOARD),
             nativeAnimations = nativeAnimations,
             arenaId = "chess",
             arenaSeed = view.str("sessionId"),
@@ -211,8 +209,7 @@ object NativeBoardSceneRenderer {
         val serial = fields.long("moveSerial")
         val lastFrom = xiangqiIndex(fields.str("lastMoveFrom"))
         val lastTo = xiangqiIndex(fields.str("lastMoveTo"))
-        val legalMoves = parseLegalMoves(fields.str("legalMoves"), ::xiangqiIndex)
-        val legalCells = if (selectedCell == null) emptySet() else legalMoves[selectedCell].orEmpty()
+        val legalCells = NativeBoardSystems.legalTargets("xiangqi", view, selectedCell)
         val selected = selectedCell?.let(::setOf).orEmpty()
         val entities = mutableListOf<PokemonSceneEntity>()
         val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
@@ -288,7 +285,7 @@ object NativeBoardSceneRenderer {
             state = scene,
             selectedCells = selected,
             legalCells = legalCells,
-            camera = SceneCameras.XIANGQI,
+            camera = NativeBoardSystems.camera("xiangqi", view, SceneCameras.XIANGQI),
             nativeAnimations = nativeAnimations,
             arenaId = "xiangqi",
             arenaSeed = view.str("sessionId"),
@@ -303,7 +300,8 @@ object NativeBoardSceneRenderer {
         area: UiRect,
         view: JsonObject,
         ui: NativeBoardSceneUiState,
-        selectedCell: Int?
+        selectedCell: Int?,
+        placementMode: Boolean
     ): NativeBoardSceneResult {
         val scene = ui.scene("tower_defense")
         val board = view.getAsJsonArray("board") ?: JsonArray()
@@ -317,6 +315,7 @@ object NativeBoardSceneRenderer {
         val entities = mutableListOf<PokemonSceneEntity>()
         val effects = mutableListOf<SceneEffectSignal>()
         val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
+        val legalCells = NativeBoardSystems.legalTargets("tower_defense", view, selectedCell, placementMode)
 
         repeat(minOf(capacity, board.size())) { index ->
             val raw = runCatching { board[index].asString }.getOrDefault("")
@@ -353,7 +352,8 @@ object NativeBoardSceneRenderer {
             entities = entities,
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
-            camera = SceneCameras.LANE,
+            legalCells = legalCells,
+            camera = NativeBoardSystems.camera("tower_defense", view, SceneCameras.LANE),
             effects = effects,
             nativeAnimations = nativeAnimations,
             arenaId = "tower_defense",
@@ -362,7 +362,7 @@ object NativeBoardSceneRenderer {
             pathRoute = path,
             showUnitOverlays = view.get("finished")?.asBoolean != true
         )
-        return NativeBoardSceneResult(frame, emptySet())
+        return NativeBoardSceneResult(frame, legalCells)
     }
 
     private fun renderLudo(
@@ -410,7 +410,7 @@ object NativeBoardSceneRenderer {
             entities = entities,
             state = scene,
             selectedCells = selectedCell?.let(::setOf).orEmpty(),
-            camera = SceneCameras.LUDO,
+            camera = NativeBoardSystems.camera("ludo", view, SceneCameras.LUDO),
             arenaId = arenaId,
             arenaSeed = view.str("sessionId"),
             pathCells = arena.boardAnchors.indices.map { index ->

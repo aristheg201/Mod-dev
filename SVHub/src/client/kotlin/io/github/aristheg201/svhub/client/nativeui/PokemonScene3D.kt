@@ -393,7 +393,19 @@ object PokemonScene3D {
             if(!embedded) drawDiamond(gui,point.x.roundToInt(),(point.y+layout.tileHeight*0.20f).roundToInt(),max(9,(cellPixels*0.36f).roundToInt()),max(4,(layout.tileHeight*0.18f).roundToInt()),ring,ring)
             val modelSize=max(30,(layout.tileWidth*1.18f*entity.scale*camera.modelZoom).roundToInt()).coerceAtMost(108)
             val moving=abs(logical.x-entity.boardX)>0.025f||abs(logical.y-entity.boardY)>0.025f
-            val rendered=if(embedded) entity.id in renderedActors else entity.view?.let{view->
+            val rendered=if(embedded) {
+                if(entity.id in renderedActors) true else entity.view?.let { view ->
+                    PokemonModelRenderer.render(
+                        gui,view,
+                        point.x.roundToInt(),
+                        (point.y + layout.tileHeight * 0.35f).roundToInt(),
+                        modelSize,
+                        entity.yaw,
+                        (entity.scale * camera.modelZoom).coerceIn(0.55f,1.35f),
+                        12f
+                    )
+                } ?: false
+            } else entity.view?.let{view->
                 PokemonModelRenderer.renderScene(
                     gui = gui,
                     view = view,

@@ -193,7 +193,16 @@ object PokemonModelRenderer {
         context.put(RenderContext.POSABLE_STATE,state)
         context.put(RenderContext.DO_QUIRKS,true)
         model.context=context
-        state.setPoseToFirstSuitable(resolveScenePoseType(live,moving))
+        val scenePose = resolveScenePoseType(live,moving)
+        val hasAuthoredPose = model.poses.values.any { pose ->
+            runCatching { pose.isSuitable(state) }.getOrDefault(false) &&
+                (pose.animations.isNotEmpty() || pose.transformedParts.isNotEmpty())
+        }
+        if (!hasAuthoredPose) {
+            model.setDefault()
+            return false
+        }
+        state.setPoseToFirstSuitable(scenePose)
         state.updatePartialTicks(delta)
         flushSceneAnimations(instanceId,live)
         model.applyAnimations(null,state,0f,0f,0f,0f,0f)
@@ -427,7 +436,9 @@ object PokemonModelRenderer {
             pose.animations.isNotEmpty() || pose.transformedParts.isNotEmpty()
         }
         val pool = authored.ifEmpty { suitable }
-        val priorities = if (moving) {
+        val priorities = if (authored.isEmpty()) {
+            listOf(PoseType.PROFILE, PoseType.PORTRAIT, PoseType.STAND, PoseType.HOVER, PoseType.FLOAT, PoseType.WALK, PoseType.FLY, PoseType.SWIM)
+        } else if (moving) {
             listOf(PoseType.WALK, PoseType.FLY, PoseType.SWIM, PoseType.HOVER, PoseType.FLOAT, PoseType.STAND, PoseType.PROFILE, PoseType.PORTRAIT)
         } else {
             listOf(PoseType.STAND, PoseType.HOVER, PoseType.FLOAT, PoseType.FLY, PoseType.SWIM, PoseType.WALK, PoseType.PROFILE, PoseType.PORTRAIT)

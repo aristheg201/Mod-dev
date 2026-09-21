@@ -42,6 +42,9 @@ object NativeArcadeService {
     @Volatile private var tftMatchmaking = TftLifecyclePolicy.MatchmakingConfig()
     internal fun configureTftMatchmaking(config:TftLifecyclePolicy.MatchmakingConfig){tftMatchmaking=config}
     private val rewarding = hashSetOf<String>()
+    private val rewarded = hashSetOf<String>()
+    private val terminalUntil = hashMapOf<String, Long>()
+    private val terminalAcknowledged = hashMapOf<String, MutableSet<UUID>>()
     private val finishedAt = hashMapOf<String, Long>()
     private val disconnectedUntil = hashMapOf<UUID, Long>()
     private val meta = hashMapOf<String, SessionMeta>()
@@ -212,9 +215,11 @@ object NativeArcadeService {
     fun leave(player: ServerPlayer): Result {
         cancelQueue(player)
         disconnectedUntil.remove(player.uuid)
-        val sid = active.remove(player.uuid) ?: return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
+        val sid = active[player.uuid] ?: return Result(true, "gui.svhub.arcade.left", setOf(player.uuid))
         val handle = sessions[sid]
-        if(handle != null && !handle.finished) {
+        active.remove(player.uuid)
+        if(handle != null && handle.finished) acknowledgeTerminal(sid, player.uuid)
+        else if(handle != null) {
             meta[sid]?.forfeited?.add(player.uuid)
             handle.submitAction(player.uuid.toString(), "resign", emptyMap(), bot = false)
         }
@@ -229,6 +234,7 @@ object NativeArcadeService {
         val gameId=handle.gameId
         active.remove(player.uuid)
         disconnectedUntil.remove(player.uuid)
+        acknowledgeTerminal(sid, player.uuid)
         return start(player,gameId,mode)
     }
 
@@ -249,6 +255,7 @@ object NativeArcadeService {
             if (!handle.finished) handle.submitTick(now) else finishIfNeeded(handle)
             persistSession(handle, now, force = false)
         }
+        expireTerminalSessions(now)
         disconnectedUntil.entries.toList().forEach { (id, deadline) ->
             if (now < deadline || server.playerList.getPlayer(id) != null) return@forEach
             if (!disconnectedUntil.remove(id, deadline)) return@forEach
@@ -298,6 +305,9 @@ object NativeArcadeService {
         queues.values.forEach { it.clear() }
         tftCollectionDeadline.clear()
         rewarding.clear()
+        rewarded.clear()
+        terminalUntil.clear()
+        terminalAcknowledged.clear()
         finishedAt.clear()
         disconnectedUntil.clear()
         meta.clear()
@@ -352,6 +362,9 @@ object NativeArcadeService {
         if (!handle.finished || finishedAt.containsKey(handle.sessionId)) return
         val now = System.currentTimeMillis()
         persistSession(handle, now, force = true)
+        terminalUntil.putIfAbsent(handle.sessionId, now + TERMINAL_RESULT_MS)
+        terminalAcknowledged.getOrPut(handle.sessionId) { linkedSetOf() }
+        if (handle.sessionId in rewarded || handle.sessionId in rewarding) return
         if (!rewarding.add(handle.sessionId)) return
         val m = meta[handle.sessionId] ?: SessionMeta("unknown", now)
         val players = realPlayers(handle)
@@ -370,15 +383,46 @@ object NativeArcadeService {
             NativeRewardCompletion(handle.sessionId, handle.gameId, m.mode, (now - m.createdAtEpochMs).coerceAtLeast(0L), participants)
         ) { durable ->
             rewarding.remove(handle.sessionId)
-            if (durable) finalizeFinishedSession(handle.sessionId)
+            if (durable) {
+                rewarded.add(handle.sessionId)
+                maybeFinalizeTerminal(handle.sessionId, System.currentTimeMillis())
+            }
         }
         if (!accepted) rewarding.remove(handle.sessionId)
+    }
+
+    private fun acknowledgeTerminal(sessionId: String, playerId: UUID) {
+        terminalAcknowledged.getOrPut(sessionId) { linkedSetOf() }.add(playerId)
+        maybeFinalizeTerminal(sessionId, System.currentTimeMillis())
+    }
+
+    private fun expireTerminalSessions(now: Long) {
+        terminalUntil.entries.toList().forEach { (sessionId, deadline) ->
+            if (now < deadline) return@forEach
+            sessions[sessionId]?.let { handle ->
+                terminalAcknowledged.getOrPut(sessionId) { linkedSetOf() }.addAll(realPlayers(handle))
+            }
+            maybeFinalizeTerminal(sessionId, now)
+        }
+    }
+
+    private fun maybeFinalizeTerminal(sessionId: String, now: Long) {
+        val handle = sessions[sessionId] ?: return
+        if (!handle.finished || sessionId !in rewarded) return
+        val players = realPlayers(handle)
+        val acknowledged = terminalAcknowledged[sessionId].orEmpty()
+        val expired = now >= (terminalUntil[sessionId] ?: Long.MAX_VALUE)
+        if (!expired && !players.all(acknowledged::contains)) return
+        finalizeFinishedSession(sessionId)
     }
 
     private fun finalizeFinishedSession(sessionId: String) {
         val handle = sessions[sessionId] ?: return
         if (!handle.finished || finishedAt.containsKey(sessionId)) return
         finishedAt[sessionId] = System.currentTimeMillis()
+        rewarded.remove(sessionId)
+        terminalUntil.remove(sessionId)
+        terminalAcknowledged.remove(sessionId)
         NativeBotRuntime.forgetSession(sessionId)
         realPlayers(handle).forEach { id ->
             if (active[id] == sessionId) active.remove(id)
@@ -548,5 +592,6 @@ object NativeArcadeService {
     private const val RESTART_RECONNECT_GRACE_MS = 5 * 60 * 1000L
     private const val SESSION_PERSIST_INTERVAL_MS = 1_000L
     private const val TERMINAL_DEDUP_MS = 10 * 60 * 1000L
+    private const val TERMINAL_RESULT_MS = 45_000L
     private const val MAX_SESSIONS = 512
 }
