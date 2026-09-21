@@ -2,11 +2,14 @@ package io.github.aristheg201.svhub.client.nativeui
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.pokemon.Species
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameraFraming
 import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.SceneVec3
+import io.github.aristheg201.svhub.ui.UiDensity
 import io.github.aristheg201.svhub.ui.UiRect
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -26,6 +29,7 @@ object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium")
+    private val uiScenarios = listOf("planning", "pve")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
         "cobblemon:charmander", "cobblemon:snorlax", "cobblemon:onix", "cobblemon:vaporeon",
@@ -34,6 +38,7 @@ object VisualSmokeHarness {
 
     private var enabled = false
     private var arenaIndex = 0
+    private var uiScenarioIndex = 0
     private var stableTicks = 0
     private var bootTicks = 0
     private var finalWaitTicks = 0
@@ -69,12 +74,7 @@ object VisualSmokeHarness {
         }
 
         if (arenaIndex >= arenas.size) {
-            finalWaitTicks++
-            if (finalWaitTicks >= 40) {
-                System.out.println("[SVHub Visual Smoke] completed ${arenas.size} captures; stopping client")
-                enabled = false
-                client.stop()
-            }
+            tickUiScenario(client)
             return
         }
 
@@ -116,6 +116,54 @@ object VisualSmokeHarness {
 
         if (capturedCurrent && stableTicks >= 95) {
             arenaIndex++
+            stableTicks = 0
+            capturedCurrent = false
+        }
+    }
+
+    private fun tickUiScenario(client: Minecraft) {
+        if (uiScenarioIndex >= uiScenarios.size) {
+            finalWaitTicks++
+            if (finalWaitTicks >= 40) {
+                val total = arenas.size + uiScenarios.size
+                System.out.println("[SVHub Visual Smoke] completed " + total + " captures; stopping client")
+                enabled = false
+                client.stop()
+            }
+            return
+        }
+
+        val scenario = uiScenarios[uiScenarioIndex]
+        val active = client.screen as? TftUiVisualSmokeScreen
+        if (active?.scenario != scenario) {
+            stableTicks = 0
+            capturedCurrent = false
+            client.setScreen(TftUiVisualSmokeScreen(scenario))
+            System.out.println("[SVHub Visual Smoke] opened full TFT UI scenario " + scenario)
+            return
+        }
+
+        stableTicks++
+        val prefix = "tft:visual-ui-" + scenario + ":"
+        val resolvedActors = PokemonModelRenderer.sceneSizingDiagnostics()
+            .count { it.instanceId.startsWith(prefix) }
+        if (!capturedCurrent && stableTicks >= 70 && active.fixtureReady && resolvedActors >= EXPECTED_ACTORS) {
+            capturedCurrent = true
+            val fileName = "svhub-tft-ui-" + scenario + ".png"
+            Screenshot.grab(client.gameDirectory, fileName, client.mainRenderTarget) { message ->
+                System.out.println("[SVHub Visual Smoke] captured " + fileName + " with " + resolvedActors + " actors :: " + message.string)
+            }
+        }
+
+        if (!capturedCurrent && stableTicks > 600) {
+            throw IllegalStateException(
+                "SVHub full TFT UI smoke timed out in " + scenario + ": " +
+                    resolvedActors + "/" + EXPECTED_ACTORS + " resolved; fixtureReady=" + active.fixtureReady
+            )
+        }
+
+        if (capturedCurrent && stableTicks >= 95) {
+            uiScenarioIndex++
             stableTicks = 0
             capturedCurrent = false
         }
@@ -170,6 +218,256 @@ object VisualSmokeHarness {
             fakemon = false
         )
     }
+    private class TftUiVisualSmokeScreen(val scenario: String) : Screen(Component.literal("SVHub TFT UI Visual Smoke")) {
+        private val ui = TftUiState()
+        private val view = fixtureView(scenario)
+        private var rendered = false
+        val fixtureReady get() = rendered
+
+        override fun isPauseScreen(): Boolean = false
+
+        override fun render(gui: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val area = UiRect(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
+            TftGameRenderer.render(
+                gui = gui,
+                font = font,
+                area = area,
+                density = UiDensity.WIDE,
+                view = view,
+                ui = ui,
+                mouseX = mouseX,
+                mouseY = mouseY,
+                hooks = TftGameRenderer.Hooks(
+                    control = { _, _, _, _ -> },
+                    hit = { _, _ -> },
+                    sceneInput = { _ -> },
+                    dropInput = { _ -> },
+                    action = { _, _ -> },
+                    back = {}
+                )
+            )
+            rendered = true
+        }
+
+        companion object {
+            private fun fixtureView(scenario: String): JsonObject {
+                val pve = scenario == "pve"
+                val fields = JsonObject().apply {
+                    addProperty("set", "visual_smoke")
+                    addProperty("participantId", "visual")
+                    addProperty("boardColumns", "7")
+                    addProperty("boardRows", "4")
+                    addProperty("shopSlots", "5")
+                    addProperty("benchSlots", "9")
+                    addProperty("arenaId", "kanto_stadium")
+                    addProperty("tacticianEntity", "minecraft:fox")
+                    addProperty("tacticianId", "svhub:fox")
+                    addProperty("tacticianScale", "0.85")
+                    addProperty("tacticianState", if (pve) "round_start" else "idle")
+                    addProperty("scouting", "false")
+                    addProperty("round", if (pve) "1-1" else "2-2")
+                    addProperty("roundType", if (pve) "pve" else "pvp")
+                    addProperty("pveActive", pve.toString())
+                    addProperty("pveRound", if (pve) "1-1" else "")
+                    addProperty("pveComponentDrops", if (pve) "2" else "0")
+                    addProperty("pveLootTable", if (pve) "opening_cache" else "")
+                    addProperty("bossRound", "false")
+                    addProperty("roundIndex", if (pve) "0" else "4")
+                    addProperty("phaseEndsAt", (System.currentTimeMillis() + 120_000L).toString())
+                    addProperty("gold", "36")
+                    addProperty("hp", "87")
+                    addProperty("level", "6")
+                    addProperty("xp", "14")
+                    addProperty("xpNext", "36")
+                    addProperty("lastInterest", "3")
+                    addProperty("streak", "2")
+                    addProperty("bench", benchPayload(scenario))
+                    addProperty("players", "visual~Aris~87~6~0~0;rival~Rival~73~6~0~0;third~Third~52~5~0~0;fourth~Fourth~31~5~0~0")
+                    addProperty("traits", "guardian~Guardian~4~4~6~Defense active;storm~Storm~2~2~4~Speed active;arcane~Arcane~1~0~2~")
+                    addProperty("unitCatalog", unitCatalog())
+                    addProperty("traitCatalog", traitCatalog())
+                    addProperty("itemBench", "sword,rod,tear,vest,full:rapid_fire")
+                    addProperty("itemCatalog", itemCatalog())
+                    addProperty("lastItemEvent", "")
+                    addProperty("itemEventSerial", "0")
+                    addProperty("selectedAugments", selectedAugments())
+                    addProperty("augmentChoices", "")
+                    addProperty("draft", "")
+                    addProperty("opponent", if (pve) "Wild Pokémon" else "Rival")
+                    addProperty("canEditBoard", (!pve).toString())
+                    addProperty("capabilities", if (pve)
+                        "CAN_BUY_UNIT,CAN_REROLL,CAN_BUY_XP,CAN_SELL,CAN_SCOUT,CAN_EMOTE,CAN_OPEN_SHOP"
+                    else
+                        "CAN_BUY_UNIT,CAN_REROLL,CAN_BUY_XP,CAN_SELL,CAN_MOVE_BOARD_UNIT,CAN_MOVE_BENCH_UNIT,CAN_EQUIP_ITEM,CAN_COMBINE_ITEM,CAN_SCOUT,CAN_EMOTE,CAN_OPEN_SHOP,CAN_INTERACT_BENCH")
+                }
+                return JsonObject().apply {
+                    addProperty("sessionId", "visual-ui-" + scenario)
+                    addProperty("gameId", "tft")
+                    addProperty("phase", if (pve) "combat" else "planning")
+                    addProperty("status", if (pve) "1-1 • PvE" else "2-2 • Planning")
+                    add("board", boardPayload(scenario))
+                    add("cards", shopCards())
+                    add("actions", JsonArray().apply {
+                        add(JsonObject().apply { addProperty("id", "refresh"); addProperty("enabled", true) })
+                        add(JsonObject().apply { addProperty("id", "buy_xp"); addProperty("enabled", true) })
+                    })
+                    add("fields", fields)
+                    addProperty("revision", 1L)
+                    addProperty("finished", false)
+                }
+            }
+
+            private fun boardPayload(scenario: String): JsonArray {
+                val pve = scenario == "pve"
+                val cells = MutableList(56) { "" }
+                val ownSlots = listOf(28, 29, 30, 31, 35, 36, 37, 38)
+                val enemySlots = if (pve) listOf(7, 8, 9, 14, 15, 16) else emptyList()
+                ownSlots.forEachIndexed { index, cell ->
+                    cells[cell] = token(scenario, index, VisualSmokeHarness.smokeSpecies[index], 0, if (index == 1) 3 else 1)
+                }
+                enemySlots.forEachIndexed { index, cell ->
+                    cells[cell] = token(scenario, index + 6, VisualSmokeHarness.smokeSpecies[index + 6], 1, if (index == 2) 2 else 1)
+                }
+                return JsonArray().apply { cells.forEach { add(it) } }
+            }
+
+            private fun token(scenario: String, index: Int, species: String, team: Int, star: Int): String {
+                val scale = when (index % 4) { 0 -> 0.85; 1 -> 1.0; 2 -> 1.15; else -> 1.3 }
+                val items = if (team == 0 && index == 1) "sword,rod" else ""
+                return listOf(
+                    "visual-ui-" + scenario + ":board:" + index,
+                    "unit_" + index,
+                    species,
+                    star,
+                    720 - index * 12,
+                    800,
+                    35 + index,
+                    100,
+                    team,
+                    "",
+                    items,
+                    1 + index % 5,
+                    if (team == 0) "fighter" else "enemy",
+                    "",
+                    0,
+                    0L,
+                    0L,
+                    1,
+                    scale
+                ).joinToString("~")
+            }
+
+            private fun benchPayload(scenario: String): String =
+                (0 until 4).joinToString(";") { index ->
+                    val species = VisualSmokeHarness.smokeSpecies[index + 8]
+                    listOf(
+                        index + 2,
+                        "visual-ui-" + scenario + ":bench:" + index,
+                        "bench_" + index,
+                        species,
+                        1,
+                        "",
+                        if (index == 0) "tear" else "",
+                        1 + index,
+                        "reserve",
+                        0.9 + index * 0.1
+                    ).joinToString("~")
+                }
+
+            private fun unitCatalog(): String = JsonObject().apply {
+                VisualSmokeHarness.smokeSpecies.forEachIndexed { index, species ->
+                    add("unit_" + index, unitInfo(species, index))
+                    if (index >= 8) add("bench_" + (index - 8), unitInfo(species, index))
+                }
+            }.toString()
+
+            private fun unitInfo(species: String, index: Int) = JsonObject().apply {
+                addProperty("name", species.substringAfter(':').replace('_', ' ').replaceFirstChar(Char::uppercase))
+                addProperty("species", species)
+                addProperty("scale", when (index % 4) { 0 -> 0.85; 1 -> 1.0; 2 -> 1.15; else -> 1.3 })
+                addProperty("cost", 1 + index % 5)
+                addProperty("role", "fighter")
+                addProperty("traits", if (index % 2 == 0) "guardian,storm" else "guardian,arcane")
+                addProperty("hp", 800)
+                addProperty("attackDamage", 65 + index)
+                addProperty("defense", 35)
+                addProperty("specialDefense", 35)
+                addProperty("attackSpeed", 0.75)
+                addProperty("range", 1)
+                addProperty("manaStart", 20)
+                addProperty("manaMax", 100)
+                addProperty("abilityId", "visual_cast")
+                addProperty("abilityName", "Visual Cast")
+                addProperty("abilityTarget", "current")
+                addProperty("damageType", "magic")
+                addProperty("damage", 180)
+            }
+
+            private fun traitCatalog(): String = JsonObject().apply {
+                add("guardian", traitInfo("Guardian", 2, 4, 6))
+                add("storm", traitInfo("Storm", 2, 4))
+                add("arcane", traitInfo("Arcane", 2, 3))
+            }.toString()
+
+            private fun traitInfo(name: String, vararg thresholds: Int) = JsonObject().apply {
+                addProperty("name", name)
+                add("tiers", JsonArray().apply {
+                    thresholds.forEach { threshold ->
+                        add(JsonObject().apply {
+                            addProperty("threshold", threshold)
+                            addProperty("description", name + " tier " + threshold)
+                            addProperty("effects", "power=" + threshold)
+                            addProperty("teamEffects", "team_power=" + threshold)
+                        })
+                    }
+                })
+            }
+
+            private fun itemCatalog(): String = JsonObject().apply {
+                add("sword", item("component", "Sword", "minecraft:iron_sword", "attack_damage=10"))
+                add("rod", item("component", "Rod", "minecraft:blaze_rod", "ability_power=10"))
+                add("tear", item("component", "Tear", "minecraft:lapis_lazuli", "mana=15"))
+                add("vest", item("component", "Vest", "minecraft:iron_chestplate", "defense=20"))
+                add("rapid_fire", item("full", "Rapid Fire", "minecraft:diamond_sword", "attack_speed=25", "sword,rod"))
+            }.toString()
+
+            private fun item(kind: String, name: String, stack: String, effects: String, components: String = "") =
+                JsonObject().apply {
+                    addProperty("kind", kind)
+                    addProperty("name", name)
+                    addProperty("stack", stack)
+                    addProperty("effects", effects)
+                    if (components.isNotBlank()) addProperty("components", components)
+                }
+
+            private fun selectedAugments(): String = JsonArray().apply {
+                add(JsonObject().apply {
+                    addProperty("id", "visual_aug")
+                    addProperty("name", "Battle Ready")
+                    addProperty("tier", "Gold")
+                    addProperty("description", "Visual smoke augment")
+                    addProperty("mechanic", "attack damage + 10")
+                })
+            }.toString()
+
+            private fun shopCards(): JsonArray = JsonArray().apply {
+                repeat(5) { index ->
+                    val species = VisualSmokeHarness.smokeSpecies[index]
+                    add(JsonObject().apply {
+                        addProperty("id", "shop:" + index)
+                        addProperty("label", "unit_" + index)
+                        addProperty("value", index + 1)
+                        add("meta", JsonObject().apply {
+                            addProperty("species", species)
+                            addProperty("aspects", "")
+                            addProperty("enabled", "true")
+                        })
+                    })
+                }
+            }
+        }
+    }
+
     private class ArenaVisualSmokeScreen(val arenaId: String) : Screen(Component.literal("SVHub Visual Smoke")) {
         private val scene = PokemonSceneState()
         private var cachedEntities: List<PokemonSceneEntity>? = null
