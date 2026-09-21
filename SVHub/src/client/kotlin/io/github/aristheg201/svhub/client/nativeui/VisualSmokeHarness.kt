@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.client.nativeui
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import com.cobblemon.mod.common.pokemon.Species
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameraFraming
@@ -12,10 +13,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.gui.screens.ConnectScreen
-import net.minecraft.client.gui.screens.TitleScreen
-import net.minecraft.client.multiplayer.ServerData
-import net.minecraft.client.multiplayer.resolver.ServerAddress
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
@@ -29,6 +26,11 @@ object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium")
+    private val smokeSpecies = listOf(
+        "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
+        "cobblemon:charmander", "cobblemon:snorlax", "cobblemon:onix", "cobblemon:vaporeon",
+        "cobblemon:eevee", "cobblemon:lucario", "cobblemon:charizard", "cobblemon:lapras"
+    )
 
     private var enabled = false
     private var arenaIndex = 0
@@ -36,7 +38,8 @@ object VisualSmokeHarness {
     private var bootTicks = 0
     private var finalWaitTicks = 0
     private var capturedCurrent = false
-    private var connectRequested = false
+    private var syntheticSpeciesReady = false
+    private var rendererReady = false
 
     fun register() {
         if (System.getenv(ENV) != "1") return
@@ -49,23 +52,20 @@ object VisualSmokeHarness {
         if (!enabled) return
         bootTicks++
 
-        // Cobblemon species are datapack/server data, not client resource data.
-        // A title-screen-only client can load models/posers but cannot construct
-        // RenderablePokemon instances. The visual smoke therefore joins the
-        // dedicated localhost fixture server before opening the embedded scene.
-        if (client.connection == null || client.level == null) {
-            if (!connectRequested && bootTicks >= 20) {
-                connectRequested = true
-                val address = ServerAddress("127.0.0.1", 25565)
-                val data = ServerData("SVHub Visual Smoke", "127.0.0.1:25565", ServerData.Type.OTHER)
-                val parent = client.screen ?: TitleScreen()
-                System.out.println("[SVHub Visual Smoke] connecting to fixture server 127.0.0.1:25565")
-                ConnectScreen.startConnecting(parent, client, address, data, false, null)
-            }
+        prepareSyntheticSpecies()
+        if (!syntheticSpeciesReady) {
             if (bootTicks > 1200) {
-                throw IllegalStateException("SVHub visual smoke timed out joining the fixture server")
+                throw IllegalStateException("SVHub visual smoke could not seed title-screen Cobblemon species")
             }
             return
+        }
+
+        if (!rendererReady) {
+            val probe = smokeView(smokeSpecies.first())
+            val outcome = probe?.let(PokemonModelRenderer::diagnostics)?.outcome
+            rendererReady = outcome != null && outcome != "REJECTED" && outcome != "FALLBACK"
+            if (!rendererReady) return
+            System.out.println("[SVHub Visual Smoke] Cobblemon model repository ready for embedded actors")
         }
 
         if (arenaIndex >= arenas.size) {
@@ -121,6 +121,55 @@ object VisualSmokeHarness {
         }
     }
 
+    /**
+     * The normal client receives PokemonSpecies from server-data synchronization.
+     * CI intentionally stays on the title screen, so seed only the twelve smoke
+     * species while continuing to use Cobblemon's real model/poser/texture assets.
+     * This path is unreachable unless SVHUB_VISUAL_SMOKE=1.
+     */
+    private fun prepareSyntheticSpecies() {
+        if (syntheticSpeciesReady) return
+        runCatching {
+            val merged = PokemonSpecies.species.associateBy { it.resourceIdentifier }.toMutableMap()
+            var added = 0
+            smokeSpecies.forEachIndexed { index, raw ->
+                val id = ResourceLocation.tryParse(raw) ?: return@forEachIndexed
+                if (merged.containsKey(id)) return@forEachIndexed
+                val synthetic = Species().apply {
+                    resourceIdentifier = id
+                    name = id.path.replace("_", " ").split(" ").joinToString("") { token ->
+                        token.replaceFirstChar(Char::uppercase)
+                    }
+                    nationalPokedexNumber = 10000 + index
+                    baseScale = 1f
+                    implemented = true
+                }
+                merged[id] = synthetic
+                added++
+            }
+            if (added > 0) {
+                PokemonSpecies.reload(merged)
+                System.out.println("[SVHub Visual Smoke] seeded $added title-screen Pokemon species")
+            }
+            syntheticSpeciesReady = smokeSpecies.all { raw ->
+                ResourceLocation.tryParse(raw)?.let(PokemonSpecies::getByIdentifier) != null
+            }
+        }
+    }
+
+    private fun smokeView(speciesId: String): PokemonView? {
+        val id = ResourceLocation.tryParse(speciesId) ?: return null
+        val species = PokemonSpecies.getByIdentifier(id) ?: return null
+        return PokemonView(
+            key = speciesId,
+            route = "",
+            speciesId = speciesId,
+            aspects = emptySet(),
+            displayName = species.translatedName.string,
+            dexNumber = species.nationalPokedexNumber,
+            fakemon = false
+        )
+    }
     private class ArenaVisualSmokeScreen(val arenaId: String) : Screen(Component.literal("SVHub Visual Smoke")) {
         private val scene = PokemonSceneState()
         private var cachedEntities: List<PokemonSceneEntity>? = null
@@ -233,18 +282,6 @@ object VisualSmokeHarness {
             return board + bench
         }
 
-        private fun pokemonView(speciesId: String): PokemonView? {
-            val id = ResourceLocation.tryParse(speciesId) ?: return null
-            val species = PokemonSpecies.getByIdentifier(id) ?: return null
-            return PokemonView(
-                key = speciesId,
-                route = "",
-                speciesId = speciesId,
-                aspects = emptySet(),
-                displayName = species.translatedName.string,
-                dexNumber = species.nationalPokedexNumber,
-                fakemon = false
-            )
-        }
+        private fun pokemonView(speciesId: String): PokemonView? = smokeView(speciesId)
     }
 }

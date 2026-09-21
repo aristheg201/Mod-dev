@@ -209,50 +209,8 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-
-          # Cobblemon species are server/datapack data. A standalone title client
-          # has model resources but no synchronized species registry, so launch a
-          # local Fabric server and let the visual client join it before capture.
-          mkdir -p run/logs
-          cat > run/eula.txt <<'EOF'
-          eula=true
-          EOF
-          cat > run/server.properties <<'EOF'
-          online-mode=false
-          enforce-secure-profile=false
-          server-port=25565
-          max-players=2
-          view-distance=2
-          simulation-distance=2
-          spawn-protection=0
-          motd=SVHub Visual Smoke
-          EOF
-
-          gradle --no-daemon --offline runServer > /tmp/svhub-visual-server-console.log 2>&1 &
-          server_pid=$!
-          cleanup() {
-            kill "$server_pid" 2>/dev/null || true
-            wait "$server_pid" 2>/dev/null || true
-            cp /tmp/svhub-visual-server-console.log run/logs/visual-server-console.log 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          for attempt in $(seq 1 90); do
-            if ! kill -0 "$server_pid" 2>/dev/null; then
-              echo 'Visual fixture server exited before becoming ready' >&2
-              tail -n 160 /tmp/svhub-visual-server-console.log >&2 || true
-              exit 1
-            fi
-            if grep -Eq 'Done \([0-9.]+s\)!|Done \(' run/logs/latest.log 2>/dev/null; then
-              break
-            fi
-            sleep 2
-          done
-          grep -Eq 'Done \([0-9.]+s\)!|Done \(' run/logs/latest.log
-
-          # The server keeps its file descriptor after rename on Linux; the client
-          # then gets a clean latest.log used by visual verification.
-          mv run/logs/latest.log run/logs/visual-server-latest.log
+          # Visual smoke seeds only its known Pokemon species in-process, while
+          # Cobblemon still supplies the real client models, posers and textures.
           timeout 420s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon --offline runClient
 
       - name: Verify visual evidence
