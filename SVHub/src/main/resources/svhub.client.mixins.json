@@ -4,7 +4,8 @@
   "package": "io.github.aristheg201.svhub.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "VaryingModelRepositoryMixin"
+    "VaryingModelRepositoryMixin",
+    "TftPresentationOwnershipMixin"
   ],
   "injectors": {
     "defaultRequire": 1
