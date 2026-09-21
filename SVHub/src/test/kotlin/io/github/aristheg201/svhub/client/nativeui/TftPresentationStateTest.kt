@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TftPresentationStateTest {
     private val bounds=ArenaRegion(-10f,-10f,10f,10f)
@@ -27,6 +28,22 @@ class TftPresentationStateTest {
         assertEquals("PICKUP_REACTION",ui.tactician(ArenaPoint(0f,0f),bounds,"PICKUP_REACTION",t+1_300).state)
         assertEquals("VICTORY",ui.tactician(ArenaPoint(0f,0f),bounds,"VICTORY",t+2_300).state)
         assertEquals("VICTORY",ui.tactician(ArenaPoint(0f,0f),bounds,"IDLE",t+9_000).state)
+    }
+
+    @Test fun itemDragOwnsIdentityUntilReleaseOrStateChange(){
+        val ui=TftUiState()
+        ui.selectedOrigin="bench"
+        ui.selectedIndex=2
+        ui.beginItemDrag(3,"full:rapid_fire")
+        assertTrue(ui.isItemDragging())
+        assertEquals(3,ui.selectedItem)
+        assertEquals("full:rapid_fire",ui.selectedItemIdentity)
+        assertNull(ui.selectedOrigin)
+        assertNull(ui.selectedIndex)
+        ui.clearItem()
+        assertTrue(!ui.isItemDragging())
+        assertNull(ui.selectedItem)
+        assertNull(ui.selectedItemIdentity)
     }
 
     @Test fun restoredItemEventEstablishesBaselineAndOnlyNewSerialPlays(){

@@ -39,6 +39,7 @@ class NativePlatformScreen(
     private val gson = Gson()
     private val controls = mutableListOf<Control>()
     private val sceneInputs = mutableListOf<(Double, Double) -> Boolean>()
+    private val itemDropInputs = mutableListOf<(Double, Double) -> Boolean>()
     private var selectedCell: Int? = null
     private var selectedSkin: String? = null
     private var selectedCompanion: String? = null
@@ -98,7 +99,7 @@ class NativePlatformScreen(
         applyState(merged, message)
     }
 
-    override fun init() { controls.clear(); sceneInputs.clear() }
+    override fun init() { controls.clear(); sceneInputs.clear(); itemDropInputs.clear() }
 
     fun prepareForServerReplacement() { supersededByServer = true }
 
@@ -123,6 +124,7 @@ class NativePlatformScreen(
         ) else baseLayout
         controls.clear()
         sceneInputs.clear()
+        itemDropInputs.clear()
         drawBackground(gui)
         if(!tftGame) drawHeader(gui, layout, mouseX, mouseY)
         if (module != "game") drawNavigation(gui, layout, mouseX, mouseY)
@@ -443,6 +445,7 @@ class NativePlatformScreen(
                     control = { rect, label, enabled, action -> addControl(rect, label, mouseX, mouseY, enabled = enabled, action = action) },
                     hit = { rect, action -> addHit(rect, action = action) },
                     sceneInput = { handler -> sceneInputs += handler },
+                    dropInput = { handler -> itemDropInputs += handler },
                     action = ::gameAct,
                     back = { intent("leave", JsonObject()) }
                 )
@@ -670,6 +673,7 @@ class NativePlatformScreen(
         return super.mouseClicked(mouseX,mouseY,button)
     }
     override fun mouseDragged(mouseX:Double,mouseY:Double,button:Int,dragX:Double,dragY:Double):Boolean{
+        if(button==0 && tftUi.isItemDragging()) return true
         if(button==0&&draggingModuleScrollbar){
             setModuleScrollFromThumb(mouseY)
             return true
@@ -677,6 +681,11 @@ class NativePlatformScreen(
         return super.mouseDragged(mouseX,mouseY,button,dragX,dragY)
     }
     override fun mouseReleased(mouseX:Double,mouseY:Double,button:Int):Boolean{
+        if(button==0 && tftUi.isItemDragging()){
+            itemDropInputs.asReversed().any { it(mouseX, mouseY) }
+            tftUi.clearItem()
+            return true
+        }
         if(button==0)draggingModuleScrollbar=false
         return super.mouseReleased(mouseX,mouseY,button)
     }

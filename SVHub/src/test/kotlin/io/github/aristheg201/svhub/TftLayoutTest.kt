@@ -4,6 +4,7 @@ import io.github.aristheg201.svhub.ui.NativeLayout
 import io.github.aristheg201.svhub.ui.TftLayoutResolver
 import io.github.aristheg201.svhub.ui.UiRect
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class TftLayoutTest {
@@ -22,6 +23,11 @@ class TftLayoutTest {
             }
             assertTrue(tft.board.height >= 24, "$width x $height board too short")
             assertTrue(tft.footer.height >= 24, "$width x $height footer too short")
+            val itemRail = assertNotNull(tft.itemRail, "$width x $height must expose a right-side item rail")
+            assertTrue(itemRail.right == gameContent.right, "$width x $height item rail is not right-aligned: $itemRail")
+            assertTrue(itemRail.y >= tft.hud.bottom, "$width x $height item rail overlaps HUD: $itemRail")
+            assertTrue(itemRail.bottom <= tft.footer.y, "$width x $height item rail overlaps footer: $itemRail")
+            tft.players?.let { players -> assertTrue(itemRail.y >= players.bottom, "$width x $height item rail overlaps player list") }
         }
     }
 }

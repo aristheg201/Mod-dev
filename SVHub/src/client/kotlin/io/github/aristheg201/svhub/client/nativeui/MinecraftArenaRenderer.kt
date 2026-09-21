@@ -402,11 +402,25 @@ object MinecraftArenaRenderer {
                 else SceneMeshNode("bench:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z-.075)),SceneVec3(.7,.7,.15),"bench")
             }
             val interaction=SceneInteractionSurface("board",SceneVec3(logical.minX.toDouble(),logical.minY.toDouble(),theme.boardOrigin.z.toDouble()),(logical.maxX-logical.minX).toDouble(),(logical.maxY-logical.minY).toDouble(),theme.boardColumns,theme.boardRows)
-            val tiles=if(!theme.texturedBattlefield && theme.surfaceMode() in setOf(ArenaSurfaceMode.CHECKER,ArenaSurfaceMode.TACTICAL)) (0 until theme.boardColumns*theme.boardRows).map { index ->
-                val p=theme.boardAnchor(index);val color=if((index%theme.boardColumns+index/theme.boardColumns)%2==0) theme.floorColor else theme.floorAltColor
-                val width=if(theme.surfaceMode()==ArenaSurfaceMode.CHECKER) .995 else .96
-                SceneMeshNode("cell:$index",SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z+.006)),SceneVec3(width,width,.012),"#${Integer.toHexString(color)}")
-            } else emptyList()
+            // Gameplay tiles are authored from the exact logical cell geometry.
+            // Baked Minecraft blocks remain scenery and never define cell boundaries.
+            val tiles=(0 until theme.boardColumns*theme.boardRows).map { index ->
+                val p=theme.boardAnchor(index)
+                val row=index/theme.boardColumns
+                val alternate=((index%theme.boardColumns+row) and 1)==1
+                val role=when {
+                    theme.surfaceMode()==ArenaSurfaceMode.TACTICAL && row<theme.boardRows/2 -> ArenaTileRole.ENEMY
+                    theme.surfaceMode()==ArenaSurfaceMode.TACTICAL -> ArenaTileRole.ALLY
+                    else -> ArenaTileRole.FLOOR
+                }
+                val inset=if(theme.surfaceMode()==ArenaSurfaceMode.CHECKER).992f else .965f
+                val color=theme.color(role,alternate)
+                SceneMeshNode("cell:$index",
+                    SceneTransform(SceneVec3(p.x.toDouble(),p.y.toDouble(),p.z+.006)),
+                    SceneVec3((theme.cellSize.x*inset).coerceAtLeast(.05f).toDouble(),
+                        (theme.cellSize.y*inset).coerceAtLeast(.05f).toDouble(),.012),
+                    "#%06x".format(color and 0x00FFFFFF))
+            }
             val terrain=if(theme.texturedBattlefield) {
                 val bounds=theme.battlefieldBounds ?: logical
                 val palette=theme.floor.ifEmpty { listOf("minecraft:stone_bricks") }

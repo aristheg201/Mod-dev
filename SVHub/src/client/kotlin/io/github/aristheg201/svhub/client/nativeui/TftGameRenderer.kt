@@ -104,6 +104,7 @@ class TftUiState {
     var selectedIndex: Int? = null
     var selectedItem: Int? = null
     var selectedItemIdentity: String? = null
+    private var itemDragging = false
     data class ItemTarget(val origin: String, val index: Int, val instanceId: String)
     var itemTarget: ItemTarget? = null
     var itemPage = 0
@@ -173,7 +174,20 @@ class TftUiState {
     fun itemDetails(id:String)=itemDetails[id.substringAfter(':').substringBefore('+')].orEmpty()
     fun recipe(first: String, second: String): String? =
         if (first.startsWith("full:") || second.startsWith("full:")) null else itemRecipes[listOf(first, second).sorted().joinToString("+")]
-    fun clearItem() { selectedItem = null; selectedItemIdentity = null; itemTarget = null }
+    fun beginItemDrag(index: Int, identity: String) {
+        clearUnit()
+        itemTarget = null
+        selectedItem = index
+        selectedItemIdentity = identity
+        itemDragging = true
+    }
+    fun isItemDragging(): Boolean = itemDragging && selectedItem != null && selectedItemIdentity != null
+    fun clearItem() {
+        selectedItem = null
+        selectedItemIdentity = null
+        itemTarget = null
+        itemDragging = false
+    }
     fun observeItemEvent(serial:Long,encoded:String):SceneEffectSignal?{
         val previous=lastItemEventSerial
         lastItemEventSerial=maxOf(previous?:serial,serial)
@@ -399,6 +413,7 @@ object TftGameRenderer {
         val control: (UiRect, String, Boolean, () -> Unit) -> Unit,
         val hit: (UiRect, () -> Unit) -> Unit,
         val sceneInput: ((Double, Double) -> Boolean) -> Unit,
+        val dropInput: ((Double, Double) -> Boolean) -> Unit,
         val action: (String, Map<String, String>) -> Unit,
         val back: () -> Unit
     )
@@ -451,18 +466,19 @@ object TftGameRenderer {
         if (phase == "draft" && draft.isNotEmpty()) {
             renderCarouselScene(gui, font, resolved.board, draft, fields, ui, hooks, mouseX, mouseY, view.str("sessionId"), view.long("revision"))
         } else {
-            renderBoard(gui, font, resolved.board, boardTokens, bench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
+            renderBoard(gui, font, resolved.board, boardTokens, bench, itemBench, fields, phase, canEdit, ui, hooks, mouseX, mouseY, view.str("sessionId"))
         }
         renderHud(gui, font, resolved.hud, fields, phase, view.str("status"), density, hooks, mouseX, mouseY)
         resolved.traits?.let { renderTraits(gui, font, it, traits, mouseX, mouseY, ui) }
         resolved.players?.let { renderPlayers(gui, font, it, players, hooks) }
+        resolved.itemRail?.let { renderItemRail(gui, font, it, itemBench, capabilities, ui, hooks, mouseX, mouseY) }
         renderAugmentHud(gui, font, resolved.board, fields, ui, mouseX, mouseY, hooks)
-        renderFooter(gui, font, resolved.footer, density, view, fields, bench, itemBench, canEdit,
+        renderFooter(gui, font, resolved.footer, density, view, fields, bench, canEdit,
             "CAN_BUY_UNIT" in capabilities, "CAN_SELL" in capabilities, ui, hooks, mouseX, mouseY)
 
         if (density == UiDensity.COMPACT && area.height >= 150) renderCompactChips(gui, font, area, traits, players, ui, mouseX, mouseY)
-        renderItemSlots(gui, font, resolved.board, fields, boardTokens, bench, itemBench, capabilities, ui, hooks, mouseX, mouseY)
         if (augments.isNotEmpty()) renderAugmentOverlay(gui, font, resolved.board, augments, hooks)
+        if (ui.isItemDragging()) renderDraggedItem(gui, ui, itemBench, mouseX, mouseY)
         ui.tooltip()?.let { renderHoverTooltip(gui, font, area, it, mouseX, mouseY) }
     }
 
@@ -540,6 +556,7 @@ object TftGameRenderer {
         rect: UiRect,
         units: Map<Int, UnitToken>,
         bench: List<BenchToken>,
+        tray: List<String>,
         fields: JsonObject,
         phase: String,
         canEdit: Boolean,
@@ -686,12 +703,15 @@ object TftGameRenderer {
                 gui.fill(hit.x, hit.bottom - 2, hit.right, hit.bottom, accent)
                 if (unit != null) ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items))
             }
+            fun containsBench(x: Double, y: Double): Boolean {
+                val position = anchor ?: ArenaPoint(index * .75f, combatRows + .8f)
+                val projected = frame.layout.perspective?.boardIntersection(x, y, position.z.toDouble())
+                return if (frame.layout.perspective != null) {
+                    projected != null && kotlin.math.abs(projected.x-position.x)<=.4 && kotlin.math.abs(projected.y-position.y)<=.4
+                } else hit.contains(x, y)
+            }
             fun selectBench() {
                 when {
-                    unit != null && ui.selectedItem != null -> {
-                        ui.clearUnit()
-                        ui.itemTarget = TftUiState.ItemTarget("bench", index, unit.instanceId)
-                    }
                     ui.selectedOrigin == "board" && ui.selectedIndex != null -> {
                         hooks.action("bench", mapOf("slot" to ui.selectedIndex.toString(), "bench" to index.toString()))
                         ui.clearUnit()
@@ -704,11 +724,12 @@ object TftGameRenderer {
                 }
             }
             if (canEdit) hooks.sceneInput { x,y ->
-                val position=anchor ?: ArenaPoint(index*.75f,combatRows+.8f)
-                val point=frame.layout.perspective?.boardIntersection(x,y,position.z.toDouble())
-                val inside=if(frame.layout.perspective != null) point != null && kotlin.math.abs(point.x-position.x)<=.4 && kotlin.math.abs(point.y-position.y)<=.4 else hit.contains(x,y)
+                val inside=containsBench(x,y)
                 if(inside) selectBench()
                 inside
+            }
+            if (canEdit && unit != null && ui.isItemDragging()) hooks.dropInput { x,y ->
+                if(!containsBench(x,y)) false else submitItemDrop(ui,tray,"bench",index,unit.instanceId,hooks)
             }
         }
         fun equippedIcons(instanceId:String, items:List<String>) {
@@ -727,7 +748,12 @@ object TftGameRenderer {
         hovered?.let(units::get)?.let { unit ->
                 ui.offerTooltip(unitTooltip(ui, unit.unitId, unit.star, unit.items, unit.hp, unit.maxHp, unit.mana, unit.maxMana))
             }
-        if (hovered != null && canEdit) MinecraftArenaRenderer.renderCellHighlight(gui,frame.layout,hovered,if(hovered >= formationCells) accent else danger,false)
+        if (hovered != null && canEdit) {
+            val hoveredUnit=units[hovered]
+            val validItemTarget=ui.isItemDragging() && hovered>=formationCells && hoveredUnit?.team==0
+            MinecraftArenaRenderer.renderCellHighlight(gui,frame.layout,hovered,
+                if(validItemTarget) gold else if(hovered>=formationCells) accent else danger,validItemTarget)
+        }
 
         if (canEdit) {
             hooks.sceneInput { x, y ->
@@ -735,10 +761,7 @@ object TftGameRenderer {
                 if (index !in formationCells until formationCells * 2) return@sceneInput false
                 val local = index - formationCells
                 val token = units[index]
-                    if (ui.selectedItem != null && token != null && token.team == 0) {
-                        ui.clearUnit()
-                        ui.itemTarget = TftUiState.ItemTarget("board", local, token.instanceId)
-                    } else if (ui.selectedOrigin == "bench" && ui.selectedIndex != null) {
+                    if (ui.selectedOrigin == "bench" && ui.selectedIndex != null) {
                         hooks.action("deploy", mapOf("bench" to ui.selectedIndex.toString(), "slot" to local.toString()))
                         ui.clearUnit()
                     } else if (ui.selectedOrigin == "board" && ui.selectedIndex != null) {
@@ -754,6 +777,13 @@ object TftGameRenderer {
                     }
                 true
             }
+        }
+        if(canEdit && ui.isItemDragging()) hooks.dropInput { x,y ->
+            val index=frame.layout.pick(x,y) ?: return@dropInput false
+            if(index !in formationCells until formationCells*2) return@dropInput false
+            val token=units[index] ?: return@dropInput false
+            if(token.team!=0) return@dropInput false
+            submitItemDrop(ui,tray,"board",index-formationCells,token.instanceId,hooks)
         }
 
         gui.drawCenteredString(
@@ -794,7 +824,7 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, items: List<String>, canEdit: Boolean, canBuy:Boolean,canSell:Boolean,ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
+    private fun renderFooter(gui: GuiGraphics, font: Font, rect: UiRect, density: UiDensity, view: JsonObject, fields: JsonObject, bench: List<BenchToken>, canEdit: Boolean, canBuy:Boolean,canSell:Boolean,ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
         gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel)
         val benchH = if (density == UiDensity.COMPACT) 18 else 22
         val shopY = rect.y + benchH + if (density == UiDensity.COMPACT) 1 else 3
@@ -842,36 +872,6 @@ object TftGameRenderer {
             }
         }
 
-        if (items.isNotEmpty()) {
-            val itemX = rect.x + 3
-            val itemY = rect.y - 18
-            val pageSize = ((rect.width - 115) / 18).coerceIn(1, 12)
-            val pages = (items.size + pageSize - 1) / pageSize
-            ui.itemPage = ui.itemPage.coerceIn(0, pages - 1)
-            items.drop(ui.itemPage * pageSize).take(pageSize).forEachIndexed { offset, item ->
-                val index = ui.itemPage * pageSize + offset
-                val itemRect = UiRect(itemX + offset * 18, itemY, 16, 16)
-                gui.fill(itemRect.x, itemRect.y, itemRect.right, itemRect.bottom, if (ui.selectedItem == index) 0xFF544B28.toInt() else panel2)
-                val stack = ui.itemStack(item)
-                if (stack != null && !stack.isEmpty) gui.renderItem(stack, itemRect.x, itemRect.y)
-                else gui.drawCenteredString(font, itemGlyph(item), itemRect.x + 8, itemRect.y + 4, if (ui.selectedItem == index) gold else muted)
-                if (itemRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                    ui.offerTooltip(TftHoverTooltip(ui.itemName(item), tr("gui.svhub.tft.tooltip.item"), ui.itemDetails(item), gold))
-                }
-                hooks.hit(itemRect) {
-                    if (ui.selectedItem == index) ui.clearItem() else {
-                        ui.clearUnit(); ui.itemTarget = null
-                        ui.selectedItem = index; ui.selectedItemIdentity = item
-                    }
-                }
-            }
-            if (pages > 1) {
-                val x = itemX + pageSize * 18
-                hooks.control(UiRect(x, itemY, 18, 16), "‹", ui.itemPage > 0) { ui.itemPage-- }
-                hooks.control(UiRect(x + 20, itemY, 18, 16), "›", ui.itemPage + 1 < pages) { ui.itemPage++ }
-            }
-        }
-
         if (canSell && ui.selectedOrigin != null && ui.selectedIndex != null) {
             val sellRect = UiRect(rect.right - 58, rect.y - 18, 56, 15)
             hooks.control(sellRect, tr("gui.svhub.tft.sell"), true) {
@@ -880,56 +880,64 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderItemSlots(gui: GuiGraphics, font: Font, board: UiRect, fields: JsonObject,
-        units: Map<Int, UnitToken>, bench: List<BenchToken>, tray: List<String>, capabilities: Set<String>,
-        ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int) {
-        val target = ui.itemTarget ?: return
-        val itemIndex = ui.selectedItem ?: return
-        val incoming = tray.getOrNull(itemIndex) ?: return
-        val unit = if (target.origin == "board") units[target.index + fields.int("boardColumns", 7) * fields.int("boardRows", 4)] else null
-        val benched = if (target.origin == "bench") bench.firstOrNull { it.index == target.index } else null
-        val identity = unit?.instanceId ?: benched?.instanceId
-        if (identity != target.instanceId || "CAN_EQUIP_ITEM" !in capabilities) { ui.itemTarget = null; return }
-        val equipped = unit?.items ?: benched?.items.orEmpty()
-        val width = min(282, board.width - 8).coerceAtLeast(100)
-        val root = UiRect(board.x + (board.width - width) / 2, board.y + 25, width, 102)
-        gui.fill(root.x, root.y, root.right, root.bottom, 0xF509151A.toInt())
-        gui.fill(root.x, root.y, root.right, root.y + 2, gold)
-        // Consume the panel background before registering its interactive children.
-        hooks.hit(root) {}
-        hooks.control(UiRect(root.right - 22, root.y + 4, 18, 16), "×", true) { ui.itemTarget = null }
-        gui.drawString(font, fit(font, tr("gui.svhub.tft.item.choose_slot"), width - 32), root.x + 7, root.y + 7, gold, false)
-        ui.itemStack(incoming)?.let { gui.renderItem(it, root.x + 7, root.y + 24) }
-        gui.drawString(font, fit(font, ui.itemName(incoming), width - 33), root.x + 28, root.y + 28, text, false)
-        val slotWidth = (width - 16) / 3
-        repeat(3) { slot ->
-            val current = equipped.getOrNull(slot)
-            val recipe = current?.let { ui.recipe(it, incoming) }
-            val combine = recipe != null && "CAN_COMBINE_ITEM" in capabilities
-            val append = current == null && slot == equipped.size &&
-                (incoming.startsWith("full:") || equipped.none { !it.startsWith("full:") })
-            val enabled = combine || append
-            val rect = UiRect(root.x + 6 + slot * slotWidth, root.y + 46, slotWidth - 3, 48)
-            gui.fill(rect.x, rect.y, rect.right, rect.bottom, if (enabled) 0xFF243A31.toInt() else panel2)
-            current?.let { ui.itemStack(it) }?.let { gui.renderItem(it, rect.x + 4, rect.y + 4) }
-            if (current == null) gui.drawString(font, "${slot + 1}", rect.x + 8, rect.y + 8, muted, false)
-            if (combine) {
-                gui.drawString(font, "→", rect.x + 23, rect.y + 8, gold, false)
-                ui.itemStack(recipe!!)?.let { gui.renderItem(it, rect.x + 35, rect.y + 4) }
-            }
-            val label = when { combine -> tr("gui.svhub.tft.item.combine"); append -> tr("gui.svhub.tft.item.equip"); current != null -> ui.itemName(current); else -> tr("gui.svhub.tft.item.unavailable") }
-            gui.drawString(font, fit(font, label, rect.width - 6), rect.x + 3, rect.y + 31, if (enabled) gold else muted, false)
-            if (rect.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                val details = if (recipe != null) listOf("${ui.itemName(current!!)} + ${ui.itemName(incoming)} → ${ui.itemName(recipe)}") + ui.itemDetails(recipe) else current?.let(ui::itemDetails).orEmpty()
-                ui.offerTooltip(TftHoverTooltip(label, lines = details, accent = if (enabled) gold else muted))
-            }
-            if (enabled) hooks.hit(rect) {
-                val args = mutableMapOf("item" to itemIndex.toString(), "origin" to target.origin, "index" to target.index.toString(), "instanceId" to target.instanceId, "itemId" to incoming)
-                if (combine) args["itemSlot"] = slot.toString()
-                hooks.action("equip_item", args)
-                ui.clearItem()
-            }
+    private fun renderItemRail(
+        gui: GuiGraphics, font: Font, rect: UiRect, items: List<String>, capabilities: Set<String>,
+        ui: TftUiState, hooks: Hooks, mouseX: Int, mouseY: Int
+    ) {
+        gui.fill(rect.x,rect.y,rect.right,rect.bottom,0xE8101B1F.toInt())
+        gui.fill(rect.x,rect.y,rect.x+2,rect.bottom,gold)
+        gui.drawString(font,fit(font,tr("gui.svhub.tft.items"),rect.width-12),rect.x+7,rect.y+6,text,true)
+        if(items.isEmpty()){gui.drawCenteredString(font,"—",rect.x+rect.width/2,rect.y+25,muted);return}
+        val columns=if(rect.width>=72)2 else 1
+        val cell=20
+        val rows=((rect.height-42)/cell).coerceAtLeast(1)
+        val pageSize=(rows*columns).coerceAtLeast(1)
+        val pages=(items.size+pageSize-1)/pageSize
+        ui.itemPage=ui.itemPage.coerceIn(0,pages-1)
+        val first=ui.itemPage*pageSize
+        items.drop(first).take(pageSize).forEachIndexed { offset,item ->
+            val index=first+offset
+            val x=rect.x+6+(offset%columns)*cell
+            val y=rect.y+20+(offset/columns)*cell
+            val itemRect=UiRect(x,y,18,18)
+            val selected=ui.selectedItem==index&&ui.isItemDragging()
+            gui.fill(itemRect.x,itemRect.y,itemRect.right,itemRect.bottom,if(selected)0xFF544B28.toInt() else panel2)
+            gui.fill(itemRect.x,itemRect.y,itemRect.right,itemRect.y+1,if(selected)gold else line)
+            val stack=ui.itemStack(item)
+            if(stack!=null&&!stack.isEmpty)gui.renderItem(stack,itemRect.x+1,itemRect.y+1)
+            else gui.drawCenteredString(font,itemGlyph(item),itemRect.x+9,itemRect.y+5,if(selected)gold else muted)
+            if(itemRect.contains(mouseX.toDouble(),mouseY.toDouble()))
+                ui.offerTooltip(TftHoverTooltip(ui.itemName(item),tr("gui.svhub.tft.tooltip.item"),ui.itemDetails(item),gold))
+            if("CAN_EQUIP_ITEM" in capabilities)hooks.hit(itemRect){ui.beginItemDrag(index,item)}
         }
+        if(pages>1){
+            val y=rect.bottom-18
+            hooks.control(UiRect(rect.x+5,y,18,14),"‹",ui.itemPage>0){ui.itemPage--}
+            hooks.control(UiRect(rect.right-23,y,18,14),"›",ui.itemPage+1<pages){ui.itemPage++}
+            gui.drawCenteredString(font,"${ui.itemPage+1}/$pages",rect.x+rect.width/2,y+3,muted)
+        }
+    }
+
+    private fun renderDraggedItem(gui:GuiGraphics,ui:TftUiState,tray:List<String>,mouseX:Int,mouseY:Int){
+        val index=ui.selectedItem?:return
+        val identity=ui.selectedItemIdentity?:return
+        if(tray.getOrNull(index)!=identity)return
+        gui.pose().pushPose()
+        try{
+            gui.pose().translate(0.0,0.0,450.0)
+            gui.fill(mouseX-10,mouseY-10,mouseX+10,mouseY+10,0xC00A1114.toInt())
+            gui.fill(mouseX-10,mouseY-10,mouseX+10,mouseY-8,gold)
+            ui.itemStack(identity)?.let{gui.renderItem(it,mouseX-8,mouseY-8)}
+        }finally{gui.pose().popPose()}
+    }
+
+    private fun submitItemDrop(ui:TftUiState,tray:List<String>,origin:String,index:Int,instanceId:String,hooks:Hooks):Boolean{
+        val itemIndex=ui.selectedItem?:return false
+        val itemId=ui.selectedItemIdentity?:return false
+        if(!ui.isItemDragging()||tray.getOrNull(itemIndex)!=itemId)return false
+        hooks.action("equip_item",mapOf("item" to itemIndex.toString(),"origin" to origin,"index" to index.toString(),
+            "instanceId" to instanceId,"itemId" to itemId))
+        return true
     }
 
     private fun renderAugmentHud(gui: GuiGraphics, font: Font, board: UiRect, fields: JsonObject,
