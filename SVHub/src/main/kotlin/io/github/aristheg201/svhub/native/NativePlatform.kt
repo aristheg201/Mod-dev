@@ -40,13 +40,25 @@ object NativePlatform {
         NativeProfileStore.tick()
         val messages = NativeArcadeService.tick(server)
         server.playerList.players.forEach { p ->
-            if (NativePlatformNetwork.currentModule(p.uuid) != "game") return@forEach
+            val currentModule = NativePlatformNetwork.currentModule(p.uuid)
+            val message = messages[p.uuid].orEmpty()
             val state = gameState(p)
-            if (state.get("empty")?.asBoolean == true) {
+            val activeViewPresent = state.get("empty")?.asBoolean == false
+
+            // TFT PvP can become ready asynchronously when the collection window expires.
+            // Queued players are still subscribed to the arcade screen at that point, so
+            // the matched event must promote them into the live game instead of being dropped.
+            if (NativeArcadeLifecyclePolicy.shouldAutoOpenMatchedGame(currentModule, message, activeViewPresent)) {
+                NativePlatformNetwork.sendOpen(p, "game", state)
+                NativePlatformNetwork.sendState(p, "game", state, message)
+                return@forEach
+            }
+
+            if (currentModule != "game") return@forEach
+            if (!activeViewPresent) {
                 NativePlatformNetwork.sendOpen(p, "arcade", NativeArcadeService.lobbyState(p))
-            } else {
-                val message = messages[p.uuid].orEmpty()
-                if (message.isNotBlank() || tickCounter % 20 == 0) NativePlatformNetwork.sendState(p, "game", state, message)
+            } else if (message.isNotBlank() || tickCounter % 20 == 0) {
+                NativePlatformNetwork.sendState(p, "game", state, message)
             }
         }
     }
