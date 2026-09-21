@@ -1,9 +1,12 @@
 import importlib.util
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 TOOLS = Path(__file__).resolve().parents[1]
+# The dynamic loader does not add its script directory to the import path.
+sys.path.insert(0, str(TOOLS))
 
 
 def module(name):
