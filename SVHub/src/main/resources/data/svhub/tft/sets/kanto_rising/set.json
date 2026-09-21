@@ -137,73 +137,169 @@
       "pve"
     ]
   },
-  "defaultTactician": "svhub:allay",
+  "defaultTactician": "svhub:pikachu",
   "tacticians": [
     {
       "id": "svhub:allay",
       "entity": "minecraft:allay",
       "name": "Allay",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:axolotl",
       "entity": "minecraft:axolotl",
       "name": "Axolotl",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:bee",
       "entity": "minecraft:bee",
       "name": "Bee",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:cat",
       "entity": "minecraft:cat",
       "name": "Cat",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:fox",
       "entity": "minecraft:fox",
       "name": "Fox",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:frog",
       "entity": "minecraft:frog",
       "name": "Frog",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:parrot",
       "entity": "minecraft:parrot",
       "name": "Parrot",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:rabbit",
       "entity": "minecraft:rabbit",
       "name": "Rabbit",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:wolf",
       "entity": "minecraft:wolf",
       "name": "Wolf",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:armadillo",
       "entity": "minecraft:armadillo",
       "name": "Armadillo",
-      "scale": 1.0
+      "scale": 1
     },
     {
       "id": "svhub:sniffer",
       "entity": "minecraft:sniffer",
       "name": "Sniffer",
-      "scale": 1.0
+      "scale": 1
+    },
+    {
+      "id": "svhub:pikachu",
+      "name": "Pikachu",
+      "scale": 0.72,
+      "pokemon": {
+        "species": "cobblemon:pikachu",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:eevee",
+      "name": "Eevee",
+      "scale": 0.72,
+      "pokemon": {
+        "species": "cobblemon:eevee",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:riolu",
+      "name": "Riolu",
+      "scale": 0.68,
+      "pokemon": {
+        "species": "cobblemon:riolu",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:lucario",
+      "name": "Lucario",
+      "scale": 0.72,
+      "pokemon": {
+        "species": "cobblemon:lucario",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:zorua",
+      "name": "Zorua",
+      "scale": 0.7,
+      "pokemon": {
+        "species": "cobblemon:zorua",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:mew",
+      "name": "Mew",
+      "scale": 0.68,
+      "pokemon": {
+        "species": "cobblemon:mew",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:greninja",
+      "name": "Greninja",
+      "scale": 0.72,
+      "pokemon": {
+        "species": "cobblemon:greninja",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:ceruledge",
+      "name": "Ceruledge",
+      "scale": 0.72,
+      "pokemon": {
+        "species": "cobblemon:ceruledge",
+        "aspects": [],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
     }
   ],
   "rules": {
@@ -542,8 +638,8 @@
   "carousel": {
     "arenaId": "carousel_convergence",
     "offerCount": 9,
-    "ringRadius": 3.0,
-    "spawnRadius": 5.0,
+    "ringRadius": 3,
+    "spawnRadius": 5,
     "pickupRadius": 0.72,
     "movementRadius": 5.6,
     "maxMovePerIntent": 0.8,

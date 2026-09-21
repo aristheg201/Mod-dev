@@ -1,5 +1,6 @@
 package io.github.aristheg201.svhub.client.nativeui
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.client.particle.BedrockParticleOptionsRepository
 import com.cobblemon.mod.common.util.getString
 import com.mojang.blaze3d.systems.RenderSystem
@@ -228,6 +229,7 @@ object PokemonScene3D {
         val baseLayout=PokemonSceneLayout(area,columns,rows,metrics.originX,metrics.originY,metrics.tileWidth,metrics.tileHeight,metrics.perspective)
         val layout=if(arena != null) baseLayout.copy(boardSurface=MinecraftArenaRenderer.compiledScene(baseLayout,arena).scene.interactions.first { it.id == "board" }) else baseLayout
         val activeIds=entities.mapTo(linkedSetOf()){it.id}
+        tactician?.takeIf { it.pokemonSpecies.isNotBlank() }?.let { activeIds += it.id }
         state.prune(activeIds);PokemonModelRenderer.pruneScene(activeIds)
         val now=System.currentTimeMillis();state.observeEffects(effects,now)
         val embedded=arena != null && layout.perspective != null
@@ -333,8 +335,40 @@ object PokemonScene3D {
                 }
                 tactician?.takeIf { it.visible }?.let { actor ->
                     poses.pushPose()
-                    try { EmbeddedSceneRenderer.applyTransform(poses,actor.transform);VanillaCompanionModelRenderer.renderEmbedded(actor.id,actor.entityId,actor.animation,poses,buffers) }
-                    finally { poses.popPose() }
+                    try {
+                        EmbeddedSceneRenderer.applyTransform(poses,actor.transform)
+                        val pokemonView=tacticianPokemonView(actor)
+                        if(pokemonView!=null) {
+                            val stateName=actor.animation.uppercase()
+                            val labels=when(stateName) {
+                                "WALK","CAROUSEL_MOVEMENT"->linkedSetOf("walk")
+                                "RUN"->linkedSetOf("run","walk")
+                                "EMOTE"->linkedSetOf("cry","status","idle")
+                                "ROUND_START"->linkedSetOf("send_out","idle")
+                                "VICTORY"->linkedSetOf("victory","cry","idle")
+                                "DEFEAT"->linkedSetOf("faint","recoil","idle")
+                                "PICKUP_REACTION"->linkedSetOf("cry","status","idle")
+                                else->linkedSetOf("idle")
+                            }
+                            PokemonModelRenderer.requestSceneAnimation(
+                                view=pokemonView,
+                                instanceId=actor.id,
+                                signalId="tactician:"+stateName,
+                                serial=(stateName.hashCode().toLong() and 0x7fffffffL)+1L,
+                                labels=labels,
+                                faint=stateName=="DEFEAT"
+                            )
+                            PokemonModelRenderer.renderEmbedded(
+                                pokemonView,
+                                actor.id,
+                                poses,
+                                buffers,
+                                stateName in setOf("WALK","RUN","CAROUSEL_MOVEMENT")
+                            )
+                        } else {
+                            VanillaCompanionModelRenderer.renderEmbedded(actor.id,actor.entityId,actor.animation,poses,buffers)
+                        }
+                    } finally { poses.popPose() }
                 }
                 buffers.endBatch()
                 val coordinates=positioned.associate { (entity,point,_) -> entity.id to SceneVec3(point.x.toDouble(),point.y.toDouble(),entity.elevation.toDouble()) }
@@ -533,4 +567,20 @@ object PokemonScene3D {
     private const val SELECTED=0xFF2F786E.toInt();private const val LEGAL=0xFF365D45.toInt();private const val ALLY_RING=0x664CC7B2;private const val ENEMY_RING=0x66B95E67
     private const val TEXT=0xFFF2F6F4.toInt();private const val GOLD=0xFFE2BE62.toInt();private const val BAR_BG=0xFF10191C.toInt();private const val HP_ALLY=0xFF54C97A.toInt();private const val HP_ENEMY=0xFFD86668.toInt();private const val MANA=0xFF55A9E8.toInt()
     private const val PROJECTILE=0xFFE2BE62.toInt();private const val CAST=0xFF9A7FE3.toInt();private const val HIT=0xFFE36C5C.toInt();private const val HEAL=0xFF67C989.toInt()
+
+    private fun tacticianPokemonView(actor:SceneTacticianNode):PokemonView? {
+        if(actor.pokemonSpecies.isBlank()) return null
+        val id=ResourceLocation.tryParse(actor.pokemonSpecies) ?: return null
+        val species=PokemonSpecies.getByIdentifier(id) ?: return null
+        return PokemonView(
+            key=actor.pokemonSpecies+"|"+actor.pokemonAspects.sorted().joinToString(","),
+            route="",
+            speciesId=actor.pokemonSpecies,
+            aspects=actor.pokemonAspects,
+            displayName=species.translatedName.string,
+            dexNumber=species.nationalPokedexNumber,
+            fakemon=species.resourceIdentifier.namespace!="cobblemon"
+        )
+    }
+
 }

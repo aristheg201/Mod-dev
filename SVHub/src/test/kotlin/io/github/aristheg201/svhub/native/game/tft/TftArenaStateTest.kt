@@ -20,6 +20,28 @@ class TftArenaStateTest {
         assertTrue(restored.viewFor("a").board.all(String::isBlank))
     }
 
+    @Test fun pokemonTacticianReplicatesResolverIdentityAndRemainsPresentationOnly() {
+        val custom=set.copy(
+            defaultTactician="svhub:green_lantern_mewtwo",
+            tacticians=set.tacticians + TftTacticianDefinition(
+                id="svhub:green_lantern_mewtwo",
+                pokemon=PokemonPresentationIdentity(
+                    species="cobblemon:mewtwo",
+                    cosmeticAspects=setOf("greenlantern")
+                ),
+                name="Green Lantern Mewtwo",
+                scale=.7
+            )
+        )
+        val session=TftSession(seats,seed=914,definition=custom)
+        val view=session.viewFor("a")
+        assertEquals("",view.fields["tacticianEntity"])
+        assertEquals("cobblemon:mewtwo",view.fields["tacticianSpecies"])
+        assertEquals("greenlantern",view.fields["tacticianAspects"])
+        assertEquals("true",view.fields["tacticianPresentationOnly"])
+        assertTrue(view.board.all(String::isBlank))
+    }
+
     @Test fun authoritativeTacticianEmoteSurvivesRecoveryAndRemainsPresentationOnly() {
         val session=create();val before=session.snapshotState().get("poolCounts")
         assertTrue(session.act("a","tactician_emote",emptyMap()).accepted)

@@ -53,7 +53,15 @@ data class SceneMeshNode(override val id:String,override val transform:SceneTran
 data class SceneBlockModelNode(override val id:String,override val transform:SceneTransform,val blockId:String,override val visible:Boolean=true):SceneNode
 data class SceneItemModelNode(override val id:String,override val transform:SceneTransform,val itemId:String,override val visible:Boolean=true):SceneNode
 data class ScenePokemonNode(override val id:String,override val transform:SceneTransform,val identity:String,val animation:String,override val visible:Boolean=true):SceneNode
-data class SceneTacticianNode(override val id:String,override val transform:SceneTransform,val entityId:String,val animation:String,override val visible:Boolean=true):SceneNode
+data class SceneTacticianNode(
+    override val id:String,
+    override val transform:SceneTransform,
+    val entityId:String="",
+    val animation:String="IDLE",
+    val pokemonSpecies:String="",
+    val pokemonAspects:Set<String> = emptySet(),
+    override val visible:Boolean=true
+):SceneNode
 data class SceneEffectNode(override val id:String,override val transform:SceneTransform,val effectId:String,val startedAt:Long,override val visible:Boolean=true):SceneNode
 
 /** Axis-aligned scene plane. Origin is its minimum corner, with half-open outer edges. */

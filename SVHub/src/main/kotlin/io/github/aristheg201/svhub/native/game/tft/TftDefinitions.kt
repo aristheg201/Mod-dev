@@ -85,8 +85,17 @@ data class TftCarouselDefinition(
 
 data class TftShopOdds(val level: Int = 2, val odds: List<Int> = listOf(100, 0, 0, 0, 0))
 
-/** Tacticians are presentation-only vanilla mobs, never combat units. */
-data class TftTacticianDefinition(val id: String = "", val entity: String = "", val name: String = "", val scale: Double = 1.0)
+/** Tacticians are presentation-only cosmetics, never combat units. */
+data class TftTacticianDefinition(
+    val id: String = "",
+    val entity: String = "",
+    val pokemon: PokemonPresentationIdentity? = null,
+    val name: String = "",
+    val scale: Double = 1.0,
+    val cosmeticVfx: String = ""
+) {
+    val presentation: PokemonPresentationIdentity? get() = pokemon
+}
 
 data class TftUnitDefinition(
     val id: String = "",
@@ -260,9 +269,17 @@ object TftDefinitionValidator {
             require((strategy.preferredTeams+strategy.fallbackTeams).all { it in teamDefinitionIds }) { "set ${set.id}.botStrategies.${strategy.id}.teams: unknown team" }
             require(strategy.transitionRules.all { it.team in teamDefinitionIds && it.minimumLevel in 1..set.maxLevel && it.maximumLevel in it.minimumLevel..set.maxLevel }) { "set ${set.id}.botStrategies.${strategy.id}.transitionRules: invalid" }
         }
-        set.tacticians.forEach {
-            require(it.id.isNotBlank() && it.entity.matches(Regex("minecraft:[a-z0-9_]+")) && it.scale in 0.2..3.0) {
-                "set ${set.id}.tacticians.${it.id}: expected a vanilla entity and valid scale"
+        set.tacticians.forEach { tactician ->
+            val pokemon=tactician.presentation
+            val vanilla=tactician.entity.matches(Regex("minecraft:[a-z0-9_]+"))
+            val pokemonValid=pokemon!=null &&
+                pokemon.species.matches(Regex("^[a-z0-9_.-]+:[a-z0-9_./-]+$")) &&
+                pokemon.scale in 0.1..8.0 &&
+                pokemon.aspects.none(String::isBlank) &&
+                pokemon.cosmeticAspects.none(String::isBlank) &&
+                (pokemon.gender==null || pokemon.gender in setOf("male","female","genderless"))
+            require(tactician.id.isNotBlank() && tactician.scale in 0.2..3.0 && (vanilla xor pokemonValid)) {
+                "set ${set.id}.tacticians.${tactician.id}: define exactly one valid vanilla entity or Pokemon identity"
             }
         }
         require(set.tacticians.isEmpty() || set.tacticians.any { it.id == set.defaultTactician }) { "set ${set.id}.defaultTactician: unknown id" }

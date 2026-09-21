@@ -343,8 +343,11 @@ class TftSession(
                 "benchSlots" to set.rules.benchSlots.toString(),
                 "arenaId" to observed.arena,
                 "tacticianEntity" to observedTactician?.entity.orEmpty(),
+                "tacticianSpecies" to observedTactician?.presentation?.species.orEmpty(),
+                "tacticianAspects" to observedTactician?.presentation?.resolverAspects()?.joinToString(",").orEmpty(),
                 "tacticianId" to observed.tactician,
-                "tacticianScale" to (observedTactician?.scale ?: 1.0).toString(),
+                "tacticianScale" to (observedTactician?.scale ?: observedTactician?.presentation?.scale ?: 1.0).toString(),
+                "tacticianVfx" to observedTactician?.cosmeticVfx.orEmpty(),
                 "tacticianState" to when { observed.eliminated -> "defeat"; finished && winner==observed.id -> "victory"; finished -> "defeat"; System.currentTimeMillis()<observed.tacticianEmoteUntil -> "emote"; phase==Phase.DRAFT && observed.draftPicked -> "pickup_reaction"; phase==Phase.DRAFT -> "carousel_movement"; phase==Phase.COMBAT -> "round_start"; else -> "idle" },
                 "tacticianTarget" to if(phase==Phase.DRAFT) "${observed.carouselX},${observed.carouselY}" else "",
                 "tacticianPresentationOnly" to "true",
@@ -1117,7 +1120,11 @@ class TftSession(
     private fun snapshotBoard(player: PlayerState) = player.board.mapValues { (_, unit) -> unit.copy(items = unit.items.toMutableList()) }
     private fun resolveTactician(selection: String?): String {
         val requestedEntity = selection?.let { if (':' in it) it else "minecraft:$it" }
-        return set.tacticians.firstOrNull { it.id == selection || it.entity == requestedEntity }?.id ?: set.defaultTactician
+        return set.tacticians.firstOrNull { tactician ->
+            tactician.id == selection ||
+                tactician.entity == requestedEntity ||
+                tactician.presentation?.species == selection
+        }?.id ?: set.defaultTactician
     }
 
     private fun encodeItemCatalog():String = JsonObject().apply {

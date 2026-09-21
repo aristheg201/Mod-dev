@@ -33,7 +33,8 @@ object VisualSmokeHarness {
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
         "cobblemon:charmander", "cobblemon:snorlax", "cobblemon:onix", "cobblemon:vaporeon",
-        "cobblemon:eevee", "cobblemon:lucario", "cobblemon:charizard", "cobblemon:lapras"
+        "cobblemon:eevee", "cobblemon:lucario", "cobblemon:charizard", "cobblemon:lapras",
+        "cobblemon:mewtwo"
     )
 
     private var enabled = false
@@ -260,9 +261,11 @@ object VisualSmokeHarness {
                     addProperty("shopSlots", "5")
                     addProperty("benchSlots", "9")
                     addProperty("arenaId", "kanto_stadium")
-                    addProperty("tacticianEntity", "minecraft:fox")
-                    addProperty("tacticianId", "svhub:fox")
-                    addProperty("tacticianScale", "0.85")
+                    addProperty("tacticianEntity", "")
+                    addProperty("tacticianSpecies", if (pve) "cobblemon:mewtwo" else "cobblemon:pikachu")
+                    addProperty("tacticianAspects", if (pve) "greenlantern" else "")
+                    addProperty("tacticianId", if (pve) "svhub:green_lantern_mewtwo" else "svhub:pikachu")
+                    addProperty("tacticianScale", if (pve) "0.72" else "0.70")
                     addProperty("tacticianState", if (pve) "round_start" else "idle")
                     addProperty("scouting", "false")
                     addProperty("round", if (pve) "1-1" else "2-2")

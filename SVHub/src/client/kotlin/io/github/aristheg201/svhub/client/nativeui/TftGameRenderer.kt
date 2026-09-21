@@ -668,7 +668,17 @@ object TftGameRenderer {
         val tacticianNode=arena?.let { definition ->
             val pose=ui.tactician(definition.tacticianSpawn,definition.tacticianMovementBounds,fields.str("tacticianState","IDLE"))
             val tacticianScale=fields.double("tacticianScale",1.0).coerceIn(.2,3.0)
-            SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),fields.str("tacticianEntity"),pose.state,fields.str("tacticianEntity").isNotBlank())
+            val pokemonSpecies=fields.str("tacticianSpecies")
+            val pokemonAspects=fields.str("tacticianAspects").split(',').filter(String::isNotBlank).toSet()
+            SceneTacticianNode(
+                id="tft:tactician",
+                transform=SceneTransform(SceneVec3(pose.point.x.toDouble(),pose.point.y.toDouble(),pose.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),
+                entityId=fields.str("tacticianEntity"),
+                animation=pose.state,
+                pokemonSpecies=pokemonSpecies,
+                pokemonAspects=pokemonAspects,
+                visible=fields.str("tacticianEntity").isNotBlank()||pokemonSpecies.isNotBlank()
+            )
         }
         val pveLootNodes=if(phase=="combat"&&fields.bool("pveActive")) arena?.lootAnchors.orEmpty().mapIndexed { index,anchor ->
             val yaw=((System.nanoTime()/35_000_000L+index*19)%360L).toDouble()
@@ -1037,7 +1047,16 @@ object TftGameRenderer {
             }
         }
         val tacticianScale=fields.double("tacticianScale",1.0).coerceIn(.2,3.0)
-        val actor=SceneTacticianNode("tft:tactician",SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),fields.str("tacticianEntity"),tactician.state)
+        val tacticianSpecies=fields.str("tacticianSpecies")
+        val actor=SceneTacticianNode(
+            id="tft:tactician",
+            transform=SceneTransform(SceneVec3(tactician.point.x.toDouble(),tactician.point.y.toDouble(),tactician.point.z.toDouble()),scale=SceneVec3(tacticianScale,tacticianScale,tacticianScale)),
+            entityId=fields.str("tacticianEntity"),
+            animation=tactician.state,
+            pokemonSpecies=tacticianSpecies,
+            pokemonAspects=fields.str("tacticianAspects").split(',').filter(String::isNotBlank).toSet(),
+            visible=fields.str("tacticianEntity").isNotBlank()||tacticianSpecies.isNotBlank()
+        )
         val frame = PokemonScene3D.render(gui, font, board.inset(4), arena?.boardColumns ?: 12, arena?.boardRows ?: 12, entities, ui.scene,
             camera = ui.camera(arena?.camera(ArenaCameraRole.CAROUSEL,SceneCameras.TFT)?:SceneCameras.TFT), arenaId = arenaId, arenaSeed = "carousel:$arenaSeed",sceneItems=items,tactician=actor)
         gui.drawCenteredString(font, tr("gui.svhub.tft.shared_draft"), board.x + board.width / 2, board.y + 5, gold)
