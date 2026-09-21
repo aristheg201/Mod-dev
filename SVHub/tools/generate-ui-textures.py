@@ -8,6 +8,7 @@ import argparse
 from collections import Counter
 from pathlib import Path
 import random
+import shutil
 import sys
 import zipfile
 from svhub_png import decode, encode
@@ -115,9 +116,15 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, default=OUTPUT)
     options = parser.parse_args(argv)
     expected = generated()
+    generated_root = options.output / PREFIX
     if not options.check and options.jar is None:
+        # Gradle can execute this task incrementally without a clean. Remove the
+        # previous recipe output so deleted/renamed generated textures cannot be
+        # silently repackaged from a stale build directory.
+        if generated_root.exists():
+            shutil.rmtree(generated_root)
         for name, data in expected.items():
-            path = options.output / PREFIX / name
+            path = generated_root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
     source = {p.relative_to(RESOURCES).as_posix(): p.read_bytes() for p in (RESOURCES / "assets/svhub").rglob("*.png")}
@@ -126,6 +133,8 @@ def main(argv=None):
     errors = verify(source, {}) + verify(rendered, expected)
     errors += [f"generated asset must not be shadowed by source resource: {name}"
                for name in source.keys() & rendered.keys()]
+    expected_rendered = {PREFIX + name for name in expected}
+    errors += [f"unexpected stale generated asset: {name}" for name in rendered if name not in expected_rendered]
     resources = source | rendered
     if options.jar is not None:
         with zipfile.ZipFile(options.jar) as archive:
