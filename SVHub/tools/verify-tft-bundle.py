@@ -17,9 +17,13 @@ try:
     data = {}
     for name, digest in expected.items():
         raw = read(name)
-        if hashlib.sha256(raw).hexdigest() != digest:
-            raise ValueError(f'{name}: content hash differs from the reviewed bundled set')
+        actual = hashlib.sha256(raw).hexdigest()
+        if actual != digest:
+            raise ValueError(f'{name}: content hash differs from the reviewed bundled set; actual={actual}')
         data[name] = json.loads(raw)
+    # Boss encounters are intentionally split from the normal PvE ladder, but are
+    # still mandatory runtime content and receive the same structural/reference checks.
+    data['bosses.json'] = json.loads(read('bosses.json'))
     if not isinstance(data['set.json'], dict):
         raise ValueError('set.json must contain the manifest object, not component definitions')
     manifest = data['set.json']
@@ -35,7 +39,17 @@ try:
         path = project / 'src/main/resources/assets/svhub/arenas' / f'{arena}.json'
         if not path.is_file() or not isinstance(json.loads(path.read_text()), dict):
             raise ValueError(f'Missing or invalid arena {arena}')
-    counts = {'units.json': 84, 'teams.json': 6, 'traits.json': 34, 'components.json': 8, 'full_items.json': 36, 'augments.json': 32, 'pve.json': 7, 'loot.json': 2}
+    counts = {
+        'units.json': 84,
+        'teams.json': 6,
+        'traits.json': 34,
+        'components.json': 8,
+        'full_items.json': 36,
+        'augments.json': 32,
+        'pve.json': 7,
+        'bosses.json': 2,
+        'loot.json': 2,
+    }
     for name, count in counts.items():
         if not isinstance(data[name], list) or len(data[name]) != count:
             raise ValueError(f'{name}: expected {count} reviewed definitions')
@@ -49,9 +63,9 @@ try:
         raise ValueError(f'Unused TFT traits: {sorted(traits - used_traits)}')
     role_traits = {'guardian':'guardian','caster':'caster','striker':'striker','ranger':'ranger','support':'support','fighter':'bruiser'}
     for unit in data['units.json']:
-        expected = role_traits.get(unit.get('role', ''))
-        if expected and expected not in unit.get('traits', []):
-            raise ValueError(f"Unit {unit['id']} is missing class trait {expected}")
+        expected_trait = role_traits.get(unit.get('role', ''))
+        if expected_trait and expected_trait not in unit.get('traits', []):
+            raise ValueError(f"Unit {unit['id']} is missing class trait {expected_trait}")
     tiers = {'Silver': 0, 'Gold': 0, 'Prismatic': 0}
     for augment in data['augments.json']:
         tier = augment.get('tier', 'Gold')
@@ -77,9 +91,25 @@ try:
     for item in data['full_items.json']:
         if len(item['components']) != 2 or not set(item['components']) <= components:
             raise ValueError(f"Invalid recipe {item['id']}")
-    for round_ in data['pve.json']:
-        if not all(e['unit'] in units for e in round_['enemies']):
-            raise ValueError(f"Unknown unit in PvE round {round_['round']}")
+    authored_pve = data['pve.json'] + data['bosses.json']
+    pve_by_round = {round_['round']: round_ for round_ in authored_pve}
+    if len(pve_by_round) != len(authored_pve):
+        raise ValueError('Duplicate round id across pve.json and bosses.json')
+    for round_ in authored_pve:
+        if not round_.get('enemies') or not all(e['unit'] in units for e in round_['enemies']):
+            raise ValueError(f"Unknown or empty enemies in PvE round {round_['round']}")
+    for scheduled in manifest.get('roundSchedule', []):
+        if scheduled.get('type') in {'pve', 'boss'}:
+            reference = scheduled.get('pve', scheduled.get('label'))
+            if reference not in pve_by_round:
+                raise ValueError(f"Scheduled {scheduled.get('type')} round {scheduled.get('label')} has no authored encounter {reference}")
+    boss_labels = {round_['round'] for round_ in data['bosses.json']}
+    scheduled_bosses = {round_['label'] for round_ in manifest.get('roundSchedule', []) if round_.get('type') == 'boss'}
+    if scheduled_bosses != boss_labels:
+        raise ValueError(f'Boss schedule/data mismatch: scheduled={sorted(scheduled_bosses)} authored={sorted(boss_labels)}')
+    for boss in data['bosses.json']:
+        if boss.get('lootTable') != 'boss_cache' or boss.get('lootRolls', 0) < 5:
+            raise ValueError(f"Boss {boss['round']} must use the production boss cache")
     for team in data['teams.json']:
         members = team['members'] + team.get('bench', [])
         if not all(member['unit'] in units for member in members):
