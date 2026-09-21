@@ -289,7 +289,7 @@ for (const marker of ["resultPresentation", "ArcadeResultRenderer.render", 'inte
 for (const marker of ['"pveLoot"', '"pveLootSerial"', "pveLootSerial++", "lastPveLoot"]) {
   if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing authoritative PvE loot presentation marker ${marker}`);
 }
-for (const marker of ["pveLootModelId", "renderAugmentOverlay", "gui.fill(board.x,board.y,board.right,board.bottom", "tft:pve-loot:"]) {
+for (const marker of ["pveLootModelId", "renderAugmentOverlay", "TftLayoutResolver.resolve", "resolved.itemRail", "sceneOnly", "tft:pve-loot:"]) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing scene presentation marker ${marker}`);
 }
 for (const marker of ["BeastCoin", "HunterCoin", "requestId", "owned", "equipped", "PokemonScene3D.render"]) {
@@ -308,8 +308,11 @@ if (screen.includes('wallet?.num("arcade")')) failures.push("NativePlatformScree
 for (const marker of ["arena_preview", "arena_owned", "arena_equipped", "tactician_preview", "tactician_owned", "tactician_equipped"]) {
   if (!visualSmokeHarness.includes(marker)) failures.push(`VisualSmokeHarness.kt: missing cosmetic store evidence scenario ${marker}`);
 }
-for (const marker of ["PokemonModelRenderer.renderPreview", "home_bg.png", "pixel_frame.png", "sparkle_strip.png", "skin.aspect"]) {
+for (const marker of ["PokemonModelRenderer.renderPreview", "rarityColor", "pedestal", "skin.aspect"]) {
   if (!skinShowcase.includes(marker)) failures.push(`SkinShowcaseRenderer.kt: missing premium showcase marker ${marker}`);
+}
+for (const retired of ["home_bg.png", "pixel_frame.png", "sparkle_strip.png"]) {
+  if (skinShowcase.includes(retired)) failures.push(`SkinShowcaseRenderer.kt: retired external showcase texture still referenced ${retired}`);
 }
 for (const marker of ["resultPresentation", "continueAction", "rematch", "backdrop", "renderSection"]) {
   if (!resultRenderer.includes(marker)) failures.push(`ArcadeResultRenderer.kt: missing result pipeline marker ${marker}`);
