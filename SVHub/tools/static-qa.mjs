@@ -124,6 +124,11 @@ const cardTableRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/cl
 const companionRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VanillaCompanionModelRenderer.kt");
 const resultRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/ArcadeResultRenderer.kt");
 const skinShowcase = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/SkinShowcaseRenderer.kt");
+const cosmeticStoreRenderer = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/CosmeticStoreRenderer.kt");
+const cosmeticService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeCosmeticService.kt");
+const cosmeticPurchases = read("src/main/kotlin/io/github/aristheg201/svhub/native/store/CosmeticPurchases.kt");
+const beconomyAdapter = read("src/main/kotlin/io/github/aristheg201/svhub/native/store/BEconomyAdapter.kt");
+const visualSmokeHarness = read("src/client/kotlin/io/github/aristheg201/svhub/client/nativeui/VisualSmokeHarness.kt");
 const arcadeService = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeService.kt");
 const arcadeLifecyclePolicy = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeLifecyclePolicy.kt");
 const sessionStore = read("src/main/kotlin/io/github/aristheg201/svhub/native/NativeArcadeSessionStore.kt");
@@ -286,6 +291,22 @@ for (const marker of ['"pveLoot"', '"pveLootSerial"', "pveLootSerial++", "lastPv
 }
 for (const marker of ["pveLootModelId", "renderAugmentOverlay", "gui.fill(board.x,board.y,board.right,board.bottom", "tft:pve-loot:"]) {
   if (!tftRenderer.includes(marker)) failures.push(`TftGameRenderer.kt: missing scene presentation marker ${marker}`);
+}
+for (const marker of ["BeastCoin", "HunterCoin", "requestId", "owned", "equipped", "PokemonScene3D.render"]) {
+  if (!cosmeticStoreRenderer.includes(marker)) failures.push(`CosmeticStoreRenderer.kt: missing store presentation marker ${marker}`);
+}
+for (const marker of ["BEconomyAdapter", "NativeCosmeticService.recover", '"store"', "selectedArena", "selectedTactician"]) {
+  if (!nativePlatform.includes(marker) && !cosmeticService.includes(marker)) failures.push(`Cosmetic store wiring missing marker ${marker}`);
+}
+for (const marker of ["BigDecimal", "subtractBalance", "addBalance", "getTransactionHistory", "logTransaction", 'const val BEAST = "BeastCoin"', 'const val HUNTER = "HunterCoin"']) {
+  if (!beconomyAdapter.includes(marker)) failures.push(`BEconomyAdapter.kt: missing BEconomy 1.5 marker ${marker}`);
+}
+for (const marker of ["migrationVersion", "creditOnce", "retireLegacy", "MoneyPhase.CONFIRMED", "economy.receipt", "account.entitlements"]) {
+  if (!cosmeticPurchases.includes(marker)) failures.push(`CosmeticPurchases.kt: missing durable purchase/migration marker ${marker}`);
+}
+if (screen.includes('wallet?.num("arcade")')) failures.push("NativePlatformScreen.kt: retired arcade token wallet is still player-facing");
+for (const marker of ["arena_preview", "arena_owned", "arena_equipped", "tactician_preview", "tactician_owned", "tactician_equipped"]) {
+  if (!visualSmokeHarness.includes(marker)) failures.push(`VisualSmokeHarness.kt: missing cosmetic store evidence scenario ${marker}`);
 }
 for (const marker of ["PokemonModelRenderer.renderPreview", "home_bg.png", "pixel_frame.png", "sparkle_strip.png", "skin.aspect"]) {
   if (!skinShowcase.includes(marker)) failures.push(`SkinShowcaseRenderer.kt: missing premium showcase marker ${marker}`);

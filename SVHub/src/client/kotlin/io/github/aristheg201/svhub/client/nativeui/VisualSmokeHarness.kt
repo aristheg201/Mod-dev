@@ -31,6 +31,7 @@ object VisualSmokeHarness {
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins")
     private val uiScenarios = listOf("planning", "carousel", "augment", "pve", "pve_loot", "boss", "tactician_move")
     private val resultScenarios = listOf("chess", "tower_defense", "tft")
+    private val storeScenarios = listOf("arena_preview", "arena_owned", "arena_equipped", "tactician_preview", "tactician_owned", "tactician_equipped")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
         "cobblemon:charmander", "cobblemon:snorlax", "cobblemon:onix", "cobblemon:vaporeon",
@@ -42,6 +43,7 @@ object VisualSmokeHarness {
     private var arenaIndex = 0
     private var uiScenarioIndex = 0
     private var resultScenarioIndex = 0
+    private var storeScenarioIndex = 0
     private var showcaseCaptured = false
     private var stableTicks = 0
     private var bootTicks = 0
@@ -201,13 +203,7 @@ object VisualSmokeHarness {
 
     private fun tickSkinShowcase(client:Minecraft) {
         if(showcaseCaptured) {
-            finalWaitTicks++
-            if(finalWaitTicks>=40) {
-                val total=arenas.size+uiScenarios.size+resultScenarios.size+1
-                System.out.println("[SVHub Visual Smoke] completed "+total+" captures; stopping client")
-                enabled=false
-                client.stop()
-            }
+            tickStoreScenario(client)
             return
         }
         val active=client.screen as? SkinShowcaseVisualSmokeScreen
@@ -227,6 +223,46 @@ object VisualSmokeHarness {
             stableTicks=0
         } else if(stableTicks>600) {
             throw IllegalStateException("SVHub skin showcase smoke timed out: resolved="+resolved+" fixtureReady="+active.fixtureReady)
+        }
+    }
+
+    private fun tickStoreScenario(client:Minecraft) {
+        if(storeScenarioIndex>=storeScenarios.size) {
+            finalWaitTicks++
+            if(finalWaitTicks>=40) {
+                val total=arenas.size+uiScenarios.size+resultScenarios.size+1+storeScenarios.size
+                System.out.println("[SVHub Visual Smoke] completed "+total+" captures; stopping client")
+                enabled=false
+                client.stop()
+            }
+            return
+        }
+        val scenario=storeScenarios[storeScenarioIndex]
+        val active=client.screen as? StoreVisualSmokeScreen
+        if(active?.scenario!=scenario) {
+            stableTicks=0
+            capturedCurrent=false
+            client.setScreen(StoreVisualSmokeScreen(scenario))
+            System.out.println("[SVHub Visual Smoke] opened store scenario "+scenario)
+            return
+        }
+        stableTicks++
+        val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:green_lantern_mewtwo" else "store:svhub:pikachu"
+        val resolved=PokemonModelRenderer.sceneSizingDiagnostics().any{it.instanceId==expectedActor}
+        if(!capturedCurrent && stableTicks>=55 && active.fixtureReady && resolved) {
+            capturedCurrent=true
+            val fileName="svhub-store-"+scenario+".png"
+            Screenshot.grab(client.gameDirectory,fileName,client.mainRenderTarget){message->
+                System.out.println("[SVHub Visual Smoke] captured "+fileName+" :: "+message.string)
+            }
+        }
+        if(!capturedCurrent && stableTicks>600) {
+            throw IllegalStateException("SVHub store smoke timed out in "+scenario+": actor="+expectedActor+" resolved="+resolved)
+        }
+        if(capturedCurrent && stableTicks>=80) {
+            storeScenarioIndex++
+            stableTicks=0
+            capturedCurrent=false
         }
     }
 
@@ -682,6 +718,64 @@ object VisualSmokeHarness {
                 )
             )
             rendered=true
+        }
+    }
+
+    private class StoreVisualSmokeScreen(val scenario:String):Screen(Component.literal("SVHub Store Visual Smoke")) {
+        private val ui=CosmeticStoreUi().also { state ->
+            state.kind=if(scenario.startsWith("tactician"))"TACTICIAN" else "ARENA"
+            state.selected=if(state.kind=="TACTICIAN")"svhub:green_lantern_mewtwo" else "dragon_shrine"
+        }
+        private val state=fixture(scenario)
+        private var rendered=false
+        val fixtureReady get()=rendered
+
+        override fun isPauseScreen():Boolean=false
+
+        override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
+            val area=UiRect(8,8,(width-16).coerceAtLeast(220),(height-16).coerceAtLeast(150))
+            CosmeticStoreRenderer.render(
+                gui,font,area,state,ui,
+                CosmeticStoreRenderer.Hooks(
+                    control={_,_,_,_,_->},
+                    intent={_,_->}
+                )
+            )
+            rendered=true
+        }
+
+        companion object {
+            private fun fixture(scenario:String)=JsonObject().apply {
+                val tactician=scenario.startsWith("tactician")
+                val owned=scenario.endsWith("owned")||scenario.endsWith("equipped")
+                val equipped=scenario.endsWith("equipped")
+                addProperty("module","store")
+                addProperty("arena",if(!tactician&&equipped)"dragon_shrine" else "kanto_stadium")
+                addProperty("tactician",if(tactician&&equipped)"svhub:green_lantern_mewtwo" else "svhub:pikachu")
+                add("balances",JsonObject().apply {
+                    addProperty("BeastCoin","2000")
+                    addProperty("HunterCoin","2000")
+                })
+                add("offers",JsonArray().apply {
+                    add(storeOffer("ARENA","kanto_stadium","0","BeastCoin",true,!tactician&&!equipped))
+                    add(storeOffer("ARENA","dragon_shrine","1000","BeastCoin",!tactician&&owned,!tactician&&equipped))
+                    add(storeOffer("TACTICIAN","svhub:pikachu","0","HunterCoin",true,tactician&&!equipped,
+                        name="Pikachu",species="cobblemon:pikachu",scale=.70))
+                    add(storeOffer("TACTICIAN","svhub:green_lantern_mewtwo","300","HunterCoin",tactician&&owned,tactician&&equipped,
+                        name="Green Lantern Mewtwo",species="cobblemon:mewtwo",aspects="greenlantern",scale=.72))
+                })
+            }
+
+            private fun storeOffer(
+                kind:String,id:String,price:String,currency:String,owned:Boolean,equipped:Boolean,
+                name:String="",species:String="",aspects:String="",scale:Double=1.0
+            )=JsonObject().apply {
+                addProperty("kind",kind);addProperty("id",id);addProperty("price",price);addProperty("currency",currency)
+                addProperty("owned",owned);addProperty("equipped",equipped)
+                if(name.isNotBlank())addProperty("name",name)
+                addProperty("entity","")
+                addProperty("species",species);addProperty("aspects",aspects);addProperty("scale",scale);addProperty("vfx","")
+            }
         }
     }
 
