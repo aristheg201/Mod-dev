@@ -1389,6 +1389,7 @@ object TftGameRenderer {
 
     private fun JsonObject.str(key: String, fallback: String = ""): String = runCatching { get(key)?.asString ?: fallback }.getOrDefault(fallback)
     private fun JsonObject.int(key: String, fallback: Int = 0): Int = runCatching { get(key)?.asInt ?: fallback }.getOrDefault(fallback)
+    private fun JsonObject.double(key: String, fallback: Double = 0.0): Double = runCatching { get(key)?.asDouble ?: fallback }.getOrDefault(fallback)
     private fun JsonObject.long(key: String, fallback: Long = 0L): Long = runCatching { get(key)?.asLong ?: fallback }.getOrDefault(fallback)
     private fun JsonObject.bool(key: String, fallback: Boolean = false): Boolean = runCatching { get(key)?.asBoolean ?: fallback }.getOrDefault(fallback)
     private fun fit(font: Font, value: String, width: Int) = font.plainSubstrByWidth(value, width.coerceAtLeast(4))

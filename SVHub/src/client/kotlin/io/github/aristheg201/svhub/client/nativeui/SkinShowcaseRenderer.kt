@@ -29,19 +29,19 @@ object SkinShowcaseRenderer {
     fun render(gui:GuiGraphics,font:Font,rect:UiRect,skin:Skin):Boolean {
         if(rect.width<120||rect.height<84)return false
         gui.fill(rect.x,rect.y,rect.right,rect.bottom,0xFF070C10.toInt())
-        gui.blit(BACKGROUND,rect.x,rect.y,rect.width,rect.height,0,0,512,288,512,288)
+        gui.blit(BACKGROUND,rect.x,rect.y,rect.width,rect.height,0f,0f,512,288,512,288)
 
         val accent=rarityColor(skin.rarity)
         val frameW=min(rect.width-18,max(96,rect.height*5/4))
         val frameH=rect.height-18
         val frameX=rect.x+(rect.width-frameW)/2
         val frameY=rect.y+7
-        gui.blit(FRAME,frameX,frameY,frameW,frameH,0,0,64,64,64,64)
+        gui.blit(FRAME,frameX,frameY,frameW,frameH,0f,0f,64,64,64,64)
 
         // Animated authored sparkle texture plus a restrained spotlight/pedestal.
         val sparkleOffset=((System.currentTimeMillis()/45L)%960L).toInt()
         val sparkleW=min(rect.width-20,320)
-        gui.blit(SPARKLES,rect.x+(rect.width-sparkleW)/2,rect.y+5,sparkleW,20,sparkleOffset,0,sparkleW,64,1024,64)
+        gui.blit(SPARKLES,rect.x+(rect.width-sparkleW)/2,rect.y+5,sparkleW,20,sparkleOffset.toFloat(),0f,sparkleW,64,1024,64)
         repeat(8){i->
             val t=(System.currentTimeMillis()/55L+i*97L)%1000L
             val px=rect.x+8+((t*(31+i*7))%(rect.width-16).coerceAtLeast(1)).toInt()
