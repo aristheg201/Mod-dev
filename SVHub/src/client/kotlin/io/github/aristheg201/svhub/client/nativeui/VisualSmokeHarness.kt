@@ -28,7 +28,7 @@ import net.minecraft.resources.ResourceLocation
 object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
-    private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium")
+    private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins")
     private val uiScenarios = listOf("planning", "pve", "tactician_move")
     private val resultScenarios = listOf("chess", "tower_defense", "tft")
     private val smokeSpecies = listOf(

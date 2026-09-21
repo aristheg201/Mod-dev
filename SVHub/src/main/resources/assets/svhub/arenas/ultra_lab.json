@@ -1,0 +1,578 @@
+{
+  "id": "ultra_lab",
+  "style": "ultra_lab",
+  "surface": "tactical",
+  "depth": 2,
+  "detailEvery": 0,
+  "pathDetailEvery": 0,
+  "texturedBattlefield": false,
+  "floor": [
+    "minecraft:smooth_quartz"
+  ],
+  "floorAlt": [
+    "minecraft:light_gray_concrete"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#d7e2e3",
+  "floorAltColor": "#a8bec3",
+  "allyColor": "#3c7e87",
+  "enemyColor": "#7f4c66",
+  "pathColor": "#665f56",
+  "pathAccentColor": "#59f0e8",
+  "gridColor": "#4e8f98",
+  "borderColor": "#d7fbff",
+  "edgeColor": "#14252b",
+  "depthColor": "#203940",
+  "backgroundColor": "#091b22",
+  "benchMaterial": "minecraft:iron_block",
+  "props": [],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "cellSize": [
+      1.5,
+      0.85,
+      1
+    ],
+    "benchAnchors": [
+      [
+        0,
+        7.62,
+        0.05
+      ],
+      [
+        1.125,
+        7.62,
+        0.05
+      ],
+      [
+        2.25,
+        7.62,
+        0.05
+      ],
+      [
+        3.375,
+        7.62,
+        0.05
+      ],
+      [
+        4.5,
+        7.62,
+        0.05
+      ],
+      [
+        5.625,
+        7.62,
+        0.05
+      ],
+      [
+        6.75,
+        7.62,
+        0.05
+      ],
+      [
+        7.875,
+        7.62,
+        0.05
+      ],
+      [
+        9,
+        7.62,
+        0.05
+      ]
+    ],
+    "itemBenchAnchors": [
+      [
+        0,
+        8.28,
+        0.15
+      ],
+      [
+        1.125,
+        8.28,
+        0.15
+      ],
+      [
+        2.25,
+        8.28,
+        0.15
+      ],
+      [
+        3.375,
+        8.28,
+        0.15
+      ],
+      [
+        4.5,
+        8.28,
+        0.15
+      ],
+      [
+        5.625,
+        8.28,
+        0.15
+      ],
+      [
+        6.75,
+        8.28,
+        0.15
+      ],
+      [
+        7.875,
+        8.28,
+        0.15
+      ],
+      [
+        9,
+        8.28,
+        0.15
+      ]
+    ],
+    "tacticianRegion": [
+      -3.4,
+      5,
+      -1.5,
+      7
+    ],
+    "tacticianSpawn": [
+      -2.45,
+      6,
+      0
+    ],
+    "humanSpawn": [
+      4.5,
+      5.95,
+      0
+    ],
+    "opponentSpawn": [
+      4.5,
+      0,
+      0
+    ],
+    "carouselCenter": [
+      4.5,
+      3,
+      0
+    ],
+    "arenaBounds": [
+      -6,
+      -5,
+      15,
+      11
+    ],
+    "lighting": "bright",
+    "ambientVfx": "lab_scanlines",
+    "music": "minecraft:music.game",
+    "lootAnchors": [
+      [
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
+        0
+      ]
+    ],
+    "combatStartVfx": "svhub:combat_start",
+    "victoryVfx": "svhub:victory",
+    "defeatVfx": "svhub:defeat",
+    "interactionRegions": [],
+    "camera": {
+      "spectator": [
+        4.5,
+        14,
+        12
+      ],
+      "scouting": [
+        8,
+        12,
+        9
+      ],
+      "carousel": [
+        4.5,
+        17,
+        15
+      ]
+    },
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          4.5,
+          14.2,
+          10.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 43,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "preparation": {
+        "position": [
+          4.5,
+          14.2,
+          10.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 43,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          4.5,
+          13.7,
+          11.1
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          8,
+          11.5,
+          9.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16,
+          15
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          12,
+          8.5
+        ],
+        "target": [
+          4.5,
+          1.5,
+          0.3
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.5,
+          7.5
+        ],
+        "target": [
+          4.5,
+          1,
+          0.4
+        ],
+        "fov": 37,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          12.5,
+          9.2
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.3,
+          12.8,
+          10
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          4.5,
+          14,
+          12
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          4.5,
+          14.5,
+          11
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 46,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      }
+    }
+  },
+  "geometry": [
+    {
+      "id": "lab-ally-platform",
+      "material": "minecraft:iron_block",
+      "position": [
+        4.5,
+        7.65,
+        -0.35
+      ],
+      "size": [
+        12,
+        1,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "lab-enemy-platform",
+      "material": "minecraft:polished_deepslate",
+      "position": [
+        4.5,
+        -1.65,
+        -0.35
+      ],
+      "size": [
+        12,
+        1,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-lab-wall",
+      "material": "minecraft:smooth_quartz",
+      "position": [
+        -3.8,
+        2.9,
+        1.6
+      ],
+      "size": [
+        1.2,
+        8,
+        3.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-lab-wall",
+      "material": "minecraft:smooth_quartz",
+      "position": [
+        12.8,
+        2.9,
+        1.6
+      ],
+      "size": [
+        1.2,
+        8,
+        3.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        -3.15,
+        2.9,
+        1.8
+      ],
+      "size": [
+        0.2,
+        5.5,
+        2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        12.15,
+        2.9,
+        1.8
+      ],
+      "size": [
+        0.2,
+        5.5,
+        2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "enemy-lab-header",
+      "material": "minecraft:iron_block",
+      "position": [
+        4.5,
+        -2,
+        3
+      ],
+      "size": [
+        10,
+        0.9,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "enemy-lab-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        4.5,
+        -1.95,
+        2.4
+      ],
+      "size": [
+        5,
+        0.3,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "ally-lab-header",
+      "material": "minecraft:iron_block",
+      "position": [
+        4.5,
+        8.05,
+        2.2
+      ],
+      "size": [
+        8,
+        0.8,
+        0.55
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "ally-lab-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        4.5,
+        7.98,
+        1.75
+      ],
+      "size": [
+        4.2,
+        0.25,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

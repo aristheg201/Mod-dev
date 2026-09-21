@@ -1,0 +1,578 @@
+{
+  "id": "distortion_rift",
+  "style": "distortion_rift",
+  "surface": "tactical",
+  "depth": 3,
+  "detailEvery": 0,
+  "pathDetailEvery": 0,
+  "texturedBattlefield": false,
+  "floor": [
+    "minecraft:obsidian"
+  ],
+  "floorAlt": [
+    "minecraft:crying_obsidian"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#1f1830",
+  "floorAltColor": "#302044",
+  "allyColor": "#233449",
+  "enemyColor": "#4b203e",
+  "pathColor": "#665f56",
+  "pathAccentColor": "#ad75ff",
+  "gridColor": "#7959a4",
+  "borderColor": "#553d77",
+  "edgeColor": "#0b0712",
+  "depthColor": "#160d23",
+  "backgroundColor": "#090610",
+  "benchMaterial": "minecraft:obsidian",
+  "props": [],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "cellSize": [
+      1.5,
+      0.85,
+      1
+    ],
+    "benchAnchors": [
+      [
+        0,
+        7.62,
+        0.05
+      ],
+      [
+        1.125,
+        7.62,
+        0.05
+      ],
+      [
+        2.25,
+        7.62,
+        0.05
+      ],
+      [
+        3.375,
+        7.62,
+        0.05
+      ],
+      [
+        4.5,
+        7.62,
+        0.05
+      ],
+      [
+        5.625,
+        7.62,
+        0.05
+      ],
+      [
+        6.75,
+        7.62,
+        0.05
+      ],
+      [
+        7.875,
+        7.62,
+        0.05
+      ],
+      [
+        9,
+        7.62,
+        0.05
+      ]
+    ],
+    "itemBenchAnchors": [
+      [
+        0,
+        8.28,
+        0.15
+      ],
+      [
+        1.125,
+        8.28,
+        0.15
+      ],
+      [
+        2.25,
+        8.28,
+        0.15
+      ],
+      [
+        3.375,
+        8.28,
+        0.15
+      ],
+      [
+        4.5,
+        8.28,
+        0.15
+      ],
+      [
+        5.625,
+        8.28,
+        0.15
+      ],
+      [
+        6.75,
+        8.28,
+        0.15
+      ],
+      [
+        7.875,
+        8.28,
+        0.15
+      ],
+      [
+        9,
+        8.28,
+        0.15
+      ]
+    ],
+    "tacticianRegion": [
+      11,
+      5.05,
+      12.8,
+      7
+    ],
+    "tacticianSpawn": [
+      11.9,
+      6.05,
+      0
+    ],
+    "humanSpawn": [
+      4.5,
+      5.95,
+      0
+    ],
+    "opponentSpawn": [
+      4.5,
+      0,
+      0
+    ],
+    "carouselCenter": [
+      4.5,
+      3,
+      0
+    ],
+    "arenaBounds": [
+      -6,
+      -5,
+      15,
+      11
+    ],
+    "lighting": "dark",
+    "ambientVfx": "rift_shards",
+    "music": "minecraft:music.game",
+    "lootAnchors": [
+      [
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
+        0
+      ]
+    ],
+    "combatStartVfx": "svhub:combat_start",
+    "victoryVfx": "svhub:victory",
+    "defeatVfx": "svhub:defeat",
+    "interactionRegions": [],
+    "camera": {
+      "spectator": [
+        4.5,
+        14,
+        12
+      ],
+      "scouting": [
+        8,
+        12,
+        9
+      ],
+      "carousel": [
+        4.5,
+        17,
+        15
+      ]
+    },
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          4.5,
+          12.8,
+          11.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "preparation": {
+        "position": [
+          4.5,
+          12.8,
+          11.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          4.5,
+          12.3,
+          12.2
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          8,
+          11.5,
+          9.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16,
+          15
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          12,
+          8.5
+        ],
+        "target": [
+          4.5,
+          1.5,
+          0.3
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.5,
+          7.5
+        ],
+        "target": [
+          4.5,
+          1,
+          0.4
+        ],
+        "fov": 37,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          12.5,
+          9.2
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.3,
+          12.8,
+          10
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          4.5,
+          14,
+          12
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          4.5,
+          14.5,
+          11
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 46,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      }
+    }
+  },
+  "geometry": [
+    {
+      "id": "ally-rift-base",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        4.5,
+        7.7,
+        -0.3
+      ],
+      "size": [
+        11.8,
+        1,
+        0.55
+      ],
+      "rotation": [
+        0,
+        0,
+        2
+      ]
+    },
+    {
+      "id": "enemy-rift-base",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        4.5,
+        -1.7,
+        -0.3
+      ],
+      "size": [
+        11.8,
+        1,
+        0.55
+      ],
+      "rotation": [
+        0,
+        0,
+        -2
+      ]
+    },
+    {
+      "id": "left-float-a",
+      "material": "minecraft:amethyst_block",
+      "position": [
+        -3.5,
+        1,
+        1.7
+      ],
+      "size": [
+        2.4,
+        2.4,
+        0.7
+      ],
+      "rotation": [
+        12,
+        8,
+        18
+      ]
+    },
+    {
+      "id": "left-float-b",
+      "material": "minecraft:obsidian",
+      "position": [
+        -3,
+        4.9,
+        3
+      ],
+      "size": [
+        1.7,
+        1.7,
+        0.7
+      ],
+      "rotation": [
+        -16,
+        5,
+        -20
+      ]
+    },
+    {
+      "id": "right-float-a",
+      "material": "minecraft:amethyst_block",
+      "position": [
+        12.6,
+        1.8,
+        2.5
+      ],
+      "size": [
+        2.1,
+        2.1,
+        0.7
+      ],
+      "rotation": [
+        -10,
+        12,
+        -22
+      ]
+    },
+    {
+      "id": "right-float-b",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        12.2,
+        5.5,
+        1.2
+      ],
+      "size": [
+        2.7,
+        1.6,
+        0.7
+      ],
+      "rotation": [
+        8,
+        -7,
+        15
+      ]
+    },
+    {
+      "id": "enemy-rift-arch-left",
+      "material": "minecraft:obsidian",
+      "position": [
+        0.3,
+        -2.2,
+        2
+      ],
+      "size": [
+        1.2,
+        1.2,
+        4.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "enemy-rift-arch-right",
+      "material": "minecraft:obsidian",
+      "position": [
+        8.7,
+        -2.2,
+        2
+      ],
+      "size": [
+        1.2,
+        1.2,
+        4.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "enemy-rift-arch-top",
+      "material": "minecraft:purple_stained_glass",
+      "position": [
+        4.5,
+        -2.2,
+        3.9
+      ],
+      "size": [
+        9.6,
+        0.7,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "ally-rift-arch",
+      "material": "minecraft:purple_stained_glass",
+      "position": [
+        4.5,
+        8.1,
+        1.9
+      ],
+      "size": [
+        7,
+        0.6,
+        3.2
+      ],
+      "rotation": [
+        0,
+        0,
+        4
+      ]
+    }
+  ]
+}

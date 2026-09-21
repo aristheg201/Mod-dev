@@ -315,7 +315,11 @@
       "gotham_rooftops",
       "sector_2814",
       "grand_line",
-      "celestial_vault"
+      "celestial_vault",
+      "dragon_shrine",
+      "distortion_rift",
+      "ultra_lab",
+      "ancient_ruins"
     ],
     "phaseCapabilities": {
       "planning": [
