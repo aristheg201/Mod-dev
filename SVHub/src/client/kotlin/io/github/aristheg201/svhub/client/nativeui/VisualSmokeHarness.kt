@@ -249,7 +249,11 @@ object VisualSmokeHarness {
         }
         stableTicks++
         val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:shiny_mewtwo" else "store:svhub:pikachu"
-        val resolved=PokemonModelRenderer.previewResolved(expectedActor)
+        val resolved=if(scenario.startsWith("tactician")) {
+            PokemonModelRenderer.previewResolved(expectedActor)
+        } else {
+            PokemonModelRenderer.sceneSizingDiagnostics().any { it.instanceId==expectedActor }
+        }
         if(!capturedCurrent && stableTicks>=55 && active.fixtureReady && resolved) {
             capturedCurrent=true
             val fileName="svhub-store-"+scenario+".png"
