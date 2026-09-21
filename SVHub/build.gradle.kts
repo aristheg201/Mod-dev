@@ -116,3 +116,40 @@ tasks.register<Test>("verifyPackagedTft") {
     filter { includeTestsMatching("io.github.aristheg201.svhub.native.game.tft.TftSetRegistryTest") }
     systemProperty("svhub.test.packaged", "true")
 }
+
+// Generated textures are compiled from their canonical recipe, never repaired
+// in src/main/resources. Stale checked-in copies are rejected as shadowing.
+val generatedUiResources = layout.buildDirectory.dir("generated/ui-resources")
+val generateUiTextures by tasks.registering(Exec::class) {
+    group = "build"
+    workingDir(projectDir)
+    inputs.files("tools/generate-ui-textures.py", "tools/svhub_png.py")
+    outputs.dir(generatedUiResources)
+    commandLine("python3", "tools/generate-ui-textures.py")
+}
+sourceSets.main { resources.srcDir(generatedUiResources) }
+val verifyUiResources by tasks.registering(Exec::class) {
+    group = "verification"
+    dependsOn(generateUiTextures)
+    workingDir(projectDir)
+    commandLine("python3", "tools/generate-ui-textures.py", "--check")
+}
+val testUiVerificationTools by tasks.registering(Exec::class) {
+    group = "verification"
+    workingDir(projectDir)
+    commandLine("python3", "-m", "unittest", "discover", "-s", "tools/tests", "-v")
+}
+val verifyPackagedUiResources by tasks.registering(Exec::class) {
+    group = "verification"
+    dependsOn(tasks.remapJar)
+    workingDir(projectDir)
+    doFirst {
+        commandLine("python3", "tools/generate-ui-textures.py", "--check", "--jar",
+            tasks.remapJar.get().archiveFile.get().asFile.absolutePath)
+    }
+}
+tasks.processResources { dependsOn(verifyUiResources) }
+tasks.test { dependsOn(testUiVerificationTools) }
+tasks.named("verifyPackagedTft") { dependsOn(verifyPackagedUiResources) }
+tasks.check { dependsOn(verifyUiResources, testUiVerificationTools) }
+tasks.named("sourcesJar") { dependsOn(generateUiTextures) }
