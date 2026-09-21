@@ -121,6 +121,7 @@ object PokemonModelRenderer {
     private val sceneFits = ConcurrentHashMap<ModelKey, SceneActorFit>()
     private val previewBounds = ConcurrentHashMap<ModelKey, SceneActorBounds>()
     private val failedModels = ConcurrentHashMap.newKeySet<ModelKey>()
+    private val resolvedPreviews = ConcurrentHashMap.newKeySet<String>()
     private val logger = org.slf4j.LoggerFactory.getLogger("SVHub/PokemonModels")
     data class SceneSizingDiagnostic(val instanceId:String,val species:String,val aspects:List<String>,val fit:SceneActorFit)
     fun sceneSizingDiagnostics():List<SceneSizingDiagnostic> = sceneModels.mapNotNull { (key,live) ->
@@ -146,9 +147,12 @@ object PokemonModelRenderer {
      * the world scene poser so malformed custom aspects cannot surface as bind/T-pose.
      */
     fun renderPreview(gui:GuiGraphics,view:PokemonView,instanceId:String,rect:UiRect):Boolean {
-        if(rect.width<8 || rect.height<8) return false
+        if(rect.width<8 || rect.height<8) {
+            resolvedPreviews.remove(instanceId)
+            return false
+        }
         val size=minOf(rect.width,rect.height).coerceAtLeast(24)
-        return render(
+        val rendered=render(
             gui=gui,
             view=view,
             centerX=rect.x+rect.width/2,
@@ -158,7 +162,11 @@ object PokemonModelRenderer {
             zoom=1.0f,
             pitch=10f
         )
+        if(rendered) resolvedPreviews.add(instanceId) else resolvedPreviews.remove(instanceId)
+        return rendered
     }
+
+    fun previewResolved(instanceId:String):Boolean = instanceId in resolvedPreviews
 
     private fun renderEmbeddedModel(view: PokemonView, instanceId: String, poses: PoseStack,
                                    buffers: MultiBufferSource, moving: Boolean): Boolean {
@@ -580,5 +588,5 @@ object PokemonModelRenderer {
 
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
     private fun degreesToRadians(value: Float): Float = (value * PI / 180.0).toFloat()
-    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear(); sceneFits.clear(); previewBounds.clear(); failedModels.clear(); ScenePresentationSizing.clear() }
+    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear(); sceneFits.clear(); previewBounds.clear(); failedModels.clear(); resolvedPreviews.clear(); ScenePresentationSizing.clear() }
 }

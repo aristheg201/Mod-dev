@@ -215,7 +215,7 @@ object VisualSmokeHarness {
             return
         }
         stableTicks++
-        val resolved=PokemonModelRenderer.sceneSizingDiagnostics().any{it.instanceId=="skin-showcase:visual-skin"}
+        val resolved=PokemonModelRenderer.previewResolved("skin-showcase:visual-skin")
         if(stableTicks>=60 && active.fixtureReady && resolved) {
             showcaseCaptured=true
             Screenshot.grab(client.gameDirectory,"svhub-skin-showcase.png",client.mainRenderTarget){message->
@@ -249,7 +249,7 @@ object VisualSmokeHarness {
         }
         stableTicks++
         val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:shiny_mewtwo" else "store:svhub:pikachu"
-        val resolved=PokemonModelRenderer.sceneSizingDiagnostics().any{it.instanceId==expectedActor}
+        val resolved=PokemonModelRenderer.previewResolved(expectedActor)
         if(!capturedCurrent && stableTicks>=55 && active.fixtureReady && resolved) {
             capturedCurrent=true
             val fileName="svhub-store-"+scenario+".png"
