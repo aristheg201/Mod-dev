@@ -37,7 +37,7 @@ object CardTable3DRenderer {
         val arenaId=fields?.str("arenaId",gameId)?:gameId
         val theme=MinecraftArenaRegistry.definition(arenaId)
         ArenaPresentationRuntime.frame(arenaId,ArenaCameraRole.NORMAL,SceneCameras.TFT,view.str("phase"),fields?.str("result"))
-        drawTable(gui, table, theme)
+        drawTable(gui, table, theme, gameId)
 
         val cards = view.getAsJsonArray("cards") ?: return
         val count = min(cards.size(), 6)
@@ -71,13 +71,12 @@ object CardTable3DRenderer {
                 val rgb = accent and 0x00FFFFFF
                 ((if (hovered) 0xD8 else 0xB8) shl 24) or rgb
             } else if (hovered) CARD_HOVER else CARD
-            gui.fill(rect.x, rect.y, rect.right, rect.bottom, face)
-            gui.fill(rect.x, rect.y, rect.right, rect.y + 4, accent)
             if (gameId == "uno") {
-                val inset = (rect.width / 8).coerceAtLeast(5)
-                gui.fill(rect.x + inset, rect.y + 9, rect.right - inset, rect.bottom - 9, 0x88202A2E.toInt())
-                gui.fill(rect.x + inset + 3, rect.y + 12, rect.right - inset - 3, rect.bottom - 12, 0x55343F43)
+                drawUnoFace(gui, rect, accent, hovered)
+            } else {
+                gui.fill(rect.x, rect.y, rect.right, rect.bottom, face)
             }
+            gui.fill(rect.x, rect.y, rect.right, rect.y + 4, accent)
             gui.fill(rect.x, rect.y, rect.x + 1, rect.bottom, BORDER)
             gui.fill(rect.right - 1, rect.y, rect.right, rect.bottom, BORDER)
             gui.fill(rect.x, rect.bottom - 1, rect.right, rect.bottom, BORDER)
@@ -186,21 +185,60 @@ object CardTable3DRenderer {
 
     private fun drawPile(gui:GuiGraphics,font:Font,rect:UiRect,label:String,count:String,face:Boolean){gui.fill(rect.x+2,rect.y+3,rect.right+2,rect.bottom+3,0xAA000000.toInt());gui.fill(rect.x,rect.y,rect.right,rect.bottom,if(face) CARD_HOVER else CARD);gui.fill(rect.x,rect.y,rect.right,rect.y+3,GOLD);gui.drawCenteredString(font,font.plainSubstrByWidth(label,rect.width-6),rect.x+rect.width/2,rect.y+rect.height/2-5,TEXT);if(count.isNotBlank())gui.drawCenteredString(font,count,rect.x+rect.width/2,rect.bottom-12,MUTED)}
 
-    private fun drawTable(gui: GuiGraphics, rect: UiRect, theme:MinecraftArenaDefinition?) {
+    private fun drawTable(gui: GuiGraphics, rect: UiRect, theme:MinecraftArenaDefinition?, gameId:String) {
         val cx = rect.x + rect.width / 2
         val cy = rect.y + rect.height / 2
         val halfW = rect.width / 2
         val halfH = rect.height / 2
-        val bands = max(10, min(48, rect.height))
+        val bands = max(18, min(56, rect.height))
+        val base = theme?.floorColor ?: TABLE_DEFAULT
         repeat(bands) { band ->
             val y0 = rect.y + band * rect.height / bands
             val y1 = rect.y + (band + 1) * rect.height / bands
             val mid = (y0 + y1) * 0.5
             val ratio = 1.0 - kotlin.math.abs(mid - cy) / halfH.coerceAtLeast(1).toDouble()
             val width = max(2, (halfW * ratio).toInt())
-            gui.fill(cx - width - 2, y0, cx + width + 2, max(y0 + 1, y1), theme?.borderColor?:TABLE_EDGE)
-            gui.fill(cx - width, y0, cx + width, max(y0 + 1, y1), theme?.floorColor?:TABLE_DEFAULT)
+            val edge = theme?.borderColor ?: TABLE_EDGE
+            val wave = ((band % 11) - 5) * 0.018f
+            val felt = shade(base, if(gameId=="uno") 0.88f + wave else 0.96f + wave * 0.45f)
+            gui.fill(cx - width - 2, y0, cx + width + 2, max(y0 + 1, y1), edge)
+            gui.fill(cx - width, y0, cx + width, max(y0 + 1, y1), felt)
         }
+        if(gameId=="uno"){
+            val ringW=(rect.width*0.23f).toInt().coerceAtLeast(42)
+            val ringH=(rect.height*0.18f).toInt().coerceAtLeast(28)
+            repeat(5){i->
+                val pad=i*3
+                gui.fill(cx-ringW-pad,cy-ringH-pad,cx+ringW+pad,cy-ringH-pad+1,shade(base,1.08f+i*0.025f))
+                gui.fill(cx-ringW-pad,cy+ringH+pad-1,cx+ringW+pad,cy+ringH+pad,shade(base,0.72f+i*0.018f))
+            }
+        }
+    }
+
+    private fun drawUnoFace(gui:GuiGraphics,rect:UiRect,accent:Int,hovered:Boolean){
+        val bands=14
+        repeat(bands){band->
+            val y0=rect.y+band*rect.height/bands
+            val y1=rect.y+(band+1)*rect.height/bands
+            val center=(bands-1)/2f
+            val distance=kotlin.math.abs(band-center)/center.coerceAtLeast(1f)
+            val factor=(if(hovered)1.12f else 1.0f) * (1.10f-distance*0.34f)
+            gui.fill(rect.x,y0,rect.right,max(y0+1,y1),shade(accent,factor))
+        }
+        val inset=(rect.width/8).coerceAtLeast(5)
+        gui.fill(rect.x+inset,rect.y+9,rect.right-inset,rect.bottom-9,0x66202A2E)
+        gui.fill(rect.x+inset+3,rect.y+12,rect.right-inset-3,rect.bottom-12,0x443E4A4E)
+        val badge=(rect.width/6).coerceAtLeast(6)
+        gui.fill(rect.x+5,rect.y+7,rect.x+5+badge,rect.y+7+badge,shade(accent,1.28f))
+        gui.fill(rect.right-5-badge,rect.bottom-7-badge,rect.right-5,rect.bottom-7,shade(accent,0.68f))
+    }
+
+    private fun shade(color:Int,factor:Float):Int{
+        val a=(color ushr 24) and 0xFF
+        val r=(((color ushr 16) and 0xFF)*factor).toInt().coerceIn(0,255)
+        val g=(((color ushr 8) and 0xFF)*factor).toInt().coerceIn(0,255)
+        val b=((color and 0xFF)*factor).toInt().coerceIn(0,255)
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
     }
 
     private fun unoColor(value: String): Int = when (value.lowercase()) {
