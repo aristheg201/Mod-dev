@@ -120,31 +120,33 @@ tasks.register<Test>("verifyPackagedTft") {
 // Generated textures are compiled from their canonical recipe, never repaired
 // in src/main/resources. Stale checked-in copies are rejected as shadowing.
 val generatedUiResources = layout.buildDirectory.dir("generated/ui-resources")
+val pythonExecutable = providers.gradleProperty("pythonExecutable").getOrElse(
+    if (System.getProperty("os.name").startsWith("Windows")) "python" else "python3")
 val generateUiTextures by tasks.registering(Exec::class) {
     group = "build"
     workingDir(projectDir)
     inputs.files("tools/generate-ui-textures.py", "tools/svhub_png.py")
     outputs.dir(generatedUiResources)
-    commandLine("python3", "tools/generate-ui-textures.py")
+    commandLine(pythonExecutable, "tools/generate-ui-textures.py")
 }
 sourceSets.main { resources.srcDir(generatedUiResources) }
 val verifyUiResources by tasks.registering(Exec::class) {
     group = "verification"
     dependsOn(generateUiTextures)
     workingDir(projectDir)
-    commandLine("python3", "tools/generate-ui-textures.py", "--check")
+    commandLine(pythonExecutable, "tools/generate-ui-textures.py", "--check")
 }
 val testUiVerificationTools by tasks.registering(Exec::class) {
     group = "verification"
     workingDir(projectDir)
-    commandLine("python3", "-m", "unittest", "discover", "-s", "tools/tests", "-v")
+    commandLine(pythonExecutable, "-m", "unittest", "discover", "-s", "tools/tests", "-v")
 }
 val verifyPackagedUiResources by tasks.registering(Exec::class) {
     group = "verification"
     dependsOn(tasks.remapJar)
     workingDir(projectDir)
     doFirst {
-        commandLine("python3", "tools/generate-ui-textures.py", "--check", "--jar",
+        commandLine(pythonExecutable, "tools/generate-ui-textures.py", "--check", "--jar",
             tasks.remapJar.get().archiveFile.get().asFile.absolutePath)
     }
 }

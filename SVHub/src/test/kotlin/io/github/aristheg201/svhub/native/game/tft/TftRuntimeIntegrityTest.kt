@@ -79,7 +79,7 @@ class TftRuntimeIntegrityTest {
     fun `selling a unit preserves authored completed item identity`() {
         val initial = TftSession(seats, 93L, definition = base)
         val card = initial.viewFor("a").cards.first { it.value <= initial.viewFor("a").fields.getValue("gold").toInt() }
-        assertTrue(initial.act("a", "buy", mapOf("index" to card.id.substringAfter(':'))).accepted)
+        assertTrue(initial.buyOffer("a", card.id.substringAfter(':')).accepted)
         val saved = initial.snapshotState()
         val bench = saved.getAsJsonArray("players")[0].asJsonObject.getAsJsonArray("bench")
         val index = (0 until bench.size()).first { !bench[it].isJsonNull }
@@ -105,7 +105,7 @@ class TftRuntimeIntegrityTest {
         bench.set(1, Gson().toJsonTree(TftOwnedUnit("copy-b", unitId, items = mutableListOf("recurve_bow", "full:deathblade"))))
 
         val restored = restore(saved)
-        assertTrue(restored.act("a", "buy", mapOf("index" to card.id.substringAfter(':'))).accepted)
+        assertTrue(restored.buyOffer("a", card.id.substringAfter(':')).accepted)
         val upgraded = restored.viewFor("a").fields.getValue("bench").split(';').single { row ->
             val parts = row.split('~')
             parts.getOrNull(2) == unitId && parts.getOrNull(4) == "2"

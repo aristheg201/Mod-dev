@@ -286,5 +286,14 @@
   "gui.svhub.store.arena.sector_2814": "Sector 2814",
   "gui.svhub.store.arena.dragon_shrine": "Dragon Shrine",
   "gui.svhub.store.arena.distortion_rift": "Distortion Rift",
-  "gui.svhub.store.arena.ultra_lab": "Ultra Lab"
+  "gui.svhub.store.arena.ultra_lab": "Ultra Lab",
+  "gui.svhub.tft.shop_lock": "Lock",
+  "gui.svhub.tft.shop_locked": "Locked",
+  "gui.svhub.tft.auto_sold": "AUTO SOLD — %s · +%s GOLD",
+  "gui.svhub.tft.item_received": "ITEM RECEIVED — %s",
+  "gui.svhub.tft.star_up": "%s → %s★",
+  "gui.svhub.tft.pending_items": "%s items pending · equip items to make room",
+  "gui.svhub.store.arena.temporal_observatory": "Temporal Observatory",
+  "gui.svhub.store.arena.abyssal_sanctum": "Abyssal Sanctum",
+  "gui.svhub.store.arena.crimson_caldera": "Crimson Caldera"
 }

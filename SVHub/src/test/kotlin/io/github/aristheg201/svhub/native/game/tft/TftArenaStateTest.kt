@@ -67,7 +67,7 @@ class TftArenaStateTest {
 
     @Test fun scoutingShowsPublicBoardBenchAndTacticianWithoutOpponentShop() {
         val s = create()
-        assertTrue(s.act("b", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(s.buyOffer("b", "0").accepted)
         val ownShop = s.viewFor("a").cards
         assertTrue(s.act("a", "scout", mapOf("target" to "b")).accepted)
         val observed = s.viewFor("a")
@@ -86,7 +86,7 @@ class TftArenaStateTest {
         val s=TftSession(seats,seed=913,definition=scaled)
         val shop=s.viewFor("a").cards.first()
         assertEquals("1.75",shop.meta["scale"])
-        assertTrue(s.act("a","buy",mapOf("index" to shop.id.substringAfter(':'))).accepted)
+        assertTrue(s.buyOffer("a", shop.id.substringAfter(':')).accepted)
         val bench=s.viewFor("a").fields.getValue("bench").split('~')
         assertEquals(1.75,bench[9].toDouble())
         assertTrue(s.act("a","deploy",mapOf("bench" to bench[0],"slot" to "0")).accepted)
@@ -134,10 +134,10 @@ class TftArenaStateTest {
 
     @Test fun boardToBenchSwapsWithTheRequestedSlot() {
         val s = create()
-        assertTrue(s.act("a", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(s.buyOffer("a", "0").accepted)
         assertTrue(s.act("a", "deploy", mapOf("bench" to "0", "slot" to "0")).accepted)
         val first = s.viewFor("a").board[28].substringBefore('~')
-        assertTrue(s.act("a", "buy", mapOf("index" to "1")).accepted)
+        assertTrue(s.buyOffer("a", "1").accepted)
         assertTrue(s.act("a", "bench", mapOf("slot" to "0", "bench" to "0")).accepted)
         assertTrue(s.viewFor("a").fields.getValue("bench").contains(first))
         assertNotEquals(first, s.viewFor("a").board[28].substringBefore('~'))
@@ -145,7 +145,7 @@ class TftArenaStateTest {
 
     @Test fun benchMoveKeepsExactInstanceIdentityAndRejectsInvalidSlots() {
         val s = create()
-        assertTrue(s.act("a", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(s.buyOffer("a", "0").accepted)
         val before = s.viewFor("a").fields.getValue("bench").substringAfter('~')
         assertTrue(s.act("a", "swap_bench", mapOf("from" to "0", "to" to "8")).accepted)
         assertEquals(before, s.viewFor("a").fields.getValue("bench").substringAfter('~'))

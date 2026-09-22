@@ -3468,5 +3468,718 @@
       "dash": 0,
       "effects": {}
     }
+  },
+  {
+    "id": "giratina",
+    "pokemon": {
+      "species": "cobblemon:giratina"
+    },
+    "cost": 4,
+    "traits": [
+      "creation",
+      "ghost",
+      "dragon",
+      "guardian",
+      "legendary"
+    ],
+    "role": "guardian",
+    "stats": {
+      "hp": 1500,
+      "attackDamage": 110,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "shadow_force",
+      "name": "Shadow Force",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 500,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "svhub:creation_trio",
+    "shopEligible": true
+  },
+  {
+    "id": "dialga",
+    "pokemon": {
+      "species": "cobblemon:dialga"
+    },
+    "cost": 3,
+    "traits": [
+      "creation",
+      "steel",
+      "dragon",
+      "caster",
+      "legendary"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1000,
+      "attackDamage": 80,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "roar_of_time",
+      "name": "Roar of Time",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 420,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "svhub:creation_trio",
+    "shopEligible": true
+  },
+  {
+    "id": "palkia",
+    "pokemon": {
+      "species": "cobblemon:palkia"
+    },
+    "cost": 5,
+    "traits": [
+      "creation",
+      "water",
+      "dragon",
+      "caster",
+      "legendary"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1300,
+      "attackDamage": 115,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "spacial_rend",
+      "name": "Spacial Rend",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 740,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "svhub:creation_trio",
+    "shopEligible": true
+  },
+  {
+    "id": "arceus",
+    "pokemon": {
+      "species": "cobblemon:arceus"
+    },
+    "cost": 5,
+    "traits": [
+      "normal",
+      "legendary",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 4200,
+      "attackDamage": 230,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "judgment",
+      "name": "Judgment",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 950,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "svhub:creation_trio",
+    "shopEligible": false
+  },
+  {
+    "id": "regigigas",
+    "pokemon": {
+      "species": "cobblemon:regigigas"
+    },
+    "cost": 4,
+    "traits": [
+      "normal",
+      "legendary",
+      "bruiser"
+    ],
+    "role": "fighter",
+    "stats": {
+      "hp": 2400,
+      "attackDamage": 190,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 140,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "crush_grip",
+      "name": "Crush Grip · Slow Start: half attack and speed for 6 seconds",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 900,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "",
+    "shopEligible": true,
+    "triggers": [
+      {
+        "id": "slow_start",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1.0,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": -0.5,
+              "duration_ms": 6000
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "slow_start_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": -0.5,
+              "duration_ms": 6000
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "slow_start_speed"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yveltal",
+    "pokemon": {
+      "species": "cobblemon:yveltal"
+    },
+    "cost": 5,
+    "traits": [
+      "dark",
+      "flying",
+      "legendary",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1000,
+      "attackDamage": 95,
+      "defense": 25,
+      "specialDefense": 35,
+      "attackSpeed": 0.8,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 120,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "oblivion_wing",
+      "name": "Oblivion Wing · fragile drain caster",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 850,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {},
+      "graph": [
+        {
+          "op": "damage",
+          "selector": "farthest_enemy",
+          "values": {
+            "amount": 550,
+            "scale_ap": 3
+          },
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        },
+        {
+          "op": "heal",
+          "selector": "self",
+          "values": {
+            "amount": 180,
+            "scale_ap": 2
+          },
+          "strings": {},
+          "children": [],
+          "otherwise": []
+        }
+      ]
+    },
+    "team": "",
+    "shopEligible": true
+  },
+  {
+    "id": "necrozma",
+    "pokemon": {
+      "species": "cobblemon:necrozma"
+    },
+    "cost": 5,
+    "traits": [
+      "psychic",
+      "legendary",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 1450,
+      "attackDamage": 150,
+      "defense": 75,
+      "specialDefense": 100,
+      "attackSpeed": 0.8,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "prismatic_laser",
+      "name": "Prismatic Laser · pays 30% HP; awakens below 35% HP",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 1050,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "",
+    "shopEligible": true,
+    "triggers": [
+      {
+        "id": "prism_risk",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1.0,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.3
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      },
+      {
+        "id": "prism_reward",
+        "event": "ON_DAMAGE_TAKEN",
+        "priority": 0,
+        "chance": 1.0,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [
+          {
+            "kind": "hp_below",
+            "key": "",
+            "value": 0.35
+          }
+        ],
+        "effects": [
+          {
+            "op": "shield",
+            "selector": "self",
+            "values": {
+              "amount": 500
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "prism_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "prism_power"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "elite_mv_godzilla",
+    "pokemon": {
+      "species": "cobblemon:tyranitar",
+      "aspects": [
+        "cosmetic_item-godzilla"
+      ]
+    },
+    "cost": 5,
+    "traits": [
+      "monsterverse",
+      "guardian",
+      "rock",
+      "dark"
+    ],
+    "role": "guardian",
+    "stats": {
+      "hp": 1430,
+      "attackDamage": 118,
+      "defense": 70,
+      "specialDefense": 70,
+      "attackSpeed": 0.8550000000000001,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 105,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "mv_godzilla_ability",
+      "name": "Elite · Atomic Rampage",
+      "target": "current",
+      "damageType": "physical",
+      "damage": 485,
+      "heal": 0,
+      "shield": 255,
+      "radius": 2,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {}
+    },
+    "tags": [
+      "titan",
+      "elite"
+    ],
+    "team": "monsterverse",
+    "shopPrice": 12,
+    "purchaseStar": 2,
+    "elite": {
+      "healthMultiplier": 2.0,
+      "damageMultiplier": 2.0
+    }
+  },
+  {
+    "id": "elite_dc_superman",
+    "pokemon": {
+      "species": "cobblemon:buzzwole",
+      "aspects": [
+        "buzzwole_superman"
+      ]
+    },
+    "cost": 5,
+    "traits": [
+      "dc_universe",
+      "guardian",
+      "bug",
+      "fighting"
+    ],
+    "role": "guardian",
+    "stats": {
+      "hp": 1430,
+      "attackDamage": 118,
+      "defense": 70,
+      "specialDefense": 70,
+      "attackSpeed": 0.8550000000000001,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 105,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "dc_superman_ability",
+      "name": "Elite · Dc Superman",
+      "target": "current",
+      "damageType": "physical",
+      "damage": 485,
+      "heal": 0,
+      "shield": 255,
+      "radius": 2,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {}
+    },
+    "tags": [
+      "dc_hero",
+      "elite"
+    ],
+    "team": "dc_universe",
+    "shopPrice": 12,
+    "purchaseStar": 2,
+    "elite": {
+      "healthMultiplier": 2.0,
+      "damageMultiplier": 2.0
+    }
+  },
+  {
+    "id": "elite_gl_mewtwo_y",
+    "pokemon": {
+      "species": "cobblemon:mewtwo",
+      "aspects": [
+        "greenlantern"
+      ],
+      "form": "mega-y"
+    },
+    "cost": 5,
+    "traits": [
+      "green_lantern",
+      "caster",
+      "psychic",
+      "legendary"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1430,
+      "attackDamage": 118,
+      "defense": 70,
+      "specialDefense": 70,
+      "attackSpeed": 0.8550000000000001,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 105,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "gl_mewtwo_y_ability",
+      "name": "Elite · Construct Barrage",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 485,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {
+        "burn_ms": 2500
+      }
+    },
+    "tags": [
+      "elite"
+    ],
+    "team": "green_lantern",
+    "shopPrice": 12,
+    "purchaseStar": 2,
+    "elite": {
+      "healthMultiplier": 2.0,
+      "damageMultiplier": 2.0
+    }
+  },
+  {
+    "id": "elite_fortune_gholdengo",
+    "pokemon": {
+      "species": "cobblemon:gholdengo"
+    },
+    "cost": 5,
+    "traits": [
+      "fortune",
+      "caster",
+      "steel",
+      "ghost"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1430,
+      "attackDamage": 118,
+      "defense": 70,
+      "specialDefense": 70,
+      "attackSpeed": 0.8550000000000001,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 105,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "fortune_gholdengo_ability",
+      "name": "Elite · Fortune Gholdengo",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 485,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 900,
+      "dash": 0,
+      "effects": {
+        "burn_ms": 2500
+      }
+    },
+    "tags": [
+      "economy",
+      "elite"
+    ],
+    "team": "fortune",
+    "shopPrice": 12,
+    "purchaseStar": 2,
+    "elite": {
+      "healthMultiplier": 2.0,
+      "damageMultiplier": 2.0
+    }
+  },
+  {
+    "id": "elite_op_luffy",
+    "pokemon": {
+      "species": "cobblemon:ambipom",
+      "aspects": [
+        "op"
+      ]
+    },
+    "cost": 5,
+    "traits": [
+      "straw_hat",
+      "striker",
+      "normal"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 1260,
+      "attackDamage": 104,
+      "defense": 61,
+      "specialDefense": 61,
+      "attackSpeed": 0.8200000000000001,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "op_luffy_ability",
+      "name": "Elite · Nakama Luffy",
+      "target": "current",
+      "damageType": "physical",
+      "damage": 410,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 900,
+      "dash": 1,
+      "effects": {}
+    },
+    "tags": [
+      "elite",
+      "straw_hat_crew"
+    ],
+    "team": "straw_hat",
+    "shopPrice": 12,
+    "purchaseStar": 2,
+    "elite": {
+      "healthMultiplier": 2.0,
+      "damageMultiplier": 2.0
+    }
   }
 ]

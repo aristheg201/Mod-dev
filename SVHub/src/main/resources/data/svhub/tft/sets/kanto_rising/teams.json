@@ -275,5 +275,37 @@
     "startingGold": 30,
     "startingHealth": 100,
     "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:creation_trio",
+    "name": "Creation Trio",
+    "synergyTrait": "creation",
+    "members": [
+      {
+        "unit": "giratina",
+        "slot": 3,
+        "star": 1,
+        "items": []
+      },
+      {
+        "unit": "dialga",
+        "slot": 17,
+        "star": 1,
+        "items": []
+      },
+      {
+        "unit": "palkia",
+        "slot": 24,
+        "star": 1,
+        "items": []
+      }
+    ],
+    "bench": [],
+    "augments": [],
+    "arena": "svhub:distortion_rift",
+    "startingLevel": 3,
+    "startingGold": 0,
+    "startingHealth": 100,
+    "aiProfile": "hard"
   }
 ]

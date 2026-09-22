@@ -104,6 +104,12 @@ class TftUiState {
     private var itemRecipes: Map<String, String> = emptyMap()
     private var hoverTooltip: TftHoverTooltip? = null
     private var lastItemEventSerial:Long?=null
+    private var lastAcquisitionSerial = -1L
+    private var acquisitionUntil = 0L
+    internal fun acquisitionVisible(serial: Long): Boolean {
+        if (serial != lastAcquisitionSerial) { lastAcquisitionSerial = serial; acquisitionUntil = System.currentTimeMillis() + 7000L }
+        return serial > 0 && System.currentTimeMillis() < acquisitionUntil
+    }
     val scene = PokemonSceneState()
     var selectedOrigin: String? = null
     var selectedIndex: Int? = null
@@ -968,7 +974,7 @@ object TftGameRenderer {
         val benchH = if (density == UiDensity.COMPACT) 18 else 22
         val shopY = rect.y + benchH + if (density == UiDensity.COMPACT) 1 else 3
         val shopH = (rect.bottom - shopY - 1).coerceAtLeast(12)
-        val benchW = (rect.width * 2 / 3).coerceAtLeast(90)
+        val benchW = (rect.width / 2).coerceAtLeast(90)
         val buttonX = rect.x + benchW + 7
         val buttonW = (rect.right - buttonX).coerceAtLeast(44)
         val progressWidth=(benchW-12).coerceAtLeast(20)
@@ -976,8 +982,13 @@ object TftGameRenderer {
         gui.fill(rect.x+5,rect.y+benchH-5,rect.x+5+progressWidth,rect.y+benchH-3,line)
         val progress=(fields.int("xp").toFloat()/fields.int("xpNext",1).coerceAtLeast(1)).coerceIn(0f,1f)
         gui.fill(rect.x+5,rect.y+benchH-5,rect.x+5+(progressWidth*progress).toInt(),rect.y+benchH-3,accent)
-        hooks.control(UiRect(buttonX, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.reroll"), view.actionEnabled("refresh")) { hooks.action("refresh", emptyMap()) }
-        hooks.control(UiRect(buttonX + buttonW / 2 + 2, rect.y + 2, buttonW / 2 - 2, benchH - 4), tr("gui.svhub.tft.buy_xp"), view.actionEnabled("buy_xp")) { hooks.action("buy_xp", emptyMap()) }
+        val buttonCell = buttonW / 3
+        hooks.control(UiRect(buttonX, rect.y + 2, buttonCell - 2, benchH - 4), tr("gui.svhub.tft.reroll"), view.actionEnabled("refresh")) { hooks.action("refresh", emptyMap()) }
+        hooks.control(UiRect(buttonX + buttonCell, rect.y + 2, buttonCell - 2, benchH - 4), tr("gui.svhub.tft.buy_xp"), view.actionEnabled("buy_xp")) { hooks.action("buy_xp", emptyMap()) }
+        val locked = fields.bool("shopLocked")
+        hooks.control(UiRect(buttonX + buttonCell * 2, rect.y + 2, buttonW - buttonCell * 2 - 2, benchH - 4), tr(if (locked) "gui.svhub.tft.shop_locked" else "gui.svhub.tft.shop_lock"), canBuy) {
+            hooks.action("shop_lock", mapOf("locked" to (!locked).toString()))
+        }
 
         val cards = view.getAsJsonArray("cards")
         if (cards != null && cards.size() > 0) {
@@ -1006,7 +1017,7 @@ object TftGameRenderer {
                     ui.offerTooltip(unitTooltip(ui, unit, 1, emptyList()))
                 }
                 if (canBuy && card.getAsJsonObject("meta")?.str("enabled") == "true") {
-                    hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'))) }
+                    hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'), "offerId" to card.getAsJsonObject("meta").str("offerId"))) }
                 }
             }
         }
@@ -1085,7 +1096,19 @@ object TftGameRenderer {
         val scouting=fields.bool("scouting")
         val buttonsW=if(scouting)104 else 54
         val maxWidth = max(12, min(120, (board.width - buttonsW - 8) / 3))
-        selected?.take(3)?.forEachIndexed { index, value ->
+        val event = fields.str("acquisitionEvent").split('~')
+        val pending = fields.str("pendingItems").split(',').count(String::isNotBlank)
+        val feedback = if (ui.acquisitionVisible(fields.long("acquisitionSerial")) && event.size >= 3) {
+            if (event[0].endsWith("AUTO_SELL")) trf("gui.svhub.tft.auto_sold", humanize(event[1]), event[2]) +
+                event.getOrNull(3)?.takeIf(String::isNotBlank)?.let { " · " + trf("gui.svhub.tft.item_received", it.split(',').joinToString { id -> ui.itemName(id) }) }.orEmpty()
+            else trf("gui.svhub.tft.star_up", humanize(event[1]), event[2])
+        } else if (pending > 0) trf("gui.svhub.tft.pending_items", pending) else ""
+        if (feedback.isNotBlank()) {
+            val region = UiRect(board.x + 4, board.y + 2, (board.width - buttonsW - 8).coerceAtLeast(1), board.height - 4)
+            gui.drawString(font, fit(font, feedback, region.width), region.x, region.y + 4, gold, false)
+            if (region.contains(mouseX.toDouble(), mouseY.toDouble())) ui.offerTooltip(TftHoverTooltip(feedback, lines = listOf(trf("gui.svhub.tft.pending_items", pending)), accent = gold))
+        }
+        if (feedback.isBlank()) selected?.take(3)?.forEachIndexed { index, value ->
             val augment = value.asJsonObject
             val rect = UiRect(board.x + 4 + index * maxWidth, board.y + 2, maxWidth - 3, (board.height-4).coerceAtMost(17))
             gui.fill(rect.x, rect.y, rect.right, rect.bottom, panel2)

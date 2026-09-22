@@ -75,14 +75,14 @@ object TftBotPlanner {
 
         val shop = view.cards.filter { it.value <= gold }.mapNotNull { card ->
             val idx = card.id.substringAfter(':').toIntOrNull() ?: return@mapNotNull null
-            Shop(idx, card.meta["unit"].orEmpty(), card.value, card.meta["traits"].orEmpty(), card.meta["role"].orEmpty(),card.meta["team"].orEmpty(),card.meta["tags"].orEmpty(),card.meta["ownedCopies"]?.toIntOrNull()?:0)
+            Shop(idx, card.meta["unit"].orEmpty(), card.value, card.meta["traits"].orEmpty(), card.meta["role"].orEmpty(),card.meta["team"].orEmpty(),card.meta["tags"].orEmpty(),card.meta["ownedCopies"]?.toIntOrNull()?:0,card.meta["offerId"].orEmpty())
         }
         val orderedShop = when (difficulty) {
             NativeBotDifficulty.EASY -> shop.sortedWith(compareBy<Shop> { it.cost }.thenBy { it.index })
             NativeBotDifficulty.NORMAL -> shop.sortedWith(compareByDescending<Shop> { it.cost }.thenByDescending { traitFit(view, it.traits) })
             NativeBotDifficulty.HARD -> shop.sortedWith(compareByDescending<Shop> { it.cost * 20 + traitFit(view, it.traits) * 5 + roleScore(it.role) + strategy.shopScore(it,level,contestedUnitIds(view)) }.thenBy { it.index })
         }
-        out += orderedShop.map { NativeBotAction("buy", mapOf("index" to it.index.toString())) }
+        out += orderedShop.map { NativeBotAction("buy", mapOf("index" to it.index.toString(), "offerId" to it.offerId)) }
 
         // Item planning is based only on the participant's own item bench plus authored public
         // recipe/effect metadata. The session remains authoritative for every equip/combine.
@@ -197,7 +197,7 @@ object TftBotPlanner {
     }
 
     private data class Bench(val index: Int, val star: Int, val cost: Int, val role: String)
-    private data class Shop(val index: Int,val unitId:String, val cost: Int, val traits: String, val role: String,val team:String,val tags:String,val ownedCopies:Int)
+    private data class Shop(val index: Int,val unitId:String, val cost: Int, val traits: String, val role: String,val team:String,val tags:String,val ownedCopies:Int,val offerId:String)
     private data class Draft(val index: Int, val unitId: String, val cost: Int, val traits: String,val x:Double,val y:Double)
     private data class Augment(val id: String, val weight: Int,val tags:String)
     private fun contestedUnitIds(view:NativeGameView)=view.fields["contestedUnits"].orEmpty().split(',').filter(String::isNotBlank).toSet()

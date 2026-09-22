@@ -212,7 +212,7 @@ jobs:
           set -euo pipefail
           # Visual smoke seeds only its known Pokemon species in-process, while
           # Cobblemon still supplies the real client models, posers and textures.
-          timeout 420s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon --offline runClient
+          timeout 600s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon --offline runClient
 
       - name: Verify visual evidence
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
@@ -222,9 +222,9 @@ jobs:
           echo "Screenshots:"
           find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' -print
           count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' | wc -l)"
-          test "$count" -eq 31
+          test "$count" -eq 34
           test -f run/logs/latest.log
-          for arena in monster_island gotham_rooftops sector_2814 kanto_stadium dragon_shrine distortion_rift ultra_lab ancient_ruins; do
+          for arena in monster_island gotham_rooftops sector_2814 kanto_stadium dragon_shrine distortion_rift ultra_lab ancient_ruins temporal_observatory abyssal_sanctum crimson_caldera; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-$arena.png with 12 actors" run/logs/latest.log
           done
           for scenario in planning carousel augment pve pve_loot boss tactician_move; do
@@ -246,7 +246,7 @@ jobs:
             grep -Ein 'Failed to load texture: svhub:|Could not load image[^[:cntrl:]]*svhub:|PNG not supported|unknown PNG chunk type' run/logs/latest.log | tail -n 80 >&2
             exit 1
           fi
-          grep -Fq '[SVHub Visual Smoke] completed 31 captures; stopping client' run/logs/latest.log
+          grep -Fq '[SVHub Visual Smoke] completed 34 captures; stopping client' run/logs/latest.log
           # Headless Linux may log non-fatal narrator (missing flite) and audio
           # initialization errors. The runClient task and all four framebuffer
           # captures already succeeded, so only treat actual Minecraft/render

@@ -1039,5 +1039,17 @@
         "teamEffects": {}
       }
     ]
+  },
+  {
+    "id": "creation",
+    "name": "Creation Trio",
+    "tiers": [
+      {
+        "threshold": 3,
+        "description": "Deploy Giratina, Dialga and Palkia to synchronize and summon Arceus once at combat start.",
+        "effects": {},
+        "teamEffects": {}
+      }
+    ]
   }
 ]

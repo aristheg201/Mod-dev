@@ -11,7 +11,8 @@ data class TftOwnedUnit(
     val instanceId: String,
     val unitId: String,
     var star: Int = 1,
-    val items: MutableList<String> = mutableListOf()
+    val items: MutableList<String> = mutableListOf(),
+    val poolCopies: Int? = null
 )
 
 data class TftCombatUnit(
@@ -305,6 +306,9 @@ class TftCombatEngine(
 
         return board.entries.sortedBy { it.key }.mapNotNull { (slot, owned) ->
             val def = unitDefs[owned.unitId] ?: return@mapNotNull null
+            val elite = board.values.firstOrNull { candidate -> candidate.instanceId != owned.instanceId &&
+                unitDefs[candidate.unitId]?.let { it.elite != null && it.team == def.team && def.team.isNotBlank() } == true
+            }?.let { unitDefs.getValue(it.unitId).elite }
             val effects = mutableMapOf<String, Double>()
             merge(effects, teamEffects); merge(effects, augmentEffects)
             def.traits.forEach { trait ->
@@ -320,7 +324,7 @@ class TftCombatEngine(
                 else unpackRuntimeItem(item).forEach { component -> componentDefs[component]?.let { merge(effects, it.effects) } }
             }
             val starMult = when (owned.star) { 2 -> 1.80; 3 -> 3.24; else -> 1.0 }
-            val hp = (def.stats.hp * starMult * (1.0 + effects.value("hp_pct"))).roundToInt().coerceAtLeast(1)
+            val hp = (def.stats.hp * starMult * (1.0 + effects.value("hp_pct")) * (elite?.healthMultiplier ?: 1.0)).roundToInt().coerceAtLeast(1)
             val ad = def.stats.attackDamage * starMult * (1.0 + effects.value("attack_pct"))
             val globalCell = formationToCombatCell(slot, team)
             TftCombatUnit(

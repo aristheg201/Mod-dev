@@ -38,7 +38,7 @@ object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
     private val gson = Gson()
-    private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins")
+    private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins", "temporal_observatory", "abyssal_sanctum", "crimson_caldera")
     private val uiScenarios = listOf("planning", "carousel", "augment", "pve", "pve_loot", "boss", "tactician_move")
     private val gameplayScenarios = listOf("chess", "xiangqi", "tower_defense", "ludo", "uno", "pokecards")
     private val resultScenarios = listOf("chess", "tower_defense", "tft")

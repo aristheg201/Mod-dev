@@ -40,9 +40,9 @@ try:
         if not path.is_file() or not isinstance(json.loads(path.read_text()), dict):
             raise ValueError(f'Missing or invalid arena {arena}')
     counts = {
-        'units.json': 84,
-        'teams.json': 6,
-        'traits.json': 34,
+        'units.json': 96,
+        'teams.json': 7,
+        'traits.json': 35,
         'components.json': 8,
         'full_items.json': 36,
         'augments.json': 32,

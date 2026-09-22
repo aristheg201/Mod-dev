@@ -1,17 +1,92 @@
 [
-  {"kind":"ARENA","id":"kanto_stadium","price":"0"},
-  {"kind":"ARENA","id":"ancient_ruins","price":"0"},
-  {"kind":"ARENA","id":"monster_island","price":"500"},
-  {"kind":"ARENA","id":"gotham_rooftops","price":"750"},
-  {"kind":"ARENA","id":"sector_2814","price":"750"},
-  {"kind":"ARENA","id":"dragon_shrine","price":"1000"},
-  {"kind":"ARENA","id":"distortion_rift","price":"1000"},
-  {"kind":"ARENA","id":"ultra_lab","price":"1000"},
-  {"kind":"TACTICIAN","id":"svhub:pikachu","price":"0"},
-  {"kind":"TACTICIAN","id":"svhub:allay","price":"0"},
-  {"kind":"TACTICIAN","id":"svhub:eevee","price":"100"},
-  {"kind":"TACTICIAN","id":"svhub:riolu","price":"150"},
-  {"kind":"TACTICIAN","id":"svhub:lucario","price":"200"},
-  {"kind":"TACTICIAN","id":"svhub:zorua","price":"150"},
-  {"kind":"TACTICIAN","id":"svhub:mew","price":"300"}
+  {
+    "kind": "ARENA",
+    "id": "kanto_stadium",
+    "price": "0"
+  },
+  {
+    "kind": "ARENA",
+    "id": "ancient_ruins",
+    "price": "0"
+  },
+  {
+    "kind": "ARENA",
+    "id": "monster_island",
+    "price": "500"
+  },
+  {
+    "kind": "ARENA",
+    "id": "gotham_rooftops",
+    "price": "750"
+  },
+  {
+    "kind": "ARENA",
+    "id": "sector_2814",
+    "price": "750"
+  },
+  {
+    "kind": "ARENA",
+    "id": "dragon_shrine",
+    "price": "1000"
+  },
+  {
+    "kind": "ARENA",
+    "id": "distortion_rift",
+    "price": "1000"
+  },
+  {
+    "kind": "ARENA",
+    "id": "ultra_lab",
+    "price": "1000"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:pikachu",
+    "price": "0"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:allay",
+    "price": "0"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:eevee",
+    "price": "100"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:riolu",
+    "price": "150"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:lucario",
+    "price": "200"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:zorua",
+    "price": "150"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:mew",
+    "price": "300"
+  },
+  {
+    "kind": "ARENA",
+    "id": "temporal_observatory",
+    "price": "1500"
+  },
+  {
+    "kind": "ARENA",
+    "id": "abyssal_sanctum",
+    "price": "1500"
+  },
+  {
+    "kind": "ARENA",
+    "id": "crimson_caldera",
+    "price": "1500"
+  }
 ]

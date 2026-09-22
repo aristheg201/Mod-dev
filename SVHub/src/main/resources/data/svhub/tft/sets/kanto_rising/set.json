@@ -319,7 +319,10 @@
       "dragon_shrine",
       "distortion_rift",
       "ultra_lab",
-      "ancient_ruins"
+      "ancient_ruins",
+      "temporal_observatory",
+      "abyssal_sanctum",
+      "crimson_caldera"
     ],
     "phaseCapabilities": {
       "planning": [
@@ -956,6 +959,17 @@
           "maximumContested": 4
         }
       ]
+    }
+  ],
+  "convergences": [
+    {
+      "id": "creation_trio",
+      "units": [
+        "giratina",
+        "dialga",
+        "palkia"
+      ],
+      "summon": "arceus"
     }
   ]
 }

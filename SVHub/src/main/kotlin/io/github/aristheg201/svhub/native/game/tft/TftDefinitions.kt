@@ -20,6 +20,7 @@ data class TftSetDefinition(
     val tacticians: List<TftTacticianDefinition> = emptyList(),
     val defaultTactician: String = "",
     val effectGraphs: Map<String, List<EffectDefinition>> = emptyMap(),
+    val convergences: List<TftConvergenceDefinition> = emptyList(),
     val shopOdds: List<TftShopOdds> = emptyList(),
     val units: List<TftUnitDefinition> = emptyList(),
     val teams: List<TftTeamDefinition> = emptyList(),
@@ -111,11 +112,22 @@ data class TftUnitDefinition(
     val ability: TftAbilityDefinition = TftAbilityDefinition(),
     val triggers: List<TriggerDefinition> = emptyList(),
     val tags: Set<String> = emptySet(),
-    val team: String = ""
+    val team: String = "",
+    val shopPrice: Int? = null,
+    val purchaseStar: Int = 1,
+    val shopEligible: Boolean = true,
+    val elite: TftEliteDefinition? = null
 ) {
+    val price: Int get() = shopPrice ?: cost
     val presentation: PokemonPresentationIdentity
         get() = pokemon ?: PokemonPresentationIdentity(species = species, aspects = aspects.toSet())
 }
+
+/** An elite amplifies only deployed allies with the same authored team identity. */
+data class TftEliteDefinition(val healthMultiplier: Double = 2.0, val damageMultiplier: Double = 2.0)
+
+/** Once per team at combat start, requiring each distinct authored unit on the board. */
+data class TftConvergenceDefinition(val id: String = "", val units: Set<String> = emptySet(), val summon: String = "")
 
 data class PokemonPresentationIdentity(
     val species: String = "",
@@ -321,6 +333,12 @@ object TftDefinitionValidator {
             require(identity.aspects.none(String::isBlank) && identity.cosmeticAspects.none(String::isBlank)) { "TFT unit ${unit.id}.pokemon contains a blank aspect" }
             require(identity.gender == null || identity.gender in setOf("male", "female", "genderless")) { "TFT unit ${unit.id}.pokemon.gender is invalid" }
             require(unit.cost in 1..5) { "TFT unit ${unit.id} has invalid cost ${unit.cost}" }
+            require(unit.price in 1..999 && unit.purchaseStar in 1..3) { "Invalid purchase rules for ${unit.id}" }
+            unit.elite?.let { elite ->
+                require(unit.purchaseStar == 2 && unit.team.isNotBlank()) { "Elite ${unit.id} requires 2 stars and a team" }
+                require(elite.healthMultiplier.isFinite() && elite.healthMultiplier in 1.0..4.0 &&
+                    elite.damageMultiplier.isFinite() && elite.damageMultiplier in 1.0..4.0) { "Invalid elite boost ${unit.id}" }
+            }
             require(unit.stats.hp > 0 && unit.stats.attackDamage > 0) { "TFT unit ${unit.id} has invalid base stats" }
             require(unit.stats.attackSpeed in 0.1..5.0) { "TFT unit ${unit.id} attack speed out of range" }
             require(unit.stats.range in 1..6) { "TFT unit ${unit.id} attack range out of range" }
@@ -381,6 +399,14 @@ object TftDefinitionValidator {
         require(set.augments.map { it.id }.toSet().size == set.augments.size) { "Duplicate TFT augment id" }
         require(set.pveRounds.map { it.round }.toSet().size == set.pveRounds.size) { "Duplicate TFT PvE round" }
         val unitIds = set.units.map { it.id }.toSet()
+        require(set.convergences.map { it.id }.distinct().size == set.convergences.size) { "Duplicate convergence id" }
+        set.convergences.forEach { convergence ->
+            require(convergence.id.isNotBlank() && convergence.units.size >= 2 && convergence.units.all(unitIds::contains)) {
+                "Convergence ${convergence.id} requires valid distinct units"
+            }
+            require(convergence.summon in unitIds && convergence.summon !in convergence.units) { "Invalid convergence summon ${convergence.id}" }
+            require(set.units.first { it.id == convergence.summon }.shopEligible == false) { "Convergence summons cannot enter shops" }
+        }
         require(set.teams.map { it.id }.toSet().size == set.teams.size) { "Duplicate TFT team id" }
         val augmentIds = set.augments.map { it.id }.toSet()
         val itemIds = componentIds + set.fullItems.map { it.id }

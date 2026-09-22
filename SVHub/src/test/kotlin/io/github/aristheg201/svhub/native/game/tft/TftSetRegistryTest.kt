@@ -20,9 +20,9 @@ class TftSetRegistryTest {
     }
     @Test fun bundledSetLoadsAllOriginalContent() {
         val set = TftSetRegistry.bundled("kanto_rising")
-        assertEquals(84, set.units.size)
-        assertEquals(6, set.teams.size)
-        assertEquals(34, set.traits.size)
+        assertEquals(96, set.units.size)
+        assertEquals(7, set.teams.size)
+        assertEquals(35, set.traits.size)
         assertEquals(8, set.components.size)
         assertEquals(36, set.fullItems.size)
         assertEquals(32, set.augments.size)
@@ -98,7 +98,7 @@ class TftSetRegistryTest {
         assertEquals("planning", view.phase)
         assertEquals(56, view.board.size)
         assertEquals(5, view.cards.size)
-        assertTrue(session.act("p1", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(session.buyOffer("p1", "0").accepted)
         assertTrue(session.act("p1", "deploy", mapOf("bench" to "0", "slot" to "3")).accepted)
         assertEquals("1", session.viewFor("p1").fields["boardCount"])
     }
@@ -108,7 +108,7 @@ class TftSetRegistryTest {
         val seats = (1..4).map { NativeSeat("p" + it, "Trainer " + it) }
         val session = TftSession(seats, seed = 162L, definition = set)
 
-        assertTrue(session.act("p1", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(session.buyOffer("p1", "0").accepted)
         assertTrue(session.act("p1", "deploy", mapOf("bench" to "0", "slot" to "3")).accepted)
 
         val planning = session.snapshotState()
@@ -154,7 +154,7 @@ class TftSetRegistryTest {
         val view = buy.viewFor("p1")
         val affordable = view.cards.indexOfFirst { it.value <= view.fields.getValue("gold").toInt() }
         assertTrue(affordable >= 0)
-        assertTrue(buy.act("p1", "buy", mapOf("index" to affordable.toString())).accepted)
+        assertTrue(buy.buyOffer("p1", affordable.toString()).accepted)
         assertTrue(combat().act("p1","refresh",emptyMap()).accepted)
         assertTrue(combat().act("p1","buy_xp",emptyMap()).accepted)
         val combatView = combat().viewFor("p1")
@@ -166,7 +166,7 @@ class TftSetRegistryTest {
         val set = TftSetRegistry.bundled("kanto_rising")
         val seats = listOf(NativeSeat("p1", "P1"), NativeSeat("p2", "P2"))
         val initial = TftSession(seats, seed = 91L, definition = set)
-        assertTrue(initial.act("p1", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(initial.buyOffer("p1", "0").accepted)
         val snapshot = initial.snapshotState()
         val player = snapshot.getAsJsonArray("players")[0].asJsonObject
         player.add("itemBench", com.google.gson.JsonArray().apply { add("bf_sword");add("recurve_bow") })
@@ -188,7 +188,7 @@ class TftSetRegistryTest {
         val set = bundled.copy(fullItems = bundled.fullItems.filterNot { it.components.toSet() == setOf("bf_sword", "recurve_bow") })
         val seats = listOf(NativeSeat("p1", "P1"), NativeSeat("p2", "P2"))
         val initial = TftSession(seats, seed = 92L, definition = set)
-        assertTrue(initial.act("p1", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(initial.buyOffer("p1", "0").accepted)
         val snapshot = initial.snapshotState()
         snapshot.getAsJsonArray("players")[0].asJsonObject.add("itemBench", com.google.gson.JsonArray().apply { add("bf_sword");add("recurve_bow") })
         val restored = TftSession(seats, seed = 92L, definition = set, restoreState = snapshot)
@@ -201,7 +201,7 @@ class TftSetRegistryTest {
 
     @Test fun fullThreeSlotsStillAllowInPlaceComponentCombination() {
         val set=TftSetRegistry.bundled("kanto_rising");val seats=listOf(NativeSeat("p1","P1"),NativeSeat("p2","P2"))
-        val initial=TftSession(seats,seed=93L,definition=set);assertTrue(initial.act("p1","buy",mapOf("index" to "0")).accepted)
+        val initial=TftSession(seats,seed=93L,definition=set);assertTrue(initial.buyOffer("p1", "0").accepted)
         val snapshot=initial.snapshotState();val player=snapshot.getAsJsonArray("players")[0].asJsonObject
         player.getAsJsonArray("bench")[0].asJsonObject.add("items",com.google.gson.JsonArray().apply{add("full:deathblade");add("full:warmogs_armor");add("bf_sword")})
         player.add("itemBench",com.google.gson.JsonArray().apply{add("recurve_bow")})
@@ -216,7 +216,7 @@ class TftSetRegistryTest {
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")
         TftSetRegistry.start(root)
-        assertEquals(84, TftSetRegistry.active().units.size)
+        assertEquals(96, TftSetRegistry.active().units.size)
         assertEquals("[]", Files.readString(path))
     }
 
@@ -305,7 +305,7 @@ class TftSetRegistryTest {
         val set = TftSetRegistry.bundled("kanto_rising")
         val seats = listOf(NativeSeat("p1", "P1"), NativeSeat("p2", "P2"))
         val initial = TftSession(seats, seed = 94L, definition = set)
-        assertTrue(initial.act("p1", "buy", mapOf("index" to "0")).accepted)
+        assertTrue(initial.buyOffer("p1", "0").accepted)
         val snapshot = initial.snapshotState()
         val player = snapshot.getAsJsonArray("players")[0].asJsonObject
         player.add("itemBench", com.google.gson.JsonArray().apply { add("recurve_bow") })

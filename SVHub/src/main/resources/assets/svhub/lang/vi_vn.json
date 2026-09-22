@@ -286,5 +286,14 @@
   "gui.svhub.store.arena.sector_2814": "Khu vực 2814",
   "gui.svhub.store.arena.dragon_shrine": "Đền rồng",
   "gui.svhub.store.arena.distortion_rift": "Khe nứt dị giới",
-  "gui.svhub.store.arena.ultra_lab": "Phòng thí nghiệm Ultra"
+  "gui.svhub.store.arena.ultra_lab": "Phòng thí nghiệm Ultra",
+  "gui.svhub.tft.shop_lock": "Khóa",
+  "gui.svhub.tft.shop_locked": "Đã khóa",
+  "gui.svhub.tft.auto_sold": "TỰ BÁN — %s · +%s VÀNG",
+  "gui.svhub.tft.item_received": "NHẬN TRANG BỊ — %s",
+  "gui.svhub.tft.star_up": "%s → %s★",
+  "gui.svhub.tft.pending_items": "%s trang bị chờ · trang bị để nhận tiếp",
+  "gui.svhub.store.arena.temporal_observatory": "Đài Quan Sát Thời Gian",
+  "gui.svhub.store.arena.abyssal_sanctum": "Thánh Điện Vực Sâu",
+  "gui.svhub.store.arena.crimson_caldera": "Miệng Núi Lửa Đỏ"
 }

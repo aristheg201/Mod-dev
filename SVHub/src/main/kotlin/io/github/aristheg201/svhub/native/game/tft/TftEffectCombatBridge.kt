@@ -13,8 +13,8 @@ internal class TftEffectCombatBridge(
     recovering: Boolean = false
 ) {
     private val definitions = set.units.associateBy { it.id }
-    private val board = BattleBoard(7, 8, true, emptySet())
-    private val limits = BattleRuntime.Limits(12, 4096, 1024, 2048, 128)
+    private val board = BattleBoard(set.rules.boardColumns, set.rules.boardRows * 2, true, emptySet())
+    private val limits = BattleRuntime.Limits(set.rules.formationCells * 2, 4096, 1024, 2048, 128)
     private val factory = BattleRuntime.UnitFactory { definition, id, owner, team, cell ->
         val def = definitions[definition] ?: error("Unknown summoned/transformed definition $definition")
         BattleUnit(id, owner, team, definition, cell, baseStats(def)).also { unit ->
@@ -26,6 +26,11 @@ internal class TftEffectCombatBridge(
             visibleUnits.forEach { source ->
                 val unit = factory.create(source.definition.id, source.instanceId, source.ownerId, source.team, source.cell)
                 copyToRuntime(source, unit)
+                val elite = visibleUnits.firstOrNull { candidate -> candidate.team == source.team &&
+                    candidate.instanceId != source.instanceId && candidate.definition.elite != null &&
+                    candidate.definition.team == source.definition.team && source.definition.team.isNotBlank() }
+                    ?.definition?.elite
+                if (elite != null) unit.stats[Stat.DAMAGE_AMPLIFICATION] = elite.damageMultiplier - 1.0
                 unit.items += source.items
                 source.items.forEach { id ->
                     unit.triggers += if (id.startsWith("full:")) set.fullItems.first { it.id == id.removePrefix("full:") }.triggers
@@ -46,6 +51,18 @@ internal class TftEffectCombatBridge(
 
     init {
         if (saved == null && !recovering) {
+            // Only deployment snapshots participate. Bench and previous combat summons never qualify.
+            visibleUnits.groupBy { it.team }.values.forEach { allies ->
+                val deployed = allies.map { it.definition.id }.toSet()
+                set.convergences.forEach { convergence ->
+                    if (deployed.containsAll(convergence.units)) {
+                        val leader = allies.filter { it.definition.id in convergence.units }.minBy { it.instanceId }
+                        val source = runtime.unit(leader.instanceId)
+                        runtime.execute(source, source, listOf(EffectDefinition("summon", "self", mapOf("count" to 1.0),
+                            mapOf("definition" to convergence.summon), emptyList(), emptyList())), 0)
+                    }
+                }
+            }
             runtime.units().forEach { runtime.emit(BattleEvent.ON_COMBAT_START, it, it, it, 0.0, 0) }
             runtime.drain()
         }
