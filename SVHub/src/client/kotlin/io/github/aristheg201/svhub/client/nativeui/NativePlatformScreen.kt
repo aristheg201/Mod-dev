@@ -80,7 +80,8 @@ class NativePlatformScreen(
         if (module == "gacha") gachaUi.observe(newState, true)
         if (module == "game") {
             val newView = newState.getAsJsonObject("view")
-            if (newView == null || newView.bool("finished")) {
+            val eliminatedResult = newView?.getAsJsonObject("fields")?.bool("eliminated") == true && newView.getAsJsonObject("resultPresentation") != null
+            if (newView == null || newView.bool("finished") || eliminatedResult) {
                 selectedCell = null
                 selectedTowerType = null
                 unoPendingCard = null
@@ -501,7 +502,8 @@ class NativePlatformScreen(
     private fun renderGame(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
         val view=state.getAsJsonObject("view")?:return
         val gameId=view.str("gameId")
-        if(view.bool("finished") && view.getAsJsonObject("resultPresentation")!=null){
+        val eliminatedResult=view.getAsJsonObject("fields")?.bool("eliminated")==true && view.getAsJsonObject("resultPresentation")!=null
+        if((view.bool("finished") || eliminatedResult) && view.getAsJsonObject("resultPresentation")!=null){
             renderGameResult(gui,layout,view,mouseX,mouseY)
             return
         }
