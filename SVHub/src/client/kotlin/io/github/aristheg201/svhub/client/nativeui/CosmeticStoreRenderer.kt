@@ -40,9 +40,11 @@ object CosmeticStoreRenderer {
 
         val beast="BeastCoin  "+balances.str("BeastCoin","—")
         val hunter="HunterCoin  "+balances.str("HunterCoin","—")
-        val wallet=hunter+"    "+beast
+        val economyReady=state.bool("economyReady")
+        val economyLabel=if(economyReady) "BEconomy ✓" else "BEconomy !"
+        val wallet=economyLabel+"    "+hunter+"    "+beast
         val walletText=font.plainSubstrByWidth(wallet,(area.width-92).coerceAtLeast(80))
-        gui.drawString(font,walletText,area.right-font.width(walletText)-10,area.y+9,gold,true)
+        gui.drawString(font,walletText,area.right-font.width(walletText)-10,area.y+9,if(economyReady)gold else 0xFFE36C5C.toInt(),true)
 
         val tabY=area.y+22
         val tabWidth=((area.width-26)/2).coerceAtLeast(58)
@@ -152,8 +154,15 @@ object CosmeticStoreRenderer {
 
         val actionW=info.width-16
         val actionX=info.x+8
-        val buttonLabel=if(equipped)text("equipped") else if(owned)text("equip") else I18n.get("gui.svhub.store.buy",chosen.str("price"),chosen.str("currency"))
-        hooks.control(UiRect(actionX,info.bottom-28,actionW,22),buttonLabel,!equipped,equipped){
+        val currencyReady=chosen.bool("currencyReady") || chosen.str("price")=="0"
+        val buttonLabel=when {
+            equipped -> text("equipped")
+            owned -> text("equip")
+            !currencyReady -> text("economy_unavailable")
+            else -> I18n.get("gui.svhub.store.buy",chosen.str("price"),chosen.str("currency"))
+        }
+        val actionEnabled=!equipped && (owned || currencyReady)
+        hooks.control(UiRect(actionX,info.bottom-28,actionW,22),buttonLabel,actionEnabled,equipped){
             val key=ui.kind+":"+ui.selected
             hooks.intent(if(owned)"equip" else "buy",JsonObject().apply{
                 addProperty("kind",ui.kind)
