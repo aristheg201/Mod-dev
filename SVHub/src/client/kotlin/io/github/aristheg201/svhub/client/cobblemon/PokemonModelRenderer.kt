@@ -122,6 +122,7 @@ object PokemonModelRenderer {
     private val previewBounds = ConcurrentHashMap<ModelKey, SceneActorBounds>()
     private val failedModels = ConcurrentHashMap.newKeySet<ModelKey>()
     private val resolvedPreviews = ConcurrentHashMap.newKeySet<String>()
+    private val resolvedSceneInstances = ConcurrentHashMap.newKeySet<String>()
     private val logger = org.slf4j.LoggerFactory.getLogger("SVHub/PokemonModels")
     data class SceneSizingDiagnostic(val instanceId:String,val species:String,val aspects:List<String>,val fit:SceneActorFit)
     fun sceneSizingDiagnostics():List<SceneSizingDiagnostic> = sceneModels.mapNotNull { (key,live) ->
@@ -295,9 +296,16 @@ object PokemonModelRenderer {
             scenePose = true,
             moving = moving
         )
-        if (rendered) flushSceneAnimations(instanceId, live)
+        if (rendered) {
+            resolvedSceneInstances.add(instanceId)
+            flushSceneAnimations(instanceId, live)
+        } else {
+            resolvedSceneInstances.remove(instanceId)
+        }
         return rendered
     }
+
+    fun sceneResolved(instanceId:String):Boolean = instanceId in resolvedSceneInstances
 
     fun requestSceneAnimation(
         view: PokemonView,
@@ -588,5 +596,5 @@ object PokemonModelRenderer {
 
     private fun key(view: PokemonView) = ModelKey(view.speciesId, view.aspects.sorted())
     private fun degreesToRadians(value: Float): Float = (value * PI / 180.0).toFloat()
-    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear(); sceneFits.clear(); previewBounds.clear(); failedModels.clear(); resolvedPreviews.clear(); ScenePresentationSizing.clear() }
+    fun clear() { models.clear(); sceneModels.clear(); movePresentationCache.clear(); sceneFits.clear(); previewBounds.clear(); failedModels.clear(); resolvedPreviews.clear(); resolvedSceneInstances.clear(); ScenePresentationSizing.clear() }
 }

@@ -684,7 +684,9 @@ object VisualSmokeHarness {
                 "xiangqi"->diagnostics.count{it.instanceId.startsWith("xiangqi:")}
                 "tower_defense"->diagnostics.count{it.instanceId.startsWith("td:tower:")||it.instanceId.startsWith("td:enemy:")}
                 "ludo"->diagnostics.count{it.instanceId.startsWith("ludo:")}
-                "pokecards"->diagnostics.count{it.instanceId.startsWith("pokecards:")}
+                "pokecards"->(0 until 5).count{ index ->
+                    PokemonModelRenderer.sceneResolved("pokecards:"+index+":"+index)
+                }
                 else->0
             }
         }
