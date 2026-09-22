@@ -425,7 +425,7 @@ object VisualSmokeHarness {
             private val authoredCatalogs by lazy {
                 io.github.aristheg201.svhub.native.game.TftSession(
                     listOf(NativeSeat("catalog-a","A"),NativeSeat("catalog-b","B")),seed=19L,
-                    definition=io.github.aristheg201.svhub.native.game.tft.TftSetRegistry.bundled("kanto_rising")
+                    definition=io.github.aristheg201.svhub.native.game.tft.TftSetRegistry.active()
                 ).viewFor("catalog-a").fields
             }
             fun fixtureView(scenario: String): JsonObject {
