@@ -88,7 +88,7 @@ class CompiledArenaSceneTest {
         }
         assertEquals(3,nodes("arkham_asylum").count { it is SceneBlockModelNode && it.id.startsWith("prop:") })
         assertEquals(3,nodes("wayne_manor").count { it is SceneBlockModelNode && it.id.startsWith("prop:") })
-        assertEquals(2,nodes("infinite_void").count { it is SceneItemModelNode && it.id.startsWith("prop:") })
+        assertEquals(3,nodes("infinite_void").count { it is SceneItemModelNode && it.id.startsWith("prop:") })
         assertEquals(3,nodes("sukuna_domain").count { it is SceneBlockModelNode && it.id.startsWith("prop:") })
     }
 
@@ -179,6 +179,42 @@ class CompiledArenaSceneTest {
             assertNotEquals(a.benchAnchors,b.benchAnchors)
             assertNotEquals(a.camera(ArenaCameraRole.PREPARATION,SceneCameras.TFT),b.camera(ArenaCameraRole.PREPARATION,SceneCameras.TFT))
             assertNotEquals(a.tacticianMovementBounds,b.tacticianMovementBounds)
+        }
+    }
+
+    @Test fun premiumHeroLandmarksAreVisibleAndReadAsMajorSilhouettes() {
+        fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
+            .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
+        val heroes=mapOf(
+            "arkham_asylum" to "structure:watchtower-west",
+            "wayne_manor" to "structure:manor-main",
+            "infinite_void" to "structure:signature-black-hole-core",
+            "sukuna_domain" to "structure:signature-shrine-core"
+        )
+        val viewport=UiRect(0,0,1280,720)
+        heroes.forEach { (id,marker) ->
+            val arena=load(id)
+            val node=checkNotNull(arena.geometry.firstOrNull { it.id==marker }) { id+" missing hero landmark "+marker }
+            val framed=SceneCameraFraming.board(
+                arena.camera(ArenaCameraRole.PREPARATION,SceneCameras.TFT),
+                viewport,
+                SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble()),
+                arena.boardColumns,
+                arena.boardRows,
+                arena.framingAnchors().map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) },
+                cellSize=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble())
+            )
+            val camera=PerspectiveBoardTransform(viewport,framed.position,framed.target,framed.fov,framed.near,framed.far)
+            val projected=node.corners().mapNotNull(camera::project)
+            assertEquals(8,projected.size,id+" hero landmark must remain inside the preparation frustum")
+            val width=projected.maxOf { it.x }-projected.minOf { it.x }
+            val height=projected.maxOf { it.y }-projected.minOf { it.y }
+            assertTrue(width>=viewport.width*.055f,id+" hero landmark is too small horizontally: "+width)
+            assertTrue(height>=viewport.height*.075f,id+" hero landmark is too small vertically: "+height)
+            val centerX=(projected.minOf { it.x }+projected.maxOf { it.x })*.5f
+            val centerY=(projected.minOf { it.y }+projected.maxOf { it.y })*.5f
+            assertTrue(centerX in viewport.x.toFloat()..viewport.right.toFloat(),id+" hero landmark must stay on screen")
+            assertTrue(centerY in viewport.y.toFloat()..viewport.bottom.toFloat(),id+" hero landmark must stay on screen")
         }
     }
 
