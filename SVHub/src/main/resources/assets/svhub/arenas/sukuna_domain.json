@@ -441,14 +441,14 @@
       ]
     ],
     "tacticianRegion": [
-      3.25,
-      9.35,
-      5.75,
-      11.15
+      3.55,
+      9,
+      5.45,
+      10.2
     ],
     "tacticianSpawn": [
       4.5,
-      10.25,
+      9.6,
       0.02
     ],
     "humanSpawn": [
@@ -494,32 +494,32 @@
     "cameraPresets": {
       "normal": {
         "position": [
-          8.6,
-          12.4,
-          9.4
+          4.5,
+          13,
+          10.8
         ],
         "target": [
-          4.1,
-          2.55,
-          0.18
+          4.5,
+          2.8,
+          0.25
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
       },
       "preparation": {
         "position": [
-          8.6,
-          12.4,
-          9.4
+          4.5,
+          13,
+          10.8
         ],
         "target": [
-          4.1,
-          2.55,
-          0.18
+          4.5,
+          2.8,
+          0.25
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
@@ -654,16 +654,16 @@
       },
       "arena_preview": {
         "position": [
-          8.6,
-          12.4,
-          9.4
+          4.5,
+          13,
+          10.8
         ],
         "target": [
-          4.1,
-          2.55,
-          0.18
+          4.5,
+          2.8,
+          0.25
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
@@ -901,12 +901,12 @@
       "material": "minecraft:polished_blackstone",
       "position": [
         4.5,
-        10.25,
+        9.6,
         -0.15
       ],
       "size": [
-        2.8,
-        2.1,
+        2,
+        1.35,
         0.3
       ],
       "rotation": [
@@ -919,8 +919,8 @@
       "id": "tactician-bone-pillar-left",
       "material": "minecraft:bone_block",
       "position": [
-        3.12,
-        10.25,
+        3.48,
+        9.6,
         1.1
       ],
       "size": [
@@ -938,8 +938,8 @@
       "id": "tactician-bone-pillar-right",
       "material": "minecraft:bone_block",
       "position": [
-        5.88,
-        10.25,
+        5.52,
+        9.6,
         1.1
       ],
       "size": [
@@ -958,11 +958,11 @@
       "material": "minecraft:nether_bricks",
       "position": [
         4.5,
-        11.27,
+        10.28,
         0.5
       ],
       "size": [
-        2.8,
+        2,
         0.18,
         1
       ],
@@ -977,12 +977,12 @@
       "material": "minecraft:red_nether_bricks",
       "position": [
         4.5,
-        9,
+        8.82,
         -0.15
       ],
       "size": [
-        1.8,
-        1.35,
+        1.4,
+        0.9,
         0.3
       ],
       "rotation": [
@@ -995,7 +995,7 @@
       "id": "premium-identity-rib-west",
       "material": "minecraft:bone_block",
       "position": [
-        -2.8,
+        -3.2,
         -1.3,
         2.4
       ],
@@ -1014,7 +1014,7 @@
       "id": "premium-identity-rib-east",
       "material": "minecraft:bone_block",
       "position": [
-        11.8,
+        12.2,
         -1.3,
         2.4
       ],
