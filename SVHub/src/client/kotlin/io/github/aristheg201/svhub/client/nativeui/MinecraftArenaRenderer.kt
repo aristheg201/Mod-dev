@@ -188,8 +188,8 @@ data class MinecraftArenaDefinition(
      * their own anchor topology.
      */
     fun forBoardDimensions(columns:Int,rows:Int):MinecraftArenaDefinition {
-        val cols=columns.coerceIn(2,16)
-        val rowsSafe=rows.coerceIn(2,16)
+        val cols=columns.coerceIn(2,64)
+        val rowsSafe=rows.coerceIn(2,64)
         if(boardAnchors.isNotEmpty() || (boardColumns==cols && boardRows==rowsSafe)) return this
         return copy(boardColumns=cols,boardRows=rowsSafe)
     }
@@ -321,8 +321,8 @@ object MinecraftArenaRegistry {
             depth = int(root, "depth", 2).coerceIn(0, 10),
             detailEvery = int(root, "detailEvery", 0).coerceIn(0, 32),
             pathDetailEvery = int(root, "pathDetailEvery", 0).coerceIn(0, 32),
-            boardColumns = int(metadata, "boardColumns", 7).coerceIn(2, 16),
-            boardRows = int(metadata, "boardRows", 8).coerceIn(2, 16),
+            boardColumns = int(metadata, "boardColumns", 7).coerceIn(2, 64),
+            boardRows = int(metadata, "boardRows", 8).coerceIn(2, 64),
             cellSize = point(metadata,"cellSize",ArenaPoint(1f,1f,1f)).also { require(it.x>0 && it.y>0 && it.z>0) },
             battlefieldBounds = metadata.get("battlefieldBounds")?.let { region(metadata,"battlefieldBounds",bounds) },
             environmentBounds = metadata.get("environmentBounds")?.let { region(metadata,"environmentBounds",bounds) },
