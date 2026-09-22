@@ -577,19 +577,41 @@ object PokemonModelRenderer {
         }
     }
 
+    internal fun canonicalSpeciesPath(value:String):String =
+        value.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }
+
+    private fun resolveSpecies(rawId:String): com.cobblemon.mod.common.pokemon.Species? {
+        val id=ResourceLocation.tryParse(rawId) ?: return null
+        PokemonSpecies.getByIdentifier(id)?.let { return it }
+
+        val canonical=canonicalSpeciesPath(id.path)
+        if(canonical.isBlank()) return null
+        val matches=PokemonSpecies.species.asSequence()
+            .filter { it.resourceIdentifier.namespace==id.namespace }
+            .filter { canonicalSpeciesPath(it.resourceIdentifier.path)==canonical }
+            .take(2)
+            .toList()
+        if(matches.size!=1) {
+            if(matches.isEmpty()) logger.warn("Unknown Pokemon species id {}",rawId)
+            else logger.warn("Ambiguous Pokemon species alias {} -> {}",rawId,matches.map{it.resourceIdentifier})
+            return null
+        }
+        val resolved=matches.single()
+        logger.info("Resolved Pokemon species alias {} -> {}",rawId,resolved.resourceIdentifier)
+        return resolved
+    }
+
     private fun model(view: PokemonView): LiveModel? {
         val key = key(view)
         models[key]?.let { return it }
-        val id = ResourceLocation.tryParse(view.speciesId) ?: return null
-        val species = PokemonSpecies.getByIdentifier(id) ?: return null
+        val species = resolveSpecies(view.speciesId) ?: return null
         val created = LiveModel(RenderablePokemon(species, view.aspects.toSet()))
         return models.putIfAbsent(key, created) ?: created
     }
 
     private fun sceneModel(key: SceneModelKey, view: PokemonView): LiveModel? {
         sceneModels[key]?.let { return it }
-        val id = ResourceLocation.tryParse(view.speciesId) ?: return null
-        val species = PokemonSpecies.getByIdentifier(id) ?: return null
+        val species = resolveSpecies(view.speciesId) ?: return null
         val created = LiveModel(RenderablePokemon(species, view.aspects.toSet()))
         return sceneModels.putIfAbsent(key, created) ?: created
     }

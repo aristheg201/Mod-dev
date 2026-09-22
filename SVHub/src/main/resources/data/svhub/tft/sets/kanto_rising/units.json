@@ -1592,7 +1592,7 @@
   },
   {
     "id": "ho_oh",
-    "species": "cobblemon:ho_oh",
+    "species": "cobblemon:hooh",
     "cost": 5,
     "traits": [
       "fire",
@@ -2464,7 +2464,7 @@
   {
     "id": "fortune_chiyu",
     "pokemon": {
-      "species": "cobblemon:chi_yu"
+      "species": "cobblemon:chiyu"
     },
     "cost": 4,
     "traits": [

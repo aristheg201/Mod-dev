@@ -406,7 +406,7 @@ object PokemonScene3D {
                     )
                 } ?: false
             } else entity.view?.let{view->
-                PokemonModelRenderer.renderScene(
+                val sceneRendered=PokemonModelRenderer.renderScene(
                     gui = gui,
                     view = view,
                     instanceId = entity.id,
@@ -419,8 +419,30 @@ object PokemonScene3D {
                     depth = camera.depthBase + order * camera.depthStride,
                     moving = moving
                 )
+                if(sceneRendered) true else PokemonModelRenderer.render(
+                    gui = gui,
+                    view = view,
+                    centerX = point.x.roundToInt(),
+                    centerY = (point.y + layout.tileHeight * 0.30f).roundToInt(),
+                    size = modelSize,
+                    yaw = entity.yaw,
+                    zoom = (entity.scale * camera.modelZoom).coerceIn(0.55f,1.35f),
+                    pitch = 12f
+                )
             }?:false
-            if(!rendered){val label=font.plainSubstrByWidth(entity.label,max(16,layout.tileWidth-8));gui.drawCenteredString(font,label,point.x.roundToInt(),point.y.roundToInt()-4,TEXT)}
+            if(!rendered){
+                // Never substitute a species name for a failed 3D actor. Keep the failure
+                // visually obvious without pretending text is the Pokemon model.
+                drawDiamond(
+                    gui,
+                    point.x.roundToInt(),
+                    point.y.roundToInt(),
+                    max(12,(cellPixels*.34f).roundToInt()),
+                    max(6,(layout.tileHeight*.24f).roundToInt()),
+                    0xFF252C30.toInt(),
+                    0xFFE36C5C.toInt()
+                )
+            }
             val height=entity.view?.let { PokemonModelRenderer.sceneHeight(it,entity.id) } ?: 1f
             val head=if(embedded) layout.project(logical.x,logical.y,entity.elevation+height*entity.scale+.12f) ?: point else ScenePoint(point.x,point.y-layout.tileHeight*.75f)
             heads[entity.id]=head

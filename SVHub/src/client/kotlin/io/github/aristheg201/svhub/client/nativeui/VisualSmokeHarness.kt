@@ -54,7 +54,8 @@ object VisualSmokeHarness {
         "cobblemon:blastoise", "cobblemon:venusaur", "cobblemon:greninja", "cobblemon:garchomp",
         "cobblemon:tyranitar", "cobblemon:dragonite", "cobblemon:metagross", "cobblemon:sylveon",
         "cobblemon:mamoswine", "cobblemon:excadrill", "cobblemon:zoroark", "cobblemon:roserade",
-        "cobblemon:electivire", "cobblemon:rayquaza", "cobblemon:zacian", "cobblemon:kyogre"
+        "cobblemon:electivire", "cobblemon:rayquaza", "cobblemon:zacian", "cobblemon:kyogre",
+        "cobblemon:hooh", "cobblemon:chiyu"
     )
 
     private var enabled = false
@@ -516,7 +517,12 @@ object VisualSmokeHarness {
                 val ownSlots = listOf(28, 29, 30, 31, 35, 36, 37, 38)
                 val enemySlots = if (pve) listOf(7, 8, 9, 14, 15, 16) else emptyList()
                 ownSlots.forEachIndexed { index, cell ->
-                    cells[cell] = token(scenario, index, VisualSmokeHarness.smokeSpecies[index], 0, if (index == 1) 3 else 1)
+                    val species=when(index){
+                        0->"cobblemon:ho_oh"
+                        1->"cobblemon:chi_yu"
+                        else->VisualSmokeHarness.smokeSpecies[index]
+                    }
+                    cells[cell] = token(scenario, index, species, 0, if (index == 1) 3 else 1)
                 }
                 enemySlots.forEachIndexed { index, cell ->
                     cells[cell] = token(scenario, index + 6, VisualSmokeHarness.smokeSpecies[index + 6], 1, if (index == 2) 2 else 1)
