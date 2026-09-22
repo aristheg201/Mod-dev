@@ -580,7 +580,7 @@ object PokemonModelRenderer {
     fun canonicalSpeciesPath(value:String):String =
         value.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }
 
-    private fun resolveSpecies(rawId:String): com.cobblemon.mod.common.pokemon.Species? {
+    fun resolveSpecies(rawId:String): com.cobblemon.mod.common.pokemon.Species? {
         val id=ResourceLocation.tryParse(rawId) ?: return null
         PokemonSpecies.getByIdentifier(id)?.let { return it }
 

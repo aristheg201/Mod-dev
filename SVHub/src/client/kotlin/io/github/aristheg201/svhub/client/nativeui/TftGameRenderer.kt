@@ -1367,11 +1367,12 @@ object TftGameRenderer {
 
     private fun pokemonView(speciesId: String, aspects: Set<String>, fallback: String): PokemonView? {
         if (speciesId.isBlank()) return null
-        val species = ResourceLocation.tryParse(speciesId)?.let(PokemonSpecies::getByIdentifier) ?: return null
+        val species = PokemonModelRenderer.resolveSpecies(speciesId) ?: return null
+        val canonicalId = species.resourceIdentifier.toString()
         return PokemonView(
-            key = "$speciesId|${aspects.sorted().joinToString(",")}",
+            key = "$canonicalId|${aspects.sorted().joinToString(",")}",
             route = "",
-            speciesId = speciesId,
+            speciesId = canonicalId,
             aspects = aspects,
             displayName = species.translatedName.string.ifBlank { fallback },
             dexNumber = species.nationalPokedexNumber,
