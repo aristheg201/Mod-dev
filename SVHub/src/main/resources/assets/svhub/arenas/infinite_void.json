@@ -716,13 +716,13 @@
       "material": "minecraft:black_concrete",
       "position": [
         4.5,
-        -4.35,
-        3.75
+        -2.2,
+        2.2
       ],
       "size": [
-        2.8,
+        3.25,
         0.32,
-        2.8
+        3.25
       ],
       "rotation": [
         0,
@@ -735,8 +735,8 @@
       "material": "minecraft:crying_obsidian",
       "position": [
         4.5,
-        -4.42,
-        5.35
+        -2.28,
+        3.8
       ],
       "size": [
         3.2,
@@ -754,8 +754,8 @@
       "material": "minecraft:crying_obsidian",
       "position": [
         4.5,
-        -4.42,
-        2.15
+        -2.28,
+        0.6
       ],
       "size": [
         3.2,
@@ -773,8 +773,8 @@
       "material": "minecraft:crying_obsidian",
       "position": [
         2.9,
-        -4.42,
-        3.75
+        -2.28,
+        2.2
       ],
       "size": [
         0.42,
@@ -792,8 +792,8 @@
       "material": "minecraft:crying_obsidian",
       "position": [
         6.1,
-        -4.42,
-        3.75
+        -2.28,
+        2.2
       ],
       "size": [
         0.42,
@@ -811,8 +811,8 @@
       "material": "minecraft:amethyst_block",
       "position": [
         4.5,
-        -4.5,
-        5.78
+        -2.36,
+        4.22
       ],
       "size": [
         3,
@@ -830,8 +830,8 @@
       "material": "minecraft:amethyst_block",
       "position": [
         4.5,
-        -4.5,
-        1.72
+        -2.36,
+        0.18
       ],
       "size": [
         3,
@@ -849,8 +849,8 @@
       "material": "minecraft:purple_stained_glass",
       "position": [
         2.47,
-        -4.5,
-        3.75
+        -2.36,
+        2.2
       ],
       "size": [
         0.34,
@@ -868,8 +868,8 @@
       "material": "minecraft:magenta_stained_glass",
       "position": [
         6.53,
-        -4.5,
-        3.75
+        -2.36,
+        2.2
       ],
       "size": [
         0.34,
@@ -887,8 +887,8 @@
       "material": "minecraft:purple_stained_glass",
       "position": [
         3.05,
-        -4.5,
-        5.18
+        -2.36,
+        3.63
       ],
       "size": [
         1.6,
@@ -906,8 +906,8 @@
       "material": "minecraft:magenta_stained_glass",
       "position": [
         5.95,
-        -4.5,
-        5.18
+        -2.36,
+        3.63
       ],
       "size": [
         1.6,
@@ -925,8 +925,8 @@
       "material": "minecraft:magenta_stained_glass",
       "position": [
         3.05,
-        -4.5,
-        2.32
+        -2.36,
+        0.77
       ],
       "size": [
         1.6,
@@ -944,8 +944,8 @@
       "material": "minecraft:purple_stained_glass",
       "position": [
         5.95,
-        -4.5,
-        2.32
+        -2.36,
+        0.77
       ],
       "size": [
         1.6,
