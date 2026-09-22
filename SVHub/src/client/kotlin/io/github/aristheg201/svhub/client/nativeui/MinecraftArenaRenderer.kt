@@ -198,6 +198,17 @@ data class MinecraftArenaDefinition(
     fun boardAnchor(index:Int):ArenaPoint = boardAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+(index%boardColumns)*cellSize.x,boardOrigin.y+(index/boardColumns)*cellSize.y,boardOrigin.z)
     fun benchAnchor(index:Int):ArenaPoint = benchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.75f,boardOrigin.y+boardRows+.8f,boardOrigin.z)
     fun itemAnchor(index:Int):ArenaPoint = itemBenchAnchors.getOrNull(index) ?: ArenaPoint(boardOrigin.x+index*.6f,boardOrigin.y+boardRows+1.6f,boardOrigin.z)
+    fun framingAnchors():List<ArenaPoint> {
+        val z=tacticianSpawn.z
+        val bounds=tacticianMovementBounds
+        return benchAnchors + listOf(
+            tacticianSpawn,
+            ArenaPoint(bounds.minX,bounds.minY,z),
+            ArenaPoint(bounds.maxX,bounds.minY,z),
+            ArenaPoint(bounds.maxX,bounds.maxY,z),
+            ArenaPoint(bounds.minX,bounds.maxY,z)
+        )
+    }
     fun camera(role:ArenaCameraRole,fallback:SceneCameraPreset):SceneCameraPreset {
         cameraPresets[role]?.let { return it }
         val point=when(role){ArenaCameraRole.SCOUTING->cameras.scouting;ArenaCameraRole.CAROUSEL->cameras.carousel;else->cameras.spectator}
