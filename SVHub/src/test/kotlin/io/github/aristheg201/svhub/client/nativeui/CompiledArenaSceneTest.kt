@@ -11,6 +11,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertNotSame
 import io.github.aristheg201.svhub.ui.SceneMeshNode
 import io.github.aristheg201.svhub.ui.SceneBlockModelNode
+import io.github.aristheg201.svhub.ui.SceneItemModelNode
 import io.github.aristheg201.svhub.ui.SceneVec3
 import io.github.aristheg201.svhub.ui.PerspectiveBoardTransform
 
@@ -75,6 +76,17 @@ class CompiledArenaSceneTest {
             assertTrue(nodes.none { it is SceneMeshNode && it.id=="floor" },"$id retained the legacy coplanar floor mesh")
             assertTrue(nodes.any { it is SceneBlockModelNode && it.id.startsWith("terrain:") },"$id must compile real block-model terrain")
         }
+    }
+
+    @Test fun premiumArenaPropsUseAuthoredModelKindsWithoutRegistryBootstrap() {
+        val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
+        fun nodes(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
+            MinecraftArenaRenderer.compiledScene(layout,MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject)).scene.nodes
+        }
+        assertEquals(3,nodes("arkham_asylum").count { it is SceneBlockModelNode && it.id.startsWith("prop:") })
+        assertEquals(3,nodes("wayne_manor").count { it is SceneBlockModelNode && it.id.startsWith("prop:") })
+        assertEquals(2,nodes("infinite_void").count { it is SceneItemModelNode && it.id.startsWith("prop:") })
+        assertEquals(3,nodes("sukuna_domain").count { it is SceneBlockModelNode && it.id.startsWith("prop:") })
     }
 
     @Test fun floorSupportsAllCellCentersIncludingOffsetElevatedBoards() {

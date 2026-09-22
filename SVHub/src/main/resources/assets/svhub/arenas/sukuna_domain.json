@@ -32,19 +32,22 @@
       "item": "minecraft:soul_campfire",
       "x": -2,
       "y": 8.6,
-      "scale": 0.9
+      "scale": 0.9,
+      "blockModel": true
     },
     {
       "item": "minecraft:soul_campfire",
       "x": 11,
       "y": 8.6,
-      "scale": 0.9
+      "scale": 0.9,
+      "blockModel": true
     },
     {
       "item": "minecraft:wither_skeleton_skull",
       "x": 4.5,
       "y": -1.8,
-      "scale": 0.9
+      "scale": 0.9,
+      "blockModel": true
     }
   ],
   "metadata": {

@@ -32,13 +32,15 @@
       "item": "minecraft:end_crystal",
       "x": -2.7,
       "y": 8.7,
-      "scale": 0.8
+      "scale": 0.8,
+      "blockModel": false
     },
     {
       "item": "minecraft:end_crystal",
       "x": 11.7,
       "y": 8.7,
-      "scale": 0.8
+      "scale": 0.8,
+      "blockModel": false
     }
   ],
   "metadata": {

@@ -39,7 +39,8 @@ data class MinecraftArenaProp(
     val z:Float=0f,
     val yaw:Float=0f,
     val pitch:Float=0f,
-    val roll:Float=0f
+    val roll:Float=0f,
+    val blockModel:Boolean?=null
 )
 
 data class ArenaPoint(val x: Float, val y: Float, val z: Float = 0f) {
@@ -305,6 +306,7 @@ object MinecraftArenaRegistry {
                     ,yaw=runCatching{obj.get("yaw")?.asFloat?:0f}.getOrDefault(0f)
                     ,pitch=runCatching{obj.get("pitch")?.asFloat?:0f}.getOrDefault(0f)
                     ,roll=runCatching{obj.get("roll")?.asFloat?:0f}.getOrDefault(0f)
+                    ,blockModel=runCatching{obj.get("blockModel")?.asBoolean}.getOrNull()
                 )
             }.orEmpty().take(40),
             floorColor = color(root, "floorColor", 0xFF173530.toInt()),
@@ -411,7 +413,9 @@ object MinecraftArenaRenderer {
             )
             val props=theme.props.mapIndexed{index,prop->
                 val transform=SceneTransform(SceneVec3(prop.x.toDouble(),prop.y.toDouble(),prop.z.toDouble()),SceneVec3(prop.pitch.toDouble(),prop.roll.toDouble(),prop.yaw.toDouble()),SceneVec3(prop.scale.toDouble(),prop.scale.toDouble(),prop.scale.toDouble()))
-                val block=ResourceLocation.tryParse(prop.item)?.let(BuiltInRegistries.BLOCK::containsKey)==true
+                val block=prop.blockModel ?: runCatching {
+                    ResourceLocation.tryParse(prop.item)?.let(BuiltInRegistries.BLOCK::containsKey)==true
+                }.getOrDefault(false)
                 if(block)SceneBlockModelNode("prop:$index",transform,prop.item) else SceneItemModelNode("prop:$index",transform,prop.item)
             }
             val benches=theme.benchAnchors.mapIndexed{index,p->
