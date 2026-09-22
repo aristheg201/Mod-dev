@@ -1,4 +1,4 @@
-# Final production acceptance: 25 visual captures including cosmetic store flows.
+# Final production acceptance: 31 visual captures including every non-TFT gameplay surface.
 name: SVHub Loom build
 
 on:
@@ -203,7 +203,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         run: gradle --no-daemon downloadAssets
 
-      - name: Boot Minecraft and capture TFT scenes
+      - name: Boot Minecraft and capture SVHub scenes
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         env:
           SVHUB_VISUAL_SMOKE: '1'
@@ -220,15 +220,18 @@ jobs:
         run: |
           set -euo pipefail
           echo "Screenshots:"
-          find run/screenshots -maxdepth 1 -type f -name 'svhub-tft-*.png' -print
+          find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' -print
           count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' | wc -l)"
-          test "$count" -eq 25
+          test "$count" -eq 31
           test -f run/logs/latest.log
           for arena in monster_island gotham_rooftops sector_2814 kanto_stadium dragon_shrine distortion_rift ultra_lab ancient_ruins; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-$arena.png with 12 actors" run/logs/latest.log
           done
           for scenario in planning carousel augment pve pve_loot boss tactician_move; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-ui-$scenario.png with " run/logs/latest.log
+          done
+          for game in chess xiangqi tower_defense ludo uno pokecards; do
+            grep -Fq "[SVHub Visual Smoke] captured svhub-gameplay-$game.png with " run/logs/latest.log
           done
           for game in chess tower_defense tft; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-result-$game.png" run/logs/latest.log
@@ -243,7 +246,7 @@ jobs:
             grep -Ein 'Failed to load texture: svhub:|Could not load image[^[:cntrl:]]*svhub:|PNG not supported|unknown PNG chunk type' run/logs/latest.log | tail -n 80 >&2
             exit 1
           fi
-          grep -Fq '[SVHub Visual Smoke] completed 25 captures; stopping client' run/logs/latest.log
+          grep -Fq '[SVHub Visual Smoke] completed 31 captures; stopping client' run/logs/latest.log
           # Headless Linux may log non-fatal narrator (missing flite) and audio
           # initialization errors. The runClient task and all four framebuffer
           # captures already succeeded, so only treat actual Minecraft/render
@@ -254,11 +257,11 @@ jobs:
             exit 1
           fi
 
-      - name: Upload TFT visual smoke evidence
+      - name: Upload full SVHub visual smoke evidence
         if: always() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]'))
         uses: actions/upload-artifact@v4
         with:
-          name: SVHub-TFT-visual-smoke
+          name: SVHub-full-visual-smoke
           path: |
             SVHub/run/screenshots/svhub-*.png
             SVHub/run/logs/latest.log

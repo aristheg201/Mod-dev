@@ -23,7 +23,7 @@ data class TdLootTable(val id:String="",val rolls:Int=1,val entries:List<TdLootE
 data class TdDifficulty(val id:String="normal",val hpMultiplier:Double=1.0,val speedMultiplier:Double=1.0,val rewardMultiplier:Double=1.0,val livesMultiplier:Double=1.0)
 data class TdEndlessRules(val enabled:Boolean=false,val repeatFromWave:Int=1,val hpMultiplierPerCycle:Double=1.0)
 data class TowerDefenseDefinition(
-    val id:String="",val width:Int=12,val height:Int=8,val path:List<Int> = emptyList(),val navigationEdges:Map<Int,List<Int>> = emptyMap(),
+    val id:String="",val width:Int=20,val height:Int=12,val path:List<Int> = emptyList(),val navigationEdges:Map<Int,List<Int>> = emptyMap(),
     val buildZones:List<Int> = emptyList(),val spawn:Int=0,val core:Int=0,val startingGold:Int=120,val startingLives:Int=20,
     val simulationStepMs:Long=200,val sellRatio:Double=.7,val towers:List<TdTowerDefinition> = emptyList(),
     val enemies:List<TdEnemyDefinition> = emptyList(),val bosses:List<TdBossDefinition> = emptyList(),val waves:List<TdWaveDefinition> = emptyList(),

@@ -1,92 +1,120 @@
 {
   "style": "forest_route",
   "surface": "terrain",
-  "depth": 8,
-  "detailEvery": 13,
-  "pathDetailEvery": 0,
+  "depth": 12,
+  "detailEvery": 17,
+  "pathDetailEvery": 5,
   "backgroundColor": "#0e1b12",
   "geometry": [
     {
       "id": "td_terrain",
       "position": [
+        9.5,
         5.5,
-        3.5,
-        -0.62
+        -0.72
       ],
       "size": [
-        13.8,
-        9.8,
-        1
+        22.8,
+        14.8,
+        1.15
       ],
       "material": "#17311e"
     },
     {
-      "id": "north_bank",
+      "id": "north_ridge",
       "position": [
-        5.5,
-        -0.68,
-        0.06
+        9.5,
+        -1.05,
+        0.05
       ],
       "size": [
-        13,
-        0.72,
-        0.5
+        22,
+        1.1,
+        0.72
       ],
-      "material": "#2f5734"
+      "material": "#294b2f"
     },
     {
-      "id": "south_bank",
+      "id": "south_ridge",
       "position": [
-        5.5,
-        7.68,
-        0.06
+        9.5,
+        12.05,
+        0.05
       ],
       "size": [
-        13,
-        0.72,
-        0.5
+        22,
+        1.1,
+        0.72
       ],
-      "material": "#2f5734"
+      "material": "#294b2f"
+    },
+    {
+      "id": "west_cliff",
+      "position": [
+        -1.05,
+        5.5,
+        0.02
+      ],
+      "size": [
+        1.1,
+        12.4,
+        0.68
+      ],
+      "material": "#203b27"
+    },
+    {
+      "id": "east_cliff",
+      "position": [
+        20.05,
+        5.5,
+        0.02
+      ],
+      "size": [
+        1.1,
+        12.4,
+        0.68
+      ],
+      "material": "#203b27"
     },
     {
       "id": "spawn_gate_left",
       "position": [
-        -0.68,
+        -0.72,
         0.35,
-        0.58
+        0.72
       ],
       "size": [
+        0.58,
         0.48,
-        0.45,
-        1.4
+        1.75
       ],
       "material": "#695e50"
     },
     {
       "id": "spawn_gate_right",
       "position": [
-        -0.68,
+        -0.72,
         1.65,
-        0.58
+        0.72
       ],
       "size": [
+        0.58,
         0.48,
-        0.45,
-        1.4
+        1.75
       ],
       "material": "#695e50"
     },
     {
       "id": "spawn_gate_top",
       "position": [
-        -0.68,
+        -0.72,
         1,
-        1.18
+        1.48
       ],
       "size": [
-        0.48,
-        1.75,
-        0.26
+        0.58,
+        1.85,
+        0.3
       ],
       "material": "#857763"
     },
@@ -94,29 +122,71 @@
       "id": "core_plinth",
       "position": [
         10,
-        3,
-        0.02
+        10,
+        0.03
       ],
       "size": [
-        1.38,
-        1.38,
-        0.28
+        1.9,
+        1.9,
+        0.34
       ],
       "material": "#8b8065"
+    },
+    {
+      "id": "core_ring",
+      "position": [
+        10,
+        10,
+        0.28
+      ],
+      "size": [
+        1.25,
+        1.25,
+        0.18
+      ],
+      "material": "#b39b5d"
     },
     {
       "id": "core_beacon",
       "position": [
         10,
-        3,
-        0.56
+        10,
+        0.82
       ],
       "size": [
-        0.44,
-        0.44,
-        0.92
+        0.52,
+        0.52,
+        1.15
       ],
       "material": "#e0c76f"
+    },
+    {
+      "id": "watch_post_a",
+      "position": [
+        6.5,
+        2.9,
+        0.28
+      ],
+      "size": [
+        1.1,
+        1.1,
+        0.72
+      ],
+      "material": "#4a5138"
+    },
+    {
+      "id": "watch_post_b",
+      "position": [
+        13.5,
+        6.2,
+        0.28
+      ],
+      "size": [
+        1.1,
+        1.1,
+        0.72
+      ],
+      "material": "#4a5138"
     }
   ],
   "floor": [
@@ -151,59 +221,109 @@
   "props": [
     {
       "item": "minecraft:oak_sapling",
-      "x": -1,
-      "y": 0.3,
-      "scale": 1
+      "x": -1.15,
+      "y": 0.25,
+      "scale": 1.05
     },
     {
       "item": "minecraft:spruce_sapling",
-      "x": -0.9,
-      "y": 6.9,
-      "scale": 1
+      "x": -1.05,
+      "y": 10.9,
+      "scale": 1.08
     },
     {
       "item": "minecraft:campfire",
-      "x": 2.3,
-      "y": -0.95,
+      "x": 2.4,
+      "y": -1.1,
       "scale": 0.9
     },
     {
       "item": "minecraft:lantern",
-      "x": 7.1,
-      "y": 7.8,
-      "scale": 0.78
+      "x": 7.2,
+      "y": 12.15,
+      "scale": 0.82
     },
     {
       "item": "minecraft:bell",
-      "x": 11.9,
-      "y": 0.4,
-      "scale": 0.88
+      "x": 19.7,
+      "y": 0.35,
+      "scale": 0.9
     },
     {
       "item": "minecraft:chest",
-      "x": 11.9,
-      "y": 6.9,
-      "scale": 0.95
+      "x": 19.7,
+      "y": 10.9,
+      "scale": 0.98
+    },
+    {
+      "item": "minecraft:azalea",
+      "x": 5.5,
+      "y": 2.8,
+      "scale": 0.92
+    },
+    {
+      "item": "minecraft:flowering_azalea",
+      "x": 12.8,
+      "y": 6,
+      "scale": 0.92
+    },
+    {
+      "item": "minecraft:spruce_sapling",
+      "x": 1.4,
+      "y": 6.8,
+      "scale": 1
+    },
+    {
+      "item": "minecraft:oak_sapling",
+      "x": 17.8,
+      "y": 6.6,
+      "scale": 1
     }
   ],
   "metadata": {
     "cameraPresets": {
       "normal": {
         "position": [
-          5.5,
-          13.2,
-          11.5
+          9.5,
+          21.5,
+          19.5
         ],
         "target": [
+          9.5,
           5.5,
-          3.5,
           0
         ],
         "fov": 49
+      },
+      "preparation": {
+        "position": [
+          9.5,
+          19.5,
+          17
+        ],
+        "target": [
+          9.5,
+          5.5,
+          0
+        ],
+        "fov": 47
+      },
+      "spectator": {
+        "position": [
+          9.5,
+          23,
+          21
+        ],
+        "target": [
+          9.5,
+          5.5,
+          0
+        ],
+        "fov": 52
       }
     },
-    "boardColumns": 12,
-    "boardRows": 8,
+    "boardColumns": 20,
+    "boardRows": 12,
     "boardOrigin": [
       0,
       0,
@@ -215,10 +335,10 @@
       1
     ],
     "arenaBounds": [
-      -1,
-      -1,
-      12,
-      8
+      -1.6,
+      -1.6,
+      20.6,
+      12.6
     ]
   }
 }

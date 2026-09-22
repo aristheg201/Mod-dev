@@ -3,7 +3,7 @@ package io.github.aristheg201.svhub.native.game
 import kotlin.test.*
 
 class TowerDefenseDefinitionTest {
- @Test fun bundledMapTowersEnemiesExplicitWavesAndBossesAreExternalized(){val d=TowerDefenseDefinitions.bundled;assertEquals(12,d.width);assertEquals(8,d.height);assertTrue(d.path.size>20);assertEquals(6,d.towers.size);assertEquals(4,d.enemies.size);assertEquals(20,d.waves.size);assertTrue(d.waves[4].groups.any{it.enemy in d.bosses.map(TdBossDefinition::id)});assertTrue(d.bosses.isNotEmpty())}
+ @Test fun bundledMapTowersEnemiesExplicitWavesAndBossesAreExternalized(){val d=TowerDefenseDefinitions.bundled;assertEquals(20,d.width);assertEquals(12,d.height);assertTrue(d.path.size>=60);assertTrue(d.buildZones.size>=80);assertEquals(6,d.towers.size);assertEquals(4,d.enemies.size);assertEquals(20,d.waves.size);assertTrue(d.waves[4].groups.any{it.enemy in d.bosses.map(TdBossDefinition::id)});assertTrue(d.bosses.isNotEmpty())}
  @Test fun nonDefaultDefinitionControlsGeometryUpgradesTimingDamageAndRecovery(){
   val tower=TdTowerDefinition(id="odd",name="Odd",species="cobblemon:ditto",element="Arcane",cost=3,damage=7,range=9.0,cooldown=1,moveId="transform",targetMode="strongest",targetFilters=setOf("boss","ground"),effects=listOf(io.github.aristheg201.svhub.engine.EffectDefinition.amount("damage","current_target",7.0)),upgrades=listOf(TdUpgradeLevel(1),TdUpgradeLevel(2,17,3.0,4.0,1)))
   val enemy=TdEnemyDefinition("tiny",11,.01,2,7,setOf("ground"),listOf(TdResistance("Arcane",.25)))

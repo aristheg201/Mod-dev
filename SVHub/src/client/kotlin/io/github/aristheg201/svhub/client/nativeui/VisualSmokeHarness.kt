@@ -2,8 +2,17 @@ package io.github.aristheg201.svhub.client.nativeui
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.pokemon.Species
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.native.game.CardDuelSession
+import io.github.aristheg201.svhub.native.game.ChessSession
+import io.github.aristheg201.svhub.native.game.NativeGameView
+import io.github.aristheg201.svhub.native.game.NativeSeat
+import io.github.aristheg201.svhub.native.game.TowerDefenseDefinitions
+import io.github.aristheg201.svhub.native.game.TowerDefenseSession
+import io.github.aristheg201.svhub.native.game.UnoSession
+import io.github.aristheg201.svhub.native.game.XiangqiSession
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameraFraming
@@ -20,28 +29,38 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
 /**
- * Headless/CI visual smoke harness for the embedded TFT scene.
+ * Headless/CI visual acceptance harness for SVHub.
  *
- * The smoke scene intentionally contains real Cobblemon actors on both board and
- * bench. A screenshot without resolved actors is a failed smoke test, not a pass.
+ * TFT, every non-TFT gameplay surface, result screens, skins and store previews
+ * are captured with real Cobblemon actors. Missing gameplay evidence is a failure.
  */
 object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
+    private val gson = Gson()
     private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins")
     private val uiScenarios = listOf("planning", "carousel", "augment", "pve", "pve_loot", "boss", "tactician_move")
+    private val gameplayScenarios = listOf("chess", "xiangqi", "tower_defense", "ludo", "uno", "pokecards")
     private val resultScenarios = listOf("chess", "tower_defense", "tft")
     private val storeScenarios = listOf("arena_preview", "arena_owned", "arena_equipped", "tactician_preview", "tactician_owned", "tactician_equipped")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
         "cobblemon:charmander", "cobblemon:snorlax", "cobblemon:onix", "cobblemon:vaporeon",
         "cobblemon:eevee", "cobblemon:lucario", "cobblemon:charizard", "cobblemon:lapras",
-        "cobblemon:mewtwo"
+        "cobblemon:mewtwo", "cobblemon:squirtle", "cobblemon:rapidash", "cobblemon:gardevoir",
+        "cobblemon:aggron", "cobblemon:milotic", "cobblemon:arcanine", "cobblemon:gallade",
+        "cobblemon:donphan", "cobblemon:mudsdale", "cobblemon:magnezone", "cobblemon:pawniard",
+        "cobblemon:rattata", "cobblemon:zubat", "cobblemon:geodude", "cobblemon:gastly",
+        "cobblemon:blastoise", "cobblemon:venusaur", "cobblemon:greninja", "cobblemon:garchomp",
+        "cobblemon:tyranitar", "cobblemon:dragonite", "cobblemon:metagross", "cobblemon:sylveon",
+        "cobblemon:mamoswine", "cobblemon:excadrill", "cobblemon:zoroark", "cobblemon:roserade",
+        "cobblemon:electivire", "cobblemon:rayquaza", "cobblemon:zacian", "cobblemon:kyogre"
     )
 
     private var enabled = false
     private var arenaIndex = 0
     private var uiScenarioIndex = 0
+    private var gameplayScenarioIndex = 0
     private var resultScenarioIndex = 0
     private var storeScenarioIndex = 0
     private var showcaseCaptured = false
@@ -130,7 +149,7 @@ object VisualSmokeHarness {
 
     private fun tickUiScenario(client: Minecraft) {
         if (uiScenarioIndex >= uiScenarios.size) {
-            tickResultScenario(client)
+            tickGameplayScenario(client)
             return
         }
 
@@ -167,6 +186,44 @@ object VisualSmokeHarness {
 
         if (capturedCurrent && stableTicks >= 95) {
             uiScenarioIndex++
+            stableTicks = 0
+            capturedCurrent = false
+        }
+    }
+
+
+    private fun tickGameplayScenario(client: Minecraft) {
+        if (gameplayScenarioIndex >= gameplayScenarios.size) {
+            tickResultScenario(client)
+            return
+        }
+        val scenario = gameplayScenarios[gameplayScenarioIndex]
+        val active = client.screen as? NativeGameVisualSmokeScreen
+        if (active?.scenario != scenario) {
+            stableTicks = 0
+            capturedCurrent = false
+            client.setScreen(NativeGameVisualSmokeScreen(scenario))
+            System.out.println("[SVHub Visual Smoke] opened gameplay scenario " + scenario)
+            return
+        }
+        stableTicks++
+        val resolvedActors = active.resolvedActors()
+        val requiredActors = active.requiredActors
+        if (!capturedCurrent && stableTicks >= 70 && active.fixtureReady && resolvedActors >= requiredActors) {
+            capturedCurrent = true
+            val fileName = "svhub-gameplay-" + scenario + ".png"
+            Screenshot.grab(client.gameDirectory, fileName, client.mainRenderTarget) { message ->
+                System.out.println("[SVHub Visual Smoke] captured " + fileName + " with " + resolvedActors + " actors :: " + message.string)
+            }
+        }
+        if (!capturedCurrent && stableTicks > 600) {
+            throw IllegalStateException(
+                "SVHub gameplay smoke timed out in " + scenario + ": " +
+                    resolvedActors + "/" + requiredActors + " actors; fixtureReady=" + active.fixtureReady
+            )
+        }
+        if (capturedCurrent && stableTicks >= 95) {
+            gameplayScenarioIndex++
             stableTicks = 0
             capturedCurrent = false
         }
@@ -231,7 +288,7 @@ object VisualSmokeHarness {
         if(storeScenarioIndex>=storeScenarios.size) {
             finalWaitTicks++
             if(finalWaitTicks>=40) {
-                val total=arenas.size+uiScenarios.size+resultScenarios.size+1+storeScenarios.size
+                val total=arenas.size+uiScenarios.size+gameplayScenarios.size+resultScenarios.size+1+storeScenarios.size
                 System.out.println("[SVHub Visual Smoke] completed "+total+" captures; stopping client")
                 enabled=false
                 client.stop()
@@ -273,8 +330,8 @@ object VisualSmokeHarness {
 
     /**
      * The normal client receives PokemonSpecies from server-data synchronization.
-     * CI intentionally stays on the title screen, so seed only the twelve smoke
-     * species while continuing to use Cobblemon's real model/poser/texture assets.
+     * CI intentionally stays on the title screen, so seed the species required
+     * by all gameplay fixtures while continuing to use Cobblemon's real assets.
      * This path is unreachable unless SVHUB_VISUAL_SMOKE=1.
      */
     private fun prepareSyntheticSpecies() {
@@ -604,6 +661,118 @@ object VisualSmokeHarness {
         }
     }
 
+    private class NativeGameVisualSmokeScreen(val scenario:String):Screen(Component.literal("SVHub Gameplay Visual Smoke")) {
+        private val boardUi=NativeBoardSceneUiState()
+        private val view=fixtureView(scenario)
+        private var rendered=false
+        val fixtureReady get()=rendered
+        val requiredActors:Int get()=when(scenario){
+            "chess"->32
+            "xiangqi"->32
+            "tower_defense"->10
+            "ludo"->8
+            "pokecards"->5
+            else->0
+        }
+
+        override fun isPauseScreen():Boolean=false
+
+        fun resolvedActors():Int {
+            val diagnostics=PokemonModelRenderer.sceneSizingDiagnostics()
+            return when(scenario){
+                "chess"->diagnostics.count{it.instanceId.startsWith("chess:")}
+                "xiangqi"->diagnostics.count{it.instanceId.startsWith("xiangqi:")}
+                "tower_defense"->diagnostics.count{it.instanceId.startsWith("td:tower:")||it.instanceId.startsWith("td:enemy:")}
+                "ludo"->diagnostics.count{it.instanceId.startsWith("ludo:")}
+                "pokecards"->diagnostics.count{it.instanceId.startsWith("pokecards:")}
+                else->0
+            }
+        }
+
+        override fun render(gui:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float) {
+            gui.fill(0,0,width,height,0xFF050A0E.toInt())
+            val boardW=runCatching{view.get("boardWidth")?.asInt?:0}.getOrDefault(0)
+            val boardH=runCatching{view.get("boardHeight")?.asInt?:0}.getOrDefault(0)
+            val suffix=if(boardW>0&&boardH>0)"  •  "+boardW+"×"+boardH else ""
+            gui.drawString(font,"GAMEPLAY  •  "+scenario.uppercase()+suffix,14,10,0xFFF2F6F4.toInt(),true)
+            val area=UiRect(10,28,(width-20).coerceAtLeast(120),(height-38).coerceAtLeast(90))
+            if(CardTable3DRenderer.supports(scenario)) {
+                CardTable3DRenderer.render(gui,font,area,view,mouseX,mouseY){_,_->}
+            } else {
+                NativeBoardSceneRenderer.render(gui,font,area,view,boardUi,null)
+            }
+            rendered=true
+        }
+
+        companion object {
+            fun fixtureView(scenario:String):JsonObject=when(scenario){
+                "chess"->{
+                    val game=ChessSession(listOf(NativeSeat("visual","Aris"),NativeSeat("rival","Rival")),seed=11L)
+                    check(game.act("visual","move",mapOf("from" to "e2","to" to "e4")).accepted)
+                    check(game.act("rival","move",mapOf("from" to "e7","to" to "e5")).accepted)
+                    nativeView(game.viewFor("visual"))
+                }
+                "xiangqi"->{
+                    val game=XiangqiSession(listOf(NativeSeat("visual","Aris"),NativeSeat("rival","Rival")),seed=12L)
+                    check(game.act("visual","move",mapOf("from" to "a6","to" to "a5")).accepted)
+                    check(game.act("rival","move",mapOf("from" to "a3","to" to "a4")).accepted)
+                    nativeView(game.viewFor("visual"))
+                }
+                "tower_defense"->{
+                    val game=TowerDefenseSession(listOf(NativeSeat("visual","Aris")),seed=13L)
+                    check(game.act("visual","start_wave",emptyMap()).accepted)
+                    var now=System.currentTimeMillis()
+                    repeat(8){now+=1_000L;game.tick(now)}
+                    listOf("charmander" to 4,"squirtle" to 59,"bulbasaur" to 104).forEach{(type,slot)->
+                        check(game.act("visual","deploy",mapOf("type" to type,"slot" to slot.toString())).accepted)
+                    }
+                    nativeView(game.viewFor("visual"))
+                }
+                "ludo"->ludoFixture()
+                "uno"->nativeView(UnoSession(listOf(
+                    NativeSeat("visual","Aris"),NativeSeat("rival","Rival"),
+                    NativeSeat("third","Third"),NativeSeat("fourth","Fourth")
+                ),seed=14L).viewFor("visual"))
+                "pokecards"->nativeView(CardDuelSession(
+                    listOf(NativeSeat("visual","Aris"),NativeSeat("rival","Rival")),seed=15L
+                ).viewFor("visual"))
+                else->JsonObject()
+            }
+
+            private fun nativeView(view:NativeGameView):JsonObject = gson.toJsonTree(view).asJsonObject
+
+            private fun ludoFixture():JsonObject {
+                val cells=MutableList(52){""}
+                val placements=listOf(
+                    0 to "1:1",4 to "1:2",13 to "2:1",17 to "2:2",
+                    26 to "3:1",30 to "3:2",39 to "4:1",43 to "4:2"
+                )
+                placements.forEach{(slot,token)->cells[slot]=token}
+                return JsonObject().apply {
+                    addProperty("sessionId","visual-ludo")
+                    addProperty("gameId","ludo")
+                    addProperty("title","Cờ Cá Ngựa")
+                    addProperty("phase","move")
+                    addProperty("turn","Aris")
+                    addProperty("status","Gameplay visual acceptance")
+                    addProperty("boardWidth",13)
+                    addProperty("boardHeight",4)
+                    add("board",JsonArray().apply{cells.forEach(::add)})
+                    add("cards",JsonArray())
+                    add("actions",JsonArray())
+                    add("fields",JsonObject().apply{
+                        addProperty("you","0")
+                        addProperty("rolled","6")
+                        addProperty("arenaId","ludo")
+                        addProperty("safeSquares","0,8,13,21,26,34,39,47")
+                    })
+                    addProperty("revision",3L)
+                    addProperty("finished",false)
+                }
+            }
+        }
+    }
+
     private class ResultVisualSmokeScreen(val scenario:String):Screen(Component.literal("SVHub Result Visual Smoke")) {
         private val tftUi=TftUiState()
         private val boardUi=NativeBoardSceneUiState()
@@ -654,8 +823,20 @@ object VisualSmokeHarness {
                     return view
                 }
 
+                if(gameId=="tower_defense") {
+                    val view=NativeGameVisualSmokeScreen.fixtureView("tower_defense")
+                    view.addProperty("phase","finished")
+                    view.addProperty("status","Victory")
+                    view.addProperty("finished",true)
+                    view.addProperty("winner","Aris")
+                    view.add("resultPresentation",presentation("victory","defense_complete","tower_defense",
+                        listOf("wave" to "20","lives" to "7","gold" to "132","towers" to "3"),
+                        listOf("loot_count" to "5"),listOf("waves_cleared" to "20")))
+                    return view
+                }
+
                 val chess=gameId=="chess"
-                val board=if(chess) chessBoard() else tdBoard()
+                val board=chessBoard()
                 val fields=JsonObject().apply {
                     if(chess) {
                         addProperty("you","white");addProperty("white","Aris");addProperty("black","Rival")
@@ -676,13 +857,9 @@ object VisualSmokeHarness {
                     addProperty("winner","Aris")
                     addProperty("boardWidth",8);addProperty("boardHeight",8)
                     add("board",board);add("cards",JsonArray());add("actions",JsonArray());add("fields",fields)
-                    add("resultPresentation",if(chess)
-                        presentation("victory","checkmate","chess",
-                            listOf("moves" to "38","white_clock" to "82","black_clock" to "0"),
-                            listOf("match_reward" to ""),listOf("match_complete" to ""))
-                        else presentation("victory","defense_complete","tower_defense",
-                            listOf("wave" to "20","lives" to "7","gold" to "132","towers" to "8"),
-                            listOf("loot_count" to "5"),listOf("waves_cleared" to "20")))
+                    add("resultPresentation",presentation("victory","checkmate","chess",
+                        listOf("moves" to "38","white_clock" to "82","black_clock" to "0"),
+                        listOf("match_reward" to ""),listOf("match_complete" to "")))
                 }
             }
 
@@ -695,13 +872,6 @@ object VisualSmokeHarness {
             private fun chessBoard()=JsonArray().apply {
                 val cells=MutableList(64){""}
                 mapOf(4 to "k",6 to "R",7 to "K",52 to "P",60 to "r").forEach{(i,p)->cells[i]=p}
-                cells.forEach{add(it)}
-            }
-            private fun tdBoard()=JsonArray().apply {
-                val cells=MutableList(64){""}
-                listOf(0,1,2,3,11,19,27,35,43,51,59,60,61,62,63).forEachIndexed{i,slot->cells[slot]=when(i){0->"path:start";14->"path:goal";else->"path"}}
-                cells[18]="tower:pikachu:3:4:-1:thunderbolt:ATTACK_SPECIAL"
-                cells[26]="tower:charizard:2:3:-1:flamethrower:ATTACK_SPECIAL"
                 cells.forEach{add(it)}
             }
         }
