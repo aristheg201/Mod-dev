@@ -139,14 +139,19 @@ object NativeCosmeticService {
         }
     }
     fun state(player: ServerPlayer) = JsonObject().apply {
+        val economyStatus = economy.status()
         addProperty("module", "store")
         add("balances", balances(player.uuid))
+        addProperty("economyReady", economyStatus.ready)
+        addProperty("economyProvider", economyStatus.providerClass)
+        addProperty("economyDetail", economyStatus.detail)
         addProperty("arena", selectedArena(player.uuid) ?: TftSetRegistry.active().rules.defaultArena)
         addProperty("tactician", selectedTactician(player.uuid) ?: TftSetRegistry.active().defaultTactician)
         add("offers", JsonArray().also { array -> offers.forEach { offer ->
             array.add(JsonObject().apply {
                 addProperty("id", offer.id); addProperty("kind", offer.kind.name)
                 addProperty("price", offer.price.toPlainString()); addProperty("currency", offer.currency)
+                addProperty("currencyReady", offer.price.signum() == 0 || runCatching { economy.currencyExists(offer.currency) }.getOrDefault(false))
                 addProperty("owned", purchases.owns(player.uuid, offer))
                 addProperty("equipped", (if (offer.kind == CosmeticKind.ARENA) selectedArena(player.uuid) ?: TftSetRegistry.active().rules.defaultArena
                     else selectedTactician(player.uuid) ?: TftSetRegistry.active().defaultTactician) == offer.id)
