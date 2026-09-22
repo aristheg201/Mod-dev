@@ -17,9 +17,10 @@ class CosmeticPurchasesTest {
     private val arena = CosmeticOffer(CosmeticKind.ARENA, "monster_island", BigDecimal("500"))
     private val free = CosmeticOffer(CosmeticKind.ARENA, "kanto_stadium", BigDecimal.ZERO)
     private val tactician = CosmeticOffer(CosmeticKind.TACTICIAN, "svhub:eevee", BigDecimal("100.25"))
+    private val hunterArena = CosmeticOffer(CosmeticKind.ARENA, "arkham_asylum", BigDecimal("725"), BEconomyAdapter.HUNTER)
     private val api = Api15()
     private val profiles = Profiles()
-    private fun engine() = CosmeticPurchases(BEconomyAdapter { api }, profiles, { listOf(arena, free, tactician) })
+    private fun engine() = CosmeticPurchases(BEconomyAdapter { api }, profiles, { listOf(arena, free, tactician, hunterArena) })
     private fun buy(engine: CosmeticPurchases, offer: CosmeticOffer = arena, request: String = UUID.randomUUID().toString()): StoreResult {
         var result: StoreResult? = null
         engine.purchase(player, offer.kind, offer.id, request) { result = it }
@@ -36,6 +37,13 @@ class CosmeticPurchasesTest {
         assertEquals(BigDecimal("1500"), api.balances[BEconomyAdapter.BEAST])
         assertTrue(engine.owns(player, arena))
         assertEquals(1, api.debits)
+    }
+    @Test fun `premium arena can debit HunterCoin without changing legacy arena currency`() {
+        assertEquals(StoreResult.PURCHASED, buy(engine(), hunterArena))
+        assertEquals(BigDecimal("1275"), api.balances[BEconomyAdapter.HUNTER])
+        assertEquals(BigDecimal("2000"), api.balances[BEconomyAdapter.BEAST])
+        assertEquals(BEconomyAdapter.HUNTER, hunterArena.currency)
+        assertEquals(BEconomyAdapter.BEAST, arena.currency)
     }
     @Test fun `tactician debits HunterCoin preserving decimals`() {
         assertEquals(StoreResult.PURCHASED, buy(engine(), tactician))

@@ -4,9 +4,16 @@ import java.math.BigDecimal
 import java.util.UUID
 
 enum class CosmeticKind { ARENA, TACTICIAN }
-data class CosmeticOffer(val kind: CosmeticKind, val id: String, val price: BigDecimal) {
-    init { require(price.signum() >= 0) }
-    val currency: String get() = if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
+data class CosmeticOffer(
+    val kind: CosmeticKind,
+    val id: String,
+    val price: BigDecimal,
+    val currency: String = if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
+) {
+    init {
+        require(price.signum() >= 0)
+        require(currency in setOf(BEconomyAdapter.BEAST, BEconomyAdapter.HUNTER))
+    }
     val key: String get() = "${kind.name.lowercase()}:$id"
 }
 enum class MoneyPhase { STARTED, CONFIRMED, COMPLETE, DECLINED }

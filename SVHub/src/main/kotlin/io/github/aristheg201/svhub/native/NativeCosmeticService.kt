@@ -41,7 +41,8 @@ object NativeCosmeticService {
             val id = value.get("id").asString
             require(if (kind == CosmeticKind.ARENA) id in set.rules.arenas &&
                 javaClass.getResource("/assets/svhub/arenas/$id.json") != null else set.tacticians.any { it.id == id }) { "Unknown cosmetic $kind:$id" }
-            CosmeticOffer(kind, id, value.get("price").asString.toBigDecimal())
+            val currency = value.get("currency")?.asString ?: if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
+            CosmeticOffer(kind, id, value.get("price").asString.toBigDecimal(), currency)
         }
         require(offers.map { it.key }.distinct().size == offers.size) { "Duplicate cosmetic catalog keys" }
         require(offers.any { it.kind == CosmeticKind.ARENA && it.id == set.rules.defaultArena && it.price.signum() == 0 })
@@ -84,10 +85,12 @@ object NativeCosmeticService {
         if (action == "refresh") { recover(player.uuid); NativePlatform.refresh(player, "store"); return "" }
         val kind = runCatching { CosmeticKind.valueOf(data.string("kind")) }.getOrNull() ?: return "gui.svhub.store.invalid"
         val id = data.string("id")
+        val currency = offers.firstOrNull { it.kind == kind && it.id == id }?.currency
+            ?: if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
         val callback: (StoreResult) -> Unit = { result ->
             SVHubRuntime.server?.playerList?.getPlayer(player.uuid)?.let { live ->
                 if (NativePlatformNetwork.currentModule(live.uuid) == "store")
-                    NativePlatformNetwork.sendState(live, "store", state(live), message(result, kind))
+                    NativePlatformNetwork.sendState(live, "store", state(live), message(result, kind, currency))
             }
         }
         when (action) {
@@ -97,11 +100,11 @@ object NativeCosmeticService {
         }
         return ""
     }
-    private fun message(result: StoreResult, kind: CosmeticKind) = "gui.svhub.store." + when (result) {
+    private fun message(result: StoreResult, kind: CosmeticKind, currency: String) = "gui.svhub.store." + when (result) {
         StoreResult.PURCHASED -> if (kind == CosmeticKind.ARENA) "arena_unlocked" else "tactician_unlocked"
         StoreResult.OWNED -> "already_owned"
         StoreResult.EQUIPPED -> "equipped"
-        StoreResult.INSUFFICIENT -> if (kind == CosmeticKind.ARENA) "not_enough_beast" else "not_enough_hunter"
+        StoreResult.INSUFFICIENT -> if (currency == BEconomyAdapter.HUNTER) "not_enough_hunter" else "not_enough_beast"
         StoreResult.UNAVAILABLE -> "unavailable"
         StoreResult.PENDING -> "pending"
         StoreResult.GRANTED -> "complete"
