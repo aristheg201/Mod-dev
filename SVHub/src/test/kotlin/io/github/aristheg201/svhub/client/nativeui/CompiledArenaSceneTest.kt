@@ -146,10 +146,16 @@ class CompiledArenaSceneTest {
         fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
             .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
         val markers=mapOf(
-            "arkham_asylum" to "structure:tactician-guard-catwalk",
-            "wayne_manor" to "structure:tactician-manor-terrace",
-            "infinite_void" to "structure:tactician-floating-dais",
-            "sukuna_domain" to "structure:tactician-blood-altar"
+            "arkham_asylum" to "structure:tactician-guard-balcony-main",
+            "wayne_manor" to "structure:tactician-manor-terrace-main",
+            "infinite_void" to "structure:tactician-asteroid-core",
+            "sukuna_domain" to "structure:tactician-cursed-overlook"
+        )
+        val heroMarkers=mapOf(
+            "arkham_asylum" to "structure:watchtower-west",
+            "wayne_manor" to "structure:manor-main",
+            "infinite_void" to "structure:signature-black-hole-core",
+            "sukuna_domain" to "structure:signature-shrine-core"
         )
         val ids=markers.keys.toList()
         val arenas=ids.associateWith(::load)
@@ -157,7 +163,8 @@ class CompiledArenaSceneTest {
             val arena=arenas.getValue(id)
             assertTrue(arena.geometry.size>=14,id+" must have authored premium geometry")
             assertTrue(arena.texturedBattlefield,id+" must use textured battlefield rendering")
-            assertTrue(arena.geometry.any { it.id=="structure:"+markers.getValue(id).removePrefix("structure:") },id+" must author a physical tactician home pad")
+            assertTrue(arena.geometry.any { it.id=="structure:"+markers.getValue(id).removePrefix("structure:") },id+" must author an integrated tactician perch")
+            assertTrue(arena.geometry.any { it.id=="structure:"+heroMarkers.getValue(id).removePrefix("structure:") },id+" must author a signature hero landmark")
             val home=arena.tacticianMovementBounds
             val spawn=arena.tacticianSpawn
             assertTrue(spawn.x in home.minX..home.maxX && spawn.y in home.minY..home.maxY,id+" tactician spawn must be inside its movement pocket")
