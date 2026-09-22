@@ -10,6 +10,8 @@ internal interface NativeGameBoardSystem {
         MinecraftArenaRegistry.definition(arenaId(view))?.camera(ArenaCameraRole.NORMAL, fallback) ?: fallback
     fun sourceCells(view: JsonObject): Set<Int> = emptySet()
     fun legalTargets(view: JsonObject, selectedCell: Int?, placementMode: Boolean): Set<Int> = emptySet()
+    fun displayCell(view: JsonObject, logicalCell: Int): Int = logicalCell
+    fun logicalCell(view: JsonObject, displayCell: Int): Int = displayCell
 }
 
 private abstract class MoveBoardSystem(
@@ -32,7 +34,13 @@ private abstract class MoveBoardSystem(
         selectedCell?.let { legalMap(view)[it] }.orEmpty()
 }
 
-private object ChessBoardSystem : MoveBoardSystem("chess", ::chessIndex)
+private object ChessBoardSystem : MoveBoardSystem("chess", ::chessIndex) {
+    private fun flipped(view: JsonObject) = view.getAsJsonObject("fields")?.str("you") == "black"
+    override fun displayCell(view: JsonObject, logicalCell: Int): Int =
+        if (flipped(view)) 63 - logicalCell else logicalCell
+    override fun logicalCell(view: JsonObject, displayCell: Int): Int =
+        if (flipped(view)) 63 - displayCell else displayCell
+}
 private object XiangqiBoardSystem : MoveBoardSystem("xiangqi", ::xiangqiIndex)
 
 private object TowerDefenseBoardSystem : NativeGameBoardSystem {
@@ -66,6 +74,10 @@ internal object NativeBoardSystems {
     fun sourceCells(gameId: String, view: JsonObject) = systems[gameId]?.sourceCells(view).orEmpty()
     fun legalTargets(gameId: String, view: JsonObject, selectedCell: Int?, placementMode: Boolean = false) =
         systems[gameId]?.legalTargets(view, selectedCell, placementMode).orEmpty()
+    fun displayCell(gameId: String, view: JsonObject, logicalCell: Int) =
+        systems[gameId]?.displayCell(view, logicalCell) ?: logicalCell
+    fun logicalCell(gameId: String, view: JsonObject, displayCell: Int) =
+        systems[gameId]?.logicalCell(view, displayCell) ?: displayCell
 }
 
 private fun chessIndex(square: String): Int? {
