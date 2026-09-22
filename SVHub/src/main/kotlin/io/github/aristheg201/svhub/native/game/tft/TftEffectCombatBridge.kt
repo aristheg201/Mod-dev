@@ -51,26 +51,69 @@ internal class TftEffectCombatBridge(
 
     init {
         if (saved == null && !recovering) {
-            // Only deployment snapshots participate. Bench and previous combat summons never qualify.
-            visibleUnits.groupBy { it.team }.values.forEach { allies ->
-                val deployed = allies.map { it.definition.id }.toSet()
-                set.convergences.forEach { convergence ->
-                    if (deployed.containsAll(convergence.units)) {
-                        val leader = allies.filter { it.definition.id in convergence.units }.minBy { it.instanceId }
-                        val source = runtime.unit(leader.instanceId)
-                        runtime.execute(source, source, listOf(EffectDefinition("summon", "self", mapOf("count" to 1.0),
-                            mapOf("definition" to convergence.summon), emptyList(), emptyList())), 0)
-                    }
-                }
-            }
-            runtime.units().forEach { runtime.emit(BattleEvent.ON_COMBAT_START, it, it, it, 0.0, 0) }
+            activateConvergences()
+            runtime.units().filter { it.alive() }.forEach { runtime.emit(BattleEvent.ON_COMBAT_START, it, it, it, 0.0, 0) }
             runtime.drain()
         }
+        restoreConvergencesIfReady()
         syncFromRuntime()
+    }
+
+    private fun activateConvergences() {
+        val runtimeUnits = runtime.units().toList()
+        runtimeUnits.groupBy { it.team }.forEach { (_, allies) ->
+            set.convergences.forEach { convergence ->
+                val selected = convergence.units.sorted().mapNotNull { definition ->
+                    allies.filter { it.definitionId == definition && it.alive() }.minByOrNull { it.id }
+                }
+                if (selected.size != convergence.units.size) return@forEach
+                val marker = "convergence:" + convergence.id
+                selected.forEach { member ->
+                    member.stacks[marker + ":member:" + member.definitionId] = 1
+                }
+                val leader = selected.minBy { it.id }
+                leader.stacks[marker + ":leader"] = 1
+                selected.filter { it !== leader }.forEach { member ->
+                    member.hp = 0.0
+                    member.deadAt = runtime.now()
+                    runtime.cue("despawn", member, null, convergence.id, 0.0)
+                }
+                runtime.transform(leader, convergence.summon, false, 0)
+                runtime.cue("convergence", leader, null, convergence.id, 1.0)
+            }
+        }
+    }
+
+    private fun restoreConvergencesIfReady() {
+        set.convergences.forEach { convergence ->
+            val marker = "convergence:" + convergence.id
+            val leader = runtime.units().firstOrNull {
+                it.stacks.getOrDefault(marker + ":leader", 0) > 0 && it.definitionId == convergence.summon
+            } ?: return@forEach
+            if (leader.alive()) return@forEach
+            val members = runtime.units().filter { unit ->
+                unit.stacks.keys.any { it.startsWith(marker + ":member:") }
+            }
+            members.forEach memberLoop@{ member ->
+                val original = member.stacks.keys.firstOrNull { it.startsWith(marker + ":member:") }
+                    ?.substringAfter(marker + ":member:")
+                    ?: return@memberLoop
+                if (member === leader) runtime.transform(member, original, false, 0)
+                member.hp = member.stat(Stat.MAX_HP).coerceAtLeast(1.0)
+                member.mana = 0.0
+                member.deadAt = -1L
+                member.target = null
+                member.stacks.keys.removeIf { it.startsWith(marker) }
+                runtime.emit(BattleEvent.ON_REVIVE, member, member, member, member.hp, 0)
+                runtime.cue("spawn", member, null, convergence.id, 1.0)
+            }
+            runtime.drain()
+        }
     }
 
     fun advance(deltaMillis: Long) {
         runtime.advance(deltaMillis)
+        restoreConvergencesIfReady()
         syncFromRuntime()
     }
 
@@ -85,7 +128,7 @@ internal class TftEffectCombatBridge(
         DamagePipeline.damage(runtime, actor, victim, actor.stat(Stat.ATTACK) * multiplier, DamagePipeline.Type.PHYSICAL, crit, 0.0, 0)
         runtime.emit(BattleEvent.ON_BASIC_HIT, actor, actor, victim, 0.0, 0)
         DamagePipeline.mana(runtime, actor, actor.stat(Stat.MANA_ON_ATTACK), 0)
-        runtime.drain(); syncFromRuntime()
+        runtime.drain(); restoreConvergencesIfReady(); syncFromRuntime()
     }
 
     fun cast(source: TftCombatUnit, target: TftCombatUnit, multiplier: Double) {
@@ -103,6 +146,7 @@ internal class TftEffectCombatBridge(
         if (ability.castDelayMs > 0) runtime.schedule(ability.castDelayMs, actor, victim, castGraph, 0)
         else runtime.execute(actor, victim, castGraph, 0)
         runtime.drain()
+        restoreConvergencesIfReady()
         syncFromRuntime()
     }
 
