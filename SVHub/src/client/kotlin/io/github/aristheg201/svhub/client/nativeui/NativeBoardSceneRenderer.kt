@@ -108,7 +108,8 @@ object NativeBoardSceneRenderer {
         val lastTo = chessIndex(fields.str("lastMoveTo"))
         val auxFrom=chessIndex(fields.str("lastAuxMoveFrom"));val auxTo=chessIndex(fields.str("lastAuxMoveTo"))
         val legalCells = NativeBoardSystems.legalTargets("chess", view, selectedCell)
-        val selected = selectedCell?.let(::setOf).orEmpty()
+            .mapTo(linkedSetOf()) { NativeBoardSystems.displayCell("chess", view, it) }
+        val selected = selectedCell?.let { setOf(NativeBoardSystems.displayCell("chess", view, it)) }.orEmpty()
         val entities = mutableListOf<PokemonSceneEntity>()
         val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
 
@@ -117,22 +118,24 @@ object NativeBoardSceneRenderer {
             if (token.isBlank()) return@repeat
             val visual = NativeGameVisualRegistry.piece("chess", token.lowercase()) ?: return@repeat
             val team = if (token.firstOrNull()?.isUpperCase() == true) 0 else 1
+            val displayIndex = NativeBoardSystems.displayCell("chess", view, index)
             var motionFrom: Int? = if (index == lastTo) lastFrom else null
 
             if (serial > 0 && index==auxTo) motionFrom=auxFrom
+            val displayMotionFrom = motionFrom?.let { NativeBoardSystems.displayCell("chess", view, it) }
 
             entities += PokemonSceneEntity(
                 id = "chess:$index:$token",
                 view = visual.pokemon(token),
                 label = token,
-                boardX = (index % 8).toFloat(),
-                boardY = (index / 8).toFloat(),
+                boardX = (displayIndex % 8).toFloat(),
+                boardY = (displayIndex / 8).toFloat(),
                 team = team,
                 yaw = visual.yaw + if (team == 0) 180f else 0f,
                 scale = visual.scale,
-                motionSerial = if (motionFrom != null) serial else 0L,
-                motionFromX = motionFrom?.let { (it % 8).toFloat() },
-                motionFromY = motionFrom?.let { (it / 8).toFloat() }
+                motionSerial = if (displayMotionFrom != null) serial else 0L,
+                motionFromX = displayMotionFrom?.let { (it % 8).toFloat() },
+                motionFromY = displayMotionFrom?.let { (it / 8).toFloat() }
             )
         }
 
@@ -142,12 +145,13 @@ object NativeBoardSceneRenderer {
             val visual = NativeGameVisualRegistry.piece("chess", capturedToken.lowercase())
             val capturedTeam = if (capturedToken.firstOrNull()?.isUpperCase() == true) 0 else 1
             visual?.let {
+                val displayCaptured = NativeBoardSystems.displayCell("chess", view, capturedIndex)
                 PokemonSceneEntity(
                     id = "chess:captured:$serial",
                     view = it.pokemon(capturedToken),
                     label = capturedToken,
-                    boardX = (capturedIndex % 8).toFloat(),
-                    boardY = (capturedIndex / 8).toFloat(),
+                    boardX = (displayCaptured % 8).toFloat(),
+                    boardY = (displayCaptured / 8).toFloat(),
                     team = capturedTeam,
                     yaw = it.yaw + if (capturedTeam == 0) 180f else 0f,
                     scale = it.scale
