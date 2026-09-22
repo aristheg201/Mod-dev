@@ -1,6 +1,6 @@
 package io.github.aristheg201.svhub.native
 
-internal enum class ActiveSessionResolution { NONE, RESUME, STALE }
+enum class ActiveSessionResolution { NONE, RESUME, STALE }
 
 object NativeArcadeLifecyclePolicy {
     private const val MATCHED_MESSAGE = "gui.svhub.arcade.matched"
