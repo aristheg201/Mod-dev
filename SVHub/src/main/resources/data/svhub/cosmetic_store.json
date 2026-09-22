@@ -118,5 +118,75 @@
     "id": "sukuna_domain",
     "price": "1400",
     "currency": "HunterCoin"
+  },
+  {
+    "kind": "ARENA",
+    "id": "grand_line",
+    "price": "1250"
+  },
+  {
+    "kind": "ARENA",
+    "id": "celestial_vault",
+    "price": "1250"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:axolotl",
+    "price": "75"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:bee",
+    "price": "75"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:cat",
+    "price": "90"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:fox",
+    "price": "100"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:frog",
+    "price": "80"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:parrot",
+    "price": "90"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:rabbit",
+    "price": "80"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:wolf",
+    "price": "120"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:armadillo",
+    "price": "120"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:sniffer",
+    "price": "180"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:greninja",
+    "price": "350"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:ceruledge",
+    "price": "400"
   }
 ]
