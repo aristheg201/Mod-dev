@@ -1,4 +1,4 @@
-# Final production acceptance: 38 visual captures including every non-TFT gameplay surface and 15 TFT arenas.
+# Final production acceptance: 43 visual captures including every non-TFT gameplay surface, 17 TFT arenas, full set browser, and TFT endgame states.
 name: SVHub Loom build
 
 on:
@@ -222,18 +222,18 @@ jobs:
           echo "Screenshots:"
           find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' -print
           count="$(find run/screenshots -maxdepth 1 -type f -name 'svhub-*.png' | wc -l)"
-          test "$count" -eq 38
+          test "$count" -eq 43
           test -f run/logs/latest.log
-          for arena in monster_island gotham_rooftops sector_2814 kanto_stadium dragon_shrine distortion_rift ultra_lab ancient_ruins temporal_observatory abyssal_sanctum crimson_caldera arkham_asylum wayne_manor infinite_void sukuna_domain; do
+          for arena in monster_island gotham_rooftops sector_2814 grand_line celestial_vault kanto_stadium dragon_shrine distortion_rift ultra_lab ancient_ruins temporal_observatory abyssal_sanctum crimson_caldera arkham_asylum wayne_manor infinite_void sukuna_domain; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-$arena.png with 12 actors" run/logs/latest.log
           done
-          for scenario in planning carousel augment pve pve_loot boss tactician_move; do
+          for scenario in planning set_units set_traits carousel augment pve pve_loot boss tactician_move; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-tft-ui-$scenario.png with " run/logs/latest.log
           done
           for game in chess xiangqi tower_defense ludo uno pokecards; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-gameplay-$game.png with " run/logs/latest.log
           done
-          for game in chess tower_defense tft; do
+          for game in chess tower_defense tft_champion tft_eliminated; do
             grep -Fq "[SVHub Visual Smoke] captured svhub-result-$game.png" run/logs/latest.log
           done
           grep -Fq "[SVHub Visual Smoke] captured svhub-skin-showcase.png" run/logs/latest.log
@@ -246,7 +246,7 @@ jobs:
             grep -Ein 'Failed to load texture: svhub:|Could not load image[^[:cntrl:]]*svhub:|PNG not supported|unknown PNG chunk type' run/logs/latest.log | tail -n 80 >&2
             exit 1
           fi
-          grep -Fq '[SVHub Visual Smoke] completed 38 captures; stopping client' run/logs/latest.log
+          grep -Fq '[SVHub Visual Smoke] completed 43 captures; stopping client' run/logs/latest.log
           # Headless Linux may log non-fatal narrator (missing flite) and audio
           # initialization errors. The runClient task and all four framebuffer
           # captures already succeeded, so only treat actual Minecraft/render
