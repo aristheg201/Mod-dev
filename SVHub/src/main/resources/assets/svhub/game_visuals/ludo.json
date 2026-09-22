@@ -2,19 +2,19 @@
   "teams": {
     "0": {
       "species": "cobblemon:pikachu",
-      "scale": 0.82
+      "scale": 1.18
     },
     "1": {
       "species": "cobblemon:charmander",
-      "scale": 0.82
+      "scale": 1.18
     },
     "2": {
       "species": "cobblemon:squirtle",
-      "scale": 0.82
+      "scale": 1.18
     },
     "3": {
       "species": "cobblemon:bulbasaur",
-      "scale": 0.82
+      "scale": 1.18
     }
   }
 }

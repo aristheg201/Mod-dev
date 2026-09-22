@@ -117,6 +117,174 @@
         0.96
       ],
       "material": "#8c6544"
+    },
+    {
+      "id": "blue_launch",
+      "position": [
+        6.45,
+        1,
+        0.09
+      ],
+      "size": [
+        0.72,
+        1.45,
+        0.1
+      ],
+      "material": "#68b8eb"
+    },
+    {
+      "id": "red_launch",
+      "position": [
+        12.9,
+        6.45,
+        0.09
+      ],
+      "size": [
+        1.45,
+        0.72,
+        0.1
+      ],
+      "material": "#eb7079"
+    },
+    {
+      "id": "green_launch",
+      "position": [
+        7.55,
+        13,
+        0.09
+      ],
+      "size": [
+        0.72,
+        1.45,
+        0.1
+      ],
+      "material": "#7dcc7a"
+    },
+    {
+      "id": "yellow_launch",
+      "position": [
+        1.1,
+        7.55,
+        0.09
+      ],
+      "size": [
+        1.45,
+        0.72,
+        0.1
+      ],
+      "material": "#f0d560"
+    },
+    {
+      "id": "blue_nest_inner",
+      "position": [
+        2.5,
+        2.5,
+        0.08
+      ],
+      "size": [
+        2.4,
+        2.4,
+        0.1
+      ],
+      "material": "#7cc5f3"
+    },
+    {
+      "id": "red_nest_inner",
+      "position": [
+        11.5,
+        2.5,
+        0.08
+      ],
+      "size": [
+        2.4,
+        2.4,
+        0.1
+      ],
+      "material": "#ef858b"
+    },
+    {
+      "id": "green_nest_inner",
+      "position": [
+        2.5,
+        11.5,
+        0.08
+      ],
+      "size": [
+        2.4,
+        2.4,
+        0.1
+      ],
+      "material": "#8bd489"
+    },
+    {
+      "id": "yellow_nest_inner",
+      "position": [
+        11.5,
+        11.5,
+        0.08
+      ],
+      "size": [
+        2.4,
+        2.4,
+        0.1
+      ],
+      "material": "#f4dc77"
+    },
+    {
+      "id": "goal_blue",
+      "position": [
+        6.55,
+        6.55,
+        0.16
+      ],
+      "size": [
+        0.82,
+        0.82,
+        0.12
+      ],
+      "material": "#4c9fd6"
+    },
+    {
+      "id": "goal_red",
+      "position": [
+        7.45,
+        6.55,
+        0.16
+      ],
+      "size": [
+        0.82,
+        0.82,
+        0.12
+      ],
+      "material": "#d75f67"
+    },
+    {
+      "id": "goal_green",
+      "position": [
+        6.55,
+        7.45,
+        0.16
+      ],
+      "size": [
+        0.82,
+        0.82,
+        0.12
+      ],
+      "material": "#68b866"
+    },
+    {
+      "id": "goal_yellow",
+      "position": [
+        7.45,
+        7.45,
+        0.16
+      ],
+      "size": [
+        0.82,
+        0.82,
+        0.12
+      ],
+      "material": "#d8bb4b"
     }
   ],
   "floor": [
@@ -181,15 +349,15 @@
       "normal": {
         "position": [
           7,
-          20,
-          19
+          16.8,
+          14.8
         ],
         "target": [
           7,
           7,
-          0
+          0.15
         ],
-        "fov": 50
+        "fov": 45
       }
     },
     "boardColumns": 15,

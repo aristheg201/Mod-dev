@@ -67,8 +67,17 @@ object CardTable3DRenderer {
             pose.translate(-cx.toDouble(), -cy.toDouble(), 0.0)
 
             val accent = if (gameId == "uno") unoColor(card.str("accent")) else typeColor(card.str("accent"))
-            gui.fill(rect.x, rect.y, rect.right, rect.bottom, if (hovered) CARD_HOVER else CARD)
+            val face = if (gameId == "uno") {
+                val rgb = accent and 0x00FFFFFF
+                ((if (hovered) 0xD8 else 0xB8) shl 24) or rgb
+            } else if (hovered) CARD_HOVER else CARD
+            gui.fill(rect.x, rect.y, rect.right, rect.bottom, face)
             gui.fill(rect.x, rect.y, rect.right, rect.y + 4, accent)
+            if (gameId == "uno") {
+                val inset = (rect.width / 8).coerceAtLeast(5)
+                gui.fill(rect.x + inset, rect.y + 9, rect.right - inset, rect.bottom - 9, 0x88202A2E.toInt())
+                gui.fill(rect.x + inset + 3, rect.y + 12, rect.right - inset - 3, rect.bottom - 12, 0x55343F43)
+            }
             gui.fill(rect.x, rect.y, rect.x + 1, rect.bottom, BORDER)
             gui.fill(rect.right - 1, rect.y, rect.right, rect.bottom, BORDER)
             gui.fill(rect.x, rect.bottom - 1, rect.right, rect.bottom, BORDER)
