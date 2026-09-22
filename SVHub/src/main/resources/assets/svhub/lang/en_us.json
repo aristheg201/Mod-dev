@@ -300,5 +300,8 @@
   "gui.svhub.store.arena.wayne_manor": "Wayne Manor",
   "gui.svhub.store.arena.infinite_void": "Infinite Void",
   "gui.svhub.store.arena.sukuna_domain": "Sukuna Domain Expansion",
-  "gui.svhub.store.economy_unavailable": "BEconomy unavailable"
+  "gui.svhub.store.economy_unavailable": "BEconomy unavailable",
+  "gui.svhub.tft.set": "SET",
+  "gui.svhub.tft.set_browser": "Set Roster",
+  "gui.svhub.tft.units": "Units"
 }
