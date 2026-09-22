@@ -573,7 +573,7 @@ object TftGameRenderer {
         gui.fill(rect.x, rect.y, rect.right, rect.y+20,0xC0101B1F.toInt())
         gui.drawString(font, tr("gui.svhub.tft.traits"), rect.x + 7, rect.y + 7, muted, true)
         val allRect=UiRect(rect.right-34,rect.y+3,30,14)
-        hooks.control(allRect,tr("gui.svhub.tft.set"),true,ui.setBrowserOpen){
+        hooks.control(allRect,tr("gui.svhub.tft.set"),true){
             ui.setBrowserOpen=true
             ui.setBrowserTab="UNITS"
             ui.setBrowserPage=0
@@ -608,10 +608,10 @@ object TftGameRenderer {
         gui.drawString(font,tr("gui.svhub.tft.set_browser"),panelRect.x+10,panelRect.y+9,text,true)
         hooks.control(UiRect(panelRect.right-30,panelRect.y+5,22,18),"×",true){ui.setBrowserOpen=false}
         val tabY=panelRect.y+30
-        hooks.control(UiRect(panelRect.x+10,tabY,70,18),tr("gui.svhub.tft.units"),true,ui.setBrowserTab=="UNITS"){
+        hooks.control(UiRect(panelRect.x+10,tabY,70,18),tr("gui.svhub.tft.units"),true){
             ui.setBrowserTab="UNITS";ui.setBrowserPage=0
         }
-        hooks.control(UiRect(panelRect.x+84,tabY,70,18),tr("gui.svhub.tft.traits"),true,ui.setBrowserTab=="TRAITS"){
+        hooks.control(UiRect(panelRect.x+84,tabY,70,18),tr("gui.svhub.tft.traits"),true){
             ui.setBrowserTab="TRAITS";ui.setBrowserPage=0
         }
         val body=UiRect(panelRect.x+10,tabY+24,panelRect.width-20,panelRect.height-62)
@@ -630,7 +630,6 @@ object TftGameRenderer {
                 gui.fill(r.x,r.y,r.x+3,r.bottom,accent)
                 gui.drawString(font,fit(font,trait.name,r.width-12),r.x+8,r.y+5,text,false)
                 if(r.contains(mouseX.toDouble(),mouseY.toDouble())){
-                    val first=trait.tiers.firstOrNull()
                     ui.offerTooltip(TftHoverTooltip(trait.name,tr("gui.svhub.tft.tooltip.trait"),
                         trait.tiers.map{tier->"${tier.threshold}: ${tier.description}".trim()},accent))
                 }
