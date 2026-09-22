@@ -577,7 +577,7 @@ object PokemonModelRenderer {
         }
     }
 
-    internal fun canonicalSpeciesPath(value:String):String =
+    fun canonicalSpeciesPath(value:String):String =
         value.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }
 
     private fun resolveSpecies(rawId:String): com.cobblemon.mod.common.pokemon.Species? {
