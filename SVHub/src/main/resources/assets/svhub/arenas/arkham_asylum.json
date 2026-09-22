@@ -30,23 +30,26 @@
   "props": [
     {
       "item": "minecraft:lantern",
-      "x": -2.2,
-      "y": -1.7,
-      "scale": 0.85,
+      "x": -3.05,
+      "y": 5.55,
+      "z": 1,
+      "scale": 0.72,
       "blockModel": true
     },
     {
       "item": "minecraft:soul_lantern",
       "x": 11.2,
       "y": -1.7,
-      "scale": 0.85,
+      "z": 0.8,
+      "scale": 0.82,
       "blockModel": true
     },
     {
       "item": "minecraft:chain",
       "x": 4.5,
       "y": -2,
-      "scale": 0.8,
+      "z": 1.2,
+      "scale": 0.72,
       "blockModel": true
     }
   ],
@@ -916,101 +919,6 @@
       ]
     },
     {
-      "id": "tactician-guard-catwalk",
-      "material": "minecraft:polished_blackstone",
-      "position": [
-        -2.5,
-        6,
-        -0.15
-      ],
-      "size": [
-        1.8,
-        2.4,
-        0.3
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-guard-rail-west",
-      "material": "minecraft:iron_bars",
-      "position": [
-        -3.15,
-        6,
-        0.6
-      ],
-      "size": [
-        0.15,
-        2.4,
-        1.2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-guard-rail-rear",
-      "material": "minecraft:iron_bars",
-      "position": [
-        -2.5,
-        4.9,
-        0.6
-      ],
-      "size": [
-        1.4,
-        0.15,
-        1.2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-searchlight-post",
-      "material": "minecraft:polished_blackstone_bricks",
-      "position": [
-        -3,
-        6.85,
-        1.3
-      ],
-      "size": [
-        0.35,
-        0.35,
-        2.6
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-searchlight",
-      "material": "minecraft:sea_lantern",
-      "position": [
-        -3,
-        6.85,
-        2.78
-      ],
-      "size": [
-        0.8,
-        0.8,
-        0.5
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
       "id": "premium-identity-cell-bridge",
       "material": "minecraft:iron_block",
       "position": [
@@ -1022,6 +930,139 @@
         8,
         0.55,
         0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-balcony-main",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        -2.5,
+        6,
+        -0.14
+      ],
+      "size": [
+        1.45,
+        1.55,
+        0.28
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-balcony-step",
+      "material": "minecraft:deepslate_tiles",
+      "position": [
+        -1.75,
+        6,
+        -0.1
+      ],
+      "size": [
+        0.65,
+        0.78,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-balcony-rail-west",
+      "material": "minecraft:iron_bars",
+      "position": [
+        -3.2,
+        6,
+        0.55
+      ],
+      "size": [
+        0.12,
+        1.6,
+        1.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-balcony-rail-rear",
+      "material": "minecraft:iron_bars",
+      "position": [
+        -2.55,
+        5.25,
+        0.55
+      ],
+      "size": [
+        1.35,
+        0.12,
+        1.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-balcony-post",
+      "material": "minecraft:polished_blackstone_bricks",
+      "position": [
+        -3,
+        6.72,
+        1.3
+      ],
+      "size": [
+        0.3,
+        0.3,
+        2.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-searchlight",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        -3,
+        6.72,
+        2.72
+      ],
+      "size": [
+        0.7,
+        0.7,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-guard-chain",
+      "material": "minecraft:chain",
+      "position": [
+        -2.02,
+        5.45,
+        1.25
+      ],
+      "size": [
+        0.18,
+        0.18,
+        2.2
       ],
       "rotation": [
         0,
