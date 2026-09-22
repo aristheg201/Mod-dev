@@ -119,6 +119,11 @@ class TftUiState {
     data class ItemTarget(val origin: String, val index: Int, val instanceId: String)
     var itemTarget: ItemTarget? = null
     var itemPage = 0
+    var setBrowserOpen = false
+    var setBrowserTab = "UNITS"
+    var setBrowserPage = 0
+    internal fun catalogUnits():List<TftUnitInfo> = unitCatalog.values.sortedWith(compareBy<TftUnitInfo>{it.cost}.thenBy{it.name})
+    internal fun catalogTraits():List<TftTraitInfo> = traitCatalog.values.sortedBy{it.name}
     var carouselDestination: ArenaPoint? = null
     var carouselOffer: Int? = null
     var carouselLastIntentAt = 0L
@@ -518,11 +523,12 @@ object TftGameRenderer {
             renderAugmentHud(gui,font,UiRect(banner.x,banner.y+titleH,banner.width,banner.height-titleH),fields,ui,mouseX,mouseY,hooks)
         }
         renderHud(gui,font,resolved.hud,fields,phase,view.str("status"),density,hooks,mouseX,mouseY)
-        resolved.traits?.let{renderTraits(gui,font,it,traits,mouseX,mouseY,ui)}
+        resolved.traits?.let{renderTraits(gui,font,it,traits,mouseX,mouseY,ui,hooks)}
         resolved.players?.let{renderPlayers(gui,font,it,players,hooks)}
         resolved.itemRail?.let{renderItemRail(gui,font,it,itemBench,capabilities,ui,hooks,mouseX,mouseY)}
         renderFooter(gui,font,resolved.footer,density,view,fields,bench,canEdit,"CAN_BUY_UNIT" in capabilities,"CAN_SELL" in capabilities,ui,hooks,mouseX,mouseY)
         if(density==UiDensity.COMPACT&&area.height>=150)renderCompactChips(gui,font,resolved.board,traits,players,ui,mouseX,mouseY)
+        if(ui.setBrowserOpen) renderSetBrowser(gui,font,area,ui,hooks,mouseX,mouseY)
         if(ui.isItemDragging())renderDraggedItem(gui,ui,itemBench,mouseX,mouseY)
         ui.tooltip()?.let{renderHoverTooltip(gui,font,area,it,mouseX,mouseY)}
     }
@@ -560,10 +566,22 @@ object TftGameRenderer {
         }
     }
 
-    private fun renderTraits(gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>, mouseX: Int, mouseY: Int, ui: TftUiState) {
-        if(traits.isEmpty()) return
+    private fun renderTraits(
+        gui: GuiGraphics, font: Font, rect: UiRect, traits: List<TraitLine>,
+        mouseX: Int, mouseY: Int, ui: TftUiState, hooks: Hooks
+    ) {
         gui.fill(rect.x, rect.y, rect.right, rect.y+20,0xC0101B1F.toInt())
         gui.drawString(font, tr("gui.svhub.tft.traits"), rect.x + 7, rect.y + 7, muted, true)
+        val allRect=UiRect(rect.right-34,rect.y+3,30,14)
+        hooks.control(allRect,tr("gui.svhub.tft.set"),true,ui.setBrowserOpen){
+            ui.setBrowserOpen=true
+            ui.setBrowserTab="UNITS"
+            ui.setBrowserPage=0
+        }
+        if(traits.isEmpty()){
+            gui.drawCenteredString(font,"—",rect.x+rect.width/2,rect.y+28,muted)
+            return
+        }
         var y = rect.y + 23
         traits.take(10).forEach { trait ->
             val active = trait.active > 0
@@ -579,6 +597,67 @@ object TftGameRenderer {
             y += 29
             if (y + 25 > rect.bottom) return
         }
+    }
+
+    private fun renderSetBrowser(gui:GuiGraphics,font:Font,area:UiRect,ui:TftUiState,hooks:Hooks,mouseX:Int,mouseY:Int){
+        val margin=(min(area.width,area.height)*.06f).toInt().coerceIn(8,26)
+        val panelRect=UiRect(area.x+margin,area.y+margin,(area.width-margin*2).coerceAtLeast(180),(area.height-margin*2).coerceAtLeast(120))
+        gui.fill(area.x,area.y,area.right,area.bottom,0xB8000000.toInt())
+        gui.fill(panelRect.x,panelRect.y,panelRect.right,panelRect.bottom,0xFA0C1519.toInt())
+        gui.fill(panelRect.x,panelRect.y,panelRect.right,panelRect.y+3,gold)
+        gui.drawString(font,tr("gui.svhub.tft.set_browser"),panelRect.x+10,panelRect.y+9,text,true)
+        hooks.control(UiRect(panelRect.right-30,panelRect.y+5,22,18),"×",true){ui.setBrowserOpen=false}
+        val tabY=panelRect.y+30
+        hooks.control(UiRect(panelRect.x+10,tabY,70,18),tr("gui.svhub.tft.units"),true,ui.setBrowserTab=="UNITS"){
+            ui.setBrowserTab="UNITS";ui.setBrowserPage=0
+        }
+        hooks.control(UiRect(panelRect.x+84,tabY,70,18),tr("gui.svhub.tft.traits"),true,ui.setBrowserTab=="TRAITS"){
+            ui.setBrowserTab="TRAITS";ui.setBrowserPage=0
+        }
+        val body=UiRect(panelRect.x+10,tabY+24,panelRect.width-20,panelRect.height-62)
+        val rows=((body.height-24)/22).coerceAtLeast(1)
+        val columns=if(body.width>=520)2 else 1
+        val pageSize=(rows*columns).coerceAtLeast(1)
+        if(ui.setBrowserTab=="TRAITS"){
+            val entries=ui.catalogTraits()
+            val pages=((entries.size+pageSize-1)/pageSize).coerceAtLeast(1)
+            ui.setBrowserPage=ui.setBrowserPage.coerceIn(0,pages-1)
+            entries.drop(ui.setBrowserPage*pageSize).take(pageSize).forEachIndexed{offset,trait->
+                val col=offset/rows;val row=offset%rows
+                val w=(body.width-(columns-1)*6)/columns
+                val r=UiRect(body.x+col*(w+6),body.y+row*22,w,19)
+                gui.fill(r.x,r.y,r.right,r.bottom,panel2)
+                gui.fill(r.x,r.y,r.x+3,r.bottom,accent)
+                gui.drawString(font,fit(font,trait.name,r.width-12),r.x+8,r.y+5,text,false)
+                if(r.contains(mouseX.toDouble(),mouseY.toDouble())){
+                    val first=trait.tiers.firstOrNull()
+                    ui.offerTooltip(TftHoverTooltip(trait.name,tr("gui.svhub.tft.tooltip.trait"),
+                        trait.tiers.map{tier->"${tier.threshold}: ${tier.description}".trim()},accent))
+                }
+            }
+            renderBrowserPager(gui,font,panelRect,ui,hooks,pages)
+        }else{
+            val entries=ui.catalogUnits()
+            val pages=((entries.size+pageSize-1)/pageSize).coerceAtLeast(1)
+            ui.setBrowserPage=ui.setBrowserPage.coerceIn(0,pages-1)
+            entries.drop(ui.setBrowserPage*pageSize).take(pageSize).forEachIndexed{offset,unit->
+                val col=offset/rows;val row=offset%rows
+                val w=(body.width-(columns-1)*6)/columns
+                val r=UiRect(body.x+col*(w+6),body.y+row*22,w,19)
+                gui.fill(r.x,r.y,r.right,r.bottom,panel2)
+                gui.fill(r.x,r.y,r.x+3,r.bottom,costColor(unit.cost))
+                gui.drawString(font,fit(font,"${unit.cost}g  ${unit.name}",r.width-16),r.x+8,r.y+5,if(unit.cost>=4)gold else text,false)
+                if(r.contains(mouseX.toDouble(),mouseY.toDouble()))ui.offerTooltip(unitTooltip(ui,unit.id,1,emptyList()))
+            }
+            renderBrowserPager(gui,font,panelRect,ui,hooks,pages)
+        }
+    }
+
+    private fun renderBrowserPager(gui:GuiGraphics,font:Font,panelRect:UiRect,ui:TftUiState,hooks:Hooks,pages:Int){
+        val y=panelRect.bottom-24
+        hooks.control(UiRect(panelRect.x+10,y,22,17),"‹",ui.setBrowserPage>0){ui.setBrowserPage--}
+        hooks.control(UiRect(panelRect.right-32,y,22,17),"›",ui.setBrowserPage+1<pages){ui.setBrowserPage++}
+        gui.drawCenteredString(font,"${ui.setBrowserPage+1}/$pages",panelRect.x+panelRect.width/2,y+5,muted)
     }
 
     private fun renderPlayers(gui: GuiGraphics, font: Font, rect: UiRect, players: List<PlayerLine>, hooks: Hooks) {
