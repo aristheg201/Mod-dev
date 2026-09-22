@@ -20,7 +20,7 @@ object ArcadeResultRenderer {
         val result=view.getAsJsonObject("resultPresentation")?:return
         val gameId=view.str("gameId","arcade")
         val accent=gameAccent(gameId)
-        gui.fill(area.x,area.y,area.right,area.bottom,0xFF050B0E.toInt())
+        gui.fillGradient(area.x,area.y,area.right,area.bottom,0xFF152C35.toInt(),0xFF050B0E.toInt())
 
         val margin=6
         val controlsH=27
@@ -29,7 +29,7 @@ object ArcadeResultRenderer {
         gui.fill(scene.x,scene.y,scene.right,scene.bottom,0xFF081217.toInt())
         backdrop(UiRect(scene.x,scene.y,scene.width,(scene.height-42).coerceAtLeast(8)))
         gui.fill(scene.x,scene.y,scene.right,scene.y+3,accent)
-        gui.fill(scene.x,scene.bottom-40,scene.right,scene.bottom,0xE4070E12.toInt())
+        gui.fillGradient(scene.x,scene.bottom-40,scene.right,scene.bottom,0xEE24434D.toInt(),0xFF070E12.toInt())
 
         val outcome=result.str("outcome","complete")
         val outcomeText=trOr("gui.svhub.result."+outcome,outcome.replaceFirstChar(Char::uppercase))

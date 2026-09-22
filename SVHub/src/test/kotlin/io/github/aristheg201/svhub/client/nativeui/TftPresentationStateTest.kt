@@ -57,4 +57,14 @@ class TftPresentationStateTest {
         assertEquals(8,next.serial)
         assertNull(ui.observeItemEvent(8,"combine:a+b->c:u1"))
     }
+
+    @Test fun starUpBurstFiresOnceForNewTransactionsAndNotOnReconnectOrStaleState() {
+        val ui = TftUiState()
+        assertNull(ui.observeStarUp(3,"STAR_UP~pikachu~2~player:unit:5"))
+        val next = assertNotNull(ui.observeStarUp(4,"STAR_UP~pikachu~3~player:unit:5"))
+        assertEquals("tft:player:unit:5", next.sourceEntityId)
+        assertNull(ui.observeStarUp(4,"STAR_UP~pikachu~3~player:unit:5"))
+        assertNull(ui.observeStarUp(2,"STAR_UP~pikachu~2~player:unit:5"))
+        assertNull(ui.observeStarUp(5,"CAROUSEL_AUTO_SELL~pikachu~1~rod"))
+    }
 }

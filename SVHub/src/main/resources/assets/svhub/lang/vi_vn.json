@@ -304,5 +304,6 @@
   "gui.svhub.tft.set": "HỆ",
   "gui.svhub.tft.set_browser": "Danh sách TFT",
   "gui.svhub.tft.units": "Tướng",
-  "gui.svhub.tft.tooltip.trait": "Hệ"
+  "gui.svhub.tft.tooltip.trait": "Hệ",
+  "gui.svhub.tft.elite_bonus": "Tinh anh: ??ng minh c?ng ??i nh?n g?p ??i m?u v? s?t th??ng. M?i ??i ch? s? h?u m?t Tinh anh."
 }

@@ -205,6 +205,15 @@ class TftUiState {
         itemTarget = null
         itemDragging = false
     }
+    private var lastStarUpSerial: Long? = null
+    fun observeStarUp(serial: Long, encoded: String): SceneEffectSignal? {
+        val previous = lastStarUpSerial
+        lastStarUpSerial = maxOf(previous ?: serial, serial)
+        if (previous == null || serial <= previous) return null
+        val event = encoded.split('~')
+        if (event.size != 4 || event[0] != "STAR_UP" || event[3].isBlank()) return null
+        return SceneEffectSignal("tft:star-up:$serial",serial,SceneEffectKind.BURST,"tft:${event[3]}","tft:${event[3]}")
+    }
     fun observeItemEvent(serial:Long,encoded:String):SceneEffectSignal?{
         val previous=lastItemEventSerial
         lastItemEventSerial=maxOf(previous?:serial,serial)
@@ -755,6 +764,7 @@ object TftGameRenderer {
         }
         val activeIds=units.values.mapTo(linkedSetOf()){it.instanceId}
         val effectSignals=mutableListOf<SceneEffectSignal>()
+        ui.observeStarUp(fields.long("acquisitionSerial"),fields.str("acquisitionEvent"))?.let { effectSignals += it }
         ui.observeItemEvent(fields.long("itemEventSerial"),fields.str("lastItemEvent"))?.let {
             effectSignals += it
             Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.2f))
@@ -1077,6 +1087,8 @@ object TftGameRenderer {
                 val card = cards[index].asJsonObject
                 val cardRect = UiRect(rect.x + index * (cardW + gap), shopY, cardW, shopH)
                 val cost = card.int("value", 1)
+                val purchaseStar = card.getAsJsonObject("meta")?.int("star", 1) ?: 1
+                val elite = card.getAsJsonObject("meta")?.str("elite") == "true"
                 gui.fill(cardRect.x, cardRect.y, cardRect.right, cardRect.bottom, panel2)
                 gui.fill(cardRect.x, cardRect.y, cardRect.x + 3, cardRect.bottom, costColor(cost))
                 val species = card.getAsJsonObject("meta")?.str("species").orEmpty()
@@ -1089,10 +1101,11 @@ object TftGameRenderer {
                         PokemonModelRenderer.renderPreview(gui,pv,"tft:shop:$index",UiRect(cardRect.x+8,cardRect.y+15,cardRect.width-16,cardRect.height-27))
                     }
                     gui.drawString(font, fit(font, ui.unitInfo(unit)?.name ?: humanize(unit), cardRect.width - 12), cardRect.x + 6, cardRect.y + 5, text, true)
-                    gui.drawString(font, "${cost}g", cardRect.x + 6, cardRect.bottom - 11, gold, true)
+                    gui.drawString(font, "${cost}g" + if (elite) "  2?" else "", cardRect.x + 6, cardRect.bottom - 11, gold, true)
                 }
                 if (cardRect.contains(mouseX.toDouble(), mouseY.toDouble())) {
-                    ui.offerTooltip(unitTooltip(ui, unit, 1, emptyList()))
+                    val tooltip = unitTooltip(ui, unit, purchaseStar, emptyList())
+                    ui.offerTooltip(if (elite && tooltip != null) tooltip.copy(lines = tooltip.lines + tr("gui.svhub.tft.elite_bonus")) else tooltip)
                 }
                 if (canBuy && card.getAsJsonObject("meta")?.str("enabled") == "true") {
                     hooks.hit(cardRect) { hooks.action("buy", mapOf("index" to card.str("id").substringAfter(':'), "offerId" to card.getAsJsonObject("meta").str("offerId"))) }

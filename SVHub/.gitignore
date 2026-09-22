@@ -6,3 +6,5 @@ out/
 run/
 logs/
 crash-reports/
+
+__pycache__/
