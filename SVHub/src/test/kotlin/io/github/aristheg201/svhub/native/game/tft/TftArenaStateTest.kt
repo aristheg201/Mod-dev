@@ -4,6 +4,7 @@ import com.google.gson.JsonParser
 import io.github.aristheg201.svhub.native.game.*
 import kotlin.test.*
 
+// Visual verification includes the full set browser and TFT elimination result presentation.
 class TftArenaStateTest {
     private val seats = listOf(NativeSeat("a", "A"), NativeSeat("b", "B"))
     private val set = TftSetRegistry.bundled("kanto_rising")
