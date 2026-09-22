@@ -101,13 +101,14 @@ class TftArenaStateTest {
     }
 
     @Test fun eliminatedPlayerGetsEndgamePresentationBeforeLobbyFinishes() {
-        val initial=create()
+        val fiveSeats=(0 until 5).map { index -> NativeSeat(('a'.code+index).toChar().toString(),"P${index+1}") }
+        val initial=TftSession(fiveSeats,seed=915,definition=set)
         val saved=initial.snapshotState()
         val player=saved.getAsJsonArray("players")[0].asJsonObject
         player.addProperty("eliminated",true)
         player.addProperty("placement",5)
-        val restored=NativeGameRestorer.restore("tft",seats,initial.sessionId,saved)
-        val view=restored.viewFor("a")
+        val restored=NativeGameRestorer.restore("tft",fiveSeats,initial.sessionId,saved)
+        val view=restored.viewFor(fiveSeats.first().id)
         assertFalse(view.finished)
         assertEquals("true",view.fields["eliminated"])
         val result=assertNotNull(view.resultPresentation)
