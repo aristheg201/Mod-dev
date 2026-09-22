@@ -40,9 +40,9 @@ try:
         if not path.is_file() or not isinstance(json.loads(path.read_text()), dict):
             raise ValueError(f'Missing or invalid arena {arena}')
     counts = {
-        'units.json': 96,
-        'teams.json': 7,
-        'traits.json': 35,
+        'units.json': 116,
+        'teams.json': 13,
+        'traits.json': 41,
         'components.json': 8,
         'full_items.json': 36,
         'augments.json': 32,
@@ -117,11 +117,27 @@ try:
         arena = team.get('arena', '').removeprefix('svhub:')
         if arena and arena not in arenas:
             raise ValueError(f"Unknown arena in team {team['id']}: {arena}")
-    required_teams = {'svhub:monsterverse', 'svhub:dc_universe', 'svhub:green_lantern_corps', 'svhub:than_tai', 'svhub:one_piece'}
+    required_teams = {'svhub:monsterverse', 'svhub:dc_universe', 'svhub:green_lantern_corps', 'svhub:than_tai', 'svhub:one_piece', 'svhub:creation_trio', 'svhub:glass_cannon', 'svhub:blood_pact', 'svhub:void_contract', 'svhub:wild_gambit', 'svhub:summon_spirit', 'svhub:hoopa'}
     team_ids = {team['id'] for team in data['teams.json']}
     if not required_teams <= team_ids:
         raise ValueError(f'Missing production teams: {sorted(required_teams - team_ids)}')
     by_id = {unit['id']: unit for unit in data['units.json']}
+
+    risky = [unit for unit in data['units.json'] if 'risky' in unit.get('tags', [])]
+    if len(risky) < 20:
+        raise ValueError(f'Expected at least 20 risky units, got {len(risky)}')
+    elite_costs = sorted(unit['cost'] for unit in data['units.json'] if unit.get('elite'))
+    if elite_costs != [1, 2, 3, 4, 5]:
+        raise ValueError(f'Elite costs must span 1-5 exactly, got {elite_costs}')
+    for required in ('regiraga', 'hoopa_sukuna', 'hoopa_unbound_sukuna'):
+        if required not in units:
+            raise ValueError(f'Missing authored special unit {required}')
+    if set(by_id['regiraga']['pokemon'].get('aspects', [])) != {'regiraga'}:
+        raise ValueError('regiraga must use the regiraga aspect')
+    if set(by_id['hoopa_sukuna']['pokemon'].get('aspects', [])) != {'sukuna'}:
+        raise ValueError('hoopa_sukuna must use the sukuna aspect')
+    if by_id['hoopa_sukuna'].get('permanentEvolution', {}).get('targetUnit') != 'hoopa_unbound_sukuna':
+        raise ValueError('Hoopa persistent evolution target is missing')
     expected_aspects = {
         'mv_godzilla': {'cosmetic_item-godzilla'}, 'mv_ghidorah': {'cosmetic_item-kingghidora'},
         'mv_kong': {'cosmetic_item-kingkong'}, 'mv_mothra': {'cosmetic_item-mothra'}, 'mv_rodan': {'cosmetic_item-rodan'},

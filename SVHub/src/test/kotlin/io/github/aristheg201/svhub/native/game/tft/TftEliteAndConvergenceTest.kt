@@ -28,6 +28,21 @@ class TftEliteAndConvergenceTest {
         assertEquals("cobblemon:arceus", summoned.definition.presentation.species)
         assertEquals("a", summoned.ownerId)
     }
+    @Test fun arceusDeathRestoresTheThreeSynchronizedMembers() {
+        val fragile = base.copy(units = base.units.map {
+            when (it.id) {
+                "arceus" -> it.copy(stats = it.stats.copy(hp = 1, defense = 0, specialDefense = 0))
+                "snorlax" -> it.copy(stats = it.stats.copy(attackDamage = 5000, attackSpeed = 5.0, range = 6))
+                else -> it
+            }
+        })
+        val combat = combat(fragile, own = board("giratina","dialga","palkia"), enemy = board("snorlax"))
+        repeat(100) { if (!combat.finished) combat.step(50) }
+        assertFalse(combat.units.any { it.definition.id == "arceus" && it.alive })
+        val restored = combat.units.filter { it.ownerId == "a" && it.alive }.map { it.definition.id }.toSet()
+        assertEquals(setOf("giratina","dialga","palkia"), restored)
+    }
+
     @Test fun missingTrioMemberNeverQualifiesThroughDuplicates() {
         for (missing in listOf("giratina", "dialga", "palkia")) {
             val ids = listOf("giratina", "dialga", "palkia").filterNot { it == missing }

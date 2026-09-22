@@ -986,17 +986,14 @@ class TftSession(
 
     private fun advancePermanentEvolutions(player: PlayerState) {
         player.board.toMap().forEach { (slot, owned) ->
-            val evolution = unitDefs[owned.unitId]?.permanentEvolution ?: return@forEach
-            val progressed = owned.copy(combatRounds = owned.combatRounds + 1)
-            if (progressed.combatRounds < evolution.afterCombats) {
-                player.board[slot] = progressed
-                return@forEach
+            val result = TftPermanentEvolution.advance(owned, unitDefs)
+            if (result.unit == owned) return@forEach
+            player.board[slot] = result.unit
+            result.evolvedFrom?.let { source ->
+                player.acquisitionSerial++
+                player.acquisitionEvent = "EVOLVE~" + source + "~" + result.unit.unitId + "~" + owned.instanceId
+                bump(player.name + ": " + source + " permanently evolved into " + result.unit.unitId)
             }
-            val target = unitDefs.getValue(evolution.targetUnit)
-            player.board[slot] = progressed.copy(unitId = target.id, combatRounds = 0, poolUnitId = owned.poolSourceUnitId())
-            player.acquisitionSerial++
-            player.acquisitionEvent = "EVOLVE~" + owned.unitId + "~" + target.id + "~" + owned.instanceId
-            bump(player.name + ": " + owned.unitId + " permanently evolved into " + target.id)
         }
     }
 
