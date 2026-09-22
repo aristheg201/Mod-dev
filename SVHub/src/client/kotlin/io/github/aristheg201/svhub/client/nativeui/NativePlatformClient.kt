@@ -13,6 +13,7 @@ import io.github.aristheg201.svhub.native.network.NativeTftPreviewS2C
 import io.github.aristheg201.svhub.native.network.NativeTftPreviewResultC2S
 import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
+import io.github.aristheg201.svhub.native.NativeArcadeLifecyclePolicy
 import io.github.aristheg201.svhub.native.game.tft.PokemonAnimationSemantic
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -41,17 +42,24 @@ object NativePlatformClient {
             context.client().execute {
                 val minecraft = Minecraft.getInstance()
                 val current = minecraft.screen as? NativePlatformScreen
-                // A freshly-created server view is allowed to replace a view the player just
-                // closed. Reject the closed view itself, not every future view that references it.
-                // The old check used replacesViewId and made a fast close -> reopen race reject
-                // the legitimate new Hub view forever from the user's perspective.
+                val nextState = decode(payload.state)
+                // Matchmaking may create the server game one network turn before the client's
+                // lobby replacement is visible. Treat a non-empty game open as authoritative,
+                // while preserving lineage checks for ordinary module replacements.
                 val explicitlyClosed = payload.viewId in closedViews
-                val accepted = !explicitlyClosed && (current == null || current.viewId == payload.replacesViewId || current.viewId == payload.viewId)
+                val accepted = NativeArcadeLifecyclePolicy.shouldAcceptServerOpen(
+                    targetModule = payload.module,
+                    targetHasActiveView = payload.module == "game" && nextState.get("empty")?.asBoolean == false,
+                    currentViewId = current?.viewId,
+                    incomingViewId = payload.viewId,
+                    replacesViewId = payload.replacesViewId,
+                    explicitlyClosed = explicitlyClosed
+                )
                 if (!accepted) { reject(payload.viewId); return@execute }
                 if (payload.replacesViewId.isNotBlank()) closedViews.remove(payload.replacesViewId)
                 closedViews.remove(payload.viewId)
                 current?.prepareForServerReplacement()
-                minecraft.setScreen(NativePlatformScreen(payload.module, decode(payload.state), "", payload.viewId))
+                minecraft.setScreen(NativePlatformScreen(payload.module, nextState, "", payload.viewId))
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(NativeStateS2C.TYPE) { payload, context ->

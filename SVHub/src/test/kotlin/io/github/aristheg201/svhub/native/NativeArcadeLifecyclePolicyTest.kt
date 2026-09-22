@@ -31,11 +31,57 @@ class NativeArcadeLifecyclePolicyTest {
             )
         )
         assertEquals(
+            true,
+            NativeArcadeLifecyclePolicy.shouldAutoOpenMatchedGame(
+                currentModule = "arcade",
+                message = "",
+                activeViewPresent = true
+            )
+        )
+        assertEquals(
             false,
             NativeArcadeLifecyclePolicy.shouldAutoOpenMatchedGame(
                 currentModule = "arcade",
                 message = "gui.svhub.arcade.matched",
                 activeViewPresent = false
+            )
+        )
+    }
+
+
+    @Test
+    fun `active game promotion survives stale lobby view lineage`() {
+        assertEquals(
+            true,
+            NativeArcadeLifecyclePolicy.shouldAcceptServerOpen(
+                targetModule = "game",
+                targetHasActiveView = true,
+                currentViewId = "client-lobby-newer",
+                incomingViewId = "server-game",
+                replacesViewId = "client-lobby-older",
+                explicitlyClosed = false
+            )
+        )
+        assertEquals(
+            false,
+            NativeArcadeLifecyclePolicy.shouldAcceptServerOpen(
+                targetModule = "arcade",
+                targetHasActiveView = false,
+                currentViewId = "client-newer",
+                incomingViewId = "server-stale",
+                replacesViewId = "client-older",
+                explicitlyClosed = false
+            )
+        )
+        assertEquals(
+            false,
+            NativeArcadeLifecyclePolicy.shouldAcceptServerOpen(
+                targetModule = "game",
+                targetHasActiveView = true,
+                currentViewId = "client-lobby",
+                incomingViewId = "server-game",
+                replacesViewId = "client-lobby",
+                explicitlyClosed = true
             )
         )
     }
