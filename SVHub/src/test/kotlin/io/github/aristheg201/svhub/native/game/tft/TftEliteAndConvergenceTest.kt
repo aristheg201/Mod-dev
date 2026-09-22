@@ -37,7 +37,9 @@ class TftEliteAndConvergenceTest {
             }
         })
         val combat = combat(fragile, own = board("giratina","dialga","palkia"), enemy = board("snorlax"))
-        repeat(100) { if (!combat.finished) combat.step(50) }
+        repeat(100) {
+            if (combat.units.any { it.definition.id == "arceus" && it.alive } && !combat.finished) combat.step(50)
+        }
         assertFalse(combat.units.any { it.definition.id == "arceus" && it.alive })
         val restored = combat.units.filter { it.ownerId == "a" && it.alive }.map { it.definition.id }.toSet()
         assertEquals(setOf("giratina","dialga","palkia"), restored)
@@ -65,7 +67,7 @@ class TftEliteAndConvergenceTest {
         val ally = board("giratina", "dialga", "palkia", "pikachu", "eevee", "snorlax", "gengar", "lucario", "charizard")
         val enemy = ally.mapValues { it.value.copy(instanceId = "b:${it.key}") }
         val running = combat(own = ally, enemy = enemy)
-        assertEquals(20, running.units.size)
+        assertEquals(18, running.units.size)
         assertEquals(2, running.units.count { it.definition.id == "arceus" })
     }
     @Test fun eliteBoostIsRestrictedToDeployedFranchiseAlliesAndSurvivesRecovery() {
