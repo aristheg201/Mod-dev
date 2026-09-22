@@ -175,7 +175,7 @@ class CompiledArenaSceneTest {
         }
     }
 
-    // Premium staging is part of acceptance: the tactician must be visibly grounded beside the board.
+    // Premium staging acceptance also guards the authored home pad against battlefield encroachment.
     @Test fun premiumArenaPreparationCamerasKeepTacticianHomeOnScreen() {
         fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
             .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
