@@ -95,7 +95,8 @@ data class TftCombatSnapshot(
     val timedOut: Boolean,
     val rngState: Long,
     val units: List<TftCombatUnitSnapshot>,
-    val effects: BattleRuntime.Snapshot? = null
+    val effects: BattleRuntime.Snapshot? = null,
+    val convergenceOriginals: Map<String, io.github.aristheg201.svhub.engine.BattleUnit.Snapshot>? = null
 )
 
 /** Pure deterministic TFT-like combat. It never touches Minecraft state. */
@@ -184,7 +185,7 @@ class TftCombatEngine(
                 healingDone = saved.healingDone.coerceAtLeast(0L)
             )
         }
-        effects = TftEffectCombatBridge(set, units, emptyMap(), snapshot.rngState, snapshot.effects, recovering = true)
+        effects = TftEffectCombatBridge(set, units, emptyMap(), snapshot.rngState, snapshot.effects, recovering = true, savedConvergenceOriginals = snapshot.convergenceOriginals)
         elapsedMs = snapshot.elapsedMs.coerceIn(0L, maxDurationMs)
         rng.restore(snapshot.rngState)
         finished = snapshot.finished
@@ -209,6 +210,7 @@ class TftCombatEngine(
         timedOut = result?.timedOut ?: false,
         rngState = rng.state,
         effects = effects.snapshot(),
+        convergenceOriginals = effects.convergenceSnapshot(),
         units = units.map { unit ->
             TftCombatUnitSnapshot(
                 instanceId = unit.instanceId,

@@ -473,7 +473,7 @@ for (const marker of ["TftLayoutResolver.resolve", "PokemonModelRenderer.render"
 if (!/arenaId\s*=\s*fields\.str\("arenaId"/.test(tftRenderer)) {
   failures.push("TftGameRenderer.kt: missing arenaId state mapping");
 }
-for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone", "encodeUnitCatalog(observed, includeShop = !scouting)", "encodeTraitCatalog(observed, includeShop = !scouting)", "abilityName", "teamEffects"]) {
+for (const marker of ["targetId.orEmpty()", "unit.casts", "unit.damageDone", "unit.healingDone", '"unitCatalog" to encodedUnitCatalog', '"traitCatalog" to encodedTraitCatalog', "abilityName", "teamEffects"]) {
   if (!tftSessionCore.includes(marker)) failures.push(`TftSession.kt: missing render metadata marker ${marker}`);
 }
 for (const marker of ["fireSerial", "targetEnemyId", '"towerEncoding" to "v2"']) {

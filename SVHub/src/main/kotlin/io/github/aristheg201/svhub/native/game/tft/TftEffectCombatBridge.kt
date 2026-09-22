@@ -10,8 +10,11 @@ internal class TftEffectCombatBridge(
     private val augments: Map<String, List<String>>,
     seed: Long,
     saved: BattleRuntime.Snapshot? = null,
-    recovering: Boolean = false
+    recovering: Boolean = false,
+    savedConvergenceOriginals: Map<String, BattleUnit.Snapshot>? = null
 ) {
+    private val convergenceOriginals = savedConvergenceOriginals.orEmpty().toMutableMap()
+    fun convergenceSnapshot(): Map<String, BattleUnit.Snapshot> = convergenceOriginals.toMap()
     private val definitions = set.units.associateBy { it.id }
     private val board = BattleBoard(set.rules.boardColumns, set.rules.boardRows * 2, true, emptySet())
     private val limits = BattleRuntime.Limits(set.rules.formationCells * 2, 4096, 1024, 2048, 128)
@@ -78,6 +81,7 @@ internal class TftEffectCombatBridge(
                     member.deadAt = runtime.now()
                     runtime.cue("despawn", member, null, convergence.id, 0.0)
                 }
+                convergenceOriginals[leader.id] = leader.snapshot()
                 runtime.transform(leader, convergence.summon, false, 0)
                 runtime.cue("convergence", leader, null, convergence.id, 1.0)
             }
@@ -87,27 +91,38 @@ internal class TftEffectCombatBridge(
     private fun restoreConvergencesIfReady() {
         set.convergences.forEach { convergence ->
             val marker = "convergence:" + convergence.id
-            val leader = runtime.units().firstOrNull {
-                it.stacks.getOrDefault(marker + ":leader", 0) > 0 && it.definitionId == convergence.summon
-            } ?: return@forEach
-            if (leader.alive()) return@forEach
-            val members = runtime.units().filter { unit ->
-                unit.stacks.keys.any { it.startsWith(marker + ":member:") }
+            val leaders = runtime.units().filter {
+                it.stacks.getOrDefault(marker + ":leader", 0) > 0 && it.definitionId == convergence.summon && !it.alive()
             }
-            members.forEach memberLoop@{ member ->
-                val original = member.stacks.keys.firstOrNull { it.startsWith(marker + ":member:") }
-                    ?.substringAfter(marker + ":member:")
-                    ?: return@memberLoop
-                if (member === leader) runtime.transform(member, original, false, 0)
-                member.hp = member.stat(Stat.MAX_HP).coerceAtLeast(1.0)
-                member.mana = 0.0
-                member.deadAt = -1L
-                member.target = null
-                member.stacks.keys.removeIf { it.startsWith(marker) }
-                runtime.emit(BattleEvent.ON_REVIVE, member, member, member, member.hp, 0)
-                runtime.cue("spawn", member, null, convergence.id, 1.0)
+            leaders.forEach { leader ->
+                val members = runtime.units().filter { unit ->
+                    unit.team == leader.team && unit.owner == leader.owner &&
+                        unit.stacks.keys.any { it.startsWith(marker + ":member:") }
+                }
+                members.forEach memberLoop@{ member ->
+                    val original = member.stacks.keys.firstOrNull { it.startsWith(marker + ":member:") }
+                        ?.substringAfter(marker + ":member:") ?: return@memberLoop
+                    if (member === leader) {
+                        runtime.transform(member, original, false, 0)
+                        convergenceOriginals.remove(member.id)?.let { saved ->
+                            member.stats.clear(); member.stats.putAll(saved.stats())
+                            member.traits.clear(); member.traits.addAll(saved.traits())
+                            member.tags.clear(); member.tags.addAll(saved.tags())
+                            member.triggers.clear(); member.triggers.addAll(saved.triggers())
+                            member.modifiers.clear()
+                            member.modifiers.putAll(saved.modifiers().filterValues { it.expiresAt() <= 0 || it.expiresAt() > runtime.now() })
+                        }
+                    }
+                    member.hp = member.stat(Stat.MAX_HP).coerceAtLeast(1.0)
+                    member.mana = 0.0
+                    member.deadAt = -1L
+                    member.target = null
+                    member.stacks.keys.removeIf { it.startsWith(marker + ":") }
+                    runtime.emit(BattleEvent.ON_REVIVE, member, member, member, member.hp, 0)
+                    runtime.cue("spawn", member, null, convergence.id, 1.0)
+                }
             }
-            runtime.drain()
+            if (leaders.isNotEmpty()) runtime.drain()
         }
     }
 

@@ -122,4 +122,46 @@ class TftEliteAndConvergenceTest {
         assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(base.copy(convergences = listOf(TftConvergenceDefinition("bad", setOf("pikachu","missing"),"arceus")))) }
         assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(base.copy(units = base.units.map { if(it.id == elite.id) it.copy(purchaseStar=1) else it })) }
     }
+
+    @Test fun enemyProxyDeathRestoresOnlyItsOwnTrioAndRetainsUpgradedLeaderAfterReconnect() {
+        val ally = board("giratina", "dialga", "palkia").mapValues { it.value.copy(star = 2, items = mutableListOf("full:rapid_firecannon")) }
+        val enemy = ally.mapValues { it.value.copy(instanceId = "b:${it.key}") }
+        val running = combat(own = ally, enemy = enemy)
+        val saved = running.snapshotState()
+        val enemyProxy = saved.effects!!.units().single { it.owner() == "b" && it.definitionId() == "arceus" }
+        val original = saved.convergenceOriginals!!.getValue(enemyProxy.id())
+        val json = Gson().toJsonTree(saved).asJsonObject
+        json.getAsJsonObject("effects").getAsJsonArray("units").map { it.asJsonObject }
+            .single { it.get("id").asString == enemyProxy.id() }.addProperty("hp", 0)
+        val recovered = TftCombatEngine(base,Gson().fromJson(json,TftCombatSnapshot::class.java))
+        assertEquals(1,recovered.units.count { it.ownerId == "a" && it.definition.id == "arceus" && it.alive })
+        assertEquals(2,recovered.units.count { it.ownerId == "a" && !it.alive })
+        assertEquals(setOf("giratina","dialga","palkia"), recovered.units.filter { it.ownerId == "b" && it.alive }.map { it.definition.id }.toSet())
+        val restoredLeader = recovered.snapshotState().effects!!.units().single { it.id() == enemyProxy.id() }
+        assertEquals(original.stats(),restoredLeader.stats())
+        assertEquals(original.items(),restoredLeader.items())
+        assertEquals(original.triggers(),restoredLeader.triggers())
+        assertEquals(2.0, restoredLeader.stats()[Stat.STAR])
+        assertEquals(recovered.snapshotState(), TftCombatEngine(base,recovered.snapshotState()).snapshotState())
+    }
+
+    @Test fun eliteAmplifierDoublesActualPhysicalMagicAndTrueDamageWithoutBoostingOtherFranchises() {
+        val ally = base.units.first { it.team == elite.team && it.elite == null }
+        val boosted = combat(own = board(elite.id, ally.id, "pikachu"))
+        val snapshots = boosted.snapshotState().effects!!.units().associateBy { it.id() }
+        val world = io.github.aristheg201.svhub.engine.BattleRuntime(
+            io.github.aristheg201.svhub.engine.BattleBoard(7,8,true,emptySet()),
+            io.github.aristheg201.svhub.engine.BattleRuntime.Limits(12,4096,1024,2048,128), 1L,
+            { _,_,_,_,_ -> error("No summons") }, emptyMap())
+        for (kind in io.github.aristheg201.svhub.engine.DamagePipeline.Type.entries) {
+            fun damage(id: String): Double {
+                val source = io.github.aristheg201.svhub.engine.BattleUnit.restore(snapshots.getValue(id))
+                val target = io.github.aristheg201.svhub.engine.BattleUnit.restore(snapshots.getValue("enemy"))
+                target.shield = 0.0
+                return io.github.aristheg201.svhub.engine.DamagePipeline.damage(world,source,target,10.0,kind,false,0.0,0)
+            }
+            assertEquals(damage("a:2") * 2, damage("a:1"), 0.000001)
+            assertEquals(damage("a:2"), damage("a:0"), 0.000001)
+        }
+    }
 }

@@ -187,4 +187,17 @@ class TftArenaStateTest {
         assertEquals(before, s.viewFor("a").fields.getValue("bench").substringAfter('~'))
         assertFalse(s.act("a", "swap_bench", mapOf("from" to "8", "to" to "9")).accepted)
     }
+
+    @Test fun publicCatalogIsCachedAndCannotRevealPrivateShopOrderingWhileScouting() {
+        val s = create()
+        val ownView = s.viewFor("a")
+        val own = ownView.fields
+        assertTrue(s.act("a","scout",mapOf("target" to "b")).accepted)
+        val opponent = s.viewFor("a")
+        assertEquals(ownView.cards, opponent.cards)
+        for (key in listOf("unitCatalog","traitCatalog")) {
+            kotlin.test.assertSame(own.getValue(key), opponent.fields.getValue(key))
+            assertEquals(own.getValue(key),s.viewFor("b").fields.getValue(key))
+        }
+    }
 }

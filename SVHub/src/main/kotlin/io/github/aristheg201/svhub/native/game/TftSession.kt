@@ -1,6 +1,7 @@
 package io.github.aristheg201.svhub.native.game
 
 import com.google.gson.JsonObject
+import io.github.aristheg201.svhub.native.game.tft.TftUnitDefinition
 import io.github.aristheg201.svhub.native.game.tft.TftAcquisition
 import io.github.aristheg201.svhub.native.game.tft.TftPermanentEvolution
 import io.github.aristheg201.svhub.native.game.tft.poolSourceUnitId
@@ -422,8 +423,8 @@ class TftSession(
                 "players" to encodePlayers(),
                 "contestedUnits" to encodePublicContestedUnits(player.id),
                 "traits" to encodeTraits(observed),
-                "unitCatalog" to encodeUnitCatalog(observed, includeShop = !scouting),
-                "traitCatalog" to encodeTraitCatalog(observed, includeShop = !scouting),
+                "unitCatalog" to encodedUnitCatalog,
+                "traitCatalog" to encodedTraitCatalog,
                 "itemBench" to player.itemBench.joinToString(","),
                 "pendingItems" to player.pendingItems.joinToString(","),
                 "shopLocked" to player.shopLocked.toString(),
@@ -1155,16 +1156,10 @@ class TftSession(
         }
     }
 
-    private fun encodeUnitCatalog(player: PlayerState, includeShop: Boolean = true): String {
-        val ids = linkedSetOf<String>()
-        player.board.values.forEach { ids += it.unitId }
-        player.bench.forEach { unit -> if (unit != null) ids += unit.unitId }
-        if (includeShop) player.shop.forEach { unitId -> if (unitId != null) ids += unitId }
-        combatFor(player.id)?.engine?.units?.forEach { ids += it.definition.id }
-        if (phase == Phase.DRAFT) draftOffers.forEach { ids += it.unitId }
-        set.units.sortedWith(compareBy<io.github.aristheg201.svhub.native.game.tft.TftUnitDefinition> { it.cost }.thenBy { it.id })
-            .forEach { ids += it.id }
-        return JsonObject().apply {
+    // Public immutable metadata has stable ordering and never encodes a player's private shop/bench.
+    private val encodedUnitCatalog: String by lazy {
+        val ids = set.units.sortedWith(compareBy<TftUnitDefinition> { it.cost }.thenBy { it.id }).map { it.id }
+        JsonObject().apply {
             ids.forEach { id ->
                 val def = unitDefs[id] ?: return@forEach
                 add(def.id, JsonObject().apply {
@@ -1201,14 +1196,9 @@ class TftSession(
         }.toString()
     }
 
-    private fun encodeTraitCatalog(player: PlayerState, includeShop: Boolean = true): String {
-        val ids = linkedSetOf<String>()
-        traitCounts(player).keys.forEach(ids::add)
-        player.board.values.forEach { unit -> unitDefs[unit.unitId]?.traits?.forEach(ids::add) }
-        player.bench.forEach { unit -> unit?.let { unitDefs[it.unitId]?.traits?.forEach(ids::add) } }
-        if (includeShop) player.shop.forEach { unitId -> unitId?.let { unitDefs[it]?.traits?.forEach(ids::add) } }
-        set.traits.sortedBy { it.name }.forEach { ids += it.id }
-        return JsonObject().apply {
+    private val encodedTraitCatalog: String by lazy {
+        val ids = set.traits.sortedBy { it.name }.map { it.id }
+        JsonObject().apply {
             ids.forEach { id ->
                 val def = traitDefs[id] ?: return@forEach
                 add(def.id, JsonObject().apply {
