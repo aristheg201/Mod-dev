@@ -182,6 +182,19 @@ class CompiledArenaSceneTest {
         }
     }
 
+    @Test fun premiumSignatureLandmarksRetainAuthoredVisualLanguage() {
+        fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
+            .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
+        val void=load("infinite_void")
+        assertTrue(void.geometry.count { it.id.startsWith("structure:singularity-outer-ring-") }>=16)
+        assertTrue(void.geometry.count { it.id.startsWith("structure:singularity-inner-ring-") }>=12)
+        assertTrue(void.geometry.any { it.id=="structure:tactician-void-perch-core" })
+        val sukuna=load("sukuna_domain")
+        assertTrue(sukuna.geometry.any { it.id=="structure:signature-shrine-eave-left" })
+        assertTrue(sukuna.geometry.any { it.id=="structure:signature-shrine-eave-right" })
+        assertTrue(sukuna.geometry.any { it.id=="structure:tactician-domain-perch-core" })
+    }
+
     @Test fun premiumHeroLandmarksAreVisibleAndReadAsMajorSilhouettes() {
         fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
             .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
