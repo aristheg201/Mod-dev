@@ -10,6 +10,30 @@ import kotlin.test.*
 class BEconomyAdapterResolverTest {
     private val player = UUID.randomUUID()
 
+    class FakeCurrency(private val id: String) {
+        fun getCurrencyType(): String = id
+    }
+
+    class LowercaseProvider {
+        private val balances = mutableMapOf(
+            "beastcoin" to BigDecimal("900"),
+            "hunter_coin" to BigDecimal("450")
+        )
+
+        fun getCurrencyList() = listOf(FakeCurrency("beastcoin"), FakeCurrency("hunter_coin"))
+        fun currencyExists(currency: String) = balances.containsKey(currency)
+        fun getBalance(player: UUID, currency: String) = balances.getValue(currency)
+        fun subtractBalance(player: UUID, amount: BigDecimal, currency: String): Boolean {
+            val current = balances.getValue(currency)
+            if (current < amount) return false
+            balances[currency] = current - amount
+            return true
+        }
+        fun addBalance(player: UUID, amount: BigDecimal, currency: String) {
+            balances[currency] = balances.getValue(currency) + amount
+        }
+    }
+
     @BeforeEach
     fun resetProvider() {
         BlanketEconomy.reset()
@@ -49,6 +73,25 @@ class BEconomyAdapterResolverTest {
 
         assertTrue(adapter.receipt(player, identity, amount, BEconomyAdapter.BEAST))
         assertFalse(adapter.receipt(player, identity + ":other", amount, BEconomyAdapter.BEAST))
+    }
+
+    @Test
+    fun `BEconomy currency aliases resolve to canonical server config ids`() {
+        val provider = LowercaseProvider()
+        val adapter = BEconomyAdapter { provider }
+
+        val status = adapter.status()
+        assertTrue(status.ready)
+        assertEquals(BigDecimal("900"), adapter.balance(player, BEconomyAdapter.BEAST))
+        assertEquals(BigDecimal("450"), adapter.balance(player, BEconomyAdapter.HUNTER))
+
+        assertTrue(adapter.debit(player, BigDecimal("100"), BEconomyAdapter.BEAST))
+        adapter.credit(player, BigDecimal("25"), BEconomyAdapter.HUNTER)
+
+        assertEquals(BigDecimal("800"), adapter.balance(player, BEconomyAdapter.BEAST))
+        assertEquals(BigDecimal("475"), adapter.balance(player, BEconomyAdapter.HUNTER))
+        assertTrue(status.detail.contains("BeastCoin=beastcoin"))
+        assertTrue(status.detail.contains("HunterCoin=hunter_coin"))
     }
 
     @Test
