@@ -135,12 +135,14 @@ object PokemonModelRenderer {
     fun renderEmbedded(view: PokemonView, instanceId: String, poses: PoseStack,
                        buffers: MultiBufferSource, moving: Boolean): Boolean {
         val key=key(view)
-        if(key in failedModels) return false
-        return try { renderEmbeddedModel(view,instanceId,poses,buffers,moving) }
-        catch(failure:Exception) {
+        val rendered = if (key in failedModels) false else try {
+            renderEmbeddedModel(view,instanceId,poses,buffers,moving)
+        } catch(failure:Exception) {
             if(failedModels.add(key)) logger.warn("Unable to render scene model {} with aspects {}",view.speciesId,view.aspects,failure)
             false
         }
+        if (rendered) resolvedSceneInstances.add(instanceId) else resolvedSceneInstances.remove(instanceId)
+        return rendered
     }
 
     /**
@@ -349,6 +351,7 @@ object PokemonModelRenderer {
     }
 
     fun pruneScene(activeInstanceIds: Set<String>) {
+        resolvedSceneInstances.retainAll(activeInstanceIds)
         if (sceneModels.size <= activeInstanceIds.size + 32) return
         sceneModels.keys.removeIf { it.instanceId !in activeInstanceIds }
     }

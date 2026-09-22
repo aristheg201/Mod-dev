@@ -122,7 +122,7 @@ object CosmeticStoreRenderer {
                 val scale=if(ui.kind=="TACTICIAN")(authoredScale*1.25).coerceAtLeast(.82) else authoredScale
                 val position=SceneVec3(arena.tacticianSpawn.x.toDouble(),arena.tacticianSpawn.y.toDouble(),arena.tacticianSpawn.z.toDouble())
                 SceneTacticianNode(
-                    "store:"+offer.str("id"),
+                    CosmeticPreviewActors.arena(offer.str("id")),
                     SceneTransform(position,scale=SceneVec3(scale,scale,scale)),
                     entityId=offer.str("entity"),
                     pokemonSpecies=offer.str("species"),
@@ -134,11 +134,13 @@ object CosmeticStoreRenderer {
             if(ui.kind=="TACTICIAN"&&species!=null){
                 val aspects=chosen.str("aspects").split(',').filter(String::isNotBlank).toSet()
                 val view=PokemonView(chosen.str("id"),"",speciesId.toString(),aspects,name(chosen),species.nationalPokedexNumber,false)
-                val portraitW=(stage.width*34/100).coerceAtLeast(96)
-                val portraitRect=UiRect(stage.right-portraitW-10,stage.y+34,portraitW,(stage.height-54).coerceAtLeast(40))
+                val portraitW=(stage.width*30/100).coerceAtLeast(72)
+                val portraitX=if(arena.tacticianSpawn.x < arena.boardOrigin.x + (arena.boardColumns-1)*arena.cellSize.x/2)
+                    stage.x+12 else stage.right-portraitW-10
+                val portraitRect=UiRect(portraitX,stage.y+25,portraitW,(stage.height-34).coerceAtLeast(40))
                 gui.fill(portraitRect.x-4,portraitRect.y-4,portraitRect.right+4,portraitRect.bottom+4,0xA8081217.toInt())
                 gui.fill(portraitRect.x-4,portraitRect.y-4,portraitRect.x-1,portraitRect.bottom+4,teal)
-                PokemonModelRenderer.renderPreview(gui,view,"store:"+chosen.str("id")+":portrait",portraitRect)
+                PokemonModelRenderer.renderPreview(gui,view,CosmeticPreviewActors.portrait(chosen.str("id")),portraitRect)
             }
         }else if(ui.kind=="TACTICIAN"&&species!=null){
             val aspects=chosen.str("aspects").split(',').filter(String::isNotBlank).toSet()

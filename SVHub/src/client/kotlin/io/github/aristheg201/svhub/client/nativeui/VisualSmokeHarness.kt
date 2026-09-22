@@ -309,12 +309,11 @@ object VisualSmokeHarness {
             return
         }
         stableTicks++
-        val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:greninja" else "store:svhub:pikachu"
-        val resolved=if(scenario.startsWith("tactician")) {
-            PokemonModelRenderer.previewResolved(expectedActor)
-        } else {
-            PokemonModelRenderer.sceneSizingDiagnostics().any { it.instanceId==expectedActor }
-        }
+        val needsPortrait=scenario.startsWith("tactician")
+        val tacticianId=if(needsPortrait) "svhub:greninja" else "svhub:pikachu"
+        val expectedActor=CosmeticPreviewActors.arena(tacticianId)
+        val resolved=CosmeticPreviewActors.ready(tacticianId,needsPortrait,
+            PokemonModelRenderer::sceneResolved,PokemonModelRenderer::previewResolved)
         if(!capturedCurrent && stableTicks>=55 && active.fixtureReady && resolved) {
             capturedCurrent=true
             val fileName="svhub-store-"+scenario+".png"
