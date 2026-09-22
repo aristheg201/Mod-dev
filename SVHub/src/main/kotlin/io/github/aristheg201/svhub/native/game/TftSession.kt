@@ -2,6 +2,8 @@ package io.github.aristheg201.svhub.native.game
 
 import com.google.gson.JsonObject
 import io.github.aristheg201.svhub.native.game.tft.TftAcquisition
+import io.github.aristheg201.svhub.native.game.tft.TftPermanentEvolution
+import io.github.aristheg201.svhub.native.game.tft.poolSourceUnitId
 import io.github.aristheg201.svhub.native.game.tft.reservedCopies
 import io.github.aristheg201.svhub.native.game.tft.TftCombatEngine
 import io.github.aristheg201.svhub.native.game.tft.TftCombatSnapshot
