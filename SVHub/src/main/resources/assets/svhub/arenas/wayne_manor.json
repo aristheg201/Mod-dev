@@ -441,14 +441,14 @@
       ]
     ],
     "tacticianRegion": [
-      11.55,
-      4.65,
-      14.15,
-      7.55
+      10.95,
+      5,
+      12.1,
+      7
     ],
     "tacticianSpawn": [
-      12.85,
-      6.1,
+      11.55,
+      6,
       0.02
     ],
     "humanSpawn": [
@@ -494,32 +494,32 @@
     "cameraPresets": {
       "normal": {
         "position": [
-          1.2,
-          14.2,
-          10.6
+          4.5,
+          13.7,
+          10.1
         ],
         "target": [
-          4.8,
+          4.5,
           2.8,
-          0.12
+          0.25
         ],
-        "fov": 41,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
       },
       "preparation": {
         "position": [
-          1.2,
-          14.2,
-          10.6
+          4.5,
+          13.7,
+          10.1
         ],
         "target": [
-          4.8,
+          4.5,
           2.8,
-          0.12
+          0.25
         ],
-        "fov": 41,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
@@ -654,16 +654,16 @@
       },
       "arena_preview": {
         "position": [
-          1.2,
-          14.2,
-          10.6
+          4.5,
+          13.7,
+          10.1
         ],
         "target": [
-          4.8,
+          4.5,
           2.8,
-          0.12
+          0.25
         ],
-        "fov": 41,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
@@ -957,13 +957,13 @@
       "id": "tactician-manor-terrace",
       "material": "minecraft:smooth_stone",
       "position": [
-        12.85,
-        6.1,
+        11.55,
+        6,
         -0.15
       ],
       "size": [
-        2.8,
-        3.2,
+        1.8,
+        2.4,
         0.3
       ],
       "rotation": [
@@ -976,13 +976,13 @@
       "id": "tactician-balustrade-east",
       "material": "minecraft:quartz_pillar",
       "position": [
-        14.25,
-        6.1,
+        12.15,
+        6,
         0.55
       ],
       "size": [
         0.18,
-        3.2,
+        2.4,
         1.1
       ],
       "rotation": [
@@ -995,12 +995,12 @@
       "id": "tactician-balustrade-rear",
       "material": "minecraft:smooth_quartz",
       "position": [
-        12.85,
-        4.55,
+        11.55,
+        4.9,
         0.55
       ],
       "size": [
-        2.8,
+        1.8,
         0.18,
         1.1
       ],
@@ -1014,13 +1014,13 @@
       "id": "tactician-wayne-statue",
       "material": "minecraft:oxidized_copper",
       "position": [
-        13.7,
-        7.15,
+        11.9,
+        6.75,
         1.15
       ],
       "size": [
-        0.65,
-        0.65,
+        0.55,
+        0.55,
         2.3
       ],
       "rotation": [
