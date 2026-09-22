@@ -303,5 +303,6 @@
   "gui.svhub.store.economy_unavailable": "BEconomy chưa sẵn sàng",
   "gui.svhub.tft.set": "HỆ",
   "gui.svhub.tft.set_browser": "Danh sách TFT",
-  "gui.svhub.tft.units": "Tướng"
+  "gui.svhub.tft.units": "Tướng",
+  "gui.svhub.tft.tooltip.trait": "Hệ"
 }
