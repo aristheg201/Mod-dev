@@ -760,16 +760,17 @@ class NativePlatformScreen(
                 if(projected!=null && view!=null){
                     when(game){
                         "chess","xiangqi"->{
+                            val logicalProjected=NativeBoardSystems.logicalCell(game,view,projected)
                             val sources=NativeBoardSystems.sourceCells(game,view)
                             val first=selectedCell
                             when {
-                                first==null && projected in sources -> selectedCell=projected
-                                first==projected -> selectedCell=null
-                                first!=null && projected in NativeBoardSystems.legalTargets(game,view,first) -> {
+                                first==null && logicalProjected in sources -> selectedCell=logicalProjected
+                                first==logicalProjected -> selectedCell=null
+                                first!=null && logicalProjected in NativeBoardSystems.legalTargets(game,view,first) -> {
                                     selectedCell=null
-                                    gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,projected)))
+                                    gameAct("move",mapOf("from" to coord(game,first),"to" to coord(game,logicalProjected)))
                                 }
-                                projected in sources -> selectedCell=projected
+                                logicalProjected in sources -> selectedCell=logicalProjected
                                 else -> selectedCell=null
                             }
                         }
