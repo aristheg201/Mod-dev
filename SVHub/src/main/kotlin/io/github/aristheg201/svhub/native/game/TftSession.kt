@@ -695,7 +695,7 @@ class TftSession(
             "board" -> player.board.remove(index)
         }
         player.gold = (player.gold + sellValue(unit)).coerceAtMost(MAX_GOLD)
-        pool.returnCopies(unit.unitId, unit.reservedCopies())
+        pool.returnCopies(unit.poolSourceUnitId(), unit.reservedCopies())
         grantItems(player, unit.items.flatMap(::unpackItem))
         bump("${player.name} sold ${unit.unitId}")
         return accept("Unit sold")
@@ -920,8 +920,9 @@ class TftSession(
             if (a.hp <= 0) eliminated += a else healFromModifiers(a)
             if (b.hp <= 0) eliminated += b else healFromModifiers(b)
         }
-        eliminatePlayers(eliminated.distinctBy { it.id })
         val participants = unique.flatMap { listOfNotNull(it.aId, it.bId) }.toSet()
+        players.values.filter { it.id in participants && !it.eliminated }.forEach(::advancePermanentEvolutions)
+        eliminatePlayers(eliminated.distinctBy { it.id })
         val roundType = if (unique.any { it.pve != null }) "pve" else "pvp"
         alivePlayers().filter { it.id in participants }.forEach { settleRound(it, roundType) }
         combats.clear(); checkWinner()
@@ -980,7 +981,23 @@ class TftSession(
 
     private fun incomingUnit(unitId: String, poolCopies: Int = 1): TftOwnedUnit {
         val def = unitDefs.getValue(unitId)
-        return TftOwnedUnit("u${nextUnitSerial}", unitId, def.purchaseStar, poolCopies = poolCopies)
+        return TftOwnedUnit("u" + nextUnitSerial, unitId, def.purchaseStar, poolCopies = poolCopies, poolUnitId = unitId)
+    }
+
+    private fun advancePermanentEvolutions(player: PlayerState) {
+        player.board.toMap().forEach { (slot, owned) ->
+            val evolution = unitDefs[owned.unitId]?.permanentEvolution ?: return@forEach
+            val progressed = owned.copy(combatRounds = owned.combatRounds + 1)
+            if (progressed.combatRounds < evolution.afterCombats) {
+                player.board[slot] = progressed
+                return@forEach
+            }
+            val target = unitDefs.getValue(evolution.targetUnit)
+            player.board[slot] = progressed.copy(unitId = target.id, combatRounds = 0, poolUnitId = owned.poolSourceUnitId())
+            player.acquisitionSerial++
+            player.acquisitionEvent = "EVOLVE~" + owned.unitId + "~" + target.id + "~" + owned.instanceId
+            bump(player.name + ": " + owned.unitId + " permanently evolved into " + target.id)
+        }
     }
 
     private fun ownsElite(player: PlayerState) = unitLocations(player).any { unitDefs[it.unit.unitId]?.elite != null }
@@ -1018,7 +1035,7 @@ class TftSession(
             val before = player.gold
             player.gold = (player.gold + sellValue(unit)).coerceAtMost(MAX_GOLD)
             grantItems(player, unit.items.flatMap(::unpackItem))
-            pool.returnCopies(unit.unitId, unit.reservedCopies())
+            pool.returnCopies(unit.poolSourceUnitId(), unit.reservedCopies())
             player.acquisitionSerial++
             player.acquisitionEvent = "${source}_AUTO_SELL~${unit.unitId}~${player.gold - before}~${unit.items.joinToString(",")}"
             bump(player.acquisitionEvent)
@@ -1051,8 +1068,9 @@ class TftSession(
     }
 
     private fun sellValue(unit: TftOwnedUnit): Int {
-        val def = unitDefs.getValue(unit.unitId)
-        return if (def.elite != null) def.price else def.cost * copiesForStar(unit.star)
+        val current = unitDefs.getValue(unit.unitId)
+        val source = unitDefs[unit.poolSourceUnitId()] ?: current
+        return if (current.elite != null) current.price else source.cost * copiesForStar(unit.star)
     }
 
     private fun mergeUpgradeItems(raw: List<String>): Pair<List<String>, List<String>> {
