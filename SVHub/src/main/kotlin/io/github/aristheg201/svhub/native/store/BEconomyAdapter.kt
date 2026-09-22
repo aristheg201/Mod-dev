@@ -30,48 +30,101 @@ data class BEconomyStatus(
  * Server-only bridge to BEconomy / BlanketEconomy.
  *
  * The provider remains reflection-isolated so clients and servers without the optional
- * economy mod can still load SVHub. The live provider currently exposes the Kotlin object
- * org.blanketeconomy.api.BlanketEconomy; the older package name remains as a compatibility
- * candidate for servers that still ship that API surface.
+ * economy mod can still load SVHub. BEconomy 1.5 exposes
+ * org.krripe.beconomy.api.BEconomy; the older BlanketEconomy package remains as a
+ * compatibility candidate for servers that still ship that API surface.
  */
 class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEconomy {
     @Volatile private var cachedApi: Any? = null
     @Volatile private var resolvedProviderClass: String = if (apiSupplier != null) "injected" else ""
 
-    override fun currencyExists(currency: String) =
-        invoke("currencyExists", arrayOf(String::class.java), currency) as Boolean
+    override fun currencyExists(currency: String) = canonicalCurrency(currency) != null
 
-    override fun balance(player: UUID, currency: String) =
-        invoke("getBalance", arrayOf(UUID::class.java, String::class.java), player, currency) as BigDecimal
+    override fun balance(player: UUID, currency: String): BigDecimal {
+        val canonical = requireCurrency(currency)
+        return invoke("getBalance", arrayOf(UUID::class.java, String::class.java), player, canonical) as BigDecimal
+    }
 
     override fun debit(player: UUID, amount: BigDecimal, currency: String): Boolean {
         require(amount.signum() > 0)
-        return invoke("subtractBalance", MONEY_TYPES, player, amount, currency) as Boolean
+        val canonical = requireCurrency(currency)
+        return invoke("subtractBalance", MONEY_TYPES, player, amount, canonical) as Boolean
     }
 
     override fun credit(player: UUID, amount: BigDecimal, currency: String) {
         require(amount.signum() > 0)
-        invoke("addBalance", MONEY_TYPES, player, amount, currency)
+        val canonical = requireCurrency(currency)
+        invoke("addBalance", MONEY_TYPES, player, amount, canonical)
     }
 
     override fun recordReceipt(player: UUID, identity: String, amount: BigDecimal, currency: String) {
+        val canonical = requireCurrency(currency)
         invoke(
             "logTransaction",
             arrayOf(UUID::class.java, String::class.java, BigDecimal::class.java, String::class.java),
-            player, currency, amount, "svhub:$identity"
+            player, canonical, amount, "svhub:$identity"
         )
     }
 
     override fun receipt(player: UUID, identity: String, amount: BigDecimal, currency: String): Boolean {
+        val canonical = requireCurrency(currency)
         val history = invoke("getTransactionHistory", arrayOf(UUID::class.java), player) as List<*>
         return history.filterNotNull().any { transaction ->
             fun field(name: String) = transaction.javaClass.getMethod(name).invoke(transaction)
             field("getPlayerId") == player &&
                 field("getType") == "svhub:$identity" &&
-                field("getCurrencyType") == currency &&
+                field("getCurrencyType") == canonical &&
                 (field("getAmount") as BigDecimal).compareTo(amount) == 0
         }
     }
+
+    private fun requireCurrency(currency: String): String =
+        canonicalCurrency(currency) ?: throw IllegalStateException(
+            "BEconomy currency '$currency' is unavailable; configured currencies: " +
+                availableCurrencyTypes().joinToString().ifBlank { "<none>" }
+        )
+
+    /**
+     * BEconomy 1.5 treats currencyType as case-sensitive. Server configs commonly use
+     * lower-case or separator variants (beastcoin, beast_coin, hunter-coin), while SVHub
+     * exposes stable UI names BeastCoin/HunterCoin. Resolve those aliases to the provider's
+     * canonical currencyType before every balance mutation/receipt operation.
+     */
+    private fun canonicalCurrency(currency: String): String? {
+        val provider = target()
+        val exact = runCatching {
+            provider.javaClass.getMethod("currencyExists", String::class.java)
+                .invoke(provider, currency) as? Boolean
+        }.getOrNull()
+        if (exact == true) return currency
+
+        val configured = availableCurrencyTypes(provider)
+        configured.firstOrNull { it.equals(currency, ignoreCase = true) }?.let { return it }
+
+        val wanted = normalizeCurrency(currency)
+        val normalizedMatches = configured.filter { normalizeCurrency(it) == wanted }
+        return when (normalizedMatches.size) {
+            0 -> null
+            1 -> normalizedMatches.single()
+            else -> throw IllegalStateException(
+                "Ambiguous BEconomy currency '$currency': ${normalizedMatches.joinToString()}"
+            )
+        }
+    }
+
+    private fun availableCurrencyTypes(provider: Any = target()): List<String> {
+        val currencies = runCatching {
+            provider.javaClass.getMethod("getCurrencyList").invoke(provider) as? Iterable<*>
+        }.getOrNull() ?: return emptyList()
+        return currencies.filterNotNull().mapNotNull { config ->
+            runCatching {
+                config.javaClass.getMethod("getCurrencyType").invoke(config) as? String
+            }.getOrNull()?.takeIf(String::isNotBlank)
+        }.distinct()
+    }
+
+    private fun normalizeCurrency(value: String): String =
+        value.filter(Char::isLetterOrDigit).lowercase()
 
     /**
      * Resolves the real provider and verifies the two currencies SVHub actually consumes.
@@ -79,18 +132,20 @@ class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEc
      */
     fun status(): BEconomyStatus = try {
         target()
-        val beast = currencyExists(BEAST)
-        val hunter = currencyExists(HUNTER)
+        val beastId = canonicalCurrency(BEAST)
+        val hunterId = canonicalCurrency(HUNTER)
+        val beast = beastId != null
+        val hunter = hunterId != null
         BEconomyStatus(
             available = true,
             providerClass = resolvedProviderClass,
             beastCoin = beast,
             hunterCoin = hunter,
             detail = when {
-                beast && hunter -> "ready"
-                !beast && !hunter -> "missing BeastCoin and HunterCoin"
-                !beast -> "missing BeastCoin"
-                else -> "missing HunterCoin"
+                beast && hunter -> "ready ($BEAST=$beastId, $HUNTER=$hunterId)"
+                !beast && !hunter -> "missing BeastCoin and HunterCoin; configured=${availableCurrencyTypes().joinToString()}"
+                !beast -> "missing BeastCoin; configured=${availableCurrencyTypes().joinToString()}"
+                else -> "missing HunterCoin; configured=${availableCurrencyTypes().joinToString()}"
             }
         )
     } catch (error: Throwable) {
