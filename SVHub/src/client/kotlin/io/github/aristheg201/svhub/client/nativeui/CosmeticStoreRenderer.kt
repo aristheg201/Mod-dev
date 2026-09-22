@@ -105,29 +105,22 @@ object CosmeticStoreRenderer {
         val arena=MinecraftArenaRegistry.definition(arenaId)
         val speciesId=ResourceLocation.tryParse(chosen.str("species"))
         val species=speciesId?.let(PokemonSpecies::getByIdentifier)
-        if(ui.kind=="TACTICIAN"&&species!=null){
-            val aspects=chosen.str("aspects").split(',').filter(String::isNotBlank).toSet()
-            val view=PokemonView(chosen.str("id"),"",speciesId.toString(),aspects,name(chosen),species.nationalPokedexNumber,false)
-            val modelRect=UiRect(stage.x+12,stage.y+26,(stage.width-24).coerceAtLeast(12),(stage.height-36).coerceAtLeast(12))
-            gui.fill(stage.x+stage.width/4,stage.bottom-9,stage.right-stage.width/4,stage.bottom-6,teal)
-            PokemonModelRenderer.renderPreview(gui,view,"store:"+chosen.str("id"),modelRect)
-        }else if(arena!=null){
+        if(arena!=null){
             val sceneRect=stage.inset(5)
             val origin=SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble())
             val cell=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble())
             val camera=SceneCameraFraming.board(
                 arena.camera(ArenaCameraRole.ARENA_PREVIEW,SceneCameras.TFT),sceneRect,origin,
                 arena.boardColumns,arena.boardRows,
-                arena.benchAnchors.map{SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble())},
-                widthFraction=.72,cellSize=cell
+                arena.framingAnchors().map{SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble())},
+                widthFraction=.76,cellSize=cell
             )
             val tactician=if(ui.kind=="TACTICIAN")chosen else state.getAsJsonArray("offers")?.map{it.asJsonObject}
                 ?.find{it.str("kind")=="TACTICIAN"&&it.str("id")==state.str("tactician")}
             val actor=tactician?.let{offer->
-                val scale=runCatching{offer.get("scale").asDouble}.getOrDefault(1.0)
-                val position=if(ui.kind=="TACTICIAN")
-                    origin+SceneVec3(arena.boardColumns*cell.x/2,arena.boardRows*cell.y/2,0.0)
-                else SceneVec3(arena.tacticianSpawn.x.toDouble(),arena.tacticianSpawn.y.toDouble(),arena.tacticianSpawn.z.toDouble())
+                val authoredScale=runCatching{offer.get("scale").asDouble}.getOrDefault(1.0)
+                val scale=if(ui.kind=="TACTICIAN")(authoredScale*1.25).coerceAtLeast(.82) else authoredScale
+                val position=SceneVec3(arena.tacticianSpawn.x.toDouble(),arena.tacticianSpawn.y.toDouble(),arena.tacticianSpawn.z.toDouble())
                 SceneTacticianNode(
                     "store:"+offer.str("id"),
                     SceneTransform(position,scale=SceneVec3(scale,scale,scale)),
@@ -138,6 +131,20 @@ object CosmeticStoreRenderer {
             }
             PokemonScene3D.render(gui,font,sceneRect,arena.boardColumns,arena.boardRows,emptyList(),ui.scene,
                 camera=camera,arenaId=arenaId,arenaSeed="store:"+arenaId,tactician=actor)
+            if(ui.kind=="TACTICIAN"&&species!=null){
+                val aspects=chosen.str("aspects").split(',').filter(String::isNotBlank).toSet()
+                val view=PokemonView(chosen.str("id"),"",speciesId.toString(),aspects,name(chosen),species.nationalPokedexNumber,false)
+                val portraitW=(stage.width*34/100).coerceAtLeast(96)
+                val portraitRect=UiRect(stage.right-portraitW-10,stage.y+34,portraitW,(stage.height-54).coerceAtLeast(40))
+                gui.fill(portraitRect.x-4,portraitRect.y-4,portraitRect.right+4,portraitRect.bottom+4,0xA8081217.toInt())
+                gui.fill(portraitRect.x-4,portraitRect.y-4,portraitRect.x-1,portraitRect.bottom+4,teal)
+                PokemonModelRenderer.renderPreview(gui,view,"store:"+chosen.str("id")+":portrait",portraitRect)
+            }
+        }else if(ui.kind=="TACTICIAN"&&species!=null){
+            val aspects=chosen.str("aspects").split(',').filter(String::isNotBlank).toSet()
+            val view=PokemonView(chosen.str("id"),"",speciesId.toString(),aspects,name(chosen),species.nationalPokedexNumber,false)
+            val modelRect=UiRect(stage.x+12,stage.y+26,(stage.width-24).coerceAtLeast(12),(stage.height-36).coerceAtLeast(12))
+            PokemonModelRenderer.renderPreview(gui,view,"store:"+chosen.str("id"),modelRect)
         }
 
         gui.fill(stage.x+5,stage.y+5,stage.right-5,stage.y+21,0xC9071014.toInt())
