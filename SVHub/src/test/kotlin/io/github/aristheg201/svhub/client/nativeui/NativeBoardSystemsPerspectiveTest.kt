@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
+// Visual contract: the local chess army must be rendered on the near edge and clicks must still address logical squares.
 class NativeBoardSystemsPerspectiveTest {
     private fun chessView(side:String)=JsonObject().apply {
         add("fields", JsonObject().apply { addProperty("you", side) })
