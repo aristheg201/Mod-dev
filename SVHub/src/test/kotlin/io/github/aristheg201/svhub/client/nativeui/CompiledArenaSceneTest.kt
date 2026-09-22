@@ -13,6 +13,8 @@ import io.github.aristheg201.svhub.ui.SceneMeshNode
 import io.github.aristheg201.svhub.ui.SceneBlockModelNode
 import io.github.aristheg201.svhub.ui.SceneItemModelNode
 import io.github.aristheg201.svhub.ui.SceneVec3
+import io.github.aristheg201.svhub.ui.SceneCameraFraming
+import io.github.aristheg201.svhub.ui.SceneCameras
 import io.github.aristheg201.svhub.ui.PerspectiveBoardTransform
 
 class CompiledArenaSceneTest {
@@ -143,18 +145,56 @@ class CompiledArenaSceneTest {
     @Test fun premiumHunterCoinArenasHaveMateriallyDistinctSceneIdentity() {
         fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
             .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
-        val ids=listOf("arkham_asylum","wayne_manor","infinite_void","sukuna_domain")
+        val markers=mapOf(
+            "arkham_asylum" to "structure:tactician-guard-catwalk",
+            "wayne_manor" to "structure:tactician-manor-terrace",
+            "infinite_void" to "structure:tactician-floating-dais",
+            "sukuna_domain" to "structure:tactician-blood-altar"
+        )
+        val ids=markers.keys.toList()
         val arenas=ids.associateWith(::load)
         ids.forEach { id ->
             val arena=arenas.getValue(id)
-            assertTrue(arena.geometry.size>=10,id+" must have authored premium geometry")
+            assertTrue(arena.geometry.size>=14,id+" must have authored premium geometry")
             assertTrue(arena.texturedBattlefield,id+" must use textured battlefield rendering")
+            assertTrue(arena.geometry.any { it.id=="structure:"+markers.getValue(id).removePrefix("structure:") },id+" must author a physical tactician home pad")
+            val home=arena.tacticianMovementBounds
+            val spawn=arena.tacticianSpawn
+            assertTrue(spawn.x in home.minX..home.maxX && spawn.y in home.minY..home.maxY,id+" tactician spawn must be inside its movement pocket")
+            val field=checkNotNull(arena.battlefieldBounds)
+            assertTrue(home.maxX<=field.minX || home.minX>=field.maxX || home.maxY<=field.minY || home.minY>=field.maxY,id+" tactician home must not overlap the battlefield")
+            assertTrue(arena.framingAnchors().contains(spawn),id+" tactician home must participate in camera framing")
         }
         for(i in ids.indices) for(j in i+1 until ids.size) {
             val a=arenas.getValue(ids[i]); val b=arenas.getValue(ids[j])
             assertNotEquals(a.geometry.map{it.material}.toSet(),b.geometry.map{it.material}.toSet())
             assertNotEquals(a.geometry.map{it.id}.toSet(),b.geometry.map{it.id}.toSet())
-            assertNotEquals(a.cameras,b.cameras)
+            assertNotEquals(a.benchAnchors,b.benchAnchors)
+            assertNotEquals(a.camera(ArenaCameraRole.PREPARATION,SceneCameras.TFT),b.camera(ArenaCameraRole.PREPARATION,SceneCameras.TFT))
+            assertNotEquals(a.tacticianMovementBounds,b.tacticianMovementBounds)
+        }
+    }
+
+    @Test fun premiumArenaPreparationCamerasKeepTacticianHomeOnScreen() {
+        fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
+            .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
+        val viewport=UiRect(0,0,1280,720)
+        for(id in listOf("arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
+            val arena=load(id)
+            val framed=SceneCameraFraming.board(
+                arena.camera(ArenaCameraRole.PREPARATION,SceneCameras.TFT),
+                viewport,
+                SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble()),
+                arena.boardColumns,
+                arena.boardRows,
+                arena.framingAnchors().map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) },
+                cellSize=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble())
+            )
+            val transform=PerspectiveBoardTransform(viewport,framed.position,framed.target,framed.fov,framed.near,framed.far)
+            val projected=transform.project(SceneVec3(arena.tacticianSpawn.x.toDouble(),arena.tacticianSpawn.y.toDouble(),arena.tacticianSpawn.z.toDouble()))
+            assertTrue(projected!=null,id+" tactician home must project into the preparation camera")
+            assertTrue(projected!!.x>=viewport.width*.035 && projected.x<=viewport.right-viewport.width*.035,id+" tactician home must remain horizontally visible")
+            assertTrue(projected.y>=viewport.height*.035 && projected.y<=viewport.bottom-viewport.height*.035,id+" tactician home must remain vertically visible")
         }
     }
 
