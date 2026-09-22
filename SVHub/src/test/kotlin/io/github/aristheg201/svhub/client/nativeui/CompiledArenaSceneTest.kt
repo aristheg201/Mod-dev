@@ -152,7 +152,7 @@ class CompiledArenaSceneTest {
             "sukuna_domain" to "structure:tactician-cursed-overlook"
         )
         val heroMarkers=mapOf(
-            "arkham_asylum" to "structure:watchtower-west",
+            "arkham_asylum" to "structure:north-cell-block",
             "wayne_manor" to "structure:manor-main",
             "infinite_void" to "structure:signature-black-hole-core",
             "sukuna_domain" to "structure:signature-shrine-core"
@@ -186,7 +186,7 @@ class CompiledArenaSceneTest {
         fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
             .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
         val heroes=mapOf(
-            "arkham_asylum" to "structure:watchtower-west",
+            "arkham_asylum" to "structure:north-cell-block",
             "wayne_manor" to "structure:manor-main",
             "infinite_void" to "structure:signature-black-hole-core",
             "sukuna_domain" to "structure:signature-shrine-core"
