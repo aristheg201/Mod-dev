@@ -17,6 +17,8 @@ import io.github.aristheg201.svhub.client.cobblemon.PokemonModelRenderer
 import io.github.aristheg201.svhub.client.cobblemon.PokemonView
 import io.github.aristheg201.svhub.ui.SceneCameraFraming
 import io.github.aristheg201.svhub.ui.SceneCameras
+import io.github.aristheg201.svhub.ui.SceneTacticianNode
+import io.github.aristheg201.svhub.ui.SceneTransform
 import io.github.aristheg201.svhub.ui.SceneVec3
 import io.github.aristheg201.svhub.ui.UiDensity
 import io.github.aristheg201.svhub.ui.UiRect
@@ -997,8 +999,20 @@ object VisualSmokeHarness {
                 SceneVec3(arena.boardOrigin.x.toDouble(), arena.boardOrigin.y.toDouble(), arena.boardOrigin.z.toDouble()),
                 arena.boardColumns,
                 arena.boardRows,
-                arena.benchAnchors.map { SceneVec3(it.x.toDouble(), it.y.toDouble(), it.z.toDouble()) },
+                arena.framingAnchors().map { SceneVec3(it.x.toDouble(), it.y.toDouble(), it.z.toDouble()) },
                 cellSize = SceneVec3(arena.cellSize.x.toDouble(), arena.cellSize.y.toDouble(), arena.cellSize.z.toDouble())
+            )
+            val smokeTactician = SceneTacticianNode(
+                id = "premium-tactician:$arenaId",
+                transform = SceneTransform(
+                    SceneVec3(arena.tacticianSpawn.x.toDouble(), arena.tacticianSpawn.y.toDouble(), arena.tacticianSpawn.z.toDouble()),
+                    scale = SceneVec3(.55, .55, .55)
+                ),
+                entityId = "",
+                animation = "IDLE",
+                pokemonSpecies = "cobblemon:mewtwo",
+                pokemonAspects = emptySet(),
+                visible = true
             )
 
             PokemonScene3D.render(
@@ -1012,7 +1026,8 @@ object VisualSmokeHarness {
                 teamSplitRow = arena.boardRows / 2,
                 camera = framed,
                 arenaId = arenaId,
-                arenaSeed = "visual-smoke:$arenaId"
+                arenaSeed = "visual-smoke:$arenaId",
+                tactician = smokeTactician
             )
 
             gui.fill(6, 6, 250, 25, 0xC0000000.toInt())
