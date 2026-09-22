@@ -36,7 +36,7 @@ class TftEliteAndConvergenceTest {
                 else -> it
             }
         })
-        val combat = combat(fragile, own = board("giratina","dialga","palkia"), enemy = board("snorlax"))
+        val combat = combat(fragile, own = board("giratina","dialga","palkia"), enemy = mapOf(3 to TftOwnedUnit("enemy:snorlax","snorlax")))
         repeat(100) {
             if (combat.units.any { it.definition.id == "arceus" && it.alive } && !combat.finished) combat.step(50)
         }
