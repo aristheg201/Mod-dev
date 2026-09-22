@@ -78,6 +78,7 @@ class CompiledArenaSceneTest {
         }
     }
 
+    // Authored model kinds keep arena scene compilation independent of Minecraft registry bootstrap.
     @Test fun premiumArenaPropsUseAuthoredModelKindsWithoutRegistryBootstrap() {
         val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
         fun nodes(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
