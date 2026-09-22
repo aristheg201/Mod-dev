@@ -236,7 +236,7 @@ object NativeBoardSceneRenderer {
                 boardX = (index % 9).toFloat(),
                 boardY = (index / 9).toFloat(),
                 team = team,
-                yaw = facingYaw(team, visual.yaw),
+                yaw = visual.yaw + if (team == 0) 180f else 0f,
                 scale = visual.scale,
                 motionSerial = if (moving) serial else 0L,
                 motionFromX = if (moving) (lastFrom!! % 9).toFloat() else null,
@@ -257,7 +257,7 @@ object NativeBoardSceneRenderer {
                     boardX = (capturedIndex % 9).toFloat(),
                     boardY = (capturedIndex / 9).toFloat(),
                     team = capturedTeam,
-                    yaw = facingYaw(capturedTeam, it.yaw),
+                    yaw = it.yaw + if (capturedTeam == 0) 180f else 0f,
                     scale = it.scale
                 )
             }
