@@ -30,12 +30,18 @@ object NativeCosmeticService {
         SVHub.LOGGER.error("Cosmetic economy operation requires recovery for {}", id, error)
     }
     fun start(path: Path) {
-        if (!Files.exists(path)) {
-            val defaults = requireNotNull(javaClass.getResourceAsStream("/data/svhub/cosmetic_store.json")).bufferedReader().use { it.readText() }
-            AtomicFiles.writeUtf8(path, defaults)
+        val defaults = requireNotNull(javaClass.getResourceAsStream("/data/svhub/cosmetic_store.json"))
+            .bufferedReader().use { JsonParser.parseString(it.readText()).asJsonArray }
+        val existing = if (Files.exists(path)) {
+            JsonParser.parseString(Files.readString(path)).asJsonArray
+        } else JsonArray()
+        val merged = mergeCatalog(existing, defaults)
+        if (!Files.exists(path) || merged.toString() != existing.toString()) {
+            AtomicFiles.writeUtf8(path, merged.toString())
+            SVHub.LOGGER.info("Updated cosmetic store catalog with {} bundled offers ({} total)", merged.size() - existing.size(), merged.size())
         }
         val set = TftSetRegistry.active()
-        offers = JsonParser.parseString(Files.readString(path)).asJsonArray.map { entry ->
+        offers = merged.map { entry ->
             val value = entry.asJsonObject
             val kind = CosmeticKind.valueOf(value.get("kind").asString)
             val id = value.get("id").asString
@@ -47,6 +53,22 @@ object NativeCosmeticService {
         require(offers.map { it.key }.distinct().size == offers.size) { "Duplicate cosmetic catalog keys" }
         require(offers.any { it.kind == CosmeticKind.ARENA && it.id == set.rules.defaultArena && it.price.signum() == 0 })
         require(offers.any { it.kind == CosmeticKind.TACTICIAN && it.id == set.defaultTactician && it.price.signum() == 0 })
+    }
+
+    internal fun mergeCatalog(existing: JsonArray, bundled: JsonArray): JsonArray {
+        val merged = JsonArray()
+        val seen = linkedSetOf<String>()
+        fun append(entry: com.google.gson.JsonElement) {
+            val value = runCatching { entry.asJsonObject }.getOrNull() ?: return
+            val kind = runCatching { value.get("kind")?.asString.orEmpty() }.getOrDefault("")
+            val id = runCatching { value.get("id")?.asString.orEmpty() }.getOrDefault("")
+            if (kind.isBlank() || id.isBlank()) return
+            val key = "$kind:$id"
+            if (seen.add(key)) merged.add(value.deepCopy())
+        }
+        existing.forEach(::append)
+        bundled.forEach(::append)
+        return merged
     }
 
     fun verifyProvider() {
