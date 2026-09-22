@@ -148,8 +148,8 @@ class CompiledArenaSceneTest {
         val markers=mapOf(
             "arkham_asylum" to "structure:tactician-guard-balcony-main",
             "wayne_manor" to "structure:tactician-manor-terrace-main",
-            "infinite_void" to "structure:tactician-asteroid-core",
-            "sukuna_domain" to "structure:tactician-cursed-overlook"
+            "infinite_void" to "structure:tactician-void-perch-core",
+            "sukuna_domain" to "structure:tactician-domain-perch-core"
         )
         val heroMarkers=mapOf(
             "arkham_asylum" to "structure:north-cell-block",
