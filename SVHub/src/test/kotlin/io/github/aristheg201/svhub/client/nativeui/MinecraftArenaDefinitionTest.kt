@@ -54,7 +54,7 @@ class MinecraftArenaDefinitionTest {
         val expected = mapOf(
             "chess" to (8 to 8),
             "xiangqi" to (9 to 10),
-            "tower_defense" to (12 to 8)
+            "tower_defense" to (20 to 12)
         )
         expected.forEach { (id,size) ->
             val stream=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
