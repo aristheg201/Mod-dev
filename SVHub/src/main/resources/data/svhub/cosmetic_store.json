@@ -94,5 +94,29 @@
     "id": "svhub:mewjo",
     "price": "650",
     "currency": "HunterCoin"
+  },
+  {
+    "kind": "ARENA",
+    "id": "arkham_asylum",
+    "price": "800",
+    "currency": "HunterCoin"
+  },
+  {
+    "kind": "ARENA",
+    "id": "wayne_manor",
+    "price": "900",
+    "currency": "HunterCoin"
+  },
+  {
+    "kind": "ARENA",
+    "id": "infinite_void",
+    "price": "1200",
+    "currency": "HunterCoin"
+  },
+  {
+    "kind": "ARENA",
+    "id": "sukuna_domain",
+    "price": "1400",
+    "currency": "HunterCoin"
   }
 ]

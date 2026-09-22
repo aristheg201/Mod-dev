@@ -336,7 +336,11 @@
       "ancient_ruins",
       "temporal_observatory",
       "abyssal_sanctum",
-      "crimson_caldera"
+      "crimson_caldera",
+      "arkham_asylum",
+      "wayne_manor",
+      "infinite_void",
+      "sukuna_domain"
     ],
     "phaseCapabilities": {
       "planning": [

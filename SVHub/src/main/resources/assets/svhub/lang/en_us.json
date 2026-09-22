@@ -295,5 +295,9 @@
   "gui.svhub.tft.pending_items": "%s items pending · equip items to make room",
   "gui.svhub.store.arena.temporal_observatory": "Temporal Observatory",
   "gui.svhub.store.arena.abyssal_sanctum": "Abyssal Sanctum",
-  "gui.svhub.store.arena.crimson_caldera": "Crimson Caldera"
+  "gui.svhub.store.arena.crimson_caldera": "Crimson Caldera",
+  "gui.svhub.store.arena.arkham_asylum": "Arkham Asylum",
+  "gui.svhub.store.arena.wayne_manor": "Wayne Manor",
+  "gui.svhub.store.arena.infinite_void": "Infinite Void",
+  "gui.svhub.store.arena.sukuna_domain": "Sukuna Domain Expansion"
 }

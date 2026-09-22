@@ -33,7 +33,7 @@ class CompiledArenaSceneTest {
     }
 
     @Test fun authoredArenasFrameTheBoardAndEveryBenchSlot() {
-        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera")) {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera","arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
             for((w,h) in listOf(632 to 270,952 to 414,340 to 250)) {
                 val area=UiRect(102,40,w,h)
@@ -66,7 +66,7 @@ class CompiledArenaSceneTest {
     }
     @Test fun texturedBattlefieldsDoNotRetainTheLegacyFlatFloor() {
         val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
-        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera")) {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera","arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
                 MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject)
             }
@@ -124,6 +124,25 @@ class CompiledArenaSceneTest {
         val compact=PokemonSceneLayout(UiRect(0,0,320,180),7,8,160f,30f,28,14)
         val wide=PokemonSceneLayout(UiRect(50,20,1280,720),7,8,640f,80f,72,36)
         assertSame(MinecraftArenaRenderer.compiledScene(compact,definition),MinecraftArenaRenderer.compiledScene(wide,definition))
+    }
+
+
+    @Test fun premiumHunterCoinArenasHaveMateriallyDistinctSceneIdentity() {
+        fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
+            .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
+        val ids=listOf("arkham_asylum","wayne_manor","infinite_void","sukuna_domain")
+        val arenas=ids.associateWith(::load)
+        ids.forEach { id ->
+            val arena=arenas.getValue(id)
+            assertTrue(arena.geometry.size>=10,id+" must have authored premium geometry")
+            assertTrue(arena.texturedBattlefield,id+" must use textured battlefield rendering")
+        }
+        for(i in ids.indices) for(j in i+1 until ids.size) {
+            val a=arenas.getValue(ids[i]); val b=arenas.getValue(ids[j])
+            assertNotEquals(a.geometry.map{it.material}.toSet(),b.geometry.map{it.material}.toSet())
+            assertNotEquals(a.geometry.map{it.id}.toSet(),b.geometry.map{it.id}.toSet())
+            assertNotEquals(a.cameras,b.cameras)
+        }
     }
 
     @Test fun gothamAndSectorCompileFromMateriallyDifferentAuthoredScenes() {

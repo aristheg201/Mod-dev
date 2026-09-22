@@ -295,5 +295,9 @@
   "gui.svhub.tft.pending_items": "%s trang bị chờ · trang bị để nhận tiếp",
   "gui.svhub.store.arena.temporal_observatory": "Đài Quan Sát Thời Gian",
   "gui.svhub.store.arena.abyssal_sanctum": "Thánh Điện Vực Sâu",
-  "gui.svhub.store.arena.crimson_caldera": "Miệng Núi Lửa Đỏ"
+  "gui.svhub.store.arena.crimson_caldera": "Miệng Núi Lửa Đỏ",
+  "gui.svhub.store.arena.arkham_asylum": "Arkham Asylum",
+  "gui.svhub.store.arena.wayne_manor": "Wayne Manor",
+  "gui.svhub.store.arena.infinite_void": "Vô Lượng Không Xứ · Infinite Void",
+  "gui.svhub.store.arena.sukuna_domain": "Phục Ma Ngự Trù Tử · Sukuna Domain"
 }

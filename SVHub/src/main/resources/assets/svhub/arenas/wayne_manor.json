@@ -1,0 +1,937 @@
+{
+  "id": "wayne_manor",
+  "style": "wayne_manor",
+  "surface": "tactical",
+  "depth": 5,
+  "detailEvery": 3,
+  "pathDetailEvery": 0,
+  "texturedBattlefield": true,
+  "floor": [
+    "minecraft:smooth_stone"
+  ],
+  "floorAlt": [
+    "minecraft:moss_block"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#59604f",
+  "floorAltColor": "#3e513a",
+  "allyColor": "#567388",
+  "enemyColor": "#795a58",
+  "pathColor": "#a28d70",
+  "pathAccentColor": "#d8c18d",
+  "gridColor": "#839081",
+  "borderColor": "#e4d8bd",
+  "edgeColor": "#2a251f",
+  "depthColor": "#3a342d",
+  "backgroundColor": "#151a18",
+  "benchMaterial": "minecraft:dark_oak_planks",
+  "props": [
+    {
+      "item": "minecraft:lantern",
+      "x": 1.6,
+      "y": 8.5,
+      "scale": 0.8
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": 7.4,
+      "y": 8.5,
+      "scale": 0.8
+    },
+    {
+      "item": "minecraft:flowering_azalea",
+      "x": -1.4,
+      "y": 7.8,
+      "scale": 1
+    }
+  ],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "boardAnchors": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1.5,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0
+      ],
+      [
+        4.5,
+        0,
+        0
+      ],
+      [
+        6,
+        0,
+        0
+      ],
+      [
+        7.5,
+        0,
+        0
+      ],
+      [
+        9,
+        0,
+        0
+      ],
+      [
+        0,
+        0.85,
+        0
+      ],
+      [
+        1.5,
+        0.85,
+        0
+      ],
+      [
+        3,
+        0.85,
+        0
+      ],
+      [
+        4.5,
+        0.85,
+        0
+      ],
+      [
+        6,
+        0.85,
+        0
+      ],
+      [
+        7.5,
+        0.85,
+        0
+      ],
+      [
+        9,
+        0.85,
+        0
+      ],
+      [
+        0,
+        1.7,
+        0
+      ],
+      [
+        1.5,
+        1.7,
+        0
+      ],
+      [
+        3,
+        1.7,
+        0
+      ],
+      [
+        4.5,
+        1.7,
+        0
+      ],
+      [
+        6,
+        1.7,
+        0
+      ],
+      [
+        7.5,
+        1.7,
+        0
+      ],
+      [
+        9,
+        1.7,
+        0
+      ],
+      [
+        0,
+        2.55,
+        0
+      ],
+      [
+        1.5,
+        2.55,
+        0
+      ],
+      [
+        3,
+        2.55,
+        0
+      ],
+      [
+        4.5,
+        2.55,
+        0
+      ],
+      [
+        6,
+        2.55,
+        0
+      ],
+      [
+        7.5,
+        2.55,
+        0
+      ],
+      [
+        9,
+        2.55,
+        0
+      ],
+      [
+        0,
+        3.4,
+        0
+      ],
+      [
+        1.5,
+        3.4,
+        0
+      ],
+      [
+        3,
+        3.4,
+        0
+      ],
+      [
+        4.5,
+        3.4,
+        0
+      ],
+      [
+        6,
+        3.4,
+        0
+      ],
+      [
+        7.5,
+        3.4,
+        0
+      ],
+      [
+        9,
+        3.4,
+        0
+      ],
+      [
+        0,
+        4.25,
+        0
+      ],
+      [
+        1.5,
+        4.25,
+        0
+      ],
+      [
+        3,
+        4.25,
+        0
+      ],
+      [
+        4.5,
+        4.25,
+        0
+      ],
+      [
+        6,
+        4.25,
+        0
+      ],
+      [
+        7.5,
+        4.25,
+        0
+      ],
+      [
+        9,
+        4.25,
+        0
+      ],
+      [
+        0,
+        5.1,
+        0
+      ],
+      [
+        1.5,
+        5.1,
+        0
+      ],
+      [
+        3,
+        5.1,
+        0
+      ],
+      [
+        4.5,
+        5.1,
+        0
+      ],
+      [
+        6,
+        5.1,
+        0
+      ],
+      [
+        7.5,
+        5.1,
+        0
+      ],
+      [
+        9,
+        5.1,
+        0
+      ],
+      [
+        0,
+        5.95,
+        0
+      ],
+      [
+        1.5,
+        5.95,
+        0
+      ],
+      [
+        3,
+        5.95,
+        0
+      ],
+      [
+        4.5,
+        5.95,
+        0
+      ],
+      [
+        6,
+        5.95,
+        0
+      ],
+      [
+        7.5,
+        5.95,
+        0
+      ],
+      [
+        9,
+        5.95,
+        0
+      ]
+    ],
+    "cellSize": [
+      1.5,
+      0.85,
+      1
+    ],
+    "benchAnchors": [
+      [
+        0.036,
+        7.6075,
+        0.045
+      ],
+      [
+        1.152,
+        7.6075,
+        0.045
+      ],
+      [
+        2.268,
+        7.6075,
+        0.045
+      ],
+      [
+        3.384,
+        7.6075,
+        0.045
+      ],
+      [
+        4.5,
+        7.6075,
+        0.045
+      ],
+      [
+        5.616,
+        7.6075,
+        0.045
+      ],
+      [
+        6.732,
+        7.6075,
+        0.045
+      ],
+      [
+        7.848,
+        7.6075,
+        0.045
+      ],
+      [
+        8.964,
+        7.6075,
+        0.045
+      ]
+    ],
+    "itemBenchAnchors": [
+      [
+        0.036,
+        8.245,
+        0.15
+      ],
+      [
+        1.152,
+        8.245,
+        0.15
+      ],
+      [
+        2.268,
+        8.245,
+        0.15
+      ],
+      [
+        3.384,
+        8.245,
+        0.15
+      ],
+      [
+        4.5,
+        8.245,
+        0.15
+      ],
+      [
+        5.616,
+        8.245,
+        0.15
+      ],
+      [
+        6.732,
+        8.245,
+        0.15
+      ],
+      [
+        7.848,
+        8.245,
+        0.15
+      ],
+      [
+        8.964,
+        8.245,
+        0.15
+      ]
+    ],
+    "tacticianRegion": [
+      -3.4,
+      5.1,
+      -1.6,
+      7
+    ],
+    "tacticianSpawn": [
+      -2.5,
+      6.05,
+      0
+    ],
+    "humanSpawn": [
+      4.5,
+      5.95,
+      0
+    ],
+    "opponentSpawn": [
+      4.5,
+      0,
+      0
+    ],
+    "carouselCenter": [
+      4.5,
+      3,
+      0
+    ],
+    "arenaBounds": [
+      -7.5,
+      -5.5,
+      16.5,
+      11.5
+    ],
+    "lighting": "warm",
+    "ambientVfx": "wayne_manor",
+    "music": "minecraft:music.game",
+    "lootAnchors": [
+      [
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
+        0
+      ]
+    ],
+    "combatStartVfx": "svhub:combat_start",
+    "victoryVfx": "svhub:victory",
+    "defeatVfx": "svhub:defeat",
+    "interactionRegions": [],
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          4.5,
+          13.7,
+          10.1
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "preparation": {
+        "position": [
+          4.5,
+          13.7,
+          10.1
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          4.5,
+          13.2,
+          10.799999999999999
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          7.5,
+          11.899999999999999,
+          9.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16.5,
+          15.5
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          11.8,
+          8.8
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 39,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.2,
+          7.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 36,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          11.8,
+          8.9
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.2,
+          12.3,
+          9.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          4.5,
+          15.2,
+          13
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          4.5,
+          13.7,
+          10.1
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      }
+    },
+    "logicalBoardBounds": [
+      -0.75,
+      -0.425,
+      9.75,
+      6.375
+    ],
+    "battlefieldBounds": [
+      -1.68,
+      -1.02,
+      10.68,
+      6.97
+    ],
+    "environmentBounds": [
+      -7.5,
+      -5.5,
+      16.5,
+      11.5
+    ]
+  },
+  "geometry": [
+    {
+      "id": "manor-main",
+      "material": "minecraft:stone_bricks",
+      "position": [
+        4.5,
+        -3.4,
+        2.2
+      ],
+      "size": [
+        10.5,
+        1.8,
+        4.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "manor-left-wing",
+      "material": "minecraft:stone_bricks",
+      "position": [
+        -2.3,
+        -2.5,
+        1.7
+      ],
+      "size": [
+        4,
+        2.6,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "manor-right-wing",
+      "material": "minecraft:stone_bricks",
+      "position": [
+        11.3,
+        -2.5,
+        1.7
+      ],
+      "size": [
+        4,
+        2.6,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "front-steps",
+      "material": "minecraft:smooth_stone",
+      "position": [
+        4.5,
+        -1.65,
+        0.45
+      ],
+      "size": [
+        5.5,
+        1,
+        0.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "column-1",
+      "material": "minecraft:quartz_pillar",
+      "position": [
+        2.7,
+        -2,
+        2.5
+      ],
+      "size": [
+        0.55,
+        0.55,
+        5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "column-2",
+      "material": "minecraft:quartz_pillar",
+      "position": [
+        4,
+        -2,
+        2.5
+      ],
+      "size": [
+        0.55,
+        0.55,
+        5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "column-3",
+      "material": "minecraft:quartz_pillar",
+      "position": [
+        5,
+        -2,
+        2.5
+      ],
+      "size": [
+        0.55,
+        0.55,
+        5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "column-4",
+      "material": "minecraft:quartz_pillar",
+      "position": [
+        6.3,
+        -2,
+        2.5
+      ],
+      "size": [
+        0.55,
+        0.55,
+        5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "west-hedge",
+      "material": "minecraft:oak_leaves",
+      "position": [
+        -3.5,
+        3.2,
+        0.75
+      ],
+      "size": [
+        2.2,
+        8.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "east-hedge",
+      "material": "minecraft:oak_leaves",
+      "position": [
+        12.5,
+        3.2,
+        0.75
+      ],
+      "size": [
+        2.2,
+        8.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "fountain-basin",
+      "material": "minecraft:smooth_quartz",
+      "position": [
+        4.5,
+        8.9,
+        0.35
+      ],
+      "size": [
+        3.3,
+        1.2,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "fountain-statue",
+      "material": "minecraft:oxidized_copper",
+      "position": [
+        4.5,
+        8.9,
+        1.6
+      ],
+      "size": [
+        0.7,
+        0.7,
+        2.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "batcave-mouth",
+      "material": "minecraft:black_concrete",
+      "position": [
+        -4.5,
+        8.5,
+        1.2
+      ],
+      "size": [
+        2.8,
+        2,
+        2.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}
