@@ -714,13 +714,13 @@
       "material": "minecraft:polished_blackstone_bricks",
       "position": [
         4.5,
-        -3.2,
-        0.55
+        -2.95,
+        0.198
       ],
       "size": [
         10.4,
         2.8,
-        1.6
+        0.576
       ],
       "rotation": [
         0,
@@ -733,13 +733,13 @@
       "material": "minecraft:blackstone",
       "position": [
         4.5,
-        -2.35,
-        0.18
+        -2.1,
+        0.0648
       ],
       "size": [
         7.8,
         1.1,
-        0.5
+        0.18
       ],
       "rotation": [
         0,
@@ -752,13 +752,13 @@
       "material": "minecraft:red_nether_bricks",
       "position": [
         4.5,
-        -2.55,
-        0.45
+        -2.3,
+        0.162
       ],
       "size": [
         6.2,
         0.9,
-        0.6
+        0.216
       ],
       "rotation": [
         0,
@@ -771,13 +771,13 @@
       "material": "minecraft:nether_bricks",
       "position": [
         4.5,
-        -2.8,
-        1.5
+        -2.55,
+        0.54
       ],
       "size": [
         5.2,
         1.8,
-        4.6
+        1.656
       ],
       "rotation": [
         0,
@@ -790,13 +790,13 @@
       "material": "minecraft:red_nether_bricks",
       "position": [
         4.5,
-        -2.8,
-        3.95
+        -2.55,
+        1.422
       ],
       "size": [
         7.1,
         2.2,
-        0.5
+        0.18
       ],
       "rotation": [
         0,
@@ -809,13 +809,13 @@
       "material": "minecraft:nether_bricks",
       "position": [
         4.5,
-        -2.8,
-        4.7
+        -2.55,
+        1.692
       ],
       "size": [
         5.5,
         1.8,
-        0.45
+        0.162
       ],
       "rotation": [
         0,
@@ -828,13 +828,13 @@
       "material": "minecraft:crimson_hyphae",
       "position": [
         2.2,
-        -2.9,
-        3
+        -2.65,
+        1.08
       ],
       "size": [
         0.55,
         0.55,
-        4.6
+        1.656
       ],
       "rotation": [
         0,
@@ -847,13 +847,13 @@
       "material": "minecraft:crimson_hyphae",
       "position": [
         6.8,
-        -2.9,
-        3
+        -2.65,
+        1.08
       ],
       "size": [
         0.55,
         0.55,
-        4.6
+        1.656
       ],
       "rotation": [
         0,
@@ -866,13 +866,13 @@
       "material": "minecraft:black_concrete",
       "position": [
         4.5,
-        -2,
-        1.45
+        -1.75,
+        0.522
       ],
       "size": [
         2.2,
         0.35,
-        2.4
+        0.864
       ],
       "rotation": [
         0,
@@ -885,13 +885,13 @@
       "material": "minecraft:bone_block",
       "position": [
         3.7,
-        -1.92,
-        0.95
+        -1.67,
+        0.342
       ],
       "size": [
         0.38,
         0.38,
-        2.3
+        0.828
       ],
       "rotation": [
         0,
@@ -904,13 +904,13 @@
       "material": "minecraft:bone_block",
       "position": [
         5.3,
-        -1.92,
-        0.95
+        -1.67,
+        0.342
       ],
       "size": [
         0.38,
         0.38,
-        2.3
+        0.828
       ],
       "rotation": [
         0,
@@ -961,13 +961,13 @@
       "material": "minecraft:nether_bricks",
       "position": [
         4.5,
-        -1.55,
-        5.7
+        -1.3,
+        2.052
       ],
       "size": [
         16.4,
         0.55,
-        0.65
+        0.234
       ],
       "rotation": [
         0,
@@ -1056,13 +1056,13 @@
       "material": "minecraft:redstone_block",
       "position": [
         4.5,
-        -5.4,
-        -0.15
+        -5.15,
+        -0.054
       ],
       "size": [
         15,
         1.5,
-        0.3
+        0.108
       ],
       "rotation": [
         0,
@@ -1075,13 +1075,13 @@
       "material": "minecraft:red_nether_bricks",
       "position": [
         2.55,
-        -2.75,
-        4.25
+        -2.5,
+        1.53
       ],
       "size": [
         3.5,
         1.95,
-        0.34
+        0.1224
       ],
       "rotation": [
         0,
@@ -1094,13 +1094,13 @@
       "material": "minecraft:red_nether_bricks",
       "position": [
         6.45,
-        -2.75,
-        4.25
+        -2.5,
+        1.53
       ],
       "size": [
         3.5,
         1.95,
-        0.34
+        0.1224
       ],
       "rotation": [
         0,
@@ -1113,13 +1113,13 @@
       "material": "minecraft:polished_blackstone_bricks",
       "position": [
         4.5,
-        -2.82,
-        5.02
+        -2.57,
+        1.8072
       ],
       "size": [
         4.1,
         0.55,
-        0.38
+        0.1368
       ],
       "rotation": [
         0,
@@ -1132,13 +1132,13 @@
       "material": "minecraft:bone_block",
       "position": [
         2.15,
-        -2.6,
-        5.15
+        -2.35,
+        1.854
       ],
       "size": [
         0.28,
         0.28,
-        1.25
+        0.45
       ],
       "rotation": [
         0,
@@ -1151,13 +1151,13 @@
       "material": "minecraft:bone_block",
       "position": [
         6.85,
-        -2.6,
-        5.15
+        -2.35,
+        1.854
       ],
       "size": [
         0.28,
         0.28,
-        1.25
+        0.45
       ],
       "rotation": [
         0,

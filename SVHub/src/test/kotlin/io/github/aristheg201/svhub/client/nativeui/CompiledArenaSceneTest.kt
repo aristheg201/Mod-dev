@@ -36,7 +36,7 @@ class CompiledArenaSceneTest {
     }
 
     @Test fun authoredArenasFrameTheBoardAndEveryBenchSlot() {
-        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera","arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","grand_line","celestial_vault","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera","arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
             for((w,h) in listOf(632 to 270,952 to 414,340 to 250)) {
                 val area=UiRect(102,40,w,h)
@@ -69,7 +69,7 @@ class CompiledArenaSceneTest {
     }
     @Test fun texturedBattlefieldsDoNotRetainTheLegacyFlatFloor() {
         val layout=PokemonSceneLayout(UiRect(0,0,800,600),7,8,400f,30f,28,14)
-        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera","arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
+        for(id in listOf("gotham_rooftops","sector_2814","kanto_stadium","monster_island","grand_line","celestial_vault","dragon_shrine","distortion_rift","ultra_lab","ancient_ruins","temporal_observatory","abyssal_sanctum","crimson_caldera","arkham_asylum","wayne_manor","infinite_void","sukuna_domain")) {
             val arena=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
                 MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject)
             }
@@ -267,5 +267,20 @@ class CompiledArenaSceneTest {
         assertNotEquals(gotham.tacticianMovementBounds, sector.tacticianMovementBounds)
         assertNotEquals(gotham.benchAnchors, sector.benchAnchors)
         assertTrue(gotham.geometry.isNotEmpty() && sector.geometry.isNotEmpty())
+    }
+
+    @Test fun everyPlayableArenaHasDistinctGeometryBeyondMaterialRecolors() {
+        val set = io.github.aristheg201.svhub.native.game.tft.TftSetRegistry.bundled("kanto_rising")
+        val signatures = set.rules.arenas.associateWith { id ->
+            val arena = checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json")).bufferedReader().use {
+                MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject)
+            }
+            assertTrue(arena.geometry.size >= 12, "$id needs authored architecture")
+            arena.geometry.map { it.corners().toSet() }.toSet()
+        }
+        val ids = signatures.keys.toList()
+        for (i in ids.indices) for (j in i+1 until ids.size) {
+            assertNotEquals(signatures.getValue(ids[i]),signatures.getValue(ids[j]),"${ids[i]} and ${ids[j]} cannot share recolored topology")
+        }
     }
 }

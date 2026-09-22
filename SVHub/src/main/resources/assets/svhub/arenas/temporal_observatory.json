@@ -137,14 +137,14 @@
       ]
     ],
     "tacticianRegion": [
-      -3.4,
-      5.1,
-      -1.6,
-      7
+      -3.45,
+      5.35,
+      -1.8,
+      7.25
     ],
     "tacticianSpawn": [
-      -2.5,
-      6.05,
+      -2.62,
+      6.3,
       0
     ],
     "humanSpawn": [
@@ -207,9 +207,9 @@
     "cameraPresets": {
       "normal": {
         "position": [
-          4.5,
-          15,
-          12.8
+          4.1,
+          15.8,
+          12.4
         ],
         "target": [
           4.5,
@@ -223,9 +223,9 @@
       },
       "preparation": {
         "position": [
-          4.5,
-          15,
-          12.8
+          4.1,
+          15.8,
+          12.4
         ],
         "target": [
           4.5,
@@ -351,9 +351,9 @@
       },
       "spectator": {
         "position": [
-          4.5,
-          15.5,
-          13.5
+          4.1,
+          15.8,
+          12.4
         ],
         "target": [
           4.5,
@@ -367,9 +367,9 @@
       },
       "arena_preview": {
         "position": [
-          4.5,
+          4.1,
           15.8,
-          13.2
+          12.4
         ],
         "target": [
           4.5,
@@ -781,13 +781,13 @@
       "material": "minecraft:gold_block",
       "position": [
         8.0,
-        -3,
-        3.45
+        -2.9,
+        1.4835
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -800,13 +800,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         7.4,
-        -2.9,
-        3.45
+        -2.8,
+        1.4835
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -819,13 +819,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         7.912,
-        -3,
-        4.14
+        -2.9,
+        1.7802
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -838,13 +838,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         7.653,
-        -3,
-        4.795
+        -2.9,
+        2.0618
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -857,13 +857,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         7.113,
-        -2.9,
-        4.556
+        -2.8,
+        1.9591
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -876,13 +876,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         7.236,
-        -3,
-        5.383
+        -2.9,
+        2.3147
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -895,13 +895,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         6.682,
-        -3,
-        5.874
+        -2.9,
+        2.5258
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -914,13 +914,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         6.308,
-        -2.9,
-        5.444
+        -2.8,
+        2.3409
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -933,13 +933,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         6.019,
-        -3,
-        6.243
+        -2.9,
+        2.6845
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -952,13 +952,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         5.279,
-        -3,
-        6.472
+        -2.9,
+        2.783
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -971,13 +971,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         5.145,
-        -2.9,
-        5.936
+        -2.8,
+        2.5525
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -990,13 +990,13 @@
       "material": "minecraft:gold_block",
       "position": [
         4.5,
-        -3,
-        6.55
+        -2.9,
+        2.8165
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1009,13 +1009,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         3.721,
-        -3,
-        6.472
+        -2.9,
+        2.783
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1028,13 +1028,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         3.855,
-        -2.9,
-        5.936
+        -2.8,
+        2.5525
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1047,13 +1047,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         2.981,
-        -3,
-        6.243
+        -2.9,
+        2.6845
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1066,13 +1066,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         2.318,
-        -3,
-        5.874
+        -2.9,
+        2.5258
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1085,13 +1085,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         2.692,
-        -2.9,
-        5.444
+        -2.8,
+        2.3409
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1104,13 +1104,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         1.764,
-        -3,
-        5.383
+        -2.9,
+        2.3147
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1123,13 +1123,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         1.347,
-        -3,
-        4.795
+        -2.9,
+        2.0618
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1142,13 +1142,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         1.887,
-        -2.9,
-        4.556
+        -2.8,
+        1.9591
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1161,13 +1161,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         1.088,
-        -3,
-        4.14
+        -2.9,
+        1.7802
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1180,13 +1180,13 @@
       "material": "minecraft:gold_block",
       "position": [
         1.0,
-        -3,
-        3.45
+        -2.9,
+        1.4835
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1199,13 +1199,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         1.6,
-        -2.9,
-        3.45
+        -2.8,
+        1.4835
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1218,13 +1218,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         1.088,
-        -3,
-        2.76
+        -2.9,
+        1.1868
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1237,13 +1237,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         1.347,
-        -3,
-        2.105
+        -2.9,
+        0.9052
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1256,13 +1256,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         1.887,
-        -2.9,
-        2.344
+        -2.8,
+        1.0079
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1275,13 +1275,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         1.764,
-        -3,
-        1.517
+        -2.9,
+        0.6523
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1294,13 +1294,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         2.318,
-        -3,
-        1.026
+        -2.9,
+        0.4412
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1313,13 +1313,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         2.692,
-        -2.9,
-        1.456
+        -2.8,
+        0.6261
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1332,13 +1332,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         2.981,
-        -3,
-        0.657
+        -2.9,
+        0.2825
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1351,13 +1351,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         3.721,
-        -3,
-        0.428
+        -2.9,
+        0.184
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1370,13 +1370,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         3.855,
-        -2.9,
-        0.964
+        -2.8,
+        0.4145
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1389,13 +1389,13 @@
       "material": "minecraft:gold_block",
       "position": [
         4.5,
-        -3,
-        0.35
+        -2.9,
+        0.1505
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1408,13 +1408,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         5.279,
-        -3,
-        0.428
+        -2.9,
+        0.184
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1427,13 +1427,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         5.145,
-        -2.9,
-        0.964
+        -2.8,
+        0.4145
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1446,13 +1446,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         6.019,
-        -3,
-        0.657
+        -2.9,
+        0.2825
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1465,13 +1465,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         6.682,
-        -3,
-        1.026
+        -2.9,
+        0.4412
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1484,13 +1484,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         6.308,
-        -2.9,
-        1.456
+        -2.8,
+        0.6261
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1503,13 +1503,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         7.236,
-        -3,
-        1.517
+        -2.9,
+        0.6523
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1522,13 +1522,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         7.653,
-        -3,
-        2.105
+        -2.9,
+        0.9052
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1541,13 +1541,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         7.113,
-        -2.9,
-        2.344
+        -2.8,
+        1.0079
       ],
       "size": [
         0.2,
         0.28,
-        0.2
+        0.086
       ],
       "rotation": [
         0,
@@ -1560,13 +1560,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         7.912,
-        -3,
-        2.76
+        -2.9,
+        1.1868
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1579,13 +1579,13 @@
       "material": "minecraft:sea_lantern",
       "position": [
         4.5,
-        -2.85,
-        3.45
+        -2.75,
+        1.4835
       ],
       "size": [
         0.55,
         0.5,
-        0.55
+        0.2365
       ],
       "rotation": [
         0,
@@ -1598,13 +1598,13 @@
       "material": "minecraft:gold_block",
       "position": [
         4.5,
-        -2.65,
-        4.5
+        -2.55,
+        1.935
       ],
       "size": [
         0.18,
         0.18,
-        2.1
+        0.903
       ],
       "rotation": [
         0,
@@ -1617,13 +1617,13 @@
       "material": "minecraft:gold_block",
       "position": [
         5.4,
-        -2.65,
-        3.45
+        -2.55,
+        1.4835
       ],
       "size": [
         1.8,
         0.18,
-        0.18
+        0.0774
       ],
       "rotation": [
         0,
@@ -1636,13 +1636,13 @@
       "material": "minecraft:polished_deepslate",
       "position": [
         4.5,
-        -1.8,
-        -0.35
+        -1.7,
+        -0.1505
       ],
       "size": [
         7,
         1.0,
-        0.3
+        0.129
       ],
       "rotation": [
         0,
@@ -1655,13 +1655,13 @@
       "material": "minecraft:chiseled_deepslate",
       "position": [
         4.5,
-        -2.7,
-        -0.1
+        -2.6,
+        -0.043
       ],
       "size": [
         6,
         0.8,
-        0.5
+        0.215
       ],
       "rotation": [
         0,
@@ -1686,6 +1686,272 @@
         0,
         0,
         0
+      ]
+    },
+    {
+      "id": "tactician-clock-dais",
+      "material": "minecraft:chiseled_deepslate",
+      "position": [
+        -2.62,
+        6.3,
+        -0.3
+      ],
+      "size": [
+        2.4,
+        2.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "clock-dais-neck",
+      "material": "minecraft:deepslate_tiles",
+      "position": [
+        -2.62,
+        6.3,
+        -1.2
+      ],
+      "size": [
+        1.1,
+        1.2,
+        1.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-0",
+      "material": "minecraft:gold_block",
+      "position": [
+        -1.4700000000000002,
+        6.3,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-1",
+      "material": "minecraft:gold_block",
+      "position": [
+        -1.6240707856478958,
+        6.875,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        30
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-2",
+      "material": "minecraft:gold_block",
+      "position": [
+        -2.045,
+        7.295929214352104,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        60
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-3",
+      "material": "minecraft:gold_block",
+      "position": [
+        -2.62,
+        7.449999999999999,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-4",
+      "material": "minecraft:gold_block",
+      "position": [
+        -3.195,
+        7.295929214352104,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        120
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-5",
+      "material": "minecraft:gold_block",
+      "position": [
+        -3.6159292143521045,
+        6.875,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        150
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-6",
+      "material": "minecraft:gold_block",
+      "position": [
+        -3.77,
+        6.3,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-7",
+      "material": "minecraft:gold_block",
+      "position": [
+        -3.6159292143521045,
+        5.7250000000000005,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        210
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-8",
+      "material": "minecraft:gold_block",
+      "position": [
+        -3.1950000000000007,
+        5.3040707856478955,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        240
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-9",
+      "material": "minecraft:gold_block",
+      "position": [
+        -2.62,
+        5.15,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        270
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-10",
+      "material": "minecraft:gold_block",
+      "position": [
+        -2.045,
+        5.3040707856478955,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        300
+      ]
+    },
+    {
+      "id": "perch-clock-tooth-11",
+      "material": "minecraft:gold_block",
+      "position": [
+        -1.6240707856478962,
+        5.725,
+        -0.08
+      ],
+      "size": [
+        0.24,
+        0.3,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        330
       ]
     }
   ]

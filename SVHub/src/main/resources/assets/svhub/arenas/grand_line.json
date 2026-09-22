@@ -5,11 +5,10 @@
   "detailEvery": 12,
   "pathDetailEvery": 0,
   "floor": [
-    "minecraft:oak_planks",
-    "minecraft:blue_ice"
+    "minecraft:oak_planks"
   ],
   "floorAlt": [
-    "minecraft:moss_carpet"
+    "minecraft:stripped_spruce_wood"
   ],
   "ally": [
     "minecraft:azalea_leaves",
@@ -30,512 +29,1119 @@
   "borderColor": "#3f4b40",
   "edgeColor": "#172019",
   "depthColor": "#172019",
-  "props": [
-    {
-      "item": "minecraft:campfire",
-      "x": -1.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:soul_campfire",
-      "x": 7.05,
-      "y": 3.5,
-      "scale": 0.95
-    },
-    {
-      "item": "minecraft:lantern",
-      "x": -0.85,
-      "y": 7.1,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:soul_lantern",
-      "x": 6.85,
-      "y": -0.15,
-      "scale": 0.78
-    },
-    {
-      "item": "minecraft:bell",
-      "x": 3,
-      "y": 7.8,
-      "scale": 0.82
-    },
-    {
-      "item": "minecraft:respawn_anchor",
-      "x": 3,
-      "y": -0.95,
-      "scale": 0.82
-    }
-  ],
+  "props": [],
   "metadata": {
     "boardColumns": 7,
     "boardRows": 8,
     "benchSlots": 9,
-    "tacticianRegion": [
-      -1.0,
-      -1.0,
-      7.0,
-      8.0
-    ],
-    "camera": {
-      "spectator": [
-        3.0,
-        9.0,
-        12.0
-      ],
-      "scouting": [
-        3.0,
-        8.0,
-        10.0
-      ],
-      "carousel": [
-        3.0,
-        10.0,
-        13.0
-      ]
-    },
-    "lighting": "themed",
-    "ambientVfx": "ocean_deck",
-    "music": "minecraft:music.game",
     "boardOrigin": [
       0,
       0,
       0
     ],
-    "boardAnchors": [
-      [
-        0,
-        0,
-        0
-      ],
-      [
-        1,
-        0,
-        0
-      ],
-      [
-        2,
-        0,
-        0
-      ],
-      [
-        3,
-        0,
-        0
-      ],
-      [
-        4,
-        0,
-        0
-      ],
-      [
-        5,
-        0,
-        0
-      ],
-      [
-        6,
-        0,
-        0
-      ],
-      [
-        0,
-        1,
-        0
-      ],
-      [
-        1,
-        1,
-        0
-      ],
-      [
-        2,
-        1,
-        0
-      ],
-      [
-        3,
-        1,
-        0
-      ],
-      [
-        4,
-        1,
-        0
-      ],
-      [
-        5,
-        1,
-        0
-      ],
-      [
-        6,
-        1,
-        0
-      ],
-      [
-        0,
-        2,
-        0
-      ],
-      [
-        1,
-        2,
-        0
-      ],
-      [
-        2,
-        2,
-        0
-      ],
-      [
-        3,
-        2,
-        0
-      ],
-      [
-        4,
-        2,
-        0
-      ],
-      [
-        5,
-        2,
-        0
-      ],
-      [
-        6,
-        2,
-        0
-      ],
-      [
-        0,
-        3,
-        0
-      ],
-      [
-        1,
-        3,
-        0
-      ],
-      [
-        2,
-        3,
-        0
-      ],
-      [
-        3,
-        3,
-        0
-      ],
-      [
-        4,
-        3,
-        0
-      ],
-      [
-        5,
-        3,
-        0
-      ],
-      [
-        6,
-        3,
-        0
-      ],
-      [
-        0,
-        4,
-        0
-      ],
-      [
-        1,
-        4,
-        0
-      ],
-      [
-        2,
-        4,
-        0
-      ],
-      [
-        3,
-        4,
-        0
-      ],
-      [
-        4,
-        4,
-        0
-      ],
-      [
-        5,
-        4,
-        0
-      ],
-      [
-        6,
-        4,
-        0
-      ],
-      [
-        0,
-        5,
-        0
-      ],
-      [
-        1,
-        5,
-        0
-      ],
-      [
-        2,
-        5,
-        0
-      ],
-      [
-        3,
-        5,
-        0
-      ],
-      [
-        4,
-        5,
-        0
-      ],
-      [
-        5,
-        5,
-        0
-      ],
-      [
-        6,
-        5,
-        0
-      ],
-      [
-        0,
-        6,
-        0
-      ],
-      [
-        1,
-        6,
-        0
-      ],
-      [
-        2,
-        6,
-        0
-      ],
-      [
-        3,
-        6,
-        0
-      ],
-      [
-        4,
-        6,
-        0
-      ],
-      [
-        5,
-        6,
-        0
-      ],
-      [
-        6,
-        6,
-        0
-      ],
-      [
-        0,
-        7,
-        0
-      ],
-      [
-        1,
-        7,
-        0
-      ],
-      [
-        2,
-        7,
-        0
-      ],
-      [
-        3,
-        7,
-        0
-      ],
-      [
-        4,
-        7,
-        0
-      ],
-      [
-        5,
-        7,
-        0
-      ],
-      [
-        6,
-        7,
-        0
-      ]
+    "cellSize": [
+      1.5,
+      0.85,
+      1
     ],
     "benchAnchors": [
       [
-        0.25,
-        8.45,
-        0
+        0,
+        7.62,
+        0.05
       ],
       [
-        1.25,
-        8.45,
-        0
+        1.125,
+        7.62,
+        0.05
       ],
       [
         2.25,
-        8.45,
-        0
+        7.62,
+        0.05
       ],
       [
-        3.25,
-        8.45,
-        0
+        3.375,
+        7.62,
+        0.05
       ],
       [
-        4.25,
-        8.45,
-        0
+        4.5,
+        7.62,
+        0.05
       ],
       [
-        5.25,
-        8.45,
-        0
+        5.625,
+        7.62,
+        0.05
       ],
       [
-        6.25,
-        8.45,
-        0
+        6.75,
+        7.62,
+        0.05
       ],
       [
-        7.25,
-        8.45,
-        0
+        7.875,
+        7.62,
+        0.05
       ],
       [
-        8.25,
-        8.45,
-        0
+        9,
+        7.62,
+        0.05
       ]
     ],
     "itemBenchAnchors": [
       [
-        0.25,
-        9.15,
-        0
+        0,
+        8.28,
+        0.15
       ],
       [
-        1.25,
-        9.15,
-        0
+        1.125,
+        8.28,
+        0.15
       ],
       [
         2.25,
-        9.15,
-        0
+        8.28,
+        0.15
       ],
       [
-        3.25,
-        9.15,
-        0
+        3.375,
+        8.28,
+        0.15
       ],
       [
-        4.25,
-        9.15,
-        0
+        4.5,
+        8.28,
+        0.15
       ],
       [
-        5.25,
-        9.15,
-        0
+        5.625,
+        8.28,
+        0.15
       ],
       [
-        6.25,
-        9.15,
-        0
+        6.75,
+        8.28,
+        0.15
       ],
       [
-        7.25,
-        9.15,
-        0
+        7.875,
+        8.28,
+        0.15
       ],
       [
-        8.25,
-        9.15,
-        0
+        9,
+        8.28,
+        0.15
       ]
     ],
+    "tacticianRegion": [
+      -3.5,
+      5.25,
+      -1.75,
+      7.05
+    ],
     "tacticianSpawn": [
-      3.0,
-      3.5,
+      -2.62,
+      6.15,
       0
     ],
     "humanSpawn": [
-      3.5,
-      8.5,
+      4.5,
+      5.95,
       0
     ],
     "opponentSpawn": [
-      3.5,
-      -0.5,
+      4.5,
+      0,
       0
     ],
     "carouselCenter": [
-      3.5,
-      4.0,
+      4.5,
+      3,
       0
     ],
     "arenaBounds": [
-      -1,
-      -1,
-      7,
-      9
+      -6,
+      -5,
+      15,
+      11
     ],
+    "lighting": "dramatic",
+    "ambientVfx": "ocean_deck",
+    "music": "minecraft:music.game",
     "lootAnchors": [
       [
-        3.5,
-        4.0,
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
         0
       ]
     ],
     "combatStartVfx": "svhub:combat_start",
     "victoryVfx": "svhub:victory",
     "defeatVfx": "svhub:defeat",
-    "interactionRegions": [
-      {
-        "id": "board",
-        "bounds": [
-          0,
-          0,
-          6,
-          7
+    "interactionRegions": [],
+    "camera": {
+      "spectator": [
+        4.5,
+        15.5,
+        13.5
+      ],
+      "scouting": [
+        7.4,
+        13.6,
+        11.7
+      ],
+      "carousel": [
+        4.5,
+        17,
+        15
+      ]
+    },
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          5.1,
+          15.8,
+          12.1
         ],
-        "action": "place_unit"
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
       },
-      {
-        "id": "bench",
-        "bounds": [
-          0,
-          8,
-          7,
-          9
+      "preparation": {
+        "position": [
+          5.1,
+          15.8,
+          12.1
         ],
-        "action": "bench_unit"
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          4.5,
+          14.4,
+          13.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          8,
+          11.5,
+          9.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16,
+          15
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          12,
+          8.5
+        ],
+        "target": [
+          4.5,
+          1.5,
+          0.3
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.5,
+          7.5
+        ],
+        "target": [
+          4.5,
+          1,
+          0.4
+        ],
+        "fov": 37,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          12.5,
+          9.2
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.3,
+          12.8,
+          10
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          5.1,
+          15.8,
+          12.1
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          5.1,
+          15.8,
+          12.1
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
       }
+    },
+    "battlefieldBounds": [
+      -1.35,
+      -0.95,
+      10.35,
+      6.95
+    ],
+    "environmentBounds": [
+      -6,
+      -5,
+      15,
+      11
     ]
-  }
+  },
+  "id": "grand_line",
+  "texturedBattlefield": true,
+  "benchMaterial": "minecraft:dark_oak_planks",
+  "backgroundColor": "#102d46",
+  "geometry": [
+    {
+      "id": "ship-hull",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        4.5,
+        3,
+        -0.65
+      ],
+      "size": [
+        15,
+        12,
+        1.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "ocean-port",
+      "material": "minecraft:blue_stained_glass",
+      "position": [
+        -4.5,
+        2.7,
+        -0.45
+      ],
+      "size": [
+        2,
+        11,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "ocean-starboard",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        13.7,
+        1.5,
+        -0.65
+      ],
+      "size": [
+        2,
+        10,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "stern-cabin",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        4.5,
+        -2.55,
+        0.3
+      ],
+      "size": [
+        8,
+        2,
+        0.625
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "stern-cabin-roof",
+      "material": "minecraft:red_wool",
+      "position": [
+        4.5,
+        -2.55,
+        0.65
+      ],
+      "size": [
+        9,
+        2.5,
+        0.0875
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hero-mainmast",
+      "material": "minecraft:stripped_spruce_log",
+      "position": [
+        2.4,
+        -2.45,
+        1.075
+      ],
+      "size": [
+        0.5,
+        0.5,
+        2.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "main-yard",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        2.4,
+        -2.4,
+        1.65
+      ],
+      "size": [
+        6.8,
+        0.35,
+        0.075
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "main-canvas",
+      "material": "minecraft:white_wool",
+      "position": [
+        2.4,
+        -2.2,
+        1.225
+      ],
+      "size": [
+        5.8,
+        0.14,
+        0.775
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "sail-stripe",
+      "material": "minecraft:red_wool",
+      "position": [
+        2.4,
+        -2.09,
+        1.275
+      ],
+      "size": [
+        0.55,
+        0.1,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "mizzen-mast",
+      "material": "minecraft:stripped_spruce_log",
+      "position": [
+        9.2,
+        -2.8,
+        0.8375
+      ],
+      "size": [
+        0.38,
+        0.38,
+        1.675
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "mizzen-canvas",
+      "material": "minecraft:white_wool",
+      "position": [
+        9.2,
+        -2.6,
+        1.15
+      ],
+      "size": [
+        2.8,
+        0.14,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-helm-gallery",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.62,
+        6.15,
+        -0.25
+      ],
+      "size": [
+        2.5,
+        2.6,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "helm-stern-rail",
+      "material": "minecraft:oak_fence",
+      "position": [
+        -3.85,
+        6.1,
+        0.45
+      ],
+      "size": [
+        0.2,
+        3,
+        0.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "helm-pedestal",
+      "material": "minecraft:spruce_log",
+      "position": [
+        -3.2,
+        5.5,
+        0.6
+      ],
+      "size": [
+        0.5,
+        0.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "helm-wheel-0",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.6,
+        5.48,
+        0.95
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "helm-wheel-1",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.7757359312880716,
+        5.48,
+        1.3742640687119285
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ]
+    },
+    {
+      "id": "helm-wheel-2",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -3.2,
+        5.48,
+        1.5499999999999998
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -90
+      ]
+    },
+    {
+      "id": "helm-wheel-3",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -3.6242640687119287,
+        5.48,
+        1.3742640687119285
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -135
+      ]
+    },
+    {
+      "id": "helm-wheel-4",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -3.8000000000000003,
+        5.48,
+        0.9500000000000001
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -180
+      ]
+    },
+    {
+      "id": "helm-wheel-5",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -3.6242640687119287,
+        5.48,
+        0.5257359312880715
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -225
+      ]
+    },
+    {
+      "id": "helm-wheel-6",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -3.2,
+        5.48,
+        0.35
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -270
+      ]
+    },
+    {
+      "id": "helm-wheel-7",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.7757359312880716,
+        5.48,
+        0.5257359312880714
+      ],
+      "size": [
+        0.22,
+        0.18,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        -315
+      ]
+    },
+    {
+      "id": "cannon-base--2.6-0",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.6,
+        -0.5,
+        0.1
+      ],
+      "size": [
+        1.4,
+        1.1,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-barrel--2.6-0",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        -2.6,
+        -0.5,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-base--2.6-1",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.6,
+        1.4,
+        0.1
+      ],
+      "size": [
+        1.4,
+        1.1,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-barrel--2.6-1",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        -2.6,
+        1.4,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-base--2.6-2",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        -2.6,
+        3.4,
+        0.1
+      ],
+      "size": [
+        1.4,
+        1.1,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-barrel--2.6-2",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        -2.6,
+        3.4,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-base-11.7-0",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        11.7,
+        -0.5,
+        0.1
+      ],
+      "size": [
+        1.4,
+        1.1,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-barrel-11.7-0",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        11.7,
+        -0.5,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-base-11.7-1",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        11.7,
+        1.4,
+        0.1
+      ],
+      "size": [
+        1.4,
+        1.1,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-barrel-11.7-1",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        11.7,
+        1.4,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-base-11.7-2",
+      "material": "minecraft:dark_oak_planks",
+      "position": [
+        11.7,
+        3.4,
+        0.1
+      ],
+      "size": [
+        1.4,
+        1.1,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cannon-barrel-11.7-2",
+      "material": "minecraft:polished_blackstone",
+      "position": [
+        11.7,
+        3.4,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cabin-window-0",
+      "material": "minecraft:yellow_stained_glass",
+      "position": [
+        1.5,
+        -1.51,
+        0.3375
+      ],
+      "size": [
+        0.8,
+        0.06,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cabin-window-1",
+      "material": "minecraft:yellow_stained_glass",
+      "position": [
+        2.95,
+        -1.51,
+        0.3375
+      ],
+      "size": [
+        0.8,
+        0.06,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cabin-window-2",
+      "material": "minecraft:yellow_stained_glass",
+      "position": [
+        4.4,
+        -1.51,
+        0.3375
+      ],
+      "size": [
+        0.8,
+        0.06,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cabin-window-3",
+      "material": "minecraft:yellow_stained_glass",
+      "position": [
+        5.85,
+        -1.51,
+        0.3375
+      ],
+      "size": [
+        0.8,
+        0.06,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cabin-window-4",
+      "material": "minecraft:yellow_stained_glass",
+      "position": [
+        7.3,
+        -1.51,
+        0.3375
+      ],
+      "size": [
+        0.8,
+        0.06,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
 }

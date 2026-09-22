@@ -500,6 +500,20 @@ object TftGameRenderer {
             return
         }
 
+        if (ui.setBrowserOpen) {
+            ui.clearUnit(); ui.clearItem()
+            renderBoard(gui,font,resolved.board,boardTokens,bench,itemBench,fields,phase,false,ui,passive,-1,-1,view.str("sessionId"),false)
+            ui.beginFrame()
+            gui.flush()
+            gui.pose().pushPose()
+            try {
+                gui.pose().translate(0f,0f,500f)
+                renderSetBrowser(gui,font,area,ui,hooks,mouseX,mouseY)
+                ui.tooltip()?.let { renderHoverTooltip(gui,font,area,it,mouseX,mouseY) }
+            } finally { gui.pose().popPose() }
+            return
+        }
+
         if(augments.isNotEmpty()){
             val stage=area.inset(if(density==UiDensity.COMPACT)2 else 5)
             renderBoard(gui,font,stage,boardTokens,bench,itemBench,fields,phase,false,ui,passive,mouseX,mouseY,view.str("sessionId"),false)
@@ -537,7 +551,6 @@ object TftGameRenderer {
         resolved.itemRail?.let{renderItemRail(gui,font,it,itemBench,capabilities,ui,hooks,mouseX,mouseY)}
         renderFooter(gui,font,resolved.footer,density,view,fields,bench,canEdit,"CAN_BUY_UNIT" in capabilities,"CAN_SELL" in capabilities,ui,hooks,mouseX,mouseY)
         if(density==UiDensity.COMPACT&&area.height>=150)renderCompactChips(gui,font,resolved.board,traits,players,ui,mouseX,mouseY)
-        if(ui.setBrowserOpen) renderSetBrowser(gui,font,area,ui,hooks,mouseX,mouseY)
         if(ui.isItemDragging())renderDraggedItem(gui,ui,itemBench,mouseX,mouseY)
         ui.tooltip()?.let{renderHoverTooltip(gui,font,area,it,mouseX,mouseY)}
     }
@@ -612,7 +625,7 @@ object TftGameRenderer {
         val margin=(min(area.width,area.height)*.06f).toInt().coerceIn(8,26)
         val panelRect=UiRect(area.x+margin,area.y+margin,(area.width-margin*2).coerceAtLeast(180),(area.height-margin*2).coerceAtLeast(120))
         gui.fill(area.x,area.y,area.right,area.bottom,0xB8000000.toInt())
-        gui.fill(panelRect.x,panelRect.y,panelRect.right,panelRect.bottom,0xFA0C1519.toInt())
+        gui.fillGradient(panelRect.x,panelRect.y,panelRect.right,panelRect.bottom,0xFF1C3139.toInt(),0xFF0C1519.toInt())
         gui.fill(panelRect.x,panelRect.y,panelRect.right,panelRect.y+3,gold)
         gui.drawString(font,tr("gui.svhub.tft.set_browser"),panelRect.x+10,panelRect.y+9,text,true)
         hooks.control(UiRect(panelRect.right-30,panelRect.y+5,22,18),"×",true){ui.setBrowserOpen=false}
@@ -654,7 +667,9 @@ object TftGameRenderer {
                 val r=UiRect(body.x+col*(w+6),body.y+row*22,w,19)
                 gui.fill(r.x,r.y,r.right,r.bottom,panel2)
                 gui.fill(r.x,r.y,r.x+3,r.bottom,costColor(unit.cost))
-                gui.drawString(font,fit(font,"${unit.cost}g  ${unit.name}",r.width-16),r.x+8,r.y+5,if(unit.cost>=4)gold else text,false)
+                val nameWidth = if(r.width>=250) r.width*3/5 else r.width-16
+                gui.drawString(font,fit(font,"${unit.cost}g  ${unit.name}",nameWidth),r.x+8,r.y+5,if(unit.cost>=4)gold else text,false)
+                if(r.width>=250) gui.drawString(font,fit(font,unit.traits.joinToString(" / ") { humanize(it) },r.width-nameWidth-20),r.x+nameWidth+12,r.y+5,muted,false)
                 if(r.contains(mouseX.toDouble(),mouseY.toDouble()))ui.offerTooltip(unitTooltip(ui,unit.id,1,emptyList()))
             }
             renderBrowserPager(gui,font,panelRect,ui,hooks,pages)

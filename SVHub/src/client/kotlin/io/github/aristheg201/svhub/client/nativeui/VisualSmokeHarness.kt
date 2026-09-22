@@ -422,6 +422,12 @@ object VisualSmokeHarness {
         }
 
         companion object {
+            private val authoredCatalogs by lazy {
+                io.github.aristheg201.svhub.native.game.TftSession(
+                    listOf(NativeSeat("catalog-a","A"),NativeSeat("catalog-b","B")),seed=19L,
+                    definition=io.github.aristheg201.svhub.native.game.tft.TftSetRegistry.bundled("kanto_rising")
+                ).viewFor("catalog-a").fields
+            }
             fun fixtureView(scenario: String): JsonObject {
                 val pve = scenario == "pve" || scenario == "boss"
                 val boss = scenario == "boss"
@@ -467,8 +473,8 @@ object VisualSmokeHarness {
                     addProperty("bench", benchPayload(scenario))
                     addProperty("players", "visual~Aris~87~6~0~0;rival~Rival~73~6~0~0;third~Third~52~5~0~0;fourth~Fourth~31~5~0~0")
                     addProperty("traits", "glass_cannon~Glass Cannon~3~2~4~Risk power active;void_contract~Void Contract~2~2~4~Void power active;summon_spirit~Summon Spirit~1~1~2~Spirit active;hoopa_domain~Hoopa~1~1~2~Domain active;guardian~Guardian~2~2~4~Defense active")
-                    addProperty("unitCatalog", unitCatalog())
-                    addProperty("traitCatalog", traitCatalog())
+                    addProperty("unitCatalog", if(scenario.startsWith("set_")) authoredCatalogs.getValue("unitCatalog") else unitCatalog())
+                    addProperty("traitCatalog", if(scenario.startsWith("set_")) authoredCatalogs.getValue("traitCatalog") else traitCatalog())
                     addProperty("itemBench", "sword,rod,tear,vest,full:rapid_fire")
                     addProperty("itemCatalog", itemCatalog())
                     addProperty("lastItemEvent", "")
