@@ -15,31 +15,43 @@
   "ally": [],
   "enemy": [],
   "path": [],
-  "floorColor": "#09090d",
-  "floorAltColor": "#26153f",
-  "allyColor": "#6753a2",
-  "enemyColor": "#a84d87",
-  "pathColor": "#1b1724",
-  "pathAccentColor": "#b99cff",
-  "gridColor": "#5b4c78",
-  "borderColor": "#6b5a8e",
+  "floorColor": "#111018",
+  "floorAltColor": "#1b1428",
+  "allyColor": "#252343",
+  "enemyColor": "#3a203f",
+  "pathColor": "#17131f",
+  "pathAccentColor": "#b58cff",
+  "gridColor": "#5e4b7b",
+  "borderColor": "#6e5795",
   "edgeColor": "#050507",
-  "depthColor": "#0b0710",
+  "depthColor": "#09070d",
   "backgroundColor": "#000000",
   "benchMaterial": "minecraft:obsidian",
   "props": [
     {
       "item": "minecraft:end_crystal",
-      "x": -2.7,
-      "y": 8.7,
-      "scale": 0.8,
+      "x": -3.15,
+      "y": 8.35,
+      "z": 0.45,
+      "scale": 0.68,
       "blockModel": false
     },
     {
       "item": "minecraft:end_crystal",
-      "x": 11.7,
-      "y": 8.7,
-      "scale": 0.8,
+      "x": 12.2,
+      "y": 8.15,
+      "z": 0.4,
+      "scale": 0.62,
+      "blockModel": false
+    },
+    {
+      "item": "minecraft:amethyst_shard",
+      "x": 11.8,
+      "y": 6.85,
+      "z": 1.1,
+      "scale": 0.82,
+      "yaw": 18,
+      "pitch": -12,
       "blockModel": false
     }
   ],
@@ -434,14 +446,14 @@
       ]
     ],
     "tacticianRegion": [
-      3.55,
-      -2.85,
-      5.45,
-      -1.3
+      10.95,
+      5,
+      12.1,
+      7
     ],
     "tacticianSpawn": [
-      4.5,
-      -2.1,
+      11.55,
+      6,
       0.02
     ],
     "humanSpawn": [
@@ -700,131 +712,340 @@
   },
   "geometry": [
     {
-      "id": "fragment-a",
-      "material": "minecraft:amethyst_block",
+      "id": "signature-black-hole-core",
+      "material": "minecraft:black_concrete",
       "position": [
-        -3,
-        -2.1,
-        5
+        4.5,
+        -4.35,
+        3.75
       ],
       "size": [
-        1.2,
-        1,
+        2.8,
+        0.32,
+        2.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-inner-top",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        4.5,
+        -4.42,
+        5.35
+      ],
+      "size": [
+        3.2,
+        0.28,
+        0.42
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-inner-bottom",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        4.5,
+        -4.42,
+        2.15
+      ],
+      "size": [
+        3.2,
+        0.28,
+        0.42
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-inner-left",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        2.9,
+        -4.42,
+        3.75
+      ],
+      "size": [
+        0.42,
+        0.28,
         3.2
       ],
       "rotation": [
-        18,
         0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-inner-right",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        6.1,
+        -4.42,
+        3.75
+      ],
+      "size": [
+        0.42,
+        0.28,
+        3.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-top",
+      "material": "minecraft:amethyst_block",
+      "position": [
+        4.5,
+        -4.5,
+        5.78
+      ],
+      "size": [
+        3,
+        0.24,
+        0.34
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-bottom",
+      "material": "minecraft:amethyst_block",
+      "position": [
+        4.5,
+        -4.5,
+        1.72
+      ],
+      "size": [
+        3,
+        0.24,
+        0.34
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-left",
+      "material": "minecraft:purple_stained_glass",
+      "position": [
+        2.47,
+        -4.5,
+        3.75
+      ],
+      "size": [
+        0.34,
+        0.24,
+        3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-right",
+      "material": "minecraft:magenta_stained_glass",
+      "position": [
+        6.53,
+        -4.5,
+        3.75
+      ],
+      "size": [
+        0.34,
+        0.24,
+        3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-nw",
+      "material": "minecraft:purple_stained_glass",
+      "position": [
+        3.05,
+        -4.5,
+        5.18
+      ],
+      "size": [
+        1.6,
+        0.24,
+        0.28
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-ne",
+      "material": "minecraft:magenta_stained_glass",
+      "position": [
+        5.95,
+        -4.5,
+        5.18
+      ],
+      "size": [
+        1.6,
+        0.24,
+        0.28
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-sw",
+      "material": "minecraft:magenta_stained_glass",
+      "position": [
+        3.05,
+        -4.5,
+        2.32
+      ],
+      "size": [
+        1.6,
+        0.24,
+        0.28
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ]
+    },
+    {
+      "id": "black-hole-halo-se",
+      "material": "minecraft:purple_stained_glass",
+      "position": [
+        5.95,
+        -4.5,
+        2.32
+      ],
+      "size": [
+        1.6,
+        0.24,
+        0.28
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ]
+    },
+    {
+      "id": "void-debris-left-a",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        -3.3,
+        -2.5,
+        4.8
+      ],
+      "size": [
+        1,
+        0.9,
+        2.6
+      ],
+      "rotation": [
+        16,
+        10,
         22
       ]
     },
     {
-      "id": "fragment-b",
-      "material": "minecraft:purple_stained_glass",
+      "id": "void-debris-left-b",
+      "material": "minecraft:amethyst_block",
       "position": [
-        12,
-        -2,
-        4
+        -4.1,
+        6.9,
+        3.1
       ],
       "size": [
-        1,
-        1.2,
-        4
+        0.8,
+        0.7,
+        1.8
       ],
       "rotation": [
-        -20,
-        0,
+        -10,
+        18,
+        -24
+      ]
+    },
+    {
+      "id": "void-debris-right-a",
+      "material": "minecraft:obsidian",
+      "position": [
+        12.3,
+        -2,
+        3.7
+      ],
+      "size": [
+        1.1,
+        0.9,
+        2.2
+      ],
+      "rotation": [
+        -18,
+        -12,
         -18
       ]
     },
     {
-      "id": "fragment-c",
-      "material": "minecraft:crying_obsidian",
-      "position": [
-        -4,
-        8.6,
-        4.5
-      ],
-      "size": [
-        1.3,
-        1.1,
-        3.5
-      ],
-      "rotation": [
-        12,
-        0,
-        -28
-      ]
-    },
-    {
-      "id": "fragment-d",
-      "material": "minecraft:amethyst_block",
+      "id": "void-debris-right-b",
+      "material": "minecraft:purple_stained_glass",
       "position": [
         13,
-        8.5,
-        5.2
-      ],
-      "size": [
-        1.1,
-        1.3,
-        3.8
-      ],
-      "rotation": [
-        -14,
-        0,
-        31
-      ]
-    },
-    {
-      "id": "infinity-band-back",
-      "material": "minecraft:purple_stained_glass",
-      "position": [
-        4.5,
-        -4,
-        2.8
-      ],
-      "size": [
-        15,
-        0.25,
-        0.25
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "infinity-band-front",
-      "material": "minecraft:magenta_stained_glass",
-      "position": [
-        14.7,
-        2.7,
-        2.5
-      ],
-      "size": [
-        0.25,
-        11,
-        0.25
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "singularity",
-      "material": "minecraft:end_portal_frame",
-      "position": [
-        13.7,
         7.4,
-        1
+        4.4
       ],
       "size": [
-        2.2,
-        1.4,
-        2
+        0.75,
+        0.85,
+        2.6
+      ],
+      "rotation": [
+        14,
+        -20,
+        28
+      ]
+    },
+    {
+      "id": "tactician-asteroid-core",
+      "material": "minecraft:obsidian",
+      "position": [
+        11.55,
+        6,
+        -0.14
+      ],
+      "size": [
+        1.55,
+        1.45,
+        0.28
       ],
       "rotation": [
         0,
@@ -833,131 +1054,74 @@
       ]
     },
     {
-      "id": "tactician-floating-dais",
+      "id": "tactician-asteroid-nose",
       "material": "minecraft:crying_obsidian",
       "position": [
-        4.5,
-        -2.1,
-        -0.15
+        10.96,
+        5.55,
+        -0.12
       ],
       "size": [
-        2,
-        1.7,
-        0.3
+        0.75,
+        0.72,
+        0.24
       ],
       "rotation": [
         0,
         0,
-        0
+        -12
       ]
     },
     {
-      "id": "tactician-dais-rim-west",
-      "material": "minecraft:purple_stained_glass",
-      "position": [
-        3.48,
-        -2.1,
-        0.45
-      ],
-      "size": [
-        0.18,
-        1.7,
-        0.9
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-dais-rim-east",
-      "material": "minecraft:purple_stained_glass",
-      "position": [
-        5.52,
-        -2.1,
-        0.45
-      ],
-      "size": [
-        0.18,
-        1.7,
-        0.9
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-dais-rim-rear",
+      "id": "tactician-asteroid-tail",
       "material": "minecraft:amethyst_block",
       "position": [
-        4.5,
-        -2.92,
-        0.45
+        12.13,
+        6.38,
+        -0.1
       ],
       "size": [
-        2,
-        0.18,
-        0.9
+        0.7,
+        0.64,
+        0.2
       ],
       "rotation": [
         0,
         0,
-        0
+        16
       ]
     },
     {
-      "id": "premium-identity-orbit-west",
-      "material": "minecraft:purple_stained_glass",
+      "id": "tactician-rift-spire",
+      "material": "minecraft:amethyst_block",
       "position": [
-        -4.2,
-        2.5,
-        2.6
+        12.28,
+        6.72,
+        1.1
       ],
       "size": [
-        0.28,
-        7,
-        4.6
+        0.36,
+        0.36,
+        2.2
       ],
       "rotation": [
+        8,
         0,
-        18,
-        -10
-      ]
-    },
-    {
-      "id": "premium-identity-orbit-east",
-      "material": "minecraft:magenta_stained_glass",
-      "position": [
-        13.2,
-        2.5,
-        2.6
-      ],
-      "size": [
-        0.28,
-        7,
-        4.6
-      ],
-      "rotation": [
-        0,
-        -18,
         10
       ]
     },
     {
-      "id": "premium-identity-void-bridge",
-      "material": "minecraft:obsidian",
+      "id": "tactician-rift-rim",
+      "material": "minecraft:purple_stained_glass",
       "position": [
-        4.5,
-        -1.98,
-        -0.15
+        11.95,
+        5.16,
+        0.45
       ],
       "size": [
-        1.2,
-        1,
-        0.3
+        0.95,
+        0.18,
+        0.9
       ],
       "rotation": [
         0,
