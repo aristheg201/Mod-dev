@@ -1071,74 +1071,55 @@
       ]
     },
     {
-      "id": "tactician-cursed-overlook",
-      "material": "minecraft:polished_blackstone",
-      "position": [
-        -2.5,
-        6,
-        -0.15
-      ],
-      "size": [
-        1.7,
-        1.55,
-        0.3
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-overlook-rib",
-      "material": "minecraft:bone_block",
-      "position": [
-        -3.15,
-        6.2,
-        0.95
-      ],
-      "size": [
-        0.35,
-        0.35,
-        1.9
-      ],
-      "rotation": [
-        0,
-        0,
-        -10
-      ]
-    },
-    {
-      "id": "tactician-overlook-fang",
-      "material": "minecraft:bone_block",
-      "position": [
-        -2.05,
-        5.25,
-        0.75
-      ],
-      "size": [
-        0.3,
-        0.3,
-        1.5
-      ],
-      "rotation": [
-        0,
-        0,
-        16
-      ]
-    },
-    {
-      "id": "tactician-overlook-rail",
+      "id": "signature-shrine-eave-left",
       "material": "minecraft:red_nether_bricks",
       "position": [
-        -2.95,
-        5.2,
-        0.42
+        2.55,
+        -2.75,
+        4.25
       ],
       "size": [
-        1.05,
-        0.16,
-        0.84
+        3.5,
+        1.95,
+        0.34
+      ],
+      "rotation": [
+        0,
+        0,
+        -7
+      ]
+    },
+    {
+      "id": "signature-shrine-eave-right",
+      "material": "minecraft:red_nether_bricks",
+      "position": [
+        6.45,
+        -2.75,
+        4.25
+      ],
+      "size": [
+        3.5,
+        1.95,
+        0.34
+      ],
+      "rotation": [
+        0,
+        0,
+        7
+      ]
+    },
+    {
+      "id": "signature-shrine-ridge",
+      "material": "minecraft:polished_blackstone_bricks",
+      "position": [
+        4.5,
+        -2.82,
+        5.02
+      ],
+      "size": [
+        4.1,
+        0.55,
+        0.38
       ],
       "rotation": [
         0,
@@ -1147,22 +1128,174 @@
       ]
     },
     {
-      "id": "tactician-overlook-step",
-      "material": "minecraft:blackstone",
+      "id": "signature-shrine-horn-left",
+      "material": "minecraft:bone_block",
       "position": [
-        -1.75,
+        2.15,
+        -2.6,
+        5.15
+      ],
+      "size": [
+        0.28,
+        0.28,
+        1.25
+      ],
+      "rotation": [
+        0,
+        0,
+        -22
+      ]
+    },
+    {
+      "id": "signature-shrine-horn-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        6.85,
+        -2.6,
+        5.15
+      ],
+      "size": [
+        0.28,
+        0.28,
+        1.25
+      ],
+      "rotation": [
+        0,
+        0,
+        22
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-core",
+      "material": "#1A0909",
+      "position": [
+        -2.52,
         6,
+        -0.08
+      ],
+      "size": [
+        1.35,
+        1.15,
+        0.16
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-front",
+      "material": "#5B1717",
+      "position": [
+        -2.52,
+        5.3,
         -0.1
       ],
       "size": [
-        0.65,
-        0.75,
-        0.2
+        0.82,
+        0.45,
+        0.18
       ],
       "rotation": [
         0,
         0,
         0
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-left",
+      "material": "#2B0C0C",
+      "position": [
+        -3.15,
+        6.08,
+        -0.1
+      ],
+      "size": [
+        0.45,
+        0.82,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        -16
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-right",
+      "material": "#7A2222",
+      "position": [
+        -1.9,
+        5.95,
+        -0.1
+      ],
+      "size": [
+        0.45,
+        0.78,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        18
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-rear",
+      "material": "#3A0F0F",
+      "position": [
+        -2.48,
+        6.6,
+        -0.1
+      ],
+      "size": [
+        0.76,
+        0.42,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-domain-fang-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        -3.02,
+        6.45,
+        0.65
+      ],
+      "size": [
+        0.24,
+        0.24,
+        1.45
+      ],
+      "rotation": [
+        0,
+        0,
+        -18
+      ]
+    },
+    {
+      "id": "tactician-domain-fang-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        -2.02,
+        6.4,
+        0.6
+      ],
+      "size": [
+        0.22,
+        0.22,
+        1.35
+      ],
+      "rotation": [
+        0,
+        0,
+        20
       ]
     }
   ]
