@@ -112,6 +112,11 @@ object NativeBoardSceneRenderer {
         val selected = selectedCell?.let { setOf(NativeBoardSystems.displayCell("chess", view, it)) }.orEmpty()
         val entities = mutableListOf<PokemonSceneEntity>()
         val nativeAnimations = mutableListOf<SceneNativeAnimationSignal>()
+        val viewerTeam = when (fields.str("you")) {
+            "black" -> 1
+            else -> 0
+        }
+        fun facingYaw(team:Int, base:Float) = base + if (team == viewerTeam) 0f else 180f
 
         repeat(minOf(64, board.size())) { index ->
             val token = runCatching { board[index].asString }.getOrDefault("")
@@ -131,7 +136,7 @@ object NativeBoardSceneRenderer {
                 boardX = (displayIndex % 8).toFloat(),
                 boardY = (displayIndex / 8).toFloat(),
                 team = team,
-                yaw = visual.yaw + if (team == 0) 180f else 0f,
+                yaw = facingYaw(team, visual.yaw),
                 scale = visual.scale,
                 motionSerial = if (displayMotionFrom != null) serial else 0L,
                 motionFromX = displayMotionFrom?.let { (it % 8).toFloat() },
@@ -153,7 +158,7 @@ object NativeBoardSceneRenderer {
                     boardX = (displayCaptured % 8).toFloat(),
                     boardY = (displayCaptured / 8).toFloat(),
                     team = capturedTeam,
-                    yaw = it.yaw + if (capturedTeam == 0) 180f else 0f,
+                    yaw = facingYaw(capturedTeam, it.yaw),
                     scale = it.scale
                 )
             }
@@ -231,7 +236,7 @@ object NativeBoardSceneRenderer {
                 boardX = (index % 9).toFloat(),
                 boardY = (index / 9).toFloat(),
                 team = team,
-                yaw = visual.yaw + if (team == 0) 180f else 0f,
+                yaw = facingYaw(team, visual.yaw),
                 scale = visual.scale,
                 motionSerial = if (moving) serial else 0L,
                 motionFromX = if (moving) (lastFrom!! % 9).toFloat() else null,
@@ -252,7 +257,7 @@ object NativeBoardSceneRenderer {
                     boardX = (capturedIndex % 9).toFloat(),
                     boardY = (capturedIndex / 9).toFloat(),
                     team = capturedTeam,
-                    yaw = it.yaw + if (capturedTeam == 0) 180f else 0f,
+                    yaw = facingYaw(capturedTeam, it.yaw),
                     scale = it.scale
                 )
             }
