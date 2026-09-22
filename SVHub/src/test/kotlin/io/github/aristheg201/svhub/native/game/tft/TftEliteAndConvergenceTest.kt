@@ -17,11 +17,13 @@ class TftEliteAndConvergenceTest {
         assertEquals(listOf(4, 3, 5), listOf("giratina", "dialga", "palkia").map { id -> base.units.first { it.id == id }.cost })
         assertFalse(base.units.first { it.id == "arceus" }.shopEligible)
         assertEquals(5, base.units.count { it.elite != null })
+        assertEquals((1..5).toList(), base.units.filter { it.elite != null }.map { it.cost }.sorted())
         base.units.filter { it.elite != null }.forEach { assertEquals(2,it.purchaseStar); assertTrue(it.price > it.cost) }
     }
-    @Test fun allThreeDistinctDeployedMembersSummonExactlyOneArceus() {
+    @Test fun allThreeDistinctDeployedMembersSynchronizeIntoExactlyOneArceus() {
         val combat = combat(own = board("giratina", "dialga", "palkia", "giratina"))
-        assertEquals(1, combat.units.count { it.definition.id == "arceus" })
+        assertEquals(1, combat.units.count { it.definition.id == "arceus" && it.alive })
+        assertEquals(2, combat.units.count { !it.alive && it.definition.id in setOf("giratina","dialga","palkia") })
         val summoned = combat.units.single { it.definition.id == "arceus" }
         assertEquals("cobblemon:arceus", summoned.definition.presentation.species)
         assertEquals("a", summoned.ownerId)
@@ -88,6 +90,16 @@ class TftEliteAndConvergenceTest {
             appeared = appeared || recovered.viewFor("a").cards.any { it.meta["elite"] == "true" }
         }
         assertTrue(appeared, "Selling elite must restore elite eligibility")
+    }
+    @Test fun riskyRosterAndPersistentHoopaEvolutionAreAuthored() {
+        assertTrue(base.units.count { "risky" in it.tags } >= 20)
+        for (trait in listOf("glass_cannon","blood_pact","void_contract","wild_gambit","summon_spirit","hoopa_domain")) assertTrue(base.traits.any { it.id == trait })
+        val hoopa = base.units.first { it.id == "hoopa_sukuna" }
+        val evolution = assertNotNull(hoopa.permanentEvolution)
+        assertEquals(3, evolution.afterCombats)
+        assertEquals("hoopa_unbound_sukuna", evolution.targetUnit)
+        assertFalse(base.units.first { it.id == evolution.targetUnit }.shopEligible)
+        assertTrue(base.units.first { it.id == "regiraga" }.presentation.resolverAspects().contains("regiraga"))
     }
     @Test fun invalidConvergenceAndEliteRulesAreRejected() {
         assertFailsWith<IllegalArgumentException> { TftDefinitionValidator.validate(base.copy(convergences = listOf(TftConvergenceDefinition("bad", setOf("pikachu","missing"),"arceus")))) }

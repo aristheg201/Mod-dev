@@ -1051,5 +1051,142 @@
         "teamEffects": {}
       }
     ]
+  },
+  {
+    "id": "glass_cannon",
+    "name": "Glass Cannon",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Trade 12% max HP for 30% Attack and AP.",
+        "effects": {
+          "hp_pct": -0.12,
+          "attack_pct": 0.3,
+          "ability_power_pct": 0.3
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Trade 25% max HP for 65% Attack/AP and 15% Attack Speed.",
+        "effects": {
+          "hp_pct": -0.25,
+          "attack_pct": 0.65,
+          "ability_power_pct": 0.65,
+          "attack_speed_pct": 0.15
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "blood_pact",
+    "name": "Blood Pact",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Sacrifice 10% max HP for 25% Attack and 10 starting mana.",
+        "effects": {
+          "hp_pct": -0.1,
+          "attack_pct": 0.25,
+          "mana_start": 10
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Sacrifice 20% max HP for 50% Attack and 25% AP.",
+        "effects": {
+          "hp_pct": -0.2,
+          "attack_pct": 0.5,
+          "ability_power_pct": 0.25
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "void_contract",
+    "name": "Void Contract",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Lose 15 Armor/Sp.Def for 35% AP.",
+        "effects": {
+          "defense": -15,
+          "spdef": -15,
+          "ability_power_pct": 0.35
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Lose 30 Armor/Sp.Def for 75% AP and 15 starting mana.",
+        "effects": {
+          "defense": -30,
+          "spdef": -30,
+          "ability_power_pct": 0.75,
+          "mana_start": 15
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "wild_gambit",
+    "name": "Wild Gambit",
+    "tiers": [
+      {
+        "threshold": 2,
+        "description": "Gain 20% crit and 25% Attack Speed at the cost of 8% max HP.",
+        "effects": {
+          "crit_chance": 0.2,
+          "attack_speed_pct": 0.25,
+          "hp_pct": -0.08
+        },
+        "teamEffects": {}
+      },
+      {
+        "threshold": 4,
+        "description": "Gain 35% crit, 60% crit damage and 40% Attack Speed; lose 18% max HP.",
+        "effects": {
+          "crit_chance": 0.35,
+          "crit_multiplier": 0.6,
+          "attack_speed_pct": 0.4,
+          "hp_pct": -0.18
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "summon_spirit",
+    "name": "Summon Spirit",
+    "tiers": [
+      {
+        "threshold": 1,
+        "description": "Single-unit covenant: survive Slow Start to unlock overwhelming base stats.",
+        "effects": {
+          "hp_pct": 0.1,
+          "attack_pct": 0.1
+        },
+        "teamEffects": {}
+      }
+    ]
+  },
+  {
+    "id": "hoopa_domain",
+    "name": "Hoopa",
+    "tiers": [
+      {
+        "threshold": 1,
+        "description": "Hoopa permanently becomes Unbound after three completed deployed combats.",
+        "effects": {
+          "ability_power_pct": 0.15,
+          "mana_start": 10
+        },
+        "teamEffects": {}
+      }
+    ]
   }
 ]

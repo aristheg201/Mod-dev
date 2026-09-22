@@ -307,5 +307,193 @@
     "startingGold": 0,
     "startingHealth": 100,
     "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:glass_cannon",
+    "name": "Glass Cannon",
+    "synergyTrait": "glass_cannon",
+    "members": [
+      {
+        "unit": "risk_deoxys_attack",
+        "slot": 8,
+        "star": 1
+      },
+      {
+        "unit": "risk_pheromosa",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "risk_chien_pao",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "risk_kartana",
+        "slot": 18,
+        "star": 1
+      },
+      {
+        "unit": "risk_mega_beedrill",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svhub:crimson_caldera",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:blood_pact",
+    "name": "Blood Pact",
+    "synergyTrait": "blood_pact",
+    "members": [
+      {
+        "unit": "risk_guzzlord",
+        "slot": 8,
+        "star": 1
+      },
+      {
+        "unit": "risk_annihilape",
+        "slot": 11,
+        "star": 1
+      },
+      {
+        "unit": "risk_basculegion",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "risk_yveltal",
+        "slot": 22,
+        "star": 1
+      },
+      {
+        "unit": "risk_ursaluna_bloodmoon",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svhub:abyssal_sanctum",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:void_contract",
+    "name": "Void Contract",
+    "synergyTrait": "void_contract",
+    "members": [
+      {
+        "unit": "risk_darkrai",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "risk_necrozma",
+        "slot": 12,
+        "star": 1
+      },
+      {
+        "unit": "risk_eternatus",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "risk_mega_alakazam",
+        "slot": 19,
+        "star": 1
+      },
+      {
+        "unit": "risk_mega_gengar",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svhub:temporal_observatory",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:wild_gambit",
+    "name": "Wild Gambit",
+    "synergyTrait": "wild_gambit",
+    "members": [
+      {
+        "unit": "risk_togekiss",
+        "slot": 7,
+        "star": 1
+      },
+      {
+        "unit": "risk_darmanitan",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "risk_hawlucha",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "risk_zoroark",
+        "slot": 19,
+        "star": 1
+      },
+      {
+        "unit": "risk_dragonite",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svhub:monster_island",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:summon_spirit",
+    "name": "Summon Spirit",
+    "synergyTrait": "summon_spirit",
+    "members": [
+      {
+        "unit": "regiraga",
+        "slot": 17,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svhub:ancient_ruins",
+    "startingLevel": 4,
+    "startingGold": 10,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svhub:hoopa",
+    "name": "Hoopa",
+    "synergyTrait": "hoopa_domain",
+    "members": [
+      {
+        "unit": "hoopa_sukuna",
+        "slot": 17,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svhub:distortion_rift",
+    "startingLevel": 3,
+    "startingGold": 10,
+    "startingHealth": 100,
+    "aiProfile": "hard"
   }
 ]

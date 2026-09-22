@@ -3640,12 +3640,16 @@
     "shopEligible": false
   },
   {
-    "id": "regigigas",
+    "id": "regiraga",
     "pokemon": {
-      "species": "cobblemon:regigigas"
+      "species": "cobblemon:regigigas",
+      "aspects": [
+        "regiraga"
+      ]
     },
     "cost": 4,
     "traits": [
+      "summon_spirit",
       "normal",
       "legendary",
       "bruiser"
@@ -3666,7 +3670,7 @@
     },
     "ability": {
       "id": "crush_grip",
-      "name": "Crush Grip · Slow Start: half attack and speed for 6 seconds",
+      "name": "Regiraga · Crush Grip · Slow Start",
       "target": "farthest_enemy",
       "damageType": "magic",
       "damage": 900,
@@ -3677,14 +3681,14 @@
       "dash": 0,
       "effects": {}
     },
-    "team": "",
+    "team": "summon_spirit",
     "shopEligible": true,
     "triggers": [
       {
         "id": "slow_start",
         "event": "ON_COMBAT_START",
         "priority": 0,
-        "chance": 1.0,
+        "chance": 1,
         "cooldownMs": 0,
         "every": 1,
         "oncePerCombat": true,
@@ -3721,195 +3725,10 @@
           }
         ]
       }
-    ]
-  },
-  {
-    "id": "yveltal",
-    "pokemon": {
-      "species": "cobblemon:yveltal"
-    },
-    "cost": 5,
-    "traits": [
-      "dark",
-      "flying",
-      "legendary",
-      "caster"
     ],
-    "role": "caster",
-    "stats": {
-      "hp": 1000,
-      "attackDamage": 95,
-      "defense": 25,
-      "specialDefense": 35,
-      "attackSpeed": 0.8,
-      "range": 4,
-      "manaStart": 0,
-      "manaMax": 120,
-      "critChance": 0.25,
-      "critMultiplier": 1.4,
-      "moveSpeed": 1
-    },
-    "ability": {
-      "id": "oblivion_wing",
-      "name": "Oblivion Wing · fragile drain caster",
-      "target": "farthest_enemy",
-      "damageType": "magic",
-      "damage": 850,
-      "heal": 0,
-      "shield": 0,
-      "radius": 1,
-      "stunMs": 0,
-      "dash": 0,
-      "effects": {},
-      "graph": [
-        {
-          "op": "damage",
-          "selector": "farthest_enemy",
-          "values": {
-            "amount": 550,
-            "scale_ap": 3
-          },
-          "strings": {
-            "type": "MAGIC"
-          },
-          "children": [],
-          "otherwise": []
-        },
-        {
-          "op": "heal",
-          "selector": "self",
-          "values": {
-            "amount": 180,
-            "scale_ap": 2
-          },
-          "strings": {},
-          "children": [],
-          "otherwise": []
-        }
-      ]
-    },
-    "team": "",
-    "shopEligible": true
-  },
-  {
-    "id": "necrozma",
-    "pokemon": {
-      "species": "cobblemon:necrozma"
-    },
-    "cost": 5,
-    "traits": [
-      "psychic",
-      "legendary",
-      "striker"
-    ],
-    "role": "striker",
-    "stats": {
-      "hp": 1450,
-      "attackDamage": 150,
-      "defense": 75,
-      "specialDefense": 100,
-      "attackSpeed": 0.8,
-      "range": 1,
-      "manaStart": 0,
-      "manaMax": 100,
-      "critChance": 0.25,
-      "critMultiplier": 1.4,
-      "moveSpeed": 1
-    },
-    "ability": {
-      "id": "prismatic_laser",
-      "name": "Prismatic Laser · pays 30% HP; awakens below 35% HP",
-      "target": "farthest_enemy",
-      "damageType": "magic",
-      "damage": 1050,
-      "heal": 0,
-      "shield": 0,
-      "radius": 2,
-      "stunMs": 0,
-      "dash": 0,
-      "effects": {}
-    },
-    "team": "",
-    "shopEligible": true,
-    "triggers": [
-      {
-        "id": "prism_risk",
-        "event": "ON_COMBAT_START",
-        "priority": 0,
-        "chance": 1.0,
-        "cooldownMs": 0,
-        "every": 1,
-        "oncePerCombat": true,
-        "oncePerTarget": false,
-        "conditions": [],
-        "effects": [
-          {
-            "op": "true_damage",
-            "selector": "self",
-            "values": {
-              "scale_current_hp": 0.3
-            },
-            "strings": {},
-            "children": [],
-            "otherwise": []
-          }
-        ]
-      },
-      {
-        "id": "prism_reward",
-        "event": "ON_DAMAGE_TAKEN",
-        "priority": 0,
-        "chance": 1.0,
-        "cooldownMs": 0,
-        "every": 1,
-        "oncePerCombat": true,
-        "oncePerTarget": false,
-        "conditions": [
-          {
-            "kind": "hp_below",
-            "key": "",
-            "value": 0.35
-          }
-        ],
-        "effects": [
-          {
-            "op": "shield",
-            "selector": "self",
-            "values": {
-              "amount": 500
-            },
-            "strings": {},
-            "children": [],
-            "otherwise": []
-          },
-          {
-            "op": "modify_stat",
-            "selector": "self",
-            "values": {
-              "percent": 1
-            },
-            "strings": {
-              "stat": "ATTACK",
-              "modifier_id": "prism_attack"
-            },
-            "children": [],
-            "otherwise": []
-          },
-          {
-            "op": "modify_stat",
-            "selector": "self",
-            "values": {
-              "percent": 1
-            },
-            "strings": {
-              "stat": "AP",
-              "modifier_id": "prism_power"
-            },
-            "children": [],
-            "otherwise": []
-          }
-        ]
-      }
+    "tags": [
+      "risky",
+      "spirit"
     ]
   },
   {
@@ -3962,8 +3781,8 @@
     "shopPrice": 12,
     "purchaseStar": 2,
     "elite": {
-      "healthMultiplier": 2.0,
-      "damageMultiplier": 2.0
+      "healthMultiplier": 2,
+      "damageMultiplier": 2
     }
   },
   {
@@ -3974,7 +3793,7 @@
         "buzzwole_superman"
       ]
     },
-    "cost": 5,
+    "cost": 3,
     "traits": [
       "dc_universe",
       "guardian",
@@ -4013,11 +3832,11 @@
       "elite"
     ],
     "team": "dc_universe",
-    "shopPrice": 12,
+    "shopPrice": 8,
     "purchaseStar": 2,
     "elite": {
-      "healthMultiplier": 2.0,
-      "damageMultiplier": 2.0
+      "healthMultiplier": 2,
+      "damageMultiplier": 2
     }
   },
   {
@@ -4029,7 +3848,7 @@
       ],
       "form": "mega-y"
     },
-    "cost": 5,
+    "cost": 4,
     "traits": [
       "green_lantern",
       "caster",
@@ -4069,11 +3888,11 @@
       "elite"
     ],
     "team": "green_lantern",
-    "shopPrice": 12,
+    "shopPrice": 10,
     "purchaseStar": 2,
     "elite": {
-      "healthMultiplier": 2.0,
-      "damageMultiplier": 2.0
+      "healthMultiplier": 2,
+      "damageMultiplier": 2
     }
   },
   {
@@ -4081,7 +3900,7 @@
     "pokemon": {
       "species": "cobblemon:gholdengo"
     },
-    "cost": 5,
+    "cost": 1,
     "traits": [
       "fortune",
       "caster",
@@ -4122,11 +3941,11 @@
       "elite"
     ],
     "team": "fortune",
-    "shopPrice": 12,
+    "shopPrice": 4,
     "purchaseStar": 2,
     "elite": {
-      "healthMultiplier": 2.0,
-      "damageMultiplier": 2.0
+      "healthMultiplier": 2,
+      "damageMultiplier": 2
     }
   },
   {
@@ -4137,7 +3956,7 @@
         "op"
       ]
     },
-    "cost": 5,
+    "cost": 2,
     "traits": [
       "straw_hat",
       "striker",
@@ -4175,11 +3994,1957 @@
       "straw_hat_crew"
     ],
     "team": "straw_hat",
-    "shopPrice": 12,
+    "shopPrice": 6,
     "purchaseStar": 2,
     "elite": {
-      "healthMultiplier": 2.0,
-      "damageMultiplier": 2.0
+      "healthMultiplier": 2,
+      "damageMultiplier": 2
     }
+  },
+  {
+    "id": "risk_deoxys_attack",
+    "pokemon": {
+      "species": "cobblemon:deoxys",
+      "form": "attack"
+    },
+    "cost": 1,
+    "traits": [
+      "glass_cannon",
+      "psychic",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 560,
+      "attackDamage": 88,
+      "defense": 15,
+      "specialDefense": 15,
+      "attackSpeed": 1,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 80,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "psycho_boost",
+      "name": "Psycho Boost",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 260,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "glass_cannon",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "deoxys_overclock",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.25
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.6
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "deoxys_overclock_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.6
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "deoxys_overclock_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_pheromosa",
+    "pokemon": {
+      "species": "cobblemon:pheromosa"
+    },
+    "cost": 2,
+    "traits": [
+      "glass_cannon",
+      "bug",
+      "fighting",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 650,
+      "attackDamage": 108,
+      "defense": 12,
+      "specialDefense": 18,
+      "attackSpeed": 1.22,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 70,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "high_jump_kick",
+      "name": "High Jump Kick",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 340,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "glass_cannon",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "pheromosa_redline",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.2
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.5
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "pheromosa_redline_attack_speed"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.35
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "pheromosa_redline_attack"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_chien_pao",
+    "pokemon": {
+      "species": "cobblemon:chienpao"
+    },
+    "cost": 3,
+    "traits": [
+      "glass_cannon",
+      "dark",
+      "ice",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 820,
+      "attackDamage": 138,
+      "defense": 28,
+      "specialDefense": 32,
+      "attackSpeed": 1,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 90,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "ruination_fang",
+      "name": "Ruination Fang",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 470,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "glass_cannon",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "chienpao_blood_edge",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.25
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.75
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "chienpao_blood_edge_attack"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_kartana",
+    "pokemon": {
+      "species": "cobblemon:kartana"
+    },
+    "cost": 4,
+    "traits": [
+      "glass_cannon",
+      "grass",
+      "steel",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 860,
+      "attackDamage": 178,
+      "defense": 22,
+      "specialDefense": 28,
+      "attackSpeed": 1.05,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 90,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "leaf_blade",
+      "name": "Leaf Blade",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 620,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "glass_cannon",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "kartana_paper_body",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.3
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "kartana_paper_body_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.35
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "kartana_paper_body_attack_speed"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_mega_beedrill",
+    "pokemon": {
+      "species": "cobblemon:beedrill",
+      "form": "mega"
+    },
+    "cost": 5,
+    "traits": [
+      "glass_cannon",
+      "bug",
+      "poison",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 900,
+      "attackDamage": 212,
+      "defense": 18,
+      "specialDefense": 22,
+      "attackSpeed": 1.35,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "fell_stinger",
+      "name": "Fell Stinger",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 790,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "glass_cannon",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "beedrill_last_sting",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.35
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1.2
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "beedrill_last_sting_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.45
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "beedrill_last_sting_attack_speed"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_guzzlord",
+    "pokemon": {
+      "species": "cobblemon:guzzlord"
+    },
+    "cost": 1,
+    "traits": [
+      "blood_pact",
+      "dark",
+      "dragon",
+      "bruiser"
+    ],
+    "role": "tank",
+    "stats": {
+      "hp": 1550,
+      "attackDamage": 64,
+      "defense": 22,
+      "specialDefense": 28,
+      "attackSpeed": 0.55,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 120,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "belly_void",
+      "name": "Belly of the Void",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 260,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "blood_pact",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "guzzlord_hunger",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.15
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.25
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "guzzlord_hunger_attack"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_annihilape",
+    "pokemon": {
+      "species": "cobblemon:annihilape"
+    },
+    "cost": 2,
+    "traits": [
+      "blood_pact",
+      "fighting",
+      "ghost",
+      "bruiser"
+    ],
+    "role": "fighter",
+    "stats": {
+      "hp": 1050,
+      "attackDamage": 98,
+      "defense": 45,
+      "specialDefense": 40,
+      "attackSpeed": 0.82,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "rage_fist",
+      "name": "Rage Fist",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 390,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "blood_pact",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "ape_last_stand",
+        "event": "ON_DAMAGE_TAKEN",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [
+          {
+            "kind": "hp_below",
+            "key": "",
+            "value": 0.4
+          }
+        ],
+        "effects": [
+          {
+            "op": "shield",
+            "selector": "self",
+            "values": {
+              "amount": 260
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.8
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "ape_rage"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_basculegion",
+    "pokemon": {
+      "species": "cobblemon:basculegion"
+    },
+    "cost": 3,
+    "traits": [
+      "blood_pact",
+      "water",
+      "ghost",
+      "striker"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 900,
+      "attackDamage": 128,
+      "defense": 30,
+      "specialDefense": 35,
+      "attackSpeed": 0.85,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 110,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "last_respects",
+      "name": "Last Respects",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 0,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {},
+      "graph": [
+        {
+          "op": "damage",
+          "selector": "farthest_enemy",
+          "values": {
+            "amount": 420,
+            "scale_ap": 2.2
+          },
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        },
+        {
+          "op": "heal",
+          "selector": "self",
+          "values": {
+            "amount": 160,
+            "scale_ap": 1.2
+          },
+          "strings": {},
+          "children": [],
+          "otherwise": []
+        }
+      ]
+    },
+    "team": "blood_pact",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "basculegion_toll",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.18
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.45
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "basculegion_toll_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_yveltal",
+    "pokemon": {
+      "species": "cobblemon:yveltal"
+    },
+    "cost": 4,
+    "traits": [
+      "blood_pact",
+      "dark",
+      "flying",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 960,
+      "attackDamage": 110,
+      "defense": 28,
+      "specialDefense": 38,
+      "attackSpeed": 0.82,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 120,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "oblivion_wing",
+      "name": "Oblivion Wing",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 0,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {},
+      "graph": [
+        {
+          "op": "damage",
+          "selector": "farthest_enemy",
+          "values": {
+            "amount": 540,
+            "scale_ap": 2.8
+          },
+          "strings": {
+            "type": "MAGIC"
+          },
+          "children": [],
+          "otherwise": []
+        },
+        {
+          "op": "heal",
+          "selector": "self",
+          "values": {
+            "amount": 180,
+            "scale_ap": 1.7
+          },
+          "strings": {},
+          "children": [],
+          "otherwise": []
+        }
+      ]
+    },
+    "team": "blood_pact",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "yveltal_tithe",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.22
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.7
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "yveltal_tithe_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_ursaluna_bloodmoon",
+    "pokemon": {
+      "species": "cobblemon:ursaluna",
+      "form": "bloodmoon"
+    },
+    "cost": 5,
+    "traits": [
+      "blood_pact",
+      "normal",
+      "ground",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1500,
+      "attackDamage": 155,
+      "defense": 55,
+      "specialDefense": 50,
+      "attackSpeed": 0.68,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 130,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "blood_moon",
+      "name": "Blood Moon",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 820,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "blood_pact",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "bloodmoon_price",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.3
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "bloodmoon_price_ap"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.5
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "bloodmoon_price_attack"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_darkrai",
+    "pokemon": {
+      "species": "cobblemon:darkrai"
+    },
+    "cost": 1,
+    "traits": [
+      "void_contract",
+      "dark",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 760,
+      "attackDamage": 70,
+      "defense": 24,
+      "specialDefense": 38,
+      "attackSpeed": 0.78,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 95,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "dark_void",
+      "name": "Dark Void",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 330,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "void_contract",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "darkrai_contract",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "add_status",
+            "selector": "self",
+            "values": {
+              "duration_ms": 2000
+            },
+            "strings": {
+              "id": "silence",
+              "policy": "refresh"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.7
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "darkrai_void_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_necrozma",
+    "pokemon": {
+      "species": "cobblemon:necrozma"
+    },
+    "cost": 2,
+    "traits": [
+      "void_contract",
+      "psychic",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 1050,
+      "attackDamage": 132,
+      "defense": 42,
+      "specialDefense": 55,
+      "attackSpeed": 0.78,
+      "range": 2,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "prismatic_laser",
+      "name": "Prismatic Laser",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 470,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "void_contract",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "necrozma_prism",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.3
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.75
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "necrozma_prism_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.75
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "necrozma_prism_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_eternatus",
+    "pokemon": {
+      "species": "cobblemon:eternatus"
+    },
+    "cost": 3,
+    "traits": [
+      "void_contract",
+      "poison",
+      "dragon",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1120,
+      "attackDamage": 118,
+      "defense": 45,
+      "specialDefense": 55,
+      "attackSpeed": 0.78,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 120,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "dynamax_cannon",
+      "name": "Dynamax Cannon",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 600,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "void_contract",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "eternatus_overflow",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.25
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "eternatus_overflow_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_mega_alakazam",
+    "pokemon": {
+      "species": "cobblemon:alakazam",
+      "form": "mega"
+    },
+    "cost": 4,
+    "traits": [
+      "void_contract",
+      "psychic",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 720,
+      "attackDamage": 78,
+      "defense": 18,
+      "specialDefense": 38,
+      "attackSpeed": 0.92,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 90,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "future_sight",
+      "name": "Future Sight",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 820,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "void_contract",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "alakazam_mindburn",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.3
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1.5
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "alakazam_mindburn_ap"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.3
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "alakazam_mindburn_attack_speed"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_mega_gengar",
+    "pokemon": {
+      "species": "cobblemon:gengar",
+      "form": "mega"
+    },
+    "cost": 5,
+    "traits": [
+      "void_contract",
+      "ghost",
+      "poison",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 800,
+      "attackDamage": 92,
+      "defense": 20,
+      "specialDefense": 35,
+      "attackSpeed": 1.05,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "perish_hex",
+      "name": "Perish Hex",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 980,
+      "heal": 0,
+      "shield": 0,
+      "radius": 3,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "void_contract",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "gengar_soul_burn",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.35
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 1.8
+            },
+            "strings": {
+              "stat": "AP",
+              "modifier_id": "gengar_soul_burn_ap"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_togekiss",
+    "pokemon": {
+      "species": "cobblemon:togekiss"
+    },
+    "cost": 1,
+    "traits": [
+      "wild_gambit",
+      "fairy",
+      "flying",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 760,
+      "attackDamage": 68,
+      "defense": 32,
+      "specialDefense": 45,
+      "attackSpeed": 0.72,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 90,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "metronome",
+      "name": "Metronome",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 300,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "wild_gambit",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "togekiss_coinflip",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "random_effect",
+            "selector": "self",
+            "values": {
+              "weight_0": 1,
+              "weight_1": 1
+            },
+            "strings": {},
+            "children": [
+              {
+                "op": "true_damage",
+                "selector": "self",
+                "values": {
+                  "scale_current_hp": 0.35
+                },
+                "strings": {},
+                "children": [],
+                "otherwise": []
+              },
+              {
+                "op": "modify_stat",
+                "selector": "self",
+                "values": {
+                  "percent": 1
+                },
+                "strings": {
+                  "stat": "AP",
+                  "modifier_id": "metronome_jackpot"
+                },
+                "children": [],
+                "otherwise": []
+              }
+            ],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_darmanitan",
+    "pokemon": {
+      "species": "cobblemon:darmanitan",
+      "form": "galarian"
+    },
+    "cost": 2,
+    "traits": [
+      "wild_gambit",
+      "ice",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 900,
+      "attackDamage": 120,
+      "defense": 28,
+      "specialDefense": 28,
+      "attackSpeed": 0.92,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 80,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "gorilla_tactics",
+      "name": "Gorilla Tactics",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 380,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "wild_gambit",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "darmanitan_all_in",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "amount": -20
+            },
+            "strings": {
+              "stat": "ARMOR",
+              "modifier_id": "darm_armor"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.6
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "darm_attack"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_hawlucha",
+    "pokemon": {
+      "species": "cobblemon:hawlucha"
+    },
+    "cost": 3,
+    "traits": [
+      "wild_gambit",
+      "fighting",
+      "flying",
+      "striker"
+    ],
+    "role": "striker",
+    "stats": {
+      "hp": 880,
+      "attackDamage": 125,
+      "defense": 35,
+      "specialDefense": 32,
+      "attackSpeed": 1,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 80,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "flying_press",
+      "name": "Flying Press",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 480,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "wild_gambit",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "hawlucha_dive",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.2
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.7
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "hawlucha_dive_attack_speed"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.35
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "hawlucha_dive_attack"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_zoroark",
+    "pokemon": {
+      "species": "cobblemon:zoroark"
+    },
+    "cost": 4,
+    "traits": [
+      "wild_gambit",
+      "dark",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 900,
+      "attackDamage": 120,
+      "defense": 30,
+      "specialDefense": 40,
+      "attackSpeed": 0.9,
+      "range": 3,
+      "manaStart": 0,
+      "manaMax": 90,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "night_daze",
+      "name": "Night Daze",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 610,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "wild_gambit",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "zoroark_double",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "random_effect",
+            "selector": "self",
+            "values": {
+              "weight_0": 1,
+              "weight_1": 1
+            },
+            "strings": {},
+            "children": [
+              {
+                "op": "true_damage",
+                "selector": "self",
+                "values": {
+                  "scale_current_hp": 0.45
+                },
+                "strings": {},
+                "children": [],
+                "otherwise": []
+              },
+              {
+                "op": "modify_stat",
+                "selector": "self",
+                "values": {
+                  "percent": 1.2
+                },
+                "strings": {
+                  "stat": "AP",
+                  "modifier_id": "zoroark_jackpot"
+                },
+                "children": [],
+                "otherwise": []
+              }
+            ],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "risk_dragonite",
+    "pokemon": {
+      "species": "cobblemon:dragonite"
+    },
+    "cost": 5,
+    "traits": [
+      "wild_gambit",
+      "dragon",
+      "flying",
+      "bruiser"
+    ],
+    "role": "fighter",
+    "stats": {
+      "hp": 1500,
+      "attackDamage": 155,
+      "defense": 55,
+      "specialDefense": 55,
+      "attackSpeed": 0.78,
+      "range": 1,
+      "manaStart": 0,
+      "manaMax": 120,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "outrage",
+      "name": "Outrage",
+      "target": "current",
+      "damageType": "magic",
+      "damage": 760,
+      "heal": 0,
+      "shield": 0,
+      "radius": 1,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "wild_gambit",
+    "tags": [
+      "risky"
+    ],
+    "triggers": [
+      {
+        "id": "dragonite_overcommit",
+        "event": "ON_COMBAT_START",
+        "priority": 0,
+        "chance": 1,
+        "cooldownMs": 0,
+        "every": 1,
+        "oncePerCombat": true,
+        "oncePerTarget": false,
+        "conditions": [],
+        "effects": [
+          {
+            "op": "true_damage",
+            "selector": "self",
+            "values": {
+              "scale_current_hp": 0.35
+            },
+            "strings": {},
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.9
+            },
+            "strings": {
+              "stat": "ATTACK",
+              "modifier_id": "dragonite_overcommit_attack"
+            },
+            "children": [],
+            "otherwise": []
+          },
+          {
+            "op": "modify_stat",
+            "selector": "self",
+            "values": {
+              "percent": 0.35
+            },
+            "strings": {
+              "stat": "ATTACK_SPEED",
+              "modifier_id": "dragonite_overcommit_attack_speed"
+            },
+            "children": [],
+            "otherwise": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hoopa_sukuna",
+    "pokemon": {
+      "species": "cobblemon:hoopa",
+      "aspects": [
+        "sukuna"
+      ]
+    },
+    "cost": 3,
+    "traits": [
+      "hoopa_domain",
+      "psychic",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 920,
+      "attackDamage": 95,
+      "defense": 40,
+      "specialDefense": 55,
+      "attackSpeed": 0.8,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 100,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "domain_seed",
+      "name": "Cursed Rings",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 520,
+      "heal": 0,
+      "shield": 0,
+      "radius": 2,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "hoopa",
+    "tags": [
+      "risky",
+      "domain"
+    ],
+    "permanentEvolution": {
+      "afterCombats": 3,
+      "targetUnit": "hoopa_unbound_sukuna"
+    }
+  },
+  {
+    "id": "hoopa_unbound_sukuna",
+    "pokemon": {
+      "species": "cobblemon:hoopa",
+      "form": "unbound",
+      "aspects": [
+        "sukuna"
+      ]
+    },
+    "cost": 5,
+    "traits": [
+      "hoopa_domain",
+      "psychic",
+      "dark",
+      "caster"
+    ],
+    "role": "caster",
+    "stats": {
+      "hp": 1800,
+      "attackDamage": 170,
+      "defense": 65,
+      "specialDefense": 80,
+      "attackSpeed": 0.92,
+      "range": 4,
+      "manaStart": 0,
+      "manaMax": 120,
+      "critChance": 0.25,
+      "critMultiplier": 1.4,
+      "moveSpeed": 1
+    },
+    "ability": {
+      "id": "malevolent_rings",
+      "name": "Malevolent Rings",
+      "target": "farthest_enemy",
+      "damageType": "magic",
+      "damage": 900,
+      "heal": 0,
+      "shield": 0,
+      "radius": 3,
+      "stunMs": 0,
+      "dash": 0,
+      "effects": {}
+    },
+    "team": "hoopa",
+    "tags": [
+      "risky",
+      "domain"
+    ],
+    "shopEligible": false
   }
 ]

@@ -300,6 +300,20 @@
         "scale": 1
       },
       "cosmeticVfx": "svhub:tactician_soft_glow"
+    },
+    {
+      "id": "svhub:mewjo",
+      "name": "Mewjo",
+      "scale": 0.72,
+      "pokemon": {
+        "species": "cobblemon:mewtwo",
+        "aspects": [
+          "mewjo"
+        ],
+        "cosmeticAspects": [],
+        "scale": 1
+      },
+      "cosmeticVfx": "svhub:tactician_soft_glow"
     }
   ],
   "rules": {

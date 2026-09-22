@@ -88,5 +88,11 @@
     "kind": "ARENA",
     "id": "crimson_caldera",
     "price": "1500"
+  },
+  {
+    "kind": "TACTICIAN",
+    "id": "svhub:mewjo",
+    "price": "650",
+    "currency": "HunterCoin"
   }
 ]
