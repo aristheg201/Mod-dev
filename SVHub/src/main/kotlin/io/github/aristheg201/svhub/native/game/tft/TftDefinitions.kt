@@ -116,7 +116,8 @@ data class TftUnitDefinition(
     val shopPrice: Int? = null,
     val purchaseStar: Int = 1,
     val shopEligible: Boolean = true,
-    val elite: TftEliteDefinition? = null
+    val elite: TftEliteDefinition? = null,
+    val permanentEvolution: TftPermanentEvolutionDefinition? = null
 ) {
     val price: Int get() = shopPrice ?: cost
     val presentation: PokemonPresentationIdentity
@@ -125,6 +126,9 @@ data class TftUnitDefinition(
 
 /** An elite amplifies only deployed allies with the same authored team identity. */
 data class TftEliteDefinition(val healthMultiplier: Double = 2.0, val damageMultiplier: Double = 2.0)
+
+/** Persistent owned-unit progression counted only after completed combats while deployed. */
+data class TftPermanentEvolutionDefinition(val afterCombats: Int = 3, val targetUnit: String = "")
 
 /** Once per team at combat start, requiring each distinct authored unit on the board. */
 data class TftConvergenceDefinition(val id: String = "", val units: Set<String> = emptySet(), val summon: String = "")
@@ -399,6 +403,17 @@ object TftDefinitionValidator {
         require(set.augments.map { it.id }.toSet().size == set.augments.size) { "Duplicate TFT augment id" }
         require(set.pveRounds.map { it.round }.toSet().size == set.pveRounds.size) { "Duplicate TFT PvE round" }
         val unitIds = set.units.map { it.id }.toSet()
+        set.units.forEach { unit ->
+            unit.permanentEvolution?.let { evolution ->
+                require(evolution.afterCombats in 1..20 && evolution.targetUnit in unitIds && evolution.targetUnit != unit.id) {
+                    "Invalid permanent evolution for " + unit.id
+                }
+                val target = set.units.first { it.id == evolution.targetUnit }
+                require(!target.shopEligible && target.team == unit.team) {
+                    "Permanent evolution target " + evolution.targetUnit + " must be non-shop and remain in the same team"
+                }
+            }
+        }
         require(set.convergences.map { it.id }.distinct().size == set.convergences.size) { "Duplicate convergence id" }
         set.convergences.forEach { convergence ->
             require(convergence.id.isNotBlank() && convergence.units.size >= 2 && convergence.units.all(unitIds::contains)) {

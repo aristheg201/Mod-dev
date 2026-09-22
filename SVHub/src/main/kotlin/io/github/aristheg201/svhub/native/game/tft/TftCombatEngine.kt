@@ -12,7 +12,9 @@ data class TftOwnedUnit(
     val unitId: String,
     var star: Int = 1,
     val items: MutableList<String> = mutableListOf(),
-    val poolCopies: Int? = null
+    val poolCopies: Int? = null,
+    val combatRounds: Int = 0,
+    val poolUnitId: String? = null
 )
 
 data class TftCombatUnit(

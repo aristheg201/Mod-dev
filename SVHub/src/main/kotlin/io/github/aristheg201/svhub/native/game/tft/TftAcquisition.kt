@@ -58,3 +58,4 @@ object TftAcquisition {
 }
 
 fun TftOwnedUnit.reservedCopies(): Int = poolCopies ?: when (star) { 2 -> 3; 3 -> 9; else -> 1 }
+fun TftOwnedUnit.poolSourceUnitId(): String = poolUnitId?.takeIf(String::isNotBlank) ?: unitId
