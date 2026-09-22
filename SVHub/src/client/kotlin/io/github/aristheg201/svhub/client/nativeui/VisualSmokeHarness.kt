@@ -40,10 +40,10 @@ object VisualSmokeHarness {
     private const val ENV = "SVHUB_VISUAL_SMOKE"
     private const val EXPECTED_ACTORS = 12
     private val gson = Gson()
-    private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins", "temporal_observatory", "abyssal_sanctum", "crimson_caldera", "arkham_asylum", "wayne_manor", "infinite_void", "sukuna_domain")
-    private val uiScenarios = listOf("planning", "carousel", "augment", "pve", "pve_loot", "boss", "tactician_move")
+    private val arenas = listOf("monster_island", "gotham_rooftops", "sector_2814", "grand_line", "celestial_vault", "kanto_stadium", "dragon_shrine", "distortion_rift", "ultra_lab", "ancient_ruins", "temporal_observatory", "abyssal_sanctum", "crimson_caldera", "arkham_asylum", "wayne_manor", "infinite_void", "sukuna_domain")
+    private val uiScenarios = listOf("planning", "set_units", "set_traits", "carousel", "augment", "pve", "pve_loot", "boss", "tactician_move")
     private val gameplayScenarios = listOf("chess", "xiangqi", "tower_defense", "ludo", "uno", "pokecards")
-    private val resultScenarios = listOf("chess", "tower_defense", "tft")
+    private val resultScenarios = listOf("chess", "tower_defense", "tft_champion", "tft_eliminated")
     private val storeScenarios = listOf("arena_preview", "arena_owned", "arena_equipped", "tactician_preview", "tactician_owned", "tactician_equipped")
     private val smokeSpecies = listOf(
         "cobblemon:bulbasaur", "cobblemon:pikachu", "cobblemon:gengar", "cobblemon:machamp",
@@ -57,7 +57,8 @@ object VisualSmokeHarness {
         "cobblemon:tyranitar", "cobblemon:dragonite", "cobblemon:metagross", "cobblemon:sylveon",
         "cobblemon:mamoswine", "cobblemon:excadrill", "cobblemon:zoroark", "cobblemon:roserade",
         "cobblemon:electivire", "cobblemon:rayquaza", "cobblemon:zacian", "cobblemon:kyogre",
-        "cobblemon:hooh", "cobblemon:chiyu"
+        "cobblemon:hooh", "cobblemon:chiyu", "cobblemon:regigigas", "cobblemon:hoopa",
+        "cobblemon:deoxys", "cobblemon:pheromosa", "cobblemon:darkrai", "cobblemon:eternatus"
     )
 
     private var enabled = false
@@ -308,7 +309,7 @@ object VisualSmokeHarness {
             return
         }
         stableTicks++
-        val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:shiny_mewtwo" else "store:svhub:pikachu"
+        val expectedActor=if(scenario.startsWith("tactician"))"store:svhub:greninja" else "store:svhub:pikachu"
         val resolved=if(scenario.startsWith("tactician")) {
             PokemonModelRenderer.previewResolved(expectedActor)
         } else {
@@ -381,7 +382,11 @@ object VisualSmokeHarness {
         )
     }
     private class TftUiVisualSmokeScreen(val scenario: String) : Screen(Component.literal("SVHub TFT UI Visual Smoke")) {
-        private val ui = TftUiState().also { if(scenario=="tactician_move") it.tacticianDestination=.92 to .25 }
+        private val ui = TftUiState().also {
+            if(scenario=="tactician_move") it.tacticianDestination=.92 to .25
+            if(scenario=="set_units"){ it.setBrowserOpen=true;it.setBrowserTab="UNITS";it.setBrowserPage=0 }
+            if(scenario=="set_traits"){ it.setBrowserOpen=true;it.setBrowserTab="TRAITS";it.setBrowserPage=0 }
+        }
         private val view = fixtureView(scenario)
         private var rendered = false
         private var movementObserved = false
@@ -462,7 +467,7 @@ object VisualSmokeHarness {
                     addProperty("streak", "2")
                     addProperty("bench", benchPayload(scenario))
                     addProperty("players", "visual~Aris~87~6~0~0;rival~Rival~73~6~0~0;third~Third~52~5~0~0;fourth~Fourth~31~5~0~0")
-                    addProperty("traits", "guardian~Guardian~4~4~6~Defense active;storm~Storm~2~2~4~Speed active;arcane~Arcane~1~0~2~")
+                    addProperty("traits", "glass_cannon~Glass Cannon~3~2~4~Risk power active;void_contract~Void Contract~2~2~4~Void power active;summon_spirit~Summon Spirit~1~1~2~Spirit active;hoopa_domain~Hoopa~1~1~2~Domain active;guardian~Guardian~2~2~4~Defense active")
                     addProperty("unitCatalog", unitCatalog())
                     addProperty("traitCatalog", traitCatalog())
                     addProperty("itemBench", "sword,rod,tear,vest,full:rapid_fire")
@@ -576,19 +581,28 @@ object VisualSmokeHarness {
                 }
 
             private fun unitCatalog(): String = JsonObject().apply {
-                VisualSmokeHarness.smokeSpecies.forEachIndexed { index, species ->
+                add("risk_deoxys_attack",unitInfo("cobblemon:deoxys",0,"Glass Cannon Deoxys","glass_cannon,psychic,striker"))
+                add("risk_pheromosa",unitInfo("cobblemon:pheromosa",1,"Glass Cannon Pheromosa","glass_cannon,bug,fighting,striker"))
+                add("risk_darkrai",unitInfo("cobblemon:darkrai",2,"Void Contract Darkrai","void_contract,dark,caster"))
+                add("risk_eternatus",unitInfo("cobblemon:eternatus",3,"Void Contract Eternatus","void_contract,poison,dragon,caster"))
+                add("regiraga",unitInfo("cobblemon:regigigas",4,"Regiraga","summon_spirit,normal,legendary,bruiser"))
+                add("hoopa_sukuna",unitInfo("cobblemon:hoopa",5,"Hoopa Sukuna","hoopa_domain,psychic,caster"))
+                VisualSmokeHarness.smokeSpecies.take(24).forEachIndexed { index, species ->
                     add("unit_" + index, unitInfo(species, index))
-                    if (index >= 8) add("bench_" + (index - 8), unitInfo(species, index))
+                    if (index in 8..11) add("bench_" + (index - 8), unitInfo(species, index))
                 }
             }.toString()
 
-            private fun unitInfo(species: String, index: Int) = JsonObject().apply {
-                addProperty("name", species.substringAfter(':').replace('_', ' ').replaceFirstChar(Char::uppercase))
+            private fun unitInfo(
+                species:String,index:Int,name:String=species.substringAfter(':').replace('_',' ').replaceFirstChar(Char::uppercase),
+                traits:String=if(index%2==0)"guardian,storm" else "guardian,arcane"
+            ) = JsonObject().apply {
+                addProperty("name", name)
                 addProperty("species", species)
-                addProperty("scale", when (index % 4) { 0 -> 0.85; 1 -> 1.0; 2 -> 1.15; else -> 1.3 })
+                addProperty("scale", when (index % 4) { 0 -> 0.95; 1 -> 1.05; 2 -> 1.15; else -> 1.25 })
                 addProperty("cost", 1 + index % 5)
                 addProperty("role", "fighter")
-                addProperty("traits", if (index % 2 == 0) "guardian,storm" else "guardian,arcane")
+                addProperty("traits", traits)
                 addProperty("hp", 800)
                 addProperty("attackDamage", 65 + index)
                 addProperty("defense", 35)
@@ -605,6 +619,12 @@ object VisualSmokeHarness {
             }
 
             private fun traitCatalog(): String = JsonObject().apply {
+                add("glass_cannon", traitInfo("Glass Cannon", 2, 4, 6))
+                add("blood_pact", traitInfo("Blood Pact", 2, 4, 6))
+                add("void_contract", traitInfo("Void Contract", 2, 4, 6))
+                add("wild_gambit", traitInfo("Wild Gambit", 2, 4, 6))
+                add("summon_spirit", traitInfo("Summon Spirit", 1, 2))
+                add("hoopa_domain", traitInfo("Hoopa", 1, 2))
                 add("guardian", traitInfo("Guardian", 2, 4, 6))
                 add("storm", traitInfo("Storm", 2, 4))
                 add("arcane", traitInfo("Arcane", 2, 3))
@@ -801,8 +821,8 @@ object VisualSmokeHarness {
                     control={rect,label,enabled,_->NativeControlRenderer.draw(gui,font,rect,label,mouseX,mouseY,enabled=enabled);drawnControls++},continueAction={},rematch={},exit={}
                 )
             ){scene->
-                when(scenario) {
-                    "tft"->TftGameRenderer.render(
+                when {
+                    scenario.startsWith("tft")->TftGameRenderer.render(
                         gui=gui,font=font,area=scene,density=UiDensity.WIDE,view=view,ui=tftUi,mouseX=-10,mouseY=-10,
                         hooks=TftGameRenderer.Hooks(control={_,_,_,_->},hit={_,_->},sceneInput={_->},dropInput={_->},action={_,_->},back={}),
                         sceneOnly=true
@@ -816,20 +836,23 @@ object VisualSmokeHarness {
 
         companion object {
             private fun resultFixture(gameId:String):JsonObject {
-                if(gameId=="tft") {
+                if(gameId.startsWith("tft")) {
+                    val eliminated=gameId=="tft_eliminated"
                     val view=TftUiVisualSmokeScreen.fixtureView("planning")
-                    view.addProperty("finished",true)
-                    view.addProperty("phase","finished")
-                    view.addProperty("winner","Aris")
+                    view.addProperty("finished",!eliminated)
+                    view.addProperty("phase",if(eliminated)"post" else "finished")
+                    view.addProperty("winner",if(eliminated)"Rival" else "Aris")
                     view.getAsJsonObject("fields").apply {
-                        addProperty("result","Victory")
-                        addProperty("tacticianState","victory")
+                        addProperty("result",if(eliminated)"Defeat" else "Victory")
+                        addProperty("eliminated",eliminated.toString())
+                        addProperty("placement",if(eliminated)"5" else "1")
+                        addProperty("tacticianState",if(eliminated)"defeat" else "victory")
                         addProperty("canEditBoard","false")
                     }
-                    view.add("resultPresentation",presentation("victory","first","tft",
-                        listOf("placement" to "1","level" to "8","health" to "42","gold" to "51"),
+                    view.add("resultPresentation",presentation(if(eliminated)"defeat" else "top_1",if(eliminated)"placement" else "first","tft",
+                        listOf("placement" to if(eliminated)"5" else "1","level" to "8","health" to if(eliminated)"0" else "42","gold" to "51"),
                         listOf("match_reward" to ""),
-                        listOf("placement" to "1")))
+                        listOf("placement" to if(eliminated)"5" else "1")))
                     return view
                 }
 
@@ -913,7 +936,7 @@ object VisualSmokeHarness {
     private class StoreVisualSmokeScreen(val scenario:String):Screen(Component.literal("SVHub Store Visual Smoke")) {
         private val ui=CosmeticStoreUi().also { state ->
             state.kind=if(scenario.startsWith("tactician"))"TACTICIAN" else "ARENA"
-            state.selected=if(state.kind=="TACTICIAN")"svhub:shiny_mewtwo" else "dragon_shrine"
+            state.selected=if(state.kind=="TACTICIAN")"svhub:greninja" else "grand_line"
         }
         private val state=fixture(scenario)
         private var rendered=false
@@ -942,19 +965,26 @@ object VisualSmokeHarness {
                 val owned=scenario.endsWith("owned")||scenario.endsWith("equipped")
                 val equipped=scenario.endsWith("equipped")
                 addProperty("module","store")
-                addProperty("arena",if(!tactician&&equipped)"dragon_shrine" else "kanto_stadium")
-                addProperty("tactician",if(tactician&&equipped)"svhub:shiny_mewtwo" else "svhub:pikachu")
+                addProperty("economyReady",true)
+                addProperty("economyProvider","org.blanketeconomy.api.BlanketEconomy")
+                addProperty("economyDetail","ready")
+                addProperty("arena",if(!tactician&&equipped)"grand_line" else "kanto_stadium")
+                addProperty("tactician",if(tactician&&equipped)"svhub:greninja" else "svhub:pikachu")
                 add("balances",JsonObject().apply {
                     addProperty("BeastCoin","2000")
                     addProperty("HunterCoin","2000")
                 })
                 add("offers",JsonArray().apply {
                     add(storeOffer("ARENA","kanto_stadium","0","BeastCoin",true,!tactician&&!equipped))
-                    add(storeOffer("ARENA","dragon_shrine","1000","BeastCoin",!tactician&&owned,!tactician&&equipped))
+                    add(storeOffer("ARENA","grand_line","1250","BeastCoin",!tactician&&owned,!tactician&&equipped))
+                    add(storeOffer("ARENA","celestial_vault","1250","BeastCoin",false,false))
+                    add(storeOffer("ARENA","infinite_void","1200","HunterCoin",false,false))
                     add(storeOffer("TACTICIAN","svhub:pikachu","0","HunterCoin",true,tactician&&!equipped,
                         name="Pikachu",species="cobblemon:pikachu",scale=.70))
-                    add(storeOffer("TACTICIAN","svhub:shiny_mewtwo","300","HunterCoin",tactician&&owned,tactician&&equipped,
-                        name="Shiny Mewtwo",species="cobblemon:mewtwo",aspects="shiny",scale=.72))
+                    add(storeOffer("TACTICIAN","svhub:greninja","350","HunterCoin",tactician&&owned,tactician&&equipped,
+                        name="Greninja",species="cobblemon:greninja",scale=.72))
+                    add(storeOffer("TACTICIAN","svhub:mewjo","650","HunterCoin",false,false,
+                        name="Mewjo",species="cobblemon:mewtwo",aspects="mewjo",scale=.76))
                 })
             }
 
@@ -963,6 +993,7 @@ object VisualSmokeHarness {
                 name:String="",species:String="",aspects:String="",scale:Double=1.0
             )=JsonObject().apply {
                 addProperty("kind",kind);addProperty("id",id);addProperty("price",price);addProperty("currency",currency)
+                addProperty("currencyReady",true)
                 addProperty("owned",owned);addProperty("equipped",equipped)
                 if(name.isNotBlank())addProperty("name",name)
                 addProperty("entity","")
