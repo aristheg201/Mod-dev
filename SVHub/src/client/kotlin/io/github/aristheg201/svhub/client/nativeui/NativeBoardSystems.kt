@@ -65,7 +65,7 @@ private object LudoBoardSystem : NativeGameBoardSystem {
         view.getAsJsonObject("fields")?.str("arenaId", gameId).orEmpty().ifBlank { gameId }
 }
 
-internal object NativeBoardSystems {
+object NativeBoardSystems {
     private val systems = listOf(ChessBoardSystem, XiangqiBoardSystem, TowerDefenseBoardSystem, LudoBoardSystem)
         .associateBy(NativeGameBoardSystem::gameId)
     fun supports(gameId: String) = gameId in systems
