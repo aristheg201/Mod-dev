@@ -76,9 +76,43 @@ class TftArenaStateTest {
         assertEquals("minecraft:allay", observed.fields["tacticianEntity"])
         assertEquals(ownShop, observed.cards)
         assertEquals("false", observed.fields["canEditBoard"])
-        assertEquals(1, JsonParser.parseString(observed.fields.getValue("unitCatalog")).asJsonObject.size())
+        val publicUnitCatalog=JsonParser.parseString(observed.fields.getValue("unitCatalog")).asJsonObject
+        val publicTraitCatalog=JsonParser.parseString(observed.fields.getValue("traitCatalog")).asJsonObject
+        assertEquals(set.units.size, publicUnitCatalog.size())
+        assertEquals(set.traits.size, publicTraitCatalog.size())
         assertTrue(s.act("a", "scout", mapOf("target" to "home")).accepted)
         assertEquals("minecraft:fox", s.viewFor("a").fields["tacticianEntity"])
+    }
+
+    @Test fun fullSetCatalogExposesNewRiskyUnitsAndTraitsToTheClient() {
+        val s=create()
+        val view=s.viewFor("a")
+        val units=JsonParser.parseString(view.fields.getValue("unitCatalog")).asJsonObject
+        val traits=JsonParser.parseString(view.fields.getValue("traitCatalog")).asJsonObject
+        assertEquals(set.units.size,units.size())
+        assertEquals(set.traits.size,traits.size())
+        listOf("risk_deoxys_attack","regiraga","hoopa_sukuna","elite_mv_godzilla").forEach { id ->
+            assertTrue(units.has(id),"Missing authored unit catalog entry $id")
+        }
+        listOf("glass_cannon","blood_pact","void_contract","wild_gambit","summon_spirit","hoopa_domain").forEach { id ->
+            assertTrue(traits.has(id),"Missing authored trait catalog entry $id")
+        }
+    }
+
+    @Test fun eliminatedPlayerGetsEndgamePresentationBeforeLobbyFinishes() {
+        val initial=create()
+        val saved=initial.snapshotState()
+        val player=saved.getAsJsonArray("players")[0].asJsonObject
+        player.addProperty("eliminated",true)
+        player.addProperty("placement",5)
+        val restored=NativeGameRestorer.restore("tft",seats,initial.sessionId,saved)
+        val view=restored.viewFor("a")
+        assertFalse(view.finished)
+        assertEquals("true",view.fields["eliminated"])
+        val result=assertNotNull(view.resultPresentation)
+        assertEquals("defeat",result.outcome)
+        assertEquals("5",result.stats.first{it.key=="placement"}.value)
+        assertFalse(result.canRematch)
     }
 
     @Test fun authoredPokemonScaleSurvivesShopBenchAndBoardPresentation() {
