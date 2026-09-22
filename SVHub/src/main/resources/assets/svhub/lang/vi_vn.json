@@ -300,5 +300,8 @@
   "gui.svhub.store.arena.wayne_manor": "Wayne Manor",
   "gui.svhub.store.arena.infinite_void": "Vô Lượng Không Xứ · Infinite Void",
   "gui.svhub.store.arena.sukuna_domain": "Phục Ma Ngự Trù Tử · Sukuna Domain",
-  "gui.svhub.store.economy_unavailable": "BEconomy chưa sẵn sàng"
+  "gui.svhub.store.economy_unavailable": "BEconomy chưa sẵn sàng",
+  "gui.svhub.tft.set": "HỆ",
+  "gui.svhub.tft.set_browser": "Danh sách TFT",
+  "gui.svhub.tft.units": "Tướng"
 }
