@@ -683,7 +683,24 @@
       -5.5,
       16.5,
       11.5
-    ]
+    ],
+    "camera": {
+      "spectator": [
+        4.5,
+        15.5,
+        13.5
+      ],
+      "scouting": [
+        7.8,
+        12.8,
+        10.5
+      ],
+      "carousel": [
+        4.5,
+        17,
+        15
+      ]
+    }
   },
   "geometry": [
     {
@@ -843,7 +860,7 @@
       "material": "minecraft:iron_block",
       "position": [
         4.5,
-        8.8,
+        -4.45,
         2.7
       ],
       "size": [
@@ -862,7 +879,7 @@
       "material": "minecraft:iron_bars",
       "position": [
         -1.2,
-        8.8,
+        -4,
         1.4
       ],
       "size": [
@@ -881,7 +898,7 @@
       "material": "minecraft:iron_bars",
       "position": [
         10.2,
-        8.8,
+        -4,
         1.4
       ],
       "size": [

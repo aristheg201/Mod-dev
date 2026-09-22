@@ -20,9 +20,9 @@ class TftSetRegistryTest {
     }
     @Test fun bundledSetLoadsAllOriginalContent() {
         val set = TftSetRegistry.bundled("kanto_rising")
-        assertEquals(96, set.units.size)
-        assertEquals(7, set.teams.size)
-        assertEquals(35, set.traits.size)
+        assertEquals(116, set.units.size)
+        assertEquals(13, set.teams.size)
+        assertEquals(41, set.traits.size)
         assertEquals(8, set.components.size)
         assertEquals(36, set.fullItems.size)
         assertEquals(32, set.augments.size)
@@ -216,7 +216,7 @@ class TftSetRegistryTest {
         val path = root.resolve("active-set.json")
         Files.writeString(path, "[]")
         TftSetRegistry.start(root)
-        assertEquals(96, TftSetRegistry.active().units.size)
+        assertEquals(116, TftSetRegistry.active().units.size)
         assertEquals("[]", Files.readString(path))
     }
 

@@ -683,7 +683,24 @@
       -5.5,
       16.5,
       11.5
-    ]
+    ],
+    "camera": {
+      "spectator": [
+        4.5,
+        14.5,
+        11.5
+      ],
+      "scouting": [
+        7.2,
+        12,
+        9.8
+      ],
+      "carousel": [
+        4.5,
+        16,
+        14.2
+      ]
+    }
   },
   "geometry": [
     {
@@ -880,8 +897,8 @@
       "id": "fountain-basin",
       "material": "minecraft:smooth_quartz",
       "position": [
-        4.5,
-        8.9,
+        -5.2,
+        7.7,
         0.35
       ],
       "size": [
@@ -899,8 +916,8 @@
       "id": "fountain-statue",
       "material": "minecraft:oxidized_copper",
       "position": [
-        4.5,
-        8.9,
+        -5.2,
+        7.7,
         1.6
       ],
       "size": [

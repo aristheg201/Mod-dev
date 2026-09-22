@@ -677,7 +677,24 @@
       -5.5,
       16.5,
       11.5
-    ]
+    ],
+    "camera": {
+      "spectator": [
+        4.5,
+        16.2,
+        14.5
+      ],
+      "scouting": [
+        8,
+        13.7,
+        12
+      ],
+      "carousel": [
+        4.5,
+        18,
+        16.5
+      ]
+    }
   },
   "geometry": [
     {
@@ -836,13 +853,13 @@
       "id": "infinity-band-front",
       "material": "minecraft:magenta_stained_glass",
       "position": [
-        4.5,
-        9.4,
+        14.7,
+        2.7,
         2.5
       ],
       "size": [
-        15,
         0.25,
+        11,
         0.25
       ],
       "rotation": [
@@ -855,8 +872,8 @@
       "id": "singularity",
       "material": "minecraft:end_portal_frame",
       "position": [
-        4.5,
-        8.9,
+        13.7,
+        7.4,
         1
       ],
       "size": [
