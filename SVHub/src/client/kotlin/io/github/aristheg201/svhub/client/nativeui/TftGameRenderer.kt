@@ -142,7 +142,7 @@ class TftUiState {
         if(framedSource!=destination || framedArena !== arena || framedSize!=size) {
             framedSource=destination;framedArena=arena;framedSize=size
             framedPreset=SceneCameraFraming.board(destination,viewport,SceneVec3(arena.boardOrigin.x.toDouble(),arena.boardOrigin.y.toDouble(),arena.boardOrigin.z.toDouble()),arena.boardColumns,arena.boardRows,
-                arena.benchAnchors.map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) },cellSize=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble()))
+                arena.framingAnchors().map { SceneVec3(it.x.toDouble(),it.y.toDouble(),it.z.toDouble()) },cellSize=SceneVec3(arena.cellSize.x.toDouble(),arena.cellSize.y.toDouble(),arena.cellSize.z.toDouble()))
         }
         return camera(checkNotNull(framedPreset))
     }
