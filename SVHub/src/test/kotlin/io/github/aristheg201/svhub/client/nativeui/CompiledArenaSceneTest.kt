@@ -175,7 +175,7 @@ class CompiledArenaSceneTest {
         }
     }
 
-    // Premium staging acceptance also guards the authored home pad against battlefield encroachment.
+    // Premium staging acceptance guards both the authored home pad and gameplay framing.
     @Test fun premiumArenaPreparationCamerasKeepTacticianHomeOnScreen() {
         fun load(id:String)=checkNotNull(javaClass.getResourceAsStream("/assets/svhub/arenas/$id.json"))
             .bufferedReader().use { MinecraftArenaRegistry.parse(JsonParser.parseReader(it).asJsonObject) }
