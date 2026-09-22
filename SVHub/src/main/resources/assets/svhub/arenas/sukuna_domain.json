@@ -15,38 +15,41 @@
   "ally": [],
   "enemy": [],
   "path": [],
-  "floorColor": "#4b1619",
-  "floorAltColor": "#1e1518",
-  "allyColor": "#8f4646",
-  "enemyColor": "#a72f2f",
-  "pathColor": "#5b322e",
-  "pathAccentColor": "#ff9b6b",
-  "gridColor": "#8f4c46",
-  "borderColor": "#b55148",
-  "edgeColor": "#130708",
-  "depthColor": "#260b0d",
-  "backgroundColor": "#100304",
+  "floorColor": "#24100f",
+  "floorAltColor": "#351314",
+  "allyColor": "#402025",
+  "enemyColor": "#4c1717",
+  "pathColor": "#1b0e0e",
+  "pathAccentColor": "#d97859",
+  "gridColor": "#6e2e2e",
+  "borderColor": "#7c2a25",
+  "edgeColor": "#0b0606",
+  "depthColor": "#130909",
+  "backgroundColor": "#090404",
   "benchMaterial": "minecraft:polished_blackstone_bricks",
   "props": [
     {
       "item": "minecraft:soul_campfire",
-      "x": -2,
-      "y": 8.6,
-      "scale": 0.9,
+      "x": -3.45,
+      "y": -2.5,
+      "z": 0.6,
+      "scale": 0.8,
       "blockModel": true
     },
     {
       "item": "minecraft:soul_campfire",
-      "x": 11,
-      "y": 8.6,
-      "scale": 0.9,
+      "x": 12.35,
+      "y": -2.4,
+      "z": 0.6,
+      "scale": 0.8,
       "blockModel": true
     },
     {
       "item": "minecraft:wither_skeleton_skull",
-      "x": 4.5,
-      "y": -1.8,
-      "scale": 0.9,
+      "x": -2.95,
+      "y": 6.8,
+      "z": 0.8,
+      "scale": 0.7,
       "blockModel": true
     }
   ],
@@ -441,14 +444,14 @@
       ]
     ],
     "tacticianRegion": [
-      3.55,
-      9,
-      5.45,
-      10.2
+      -3.1,
+      5,
+      -1.95,
+      7
     ],
     "tacticianSpawn": [
-      4.5,
-      9.6,
+      -2.5,
+      6,
       0.02
     ],
     "humanSpawn": [
@@ -707,17 +710,17 @@
   },
   "geometry": [
     {
-      "id": "shrine-dais",
+      "id": "signature-shrine-foundation",
       "material": "minecraft:polished_blackstone_bricks",
       "position": [
         4.5,
-        -3.1,
-        1
+        -4,
+        0.8
       ],
       "size": [
-        8,
-        2.2,
-        2
+        10.4,
+        2.8,
+        1.6
       ],
       "rotation": [
         0,
@@ -726,17 +729,55 @@
       ]
     },
     {
-      "id": "shrine-core",
+      "id": "signature-shrine-stair-low",
+      "material": "minecraft:blackstone",
+      "position": [
+        4.5,
+        -2.6,
+        0.25
+      ],
+      "size": [
+        7.8,
+        1.1,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-stair-high",
       "material": "minecraft:red_nether_bricks",
       "position": [
         4.5,
-        -3.2,
+        -3.15,
+        0.55
+      ],
+      "size": [
+        6.2,
+        0.9,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-core",
+      "material": "minecraft:nether_bricks",
+      "position": [
+        4.5,
+        -4.4,
         3
       ],
       "size": [
-        4.5,
-        1.5,
-        4
+        5.2,
+        1.8,
+        4.6
       ],
       "rotation": [
         0,
@@ -745,244 +786,282 @@
       ]
     },
     {
-      "id": "left-torii",
-      "material": "minecraft:crimson_hyphae",
-      "position": [
-        -3.3,
-        2.7,
-        2.8
-      ],
-      "size": [
-        1,
-        7,
-        5.6
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "right-torii",
-      "material": "minecraft:crimson_hyphae",
-      "position": [
-        12.3,
-        2.7,
-        2.8
-      ],
-      "size": [
-        1,
-        7,
-        5.6
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "torii-top",
-      "material": "minecraft:nether_bricks",
-      "position": [
-        4.5,
-        -2,
-        5.8
-      ],
-      "size": [
-        15.5,
-        0.7,
-        0.8
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "bone-pillar-west",
-      "material": "minecraft:bone_block",
-      "position": [
-        -4.5,
-        8.3,
-        2.5
-      ],
-      "size": [
-        1.2,
-        1.2,
-        5
-      ],
-      "rotation": [
-        0,
-        0,
-        -12
-      ]
-    },
-    {
-      "id": "bone-pillar-east",
-      "material": "minecraft:bone_block",
-      "position": [
-        13.5,
-        8.3,
-        2.5
-      ],
-      "size": [
-        1.2,
-        1.2,
-        5
-      ],
-      "rotation": [
-        0,
-        0,
-        12
-      ]
-    },
-    {
-      "id": "cursed-altar",
-      "material": "minecraft:crying_obsidian",
-      "position": [
-        4.5,
-        -4.55,
-        1.2
-      ],
-      "size": [
-        4,
-        1.6,
-        2.4
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "skull-left",
-      "material": "minecraft:quartz_block",
-      "position": [
-        -3.5,
-        7.8,
-        2.7
-      ],
-      "size": [
-        1.1,
-        1.1,
-        1.1
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "skull-right",
-      "material": "minecraft:quartz_block",
-      "position": [
-        12.5,
-        7.8,
-        2.7
-      ],
-      "size": [
-        1.1,
-        1.1,
-        1.1
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-blood-altar",
-      "material": "minecraft:polished_blackstone",
-      "position": [
-        4.5,
-        9.6,
-        -0.15
-      ],
-      "size": [
-        2,
-        1.35,
-        0.3
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-bone-pillar-left",
-      "material": "minecraft:bone_block",
-      "position": [
-        3.48,
-        9.6,
-        1.1
-      ],
-      "size": [
-        0.35,
-        0.35,
-        2.2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-bone-pillar-right",
-      "material": "minecraft:bone_block",
-      "position": [
-        5.52,
-        9.6,
-        1.1
-      ],
-      "size": [
-        0.35,
-        0.35,
-        2.2
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "tactician-altar-back",
-      "material": "minecraft:nether_bricks",
-      "position": [
-        4.5,
-        10.28,
-        0.5
-      ],
-      "size": [
-        2,
-        0.18,
-        1
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ]
-    },
-    {
-      "id": "premium-identity-procession",
+      "id": "signature-shrine-roof-lower",
       "material": "minecraft:red_nether_bricks",
       "position": [
         4.5,
-        8.82,
+        -4.4,
+        5.4
+      ],
+      "size": [
+        7.1,
+        2.2,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-roof-upper",
+      "material": "minecraft:nether_bricks",
+      "position": [
+        4.5,
+        -4.4,
+        6.15
+      ],
+      "size": [
+        5.5,
+        1.8,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-spire-left",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        2.2,
+        -4.4,
+        4.3
+      ],
+      "size": [
+        0.55,
+        0.55,
+        4.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-spire-right",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        6.8,
+        -4.4,
+        4.3
+      ],
+      "size": [
+        0.55,
+        0.55,
+        4.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-mouth",
+      "material": "minecraft:black_concrete",
+      "position": [
+        4.5,
+        -3.45,
+        2.8
+      ],
+      "size": [
+        2.2,
+        0.35,
+        2.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-fang-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        3.7,
+        -3.2,
+        1.9
+      ],
+      "size": [
+        0.38,
+        0.38,
+        2.3
+      ],
+      "rotation": [
+        0,
+        0,
+        -18
+      ]
+    },
+    {
+      "id": "signature-shrine-fang-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        5.3,
+        -3.2,
+        1.9
+      ],
+      "size": [
+        0.38,
+        0.38,
+        2.3
+      ],
+      "rotation": [
+        0,
+        0,
+        18
+      ]
+    },
+    {
+      "id": "domain-torii-left-post",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        -3.7,
+        2.3,
+        2.8
+      ],
+      "size": [
+        0.8,
+        0.8,
+        5.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-torii-right-post",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        12.7,
+        2.3,
+        2.8
+      ],
+      "size": [
+        0.8,
+        0.8,
+        5.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-torii-crossbar",
+      "material": "minecraft:nether_bricks",
+      "position": [
+        4.5,
+        -1.55,
+        5.7
+      ],
+      "size": [
+        16.4,
+        0.55,
+        0.65
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-rib-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        -4.5,
+        7.8,
+        2.6
+      ],
+      "size": [
+        0.9,
+        1,
+        5.2
+      ],
+      "rotation": [
+        0,
+        10,
+        -10
+      ]
+    },
+    {
+      "id": "domain-rib-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        13.5,
+        7.6,
+        2.6
+      ],
+      "size": [
+        0.9,
+        1,
+        5.2
+      ],
+      "rotation": [
+        0,
+        -10,
+        10
+      ]
+    },
+    {
+      "id": "domain-skull-left",
+      "material": "minecraft:quartz_block",
+      "position": [
+        -3.5,
+        8.2,
+        2.3
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-skull-right",
+      "material": "minecraft:quartz_block",
+      "position": [
+        12.4,
+        8,
+        2.3
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-blood-moat",
+      "material": "minecraft:redstone_block",
+      "position": [
+        4.5,
+        -5.4,
         -0.15
       ],
       "size": [
-        1.4,
-        0.9,
+        15,
+        1.5,
         0.3
       ],
       "rotation": [
@@ -992,55 +1071,93 @@
       ]
     },
     {
-      "id": "premium-identity-rib-west",
-      "material": "minecraft:bone_block",
+      "id": "tactician-cursed-overlook",
+      "material": "minecraft:polished_blackstone",
       "position": [
-        -3.2,
-        -1.3,
-        2.4
-      ],
-      "size": [
-        0.45,
-        5.2,
-        4.8
-      ],
-      "rotation": [
-        0,
-        18,
-        -8
-      ]
-    },
-    {
-      "id": "premium-identity-rib-east",
-      "material": "minecraft:bone_block",
-      "position": [
-        12.2,
-        -1.3,
-        2.4
-      ],
-      "size": [
-        0.45,
-        5.2,
-        4.8
-      ],
-      "rotation": [
-        0,
-        -18,
-        8
-      ]
-    },
-    {
-      "id": "premium-identity-blood-moat",
-      "material": "minecraft:redstone_block",
-      "position": [
-        4.5,
-        -4.2,
+        -2.5,
+        6,
         -0.15
       ],
       "size": [
-        14,
-        2.2,
+        1.7,
+        1.55,
         0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-overlook-rib",
+      "material": "minecraft:bone_block",
+      "position": [
+        -3.15,
+        6.2,
+        0.95
+      ],
+      "size": [
+        0.35,
+        0.35,
+        1.9
+      ],
+      "rotation": [
+        0,
+        0,
+        -10
+      ]
+    },
+    {
+      "id": "tactician-overlook-fang",
+      "material": "minecraft:bone_block",
+      "position": [
+        -2.05,
+        5.25,
+        0.75
+      ],
+      "size": [
+        0.3,
+        0.3,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        16
+      ]
+    },
+    {
+      "id": "tactician-overlook-rail",
+      "material": "minecraft:red_nether_bricks",
+      "position": [
+        -2.95,
+        5.2,
+        0.42
+      ],
+      "size": [
+        1.05,
+        0.16,
+        0.84
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-overlook-step",
+      "material": "minecraft:blackstone",
+      "position": [
+        -1.75,
+        6,
+        -0.1
+      ],
+      "size": [
+        0.65,
+        0.75,
+        0.2
       ],
       "rotation": [
         0,
