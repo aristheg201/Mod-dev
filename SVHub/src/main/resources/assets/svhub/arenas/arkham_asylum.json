@@ -441,13 +441,13 @@
       ]
     ],
     "tacticianRegion": [
-      -4.95,
-      4.55,
-      -2.45,
-      7.45
+      -3.1,
+      5,
+      -1.95,
+      7
     ],
     "tacticianSpawn": [
-      -3.7,
+      -2.5,
       6,
       0.02
     ],
@@ -494,32 +494,32 @@
     "cameraPresets": {
       "normal": {
         "position": [
-          7.8,
-          14.6,
-          11.4
+          4.5,
+          14.2,
+          10.8
         ],
         "target": [
-          4,
+          4.5,
           2.8,
-          0.15
+          0.25
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
       },
       "preparation": {
         "position": [
-          7.8,
-          14.6,
-          11.4
+          4.5,
+          14.2,
+          10.8
         ],
         "target": [
-          4,
+          4.5,
           2.8,
-          0.15
+          0.25
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
@@ -654,16 +654,16 @@
       },
       "arena_preview": {
         "position": [
-          7.8,
-          14.6,
-          11.4
+          4.5,
+          14.2,
+          10.8
         ],
         "target": [
-          4,
+          4.5,
           2.8,
-          0.15
+          0.25
         ],
-        "fov": 40,
+        "fov": 42,
         "near": 0.1,
         "far": 110,
         "transitionMs": 650
@@ -919,13 +919,13 @@
       "id": "tactician-guard-catwalk",
       "material": "minecraft:polished_blackstone",
       "position": [
-        -3.7,
+        -2.5,
         6,
         -0.15
       ],
       "size": [
-        2.8,
-        3.2,
+        1.8,
+        2.4,
         0.3
       ],
       "rotation": [
@@ -938,13 +938,13 @@
       "id": "tactician-guard-rail-west",
       "material": "minecraft:iron_bars",
       "position": [
-        -5.05,
+        -3.15,
         6,
         0.6
       ],
       "size": [
         0.15,
-        3.2,
+        2.4,
         1.2
       ],
       "rotation": [
@@ -957,12 +957,12 @@
       "id": "tactician-guard-rail-rear",
       "material": "minecraft:iron_bars",
       "position": [
-        -3.7,
-        4.45,
+        -2.5,
+        4.9,
         0.6
       ],
       "size": [
-        2.8,
+        1.8,
         0.15,
         1.2
       ],
@@ -976,8 +976,8 @@
       "id": "tactician-searchlight-post",
       "material": "minecraft:polished_blackstone_bricks",
       "position": [
-        -4.65,
-        7.15,
+        -3,
+        6.85,
         1.3
       ],
       "size": [
@@ -995,8 +995,8 @@
       "id": "tactician-searchlight",
       "material": "minecraft:sea_lantern",
       "position": [
-        -4.65,
-        7.15,
+        -3,
+        6.85,
         2.78
       ],
       "size": [
