@@ -461,7 +461,7 @@ class TftSession(
             revision = revision,
             finished = finished,
             winner = winner?.let { id -> seats.firstOrNull { it.id == id }?.name },
-            resultPresentation = if(!finished) null else NativeGameResultPresentation(
+            resultPresentation = if(!finished && !player.eliminated) null else NativeGameResultPresentation(
                 outcome = when(player.placement){
                     1 -> "top_1"
                     2 -> "top_2"
@@ -477,7 +477,8 @@ class TftSession(
                     NativeResultLine("gold",player.gold.toString())
                 ),
                 rewards = listOf(NativeResultLine("match_reward")),
-                progression = listOf(NativeResultLine("placement",(player.placement?:8).toString()))
+                progression = listOf(NativeResultLine("placement",(player.placement?:8).toString())),
+                canRematch = finished
             )
         )
     }
@@ -1161,8 +1162,10 @@ class TftSession(
         if (includeShop) player.shop.forEach { unitId -> if (unitId != null) ids += unitId }
         combatFor(player.id)?.engine?.units?.forEach { ids += it.definition.id }
         if (phase == Phase.DRAFT) draftOffers.forEach { ids += it.unitId }
+        set.units.sortedWith(compareBy<io.github.aristheg201.svhub.native.game.tft.TftUnitDefinition> { it.cost }.thenBy { it.id })
+            .forEach { ids += it.id }
         return JsonObject().apply {
-            ids.take(64).forEach { id ->
+            ids.forEach { id ->
                 val def = unitDefs[id] ?: return@forEach
                 add(def.id, JsonObject().apply {
                     addProperty("name", def.id.replace('_', ' ').replaceFirstChar { it.uppercase() }.take(96))
@@ -1204,8 +1207,9 @@ class TftSession(
         player.board.values.forEach { unit -> unitDefs[unit.unitId]?.traits?.forEach(ids::add) }
         player.bench.forEach { unit -> unit?.let { unitDefs[it.unitId]?.traits?.forEach(ids::add) } }
         if (includeShop) player.shop.forEach { unitId -> unitId?.let { unitDefs[it]?.traits?.forEach(ids::add) } }
+        set.traits.sortedBy { it.name }.forEach { ids += it.id }
         return JsonObject().apply {
-            ids.take(64).forEach { id ->
+            ids.forEach { id ->
                 val def = traitDefs[id] ?: return@forEach
                 add(def.id, JsonObject().apply {
                     addProperty("name", def.name.take(96))
