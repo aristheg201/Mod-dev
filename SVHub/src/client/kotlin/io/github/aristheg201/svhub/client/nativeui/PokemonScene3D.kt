@@ -96,6 +96,7 @@ class PokemonSceneState {
     private val nativeParticles = ArrayDeque<CobblemonSceneParticleCue>()
 
     fun position(entity: PokemonSceneEntity, now: Long = System.currentTimeMillis()): ScenePoint {
+        if (!ArcadePresentation.animation) { motions.remove(entity.id); return ScenePoint(entity.boardX, entity.boardY) }
         val existing = motions[entity.id]
         if (existing == null) {
             val fromX = entity.motionFromX?.takeIf { entity.motionSerial > 0 } ?: entity.boardX
@@ -236,6 +237,7 @@ object PokemonScene3D {
         val embedded=arena != null && layout.perspective != null
 
         gui.enableScissor(area.x,area.y,area.right,area.bottom)
+        try {
         val stableArenaSeed = if (arenaSeed.isNotBlank()) arenaSeed else arenaId.orEmpty()
         if(arena!=null && !embedded){
             MinecraftArenaRenderer.renderPathRoute(gui,layout,arena,pathRoute)
@@ -280,7 +282,7 @@ object PokemonScene3D {
             drawDiamond(gui, p.x.roundToInt(), p.y.roundToInt(), max(12, layout.tileWidth * 2 / 3), max(7, layout.tileHeight), color, if (platform.hovered || platform.selected) GOLD else GRID_LINE)
         }
 
-        val nativeByEntity = nativeAnimations.filter { it.serial > 0L }.groupBy { it.entityId }
+        val nativeByEntity = (if (ArcadePresentation.animation) nativeAnimations else emptyList()).filter { it.serial > 0L }.groupBy { it.entityId }
         entities.forEach { entity ->
             val view = entity.view ?: return@forEach
             nativeByEntity[entity.id].orEmpty().forEach { signal ->
@@ -316,6 +318,7 @@ object PokemonScene3D {
         if (embedded) {
             EmbeddedSceneRenderer.render(gui,layout,arena) { poses,buffers ->
                 EmbeddedSceneRenderer.renderBoardGrid(poses,arena)
+                EmbeddedSceneRenderer.renderCells(poses,arena,pathCells + pathRoute.toSet(),0x6658C4C8)
                 EmbeddedSceneRenderer.renderCells(poses,arena,legalCells,0x454cc7b2)
                 EmbeddedSceneRenderer.renderCells(poses,arena,selectedCells,0x99e2be62.toInt())
                 positioned.forEach { (entity,logical,_) ->
@@ -382,7 +385,6 @@ object PokemonScene3D {
                 state.observeNativeParticles(PokemonModelRenderer.drainSceneParticleCues(activeIds),now)
                 renderNativeSceneParticles(poses,buffers,state.activeNativeParticles(now),coordinates,checkNotNull(layout.perspective))
             }
-            MinecraftArenaRenderer.renderPathRoute(gui,layout,arena,pathRoute)
         }
         positioned.forEachIndexed{order,(entity,logical,point)->
             centers[entity.id]=point
@@ -459,8 +461,8 @@ object PokemonScene3D {
         state.observeNativeParticles(nativeParticleCues, now)
         if(!embedded) renderEffects(gui,state.activeEffects(now),centers,layout.tileWidth,layout.tileHeight)
         if(!embedded) renderNativeParticles(gui,state.activeNativeParticles(now),centers,layout.tileWidth,layout.tileHeight)
-        gui.disableScissor()
         return PokemonSceneFrame(layout,centers,heads)
+        } finally { gui.disableScissor() }
     }
 
     private fun renderNativeSceneParticles(poses:PoseStack,buffers:MultiBufferSource,particles:List<ActiveNativeParticle>,

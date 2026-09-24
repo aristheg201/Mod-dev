@@ -13,11 +13,16 @@ import kotlin.test.*
 
 class CosmeticPurchasesTest {
     @TempDir lateinit var directory: Path
+    @org.junit.jupiter.api.BeforeEach fun configureReward() {
+        val config = directory.resolve("economy.json")
+        Files.writeString(config, """{"defaults":{"reward":"BeastCoin"}}""")
+        EconomyConfig.start(config)
+    }
     private val player = UUID.randomUUID()
-    private val arena = CosmeticOffer(CosmeticKind.ARENA, "monster_island", BigDecimal("500"))
+    private val arena = CosmeticOffer(CosmeticKind.ARENA, "monster_island", BigDecimal("500"), "BeastCoin")
     private val free = CosmeticOffer(CosmeticKind.ARENA, "kanto_stadium", BigDecimal.ZERO)
-    private val tactician = CosmeticOffer(CosmeticKind.TACTICIAN, "svhub:eevee", BigDecimal("100.25"))
-    private val hunterArena = CosmeticOffer(CosmeticKind.ARENA, "arkham_asylum", BigDecimal("725"), BEconomyAdapter.HUNTER)
+    private val tactician = CosmeticOffer(CosmeticKind.TACTICIAN, "svhub:eevee", BigDecimal("100.25"), "HunterCoin")
+    private val hunterArena = CosmeticOffer(CosmeticKind.ARENA, "arkham_asylum", BigDecimal("725"), "HunterCoin")
     private val api = Api15()
     private val profiles = Profiles()
     private fun engine() = CosmeticPurchases(BEconomyAdapter { api }, profiles, { listOf(arena, free, tactician, hunterArena) })
@@ -28,30 +33,30 @@ class CosmeticPurchasesTest {
     }
 
     @Test fun `adapter reads exact decimal balance`() {
-        api.balances[BEconomyAdapter.BEAST] = BigDecimal("123456789.123456789")
-        assertEquals(BigDecimal("123456789.123456789"), BEconomyAdapter { api }.balance(player, BEconomyAdapter.BEAST))
+        api.balances["BeastCoin"] = BigDecimal("123456789.123456789")
+        assertEquals(BigDecimal("123456789.123456789"), BEconomyAdapter { api }.balance(player, "BeastCoin"))
     }
     @Test fun `arena debits BeastCoin once and grants ownership`() {
         val engine = engine()
         assertEquals(StoreResult.PURCHASED, buy(engine))
-        assertEquals(BigDecimal("1500"), api.balances[BEconomyAdapter.BEAST])
+        assertEquals(BigDecimal("1500"), api.balances["BeastCoin"])
         assertTrue(engine.owns(player, arena))
         assertEquals(1, api.debits)
     }
     @Test fun `premium arena can debit HunterCoin without changing legacy arena currency`() {
         assertEquals(StoreResult.PURCHASED, buy(engine(), hunterArena))
-        assertEquals(BigDecimal("1275"), api.balances[BEconomyAdapter.HUNTER])
-        assertEquals(BigDecimal("2000"), api.balances[BEconomyAdapter.BEAST])
-        assertEquals(BEconomyAdapter.HUNTER, hunterArena.currency)
-        assertEquals(BEconomyAdapter.BEAST, arena.currency)
+        assertEquals(BigDecimal("1275"), api.balances["HunterCoin"])
+        assertEquals(BigDecimal("2000"), api.balances["BeastCoin"])
+        assertEquals("HunterCoin", hunterArena.currency)
+        assertEquals("BeastCoin", arena.currency)
     }
     @Test fun `tactician debits HunterCoin preserving decimals`() {
         assertEquals(StoreResult.PURCHASED, buy(engine(), tactician))
-        assertEquals(BigDecimal("1899.75"), api.balances[BEconomyAdapter.HUNTER])
-        assertEquals(BigDecimal("2000"), api.balances[BEconomyAdapter.BEAST])
+        assertEquals(BigDecimal("1899.75"), api.balances["HunterCoin"])
+        assertEquals(BigDecimal("2000"), api.balances["BeastCoin"])
     }
     @Test fun `insufficient balance cannot grant or debit`() {
-        api.balances[BEconomyAdapter.BEAST] = BigDecimal.ONE
+        api.balances["BeastCoin"] = BigDecimal.ONE
         val engine = engine()
         assertEquals(StoreResult.INSUFFICIENT, buy(engine))
         assertFalse(engine.owns(player, arena)); assertEquals(0, api.debits)
@@ -122,7 +127,7 @@ class CosmeticPurchasesTest {
     @Test fun `migration runs once and reconnect never repeats credit`() {
         profiles.profile.arcadeTokens = 345
         engine().migrate(player) { assertEquals(StoreResult.GRANTED, it) }
-        assertEquals(BigDecimal("2345"), api.balances[BEconomyAdapter.BEAST])
+        assertEquals(BigDecimal("2345"), api.balances["BeastCoin"])
         assertEquals(0L, profiles.profile.arcadeTokens)
         profiles.reload()
         repeat(3) { engine().migrate(player) { assertEquals(StoreResult.OWNED, it) } }
@@ -139,7 +144,7 @@ class CosmeticPurchasesTest {
     }
     @Test fun `old token wallet is no longer spendable or credited`() {
         profiles.profile.arcadeTokens = 1_000_000
-        api.balances[BEconomyAdapter.BEAST] = BigDecimal.ZERO
+        api.balances["BeastCoin"] = BigDecimal.ZERO
         assertEquals(StoreResult.INSUFFICIENT, buy(engine()))
         assertEquals(0L, profiles.profile.balance("arcade"))
         assertFalse(profiles.profile.debit("arcade", 1))
@@ -192,7 +197,7 @@ class CosmeticPurchasesTest {
 
     /** Test double with the exact javap-confirmed API 1.5 signatures. */
     class Api15 {
-        val balances = mutableMapOf(BEconomyAdapter.BEAST to BigDecimal("2000"), BEconomyAdapter.HUNTER to BigDecimal("2000"))
+        val balances = mutableMapOf("BeastCoin" to BigDecimal("2000"), "HunterCoin" to BigDecimal("2000"))
         val history = mutableListOf<Receipt>()
         var debits = 0; var credits = 0; var unavailable = false; var decline = false; var throwAfterDebit = false
         fun currencyExists(currency: String) = !unavailable && currency in balances

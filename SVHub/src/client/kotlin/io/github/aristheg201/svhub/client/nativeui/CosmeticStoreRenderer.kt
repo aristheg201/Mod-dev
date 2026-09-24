@@ -35,14 +35,11 @@ object CosmeticStoreRenderer {
         gui.fill(area.x,area.y,area.right,area.y+42,panel)
         gui.fill(area.x,area.y,area.right,area.y+2,teal)
         hooks.control(UiRect(area.x+6,area.y+5,68,16),"‹ "+I18n.get("gui.svhub.nav.store"),true,false){
-            hooks.intent("open",JsonObject().apply{addProperty("module","dashboard")})
+            hooks.intent("open",JsonObject().apply{addProperty("module","arcade")})
         }
 
-        val beast="BeastCoin  "+balances.str("BeastCoin","—")
-        val hunter="HunterCoin  "+balances.str("HunterCoin","—")
         val economyReady=state.bool("economyReady")
-        val economyLabel=if(economyReady) "BEconomy ✓" else "BEconomy !"
-        val wallet=economyLabel+"    "+hunter+"    "+beast
+        val wallet=balances.entrySet().joinToString("   ") { (currency, amount) -> "$currency  ${amount.asString}" }
         val walletText=font.plainSubstrByWidth(wallet,(area.width-92).coerceAtLeast(80))
         gui.drawString(font,walletText,area.right-font.width(walletText)-10,area.y+9,if(economyReady)gold else 0xFFE36C5C.toInt(),true)
 

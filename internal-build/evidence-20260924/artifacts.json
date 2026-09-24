@@ -1,0 +1,42 @@
+[
+  {
+    "file": "SVHub-fabric-1.21.1-0.4.5-ARCADE-PRODUCTION.jar",
+    "bytes": 7093943,
+    "sha256": "439ee1bfc0b348ba24d43edb45a34b68a01ae2e02fd6b14c29ad90fa01a115e3",
+    "tests": {
+      "tests": 338,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "entrypoints": {
+      "main": [
+        "io.github.aristheg201.svhub.SVHubEntrypoint"
+      ],
+      "client": [
+        "io.github.aristheg201.svhub.client.SVHubClientEntrypoint",
+        "io.github.aristheg201.svhub.client.nativeui.NativePlatformClientEntrypoint"
+      ]
+    }
+  },
+  {
+    "file": "SVArcade-fabric-1.21.1-0.6.8-ARCADE-PRODUCTION.jar",
+    "bytes": 7104068,
+    "sha256": "c5b2f7dfdd19538e0f206e03a31b1ca260ce7a131a00208a91f200bca8a5055c",
+    "tests": {
+      "tests": 338,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "entrypoints": {
+      "main": [
+        "io.github.aristheg201.svarcade.SVArcadeEntrypoint"
+      ],
+      "client": [
+        "io.github.aristheg201.svarcade.client.SVArcadeClientEntrypoint",
+        "io.github.aristheg201.svarcade.client.nativeui.NativePlatformClientEntrypoint"
+      ]
+    }
+  }
+]

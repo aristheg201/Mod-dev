@@ -1,0 +1,435 @@
+{
+    "style":  "gotham_rooftops",
+    "surface":  "tactical",
+    "depth":  7,
+    "detailEvery":  0,
+    "pathDetailEvery":  0,
+    "floor":  [
+                  "minecraft:polished_andesite",
+                  "minecraft:smooth_stone"
+              ],
+    "floorAlt":  [
+                     "minecraft:stone_bricks"
+                 ],
+    "ally":  [
+
+             ],
+    "enemy":  [
+
+              ],
+    "path":  [
+
+             ],
+    "floorColor":  "#3c4859",
+    "floorAltColor":  "#455366",
+    "allyColor":  "#202838",
+    "enemyColor":  "#61405e",
+    "pathColor":  "#756e5f",
+    "pathAccentColor":  "#b2a887",
+    "gridColor":  "#80a08e",
+    "borderColor":  "#475463",
+    "edgeColor":  "#172019",
+    "depthColor":  "#121923",
+    "props":  [
+
+              ],
+    "metadata":  {
+                     "boardColumns":  7,
+                     "boardRows":  8,
+                     "benchSlots":  9,
+                     "tacticianRegion":  [-3.06, 5.27, -2.22, 6.63],
+                     "camera":  {
+                                    "spectator":  [11, 18, 16],
+                                    "scouting":  [8, 16, 13],
+                                    "carousel":  [3, 18, 19]
+                                },
+                     "lighting":  "themed",
+                     "ambientVfx":  "gotham_rooftops",
+                     "music":  "minecraft:music.game",
+                     "boardOrigin":  [0, 0, 0],
+                     "boardAnchors":  [
+                                          [0, 0, 0],
+                                          [1.5, 0, 0],
+                                          [3, 0, 0],
+                                          [4.5, 0, 0],
+                                          [6, 0, 0],
+                                          [7.5, 0, 0],
+                                          [9, 0, 0],
+                                          [0, 0.85, 0],
+                                          [1.5, 0.85, 0],
+                                          [3, 0.85, 0],
+                                          [4.5, 0.85, 0],
+                                          [6, 0.85, 0],
+                                          [7.5, 0.85, 0],
+                                          [9, 0.85, 0],
+                                          [0, 1.7, 0],
+                                          [1.5, 1.7, 0],
+                                          [3, 1.7, 0],
+                                          [4.5, 1.7, 0],
+                                          [6, 1.7, 0],
+                                          [7.5, 1.7, 0],
+                                          [9, 1.7, 0],
+                                          [0, 2.55, 0],
+                                          [1.5, 2.55, 0],
+                                          [3, 2.55, 0],
+                                          [4.5, 2.55, 0],
+                                          [6, 2.55, 0],
+                                          [7.5, 2.55, 0],
+                                          [9, 2.55, 0],
+                                          [0, 3.4, 0],
+                                          [1.5, 3.4, 0],
+                                          [3, 3.4, 0],
+                                          [4.5, 3.4, 0],
+                                          [6, 3.4, 0],
+                                          [7.5, 3.4, 0],
+                                          [9, 3.4, 0],
+                                          [0, 4.25, 0],
+                                          [1.5, 4.25, 0],
+                                          [3, 4.25, 0],
+                                          [4.5, 4.25, 0],
+                                          [6, 4.25, 0],
+                                          [7.5, 4.25, 0],
+                                          [9, 4.25, 0],
+                                          [0, 5.1, 0],
+                                          [1.5, 5.1, 0],
+                                          [3, 5.1, 0],
+                                          [4.5, 5.1, 0],
+                                          [6, 5.1, 0],
+                                          [7.5, 5.1, 0],
+                                          [9, 5.1, 0],
+                                          [0, 5.95, 0],
+                                          [1.5, 5.95, 0],
+                                          [3, 5.95, 0],
+                                          [4.5, 5.95, 0],
+                                          [6, 5.95, 0],
+                                          [7.5, 5.95, 0],
+                                          [9, 5.95, 0]
+                                      ],
+                     "benchAnchors":  [
+                                          [0.036, 7.6075, 0.045],
+                                          [1.152, 7.6075, 0.045],
+                                          [2.268, 7.6075, 0.045],
+                                          [3.384, 7.6075, 0.045],
+                                          [4.5, 7.6075, 0.045],
+                                          [5.616, 7.6075, 0.045],
+                                          [6.732, 7.6075, 0.045],
+                                          [7.848, 7.6075, 0.045],
+                                          [8.964, 7.6075, 0.045]
+                                      ],
+                     "itemBenchAnchors":  [
+                                              [0.036, 8.245, 0.15],
+                                              [1.152, 8.245, 0.15],
+                                              [2.268, 8.245, 0.15],
+                                              [3.384, 8.245, 0.15],
+                                              [4.5, 8.245, 0.15],
+                                              [5.616, 8.245, 0.15],
+                                              [6.732, 8.245, 0.15],
+                                              [7.848, 8.245, 0.15],
+                                              [8.964, 8.245, 0.15]
+                                          ],
+                     "tacticianSpawn":  [-2.64, 5.95, 0],
+                     "humanSpawn":  [4.5, 5.95, 0],
+                     "opponentSpawn":  [4.5, 0, 0],
+                     "carouselCenter":  [3, 3.5, 0],
+                     "arenaBounds":  [-8.4, -8.5, 18, 10.2],
+                     "lootAnchors":  [
+                                         [3.5, 4.0, 0]
+                                     ],
+                     "combatStartVfx":  "svarcade:combat_start",
+                     "victoryVfx":  "svarcade:victory",
+                     "defeatVfx":  "svarcade:defeat",
+                     "interactionRegions":  [
+
+                                            ],
+                     "cameraPresets":  {
+                                           "normal":  {
+                                                          "position":  [5.1599999999999993, 12.75, 9.35],
+                                                          "fov":  42,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "preparation":  {
+                                                               "position":  [5.1599999999999993, 12.75, 9.35],
+                                                               "fov":  42,
+                                                               "transitionMs":  650,
+                                                               "far":  100,
+                                                               "near":  0.1,
+                                                               "target":  [4.5, 2.295, 0.255]
+                                                           },
+                                           "combat":  {
+                                                          "position":  [5.1599999999999993, 12.75, 9.9449999999999985],
+                                                          "fov":  42,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "scouting":  {
+                                                            "position":  [5.1599999999999993, 12.75, 9.35],
+                                                            "fov":  42,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [4.5, 2.295, 0.255]
+                                                        },
+                                           "carousel":  {
+                                                            "position":  [3, 18, 19],
+                                                            "fov":  52,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 3.5, 0]
+                                                        },
+                                           "pve_intro":  {
+                                                             "position":  [5.1599999999999993, 12.75, 9.35],
+                                                             "fov":  42,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [4.5, 2.295, 0.255]
+                                                         },
+                                           "boss_intro":  {
+                                                              "position":  [5.1599999999999993, 12.75, 9.35],
+                                                              "fov":  39,
+                                                              "transitionMs":  650,
+                                                              "far":  100,
+                                                              "near":  0.1,
+                                                              "target":  [4.5, 2.295, 0.255]
+                                                          },
+                                           "victory":  {
+                                                           "position":  [6, 12.75, 9.35],
+                                                           "fov":  39,
+                                                           "transitionMs":  650,
+                                                           "far":  100,
+                                                           "near":  0.1,
+                                                           "target":  [4.5, 2.295, 0.255]
+                                                       },
+                                           "defeat":  {
+                                                          "position":  [4.56, 12.75, 9.35],
+                                                          "fov":  44,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "spectator":  {
+                                                             "position":  [5.1599999999999993, 12.75, 10.37],
+                                                             "fov":  42,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [4.5, 2.295, 0.255]
+                                                         },
+                                           "arena_preview":  {
+                                                                 "position":  [5.1599999999999993, 12.75, 9.35],
+                                                                 "fov":  42,
+                                                                 "transitionMs":  650,
+                                                                 "far":  100,
+                                                                 "near":  0.1,
+                                                                 "target":  [4.5, 2.295, 0.255]
+                                                             }
+                                       },
+                     "cellSize":  [1.5, 0.85, 1],
+                     "logicalBoardBounds":  [-0.75, -0.425, 9.75, 6.375],
+                     "battlefieldBounds":  [-1.68, -1.02, 10.68, 6.9699999999999989],
+                     "environmentBounds":  [-8.4, -8.5, 18, 10.2]
+                 },
+    "id":  "gotham_rooftops",
+    "geometry":  [
+                     {
+                         "id":  "roof-slab",
+                         "material":  "minecraft:deepslate_bricks",
+                         "position":  [
+                                          4.5,
+                                          3.23,
+                                          "-.75"
+                                      ],
+                         "size":  [15.6, 10.2, 1.45],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "rear-parapet",
+                         "material":  "minecraft:stone_bricks",
+                         "position":  [
+                                          4.5,
+                                          "-2.3",
+                                          0.45
+                                      ],
+                         "size":  [15.6, 0.34, 0.9],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "side-parapet--3",
+                         "material":  "minecraft:polished_andesite",
+                         "position":  [-3.5999999999999996, 3.06, 0.3],
+                         "size":  [0.48, 9.775, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "side-parapet-10.5",
+                         "material":  "minecraft:polished_andesite",
+                         "position":  [12.6, 3.06, 0.3],
+                         "size":  [0.48, 9.775, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "roof-access",
+                         "material":  "minecraft:bricks",
+                         "position":  [
+                                          12,
+                                          "-3",
+                                          1.5
+                                      ],
+                         "size":  [2.88, 2.04, 3],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "access-roof",
+                         "material":  "minecraft:polished_deepslate",
+                         "position":  [
+                                          12,
+                                          "-3",
+                                          3.05
+                                      ],
+                         "size":  [3.36, 2.38, 0.25],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "hvac--1.5",
+                         "material":  "minecraft:iron_block",
+                         "position":  [
+                                          "-3.9",
+                                          -1.275,
+                                          0.7
+                                      ],
+                         "size":  [1.68, 1.36, 1.4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "vent--1.5",
+                         "material":  "minecraft:blast_furnace",
+                         "position":  [
+                                          "-3.9",
+                                          -1.275,
+                                          1.65
+                                      ],
+                         "size":  [1.44, 1.105, 0.5],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "hvac-1.2",
+                         "material":  "minecraft:iron_block",
+                         "position":  [
+                                          "-3.9",
+                                          1.02,
+                                          0.7
+                                      ],
+                         "size":  [1.68, 1.36, 1.4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "vent-1.2",
+                         "material":  "minecraft:blast_furnace",
+                         "position":  [
+                                          "-3.9",
+                                          1.02,
+                                          1.65
+                                      ],
+                         "size":  [1.44, 1.105, 0.5],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "skyline-0",
+                         "material":  "minecraft:gray_concrete",
+                         "position":  [
+                                          -6,
+                                          "-7",
+                                          1.5
+                                      ],
+                         "size":  [3.12, 2.04, 3],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "skyline-1",
+                         "material":  "minecraft:gray_concrete",
+                         "position":  [
+                                          -2.04,
+                                          "-7",
+                                          2.25
+                                      ],
+                         "size":  [3.12, 2.04, 4.5],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "skyline-2",
+                         "material":  "minecraft:gray_concrete",
+                         "position":  [
+                                          1.9199999999999995,
+                                          "-7",
+                                          3
+                                      ],
+                         "size":  [3.12, 2.04, 6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "skyline-3",
+                         "material":  "minecraft:gray_concrete",
+                         "position":  [
+                                          5.8799999999999981,
+                                          "-7",
+                                          1.5
+                                      ],
+                         "size":  [3.12, 2.04, 3],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "skyline-4",
+                         "material":  "minecraft:gray_concrete",
+                         "position":  [
+                                          9.8399999999999981,
+                                          "-7",
+                                          2.25
+                                      ],
+                         "size":  [3.12, 2.04, 4.5],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "skyline-5",
+                         "material":  "minecraft:gray_concrete",
+                         "position":  [
+                                          13.799999999999999,
+                                          "-7",
+                                          3
+                                      ],
+                         "size":  [3.12, 2.04, 6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-deck",
+                         "material":  "minecraft:polished_andesite",
+                         "position":  [
+                                          4.5,
+                                          7.607499999999999,
+                                          "-.16"
+                                      ],
+                         "size":  [11.4, 1.0625, 0.3],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "tactician-walkway",
+                         "material":  "minecraft:stone_bricks",
+                         "position":  [
+                                          -2.64,
+                                          5.95,
+                                          "-.18"
+                                      ],
+                         "size":  [1.68, 2.55, 0.35],
+                         "rotation":  [0, 0, 0]
+                     }
+                 ],
+    "texturedBattlefield":  true,
+    "benchMaterial":  "minecraft:polished_deepslate",
+    "backgroundColor":  "#24364f"
+}

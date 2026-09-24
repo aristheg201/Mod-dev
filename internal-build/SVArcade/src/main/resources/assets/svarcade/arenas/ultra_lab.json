@@ -1,0 +1,628 @@
+{
+  "id": "ultra_lab",
+  "style": "ultra_lab",
+  "surface": "tactical",
+  "depth": 4,
+  "detailEvery": 4,
+  "pathDetailEvery": 0,
+  "texturedBattlefield": true,
+  "floor": [
+    "minecraft:smooth_quartz"
+  ],
+  "floorAlt": [
+    "minecraft:light_gray_concrete"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#d7e2e3",
+  "floorAltColor": "#a8bec3",
+  "allyColor": "#3c7e87",
+  "enemyColor": "#7f4c66",
+  "pathColor": "#665f56",
+  "pathAccentColor": "#59f0e8",
+  "gridColor": "#4e8f98",
+  "borderColor": "#d7fbff",
+  "edgeColor": "#14252b",
+  "depthColor": "#203940",
+  "backgroundColor": "#091b22",
+  "benchMaterial": "minecraft:iron_block",
+  "props": [],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "cellSize": [
+      1.5,
+      0.85,
+      1
+    ],
+    "benchAnchors": [
+      [
+        0,
+        7.62,
+        0.05
+      ],
+      [
+        1.125,
+        7.62,
+        0.05
+      ],
+      [
+        2.25,
+        7.62,
+        0.05
+      ],
+      [
+        3.375,
+        7.62,
+        0.05
+      ],
+      [
+        4.5,
+        7.62,
+        0.05
+      ],
+      [
+        5.625,
+        7.62,
+        0.05
+      ],
+      [
+        6.75,
+        7.62,
+        0.05
+      ],
+      [
+        7.875,
+        7.62,
+        0.05
+      ],
+      [
+        9,
+        7.62,
+        0.05
+      ]
+    ],
+    "itemBenchAnchors": [
+      [
+        0,
+        8.28,
+        0.15
+      ],
+      [
+        1.125,
+        8.28,
+        0.15
+      ],
+      [
+        2.25,
+        8.28,
+        0.15
+      ],
+      [
+        3.375,
+        8.28,
+        0.15
+      ],
+      [
+        4.5,
+        8.28,
+        0.15
+      ],
+      [
+        5.625,
+        8.28,
+        0.15
+      ],
+      [
+        6.75,
+        8.28,
+        0.15
+      ],
+      [
+        7.875,
+        8.28,
+        0.15
+      ],
+      [
+        9,
+        8.28,
+        0.15
+      ]
+    ],
+    "tacticianRegion": [
+      -3.4,
+      5,
+      -1.5,
+      7
+    ],
+    "tacticianSpawn": [
+      -2.45,
+      6,
+      0
+    ],
+    "humanSpawn": [
+      4.5,
+      5.95,
+      0
+    ],
+    "opponentSpawn": [
+      4.5,
+      0,
+      0
+    ],
+    "carouselCenter": [
+      4.5,
+      3,
+      0
+    ],
+    "arenaBounds": [
+      -6,
+      -5,
+      15,
+      11
+    ],
+    "lighting": "bright",
+    "ambientVfx": "lab_scanlines",
+    "music": "minecraft:music.game",
+    "lootAnchors": [
+      [
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
+        0
+      ]
+    ],
+    "combatStartVfx": "svarcade:combat_start",
+    "victoryVfx": "svarcade:victory",
+    "defeatVfx": "svarcade:defeat",
+    "interactionRegions": [],
+    "camera": {
+      "spectator": [
+        4.5,
+        15.5,
+        13.5
+      ],
+      "scouting": [
+        7.4,
+        13.6,
+        11.7
+      ],
+      "carousel": [
+        4.5,
+        17,
+        15
+      ]
+    },
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          4.5,
+          15,
+          12.8
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "preparation": {
+        "position": [
+          4.5,
+          15,
+          12.8
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          4.5,
+          14.4,
+          13.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          8,
+          11.5,
+          9.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16,
+          15
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          12,
+          8.5
+        ],
+        "target": [
+          4.5,
+          1.5,
+          0.3
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.5,
+          7.5
+        ],
+        "target": [
+          4.5,
+          1,
+          0.4
+        ],
+        "fov": 37,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          12.5,
+          9.2
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.3,
+          12.8,
+          10
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          4.5,
+          15.5,
+          13.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          4.5,
+          15.8,
+          13.2
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.2
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 100,
+        "transitionMs": 650
+      }
+    },
+    "battlefieldBounds": [
+      -1.35,
+      -0.95,
+      10.35,
+      6.95
+    ],
+    "environmentBounds": [
+      -6,
+      -5,
+      15,
+      11
+    ]
+  },
+  "geometry": [
+    {
+      "id": "left-lab-wall",
+      "material": "minecraft:smooth_quartz",
+      "position": [
+        -3.5,
+        2.9,
+        1.7
+      ],
+      "size": [
+        1,
+        7.4,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-lab-wall",
+      "material": "minecraft:smooth_quartz",
+      "position": [
+        12.5,
+        2.9,
+        1.7
+      ],
+      "size": [
+        1,
+        7.4,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-lab-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        -2.82,
+        2.9,
+        1.9
+      ],
+      "size": [
+        0.22,
+        5.3,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-lab-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        11.82,
+        2.9,
+        1.9
+      ],
+      "size": [
+        0.22,
+        5.3,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-console",
+      "material": "minecraft:polished_deepslate",
+      "position": [
+        -2.75,
+        1,
+        0.7
+      ],
+      "size": [
+        0.8,
+        1.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "left-console-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        -2.72,
+        1,
+        1.45
+      ],
+      "size": [
+        0.3,
+        1.1,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-console",
+      "material": "minecraft:polished_deepslate",
+      "position": [
+        11.75,
+        4.8,
+        0.7
+      ],
+      "size": [
+        0.8,
+        1.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "right-console-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        11.72,
+        4.8,
+        1.45
+      ],
+      "size": [
+        0.3,
+        1.1,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "far-lab-wall",
+      "material": "minecraft:iron_block",
+      "position": [
+        4.5,
+        -3.25,
+        1.8
+      ],
+      "size": [
+        11.8,
+        0.55,
+        3.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "far-lab-window",
+      "material": "minecraft:cyan_stained_glass",
+      "position": [
+        4.5,
+        -2.92,
+        1.95
+      ],
+      "size": [
+        7,
+        0.18,
+        2.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "far-lab-light",
+      "material": "minecraft:sea_lantern",
+      "position": [
+        4.5,
+        -2.78,
+        3.25
+      ],
+      "size": [
+        6,
+        0.18,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "bench-trim",
+      "material": "minecraft:iron_block",
+      "position": [
+        4.5,
+        8.65,
+        -0.6
+      ],
+      "size": [
+        11.5,
+        0.35,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

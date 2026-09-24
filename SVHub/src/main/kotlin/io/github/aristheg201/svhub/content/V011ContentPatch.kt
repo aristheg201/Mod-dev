@@ -40,7 +40,7 @@ object V011ContentPatch {
             component("v011_title", "animated_text", "text" to "<bold>SV WORLD • 0.1.1</bold>", "animation" to "glow_pulse", "align" to "center", "scale" to 1.45),
             component("v011_intro", "notice", "text" to "Gacha CS:GO, Skin Showcase và Linh Thú đã được gom vào cùng SVHub. Tất cả giao dịch vẫn do server xác thực."),
             button("v011_gacha", "GACHA • Skin Roulette", "gacha", "Mở khu roulette, xem pool và đi tới Key Shop."),
-            button("v011_skins", "SKIN SHOWCASE • Exclusive", "skins/showcase", "DBZ BeastCoin, Naruto và PokeLegends HunterCoin."),
+            button("v011_skins", "SKIN SHOWCASE • Exclusive", "skins/showcase", ServerHelpText.get("V011ContentPatch_21")),
             button("v011_companions", "LINH THÚ • Vanilla", "companions", "Chọn mob Minecraft vanilla đi cùng bạn."),
             component("v011_separator", "separator")
         )
@@ -63,7 +63,7 @@ object V011ContentPatch {
                     listOf("Animation", "CS:GO roulette"),
                     listOf("Mở crate", "Key"),
                     listOf("Pool", "Pokémon + skin custom"),
-                    listOf("Key shop", "HunterCoin")
+                    listOf("Key shop", ServerHelpText.get("V011ContentPatch_22"))
                 )),
                 commandRun("gacha_shop", "/gachashop", "Mở Key Shop để mua key premium."),
                 button("gacha_to_skins", "Xem Skin Showcase", "skins/showcase", "So sánh các bộ skin trước khi mua."),
@@ -77,25 +77,25 @@ object V011ContentPatch {
             category = "skins",
             title = LocalizedText.of("Skin Showcase"),
             subtitle = LocalizedText.of("Một nơi cho toàn bộ wardrobe và shop độc quyền."),
-            tags = listOf("skin", "showcase", "dbz", "naruto", "pokelegends", "huntercoin", "beastcoin"),
+            tags = listOf("skin", "showcase", "dbz", "naruto", "pokelegends", ServerHelpText.get("V011ContentPatch_23"), ServerHelpText.get("V011ContentPatch_24")),
             theme = "sv_arcade",
             icon = "cobblemon:pokemon_model",
             components = listOf(
                 component("skins_title", "animated_text", "text" to "<aqua><bold>EXCLUSIVE COLLECTION</bold></aqua>", "animation" to "wave", "align" to "center", "scale" to 1.25),
                 component("skins_summary", "notice", "text" to "0.1.1 bổ sung 658 skin: 8 DBZ, 6 Naruto tuyển chọn và 644 PokeLegends. Skin độc quyền là cosmetic aspect riêng, không mượn aspect gameplay như Mega."),
                 component("skins_hunter", "heading", "text" to "Hunter Exclusive"),
-                component("skins_hunter_text", "text", "text" to "Naruto + PokeLegends bán bằng HunterCoin. Mỗi lượt mua kèm Pokémon cùng species với 3 IV ngẫu nhiên đạt 31."),
+                component("skins_hunter_text", "text", "text" to ServerHelpText.get("V011ContentPatch_25")),
                 table("skins_price", listOf(
                     listOf("Nhóm", "Giá chuẩn"),
-                    listOf("HunterCoin", "1 HC = 25.000"),
+                    listOf(ServerHelpText.get("V011ContentPatch_26"), "1 HC = 25.000"),
                     listOf("Exclusive thường", "4–6 HC"),
                     listOf("Legendary/Mythical premium", ">= 6 HC / 150.000"),
                     listOf("Legendary + model/animation", "8+ HC")
                 )),
                 commandRun("skins_hunter_shop", "/svhub-hunter", "Mở quầy Hunter Exclusive; 24 trang, 650 mẫu."),
-                component("skins_dbz", "heading", "text" to "Dragon Ball • BeastCoin"),
-                component("skins_dbz_text", "text", "text" to "DBZ là bộ riêng dùng BeastCoin, gồm Annihilape, Blastoise, Infernape, Mewtwo, Rayquaza, Sawk và hai Snorlax Buu."),
-                commandRun("skins_dbz_shop", "/svhub-dbz", "Mở quầy DBZ BeastCoin."),
+                component("skins_dbz", "heading", "text" to ServerHelpText.get("V011ContentPatch_27")),
+                component("skins_dbz_text", "text", "text" to ServerHelpText.get("V011ContentPatch_28")),
+                commandRun("skins_dbz_shop", "/svhub-dbz", ServerHelpText.get("V011ContentPatch_29")),
                 commandRun("skins_inventory", "/trangphuc", "Mở tủ skin đã sở hữu."),
                 button("skins_to_gacha", "Đi tới Skin Roulette", "gacha", "Mở khu gacha và Key Shop.")
             )

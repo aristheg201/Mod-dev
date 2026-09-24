@@ -2,191 +2,223 @@
   {
     "kind": "ARENA",
     "id": "kanto_stadium",
-    "price": "0"
+    "price": "0",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "ancient_ruins",
-    "price": "0"
+    "price": "0",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "monster_island",
-    "price": "500"
+    "price": "500",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "gotham_rooftops",
-    "price": "750"
+    "price": "750",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "sector_2814",
-    "price": "750"
+    "price": "750",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "dragon_shrine",
-    "price": "1000"
+    "price": "1000",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "distortion_rift",
-    "price": "1000"
+    "price": "1000",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "ultra_lab",
-    "price": "1000"
+    "price": "1000",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:pikachu",
-    "price": "0"
+    "price": "0",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:allay",
-    "price": "0"
+    "price": "0",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:eevee",
-    "price": "100"
+    "price": "100",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:riolu",
-    "price": "150"
+    "price": "150",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:lucario",
-    "price": "200"
+    "price": "200",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:zorua",
-    "price": "150"
+    "price": "150",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:mew",
-    "price": "300"
+    "price": "300",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "temporal_observatory",
-    "price": "1500"
+    "price": "1500",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "abyssal_sanctum",
-    "price": "1500"
+    "price": "1500",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "crimson_caldera",
-    "price": "1500"
+    "price": "1500",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:mewjo",
     "price": "650",
-    "currency": "HunterCoin"
+    "currency": "secondary"
   },
   {
     "kind": "ARENA",
     "id": "arkham_asylum",
     "price": "800",
-    "currency": "HunterCoin"
+    "currency": "secondary"
   },
   {
     "kind": "ARENA",
     "id": "wayne_manor",
     "price": "900",
-    "currency": "HunterCoin"
+    "currency": "secondary"
   },
   {
     "kind": "ARENA",
     "id": "infinite_void",
     "price": "1200",
-    "currency": "HunterCoin"
+    "currency": "secondary"
   },
   {
     "kind": "ARENA",
     "id": "sukuna_domain",
     "price": "1400",
-    "currency": "HunterCoin"
+    "currency": "secondary"
   },
   {
     "kind": "ARENA",
     "id": "grand_line",
-    "price": "1250"
+    "price": "1250",
+    "currency": "primary"
   },
   {
     "kind": "ARENA",
     "id": "celestial_vault",
-    "price": "1250"
+    "price": "1250",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:axolotl",
-    "price": "75"
+    "price": "75",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:bee",
-    "price": "75"
+    "price": "75",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:cat",
-    "price": "90"
+    "price": "90",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:fox",
-    "price": "100"
+    "price": "100",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:frog",
-    "price": "80"
+    "price": "80",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:parrot",
-    "price": "90"
+    "price": "90",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:rabbit",
-    "price": "80"
+    "price": "80",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:wolf",
-    "price": "120"
+    "price": "120",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:armadillo",
-    "price": "120"
+    "price": "120",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:sniffer",
-    "price": "180"
+    "price": "180",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:greninja",
-    "price": "350"
+    "price": "350",
+    "currency": "primary"
   },
   {
     "kind": "TACTICIAN",
     "id": "svhub:ceruledge",
-    "price": "400"
+    "price": "400",
+    "currency": "primary"
   }
 ]

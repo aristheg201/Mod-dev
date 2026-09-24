@@ -118,7 +118,7 @@ object SkiesSkinsBridge {
         val apply = value(aspects, "apply") as? List<*>
         val aspect = apply?.firstOrNull()?.toString().orEmpty()
         val perfect = if (source == "dbz") 0 else 3
-        return NativeSkin(id, string(cfg, "name", id), species, aspect, source, if (source == "dbz") "beastcoin" else "huntercoin", 0L, perfect, rarity(id, species), bool(cfg, "untradable", true))
+        return NativeSkin(id, string(cfg, "name", id), species, aspect, source, string(cfg, "currency", ""), 0L, perfect, rarity(id, species), bool(cfg, "untradable", true))
     }
     private fun rarity(id: String, species: String): String {
         val s = species.substringAfter(':').lowercase()

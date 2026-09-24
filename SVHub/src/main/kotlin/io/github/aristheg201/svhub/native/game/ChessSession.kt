@@ -7,7 +7,7 @@ import kotlin.random.Random
 class ChessSession(
     override val seats: List<NativeSeat>,
     private val initialClockMillis: Long = 10 * 60 * 1000L,
-    private val incrementMillis: Long = 5_000L,
+    private var incrementMillis: Long = 5_000L,
     override val sessionId: String = NativeIds.session("chess"),
     private val restoreState: JsonObject? = null,
     seed: Long = Random.nextLong()
@@ -66,6 +66,8 @@ class ChessSession(
                 "you" to when (i) { 0 -> "white"; 1 -> "black"; else -> "spectator" },
                 "white" to seats[0].name,
                 "black" to seats[1].name,
+                "activeClock" to if(side == 'w') "white" else "black",
+                "incrementMs" to incrementMillis.toString(),
                 "whiteClockMs" to whiteClock.toString(),
                 "blackClockMs" to blackClock.toString(),
                 "halfmove" to halfmove.toString(),
@@ -101,6 +103,7 @@ class ChessSession(
     }
 
     override fun act(viewerId: String, action: String, args: Map<String, String>): NativeGameResult {
+        tick(System.currentTimeMillis())
         if (finished) return NativeGameResult(false, message = "Game already finished")
         val si = seats.indexOfFirst { it.id == viewerId }
         if (si !in 0..1) return NativeGameResult(false, message = "Spectator")
@@ -138,8 +141,8 @@ class ChessSession(
 
     override fun tick(nowMillis: Long): Boolean {
         if (finished) return false
-        val d = (nowMillis - lastClockAt).coerceIn(0L, 2000L)
-        lastClockAt = nowMillis
+        val d = (nowMillis - lastClockAt).coerceAtLeast(0L)
+        lastClockAt = maxOf(lastClockAt, nowMillis)
         if (side == 'w') whiteClock -= d else blackClock -= d
         if (whiteClock <= 0) { whiteClock = 0; finish("White lost on time", seats[1].id); return true }
         if (blackClock <= 0) { blackClock = 0; finish("Black lost on time", seats[0].id); return true }
@@ -151,9 +154,10 @@ class ChessSession(
         Snapshot(String(board), side.toString(), castling, epSquare, halfmove, fullmove, revision, log.toList(),
             repetitions.toMap(), result, winner, drawOfferedBy, whiteClock.coerceAtLeast(0L),
             blackClock.coerceAtLeast(0L), lastMoveFrom, lastMoveTo, lastCapturedPiece, lastCapturedSquare, moveSerial, rng.state,lastAuxMoveFrom,lastAuxMoveTo)
-    )
+    ).apply { addProperty("clockIncrementMs", incrementMillis) }
 
     private fun restoreSnapshot(state: JsonObject) {
+        state.get("clockIncrementMs")?.let { incrementMillis = it.asLong.coerceAtLeast(0L) }
         val s = NativeGamePersistence.fromJson(state, Snapshot::class.java)
         require(s.board.length == 64) { "Invalid chess recovery board" }
         require(s.side == "w" || s.side == "b") { "Invalid chess recovery side" }

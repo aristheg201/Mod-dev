@@ -8,6 +8,7 @@ import java.math.BigDecimal
 import java.util.UUID
 
 interface CosmeticEconomy {
+    fun resolveCurrency(currency: String): String = currency
     fun currencyExists(currency: String): Boolean
     fun balance(player: UUID, currency: String): BigDecimal
     fun debit(player: UUID, amount: BigDecimal, currency: String): Boolean
@@ -16,14 +17,8 @@ interface CosmeticEconomy {
     fun recordReceipt(player: UUID, identity: String, amount: BigDecimal, currency: String)
 }
 
-data class BEconomyStatus(
-    val available: Boolean,
-    val providerClass: String = "",
-    val beastCoin: Boolean = false,
-    val hunterCoin: Boolean = false,
-    val detail: String = ""
-) {
-    val ready: Boolean get() = available && beastCoin && hunterCoin
+data class BEconomyStatus(val available: Boolean, val providerClass: String = "", val detail: String = "") {
+    val ready: Boolean get() = available
 }
 
 /**
@@ -37,6 +32,8 @@ data class BEconomyStatus(
 class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEconomy {
     @Volatile private var cachedApi: Any? = null
     @Volatile private var resolvedProviderClass: String = if (apiSupplier != null) "injected" else ""
+
+    override fun resolveCurrency(currency: String) = requireCurrency(currency)
 
     override fun currencyExists(currency: String) = canonicalCurrency(currency) != null
 
@@ -84,14 +81,9 @@ class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEc
                 availableCurrencyTypes().joinToString().ifBlank { "<none>" }
         )
 
-    /**
-     * BEconomy 1.5 treats currencyType as case-sensitive. Server configs commonly use
-     * lower-case or separator variants (beastcoin, beast_coin, hunter-coin), while SVHub
-     * exposes stable UI names BeastCoin/HunterCoin. Resolve those aliases to the provider's
-     * canonical currencyType before every balance mutation/receipt operation.
-     */
     private fun canonicalCurrency(currency: String): String? {
         val provider = target()
+        val currency = EconomyConfig.resolve(currency, availableCurrencyTypes(provider)) ?: return null
         val exact = runCatching {
             provider.javaClass.getMethod("currencyExists", String::class.java)
                 .invoke(provider, currency) as? Boolean
@@ -112,7 +104,7 @@ class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEc
         }
     }
 
-    private fun availableCurrencyTypes(provider: Any = target()): List<String> {
+    fun availableCurrencyTypes(provider: Any = target()): List<String> {
         val currencies = runCatching {
             provider.javaClass.getMethod("getCurrencyList").invoke(provider) as? Iterable<*>
         }.getOrNull() ?: return emptyList()
@@ -126,36 +118,11 @@ class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEc
     private fun normalizeCurrency(value: String): String =
         value.filter(Char::isLetterOrDigit).lowercase()
 
-    /**
-     * Resolves the real provider and verifies the two currencies SVHub actually consumes.
-     * Failures are intentionally not cached: BEconomy may finish initializing after SVHub.
-     */
     fun status(): BEconomyStatus = try {
         target()
-        val beastId = canonicalCurrency(BEAST)
-        val hunterId = canonicalCurrency(HUNTER)
-        val beast = beastId != null
-        val hunter = hunterId != null
-        BEconomyStatus(
-            available = true,
-            providerClass = resolvedProviderClass,
-            beastCoin = beast,
-            hunterCoin = hunter,
-            detail = when {
-                beast && hunter -> "ready ($BEAST=$beastId, $HUNTER=$hunterId)"
-                !beast && !hunter -> "missing BeastCoin and HunterCoin; configured=${availableCurrencyTypes().joinToString()}"
-                !beast -> "missing BeastCoin; configured=${availableCurrencyTypes().joinToString()}"
-                else -> "missing HunterCoin; configured=${availableCurrencyTypes().joinToString()}"
-            }
-        )
+        BEconomyStatus(true, resolvedProviderClass, availableCurrencyTypes().joinToString())
     } catch (error: Throwable) {
-        BEconomyStatus(
-            available = false,
-            providerClass = resolvedProviderClass,
-            detail = rootCause(error).let { cause ->
-                cause.javaClass.simpleName + (cause.message?.takeIf(String::isNotBlank)?.let { ": $it" } ?: "")
-            }
-        )
+        BEconomyStatus(false, resolvedProviderClass, rootCause(error).message.orEmpty())
     }
 
     private fun invoke(name: String, types: Array<Class<*>>, vararg values: Any): Any? {
@@ -240,8 +207,6 @@ class BEconomyAdapter(private val apiSupplier: (() -> Any)? = null) : CosmeticEc
     }
 
     companion object {
-        const val BEAST = "BeastCoin"
-        const val HUNTER = "HunterCoin"
 
         internal val PROVIDER_CLASSES = listOf(
             "org.blanketeconomy.api.BlanketEconomy",

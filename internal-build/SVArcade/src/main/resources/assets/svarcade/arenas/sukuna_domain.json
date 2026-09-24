@@ -1,0 +1,1302 @@
+{
+  "id": "sukuna_domain",
+  "style": "sukuna_domain",
+  "surface": "tactical",
+  "depth": 5,
+  "detailEvery": 3,
+  "pathDetailEvery": 0,
+  "texturedBattlefield": true,
+  "floor": [
+    "minecraft:red_nether_bricks"
+  ],
+  "floorAlt": [
+    "minecraft:blackstone"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#24100f",
+  "floorAltColor": "#351314",
+  "allyColor": "#402025",
+  "enemyColor": "#4c1717",
+  "pathColor": "#1b0e0e",
+  "pathAccentColor": "#d97859",
+  "gridColor": "#6e2e2e",
+  "borderColor": "#7c2a25",
+  "edgeColor": "#0b0606",
+  "depthColor": "#130909",
+  "backgroundColor": "#090404",
+  "benchMaterial": "minecraft:polished_blackstone_bricks",
+  "props": [
+    {
+      "item": "minecraft:soul_campfire",
+      "x": -3.45,
+      "y": -2.5,
+      "z": 0.6,
+      "scale": 0.8,
+      "blockModel": true
+    },
+    {
+      "item": "minecraft:soul_campfire",
+      "x": 12.35,
+      "y": -2.4,
+      "z": 0.6,
+      "scale": 0.8,
+      "blockModel": true
+    },
+    {
+      "item": "minecraft:wither_skeleton_skull",
+      "x": -2.95,
+      "y": 6.8,
+      "z": 0.8,
+      "scale": 0.7,
+      "blockModel": true
+    }
+  ],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "boardAnchors": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1.5,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0
+      ],
+      [
+        4.5,
+        0,
+        0
+      ],
+      [
+        6,
+        0,
+        0
+      ],
+      [
+        7.5,
+        0,
+        0
+      ],
+      [
+        9,
+        0,
+        0
+      ],
+      [
+        0,
+        0.85,
+        0
+      ],
+      [
+        1.5,
+        0.85,
+        0
+      ],
+      [
+        3,
+        0.85,
+        0
+      ],
+      [
+        4.5,
+        0.85,
+        0
+      ],
+      [
+        6,
+        0.85,
+        0
+      ],
+      [
+        7.5,
+        0.85,
+        0
+      ],
+      [
+        9,
+        0.85,
+        0
+      ],
+      [
+        0,
+        1.7,
+        0
+      ],
+      [
+        1.5,
+        1.7,
+        0
+      ],
+      [
+        3,
+        1.7,
+        0
+      ],
+      [
+        4.5,
+        1.7,
+        0
+      ],
+      [
+        6,
+        1.7,
+        0
+      ],
+      [
+        7.5,
+        1.7,
+        0
+      ],
+      [
+        9,
+        1.7,
+        0
+      ],
+      [
+        0,
+        2.55,
+        0
+      ],
+      [
+        1.5,
+        2.55,
+        0
+      ],
+      [
+        3,
+        2.55,
+        0
+      ],
+      [
+        4.5,
+        2.55,
+        0
+      ],
+      [
+        6,
+        2.55,
+        0
+      ],
+      [
+        7.5,
+        2.55,
+        0
+      ],
+      [
+        9,
+        2.55,
+        0
+      ],
+      [
+        0,
+        3.4,
+        0
+      ],
+      [
+        1.5,
+        3.4,
+        0
+      ],
+      [
+        3,
+        3.4,
+        0
+      ],
+      [
+        4.5,
+        3.4,
+        0
+      ],
+      [
+        6,
+        3.4,
+        0
+      ],
+      [
+        7.5,
+        3.4,
+        0
+      ],
+      [
+        9,
+        3.4,
+        0
+      ],
+      [
+        0,
+        4.25,
+        0
+      ],
+      [
+        1.5,
+        4.25,
+        0
+      ],
+      [
+        3,
+        4.25,
+        0
+      ],
+      [
+        4.5,
+        4.25,
+        0
+      ],
+      [
+        6,
+        4.25,
+        0
+      ],
+      [
+        7.5,
+        4.25,
+        0
+      ],
+      [
+        9,
+        4.25,
+        0
+      ],
+      [
+        0,
+        5.1,
+        0
+      ],
+      [
+        1.5,
+        5.1,
+        0
+      ],
+      [
+        3,
+        5.1,
+        0
+      ],
+      [
+        4.5,
+        5.1,
+        0
+      ],
+      [
+        6,
+        5.1,
+        0
+      ],
+      [
+        7.5,
+        5.1,
+        0
+      ],
+      [
+        9,
+        5.1,
+        0
+      ],
+      [
+        0,
+        5.95,
+        0
+      ],
+      [
+        1.5,
+        5.95,
+        0
+      ],
+      [
+        3,
+        5.95,
+        0
+      ],
+      [
+        4.5,
+        5.95,
+        0
+      ],
+      [
+        6,
+        5.95,
+        0
+      ],
+      [
+        7.5,
+        5.95,
+        0
+      ],
+      [
+        9,
+        5.95,
+        0
+      ]
+    ],
+    "cellSize": [
+      1.5,
+      0.85,
+      1
+    ],
+    "benchAnchors": [
+      [
+        0.3,
+        7.38,
+        0.045
+      ],
+      [
+        1.45,
+        7.38,
+        0.045
+      ],
+      [
+        2.6,
+        7.38,
+        0.045
+      ],
+      [
+        3.35,
+        7.68,
+        0.045
+      ],
+      [
+        4.5,
+        7.68,
+        0.045
+      ],
+      [
+        5.65,
+        7.68,
+        0.045
+      ],
+      [
+        6.4,
+        7.38,
+        0.045
+      ],
+      [
+        7.55,
+        7.38,
+        0.045
+      ],
+      [
+        8.7,
+        7.38,
+        0.045
+      ]
+    ],
+    "itemBenchAnchors": [
+      [
+        0.3,
+        8.1,
+        0.15
+      ],
+      [
+        1.45,
+        8.1,
+        0.15
+      ],
+      [
+        2.6,
+        8.1,
+        0.15
+      ],
+      [
+        3.35,
+        8.4,
+        0.15
+      ],
+      [
+        4.5,
+        8.4,
+        0.15
+      ],
+      [
+        5.65,
+        8.4,
+        0.15
+      ],
+      [
+        6.4,
+        8.1,
+        0.15
+      ],
+      [
+        7.55,
+        8.1,
+        0.15
+      ],
+      [
+        8.7,
+        8.1,
+        0.15
+      ]
+    ],
+    "tacticianRegion": [
+      -3.18,
+      5.08,
+      -1.88,
+      6.92
+    ],
+    "tacticianSpawn": [
+      -2.52,
+      6,
+      0.02
+    ],
+    "humanSpawn": [
+      4.5,
+      5.95,
+      0
+    ],
+    "opponentSpawn": [
+      4.5,
+      0,
+      0
+    ],
+    "carouselCenter": [
+      4.5,
+      3,
+      0
+    ],
+    "arenaBounds": [
+      -7.5,
+      -5.5,
+      16.5,
+      11.5
+    ],
+    "lighting": "cursed",
+    "ambientVfx": "sukuna_domain",
+    "music": "minecraft:music.game",
+    "lootAnchors": [
+      [
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
+        0
+      ]
+    ],
+    "combatStartVfx": "svarcade:combat_start",
+    "victoryVfx": "svarcade:victory",
+    "defeatVfx": "svarcade:defeat",
+    "interactionRegions": [],
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          4.5,
+          13,
+          10.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "preparation": {
+        "position": [
+          4.5,
+          13,
+          10.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          8,
+          11.8,
+          8.8
+        ],
+        "target": [
+          4.1,
+          2.5,
+          0.2
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          10.2,
+          11.6,
+          8.8
+        ],
+        "target": [
+          4,
+          2.5,
+          0.12
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16.5,
+          15.5
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          11.8,
+          8.8
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 39,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.2,
+          7.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 36,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          11.8,
+          8.9
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.2,
+          12.3,
+          9.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          4.5,
+          15.2,
+          13
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          4.5,
+          13,
+          10.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      }
+    },
+    "logicalBoardBounds": [
+      -0.75,
+      -0.425,
+      9.75,
+      6.375
+    ],
+    "battlefieldBounds": [
+      -1.68,
+      -1.02,
+      10.68,
+      6.97
+    ],
+    "environmentBounds": [
+      -7.5,
+      -5.5,
+      16.5,
+      11.5
+    ],
+    "camera": {
+      "spectator": [
+        4.5,
+        13.8,
+        12
+      ],
+      "scouting": [
+        7.5,
+        11.8,
+        9.8
+      ],
+      "carousel": [
+        4.5,
+        16.5,
+        14.8
+      ]
+    }
+  },
+  "geometry": [
+    {
+      "id": "signature-shrine-foundation",
+      "material": "minecraft:polished_blackstone_bricks",
+      "position": [
+        4.5,
+        -2.95,
+        0.198
+      ],
+      "size": [
+        10.4,
+        2.8,
+        0.576
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-stair-low",
+      "material": "minecraft:blackstone",
+      "position": [
+        4.5,
+        -2.1,
+        0.0648
+      ],
+      "size": [
+        7.8,
+        1.1,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-stair-high",
+      "material": "minecraft:red_nether_bricks",
+      "position": [
+        4.5,
+        -2.3,
+        0.162
+      ],
+      "size": [
+        6.2,
+        0.9,
+        0.216
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-core",
+      "material": "minecraft:nether_bricks",
+      "position": [
+        4.5,
+        -2.55,
+        0.54
+      ],
+      "size": [
+        5.2,
+        1.8,
+        1.656
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-roof-lower",
+      "material": "minecraft:red_nether_bricks",
+      "position": [
+        4.5,
+        -2.55,
+        1.422
+      ],
+      "size": [
+        7.1,
+        2.2,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-roof-upper",
+      "material": "minecraft:nether_bricks",
+      "position": [
+        4.5,
+        -2.55,
+        1.692
+      ],
+      "size": [
+        5.5,
+        1.8,
+        0.162
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-spire-left",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        2.2,
+        -2.65,
+        1.08
+      ],
+      "size": [
+        0.55,
+        0.55,
+        1.656
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-spire-right",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        6.8,
+        -2.65,
+        1.08
+      ],
+      "size": [
+        0.55,
+        0.55,
+        1.656
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-mouth",
+      "material": "minecraft:black_concrete",
+      "position": [
+        4.5,
+        -1.75,
+        0.522
+      ],
+      "size": [
+        2.2,
+        0.35,
+        0.864
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-fang-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        3.7,
+        -1.67,
+        0.342
+      ],
+      "size": [
+        0.38,
+        0.38,
+        0.828
+      ],
+      "rotation": [
+        0,
+        0,
+        -18
+      ]
+    },
+    {
+      "id": "signature-shrine-fang-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        5.3,
+        -1.67,
+        0.342
+      ],
+      "size": [
+        0.38,
+        0.38,
+        0.828
+      ],
+      "rotation": [
+        0,
+        0,
+        18
+      ]
+    },
+    {
+      "id": "domain-torii-left-post",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        -3.7,
+        2.3,
+        2.8
+      ],
+      "size": [
+        0.8,
+        0.8,
+        5.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-torii-right-post",
+      "material": "minecraft:crimson_hyphae",
+      "position": [
+        12.7,
+        2.3,
+        2.8
+      ],
+      "size": [
+        0.8,
+        0.8,
+        5.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-torii-crossbar",
+      "material": "minecraft:nether_bricks",
+      "position": [
+        4.5,
+        -1.3,
+        2.052
+      ],
+      "size": [
+        16.4,
+        0.55,
+        0.234
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-rib-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        -4.5,
+        7.8,
+        2.6
+      ],
+      "size": [
+        0.9,
+        1,
+        5.2
+      ],
+      "rotation": [
+        0,
+        10,
+        -10
+      ]
+    },
+    {
+      "id": "domain-rib-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        13.5,
+        7.6,
+        2.6
+      ],
+      "size": [
+        0.9,
+        1,
+        5.2
+      ],
+      "rotation": [
+        0,
+        -10,
+        10
+      ]
+    },
+    {
+      "id": "domain-skull-left",
+      "material": "minecraft:quartz_block",
+      "position": [
+        -3.5,
+        8.2,
+        2.3
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-skull-right",
+      "material": "minecraft:quartz_block",
+      "position": [
+        12.4,
+        8,
+        2.3
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "domain-blood-moat",
+      "material": "minecraft:redstone_block",
+      "position": [
+        4.5,
+        -5.15,
+        -0.054
+      ],
+      "size": [
+        15,
+        1.5,
+        0.108
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-eave-left",
+      "material": "minecraft:red_nether_bricks",
+      "position": [
+        2.55,
+        -2.5,
+        1.53
+      ],
+      "size": [
+        3.5,
+        1.95,
+        0.1224
+      ],
+      "rotation": [
+        0,
+        0,
+        -7
+      ]
+    },
+    {
+      "id": "signature-shrine-eave-right",
+      "material": "minecraft:red_nether_bricks",
+      "position": [
+        6.45,
+        -2.5,
+        1.53
+      ],
+      "size": [
+        3.5,
+        1.95,
+        0.1224
+      ],
+      "rotation": [
+        0,
+        0,
+        7
+      ]
+    },
+    {
+      "id": "signature-shrine-ridge",
+      "material": "minecraft:polished_blackstone_bricks",
+      "position": [
+        4.5,
+        -2.57,
+        1.8072
+      ],
+      "size": [
+        4.1,
+        0.55,
+        0.1368
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "signature-shrine-horn-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        2.15,
+        -2.35,
+        1.854
+      ],
+      "size": [
+        0.28,
+        0.28,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        -22
+      ]
+    },
+    {
+      "id": "signature-shrine-horn-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        6.85,
+        -2.35,
+        1.854
+      ],
+      "size": [
+        0.28,
+        0.28,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        22
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-core",
+      "material": "#1A0909",
+      "position": [
+        -2.52,
+        6,
+        -0.08
+      ],
+      "size": [
+        1.35,
+        1.15,
+        0.16
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-front",
+      "material": "#5B1717",
+      "position": [
+        -2.52,
+        5.3,
+        -0.1
+      ],
+      "size": [
+        0.82,
+        0.45,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-left",
+      "material": "#2B0C0C",
+      "position": [
+        -3.15,
+        6.08,
+        -0.1
+      ],
+      "size": [
+        0.45,
+        0.82,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        -16
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-right",
+      "material": "#7A2222",
+      "position": [
+        -1.9,
+        5.95,
+        -0.1
+      ],
+      "size": [
+        0.45,
+        0.78,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        18
+      ]
+    },
+    {
+      "id": "tactician-domain-perch-rear",
+      "material": "#3A0F0F",
+      "position": [
+        -2.48,
+        6.6,
+        -0.1
+      ],
+      "size": [
+        0.76,
+        0.42,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-domain-fang-left",
+      "material": "minecraft:bone_block",
+      "position": [
+        -3.02,
+        6.45,
+        0.65
+      ],
+      "size": [
+        0.24,
+        0.24,
+        1.45
+      ],
+      "rotation": [
+        0,
+        0,
+        -18
+      ]
+    },
+    {
+      "id": "tactician-domain-fang-right",
+      "material": "minecraft:bone_block",
+      "position": [
+        -2.02,
+        6.4,
+        0.6
+      ],
+      "size": [
+        0.22,
+        0.22,
+        1.35
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ]
+    }
+  ]
+}

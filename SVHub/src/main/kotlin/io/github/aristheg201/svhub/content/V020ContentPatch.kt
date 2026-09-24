@@ -18,7 +18,7 @@ object V020ContentPatch {
             modulePage("gacha","gacha","Gacha CS:GO","Server rolls first, client animates after.","gacha","Pity lives in SVHub; winning skin is granted through SkiesSkinsAPI."),
             modulePage("skin_showcase","skins/showcase","Skin Showcase","SkiesSkins is the authoritative backend.","skins","658 SVHub skin definitions are read from SkiesSkins. Buy/apply/remove persist through SkiesSkins."),
             modulePage("native_arcade","arcade","SV Arcade","Seven server-authoritative game engines.","arcade","Pokémon Chess • Cờ Tướng • Cờ Cá Ngựa • UNO • PokéDraft • Pokémon TFT • Tower Defense."),
-            modulePage("native_wallet","wallet","Arcade Wallet","Only SVHub-native gameplay currencies live here.","wallet","Arcade Token + Gacha Ticket. HunterCoin/BeastCoin remain under SkiesSkins/BECONOMY."),
+            modulePage("native_wallet","wallet","Arcade Wallet","Only SVHub-native gameplay currencies live here.","wallet",ServerHelpText.get("V020ContentPatch_30")),
             modulePage("companions","companions","Linh Thú","Vanilla companion controller.","companions","Allay, Axolotl, Bee, Cat, Fox, Frog, Parrot, Rabbit, Wolf, Armadillo, Sniffer."),
             HubPage(MARKER,"system/v020","system",LocalizedText.of("SVHub 0.2"),theme=theme.id,showInNavigation=false,components=listOf(component("v020_marker","text","text" to "SVHub 0.2 native platform + SkiesSkins backend installed.")))
         )

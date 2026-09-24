@@ -33,11 +33,12 @@ object SVHub : ModInitializer {
         SVHubApi.registerServerActionType("companion_select") { player, action -> VanillaCompanionService.select(player, action.value) }
         SVHubApi.registerServerActionType("native_open") { player, action -> NativePlatform.open(player, action.value) }
         val configRoot = FabricLoader.getInstance().configDir.resolve(MOD_ID)
+        io.github.aristheg201.svhub.content.ServerHelpText.start(configRoot.resolve("server-help.json"))
         SVHubRuntime.store = HubStore(configRoot)
         VanillaCompanionService.start(configRoot.resolve("companions.json"))
         NativePlatform.start(configRoot.resolve("native"))
         PokemonRuntimeInfoService.start()
-        SVHubNetwork.registerCommon(); NativePlatformNetwork.registerCommon(); SVHubCommands.register(); NativeCommands.register(); TftCommands.register()
+        SVHubNetwork.registerCommon(); NativePlatformNetwork.registerCommon(); SVHubCommands.register(); NativeCommands.register(); io.github.aristheg201.svhub.command.ArcadeCommands.register(); TftCommands.register()
         ServerTickEvents.END_SERVER_TICK.register(VanillaCompanionService::tick); ServerTickEvents.END_SERVER_TICK.register(NativePlatform::tick)
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             SVHubRuntime.server = server
@@ -52,6 +53,7 @@ object SVHub : ModInitializer {
                 SVHubRuntime.store.commitAsync(snapshot.revision,candidate).whenComplete{result,patchError->server.execute{if(patchError!=null)LOGGER.error("SVHub native content upgrade failed",patchError)else if(!result.ok)LOGGER.error("SVHub native content upgrade rejected: {}",result.message)else LOGGER.info("SVHub native platform installed at revision {}",result.revision);SVHubNetwork.broadcastHello();SVHubNetwork.broadcastPlayerSnapshots()}}
             }}
         }
+        io.github.aristheg201.svhub.native.InternalArcadeAcceptance.register()
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register { _, _, success -> if (success) PokemonRuntimeInfoService.invalidate() }
         ServerLifecycleEvents.SERVER_STOPPING.register { server -> VanillaCompanionService.shutdown(server); NativePlatform.shutdown(); PokemonRuntimeInfoService.shutdown(); SVHubRuntime.server=null; SVHubRuntime.store.close() }
         ServerPlayConnectionEvents.JOIN.register { handler,_,_->SVHubNetwork.onJoin(handler.player);VanillaCompanionService.onJoin(handler.player);NativePlatform.onJoin(handler.player) }

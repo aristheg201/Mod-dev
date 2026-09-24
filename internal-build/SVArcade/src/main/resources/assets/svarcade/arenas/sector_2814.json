@@ -1,0 +1,542 @@
+{
+    "style":  "emerald_sector",
+    "surface":  "tactical",
+    "depth":  3,
+    "detailEvery":  0,
+    "pathDetailEvery":  0,
+    "floor":  [
+                  "minecraft:polished_deepslate"
+              ],
+    "floorAlt":  [
+                     "minecraft:dark_prismarine"
+                 ],
+    "ally":  [
+
+             ],
+    "enemy":  [
+
+              ],
+    "path":  [
+
+             ],
+    "floorColor":  "#214c3d",
+    "floorAltColor":  "#295b48",
+    "allyColor":  "#153d32",
+    "enemyColor":  "#287b5c",
+    "pathColor":  "#756e5f",
+    "pathAccentColor":  "#b2a887",
+    "gridColor":  "#80a08e",
+    "borderColor":  "#80e9ad",
+    "edgeColor":  "#172019",
+    "depthColor":  "#102c30",
+    "props":  [
+
+              ],
+    "metadata":  {
+                     "boardColumns":  7,
+                     "boardRows":  8,
+                     "benchSlots":  9,
+                     "tacticianRegion":  [11.219999999999999, 5.27, 12.059999999999999, 6.63],
+                     "camera":  {
+                                    "spectator":  [5, 20, 18],
+                                    "scouting":  [1, 18, 14],
+                                    "carousel":  [3, 19, 23]
+                                },
+                     "lighting":  "themed",
+                     "ambientVfx":  "emerald_sector",
+                     "music":  "minecraft:music.game",
+                     "boardOrigin":  [0, 0, 0],
+                     "boardAnchors":  [
+                                          [0, 0, 0],
+                                          [1.5, 0, 0],
+                                          [3, 0, 0],
+                                          [4.5, 0, 0],
+                                          [6, 0, 0],
+                                          [7.5, 0, 0],
+                                          [9, 0, 0],
+                                          [0, 0.85, 0],
+                                          [1.5, 0.85, 0],
+                                          [3, 0.85, 0],
+                                          [4.5, 0.85, 0],
+                                          [6, 0.85, 0],
+                                          [7.5, 0.85, 0],
+                                          [9, 0.85, 0],
+                                          [0, 1.7, 0],
+                                          [1.5, 1.7, 0],
+                                          [3, 1.7, 0],
+                                          [4.5, 1.7, 0],
+                                          [6, 1.7, 0],
+                                          [7.5, 1.7, 0],
+                                          [9, 1.7, 0],
+                                          [0, 2.55, 0],
+                                          [1.5, 2.55, 0],
+                                          [3, 2.55, 0],
+                                          [4.5, 2.55, 0],
+                                          [6, 2.55, 0],
+                                          [7.5, 2.55, 0],
+                                          [9, 2.55, 0],
+                                          [0, 3.4, 0],
+                                          [1.5, 3.4, 0],
+                                          [3, 3.4, 0],
+                                          [4.5, 3.4, 0],
+                                          [6, 3.4, 0],
+                                          [7.5, 3.4, 0],
+                                          [9, 3.4, 0],
+                                          [0, 4.25, 0],
+                                          [1.5, 4.25, 0],
+                                          [3, 4.25, 0],
+                                          [4.5, 4.25, 0],
+                                          [6, 4.25, 0],
+                                          [7.5, 4.25, 0],
+                                          [9, 4.25, 0],
+                                          [0, 5.1, 0],
+                                          [1.5, 5.1, 0],
+                                          [3, 5.1, 0],
+                                          [4.5, 5.1, 0],
+                                          [6, 5.1, 0],
+                                          [7.5, 5.1, 0],
+                                          [9, 5.1, 0],
+                                          [0, 5.95, 0],
+                                          [1.5, 5.95, 0],
+                                          [3, 5.95, 0],
+                                          [4.5, 5.95, 0],
+                                          [6, 5.95, 0],
+                                          [7.5, 5.95, 0],
+                                          [9, 5.95, 0]
+                                      ],
+                     "benchAnchors":  [
+                                          [0.036, 7.6925, 0.045],
+                                          [1.152, 7.6712, 0.045],
+                                          [2.268, 7.65, 0.045],
+                                          [3.384, 7.6287, 0.045],
+                                          [4.5, 7.6075, 0.045],
+                                          [5.616, 7.6287, 0.045],
+                                          [6.732, 7.65, 0.045],
+                                          [7.848, 7.6712, 0.045],
+                                          [8.964, 7.6925, 0.045]
+                                      ],
+                     "itemBenchAnchors":  [
+                                              [0.036, 8.245, 0.15],
+                                              [1.152, 8.245, 0.15],
+                                              [2.268, 8.245, 0.15],
+                                              [3.384, 8.245, 0.15],
+                                              [4.5, 8.245, 0.15],
+                                              [5.616, 8.245, 0.15],
+                                              [6.732, 8.245, 0.15],
+                                              [7.848, 8.245, 0.15],
+                                              [8.964, 8.245, 0.15]
+                                          ],
+                     "tacticianSpawn":  [11.639999999999999, 5.95, 0],
+                     "humanSpawn":  [4.5, 5.95, 0],
+                     "opponentSpawn":  [4.5, 0, 0],
+                     "carouselCenter":  [3, 4.2, 0],
+                     "arenaBounds":  [-8.4, -8.5, 18, 10.2],
+                     "lootAnchors":  [
+                                         [3.5, 4.0, 0]
+                                     ],
+                     "combatStartVfx":  "svarcade:combat_start",
+                     "victoryVfx":  "svarcade:victory",
+                     "defeatVfx":  "svarcade:defeat",
+                     "interactionRegions":  [
+
+                                            ],
+                     "cameraPresets":  {
+                                           "normal":  {
+                                                          "position":  [4.08, 12.75, 9.35],
+                                                          "fov":  42,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "preparation":  {
+                                                               "position":  [4.08, 12.75, 9.35],
+                                                               "fov":  42,
+                                                               "transitionMs":  650,
+                                                               "far":  100,
+                                                               "near":  0.1,
+                                                               "target":  [4.5, 2.295, 0.255]
+                                                           },
+                                           "combat":  {
+                                                          "position":  [4.08, 12.75, 9.9449999999999985],
+                                                          "fov":  42,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "scouting":  {
+                                                            "position":  [4.08, 12.75, 9.35],
+                                                            "fov":  42,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [4.5, 2.295, 0.255]
+                                                        },
+                                           "carousel":  {
+                                                            "position":  [3, 19, 23],
+                                                            "fov":  52,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 4.2, 0]
+                                                        },
+                                           "pve_intro":  {
+                                                             "position":  [4.08, 12.75, 9.35],
+                                                             "fov":  42,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [4.5, 2.295, 0.255]
+                                                         },
+                                           "boss_intro":  {
+                                                              "position":  [4.08, 12.75, 9.35],
+                                                              "fov":  39,
+                                                              "transitionMs":  650,
+                                                              "far":  100,
+                                                              "near":  0.1,
+                                                              "target":  [4.5, 2.295, 0.255]
+                                                          },
+                                           "victory":  {
+                                                           "position":  [4.919999999999999, 12.75, 9.35],
+                                                           "fov":  39,
+                                                           "transitionMs":  650,
+                                                           "far":  100,
+                                                           "near":  0.1,
+                                                           "target":  [4.5, 2.295, 0.255]
+                                                       },
+                                           "defeat":  {
+                                                          "position":  [3.48, 12.75, 9.35],
+                                                          "fov":  44,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "spectator":  {
+                                                             "position":  [4.08, 12.75, 10.37],
+                                                             "fov":  42,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [4.5, 2.295, 0.255]
+                                                         },
+                                           "arena_preview":  {
+                                                                 "position":  [4.08, 12.75, 9.35],
+                                                                 "fov":  42,
+                                                                 "transitionMs":  650,
+                                                                 "far":  100,
+                                                                 "near":  0.1,
+                                                                 "target":  [4.5, 2.295, 0.255]
+                                                             }
+                                       },
+                     "cellSize":  [1.5, 0.85, 1],
+                     "logicalBoardBounds":  [-0.75, -0.425, 9.75, 6.375],
+                     "battlefieldBounds":  [-1.68, -1.02, 10.68, 6.9699999999999989],
+                     "environmentBounds":  [-8.4, -8.5, 18, 10.2]
+                 },
+    "id":  "sector_2814",
+    "geometry":  [
+                     {
+                         "id":  "floating-core",
+                         "material":  "minecraft:deepslate_tiles",
+                         "position":  [
+                                          4.5,
+                                          2.8899999999999997,
+                                          "-.8"
+                                      ],
+                         "size":  [13.799999999999999, 8.84, 1.55],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin--2.2-0",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          -2.64,
+                                          0,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary--2.2-0",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [-2.64, 0, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin--2.2-1",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          -2.64,
+                                          1.87,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary--2.2-1",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [-2.64, 1.87, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin--2.2-2",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          -2.64,
+                                          3.74,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary--2.2-2",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [-2.64, 3.74, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin--2.2-3",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          -2.64,
+                                          5.61,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary--2.2-3",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [-2.64, 5.61, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin-9.7-0",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          11.639999999999999,
+                                          0,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary-9.7-0",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [11.639999999999999, 0, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin-9.7-1",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          11.639999999999999,
+                                          1.87,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary-9.7-1",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [11.639999999999999, 1.87, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin-9.7-2",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          11.639999999999999,
+                                          3.74,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary-9.7-2",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [11.639999999999999, 3.74, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "segmented-fin-9.7-3",
+                         "material":  "minecraft:oxidized_cut_copper",
+                         "position":  [
+                                          11.639999999999999,
+                                          5.61,
+                                          "-.3"
+                                      ],
+                         "size":  [1.32, 1.53, 0.6],
+                         "rotation":  [0, 0, 15]
+                     },
+                     {
+                         "id":  "energy-boundary-9.7-3",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [11.639999999999999, 5.61, 0.12],
+                         "size":  [0.36, 1.275, 0.24],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "portal-pillar-1.4",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          1.68,
+                                          "-2.3",
+                                          1.65
+                                      ],
+                         "size":  [0.89999999999999991, 0.6375, 3.3],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "portal-pillar-6.1",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          7.3199999999999994,
+                                          "-2.3",
+                                          1.65
+                                      ],
+                         "size":  [0.89999999999999991, 0.6375, 3.3],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "portal-crown",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [
+                                          4.5,
+                                          "-2.3",
+                                          3.3
+                                      ],
+                         "size":  [6.54, 0.6375, 0.55],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "pilot-platform",
+                         "material":  "minecraft:oxidized_copper",
+                         "position":  [
+                                          11.639999999999999,
+                                          5.95,
+                                          "-.25"
+                                      ],
+                         "size":  [1.7999999999999998, 2.125, 0.5],
+                         "rotation":  [0, 0, 12]
+                     },
+                     {
+                         "id":  "bench-pod-0",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          0.036,
+                                          7.692499999999999,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-1",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          1.152,
+                                          7.6712499999999988,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-2",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          2.268,
+                                          7.6499999999999995,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-3",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          3.384,
+                                          7.6287499999999993,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-4",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          4.5,
+                                          7.607499999999999,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-5",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          5.616,
+                                          7.6287499999999993,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-6",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          6.732,
+                                          7.6499999999999995,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-7",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          7.848,
+                                          7.6712499999999988,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "bench-pod-8",
+                         "material":  "minecraft:dark_prismarine",
+                         "position":  [
+                                          8.9639999999999986,
+                                          7.692499999999999,
+                                          "-.3"
+                                      ],
+                         "size":  [1.008, 0.8075, 0.6],
+                         "rotation":  [0, 0, 0]
+                     }
+                 ],
+    "texturedBattlefield":  true,
+    "benchMaterial":  "minecraft:oxidized_cut_copper",
+    "backgroundColor":  "#092934"
+}

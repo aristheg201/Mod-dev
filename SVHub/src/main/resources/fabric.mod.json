@@ -39,5 +39,8 @@
       "config": "svhub.client.mixins.json",
       "environment": "client"
     }
-  ]
+  ],
+  "breaks": {
+    "svarcade": "*"
+  }
 }

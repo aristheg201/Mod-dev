@@ -1,0 +1,499 @@
+[
+  {
+    "id": "svarcade:kanto_vanguard",
+    "name": "Kanto Vanguard",
+    "synergyTrait": "kanto",
+    "members": [
+      {
+        "unit": "snorlax",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "venusaur",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "charizard",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "blastoise",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "pikachu",
+        "slot": 23,
+        "star": 2
+      },
+      {
+        "unit": "mewtwo",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [
+      {
+        "unit": "eevee",
+        "star": 1
+      },
+      {
+        "unit": "gengar",
+        "star": 1
+      }
+    ],
+    "tactician": "svarcade:allay",
+    "startingLevel": 6,
+    "startingGold": 20,
+    "startingHealth": 100,
+    "aiProfile": "normal"
+  },
+  {
+    "id": "svarcade:monsterverse",
+    "name": "MonsterVerse",
+    "synergyTrait": "monsterverse",
+    "members": [
+      {
+        "unit": "mv_godzilla",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "mv_kong",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "mv_rodan",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "mv_mothra",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "mv_ghidorah",
+        "slot": 23,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svarcade:sniffer",
+    "arena": "svarcade:monster_island",
+    "startingLevel": 7,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:dc_universe",
+    "name": "DC Universe",
+    "synergyTrait": "dc_universe",
+    "members": [
+      {
+        "unit": "dc_superman",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "dc_nightwing",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "dc_robin",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "dc_red_hood",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "dc_batman",
+        "slot": 22,
+        "star": 1
+      },
+      {
+        "unit": "dc_joker",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svarcade:allay",
+    "arena": "svarcade:gotham_rooftops",
+    "startingLevel": 7,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:green_lantern_corps",
+    "name": "Green Lantern Corps",
+    "synergyTrait": "green_lantern",
+    "members": [
+      {
+        "unit": "gl_mewtwo_x",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "gl_mewtwo",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "gl_mewtwo_y",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svarcade:allay",
+    "arena": "svarcade:sector_2814",
+    "startingLevel": 5,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:than_tai",
+    "name": "Thần Tài",
+    "synergyTrait": "fortune",
+    "members": [
+      {
+        "unit": "fortune_greedent",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "fortune_persian",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "fortune_meowth",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "fortune_pikachu",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "fortune_chiyu",
+        "slot": 23,
+        "star": 1
+      },
+      {
+        "unit": "fortune_gholdengo",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "tactician": "svarcade:cat",
+    "arena": "svarcade:celestial_vault",
+    "startingLevel": 7,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:one_piece",
+    "name": "One Piece",
+    "synergyTrait": "straw_hat",
+    "members": [
+      {
+        "unit": "op_jinbe",
+        "slot": 7,
+        "star": 1
+      },
+      {
+        "unit": "op_franky",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "op_sanji",
+        "slot": 11,
+        "star": 1
+      },
+      {
+        "unit": "op_luffy",
+        "slot": 14,
+        "star": 1
+      },
+      {
+        "unit": "op_zoro",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "op_chopper",
+        "slot": 18,
+        "star": 1
+      },
+      {
+        "unit": "op_nami",
+        "slot": 21,
+        "star": 1
+      },
+      {
+        "unit": "op_robin",
+        "slot": 22,
+        "star": 1
+      },
+      {
+        "unit": "op_usopp",
+        "slot": 23,
+        "star": 1
+      },
+      {
+        "unit": "op_brook",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [
+      {
+        "unit": "op_sunny",
+        "star": 1
+      }
+    ],
+    "tactician": "svarcade:parrot",
+    "arena": "svarcade:grand_line",
+    "startingLevel": 10,
+    "startingGold": 30,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:creation_trio",
+    "name": "Creation Trio",
+    "synergyTrait": "creation",
+    "members": [
+      {
+        "unit": "giratina",
+        "slot": 3,
+        "star": 1,
+        "items": []
+      },
+      {
+        "unit": "dialga",
+        "slot": 17,
+        "star": 1,
+        "items": []
+      },
+      {
+        "unit": "palkia",
+        "slot": 24,
+        "star": 1,
+        "items": []
+      }
+    ],
+    "bench": [],
+    "augments": [],
+    "arena": "svarcade:distortion_rift",
+    "startingLevel": 3,
+    "startingGold": 0,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:glass_cannon",
+    "name": "Glass Cannon",
+    "synergyTrait": "glass_cannon",
+    "members": [
+      {
+        "unit": "risk_deoxys_attack",
+        "slot": 8,
+        "star": 1
+      },
+      {
+        "unit": "risk_pheromosa",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "risk_chien_pao",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "risk_kartana",
+        "slot": 18,
+        "star": 1
+      },
+      {
+        "unit": "risk_mega_beedrill",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svarcade:crimson_caldera",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:blood_pact",
+    "name": "Blood Pact",
+    "synergyTrait": "blood_pact",
+    "members": [
+      {
+        "unit": "risk_guzzlord",
+        "slot": 8,
+        "star": 1
+      },
+      {
+        "unit": "risk_annihilape",
+        "slot": 11,
+        "star": 1
+      },
+      {
+        "unit": "risk_basculegion",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "risk_yveltal",
+        "slot": 22,
+        "star": 1
+      },
+      {
+        "unit": "risk_ursaluna_bloodmoon",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svarcade:abyssal_sanctum",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:void_contract",
+    "name": "Void Contract",
+    "synergyTrait": "void_contract",
+    "members": [
+      {
+        "unit": "risk_darkrai",
+        "slot": 9,
+        "star": 1
+      },
+      {
+        "unit": "risk_necrozma",
+        "slot": 12,
+        "star": 1
+      },
+      {
+        "unit": "risk_eternatus",
+        "slot": 17,
+        "star": 1
+      },
+      {
+        "unit": "risk_mega_alakazam",
+        "slot": 19,
+        "star": 1
+      },
+      {
+        "unit": "risk_mega_gengar",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svarcade:temporal_observatory",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:wild_gambit",
+    "name": "Wild Gambit",
+    "synergyTrait": "wild_gambit",
+    "members": [
+      {
+        "unit": "risk_togekiss",
+        "slot": 7,
+        "star": 1
+      },
+      {
+        "unit": "risk_darmanitan",
+        "slot": 10,
+        "star": 1
+      },
+      {
+        "unit": "risk_hawlucha",
+        "slot": 16,
+        "star": 1
+      },
+      {
+        "unit": "risk_zoroark",
+        "slot": 19,
+        "star": 1
+      },
+      {
+        "unit": "risk_dragonite",
+        "slot": 24,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svarcade:monster_island",
+    "startingLevel": 7,
+    "startingGold": 25,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:summon_spirit",
+    "name": "Summon Spirit",
+    "synergyTrait": "summon_spirit",
+    "members": [
+      {
+        "unit": "regiraga",
+        "slot": 17,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svarcade:ancient_ruins",
+    "startingLevel": 4,
+    "startingGold": 10,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  },
+  {
+    "id": "svarcade:hoopa",
+    "name": "Hoopa",
+    "synergyTrait": "hoopa_domain",
+    "members": [
+      {
+        "unit": "hoopa_sukuna",
+        "slot": 17,
+        "star": 1
+      }
+    ],
+    "bench": [],
+    "arena": "svarcade:distortion_rift",
+    "startingLevel": 3,
+    "startingGold": 10,
+    "startingHealth": 100,
+    "aiProfile": "hard"
+  }
+]

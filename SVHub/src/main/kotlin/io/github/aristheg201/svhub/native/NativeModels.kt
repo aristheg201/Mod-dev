@@ -22,7 +22,6 @@ object NativeSkinCatalog {
     fun page(page: Int, pageSize: Int, source: String? = null): Pair<List<NativeSkin>, Int> {
         val filtered = when (source) {
             null, "", "all" -> all
-            "hunter" -> all.filter { it.currency == "huntercoin" }
             else -> all.filter { it.source == source }
         }
         val size = pageSize.coerceIn(8, 32)
@@ -32,10 +31,11 @@ object NativeSkinCatalog {
     }
 }
 
-data class NativeGameStats(var played: Int = 0, var wins: Int = 0, var losses: Int = 0, var draws: Int = 0)
+data class NativeGameStats(var played: Int = 0, var wins: Int = 0, var losses: Int = 0, var draws: Int = 0, var rankedPlayed: Int = 0, var rating: Int = 0, var history: MutableList<String> = mutableListOf())
 
 data class NativeProfile(
     var schema: Int = 4,
+    var displayName: String = "",
     var revision: Long = 0L,
     var arcadeTokens: Long = 0L,
     var gachaTickets: Int = 0,

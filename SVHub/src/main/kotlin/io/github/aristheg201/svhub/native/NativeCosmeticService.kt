@@ -30,6 +30,7 @@ object NativeCosmeticService {
         SVHub.LOGGER.error("Cosmetic economy operation requires recovery for {}", id, error)
     }
     fun start(path: Path) {
+        EconomyConfig.start(path.resolveSibling("economy.json"))
         val defaults = requireNotNull(javaClass.getResourceAsStream("/data/svhub/cosmetic_store.json"))
             .bufferedReader().use { JsonParser.parseString(it.readText()).asJsonArray }
         val existing = if (Files.exists(path)) {
@@ -47,7 +48,7 @@ object NativeCosmeticService {
             val id = value.get("id").asString
             require(if (kind == CosmeticKind.ARENA) id in set.rules.arenas &&
                 javaClass.getResource("/assets/svhub/arenas/$id.json") != null else set.tacticians.any { it.id == id }) { "Unknown cosmetic $kind:$id" }
-            val currency = value.get("currency")?.asString ?: if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
+            val currency = value.get("currency")?.asString ?: EconomyConfig.defaultCurrency(kind.name)
             CosmeticOffer(kind, id, value.get("price").asString.toBigDecimal(), currency)
         }
         require(offers.map { it.key }.distinct().size == offers.size) { "Duplicate cosmetic catalog keys" }
@@ -75,15 +76,15 @@ object NativeCosmeticService {
         val status = economy.status()
         when {
             status.ready -> SVHub.LOGGER.info(
-                "BEconomy integration ready via {} (BeastCoin={}, HunterCoin={})",
-                status.providerClass, status.beastCoin, status.hunterCoin
+                "Economy integration ready via {} ({})",
+                status.providerClass, status.detail
             )
             status.available -> SVHub.LOGGER.error(
                 "BEconomy provider {} resolved but required currencies are not ready: {}",
                 status.providerClass, status.detail
             )
             else -> SVHub.LOGGER.warn(
-                "BEconomy integration unavailable; paid cosmetics and BeastCoin rewards stay disabled until the provider is ready: {}",
+                "BEconomy integration unavailable; paid cosmetics and configured rewards stay disabled until the provider is ready: {}",
                 status.detail
             )
         }
@@ -108,7 +109,7 @@ object NativeCosmeticService {
         val kind = runCatching { CosmeticKind.valueOf(data.string("kind")) }.getOrNull() ?: return "gui.svhub.store.invalid"
         val id = data.string("id")
         val currency = offers.firstOrNull { it.kind == kind && it.id == id }?.currency
-            ?: if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
+            ?: EconomyConfig.defaultCurrency(kind.name)
         val callback: (StoreResult) -> Unit = { result ->
             SVHubRuntime.server?.playerList?.getPlayer(player.uuid)?.let { live ->
                 if (NativePlatformNetwork.currentModule(live.uuid) == "store")
@@ -126,14 +127,14 @@ object NativeCosmeticService {
         StoreResult.PURCHASED -> if (kind == CosmeticKind.ARENA) "arena_unlocked" else "tactician_unlocked"
         StoreResult.OWNED -> "already_owned"
         StoreResult.EQUIPPED -> "equipped"
-        StoreResult.INSUFFICIENT -> if (currency == BEconomyAdapter.HUNTER) "not_enough_hunter" else "not_enough_beast"
+        StoreResult.INSUFFICIENT -> "insufficient"
         StoreResult.UNAVAILABLE -> "unavailable"
         StoreResult.PENDING -> "pending"
         StoreResult.GRANTED -> "complete"
         StoreResult.INVALID -> "invalid"
     }
     fun balances(player: UUID) = JsonObject().apply {
-        listOf(BEconomyAdapter.BEAST, BEconomyAdapter.HUNTER).forEach { currency ->
+        EconomyConfig.wallet(runCatching { economy.availableCurrencyTypes() }.getOrDefault(emptyList())).forEach { currency ->
             val value = runCatching { if (economy.currencyExists(currency)) economy.balance(player, currency).toPlainString() else null }.getOrNull()
             if (value != null) addProperty(currency, value)
         }
@@ -150,7 +151,7 @@ object NativeCosmeticService {
         add("offers", JsonArray().also { array -> offers.forEach { offer ->
             array.add(JsonObject().apply {
                 addProperty("id", offer.id); addProperty("kind", offer.kind.name)
-                addProperty("price", offer.price.toPlainString()); addProperty("currency", offer.currency)
+                addProperty("price", offer.price.toPlainString()); addProperty("currency", runCatching { economy.resolveCurrency(offer.currency) }.getOrDefault(offer.currency))
                 addProperty("currencyReady", offer.price.signum() == 0 || runCatching { economy.currencyExists(offer.currency) }.getOrDefault(false))
                 addProperty("owned", purchases.owns(player.uuid, offer))
                 addProperty("equipped", (if (offer.kind == CosmeticKind.ARENA) selectedArena(player.uuid) ?: TftSetRegistry.active().rules.defaultArena

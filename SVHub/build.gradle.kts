@@ -19,7 +19,7 @@ base.archivesName.set(providers.gradleProperty("mod_name").get())
 loom {
     splitEnvironmentSourceSets()
     if (System.getenv("SVHUB_VISUAL_SMOKE") == "1") {
-        runs.named("client") { programArgs("--width", "1280", "--height", "720") }
+        runs.named("client") { programArgs("--width", "1920", "--height", "1009") }
     }
     mods {
         create(modId) {

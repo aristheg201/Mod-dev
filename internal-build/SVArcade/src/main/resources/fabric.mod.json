@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "svarcade",
+  "version": "${version}",
+  "name": "SVArcade",
+  "description": "Responsive in-game hub with Arcade, Companion Arena, gacha, skins and Pokémon reference tools.",
+  "authors": [
+    "Aris"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.aristheg201.svarcade.SVArcadeEntrypoint"
+    ],
+    "client": [
+      "io.github.aristheg201.svarcade.client.SVArcadeClientEntrypoint",
+      "io.github.aristheg201.svarcade.client.nativeui.NativePlatformClientEntrypoint"
+    ]
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": "~1.21.1",
+    "fabricloader": ">=0.18.4",
+    "fabric-api": "*",
+    "fabric-language-kotlin": "*",
+    "cobblemon": ">=1.8.1",
+    "mega_showdown": ">=1.2.0"
+  },
+  "suggests": {
+    "fabric-permissions-api-v0": "*",
+    "skiesskins": ">=1.1.0",
+    "blanketeconomy": "*",
+    "beconomy": "*"
+  },
+  "icon": "assets/svarcade/icon.png",
+  "mixins": [
+    {
+      "config": "svarcade.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "breaks": {
+    "svhub": "*"
+  }
+}

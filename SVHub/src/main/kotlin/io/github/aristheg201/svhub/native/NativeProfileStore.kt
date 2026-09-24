@@ -23,6 +23,8 @@ object NativeProfileStore {
     private data class Waiter(val revision: Long, val result: DurableMutationResult, val callback: (DurableMutationResult) -> Unit)
 
     private val gson = GsonBuilder().disableHtmlEscaping().create()
+    private val rankIndex = ConcurrentHashMap<UUID, NativeProfile>()
+    fun leaderboard(game: String): List<Pair<String, Int>> = rankIndex.values.mapNotNull { p -> p.stats[game]?.takeIf { it.rankedPlayed > 0 }?.let { p.displayName to it.rating } }.sortedByDescending { it.second }.take(20)
     private val profiles = ConcurrentHashMap<UUID, NativeProfile>()
     private val loaded = ConcurrentHashMap.newKeySet<UUID>()
     private val offlineSince = ConcurrentHashMap<UUID, Long>()
@@ -44,6 +46,11 @@ object NativeProfileStore {
                 io = Executors.newSingleThreadExecutor { task -> Thread(task, "SVHub-NativeProfile-IO").apply { isDaemon = true; priority = Thread.NORM_PRIORITY - 1 } }
             }
         }
+        io?.execute {
+            Files.list(root).use { files -> files.filter { it.fileName.toString().endsWith(".json") }.forEach { file ->
+                runCatching { val id=UUID.fromString(file.fileName.toString().removeSuffix(".json"));rankIndex.putIfAbsent(id,load(id)) }
+            } }
+        }
     }
 
     fun onJoin(player: ServerPlayer, ready: (ServerPlayer) -> Unit) {
@@ -61,7 +68,9 @@ object NativeProfileStore {
                 server.execute {
                     val live = server.playerList.getPlayer(id)
                     if (live != null) {
+                        profile.displayName = live.gameProfile.name
                         profiles[id] = sanitize(profile)
+                        rankIndex[id] = snapshot(profile)
                         persistedRevision[id] = profile.revision
                         loaded += id
                         offlineSince.remove(id)
@@ -166,7 +175,7 @@ object NativeProfileStore {
         return runCatching {
             val o = gson.fromJson(Files.readString(path), JsonObject::class.java) ?: return@runCatching NativeProfile()
             val p = NativeProfile(
-                schema = 4,
+                schema = 4, displayName = o.get("displayName")?.asString ?: id.toString().take(8),
                 revision = o.number("revision"),
                 arcadeTokens = o.number("arcadeTokens"),
                 gachaTickets = o.number("gachaTickets").toInt(),
@@ -176,7 +185,7 @@ object NativeProfileStore {
             o.getAsJsonObject("pity")?.entrySet()?.forEach { (k, v) -> runCatching { v.asInt }.getOrNull()?.let { p.pity[k] = it } }
             o.getAsJsonObject("stats")?.entrySet()?.forEach { (k, v) ->
                 val st = runCatching { v.asJsonObject }.getOrNull() ?: return@forEach
-                p.stats[k] = NativeGameStats(st.int("played"), st.int("wins"), st.int("losses"), st.int("draws"))
+                p.stats[k] = NativeGameStats(st.int("played"), st.int("wins"), st.int("losses"), st.int("draws"), st.int("rankedPlayed"), st.int("rating"), st.getAsJsonArray("history")?.map { it.asString }?.take(20)?.toMutableList() ?: mutableListOf())
             }
             o.getAsJsonObject("appliedTransactions")?.entrySet()?.forEach { (k, v) ->
                 runCatching { v.asLong }.getOrNull()?.takeIf { it > 0L }?.let { p.appliedTransactions[k.take(160)] = it }
@@ -188,15 +197,16 @@ object NativeProfileStore {
     }
 
     private fun snapshot(p: NativeProfile) = NativeProfile(
-        schema = 4, revision = p.revision, arcadeTokens = p.arcadeTokens, gachaTickets = p.gachaTickets,
+        schema = 4, displayName = p.displayName, revision = p.revision, arcadeTokens = p.arcadeTokens, gachaTickets = p.gachaTickets,
         pity = p.pity.toMutableMap(),
-        stats = p.stats.mapValuesTo(linkedMapOf()) { (_, s) -> NativeGameStats(s.played, s.wins, s.losses, s.draws) },
+        stats = p.stats.mapValuesTo(linkedMapOf()) { (_, s) -> s.copy(history = (s.history ?: mutableListOf()).toMutableList()) },
         appliedTransactions = p.appliedTransactions.toMutableMap(),
         lastUpdatedEpochMs = p.lastUpdatedEpochMs, cosmetics = p.cosmetics.copyDeep()
     )
 
     private fun scheduleSave(id: UUID, profileSnapshot: NativeProfile) {
         if (closed.get()) return
+        rankIndex[id] = profileSnapshot
         latestSnapshots.compute(id) { _, old -> newest(old, profileSnapshot) }
         val retryAt = retryAfter[id]
         if (retryAt == null || System.currentTimeMillis() >= retryAt) queueWriter(id)
@@ -265,6 +275,7 @@ object NativeProfileStore {
         p.arcadeTokens = p.arcadeTokens.coerceIn(0, NativeProfile.MAX_BALANCE)
         p.gachaTickets = p.gachaTickets.coerceIn(0, 1_000_000)
         p.pity = p.pity.mapValuesTo(linkedMapOf()) { (_, v) -> v.coerceIn(0, 10_000) }
+        p.stats.values.forEach { if (it.history == null) it.history = mutableListOf() }
         trimTransactions(p)
         return p
     }

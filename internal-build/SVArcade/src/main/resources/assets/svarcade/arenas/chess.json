@@ -1,0 +1,200 @@
+{
+  "style": "stone_table",
+  "surface": "checker",
+  "depth": 7,
+  "detailEvery": 0,
+  "pathDetailEvery": 0,
+  "backgroundColor": "#0f1115",
+  "geometry": [
+    {
+      "id": "chess_plinth",
+      "position": [
+        3.5,
+        3.5,
+        -0.58
+      ],
+      "size": [
+        9.7,
+        9.7,
+        0.82
+      ],
+      "material": "#101318"
+    },
+    {
+      "id": "chess_frame_n",
+      "position": [
+        3.5,
+        -0.72,
+        0.1
+      ],
+      "size": [
+        9.35,
+        0.28,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "chess_frame_s",
+      "position": [
+        3.5,
+        7.72,
+        0.1
+      ],
+      "size": [
+        9.35,
+        0.28,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "chess_frame_w",
+      "position": [
+        -0.72,
+        3.5,
+        0.1
+      ],
+      "size": [
+        0.28,
+        8.7,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "chess_frame_e",
+      "position": [
+        7.72,
+        3.5,
+        0.1
+      ],
+      "size": [
+        0.28,
+        8.7,
+        0.26
+      ],
+      "material": "#9a8d72"
+    },
+    {
+      "id": "white_clock",
+      "position": [
+        3.5,
+        8.45,
+        0.22
+      ],
+      "size": [
+        2.5,
+        0.62,
+        0.42
+      ],
+      "material": "#e5ddc9"
+    },
+    {
+      "id": "black_clock",
+      "position": [
+        3.5,
+        -1.45,
+        0.22
+      ],
+      "size": [
+        2.5,
+        0.62,
+        0.42
+      ],
+      "material": "#252b31"
+    }
+  ],
+  "floor": [
+    "minecraft:smooth_quartz"
+  ],
+  "floorAlt": [
+    "minecraft:polished_blackstone"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#ded7c6",
+  "floorAltColor": "#24282d",
+  "allyColor": "#ded7c6",
+  "enemyColor": "#24282d",
+  "pathColor": "#6a6257",
+  "pathAccentColor": "#9f957d",
+  "gridColor": "#57534c",
+  "borderColor": "#6b665b",
+  "edgeColor": "#24211d",
+  "depthColor": "#171717",
+  "props": [
+    {
+      "item": "minecraft:lantern",
+      "x": -1.05,
+      "y": -0.35,
+      "scale": 0.9
+    },
+    {
+      "item": "minecraft:soul_lantern",
+      "x": 8.05,
+      "y": -0.35,
+      "scale": 0.9
+    },
+    {
+      "item": "minecraft:lantern",
+      "x": -1.05,
+      "y": 7.35,
+      "scale": 0.9
+    },
+    {
+      "item": "minecraft:soul_lantern",
+      "x": 8.05,
+      "y": 7.35,
+      "scale": 0.9
+    },
+    {
+      "item": "minecraft:chiseled_quartz_block",
+      "x": 3.5,
+      "y": -1.05,
+      "scale": 0.78
+    },
+    {
+      "item": "minecraft:chiseled_deepslate",
+      "x": 3.5,
+      "y": 8.05,
+      "scale": 0.78
+    }
+  ],
+  "metadata": {
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          3.5,
+          11.6,
+          10.4
+        ],
+        "target": [
+          3.5,
+          3.45,
+          0
+        ],
+        "fov": 43
+      }
+    },
+    "boardColumns": 8,
+    "boardRows": 8,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "cellSize": [
+      1,
+      1,
+      1
+    ],
+    "arenaBounds": [
+      -1,
+      -1,
+      8,
+      8
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+package io.github.aristheg201.svarcade.client.nativeui
+import io.github.aristheg201.svarcade.ui.SceneCameras
+import kotlin.test.*
+class ArenaRuntimeConsumptionTest {
+ @Test fun authoredAnchorsBoundsCamerasAndInteractionsDriveRuntime(){val a=MinecraftArenaDefinition(boardColumns=3,boardRows=2,boardOrigin=ArenaPoint(10f,20f),boardAnchors=listOf(ArenaPoint(7f,8f)),benchAnchors=listOf(ArenaPoint(3f,9f)),itemBenchAnchors=listOf(ArenaPoint(4f,10f)),tacticianMovementBounds=ArenaRegion(0f,0f,5f,5f),cameras=ArenaCameraSet(ArenaPoint(1f,2f,3f),ArenaPoint(2f,8f,9f),ArenaPoint(4f,10f,12f)),interactionRegions=listOf(ArenaInteractionRegion("shop",ArenaRegion(1f,1f,3f,3f),"buy")));assertEquals(ArenaPoint(7f,8f),a.boardAnchor(0));assertEquals(ArenaPoint(11f,20f),a.boardAnchor(1));assertEquals(ArenaPoint(3f,9f),a.benchAnchor(0));assertEquals(ArenaPoint(4f,10f),a.itemAnchor(0));assertEquals(ArenaPoint(5f,5f),a.tacticianMovementBounds.clamp(ArenaPoint(99f,99f)));assertNotEquals(a.camera(ArenaCameraRole.SCOUTING,SceneCameras.TFT),a.camera(ArenaCameraRole.CAROUSEL,SceneCameras.TFT));assertEquals("buy",a.interactionAt(2f,2f)?.action)}
+ @Test fun distinctArenasDoNotLeakRuntimeState(){val first=MinecraftArenaDefinition(boardOrigin=ArenaPoint(1f,2f));val second=MinecraftArenaDefinition(boardOrigin=ArenaPoint(20f,30f));assertNotEquals(first.boardAnchor(0),second.boardAnchor(0));assertEquals(ArenaPoint(1f,2f),first.boardAnchor(0))}
+}

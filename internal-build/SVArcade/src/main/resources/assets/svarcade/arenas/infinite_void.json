@@ -1,0 +1,2995 @@
+{
+  "id": "infinite_void",
+  "style": "infinite_void",
+  "surface": "tactical",
+  "depth": 5,
+  "detailEvery": 3,
+  "pathDetailEvery": 0,
+  "texturedBattlefield": true,
+  "floor": [
+    "minecraft:black_concrete"
+  ],
+  "floorAlt": [
+    "minecraft:crying_obsidian"
+  ],
+  "ally": [],
+  "enemy": [],
+  "path": [],
+  "floorColor": "#111018",
+  "floorAltColor": "#1b1428",
+  "allyColor": "#252343",
+  "enemyColor": "#3a203f",
+  "pathColor": "#17131f",
+  "pathAccentColor": "#b58cff",
+  "gridColor": "#5e4b7b",
+  "borderColor": "#6e5795",
+  "edgeColor": "#050507",
+  "depthColor": "#09070d",
+  "backgroundColor": "#000000",
+  "benchMaterial": "minecraft:obsidian",
+  "props": [
+    {
+      "item": "minecraft:end_crystal",
+      "x": -3.15,
+      "y": 8.35,
+      "z": 0.45,
+      "scale": 0.68,
+      "blockModel": false
+    },
+    {
+      "item": "minecraft:end_crystal",
+      "x": 12.2,
+      "y": 8.15,
+      "z": 0.4,
+      "scale": 0.62,
+      "blockModel": false
+    },
+    {
+      "item": "minecraft:amethyst_shard",
+      "x": 11.8,
+      "y": 6.85,
+      "z": 1.1,
+      "scale": 0.82,
+      "yaw": 18,
+      "pitch": -12,
+      "blockModel": false
+    }
+  ],
+  "metadata": {
+    "boardColumns": 7,
+    "boardRows": 8,
+    "benchSlots": 9,
+    "boardOrigin": [
+      0,
+      0,
+      0
+    ],
+    "boardAnchors": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1.5,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0
+      ],
+      [
+        4.5,
+        0,
+        0
+      ],
+      [
+        6,
+        0,
+        0
+      ],
+      [
+        7.5,
+        0,
+        0
+      ],
+      [
+        9,
+        0,
+        0
+      ],
+      [
+        0,
+        0.85,
+        0
+      ],
+      [
+        1.5,
+        0.85,
+        0
+      ],
+      [
+        3,
+        0.85,
+        0
+      ],
+      [
+        4.5,
+        0.85,
+        0
+      ],
+      [
+        6,
+        0.85,
+        0
+      ],
+      [
+        7.5,
+        0.85,
+        0
+      ],
+      [
+        9,
+        0.85,
+        0
+      ],
+      [
+        0,
+        1.7,
+        0
+      ],
+      [
+        1.5,
+        1.7,
+        0
+      ],
+      [
+        3,
+        1.7,
+        0
+      ],
+      [
+        4.5,
+        1.7,
+        0
+      ],
+      [
+        6,
+        1.7,
+        0
+      ],
+      [
+        7.5,
+        1.7,
+        0
+      ],
+      [
+        9,
+        1.7,
+        0
+      ],
+      [
+        0,
+        2.55,
+        0
+      ],
+      [
+        1.5,
+        2.55,
+        0
+      ],
+      [
+        3,
+        2.55,
+        0
+      ],
+      [
+        4.5,
+        2.55,
+        0
+      ],
+      [
+        6,
+        2.55,
+        0
+      ],
+      [
+        7.5,
+        2.55,
+        0
+      ],
+      [
+        9,
+        2.55,
+        0
+      ],
+      [
+        0,
+        3.4,
+        0
+      ],
+      [
+        1.5,
+        3.4,
+        0
+      ],
+      [
+        3,
+        3.4,
+        0
+      ],
+      [
+        4.5,
+        3.4,
+        0
+      ],
+      [
+        6,
+        3.4,
+        0
+      ],
+      [
+        7.5,
+        3.4,
+        0
+      ],
+      [
+        9,
+        3.4,
+        0
+      ],
+      [
+        0,
+        4.25,
+        0
+      ],
+      [
+        1.5,
+        4.25,
+        0
+      ],
+      [
+        3,
+        4.25,
+        0
+      ],
+      [
+        4.5,
+        4.25,
+        0
+      ],
+      [
+        6,
+        4.25,
+        0
+      ],
+      [
+        7.5,
+        4.25,
+        0
+      ],
+      [
+        9,
+        4.25,
+        0
+      ],
+      [
+        0,
+        5.1,
+        0
+      ],
+      [
+        1.5,
+        5.1,
+        0
+      ],
+      [
+        3,
+        5.1,
+        0
+      ],
+      [
+        4.5,
+        5.1,
+        0
+      ],
+      [
+        6,
+        5.1,
+        0
+      ],
+      [
+        7.5,
+        5.1,
+        0
+      ],
+      [
+        9,
+        5.1,
+        0
+      ],
+      [
+        0,
+        5.95,
+        0
+      ],
+      [
+        1.5,
+        5.95,
+        0
+      ],
+      [
+        3,
+        5.95,
+        0
+      ],
+      [
+        4.5,
+        5.95,
+        0
+      ],
+      [
+        6,
+        5.95,
+        0
+      ],
+      [
+        7.5,
+        5.95,
+        0
+      ],
+      [
+        9,
+        5.95,
+        0
+      ]
+    ],
+    "cellSize": [
+      1.5,
+      0.85,
+      1
+    ],
+    "benchAnchors": [
+      [
+        0,
+        7.28,
+        0.045
+      ],
+      [
+        1.1,
+        7.38,
+        0.045
+      ],
+      [
+        2.2,
+        7.48,
+        0.045
+      ],
+      [
+        3.3,
+        7.58,
+        0.045
+      ],
+      [
+        4.5,
+        7.68,
+        0.045
+      ],
+      [
+        5.7,
+        7.58,
+        0.045
+      ],
+      [
+        6.8,
+        7.48,
+        0.045
+      ],
+      [
+        7.9,
+        7.38,
+        0.045
+      ],
+      [
+        9,
+        7.28,
+        0.045
+      ]
+    ],
+    "itemBenchAnchors": [
+      [
+        0,
+        8,
+        0.15
+      ],
+      [
+        1.1,
+        8.1,
+        0.15
+      ],
+      [
+        2.2,
+        8.200000000000001,
+        0.15
+      ],
+      [
+        3.3,
+        8.3,
+        0.15
+      ],
+      [
+        4.5,
+        8.4,
+        0.15
+      ],
+      [
+        5.7,
+        8.3,
+        0.15
+      ],
+      [
+        6.8,
+        8.200000000000001,
+        0.15
+      ],
+      [
+        7.9,
+        8.1,
+        0.15
+      ],
+      [
+        9,
+        8,
+        0.15
+      ]
+    ],
+    "tacticianRegion": [
+      10.9,
+      4.95,
+      12.15,
+      7.05
+    ],
+    "tacticianSpawn": [
+      11.52,
+      6,
+      0.02
+    ],
+    "humanSpawn": [
+      4.5,
+      5.95,
+      0
+    ],
+    "opponentSpawn": [
+      4.5,
+      0,
+      0
+    ],
+    "carouselCenter": [
+      4.5,
+      3,
+      0
+    ],
+    "arenaBounds": [
+      -7.5,
+      -5.5,
+      16.5,
+      11.5
+    ],
+    "lighting": "void",
+    "ambientVfx": "infinite_void",
+    "music": "minecraft:music.game",
+    "lootAnchors": [
+      [
+        3.2,
+        4.15,
+        0
+      ],
+      [
+        5.8,
+        4.15,
+        0
+      ]
+    ],
+    "combatStartVfx": "svarcade:combat_start",
+    "victoryVfx": "svarcade:victory",
+    "defeatVfx": "svarcade:defeat",
+    "interactionRegions": [],
+    "cameraPresets": {
+      "normal": {
+        "position": [
+          4.5,
+          14.8,
+          12.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "preparation": {
+        "position": [
+          4.5,
+          14.8,
+          12.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "combat": {
+        "position": [
+          4.5,
+          15.5,
+          14
+        ],
+        "target": [
+          4.5,
+          2.6,
+          -0.12
+        ],
+        "fov": 36,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "scouting": {
+        "position": [
+          8.3,
+          15.8,
+          13.4
+        ],
+        "target": [
+          4.5,
+          2.7,
+          -0.15
+        ],
+        "fov": 40,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "carousel": {
+        "position": [
+          4.5,
+          16.5,
+          15.5
+        ],
+        "target": [
+          4.5,
+          3,
+          0
+        ],
+        "fov": 50,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "pve_intro": {
+        "position": [
+          4.5,
+          11.8,
+          8.8
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 39,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "boss_intro": {
+        "position": [
+          4.5,
+          10.2,
+          7.5
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 36,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "victory": {
+        "position": [
+          3.8,
+          11.8,
+          8.9
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 38,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "defeat": {
+        "position": [
+          5.2,
+          12.3,
+          9.6
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 45,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "spectator": {
+        "position": [
+          4.5,
+          15.2,
+          13
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 44,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      },
+      "arena_preview": {
+        "position": [
+          4.5,
+          14.8,
+          12.4
+        ],
+        "target": [
+          4.5,
+          2.8,
+          0.25
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 110,
+        "transitionMs": 650
+      }
+    },
+    "logicalBoardBounds": [
+      -0.75,
+      -0.425,
+      9.75,
+      6.375
+    ],
+    "battlefieldBounds": [
+      -1.68,
+      -1.02,
+      10.68,
+      6.97
+    ],
+    "environmentBounds": [
+      -7.5,
+      -5.5,
+      16.5,
+      11.5
+    ],
+    "camera": {
+      "spectator": [
+        4.5,
+        16.2,
+        14.5
+      ],
+      "scouting": [
+        8,
+        13.7,
+        12
+      ],
+      "carousel": [
+        4.5,
+        18,
+        16.5
+      ]
+    }
+  },
+  "geometry": [
+    {
+      "id": "void-debris-left-a",
+      "material": "minecraft:crying_obsidian",
+      "position": [
+        -3.3,
+        -2.35,
+        3.216
+      ],
+      "size": [
+        1,
+        0.9,
+        1.742
+      ],
+      "rotation": [
+        16,
+        10,
+        22
+      ]
+    },
+    {
+      "id": "void-debris-left-b",
+      "material": "minecraft:amethyst_block",
+      "position": [
+        -4.1,
+        6.9,
+        3.1
+      ],
+      "size": [
+        0.8,
+        0.7,
+        1.8
+      ],
+      "rotation": [
+        -10,
+        18,
+        -24
+      ]
+    },
+    {
+      "id": "void-debris-right-a",
+      "material": "minecraft:obsidian",
+      "position": [
+        12.3,
+        -1.85,
+        2.479
+      ],
+      "size": [
+        1.1,
+        0.9,
+        1.474
+      ],
+      "rotation": [
+        -18,
+        -12,
+        -18
+      ]
+    },
+    {
+      "id": "void-debris-right-b",
+      "material": "minecraft:purple_stained_glass",
+      "position": [
+        13,
+        7.4,
+        4.4
+      ],
+      "size": [
+        0.75,
+        0.85,
+        2.6
+      ],
+      "rotation": [
+        14,
+        -20,
+        28
+      ]
+    },
+    {
+      "id": "signature-black-hole-core",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.87,
+        0.73
+      ],
+      "size": [
+        1.6,
+        0.1,
+        2.24
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-accretion-left",
+      "material": "#D987FF",
+      "position": [
+        2.15,
+        -1.81,
+        0.7906
+      ],
+      "size": [
+        1.15,
+        0.08,
+        0.0804
+      ],
+      "rotation": [
+        0,
+        -18,
+        -5
+      ]
+    },
+    {
+      "id": "singularity-accretion-right",
+      "material": "#8F52FF",
+      "position": [
+        6.82,
+        -1.93,
+        0.5494
+      ],
+      "size": [
+        1.35,
+        0.08,
+        0.0804
+      ],
+      "rotation": [
+        0,
+        24,
+        7
+      ]
+    },
+    {
+      "id": "singularity-accretion-upper",
+      "material": "#E1A2FF",
+      "position": [
+        4.9,
+        -1.78,
+        2.0435
+      ],
+      "size": [
+        0.88,
+        0.08,
+        0.067
+      ],
+      "rotation": [
+        0,
+        -12,
+        0
+      ]
+    },
+    {
+      "id": "tactician-void-perch-core",
+      "material": "#17101F",
+      "position": [
+        11.52,
+        6,
+        -0.08
+      ],
+      "size": [
+        1.35,
+        1.18,
+        0.16
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-void-perch-front",
+      "material": "#4C2878",
+      "position": [
+        11.52,
+        5.28,
+        -0.1
+      ],
+      "size": [
+        0.82,
+        0.48,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "tactician-void-perch-left",
+      "material": "#34204F",
+      "position": [
+        10.86,
+        6.12,
+        -0.1
+      ],
+      "size": [
+        0.48,
+        0.88,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        -18
+      ]
+    },
+    {
+      "id": "tactician-void-perch-right",
+      "material": "#6D3AA2",
+      "position": [
+        12.15,
+        5.98,
+        -0.1
+      ],
+      "size": [
+        0.48,
+        0.82,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        22
+      ]
+    },
+    {
+      "id": "tactician-void-perch-rear",
+      "material": "#28173B",
+      "position": [
+        11.62,
+        6.62,
+        -0.1
+      ],
+      "size": [
+        0.78,
+        0.44,
+        0.18
+      ],
+      "rotation": [
+        0,
+        0,
+        8
+      ]
+    },
+    {
+      "id": "tactician-void-spire",
+      "material": "#A365E8",
+      "position": [
+        12.18,
+        6.66,
+        0.72
+      ],
+      "size": [
+        0.2,
+        0.2,
+        1.55
+      ],
+      "rotation": [
+        8,
+        0,
+        12
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-0",
+      "material": "#834be0",
+      "position": [
+        6.5,
+        -1.74,
+        0.73
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -90.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-1",
+      "material": "#834be0",
+      "position": [
+        6.482889722747621,
+        -1.74,
+        0.8892419545084629
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -97.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-2",
+      "material": "#834be0",
+      "position": [
+        6.431851652578136,
+        -1.74,
+        1.0457592350250753
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -105.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-3",
+      "material": "#834be0",
+      "position": [
+        6.347759065022574,
+        -1.74,
+        1.1968737874854094
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -112.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-4",
+      "material": "#834be0",
+      "position": [
+        6.232050807568878,
+        -1.74,
+        1.3399999999999999
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -120.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-5",
+      "material": "#834be0",
+      "position": [
+        6.08670668058247,
+        -1.74,
+        1.4726889433906392
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -127.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-6",
+      "material": "#834be0",
+      "position": [
+        5.914213562373095,
+        -1.74,
+        1.5926702730475881
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -135.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-7",
+      "material": "#834be0",
+      "position": [
+        5.717522858017441,
+        -1.74,
+        1.697891075155307
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -142.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-8",
+      "material": "#834be0",
+      "position": [
+        5.5,
+        -1.74,
+        1.786550992617015
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -150.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-9",
+      "material": "#834be0",
+      "position": [
+        5.265366864730179,
+        -1.74,
+        1.8571330296637698
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -157.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-10",
+      "material": "#834be0",
+      "position": [
+        5.0176380902050415,
+        -1.74,
+        1.9084295080726632
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -165.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-11",
+      "material": "#834be0",
+      "position": [
+        4.761052384440103,
+        -1.74,
+        1.9395627308760486
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -172.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-12",
+      "material": "#834be0",
+      "position": [
+        4.5,
+        -1.74,
+        1.95
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -180.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-13",
+      "material": "#834be0",
+      "position": [
+        4.238947615559897,
+        -1.74,
+        1.9395627308760486
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -187.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-14",
+      "material": "#834be0",
+      "position": [
+        3.9823619097949585,
+        -1.74,
+        1.9084295080726632
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -195.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-15",
+      "material": "#834be0",
+      "position": [
+        3.7346331352698208,
+        -1.74,
+        1.8571330296637698
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -202.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-16",
+      "material": "#834be0",
+      "position": [
+        3.5000000000000004,
+        -1.74,
+        1.786550992617015
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -210.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-17",
+      "material": "#834be0",
+      "position": [
+        3.2824771419825587,
+        -1.74,
+        1.697891075155307
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -217.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-18",
+      "material": "#834be0",
+      "position": [
+        3.085786437626905,
+        -1.74,
+        1.5926702730475881
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -225.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-19",
+      "material": "#834be0",
+      "position": [
+        2.91329331941753,
+        -1.74,
+        1.4726889433906394
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -232.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-20",
+      "material": "#834be0",
+      "position": [
+        2.7679491924311224,
+        -1.74,
+        1.3399999999999999
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -240.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-21",
+      "material": "#834be0",
+      "position": [
+        2.6522409349774265,
+        -1.74,
+        1.1968737874854096
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -247.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-22",
+      "material": "#834be0",
+      "position": [
+        2.5681483474218636,
+        -1.74,
+        1.0457592350250757
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -255.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-23",
+      "material": "#834be0",
+      "position": [
+        2.517110277252379,
+        -1.74,
+        0.8892419545084634
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -262.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-24",
+      "material": "#834be0",
+      "position": [
+        2.5,
+        -1.74,
+        0.7300000000000001
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -270.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-25",
+      "material": "#834be0",
+      "position": [
+        2.517110277252379,
+        -1.74,
+        0.5707580454915369
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -277.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-26",
+      "material": "#834be0",
+      "position": [
+        2.5681483474218636,
+        -1.74,
+        0.4142407649749246
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -285.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-27",
+      "material": "#834be0",
+      "position": [
+        2.652240934977426,
+        -1.74,
+        0.2631262125145906
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -292.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-28",
+      "material": "#834be0",
+      "position": [
+        2.7679491924311224,
+        -1.74,
+        0.12000000000000033
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -300.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-29",
+      "material": "#834be0",
+      "position": [
+        2.9132933194175297,
+        -1.74,
+        -0.012688943390639196
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -307.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-30",
+      "material": "#834be0",
+      "position": [
+        3.085786437626904,
+        -1.74,
+        -0.1326702730475875
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -315.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-31",
+      "material": "#834be0",
+      "position": [
+        3.2824771419825582,
+        -1.74,
+        -0.2378910751553066
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -322.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-32",
+      "material": "#834be0",
+      "position": [
+        3.499999999999999,
+        -1.74,
+        -0.3265509926170149
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -330.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-33",
+      "material": "#834be0",
+      "position": [
+        3.7346331352698208,
+        -1.74,
+        -0.39713302966376984
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -337.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-34",
+      "material": "#834be0",
+      "position": [
+        3.9823619097949585,
+        -1.74,
+        -0.44842950807266324
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -345.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-35",
+      "material": "#834be0",
+      "position": [
+        4.238947615559897,
+        -1.74,
+        -0.4795627308760486
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -352.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-36",
+      "material": "#834be0",
+      "position": [
+        4.5,
+        -1.74,
+        -0.49
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -360.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-37",
+      "material": "#834be0",
+      "position": [
+        4.761052384440102,
+        -1.74,
+        -0.47956273087604884
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -367.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-38",
+      "material": "#834be0",
+      "position": [
+        5.017638090205041,
+        -1.74,
+        -0.44842950807266346
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -375.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-39",
+      "material": "#834be0",
+      "position": [
+        5.265366864730178,
+        -1.74,
+        -0.39713302966377007
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -382.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-40",
+      "material": "#834be0",
+      "position": [
+        5.5,
+        -1.74,
+        -0.32655099261701515
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -390.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-41",
+      "material": "#834be0",
+      "position": [
+        5.71752285801744,
+        -1.74,
+        -0.2378910751553076
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -397.49999999999994,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-42",
+      "material": "#834be0",
+      "position": [
+        5.914213562373095,
+        -1.74,
+        -0.13267027304758816
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -405.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-43",
+      "material": "#834be0",
+      "position": [
+        6.08670668058247,
+        -1.74,
+        -0.01268894339063964
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -412.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-44",
+      "material": "#834be0",
+      "position": [
+        6.232050807568877,
+        -1.74,
+        0.11999999999999944
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -420.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-45",
+      "material": "#834be0",
+      "position": [
+        6.347759065022574,
+        -1.74,
+        0.26312621251459073
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -427.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-46",
+      "material": "#834be0",
+      "position": [
+        6.431851652578136,
+        -1.74,
+        0.4142407649749237
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -434.99999999999994,
+        0
+      ]
+    },
+    {
+      "id": "singularity-outer-ring-47",
+      "material": "#834be0",
+      "position": [
+        6.482889722747621,
+        -1.74,
+        0.570758045491537
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -442.5,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-0",
+      "material": "#cfb4ff",
+      "position": [
+        6.27,
+        -1.74,
+        0.73
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -90.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-1",
+      "material": "#cfb4ff",
+      "position": [
+        6.2482083628533935,
+        -1.74,
+        0.8989492222434493
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -99.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-2",
+      "material": "#cfb4ff",
+      "position": [
+        6.183370033842422,
+        -1.74,
+        1.0637383539249432
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -108.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-3",
+      "material": "#cfb4ff",
+      "position": [
+        6.077081547813411,
+        -1.74,
+        1.2203097397187106
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -117.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-4",
+      "material": "#cfb4ff",
+      "position": [
+        5.931960080043657,
+        -1.74,
+        1.364808072475871
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -126.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-5",
+      "material": "#cfb4ff",
+      "position": [
+        5.751579002700189,
+        -1.74,
+        1.4936753236814715
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -135.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-6",
+      "material": "#cfb4ff",
+      "position": [
+        5.540379896557678,
+        -1.74,
+        1.6037383539249432
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -144.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-7",
+      "material": "#cfb4ff",
+      "position": [
+        5.303563184538998,
+        -1.74,
+        1.6922870461234374
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -153.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-8",
+      "material": "#cfb4ff",
+      "position": [
+        5.046960080043657,
+        -1.74,
+        1.757141037598766
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -162.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-9",
+      "material": "#cfb4ff",
+      "position": [
+        4.776889003121209,
+        -1.74,
+        1.7967034078427488
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -171.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-10",
+      "material": "#cfb4ff",
+      "position": [
+        4.5,
+        -1.74,
+        1.81
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -180.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-11",
+      "material": "#cfb4ff",
+      "position": [
+        4.223110996878792,
+        -1.74,
+        1.7967034078427488
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -189.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-12",
+      "material": "#cfb4ff",
+      "position": [
+        3.953039919956343,
+        -1.74,
+        1.757141037598766
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -198.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-13",
+      "material": "#cfb4ff",
+      "position": [
+        3.696436815461002,
+        -1.74,
+        1.6922870461234374
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -207.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-14",
+      "material": "#cfb4ff",
+      "position": [
+        3.4596201034423224,
+        -1.74,
+        1.6037383539249432
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -216.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-15",
+      "material": "#cfb4ff",
+      "position": [
+        3.248420997299811,
+        -1.74,
+        1.4936753236814715
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -225.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-16",
+      "material": "#cfb4ff",
+      "position": [
+        3.0680399199563433,
+        -1.74,
+        1.364808072475871
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -234.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-17",
+      "material": "#cfb4ff",
+      "position": [
+        2.9229184521865887,
+        -1.74,
+        1.2203097397187106
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -243.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-18",
+      "material": "#cfb4ff",
+      "position": [
+        2.816629966157578,
+        -1.74,
+        1.0637383539249434
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -252.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-19",
+      "material": "#cfb4ff",
+      "position": [
+        2.7517916371466065,
+        -1.74,
+        0.8989492222434494
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -261.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-20",
+      "material": "#cfb4ff",
+      "position": [
+        2.73,
+        -1.74,
+        0.7300000000000001
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -270.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-21",
+      "material": "#cfb4ff",
+      "position": [
+        2.7517916371466065,
+        -1.74,
+        0.5610507777565508
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -279.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-22",
+      "material": "#cfb4ff",
+      "position": [
+        2.8166299661575778,
+        -1.74,
+        0.3962616460750573
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -288.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-23",
+      "material": "#cfb4ff",
+      "position": [
+        2.9229184521865887,
+        -1.74,
+        0.2396902602812896
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -297.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-24",
+      "material": "#cfb4ff",
+      "position": [
+        3.068039919956343,
+        -1.74,
+        0.09519192752412908
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -306.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-25",
+      "material": "#cfb4ff",
+      "position": [
+        3.2484209972998106,
+        -1.74,
+        -0.0336753236814713
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -315.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-26",
+      "material": "#cfb4ff",
+      "position": [
+        3.4596201034423224,
+        -1.74,
+        -0.14373835392494316
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -324.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-27",
+      "material": "#cfb4ff",
+      "position": [
+        3.696436815461002,
+        -1.74,
+        -0.2322870461234373
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -333.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-28",
+      "material": "#cfb4ff",
+      "position": [
+        3.9530399199563426,
+        -1.74,
+        -0.297141037598766
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -342.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-29",
+      "material": "#cfb4ff",
+      "position": [
+        4.223110996878791,
+        -1.74,
+        -0.33670340784274866
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -351.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-30",
+      "material": "#cfb4ff",
+      "position": [
+        4.5,
+        -1.74,
+        -0.3500000000000001
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -360.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-31",
+      "material": "#cfb4ff",
+      "position": [
+        4.776889003121208,
+        -1.74,
+        -0.3367034078427489
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -369.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-32",
+      "material": "#cfb4ff",
+      "position": [
+        5.0469600800436565,
+        -1.74,
+        -0.297141037598766
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -378.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-33",
+      "material": "#cfb4ff",
+      "position": [
+        5.303563184538998,
+        -1.74,
+        -0.23228704612343753
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -387.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-34",
+      "material": "#cfb4ff",
+      "position": [
+        5.540379896557678,
+        -1.74,
+        -0.1437383539249435
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -396.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-35",
+      "material": "#cfb4ff",
+      "position": [
+        5.751579002700189,
+        -1.74,
+        -0.033675323681471525
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -405.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-36",
+      "material": "#cfb4ff",
+      "position": [
+        5.931960080043657,
+        -1.74,
+        0.09519192752412875
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -414.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-37",
+      "material": "#cfb4ff",
+      "position": [
+        6.077081547813411,
+        -1.74,
+        0.2396902602812892
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -423.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-38",
+      "material": "#cfb4ff",
+      "position": [
+        6.183370033842422,
+        -1.74,
+        0.3962616460750565
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -432.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-inner-ring-39",
+      "material": "#cfb4ff",
+      "position": [
+        6.2482083628533935,
+        -1.74,
+        0.5610507777565504
+      ],
+      "size": [
+        0.18,
+        0.08,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -441.0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-0",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        -0.254375
+      ],
+      "size": [
+        1.4500634415000615,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-1",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        -0.12312500000000004
+      ],
+      "size": [
+        1.969639779090329,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-2",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.008124999999999938
+      ],
+      "size": [
+        2.3243170199813536,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-3",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.13937500000000003
+      ],
+      "size": [
+        2.582942166285378,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-4",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.270625
+      ],
+      "size": [
+        2.772526417254667,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-5",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.401875
+      ],
+      "size": [
+        2.906610931888718,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-6",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.533125
+      ],
+      "size": [
+        2.9926649260107623,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-7",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.6643749999999999
+      ],
+      "size": [
+        3.03477700735573,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-8",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.795625
+      ],
+      "size": [
+        3.03477700735573,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-9",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        0.9268749999999999
+      ],
+      "size": [
+        2.9926649260107623,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-10",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        1.058125
+      ],
+      "size": [
+        2.906610931888718,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-11",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        1.189375
+      ],
+      "size": [
+        2.772526417254667,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-12",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        1.320625
+      ],
+      "size": [
+        2.582942166285378,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-13",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        1.451875
+      ],
+      "size": [
+        2.3243170199813536,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-14",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        1.5831250000000001
+      ],
+      "size": [
+        1.969639779090329,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "singularity-core-band-15",
+      "material": "#010104",
+      "position": [
+        4.5,
+        -1.79,
+        1.7143750000000002
+      ],
+      "size": [
+        1.4500634415000602,
+        0.11,
+        0.15125
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "accretion-stream--1",
+      "material": "#e4ccff",
+      "position": [
+        2.1,
+        -1.72,
+        0.75
+      ],
+      "size": [
+        1.25,
+        0.07,
+        0.08
+      ],
+      "rotation": [
+        0,
+        -7,
+        0
+      ]
+    },
+    {
+      "id": "accretion-stream-1",
+      "material": "#e4ccff",
+      "position": [
+        6.9,
+        -1.72,
+        0.75
+      ],
+      "size": [
+        1.25,
+        0.07,
+        0.08
+      ],
+      "rotation": [
+        0,
+        7,
+        0
+      ]
+    }
+  ]
+}

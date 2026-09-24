@@ -62,6 +62,7 @@ object GachaRouletteRenderer {
 
         gui.fill(roll.x, roll.y, roll.right, roll.bottom, BACKGROUND)
         gui.enableScissor(roll.x, roll.y, roll.right, roll.bottom)
+        try {
         repeat(strip.size()) { i ->
             val entry = strip[i].asJsonObject
             val x = (center + (i - index) * itemW - itemW / 2.0).roundToInt()
@@ -79,7 +80,7 @@ object GachaRouletteRenderer {
             )
             gui.drawCenteredString(font, rarity.uppercase(), x + itemW / 2, roll.y + 35, color)
         }
-        gui.disableScissor()
+        } finally { gui.disableScissor() }
         gui.fill(center - 1, roll.y - 2, center + 1, roll.bottom + 2, GOLD)
 
         if (!ui.animating) {

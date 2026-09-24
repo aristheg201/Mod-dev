@@ -1,0 +1,7 @@
+{
+  "boardUnit": {
+    "maxHeightCells": 1.35,
+    "maxFootprintCells": 0.92,
+    "maxUpscale": 3.0
+  }
+}

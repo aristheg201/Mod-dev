@@ -305,5 +305,6 @@
   "gui.svhub.tft.set_browser": "Set Roster",
   "gui.svhub.tft.units": "Units",
   "gui.svhub.tft.tooltip.trait": "Trait",
-  "gui.svhub.tft.elite_bonus": "Elite: same-franchise allies gain 2x health and damage. One Elite per team."
+  "gui.svhub.tft.elite_bonus": "Elite: same-franchise allies gain 2x health and damage. One Elite per team.",
+  "gui.svhub.store.insufficient": "Insufficient balance for this offer."
 }

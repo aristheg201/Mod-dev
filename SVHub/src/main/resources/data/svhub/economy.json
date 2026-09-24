@@ -1,0 +1,26 @@
+{
+  "schema": 3,
+  "defaults": {
+    "primary": "primary",
+    "secondary": "secondary",
+    "reward": "primary",
+    "ranked": "primary",
+    "store": {
+      "ARENA": "primary",
+      "TACTICIAN": "secondary"
+    }
+  },
+  "wallet": [
+    "@beconomy:*"
+  ],
+  "currencies": {
+    "primary": {
+      "provider": "beconomy",
+      "currency": "@beconomy:0"
+    },
+    "secondary": {
+      "provider": "beconomy",
+      "currency": "@beconomy:1"
+    }
+  }
+}

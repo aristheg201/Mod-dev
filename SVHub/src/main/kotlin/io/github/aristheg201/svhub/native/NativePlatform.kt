@@ -15,6 +15,7 @@ object NativePlatform {
     private var tickCounter = 0
     private val pendingOpen = ConcurrentHashMap<UUID, String>()
     fun start(root: Path) {
+        NativeRanking.start(root.resolve("ranking.json"))
         NativeProfileStore.start(root.resolve("profiles"))
         NativeCosmeticService.start(root.resolve("cosmetic-store.json"))
         NativeArcadeService.start(root.resolve("arcade"))
@@ -143,7 +144,7 @@ object NativePlatform {
     }
 
     private fun handleArcade(player: ServerPlayer, action: String, data: JsonObject) = when (action) {
-        "start" -> NativeArcadeService.start(player, data.string("game"), data.string("mode", "bot_normal")).let { r ->
+        "start" -> NativeArcadeService.start(player, data.string("game"), data.string("mode", "bot_normal"), data.string("timeControl", "10+5")).let { r ->
             if (r.changedPlayers.isEmpty()) {
                 NativePlatformNetwork.sendState(player, "arcade", NativeArcadeService.lobbyState(player), r.message)
             } else {

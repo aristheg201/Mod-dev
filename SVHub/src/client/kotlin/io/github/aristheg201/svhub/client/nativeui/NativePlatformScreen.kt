@@ -36,8 +36,11 @@ class NativePlatformScreen(
         val action: () -> Unit
     )
 
+    internal var acceptanceIntent: ((String, JsonObject) -> Unit)? = null
+    internal fun acceptanceControls() = controls.map { it.label to it.rect }
     private val gson = Gson()
-    private val storeUi = CosmeticStoreUi()
+    private val storeUi = CosmeticStoreUi().also { it.kind = ArcadePresentation.storeKind }
+    internal val arcadeUi = ArcadeScreen()
     private val controls = mutableListOf<Control>()
     private val sceneInputs = mutableListOf<(Double, Double) -> Boolean>()
     private val itemDropInputs = mutableListOf<(Double, Double) -> Boolean>()
@@ -115,6 +118,20 @@ class NativePlatformScreen(
 
     override fun render(gui: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         currentGui = gui
+        if (module == "arcade") {
+            controls.clear(); sceneInputs.clear(); itemDropInputs.clear(); clip = null
+            try {
+                val scale = minOf(1f, width / 720f, height / 500f)
+                gui.pose().pushPose()
+                try {
+                    gui.pose().scale(scale, scale, 1f)
+                    arcadeUi.render(gui, font, (width/scale).toInt(), (height/scale).toInt(), state, (mouseX/scale).toInt(), (mouseY/scale).toInt(), ArcadeScreen.Hooks(
+                        hit = { rect, label, action -> addHit(UiRect((rect.x*scale).toInt(),(rect.y*scale).toInt(),(rect.width*scale).toInt(),(rect.height*scale).toInt()), label, action = action) }, intent = ::intent, open = ::open))
+                } finally { gui.pose().popPose() }
+                if (notice.isNotBlank()) gui.drawCenteredString(font, fit(notice, width-40), width/2, height-16, gold)
+            } finally { currentGui = null }
+            return
+        }
         val baseLayout = NativeLayout.resolve(width, height)
         val tftGame=module=="game" && state.getAsJsonObject("view")?.str("gameId")=="tft"
         val fullScreen=tftGame || module=="store"
@@ -124,7 +141,9 @@ class NativePlatformScreen(
             navigation = UiRect(0, 0, 0, 0),
             content = UiRect(8, 42, (width - 16).coerceAtLeast(144), (height - 50).coerceAtLeast(70)),
             verticalNavigation = false
-        ) else baseLayout
+        ) else baseLayout.copy(
+            navigation=UiRect(8,42,width-16,26), content=UiRect(8,76,width-16,(height-84).coerceAtLeast(70)), verticalNavigation=false
+        )
         controls.clear()
         sceneInputs.clear()
         itemDropInputs.clear()
@@ -137,7 +156,7 @@ class NativePlatformScreen(
         moduleViewport = layout.content
         moduleContentHeight = layout.content.height
         gui.enableScissor(layout.content.x, layout.content.y, layout.content.right, layout.content.bottom)
-        when (module) {
+        try { when (module) {
             "dashboard" -> renderDashboard(gui, layout, mouseX, mouseY)
             "gacha" -> renderGacha(gui, layout, mouseX, mouseY)
             "skins" -> renderSkins(gui, layout, mouseX, mouseY)
@@ -145,13 +164,12 @@ class NativePlatformScreen(
                 control = { rect, label, enabled, active, action -> addControl(rect, label, mouseX, mouseY, active = active, enabled = enabled, action = action) },
                 intent = ::intent
             ))
-            "arcade" -> renderArcade(gui, layout, mouseX, mouseY)
             "companions" -> renderCompanions(gui, layout, mouseX, mouseY)
             "wallet" -> renderWallet(gui, layout)
             "game" -> renderGame(gui, layout, mouseX, mouseY)
         }
         if (module != "game") renderModuleScrollbar(gui, layout.content)
-        gui.disableScissor(); clip = null
+        } finally { gui.disableScissor(); clip = null }
         drawNotice(gui, layout)
         super.render(gui, mouseX, mouseY, partialTick)
         currentGui = null
@@ -169,7 +187,7 @@ class NativePlatformScreen(
         gui.fill(0, 0, width, layout.header.height, 0xFF101B1F.toInt())
         gui.fill(0, layout.header.bottom - 2, width, layout.header.bottom, accent)
         NativePixelArt.icon(gui, moduleIcon(module), 10, 9, 18, accent)
-        gui.drawString(font, "SV HUB", 34, 8, text, true)
+        gui.drawString(font, "SV ARCADE", 34, 8, text, true)
         gui.drawString(font, moduleTitle(module), 34, 20, muted, false)
         val close = UiRect(width - 31, 7, 23, 22)
         addControl(close, "×", mouseX, mouseY, action = ::onClose)
@@ -178,8 +196,8 @@ class NativePlatformScreen(
 
     private fun drawNavigation(gui: GuiGraphics, layout: NativeLayout, mouseX: Int, mouseY: Int) {
         val entries = listOf(
-            "dashboard" to "gui.svhub.nav.home", "gacha" to "gui.svhub.nav.gacha", "skins" to "gui.svhub.nav.skins",
-            "arcade" to "gui.svhub.nav.arcade", "store" to "gui.svhub.nav.store", "companions" to "gui.svhub.nav.arena"
+            "arcade" to "gui.svhub.nav.home", "gacha" to "gui.svhub.nav.gacha", "skins" to "gui.svhub.nav.skins",
+            "store" to "gui.svhub.nav.store", "companions" to "gui.svhub.nav.arena", "wallet" to "gui.svhub.nav.wallet"
         )
         if (layout.verticalNavigation) {
             gui.fill(layout.navigation.x, layout.navigation.y, layout.navigation.right, layout.navigation.bottom, 0xE6111C20.toInt())
@@ -210,7 +228,7 @@ class NativePlatformScreen(
             Triple("arcade", tr("gui.svhub.nav.arcade"), "${state.num("gameCount")} ${tr("gui.svhub.games")}"),
             Triple("companions", tr("gui.svhub.nav.arena"), tr("gui.svhub.arena.ready")),
             Triple("store", tr("gui.svhub.nav.store"), tr("gui.svhub.store.preview")),
-            Triple("wallet", tr("gui.svhub.nav.wallet"), "${wallet?.str("BeastCoin", "—") ?: "—"} BeastCoin")
+            Triple("wallet", tr("gui.svhub.nav.wallet"), tr("gui.svhub.nav.wallet"))
         )
         val ultraCompact = area.height < 130
         val cols = when { ultraCompact -> 3; layout.density == UiDensity.WIDE -> 3; else -> 2 }
@@ -331,56 +349,6 @@ class NativePlatformScreen(
         }
     }
 
-    private fun renderArcade(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
-        val area=layout.content.inset(8)
-        gui.drawString(font,tr("gui.svhub.arcade.subtitle"),area.x,area.y,muted,false)
-        val games=state.getAsJsonArray("games")?:return
-        val activeGame=state.str("activeGame")
-        val rowH=42
-        val activeHeight=if(activeGame.isNotBlank())38 else 0
-        val listTop=area.y+22+activeHeight
-        moduleContentHeight=maxOf(moduleContentHeight,listTop+games.size()*(rowH+5)+8-layout.content.y)
-
-        if(activeGame.isNotBlank()){
-            val activeRect=UiRect(area.x,area.y+18-moduleScroll,area.width,32)
-            gui.fill(activeRect.x,activeRect.y,activeRect.right,activeRect.bottom,0xFF17312D.toInt())
-            gui.fill(activeRect.x,activeRect.y,activeRect.x+4,activeRect.bottom,accent)
-            gui.drawString(font,trf("gui.svhub.arcade.current_game",gameTitleFor(activeGame,activeGame)),activeRect.x+10,activeRect.y+11,text,true)
-            val leaveW=(font.width(tr("gui.svhub.leave_game"))+14).coerceAtLeast(56)
-            val resumeW=(font.width(tr("gui.svhub.resume"))+14).coerceAtLeast(58)
-            addControl(UiRect(activeRect.right-leaveW-6,activeRect.y+6,leaveW,20),tr("gui.svhub.leave_game"),mouseX,mouseY){
-                intent("leave_active",JsonObject())
-            }
-            addControl(UiRect(activeRect.right-leaveW-resumeW-10,activeRect.y+6,resumeW,20),tr("gui.svhub.resume"),mouseX,mouseY){
-                intent("resume",JsonObject())
-            }
-        }
-
-        val modeLabels=linkedMapOf("bot_easy" to tr("gui.svhub.easy"),"bot_normal" to tr("gui.svhub.normal"),"bot_hard" to tr("gui.svhub.hard"),"pvp" to "PvP","solo" to tr("gui.svhub.solo"))
-        for(i in 0 until games.size()){
-            val game=games[i].asJsonObject
-            val id=game.str("id")
-            val y=listTop+i*(rowH+5)-moduleScroll
-            val rect=UiRect(area.x,y,area.width,rowH)
-            gui.fill(rect.x,rect.y,rect.right,rect.bottom,panelAlt)
-            gui.fill(rect.x,rect.y,rect.x+4,rect.bottom,gameColor(id))
-            NativePixelArt.icon(gui,id,rect.x+10,rect.y+8,26,gameColor(id))
-            gui.drawString(font,gameTitleFor(id,game.str("title",id)),rect.x+45,rect.y+9,text,true)
-            val advertised=game.getAsJsonArray("modes")?.let{a->(0 until a.size()).map{a[it].asString}}.orEmpty()
-            val modes=if(advertised.isEmpty())listOf("bot_easy","bot_normal","bot_hard","pvp") else advertised
-            var right=rect.right-6
-            modes.asReversed().forEach{mode->
-                val label=modeLabels[mode]?:mode
-                val w=(font.width(label)+14).coerceAtLeast(42)
-                right-=w
-                addControl(UiRect(right,rect.y+10,w,22),label,mouseX,mouseY){
-                    intent("start",json("game" to id,"mode" to mode))
-                }
-                right-=4
-            }
-        }
-    }
-
     private fun renderCompanions(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
         val area=layout.content.inset(8)
         val arena=state.getAsJsonObject("arena")
@@ -490,13 +458,14 @@ class NativePlatformScreen(
 
     private fun renderWallet(gui:GuiGraphics,layout:NativeLayout){
         val area=layout.content.inset(10);val wallet=state.getAsJsonObject("wallet")
-        listOf("BeastCoin", "HunterCoin").forEachIndexed { index, currency ->
-            val y=area.y+index*44
+        val entries = wallet?.entrySet()?.toList().orEmpty()
+        moduleContentHeight = maxOf(area.height, entries.size * 44 + 20)
+        entries.forEachIndexed { index, (currency, value) ->
+            val y=area.y+index*44-moduleScroll
             gui.fill(area.x,y,area.right,y+36,panelAlt)
-            gui.drawString(font,currency,area.x+12,y+6,muted,false)
-            gui.drawString(font,wallet?.str(currency,"—")?:"—",area.x+12,y+21,gold,true)
+            gui.drawString(font,fit(currency,area.width-24),area.x+12,y+6,muted,false)
+            gui.drawString(font,fit(value.asString,area.width-24),area.x+12,y+21,gold,true)
         }
-        drawBalance(gui,area.x,area.y+88,area.width,"gacha",tr("gui.svhub.ticket"),wallet?.num("ticket")?:0,gold)
     }
 
     private fun renderGame(gui:GuiGraphics,layout:NativeLayout,mouseX:Int,mouseY:Int){
@@ -537,6 +506,17 @@ class NativePlatformScreen(
         gui.drawString(font,gameTitleFor(gameId,view.str("title",tr("gui.svhub.game"))),area.x,area.y,text,true)
         gui.drawString(font,fit(localizedGameStatus(view),area.width-8),area.x,area.y+13,gold,false)
 
+        val clockFields = view.getAsJsonObject("fields")
+        val timed = gameId == "chess" || gameId == "xiangqi"
+        if (timed && clockFields != null) {
+            val colors = if(gameId == "chess") listOf("white", "black") else listOf("red", "black")
+            val clocks = colors.joinToString("    ") { color ->
+                val millis=runCatching { clockFields.get(color+"ClockMs")?.asLong ?: 0L }.getOrDefault(0L)
+                val seconds=(millis.coerceAtLeast(0L)+999L)/1000L
+                "${clockFields.str(color,color)}  ${seconds/60}:${(seconds%60).toString().padStart(2,'0')}"
+            }
+            gui.drawString(font,fit(clocks,area.width-8),area.x,area.y+27,accent,false)
+        }
         val actions=view.getAsJsonArray("actions")
         val cards=view.getAsJsonArray("cards")
         boardW=view.num("boardWidth")
@@ -549,7 +529,7 @@ class NativePlatformScreen(
             cards!=null&&cards.size()>0 -> 58
             else -> 8
         }
-        val boardTop=area.y+30
+        val boardTop=area.y+if(timed) 44 else 30
         val boardAvailableHeight=(area.bottom-bottomReserve-boardTop).coerceAtLeast(30)
         val sceneArea=UiRect(area.x,boardTop,availableBoardWidth,boardAvailableHeight)
         val cardTable=CardTable3DRenderer.supports(gameId)
@@ -833,7 +813,10 @@ class NativePlatformScreen(
     private fun coord(game:String,index:Int):String{val columns=if(game=="xiangqi")9 else 8;val row=index/columns;val column=index%columns;return if(game=="xiangqi")"${('a'.code+column).toChar()}$row" else "${('a'.code+column).toChar()}${8-row}"}
     private fun gameAct(action:String,args:Map<String,String>){val data=JsonObject();data.addProperty("gameAction",action);data.add("args",JsonObject().apply{args.forEach{(key,value)->addProperty(key,value)}});intent("act",data)}
     private fun open(target:String)=intent("open",json("module" to target))
-    private fun intent(action:String,data:JsonObject)=ClientPlayNetworking.send(NativeIntentC2S(module,action,gson.toJson(data),viewId))
+    private fun intent(action:String,data:JsonObject) {
+        if (System.getenv("SVHUB_ARCADE_SMOKE") == "1" && acceptanceIntent != null) acceptanceIntent!!.invoke(action,data)
+        else ClientPlayNetworking.send(NativeIntentC2S(module,action,gson.toJson(data),viewId))
+    }
     private fun json(vararg pairs:Pair<String,Any>)=JsonObject().apply{pairs.forEach{(key,value)->when(value){is Number->addProperty(key,value);is Boolean->addProperty(key,value);else->addProperty(key,value.toString())}}}
     private fun fit(value:String,availableWidth:Int):String=font.plainSubstrByWidth(value,availableWidth.coerceAtLeast(8))
     private fun gameTitleFor(gameId:String,fallback:String):String =

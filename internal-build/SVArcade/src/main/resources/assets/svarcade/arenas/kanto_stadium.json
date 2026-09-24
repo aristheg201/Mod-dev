@@ -1,0 +1,430 @@
+{
+    "style":  "kanto_stadium",
+    "surface":  "tactical",
+    "depth":  2,
+    "detailEvery":  0,
+    "pathDetailEvery":  0,
+    "floor":  [
+                  "minecraft:green_concrete"
+              ],
+    "floorAlt":  [
+                     "minecraft:green_terracotta"
+                 ],
+    "ally":  [
+
+             ],
+    "enemy":  [
+
+              ],
+    "path":  [
+
+             ],
+    "floorColor":  "#38613f",
+    "floorAltColor":  "#426e47",
+    "allyColor":  "#3e5542",
+    "enemyColor":  "#694448",
+    "pathColor":  "#756e5f",
+    "pathAccentColor":  "#b2a887",
+    "gridColor":  "#80a08e",
+    "borderColor":  "#dfd6bd",
+    "edgeColor":  "#172019",
+    "depthColor":  "#485563",
+    "props":  [
+
+              ],
+    "metadata":  {
+                     "boardColumns":  7,
+                     "boardRows":  8,
+                     "benchSlots":  9,
+                     "tacticianRegion":  [-3.06, 5.27, -2.22, 6.63],
+                     "camera":  {
+                                    "spectator":  [3, 21, 17],
+                                    "scouting":  [10, 19, 16],
+                                    "carousel":  [3, 20, 22]
+                                },
+                     "lighting":  "themed",
+                     "ambientVfx":  "kanto_stadium",
+                     "music":  "minecraft:music.game",
+                     "boardOrigin":  [0, 0, 0],
+                     "boardAnchors":  [
+                                          [0, 0, 0],
+                                          [1.5, 0, 0],
+                                          [3, 0, 0],
+                                          [4.5, 0, 0],
+                                          [6, 0, 0],
+                                          [7.5, 0, 0],
+                                          [9, 0, 0],
+                                          [0, 0.85, 0],
+                                          [1.5, 0.85, 0],
+                                          [3, 0.85, 0],
+                                          [4.5, 0.85, 0],
+                                          [6, 0.85, 0],
+                                          [7.5, 0.85, 0],
+                                          [9, 0.85, 0],
+                                          [0, 1.7, 0],
+                                          [1.5, 1.7, 0],
+                                          [3, 1.7, 0],
+                                          [4.5, 1.7, 0],
+                                          [6, 1.7, 0],
+                                          [7.5, 1.7, 0],
+                                          [9, 1.7, 0],
+                                          [0, 2.55, 0],
+                                          [1.5, 2.55, 0],
+                                          [3, 2.55, 0],
+                                          [4.5, 2.55, 0],
+                                          [6, 2.55, 0],
+                                          [7.5, 2.55, 0],
+                                          [9, 2.55, 0],
+                                          [0, 3.4, 0],
+                                          [1.5, 3.4, 0],
+                                          [3, 3.4, 0],
+                                          [4.5, 3.4, 0],
+                                          [6, 3.4, 0],
+                                          [7.5, 3.4, 0],
+                                          [9, 3.4, 0],
+                                          [0, 4.25, 0],
+                                          [1.5, 4.25, 0],
+                                          [3, 4.25, 0],
+                                          [4.5, 4.25, 0],
+                                          [6, 4.25, 0],
+                                          [7.5, 4.25, 0],
+                                          [9, 4.25, 0],
+                                          [0, 5.1, 0],
+                                          [1.5, 5.1, 0],
+                                          [3, 5.1, 0],
+                                          [4.5, 5.1, 0],
+                                          [6, 5.1, 0],
+                                          [7.5, 5.1, 0],
+                                          [9, 5.1, 0],
+                                          [0, 5.95, 0],
+                                          [1.5, 5.95, 0],
+                                          [3, 5.95, 0],
+                                          [4.5, 5.95, 0],
+                                          [6, 5.95, 0],
+                                          [7.5, 5.95, 0],
+                                          [9, 5.95, 0]
+                                      ],
+                     "benchAnchors":  [
+                                          [0.036, 7.6075, 0.045],
+                                          [1.152, 7.6075, 0.045],
+                                          [2.268, 7.6075, 0.045],
+                                          [3.384, 7.6075, 0.045],
+                                          [4.5, 7.6075, 0.045],
+                                          [5.616, 7.6075, 0.045],
+                                          [6.732, 7.6075, 0.045],
+                                          [7.848, 7.6075, 0.045],
+                                          [8.964, 7.6075, 0.045]
+                                      ],
+                     "itemBenchAnchors":  [
+                                              [0.036, 8.245, 0.15],
+                                              [1.152, 8.245, 0.15],
+                                              [2.268, 8.245, 0.15],
+                                              [3.384, 8.245, 0.15],
+                                              [4.5, 8.245, 0.15],
+                                              [5.616, 8.245, 0.15],
+                                              [6.732, 8.245, 0.15],
+                                              [7.848, 8.245, 0.15],
+                                              [8.964, 8.245, 0.15]
+                                          ],
+                     "tacticianSpawn":  [-2.64, 5.95, 0],
+                     "humanSpawn":  [4.5, 5.95, 0],
+                     "opponentSpawn":  [4.5, 0, 0],
+                     "carouselCenter":  [3, 3.5, 0],
+                     "arenaBounds":  [-8.4, -8.5, 18, 10.2],
+                     "lootAnchors":  [
+                                         [3.5, 4.0, 0]
+                                     ],
+                     "combatStartVfx":  "svarcade:combat_start",
+                     "victoryVfx":  "svarcade:victory",
+                     "defeatVfx":  "svarcade:defeat",
+                     "interactionRegions":  [
+
+                                            ],
+                     "cameraPresets":  {
+                                           "normal":  {
+                                                          "position":  [4.5, 12.75, 9.35],
+                                                          "fov":  42,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "preparation":  {
+                                                               "position":  [4.5, 12.75, 9.35],
+                                                               "fov":  42,
+                                                               "transitionMs":  650,
+                                                               "far":  100,
+                                                               "near":  0.1,
+                                                               "target":  [4.5, 2.295, 0.255]
+                                                           },
+                                           "combat":  {
+                                                          "position":  [4.5, 12.75, 9.9449999999999985],
+                                                          "fov":  42,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "scouting":  {
+                                                            "position":  [4.5, 12.75, 9.35],
+                                                            "fov":  42,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [4.5, 2.295, 0.255]
+                                                        },
+                                           "carousel":  {
+                                                            "position":  [3, 20, 22],
+                                                            "fov":  52,
+                                                            "transitionMs":  650,
+                                                            "far":  100,
+                                                            "near":  0.1,
+                                                            "target":  [3, 3.5, 0]
+                                                        },
+                                           "pve_intro":  {
+                                                             "position":  [4.5, 12.75, 9.35],
+                                                             "fov":  42,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [4.5, 2.295, 0.255]
+                                                         },
+                                           "boss_intro":  {
+                                                              "position":  [4.5, 12.75, 9.35],
+                                                              "fov":  39,
+                                                              "transitionMs":  650,
+                                                              "far":  100,
+                                                              "near":  0.1,
+                                                              "target":  [4.5, 2.295, 0.255]
+                                                          },
+                                           "victory":  {
+                                                           "position":  [5.34, 12.75, 9.35],
+                                                           "fov":  39,
+                                                           "transitionMs":  650,
+                                                           "far":  100,
+                                                           "near":  0.1,
+                                                           "target":  [4.5, 2.295, 0.255]
+                                                       },
+                                           "defeat":  {
+                                                          "position":  [3.9, 12.75, 9.35],
+                                                          "fov":  44,
+                                                          "transitionMs":  650,
+                                                          "far":  100,
+                                                          "near":  0.1,
+                                                          "target":  [4.5, 2.295, 0.255]
+                                                      },
+                                           "spectator":  {
+                                                             "position":  [4.5, 12.75, 10.37],
+                                                             "fov":  42,
+                                                             "transitionMs":  650,
+                                                             "far":  100,
+                                                             "near":  0.1,
+                                                             "target":  [4.5, 2.295, 0.255]
+                                                         },
+                                           "arena_preview":  {
+                                                                 "position":  [4.5, 12.75, 9.35],
+                                                                 "fov":  42,
+                                                                 "transitionMs":  650,
+                                                                 "far":  100,
+                                                                 "near":  0.1,
+                                                                 "target":  [4.5, 2.295, 0.255]
+                                                             }
+                                       },
+                     "cellSize":  [1.5, 0.85, 1],
+                     "logicalBoardBounds":  [-0.75, -0.425, 9.75, 6.375],
+                     "battlefieldBounds":  [-1.68, -1.02, 10.68, 6.9699999999999989],
+                     "environmentBounds":  [-8.4, -8.5, 18, 10.2]
+                 },
+    "id":  "kanto_stadium",
+    "geometry":  [
+                     {
+                         "id":  "stadium-plinth",
+                         "material":  "minecraft:smooth_stone",
+                         "position":  [
+                                          4.5,
+                                          3.23,
+                                          "-.7"
+                                      ],
+                         "size":  [15.6, 10.2, 1.35],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "touchline--0.78",
+                         "material":  "minecraft:white_concrete",
+                         "position":  [-0.93599999999999994, 2.975, 0.012],
+                         "size":  [0.12, 7.0974999999999993, 0.025],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "touchline-8.28",
+                         "material":  "minecraft:white_concrete",
+                         "position":  [9.9359999999999982, 2.975, 0.012],
+                         "size":  [0.12, 7.0974999999999993, 0.025],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "endline--0.68",
+                         "material":  "minecraft:white_concrete",
+                         "position":  [4.5, -0.57800000000000007, 0.012],
+                         "size":  [10.98, 0.085, 0.025],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "endline-7.68",
+                         "material":  "minecraft:white_concrete",
+                         "position":  [4.5, 6.528, 0.012],
+                         "size":  [10.98, 0.085, 0.025],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "center-line",
+                         "material":  "minecraft:white_concrete",
+                         "position":  [4.5, 2.975, 0.012],
+                         "size":  [10.92, 0.06375, 0.025],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "pokeball-top",
+                         "material":  "minecraft:red_concrete",
+                         "position":  [4.5, 2.635, 0.026],
+                         "size":  [1.68, 0.595, 0.03],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "pokeball-bottom",
+                         "material":  "minecraft:white_concrete",
+                         "position":  [4.5, 3.315, 0.026],
+                         "size":  [1.68, 0.595, 0.03],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "pokeball-center",
+                         "material":  "minecraft:black_concrete",
+                         "position":  [4.5, 2.975, 0.044],
+                         "size":  [0.36, 0.255, 0.03],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "stands--3.1-0",
+                         "material":  "minecraft:blue_concrete",
+                         "position":  [-3.7199999999999998, 2.38, 0.3],
+                         "size":  [1.02, 8.9249999999999989, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "stands--3.95-1",
+                         "material":  "minecraft:blue_concrete",
+                         "position":  [-4.74, 2.38, 0.7],
+                         "size":  [1.02, 8.9249999999999989, 1.4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "stands--4.8-2",
+                         "material":  "minecraft:blue_concrete",
+                         "position":  [-5.76, 2.38, 1.1],
+                         "size":  [1.02, 8.9249999999999989, 2.2],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "stands-10.6-0",
+                         "material":  "minecraft:red_concrete",
+                         "position":  [12.719999999999999, 2.38, 0.3],
+                         "size":  [1.02, 8.9249999999999989, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "stands-11.45-1",
+                         "material":  "minecraft:red_concrete",
+                         "position":  [13.739999999999998, 2.38, 0.7],
+                         "size":  [1.02, 8.9249999999999989, 1.4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "stands-12.3-2",
+                         "material":  "minecraft:red_concrete",
+                         "position":  [14.759999999999998, 2.38, 1.1],
+                         "size":  [1.02, 8.9249999999999989, 2.2],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "rear-stands",
+                         "material":  "minecraft:smooth_sandstone",
+                         "position":  [
+                                          4.5,
+                                          "-3.1",
+                                          1
+                                      ],
+                         "size":  [12, 1.19, 2],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "floodlight-post--2.1",
+                         "material":  "minecraft:iron_block",
+                         "position":  [
+                                          -2.52,
+                                          "-2.2",
+                                          2
+                                      ],
+                         "size":  [0.24, 0.17, 4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "floodlight-bank--2.1",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [
+                                          -2.52,
+                                          "-2.2",
+                                          4
+                                      ],
+                         "size":  [1.7999999999999998, 0.34, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "floodlight-post-9.6",
+                         "material":  "minecraft:iron_block",
+                         "position":  [
+                                          11.52,
+                                          "-2.2",
+                                          2
+                                      ],
+                         "size":  [0.24, 0.17, 4],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "floodlight-bank-9.6",
+                         "material":  "minecraft:sea_lantern",
+                         "position":  [
+                                          11.52,
+                                          "-2.2",
+                                          4
+                                      ],
+                         "size":  [1.7999999999999998, 0.34, 0.6],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "dugout",
+                         "material":  "minecraft:smooth_quartz",
+                         "position":  [
+                                          4.5,
+                                          7.607499999999999,
+                                          "-.18"
+                                      ],
+                         "size":  [11.52, 1.105, 0.35],
+                         "rotation":  [0, 0, 0]
+                     },
+                     {
+                         "id":  "coach-platform",
+                         "material":  "minecraft:smooth_stone",
+                         "position":  [
+                                          -2.64,
+                                          5.95,
+                                          "-.15"
+                                      ],
+                         "size":  [1.7999999999999998, 2.04, 0.3],
+                         "rotation":  [0, 0, 0]
+                     }
+                 ],
+    "texturedBattlefield":  true,
+    "benchMaterial":  "minecraft:smooth_quartz",
+    "backgroundColor":  "#92c7db"
+}

@@ -84,6 +84,8 @@ object VisualSmokeHarness {
 
     private fun tick(client: Minecraft) {
         if (!enabled) return
+        prepareSyntheticSpecies()
+        if (!ArcadeAcceptanceHarness.complete || System.getenv("SVHUB_ARCADE_ONLY") == "1") return
         bootTicks++
         if (bootTicks == 1) { client.options.guiScale().set(2); client.resizeDisplay() }
 
@@ -976,19 +978,19 @@ object VisualSmokeHarness {
                 addProperty("arena",if(!tactician&&equipped)"grand_line" else "kanto_stadium")
                 addProperty("tactician",if(tactician&&equipped)"svhub:greninja" else "svhub:pikachu")
                 add("balances",JsonObject().apply {
-                    addProperty("BeastCoin","2000")
-                    addProperty("HunterCoin","2000")
+                    addProperty("TestCredits","2000")
+                    addProperty("TestGems","2000")
                 })
                 add("offers",JsonArray().apply {
-                    add(storeOffer("ARENA","kanto_stadium","0","BeastCoin",true,!tactician&&!equipped))
-                    add(storeOffer("ARENA","grand_line","1250","BeastCoin",!tactician&&owned,!tactician&&equipped))
-                    add(storeOffer("ARENA","celestial_vault","1250","BeastCoin",false,false))
-                    add(storeOffer("ARENA","infinite_void","1200","HunterCoin",false,false))
-                    add(storeOffer("TACTICIAN","svhub:pikachu","0","HunterCoin",true,tactician&&!equipped,
+                    add(storeOffer("ARENA","kanto_stadium","0","TestCredits",true,!tactician&&!equipped))
+                    add(storeOffer("ARENA","grand_line","1250","TestCredits",!tactician&&owned,!tactician&&equipped))
+                    add(storeOffer("ARENA","celestial_vault","1250","TestCredits",false,false))
+                    add(storeOffer("ARENA","infinite_void","1200","TestGems",false,false))
+                    add(storeOffer("TACTICIAN","svhub:pikachu","0","TestGems",true,tactician&&!equipped,
                         name="Pikachu",species="cobblemon:pikachu",scale=.70))
-                    add(storeOffer("TACTICIAN","svhub:greninja","350","HunterCoin",tactician&&owned,tactician&&equipped,
+                    add(storeOffer("TACTICIAN","svhub:greninja","350","TestGems",tactician&&owned,tactician&&equipped,
                         name="Greninja",species="cobblemon:greninja",scale=.72))
-                    add(storeOffer("TACTICIAN","svhub:mewjo","650","HunterCoin",false,false,
+                    add(storeOffer("TACTICIAN","svhub:mewjo","650","TestGems",false,false,
                         name="Mewjo",species="cobblemon:mewtwo",aspects="mewjo",scale=.76))
                 })
             }

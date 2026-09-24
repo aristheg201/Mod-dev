@@ -8,11 +8,11 @@ data class CosmeticOffer(
     val kind: CosmeticKind,
     val id: String,
     val price: BigDecimal,
-    val currency: String = if (kind == CosmeticKind.ARENA) BEconomyAdapter.BEAST else BEconomyAdapter.HUNTER
+    val currency: String = EconomyConfig.defaultCurrency(kind.name)
 ) {
     init {
         require(price.signum() >= 0)
-        require(currency in setOf(BEconomyAdapter.BEAST, BEconomyAdapter.HUNTER))
+        require(currency.isNotBlank() || price.signum() == 0)
     }
     val key: String get() = "${kind.name.lowercase()}:$id"
 }
@@ -68,17 +68,17 @@ class CosmeticPurchases(
             if (economy.balance(player, offer.currency) < offer.price) { finish(StoreResult.INSUFFICIENT); return@guarded }
             // Identity is bound to player + catalog item. A different client request cannot charge it twice.
             val identity = "purchase:$player:${offer.key}"
-            val payment = CosmeticPayment(identity, offer.currency, offer.price, requestId)
+            val payment = CosmeticPayment(identity, economy.resolveCurrency(offer.currency), offer.price, requestId)
             account.payments[offer.key] = payment
             profiles.save(player, account.copyDeep()) {
                 guarded(player, finish) {
-                    if (!economy.debit(player, offer.price, offer.currency)) {
+                    if (!economy.debit(player, payment.amount, payment.currency)) {
                         payment.phase = MoneyPhase.DECLINED
                         profiles.save(player, account) { finish(StoreResult.INSUFFICIENT) }
                     } else {
                         // Persist our confirmation even if the optional history annotation fails.
                         payment.phase = MoneyPhase.CONFIRMED
-                        runCatching { economy.recordReceipt(player, identity, offer.price.negate(), offer.currency) }.onFailure { log(player, it) }
+                        runCatching { economy.recordReceipt(player, identity, payment.amount.negate(), payment.currency) }.onFailure { log(player, it) }
                         profiles.save(player, account.copyDeep()) { grantPaid(player, offer, account, finish) }
                     }
                 }
@@ -152,12 +152,12 @@ class CosmeticPurchases(
                 return@guarded
             }
             if (amount.signum() == 0) { complete(); return@guarded }
-            if (!economy.currencyExists(BEconomyAdapter.BEAST)) { finish(StoreResult.UNAVAILABLE); return@guarded }
-            val payment = CosmeticPayment("$key:$player", BEconomyAdapter.BEAST, amount, identity)
+            if (!economy.currencyExists(EconomyConfig.defaultCurrency("reward"))) { finish(StoreResult.UNAVAILABLE); return@guarded }
+            val payment = CosmeticPayment("$key:$player", economy.resolveCurrency(EconomyConfig.defaultCurrency("reward")), amount, identity)
             account.payments[key] = payment
             profiles.save(player, account.copyDeep()) {
                 guarded(player, finish) {
-                    economy.credit(player, amount, BEconomyAdapter.BEAST)
+                    economy.credit(player, payment.amount, payment.currency)
                     payment.phase = MoneyPhase.CONFIRMED
                     runCatching { economy.recordReceipt(player, payment.identity, amount, payment.currency) }.onFailure { log(player, it) }
                     profiles.save(player, account.copyDeep()) { complete() }

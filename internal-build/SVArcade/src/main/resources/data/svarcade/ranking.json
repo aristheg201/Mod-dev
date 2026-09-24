@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "points": {
+    "WIN": 25,
+    "DRAW": 0,
+    "LOSS": -20,
+    "FORFEIT": -30
+  },
+  "tiers": {
+    "Bronze": 0,
+    "Silver": 300,
+    "Gold": 600,
+    "Diamond": 1000
+  }
+}

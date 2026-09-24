@@ -1,0 +1,28 @@
+{
+  "pieces": {
+    "p": {
+      "species": "cobblemon:eevee",
+      "scale": 1.1
+    },
+    "n": {
+      "species": "cobblemon:rapidash",
+      "scale": 1.18
+    },
+    "b": {
+      "species": "cobblemon:gardevoir",
+      "scale": 1.16
+    },
+    "r": {
+      "species": "cobblemon:aggron",
+      "scale": 1.2
+    },
+    "q": {
+      "species": "cobblemon:milotic",
+      "scale": 1.18
+    },
+    "k": {
+      "species": "cobblemon:lucario",
+      "scale": 1.2
+    }
+  }
+}

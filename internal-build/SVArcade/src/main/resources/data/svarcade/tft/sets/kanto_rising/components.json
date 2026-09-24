@@ -1,0 +1,66 @@
+[
+    {
+        "id":  "bf_sword",
+        "name":  "Muscle Band",
+        "effects":  {
+                        "attack_pct":  0.1
+                    },
+        "stack":  "cobblemon:muscle_band"
+    },
+    {
+        "id":  "recurve_bow",
+        "name":  "Choice Scarf",
+        "effects":  {
+                        "attack_speed_pct":  0.1
+                    },
+        "stack":  "cobblemon:choice_scarf"
+    },
+    {
+        "id":  "needlessly_large_rod",
+        "name":  "Twisted Spoon",
+        "effects":  {
+                        "ability_power_pct":  0.1
+                    },
+        "stack":  "cobblemon:twisted_spoon"
+    },
+    {
+        "id":  "chain_vest",
+        "name":  "Metal Coat",
+        "effects":  {
+                        "defense":  20
+                    },
+        "stack":  "cobblemon:metal_coat"
+    },
+    {
+        "id":  "negatron_cloak",
+        "name":  "Resist Feather",
+        "effects":  {
+                        "spdef":  20
+                    },
+        "stack":  "cobblemon:resist_feather"
+    },
+    {
+        "id":  "giants_belt",
+        "name":  "Power Weight",
+        "effects":  {
+                        "hp_pct":  0.12
+                    },
+        "stack":  "cobblemon:power_weight"
+    },
+    {
+        "id":  "tear_of_goddess",
+        "name":  "Mystic Water",
+        "effects":  {
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:mystic_water"
+    },
+    {
+        "id":  "sparring_gloves",
+        "name":  "Razor Claw",
+        "effects":  {
+                        "crit_chance":  0.1
+                    },
+        "stack":  "cobblemon:razor_claw"
+    }
+]

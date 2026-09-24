@@ -382,12 +382,10 @@ object PokemonModelRenderer {
         val pose = gui.pose()
         pose.pushPose()
         if (selfClip) {
-            gui.enableScissor(
-                centerX - safeSize / 2,
-                centerY - safeSize / 2,
-                centerX + safeSize / 2,
-                centerY + safeSize / 2
-            )
+            val matrix = pose.last().pose()
+            val first = matrix.transformPosition(org.joml.Vector3f((centerX-safeSize/2).toFloat(),(centerY-safeSize/2).toFloat(),0f))
+            val last = matrix.transformPosition(org.joml.Vector3f((centerX+safeSize/2).toFloat(),(centerY+safeSize/2).toFloat(),0f))
+            gui.enableScissor(kotlin.math.floor(first.x).toInt(),kotlin.math.floor(first.y).toInt(),kotlin.math.ceil(last.x).toInt(),kotlin.math.ceil(last.y).toInt())
         }
 
         pose.translate(centerX.toDouble(), centerY - safeSize * 0.43, depth)

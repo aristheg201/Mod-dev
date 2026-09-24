@@ -26,12 +26,12 @@ object NativeArcadeService {
     )
 
     val games = listOf(
-        GameDef("chess", "Pokémon Chess", "chess", BOT_AND_PVP),
-        GameDef("xiangqi", "Cờ Tướng", "xiangqi", BOT_AND_PVP),
-        GameDef("ludo", "Cờ Cá Ngựa", "ludo", BOT_AND_PVP),
+        GameDef("chess", "Pokémon Chess", "chess", BOT_AND_PVP + "ranked"),
+        GameDef("xiangqi", "Cờ Tướng", "xiangqi", BOT_AND_PVP + "ranked"),
+        GameDef("ludo", "Cờ Cá Ngựa", "ludo", BOT_AND_PVP + "ranked"),
         GameDef("uno", "UNO", "uno", BOT_AND_PVP),
         GameDef("pokecards", "PokéDraft Cards", "cards", BOT_AND_PVP),
-        GameDef("tft", "Pokémon TFT", "tft", BOT_AND_PVP),
+        GameDef("tft", "Pokémon TFT", "tft", BOT_AND_PVP + "ranked"),
         GameDef("tower_defense", "Pokémon Tower Defense", "tower_defense", setOf("solo", "bot_easy", "bot_normal", "bot_hard"))
     )
 
@@ -70,7 +70,8 @@ object NativeArcadeService {
                 arr.add(JsonObject().apply {
                     addProperty("id", d.id); addProperty("title", d.title); addProperty("icon", d.icon)
                     add("modes", JsonArray().also { a -> d.modes.forEach(a::add) })
-                    addProperty("queued", queues[d.id]?.contains(player.uuid) == true)
+                    add("capabilities", ArcadeCapabilities.json(d.id, d.modes))
+                    addProperty("queued", queues.filterKeys { it == d.id || it.startsWith(d.id + "|") }.values.any { player.uuid in it })
                     addProperty("queueSize", queues[d.id]?.size ?: 0)
                     addProperty("queueTarget", if (d.id == "tft") 8 else if ("pvp" in d.modes) 2 else 1)
                 })
@@ -84,6 +85,7 @@ object NativeArcadeService {
                 })
             }
         })
+        add("ranking", NativeRanking.state(player.uuid))
         addProperty("engine", "async-session-actors")
         addProperty("bots", "async-worker")
         addProperty("rewards", "async-policy")
@@ -117,7 +119,7 @@ object NativeArcadeService {
         return resolution == ActiveSessionResolution.RESUME
     }
 
-    fun start(player: ServerPlayer, gameId: String, requestedMode: String): Result {
+    fun start(player: ServerPlayer, gameId: String, requestedMode: String, timeControl: String = "10+5"): Result {
         if (!NativeArcadeSessionStore.isLoadComplete()) {
             return Result(false, "gui.svhub.arcade.recovering")
         }
@@ -126,6 +128,7 @@ object NativeArcadeService {
         if (sessions.size >= MAX_SESSIONS) return Result(false, "gui.svhub.arcade.server_busy")
         val mode = if (requestedMode == "bot") "bot_normal" else requestedMode
         if (mode !in def.modes) return Result(false, "gui.svhub.arcade.invalid_mode")
+        if (ArcadeCapabilities.clock(gameId) && timeControl !in ArcadeCapabilities.clocks) return Result(false, "Invalid time control")
         val existingSession = active[player.uuid]
         val existingHandle = existingSession?.let(sessions::get)
         when (NativeArcadeLifecyclePolicy.resolve(
@@ -145,9 +148,10 @@ object NativeArcadeService {
         }
         queues.values.forEach { it.remove(player.uuid) }
 
-        if (mode == "pvp") {
-            val q = queues.getValue(gameId)
-            if (gameId == "tft") {
+        if (mode == "pvp" || mode == "ranked") {
+            val queueKey = if (gameId == "tft" && mode == "pvp") gameId else "$gameId|$mode|${if (ArcadeCapabilities.clock(gameId)) timeControl else "none"}"
+            val q = queues.getOrPut(queueKey) { ArrayDeque() }
+            if (gameId == "tft" && mode == "pvp") {
                 if (!q.contains(player.uuid)) q.addLast(player.uuid)
                 val ready = mutableListOf<ServerPlayer>()
                 val retained = ArrayDeque<UUID>()
@@ -176,7 +180,9 @@ object NativeArcadeService {
                 val oid = q.removeFirst()
                 val op = player.server.playerList.getPlayer(oid) ?: continue
                 if (oid == player.uuid || active.containsKey(oid)) continue
-                val handle = register(player.server, create(gameId, listOf(realSeat(player), realSeat(op))), mode)
+                val seats = mutableListOf(realSeat(player), realSeat(op))
+                if (gameId == "tft") repeat(6) { seats += botSeat("Ranked Bot ${it + 1}", NativeBotDifficulty.HARD) }
+                val handle = register(player.server, create(gameId, seats, timeControl), mode)
                 return Result(true, "gui.svhub.arcade.matched", realPlayers(handle))
             }
             q.addLast(player.uuid)
@@ -194,7 +200,7 @@ object NativeArcadeService {
             "tower_defense" -> if (mode == "solo") listOf(realSeat(player)) else listOf(realSeat(player), botSeat("Defense Assistant", difficulty))
             else -> listOf(realSeat(player), botSeat("SV Bot", difficulty))
         }
-        val handle = register(player.server, create(gameId, seats), mode)
+        val handle = register(player.server, create(gameId, seats, timeControl), mode)
         return Result(true, "gui.svhub.arcade.started", realPlayers(handle))
     }
 
@@ -346,8 +352,8 @@ object NativeArcadeService {
         return handle
     }
 
-    private fun create(id: String, seats: List<NativeSeat>): NativeGameSession = when (id) {
-        "chess" -> ChessSession(seats); "xiangqi" -> XiangqiSession(seats); "ludo" -> LudoSession(seats)
+    private fun create(id: String, seats: List<NativeSeat>, timeControl: String = "10+5"): NativeGameSession = when (id) {
+        "chess" -> ArcadeCapabilities.time(timeControl).let { (base, inc) -> ChessSession(seats, base, inc) }; "xiangqi" -> ArcadeCapabilities.time(timeControl).let { (base, inc) -> XiangqiSession(seats, base, inc) }; "ludo" -> LudoSession(seats)
         "uno" -> UnoSession(seats); "pokecards" -> CardDuelSession(seats); "tft" -> TftSession(seats, tacticianSelections = seats.mapNotNull { seat ->
             val playerId = runCatching { UUID.fromString(seat.id) }.getOrNull() ?: return@mapNotNull null
             NativeCosmeticService.selectedTactician(playerId)?.let { seat.id to it }
@@ -379,6 +385,7 @@ object NativeArcadeService {
             }
             NativeRewardParticipant(id, outcome, m.humanActions[id] ?: 0, id in m.forfeited, placement)
         }
+        if (m.mode == "ranked") NativeRanking.settle(handle.sessionId, handle.gameId, participants)
         val accepted = NativeRewardService.enqueue(
             NativeRewardCompletion(handle.sessionId, handle.gameId, m.mode, (now - m.createdAtEpochMs).coerceAtLeast(0L), participants)
         ) { durable ->

@@ -1,0 +1,25 @@
+﻿{
+    "DiskFreeBefore":  13822443520,
+    "Targets":  [
+                    {
+                        "Path":  "C:\\Users\\Admin\\Downloads\\Mod-dev-feature-svhub-production-20260916\\production\\internal-build\\runner-svhub",
+                        "Bytes":  611765744
+                    },
+                    {
+                        "Path":  "C:\\Users\\Admin\\Downloads\\Mod-dev-feature-svhub-production-20260916\\production\\internal-build\\runner-svarcade",
+                        "Bytes":  633277554
+                    },
+                    {
+                        "Path":  "C:\\Users\\Admin\\Downloads\\Mod-dev-feature-svhub-production-20260916\\production\\internal-build\\SVArcade\\.gradle",
+                        "Bytes":  250677704
+                    },
+                    {
+                        "Path":  "C:\\Users\\Admin\\Downloads\\Mod-dev-feature-svhub-production-20260916\\production\\internal-build\\SVArcade\\build",
+                        "Bytes":  227906134
+                    },
+                    {
+                        "Path":  "C:\\Users\\Admin\\Downloads\\Mod-dev-feature-svhub-production-20260916\\production\\internal-build\\SVArcade\\run",
+                        "Bytes":  113844741
+                    }
+                ]
+}

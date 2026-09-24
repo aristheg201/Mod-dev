@@ -1,0 +1,32 @@
+{
+  "pieces": {
+    "k": {
+      "species": "cobblemon:arcanine",
+      "scale": 0.98
+    },
+    "a": {
+      "species": "cobblemon:gallade",
+      "scale": 0.88
+    },
+    "e": {
+      "species": "cobblemon:donphan",
+      "scale": 0.92
+    },
+    "h": {
+      "species": "cobblemon:mudsdale",
+      "scale": 0.9
+    },
+    "r": {
+      "species": "cobblemon:aggron",
+      "scale": 0.92
+    },
+    "c": {
+      "species": "cobblemon:magnezone",
+      "scale": 0.88
+    },
+    "p": {
+      "species": "cobblemon:pawniard",
+      "scale": 0.76
+    }
+  }
+}

@@ -1,0 +1,31 @@
+package io.github.aristheg201.svarcade.server
+
+import io.github.aristheg201.svarcade.content.HubContent
+import io.github.aristheg201.svarcade.content.VisibilitySpec
+import io.github.aristheg201.svarcade.permission.SVArcadePermissions
+import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.server.level.ServerPlayer
+
+object SnapshotProjector {
+    fun forPlayer(content: HubContent, player: ServerPlayer, editor: Boolean, clientMods: Set<String> = emptySet()): HubContent {
+        // Full editors need the complete canonical snapshot because publish is an
+        // optimistic whole-document transaction. Never materialize placeholders in
+        // an editor snapshot or an admin could accidentally publish resolved values.
+        if (editor && SVArcadePermissions.has(player, SVArcadePermissions.EDITOR_ALL, 2)) return content
+
+        val pages = content.pages.mapNotNull { page ->
+            if (!visible(page.visibility, player, editor, clientMods)) return@mapNotNull null
+            page.copy(components = page.components.filter { visible(it.visibility, player, editor, clientMods) })
+        }
+        val projected = SnapshotPruner.prune(content, pages)
+        return if (editor) projected else HubPlaceholderResolver.forPlayer(projected, player)
+    }
+
+    private fun visible(spec: VisibilitySpec, player: ServerPlayer, editor: Boolean, clientMods: Set<String>): Boolean {
+        if (spec.editorOnly && !editor) return false
+        if (spec.permission != null && !SVArcadePermissions.has(player, spec.permission, 0)) return false
+        if (spec.serverMod != null && !FabricLoader.getInstance().isModLoaded(spec.serverMod)) return false
+        if (spec.clientMod != null && spec.clientMod !in clientMods) return false
+        return true
+    }
+}

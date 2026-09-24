@@ -1,0 +1,14 @@
+allprojects {
+    afterEvaluate {
+        dependencies.add('modRuntimeOnly', files('C:/Users/Admin/Downloads/Mod-dev-feature-svhub-production-20260916/production/internal-build/BEconomy-1.5-local-test.jar'))
+        tasks.named('runServer') {
+            workingDir layout.buildDirectory.dir('server-acceptance').get().asFile
+            jvmArgs '-Xverify:all'
+            classpath += files('C:/Users/Admin/.gradle/caches/modules-2/files-2.1/com.ibm.icu/icu4j/71.1/9e7d3304c23f9ba5cb71915f7cce23231a57a445/icu4j-71.1.jar')
+            doFirst {
+                workingDir layout.buildDirectory.dir('server-acceptance').get().asFile
+            }
+            args '--nogui'
+        }
+    }
+}

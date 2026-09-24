@@ -1,0 +1,470 @@
+[
+    {
+        "id":  "deathblade",
+        "name":  "Choice Band",
+        "components":  [
+                           "bf_sword",
+                           "bf_sword"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.32
+                    },
+        "stack":  "cobblemon:choice_band"
+    },
+    {
+        "id":  "giant_slayer",
+        "name":  "Expert Belt",
+        "components":  [
+                           "bf_sword",
+                           "recurve_bow"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.18,
+                        "attack_speed_pct":  0.1
+                    },
+        "stack":  "cobblemon:expert_belt"
+    },
+    {
+        "id":  "hextech_gunblade",
+        "name":  "Shell Bell",
+        "components":  [
+                           "bf_sword",
+                           "needlessly_large_rod"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "ability_power_pct":  0.1
+                    },
+        "stack":  "cobblemon:shell_bell"
+    },
+    {
+        "id":  "edge_of_night",
+        "name":  "Focus Band",
+        "components":  [
+                           "bf_sword",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "defense":  20
+                    },
+        "stack":  "cobblemon:focus_band"
+    },
+    {
+        "id":  "bloodthirster",
+        "name":  "Life Orb",
+        "components":  [
+                           "bf_sword",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.18,
+                        "spdef":  20,
+                        "hp_pct":  0.08
+                    },
+        "stack":  "cobblemon:life_orb"
+    },
+    {
+        "id":  "steraks_gage",
+        "name":  "Focus Sash",
+        "components":  [
+                           "bf_sword",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "cobblemon:focus_sash"
+    },
+    {
+        "id":  "spear_of_shojin",
+        "name":  "Quick Claw",
+        "components":  [
+                           "bf_sword",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "mana_start":  15,
+                        "mana_on_attack":  5
+                    },
+        "stack":  "cobblemon:quick_claw"
+    },
+    {
+        "id":  "infinity_edge",
+        "name":  "Razor Fang",
+        "components":  [
+                           "bf_sword",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "attack_pct":  0.1,
+                        "crit_chance":  0.25,
+                        "crit_multiplier":  0.25
+                    },
+        "stack":  "cobblemon:razor_fang"
+    },
+    {
+        "id":  "rapid_firecannon",
+        "name":  "Wide Lens",
+        "components":  [
+                           "recurve_bow",
+                           "recurve_bow"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.3,
+                        "range":  1
+                    },
+        "stack":  "cobblemon:wide_lens"
+    },
+    {
+        "id":  "guinsoos_rageblade",
+        "name":  "Metronome",
+        "components":  [
+                           "recurve_bow",
+                           "needlessly_large_rod"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.28,
+                        "ability_power_pct":  0.1
+                    },
+        "stack":  "cobblemon:metronome"
+    },
+    {
+        "id":  "titans_resolve",
+        "name":  "Assault Vest",
+        "components":  [
+                           "recurve_bow",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "defense":  32,
+                        "attack_pct":  0.08
+                    },
+        "stack":  "cobblemon:assault_vest"
+    },
+    {
+        "id":  "runaans_hurricane",
+        "name":  "Flyinium Z",
+        "components":  [
+                           "recurve_bow",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "spdef":  20
+                    },
+        "stack":  "mega_showdown:flyinium_z"
+    },
+    {
+        "id":  "nashors_tooth",
+        "name":  "Beedrillite",
+        "components":  [
+                           "recurve_bow",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "mega_showdown:beedrillite"
+    },
+    {
+        "id":  "statikk_shiv",
+        "name":  "Magnet",
+        "components":  [
+                           "recurve_bow",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:magnet"
+    },
+    {
+        "id":  "last_whisper",
+        "name":  "Scope Lens",
+        "components":  [
+                           "recurve_bow",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "attack_speed_pct":  0.1,
+                        "crit_chance":  0.18,
+                        "attack_pct":  0.06
+                    },
+        "stack":  "cobblemon:scope_lens"
+    },
+    {
+        "id":  "rabadons_deathcap",
+        "name":  "Choice Specs",
+        "components":  [
+                           "needlessly_large_rod",
+                           "needlessly_large_rod"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.4
+                    },
+        "stack":  "cobblemon:choice_specs"
+    },
+    {
+        "id":  "crownguard",
+        "name":  "Gardevoirite",
+        "components":  [
+                           "needlessly_large_rod",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.18,
+                        "defense":  20,
+                        "hp_pct":  0.08
+                    },
+        "stack":  "mega_showdown:gardevoirite"
+    },
+    {
+        "id":  "ionic_spark",
+        "name":  "Electrium Z",
+        "components":  [
+                           "needlessly_large_rod",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.18,
+                        "spdef":  30
+                    },
+        "stack":  "mega_showdown:electrium_z"
+    },
+    {
+        "id":  "morellonomicon",
+        "name":  "Firium Z",
+        "components":  [
+                           "needlessly_large_rod",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.1,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "mega_showdown:firium_z"
+    },
+    {
+        "id":  "archangels_staff",
+        "name":  "Wise Glasses",
+        "components":  [
+                           "needlessly_large_rod",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.1,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:wise_glasses"
+    },
+    {
+        "id":  "jeweled_gauntlet",
+        "name":  "Alakazite",
+        "components":  [
+                           "needlessly_large_rod",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "ability_power_pct":  0.2,
+                        "crit_chance":  0.22
+                    },
+        "stack":  "mega_showdown:alakazite"
+    },
+    {
+        "id":  "bramble_vest",
+        "name":  "Rocky Helmet",
+        "components":  [
+                           "chain_vest",
+                           "chain_vest"
+                       ],
+        "effects":  {
+                        "defense":  60
+                    },
+        "stack":  "cobblemon:rocky_helmet"
+    },
+    {
+        "id":  "gargoyle_stoneplate",
+        "name":  "Eviolite",
+        "components":  [
+                           "chain_vest",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "defense":  32,
+                        "spdef":  32
+                    },
+        "stack":  "cobblemon:eviolite"
+    },
+    {
+        "id":  "sunfire_cape",
+        "name":  "Red Orb",
+        "components":  [
+                           "chain_vest",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "defense":  20,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "mega_showdown:red_orb"
+    },
+    {
+        "id":  "protectors_vow",
+        "name":  "Light Clay",
+        "components":  [
+                           "chain_vest",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "defense":  20,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:light_clay"
+    },
+    {
+        "id":  "steadfast_heart",
+        "name":  "Steelixite",
+        "components":  [
+                           "chain_vest",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "defense":  20,
+                        "crit_chance":  0.1
+                    },
+        "stack":  "mega_showdown:steelixite"
+    },
+    {
+        "id":  "dragons_claw",
+        "name":  "Dragon Fang",
+        "components":  [
+                           "negatron_cloak",
+                           "negatron_cloak"
+                       ],
+        "effects":  {
+                        "spdef":  65
+                    },
+        "stack":  "cobblemon:dragon_fang"
+    },
+    {
+        "id":  "evenshroud",
+        "name":  "Black Glasses",
+        "components":  [
+                           "negatron_cloak",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "spdef":  20,
+                        "hp_pct":  0.12
+                    },
+        "stack":  "cobblemon:black_glasses"
+    },
+    {
+        "id":  "adaptive_helm",
+        "name":  "Safety Goggles",
+        "components":  [
+                           "negatron_cloak",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "spdef":  20,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:safety_goggles"
+    },
+    {
+        "id":  "quicksilver",
+        "name":  "Clear Amulet",
+        "components":  [
+                           "negatron_cloak",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "spdef":  20,
+                        "crit_chance":  0.1,
+                        "attack_speed_pct":  0.08
+                    },
+        "stack":  "cobblemon:clear_amulet"
+    },
+    {
+        "id":  "warmogs_armor",
+        "name":  "Leftovers",
+        "components":  [
+                           "giants_belt",
+                           "giants_belt"
+                       ],
+        "effects":  {
+                        "hp_pct":  0.42
+                    },
+        "stack":  "cobblemon:leftovers"
+    },
+    {
+        "id":  "redemption",
+        "name":  "Soothe Bell",
+        "components":  [
+                           "giants_belt",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "hp_pct":  0.12,
+                        "mana_start":  15
+                    },
+        "stack":  "cobblemon:soothe_bell"
+    },
+    {
+        "id":  "guardbreaker",
+        "name":  "Lucarionite",
+        "components":  [
+                           "giants_belt",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "hp_pct":  0.12,
+                        "crit_chance":  0.1
+                    },
+        "stack":  "mega_showdown:lucarionite"
+    },
+    {
+        "id":  "blue_buff",
+        "name":  "Blue Orb",
+        "components":  [
+                           "tear_of_goddess",
+                           "tear_of_goddess"
+                       ],
+        "effects":  {
+                        "mana_start":  50
+                    },
+        "stack":  "mega_showdown:blue_orb"
+    },
+    {
+        "id":  "hand_of_justice",
+        "name":  "Lucky Egg",
+        "components":  [
+                           "tear_of_goddess",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "mana_start":  15,
+                        "crit_chance":  0.1
+                    },
+        "stack":  "cobblemon:lucky_egg"
+    },
+    {
+        "id":  "thiefs_gloves",
+        "name":  "Kings Rock",
+        "components":  [
+                           "sparring_gloves",
+                           "sparring_gloves"
+                       ],
+        "effects":  {
+                        "crit_chance":  0.2
+                    },
+        "stack":  "cobblemon:kings_rock"
+    }
+]

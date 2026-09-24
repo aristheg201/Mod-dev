@@ -1,0 +1,33 @@
+[
+  {
+    "round": "6-7",
+    "componentDrops": 5,
+    "enemies": [
+      {
+        "unit": "mv_godzilla",
+        "star": 3,
+        "slot": 13
+      }
+    ],
+    "lootTable": "boss_cache",
+    "lootRolls": 5
+  },
+  {
+    "round": "7-7",
+    "componentDrops": 6,
+    "enemies": [
+      {
+        "unit": "mv_ghidorah",
+        "star": 3,
+        "slot": 13
+      },
+      {
+        "unit": "mv_godzilla",
+        "star": 3,
+        "slot": 6
+      }
+    ],
+    "lootTable": "boss_cache",
+    "lootRolls": 6
+  }
+]
