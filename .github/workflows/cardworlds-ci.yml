@@ -104,7 +104,7 @@ jobs:
           echo "QA driver: $QA_JAR"
           jar tf "$QA_JAR" | grep -F 'vn/svarcade/tcg/qa/VisualRun.class'
           unzip -p "$QA_JAR" fabric.mod.json | tee build/libs/qa.fabric.mod.json
-          grep -q '"id":"cardworlds_qa"' build/libs/qa.fabric.mod.json
+          grep -Eq '"id"[[:space:]]*:[[:space:]]*"cardworlds_qa"' build/libs/qa.fabric.mod.json
 
       - name: Boot Minecraft and capture Card Worlds scenes
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
