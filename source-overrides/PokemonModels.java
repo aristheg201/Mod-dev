@@ -64,8 +64,16 @@ public final class PokemonModels {
             actor.state().updateAge((int)((now - actor.born()) / 50));
             actor.state().updatePartialTicks(partial);
 
-            ui.c.getMatrices().translate(viewport.x() + viewport.w() * 0.50f, viewport.y() + viewport.h() * 0.76f, 140);
-            float scale = Math.clamp(Math.min(viewport.w() * 0.30f, viewport.h() * 0.38f), 12f, 34f);
+            // Cobblemon's profile transform already applies its own vertical profile offset.
+            // Anchor near the top of the artwork window (as Cobblemon's own ModelWidget does),
+            // rather than near the card bottom, otherwise every model sits on the footer.
+            ui.c.getMatrices().translate(
+                viewport.x() + viewport.w() * 0.50f,
+                viewport.y() + Math.max(6f, viewport.h() * 0.16f),
+                140
+            );
+            float basis = Math.min(viewport.w(), viewport.h());
+            float scale = Math.clamp(basis * 0.42f, 26f, 52f);
             Quaternionf rotation = new Quaternionf().rotationXYZ(
                 (float)Math.toRadians(13),
                 (float)Math.toRadians(-35),
