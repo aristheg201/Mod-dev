@@ -9,32 +9,44 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cardworlds-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
       - name: Restore Card Worlds source
         shell: bash
         run: |
+          set -euo pipefail
           cat bootstrap/cardworlds-src.b64.part* | base64 -d > /tmp/cardworlds-src-tools.tar.gz
           echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
           tar -xzf /tmp/cardworlds-src-tools.tar.gz
           test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
           test -f src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java
+          test -f src/qa/java/vn/svarcade/tcg/qa/VisualRun.java
           test -f tools/verify_artifact.py
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
       - name: Unit tests + remapped artifacts
         run: gradle --no-daemon clean verifyCardWorlds
+
       - name: Verify production jar and test evidence
         run: python3 tools/verify_artifact.py
+
       - name: Verify production jar metadata
         shell: bash
         run: |
@@ -44,7 +56,8 @@ jobs:
           unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
           grep -q '"id": "svarcade_tcg"' build/libs/fabric.mod.built.json
           sha256sum "$JAR" | tee build/libs/SHA256.txt
-      - name: Publish test report and jars
+
+      - name: Publish build/test evidence
         uses: actions/upload-artifact@v4
         with:
           name: CardWorlds-${{ github.sha }}
@@ -56,3 +69,127 @@ jobs:
             build/internal-evidence.json
             build/reports/tests/test/**
           if-no-files-found: error
+
+      - name: Install headless OpenGL runtime
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
+
+      - name: Download Minecraft client assets
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+        run: gradle --no-daemon downloadAssets
+
+      - name: Prepare Card Worlds QA driver
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_JAR="$(find build/libs -maxdepth 1 -type f -name 'SVArcade-TCG-*-qa-driver.jar' | head -n1)"
+          test -n "$QA_JAR"
+          mkdir -p run/mods run/screenshots run/logs
+          cp "$QA_JAR" run/mods/CardWorlds-QA.jar
+          cat > run/options.txt <<'EOF'
+          version:3955
+          guiScale:3
+          fullscreen:false
+          maxFps:60
+          renderDistance:5
+          simulationDistance:5
+          particles:1
+          showSubtitles:false
+          EOF
+          echo "QA driver: $QA_JAR"
+          jar tf "$QA_JAR" | grep -F 'vn/svarcade/tcg/qa/VisualRun.class'
+          unzip -p "$QA_JAR" fabric.mod.json | tee build/libs/qa.fabric.mod.json
+          grep -q '"id":"cardworlds_qa"' build/libs/qa.fabric.mod.json
+
+      - name: Boot Minecraft and capture Card Worlds scenes
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 720s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon --offline runClient
+
+      - name: Verify Card Worlds visual evidence
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f run/logs/latest.log
+          echo "Captured screenshots:"
+          find run/screenshots -maxdepth 1 -type f -name '*.png' -printf '%f\n' | sort
+
+          expected=(
+            01-home
+            02-collection
+            03-decks
+            04-play
+            05-market
+            06-world
+            07-packs
+            08-pack-enter
+            09-pack-opening
+            10-pack-reveal
+            11-pack-summary
+            12-duel-summon
+            13-duel-board
+            14-duel-result
+            15-reopen-y
+            16-reopen-command
+            17-scale-two
+          )
+
+          for name in "${expected[@]}"; do
+            test -f "run/screenshots/$name.png"
+            grep -Fq "Captured $name" run/logs/latest.log
+          done
+
+          count="$(find run/screenshots -maxdepth 1 -type f -name '[0-9][0-9]-*.png' | wc -l)"
+          test "$count" -eq 17
+          ! find run/screenshots -maxdepth 1 -type f -name 'failure-*.png' | grep -q .
+          grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
+
+          if grep -Eiq 'CARDWORLDS_QA_FAILED|Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Exception in thread "Render thread"' run/logs/latest.log; then
+            echo 'Card Worlds visual smoke detected a crash/render failure' >&2
+            grep -Ein 'CARDWORLDS_QA_FAILED|Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Exception in thread "Render thread"' run/logs/latest.log | tail -n 120 >&2
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+
+          expected = [
+              "01-home", "02-collection", "03-decks", "04-play", "05-market",
+              "06-world", "07-packs", "08-pack-enter", "09-pack-opening",
+              "10-pack-reveal", "11-pack-summary", "12-duel-summon",
+              "13-duel-board", "14-duel-result", "15-reopen-y",
+              "16-reopen-command", "17-scale-two",
+          ]
+          for name in expected:
+              p = Path("run/screenshots") / f"{name}.png"
+              data = p.read_bytes()
+              assert data[:8] == b"\x89PNG\r\n\x1a\n", (name, "not png")
+              width, height = struct.unpack(">II", data[16:24])
+              assert width >= 640 and height >= 360, (name, width, height)
+              assert len(data) >= 20_000, (name, "suspiciously small", len(data))
+              print(f"{name}: {width}x{height}, {len(data)} bytes")
+          PY
+
+      - name: Upload Card Worlds visual QA evidence
+        if: always() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: CardWorlds-visual-qa-${{ github.sha }}
+          path: |
+            run/screenshots/*.png
+            run/logs/latest.log
+            run/crash-reports/**
+            build/libs/qa.fabric.mod.json
+          if-no-files-found: warn
