@@ -27,6 +27,10 @@ jobs:
           cat bootstrap/cardworlds-src.b64.part* | base64 -d > /tmp/cardworlds-src-tools.tar.gz
           echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
           tar -xzf /tmp/cardworlds-src-tools.tar.gz
+          # Match the Loom generation already proven by SVHub visual smoke.
+          # Loom 1.7 leaves Cobblemon Kotlin metadata pointing at intermediary
+          # names (for example net.minecraft.class_2960) in a Yarn dev runtime.
+          sed -i 's/^loom_version=.*/loom_version=1.10.5/' gradle.properties
           test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
           test -f src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java
           test -f src/qa/java/vn/svarcade/tcg/qa/VisualRun.java
@@ -39,7 +43,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.14.3'
 
       - name: Unit tests + remapped artifacts
         run: gradle --no-daemon clean verifyCardWorlds
