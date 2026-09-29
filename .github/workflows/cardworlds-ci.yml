@@ -31,6 +31,29 @@ jobs:
           # Loom 1.7 leaves Cobblemon Kotlin metadata pointing at intermediary
           # names (for example net.minecraft.class_2960) in a Yarn dev runtime.
           sed -i 's/^loom_version=.*/loom_version=1.10.5/' gradle.properties
+          cat >> build.gradle <<'GRADLE'
+
+          configurations {
+              productionRuntimeMods
+          }
+
+          dependencies {
+              productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+              productionRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
+              productionRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
+          }
+
+          tasks.register('runProductionCardWorldsClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+              dependsOn tasks.named('remapJar'), tasks.named('remapQaJar')
+              mods.from configurations.productionRuntimeMods
+              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
+              mods.from tasks.named('remapQaJar').flatMap { it.archiveFile }
+              jvmArgs.add('-Dcardworlds.qa=true')
+              programArgs.addAll(['--width', '1280', '--height', '720'])
+              runDir = file('run')
+              useXVFB = true
+          }
+          GRADLE
           test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
           test -f src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java
           test -f src/qa/java/vn/svarcade/tcg/qa/VisualRun.java
@@ -93,8 +116,7 @@ jobs:
           set -euo pipefail
           QA_JAR="$(find build/libs -maxdepth 1 -type f -name 'SVArcade-TCG-*-qa-driver.jar' | head -n1)"
           test -n "$QA_JAR"
-          mkdir -p run/mods run/screenshots run/logs
-          cp "$QA_JAR" run/mods/CardWorlds-QA.jar
+          mkdir -p run/screenshots run/logs
           cat > run/options.txt <<'EOF'
           version:3955
           guiScale:3
@@ -114,11 +136,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true'
         shell: bash
         run: |
           set -euo pipefail
-          timeout 720s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon --offline runClient
+          timeout 720s gradle --no-daemon --stacktrace runProductionCardWorldsClient
 
       - name: Verify Card Worlds visual evidence
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
