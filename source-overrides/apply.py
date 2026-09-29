@@ -52,8 +52,8 @@ repls = [
      'case 18->{shot(c,"14-duel-result");((net.minecraft.client.gui.screen.Screen)a).close();step=20;}'),
     ('case 21->{shot(c,"15-reopen-y");a.keyPressed(GLFW.GLFW_KEY_Y,0,0);step=22;}',
      'case 21->{shot(c,"15-reopen-y");((net.minecraft.client.gui.screen.Screen)a).keyPressed(GLFW.GLFW_KEY_Y,0,0);step=22;}'),
-    ('case 24->{shot(c,"16-reopen-command");a.navigate("Collection");a.fields.put("search","");a.focus="search";a.charTyped(\\'y\\',0);if(!a.fields.get("search").equals("y"))throw new AssertionError("Typing Y failed");step++;}',
-     'case 24->{shot(c,"16-reopen-command");a.navigate("Collection");a.fields.put("search","");a.focus="search";((net.minecraft.client.gui.screen.Screen)a).charTyped(\\'y\\',0);if(!a.fields.get("search").equals("y"))throw new AssertionError("Typing Y failed");step++;}'),
+    ("""case 24->{shot(c,"16-reopen-command");a.navigate("Collection");a.fields.put("search","");a.focus="search";a.charTyped('y',0);if(!a.fields.get("search").equals("y"))throw new AssertionError("Typing Y failed");step++;}""",
+     """case 24->{shot(c,"16-reopen-command");a.navigate("Collection");a.fields.put("search","");a.focus="search";((net.minecraft.client.gui.screen.Screen)a).charTyped('y',0);if(!a.fields.get("search").equals("y"))throw new AssertionError("Typing Y failed");step++;}"""),
     ('private static void click(CardWorldsScreen a,int x,int y){a.mouseClicked(x*a.width/1280.0,y*a.width/1280.0,0);}',
      'private static void click(CardWorldsScreen a,int x,int y){double scale=MinecraftClient.getInstance().getWindow().getScaledWidth()/1280.0;((net.minecraft.client.gui.screen.Screen)a).mouseClicked(x*scale,y*scale,0);}')
 ]
