@@ -39,7 +39,15 @@ public final class PokemonModels {
         long now = System.currentTimeMillis();
         if (RETRY_AFTER.getOrDefault(key, 0L) > now) { fallback(ui, viewport, species.toUpperCase(Locale.ROOT)); return; }
 
-        ui.c.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
+        // Card Worlds renders in a 1280-wide logical canvas and scales the PoseStack down
+        // to Minecraft GUI coordinates. DrawContext scissor coordinates are NOT transformed
+        // by that PoseStack, so feeding 1280-space coordinates clipped every Pokemon model.
+        float guiScale = MinecraftClient.getInstance().getWindow().getScaledWidth() / 1280.0f;
+        int sx1 = (int)Math.floor(viewport.x() * guiScale);
+        int sy1 = (int)Math.floor(viewport.y() * guiScale);
+        int sx2 = (int)Math.ceil(viewport.right() * guiScale);
+        int sy2 = (int)Math.ceil(viewport.bottom() * guiScale);
+        ui.c.enableScissor(sx1, sy1, sx2, sy2);
         ui.c.getMatrices().push();
         try {
             Actor actor = CACHE.get(key);
