@@ -1,5 +1,10 @@
 .gradle/
 build/
 run/
+qa-runtime/
 .idea/
 *.iml
+libs/*.jar
+*.db
+*.db-wal
+*.db-shm

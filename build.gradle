@@ -5,12 +5,11 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-base {
-    archivesName = project.archives_base_name
-}
+base { archivesName = project.archives_base_name }
 
 repositories {
     mavenCentral()
+    maven { url 'https://maven.impactdev.net/repository/development/' }
 }
 
 dependencies {
@@ -18,13 +17,21 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modImplementation 'com.cobblemon:fabric:1.8.1+1.21.1'
+
+    if (file('libs/SVArcade-0.6.8.jar').exists()) {
+        modRuntimeOnly files('libs/SVArcade-0.6.8.jar')
+    }
+
+    implementation 'org.xerial:sqlite-jdbc:3.46.1.0'
+    include 'org.xerial:sqlite-jdbc:3.46.1.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 processResources {
     inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
-        filter { line -> line.replace('"version": "0.1.0-internal.2"', '"version": "' + project.version + '"') }
-    }
+    filesMatching('fabric.mod.json') { expand version: project.version }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -39,7 +46,32 @@ java {
 }
 
 tasks.named('jar') {
-    from('INTERNAL-BUILD.md') {
-        into ''
+    from('INTERNAL-BUILD.md') { into '' }
+}
+
+test { useJUnitPlatform() }
+
+sourceSets {
+    qa {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath
     }
+}
+
+tasks.register('qaJar', Jar) {
+    dependsOn tasks.named('qaClasses')
+    archiveClassifier = 'qa-driver-dev'
+    from sourceSets.qa.output
+}
+
+tasks.register('remapQaJar', net.fabricmc.loom.task.RemapJarTask) {
+    dependsOn tasks.named('qaJar')
+    inputFile = tasks.named('qaJar').flatMap { it.archiveFile }
+    archiveClassifier = 'qa-driver'
+}
+
+tasks.register('verifyCardWorlds') {
+    group = 'verification'
+    description = 'Runs unit tests and produces both production and QA remapped jars.'
+    dependsOn tasks.named('test'), tasks.named('remapJar'), tasks.named('remapQaJar')
 }

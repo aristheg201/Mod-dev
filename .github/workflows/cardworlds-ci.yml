@@ -1,0 +1,58 @@
+name: Card Worlds CI
+
+on:
+  push:
+    branches:
+      - feature/yugioh-card-worlds-production-20260930
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore Card Worlds source
+        shell: bash
+        run: |
+          cat bootstrap/cardworlds-src.b64.part* | base64 -d > /tmp/cardworlds-src-tools.tar.gz
+          echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/cardworlds-src-tools.tar.gz
+          test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
+          test -f src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java
+          test -f tools/verify_artifact.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Unit tests + remapped artifacts
+        run: gradle --no-daemon clean verifyCardWorlds
+      - name: Verify production jar and test evidence
+        run: python3 tools/verify_artifact.py
+      - name: Verify production jar metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(find build/libs -maxdepth 1 -type f -name 'SVArcade-TCG-*.jar' ! -name '*sources*' ! -name '*dev*' ! -name '*qa-driver*' | head -n1)"
+          test -n "$JAR"
+          unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
+          grep -q '"id": "svarcade_tcg"' build/libs/fabric.mod.built.json
+          sha256sum "$JAR" | tee build/libs/SHA256.txt
+      - name: Publish test report and jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: CardWorlds-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            build/libs/SHA256.txt
+            build/libs/fabric.mod.built.json
+            build/test-results/test/*.xml
+            build/internal-evidence.json
+            build/reports/tests/test/**
+          if-no-files-found: error
