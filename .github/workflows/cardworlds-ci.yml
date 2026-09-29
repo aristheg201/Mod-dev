@@ -35,13 +35,16 @@ jobs:
           from pathlib import Path
           p = Path("src/qa/java/vn/svarcade/tcg/qa/VisualRun.java")
           s = p.read_text()
+          old_fields = 'private long next;private int step;private boolean worldStarted;private int rounds;'
+          new_fields = 'private long next;private int step;private boolean worldStarted;private int rounds;private int preWorldPasses;'
           old_init = '@Override public void onInitializeClient(){if(!Boolean.getBoolean("cardworlds.qa"))return;ClientTickEvents.END_CLIENT_TICK.register(this::tick);}'
           new_init = '@Override public void onInitializeClient(){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_DRIVER_LOADED");ClientTickEvents.END_CLIENT_TICK.register(this::tick);}'
           old_world = 'if(c.player==null){if(c.currentScreen instanceof TitleScreen&&!worldStarted){worldStarted=true;c.createIntegratedServerLoader().start("cardworlds-qa",()->{});}return;}'
-          new_world = 'if(c.player==null){if(!worldStarted&&c.currentScreen!=null){worldStarted=true;org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_START_WORLD screen={}",c.currentScreen.getClass().getName());c.createIntegratedServerLoader().start("cardworlds-qa",()->{});}return;}'
-          if old_init not in s or old_world not in s:
+          new_world = '''if(c.player==null){if(!worldStarted&&c.currentScreen!=null){if(++preWorldPasses<10)return;worldStarted=true;org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_CREATE_WORLD screen={}",c.currentScreen.getClass().getName());var info=new net.minecraft.world.level.LevelInfo("Card Worlds QA",net.minecraft.world.GameMode.CREATIVE,false,net.minecraft.world.Difficulty.PEACEFUL,true,new net.minecraft.world.GameRules(),net.minecraft.resource.DataConfiguration.SAFE_MODE);c.createIntegratedServerLoader().createAndStart("cardworlds-qa",info,net.minecraft.world.gen.GeneratorOptions.createRandom(),registries->registries.get(net.minecraft.registry.RegistryKeys.WORLD_PRESET).getOrThrow(net.minecraft.world.gen.WorldPresets.DEFAULT).createDimensionsRegistryHolder(),new TitleScreen());}return;}'''
+          anchors = [old_fields, old_init, old_world]
+          if any(a not in s for a in anchors):
               raise SystemExit("VisualRun patch anchors not found")
-          p.write_text(s.replace(old_init,new_init).replace(old_world,new_world))
+          p.write_text(s.replace(old_fields,new_fields).replace(old_init,new_init).replace(old_world,new_world))
           PY
 
           cat >> build.gradle <<'GRADLE'
