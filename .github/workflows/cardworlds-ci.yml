@@ -31,6 +31,19 @@ jobs:
           # Loom 1.7 leaves Cobblemon Kotlin metadata pointing at intermediary
           # names (for example net.minecraft.class_2960) in a Yarn dev runtime.
           sed -i 's/^loom_version=.*/loom_version=1.10.5/' gradle.properties
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("src/qa/java/vn/svarcade/tcg/qa/VisualRun.java")
+          s = p.read_text()
+          old_init = '@Override public void onInitializeClient(){if(!Boolean.getBoolean("cardworlds.qa"))return;ClientTickEvents.END_CLIENT_TICK.register(this::tick);}'
+          new_init = '@Override public void onInitializeClient(){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_DRIVER_LOADED");ClientTickEvents.END_CLIENT_TICK.register(this::tick);}'
+          old_world = 'if(c.player==null){if(c.currentScreen instanceof TitleScreen&&!worldStarted){worldStarted=true;c.createIntegratedServerLoader().start("cardworlds-qa",()->{});}return;}'
+          new_world = 'if(c.player==null){if(!worldStarted&&c.currentScreen!=null){worldStarted=true;org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_START_WORLD screen={}",c.currentScreen.getClass().getName());c.createIntegratedServerLoader().start("cardworlds-qa",()->{});}return;}'
+          if old_init not in s or old_world not in s:
+              raise SystemExit("VisualRun patch anchors not found")
+          p.write_text(s.replace(old_init,new_init).replace(old_world,new_world))
+          PY
+
           cat >> build.gradle <<'GRADLE'
 
           configurations {
@@ -126,6 +139,7 @@ jobs:
           simulationDistance:5
           particles:1
           showSubtitles:false
+          onboardAccessibility:false
           EOF
           echo "QA driver: $QA_JAR"
           jar tf "$QA_JAR" | grep -F 'vn/svarcade/tcg/qa/VisualRun.class'
@@ -136,10 +150,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
+          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true'
         shell: bash
         run: |
           set -euo pipefail
-          timeout 720s gradle --no-daemon --stacktrace runProductionCardWorldsClient
+          timeout 300s gradle --no-daemon --stacktrace runProductionCardWorldsClient
 
       - name: Verify Card Worlds visual evidence
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
