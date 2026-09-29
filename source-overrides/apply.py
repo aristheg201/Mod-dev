@@ -25,8 +25,13 @@ old = '''        ui.fill(new Rect(0,0,1280,logicalHeight),Ui.BG);
         if(state.duel()!=null&&!duelPage.dismissed){duelPage.render(this,ui,new Rect(0,0,1280,logicalHeight));}
         else {shell(ui);pages.get(page).render(this,ui,new Rect(192,76,1068,logicalHeight-96));}'''
 new = '''        boolean duelActive=state.duel()!=null&&!duelPage.dismissed;
+        boolean revealActive=reveal.active();
         if(duelActive){duelPage.render(this,ui,new Rect(0,0,1280,logicalHeight));}
-        else {ui.fill(new Rect(0,0,1280,logicalHeight),Ui.BG);shell(ui);pages.get(page).render(this,ui,new Rect(192,76,1068,logicalHeight-96));}'''
+        else {
+            ui.fill(new Rect(0,0,1280,logicalHeight),Ui.BG);
+            shell(ui);
+            if(!revealActive)pages.get(page).render(this,ui,new Rect(192,76,1068,logicalHeight-96));
+        }'''
 if old not in s:
     raise SystemExit("CardWorldsScreen render anchor missing")
 s = s.replace(old, new)
