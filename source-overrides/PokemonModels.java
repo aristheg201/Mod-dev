@@ -12,7 +12,9 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.joml.Vector4f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.svarcade.tcg.client.component.Rect;
@@ -40,15 +42,22 @@ public final class PokemonModels {
         long now = System.currentTimeMillis();
         if (RETRY_AFTER.getOrDefault(key, 0L) > now) { fallback(ui, viewport, species.toUpperCase(Locale.ROOT)); return; }
 
-        // Card Worlds renders in a 1280-wide logical canvas and scales the PoseStack down
-        // to Minecraft GUI coordinates. DrawContext scissor coordinates are NOT transformed
-        // by that PoseStack, so feeding 1280-space coordinates clipped every Pokemon model.
-        float guiScale = MinecraftClient.getInstance().getWindow().getScaledWidth() / 1280.0f;
-        int sx1 = (int)Math.floor(viewport.x() * guiScale);
-        int sy1 = (int)Math.floor(viewport.y() * guiScale);
-        int sx2 = (int)Math.ceil(viewport.right() * guiScale);
-        int sy2 = (int)Math.ceil(viewport.bottom() * guiScale);
-        ui.c.enableScissor(sx1, sy1, sx2, sy2);
+        // DrawContext scissor is screen-space while Card Worlds cards live in a transformed
+        // 1280 logical canvas. Pack reveal adds another per-card X flip transform. Transform
+        // all four artwork corners through the CURRENT matrix so the clip follows the card.
+        Matrix4f clipMatrix = new Matrix4f(ui.c.getMatrices().peek().getPositionMatrix());
+        Vector4f p1 = clipMatrix.transform(new Vector4f(viewport.x(), viewport.y(), 0f, 1f));
+        Vector4f p2 = clipMatrix.transform(new Vector4f(viewport.right(), viewport.y(), 0f, 1f));
+        Vector4f p3 = clipMatrix.transform(new Vector4f(viewport.right(), viewport.bottom(), 0f, 1f));
+        Vector4f p4 = clipMatrix.transform(new Vector4f(viewport.x(), viewport.bottom(), 0f, 1f));
+        float minX = Math.min(Math.min(p1.x, p2.x), Math.min(p3.x, p4.x));
+        float maxX = Math.max(Math.max(p1.x, p2.x), Math.max(p3.x, p4.x));
+        float minY = Math.min(Math.min(p1.y, p2.y), Math.min(p3.y, p4.y));
+        float maxY = Math.max(Math.max(p1.y, p2.y), Math.max(p3.y, p4.y));
+        ui.c.enableScissor(
+            (int)Math.floor(minX), (int)Math.floor(minY),
+            (int)Math.ceil(maxX), (int)Math.ceil(maxY)
+        );
         ui.c.getMatrices().push();
         try {
             Actor actor = CACHE.get(key);
