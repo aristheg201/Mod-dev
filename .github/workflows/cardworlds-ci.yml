@@ -172,6 +172,7 @@ jobs:
             23-arceus-defense
             24-arceus-judgement
             25-arceus-ultimate
+            26-monster-positions
           )
 
           for name in "${expected[@]}"; do
@@ -180,14 +181,30 @@ jobs:
           done
 
           count="$(find run/screenshots -maxdepth 1 -type f -name '[0-9][0-9]-*.png' | wc -l)"
-          test "$count" -eq 25
+          test "$count" -eq 26
           ! find run/screenshots -maxdepth 1 -type f -name 'failure-*.png' | grep -q .
           grep -Fq 'CARDWORLDS_QA_DUEL_REALM_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_SPECTATOR_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_SPELLTRAP_CHAIN_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_SPELLTRAP_RESOLVE_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_CREATION_CONFIRMED' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_MONSTER_POSITIONS_CONFIRMED' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_ARCEUS_RENDERED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
+
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          log = Path("run/logs/latest.log").read_text(errors="replace")
+          m = re.search(r"CARDWORLDS_CATALOG_HYDRATED cards=(\d+) species=(\d+) fakemon=(\d+) decks=(\d+) banners=(\d+)", log)
+          assert m, "catalog hydration marker missing"
+          cards, species, fakemon, decks, banners = map(int, m.groups())
+          assert species >= 1025, ("loaded species below requested National Dex coverage", species)
+          assert cards >= 1025, ("catalog card coverage below requested baseline", cards)
+          assert decks >= 15, ("generated deck coverage too small", decks)
+          assert banners >= 10, ("generated pack/banner coverage too small", banners)
+          print({"cards": cards, "species": species, "fakemon": fakemon, "decks": decks, "banners": banners})
+          PY
 
           if grep -Eiq 'CARDWORLDS_QA_FAILED|Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Exception in thread "Render thread"' run/logs/latest.log; then
             echo 'Card Worlds visual smoke detected a crash/render failure' >&2
@@ -208,6 +225,7 @@ jobs:
               "19-spectator", "20-spelltrap-set", "21-spelltrap-chain",
               "22-spelltrap-resolved", "23-arceus-defense",
               "24-arceus-judgement", "25-arceus-ultimate",
+              "26-monster-positions",
           ]
           for name in expected:
               p = Path("run/screenshots") / f"{name}.png"

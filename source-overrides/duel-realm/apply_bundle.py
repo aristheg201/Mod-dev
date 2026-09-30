@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import gzip
 import io
 import hashlib
 import shutil
@@ -265,5 +266,26 @@ spectator_overlay = '''scene::resetView);
         }'''
 duel_screen_source = duel_screen_source.replace(reset_anchor, spectator_overlay, 1)
 duel_screen.write_text(duel_screen_source)
+
+# V2 presentation/content patch: coplanar coliseum, grounded Pokemon scaling,
+# real card-state defense rendering, registry-driven species/fakemon catalog and
+# expanded deck templates. Stored as one verified gzip payload split only for Git.
+v2_parts = [here / f"v2.patch.b64.part{i:02d}" for i in range(4)]
+if not all(p.is_file() for p in v2_parts):
+    raise SystemExit("Card Worlds v2 patch parts missing")
+v2_encoded = b"".join(p.read_bytes().strip() for p in v2_parts)
+v2_payload = base64.b64decode(v2_encoded, validate=True)
+v2_sha256 = hashlib.sha256(v2_payload).hexdigest()
+if v2_sha256 != "c5820f6103852ec4d016e5da4a9780b6cd833f7b0785c5c8c405d533efe45821":
+    raise SystemExit(f"Card Worlds v2 patch checksum mismatch: {v2_sha256}")
+v2_patch = gzip.decompress(v2_payload)
+with tempfile.NamedTemporaryFile(prefix="cardworlds-v2-", suffix=".patch", delete=True) as patch_file:
+    patch_file.write(v2_patch)
+    patch_file.flush()
+    subprocess.run(
+        ["patch", "-p0", "--forward", "--batch", "-i", patch_file.name],
+        cwd=root,
+        check=True,
+    )
 
 print("Applied Duel Realm production bundle")
