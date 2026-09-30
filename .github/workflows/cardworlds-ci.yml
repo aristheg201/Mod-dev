@@ -189,6 +189,7 @@ jobs:
           grep -Fq 'CARDWORLDS_QA_SPELLTRAP_RESOLVE_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_CREATION_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_MONSTER_POSITIONS_CONFIRMED' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_CATALOG_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ARCEUS_RENDERED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
 

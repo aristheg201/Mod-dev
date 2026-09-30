@@ -267,25 +267,42 @@ spectator_overlay = '''scene::resetView);
 duel_screen_source = duel_screen_source.replace(reset_anchor, spectator_overlay, 1)
 duel_screen.write_text(duel_screen_source)
 
-# V2 presentation/content patch: coplanar coliseum, grounded Pokemon scaling,
-# real card-state defense rendering, registry-driven species/fakemon catalog and
-# expanded deck templates. Stored as one verified gzip payload split only for Git.
-v2_parts = [here / f"v2.patch.b64.part{i:02d}" for i in range(4)]
-if not all(p.is_file() for p in v2_parts):
-    raise SystemExit("Card Worlds v2 patch parts missing")
-v2_encoded = b"".join(p.read_bytes().strip() for p in v2_parts)
-v2_payload = base64.b64decode(v2_encoded, validate=True)
-v2_sha256 = hashlib.sha256(v2_payload).hexdigest()
-if v2_sha256 != "c5820f6103852ec4d016e5da4a9780b6cd833f7b0785c5c8c405d533efe45821":
-    raise SystemExit(f"Card Worlds v2 patch checksum mismatch: {v2_sha256}")
-v2_patch = gzip.decompress(v2_payload)
-with tempfile.NamedTemporaryFile(prefix="cardworlds-v2-", suffix=".patch", delete=True) as patch_file:
-    patch_file.write(v2_patch)
-    patch_file.flush()
-    subprocess.run(
-        ["patch", "-p0", "--forward", "--batch", "-i", patch_file.name],
-        cwd=root,
-        check=True,
-    )
+# Final Card Worlds v2 snapshot. This is a verified effective-source archive,
+# copied last so it cannot drift against earlier line-oriented patches.
+production_v2_parts = [here / f"production-v2.b64.part{i:02d}" for i in range(4)]
+if not all(p.is_file() for p in production_v2_parts):
+    raise SystemExit("Card Worlds production-v2 snapshot parts missing")
+production_v2_encoded = b"".join(p.read_bytes().strip() for p in production_v2_parts)
+production_v2_payload = base64.b64decode(production_v2_encoded, validate=True)
+production_v2_sha256 = hashlib.sha256(production_v2_payload).hexdigest()
+if production_v2_sha256 != "31f2344f583e832c63749bae593c852e7e1200f3295574c918692878700a8663":
+    raise SystemExit(f"Card Worlds production-v2 snapshot checksum mismatch: {production_v2_sha256}")
+
+production_v2_paths = [
+    "src/main/java/vn/svarcade/tcg/duel/Duel.java",
+    "src/main/java/vn/svarcade/tcg/client/render/DuelWorldScene.java",
+    "src/main/java/vn/svarcade/tcg/client/screens/DuelScreen.java",
+    "src/main/java/vn/svarcade/tcg/fabric/DuelColiseumStructure.java",
+    "src/main/java/vn/svarcade/tcg/fabric/CobblemonCatalogHydrator.java",
+    "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java",
+    "src/main/java/vn/svarcade/tcg/fabric/TcgPackets.java",
+    "src/main/java/vn/svarcade/tcg/client/CardWorldsScreen.java",
+    "src/main/java/vn/svarcade/tcg/client/screens/CollectionScreen.java",
+    "src/main/java/vn/svarcade/tcg/client/screens/DeckBuilderScreen.java",
+    "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java",
+    "src/test/java/vn/svarcade/tcg/EngineTest.java",
+    "src/test/java/vn/svarcade/tcg/fabric/CobblemonCatalogHydratorTest.java",
+]
+with tempfile.TemporaryDirectory(prefix="cardworlds-production-v2-") as production_v2_tmp_name:
+    production_v2_tmp = Path(production_v2_tmp_name)
+    with tarfile.open(fileobj=io.BytesIO(production_v2_payload), mode="r:gz") as archive:
+        archive.extractall(production_v2_tmp)
+    for rel in production_v2_paths:
+        source = production_v2_tmp / rel
+        target = root / rel
+        if not source.is_file():
+            raise SystemExit(f"Card Worlds production-v2 snapshot missing {rel}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
 
 print("Applied Duel Realm production bundle")
