@@ -97,7 +97,6 @@ jobs:
           if-no-files-found: error
 
       - name: Install headless OpenGL runtime
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         shell: bash
         run: |
           set -euo pipefail
@@ -105,11 +104,9 @@ jobs:
           sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
 
       - name: Download Minecraft client assets
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         run: gradle --no-daemon downloadAssets
 
       - name: Prepare Card Worlds QA driver
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         shell: bash
         run: |
           set -euo pipefail
@@ -133,7 +130,6 @@ jobs:
           grep -Eq '"id"[[:space:]]*:[[:space:]]*"cardworlds_qa"' build/libs/qa.fabric.mod.json
 
       - name: Boot Minecraft and capture Card Worlds scenes
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
           JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true'
@@ -143,7 +139,6 @@ jobs:
           timeout 300s gradle --no-daemon --stacktrace runProductionCardWorldsClient
 
       - name: Verify Card Worlds visual evidence
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]')
         shell: bash
         run: |
           set -euo pipefail
@@ -209,8 +204,25 @@ jobs:
               print(f"{name}: {width}x{height}, {len(data)} bytes")
           PY
 
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          screenshots = sorted(p.name for p in Path("run/screenshots").glob("[0-9][0-9]-*.png"))
+          evidence = {
+              "head_sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow": os.environ["GITHUB_WORKFLOW"],
+              "event": os.environ["GITHUB_EVENT_NAME"],
+              "screenshots": screenshots,
+              "screenshot_count": len(screenshots),
+              "complete_marker": "CARDWORLDS_QA_COMPLETE",
+          }
+          Path("build/visual-evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
+          print(json.dumps(evidence, indent=2))
+          PY
+
       - name: Upload Card Worlds visual QA evidence
-        if: always() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[visual]'))
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: CardWorlds-visual-qa-${{ github.sha }}
@@ -219,4 +231,5 @@ jobs:
             run/logs/latest.log
             run/crash-reports/**
             build/libs/qa.fabric.mod.json
+            build/visual-evidence.json
           if-no-files-found: warn
