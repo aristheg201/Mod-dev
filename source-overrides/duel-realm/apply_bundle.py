@@ -197,4 +197,24 @@ with tempfile.TemporaryDirectory(prefix="cardworlds-final-overrides-") as final_
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
 
+
+# PvE bot may consume one response pass between targeted QA commands.
+# Resolve from the authoritative current priority instead of assuming a fixed seat.
+duel_target = root / "src/main/java/vn/svarcade/tcg/duel/Duel.java"
+duel_source = duel_target.read_text()
+old = '''    public synchronized void qaResolveSpellTrapChain(int actor){
+        require(chain.size()==3,"Expected a three-link Spell/Trap chain.");
+        act(1-actor,new Action("pass","",""),revision);
+        act(actor,new Action("pass","",""),revision);
+    }'''
+new = '''    public synchronized void qaResolveSpellTrapChain(int actor){
+        require(!chain.isEmpty(),"Expected an active Spell/Trap chain.");
+        int guard=4;
+        while(!chain.isEmpty()&&guard-->0)act(priority,new Action("pass","",""),revision);
+        require(chain.isEmpty(),"Spell/Trap chain did not resolve.");
+    }'''
+if old not in duel_source:
+    raise SystemExit("QA Spell/Trap resolve priority anchor missing")
+duel_target.write_text(duel_source.replace(old,new,1))
+
 print("Applied Duel Realm production bundle")
