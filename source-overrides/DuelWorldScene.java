@@ -39,6 +39,7 @@ public final class DuelWorldScene {
     private ArmorStandEntity cameraRig;
     private Entity previousCamera;
     private Perspective previousPerspective;
+    private boolean previousHudHidden;
     private Vec3d origin = Vec3d.ZERO;
     private Vec3d forward = new Vec3d(0, 0, 1);
     private Vec3d right = new Vec3d(-1, 0, 0);
@@ -131,6 +132,7 @@ public final class DuelWorldScene {
             if (previousCamera != null && !previousCamera.isRemoved()) client.setCameraEntity(previousCamera);
             else if (client.player != null) client.setCameraEntity(client.player);
             if (previousPerspective != null) client.options.setPerspective(previousPerspective);
+            client.options.hudHidden = previousHudHidden;
         }
         world = null;
         cameraRig = null;
@@ -143,6 +145,8 @@ public final class DuelWorldScene {
         world = client.world;
         previousCamera = client.getCameraEntity();
         previousPerspective = client.options.getPerspective();
+        previousHudHidden = client.options.hudHidden;
+        client.options.hudHidden = true;
         client.options.setPerspective(Perspective.FIRST_PERSON);
 
         arenaYaw = client.player.getYaw();
@@ -151,7 +155,7 @@ public final class DuelWorldScene {
         right = forward.crossProduct(new Vec3d(0, 1, 0)).normalize();
         origin = client.player.getPos().add(forward.multiply(10.0)).add(0, 5.5, 0);
 
-        Vec3d cameraPos = origin.subtract(forward.multiply(15.5)).add(0, 7.4, 0);
+        Vec3d cameraPos = origin.subtract(forward.multiply(19.5)).add(0, 9.4, 0);
         cameraRig = new ArmorStandEntity(world, cameraPos.x, cameraPos.y, cameraPos.z);
         cameraRig.setId(nextId());
         cameraRig.setInvisible(true);
@@ -161,7 +165,7 @@ public final class DuelWorldScene {
         cameraRig.setYaw(arenaYaw);
         cameraRig.setHeadYaw(arenaYaw);
         cameraRig.setBodyYaw(arenaYaw);
-        cameraRig.setPitch(23f);
+        cameraRig.setPitch(26f);
         world.addEntity(cameraRig);
         client.setCameraEntity(cameraRig);
 
