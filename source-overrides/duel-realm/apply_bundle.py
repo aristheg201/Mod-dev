@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import io
+import hashlib
 import shutil
 import subprocess
 import tarfile
@@ -167,7 +168,7 @@ visual.write_text(visual_source)
 
 
 # Final production overrides: deterministic spectator / Spell-Trap / Creation runtime QA.
-final_archive = here / "final-overrides.tgz"
+final_parts = [here / f"final-overrides.b64.part{i:02d}" for i in range(3)]
 final_paths = [
     "src/main/java/vn/svarcade/tcg/duel/Duel.java",
     "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java",
@@ -177,11 +178,16 @@ final_paths = [
     "src/main/resources/data/svarcade_tcg/messages.json",
     "src/main/resources/data/svarcade_tcg/spell_trap_profiles.json",
 ]
-if not final_archive.is_file():
-    raise SystemExit("Final Duel Realm QA override archive missing")
+if not all(p.is_file() for p in final_parts):
+    raise SystemExit("Final Duel Realm QA override base64 parts missing")
+final_encoded = b"".join(p.read_bytes().strip() for p in final_parts)
+final_payload = base64.b64decode(final_encoded, validate=True)
+final_sha256 = hashlib.sha256(final_payload).hexdigest()
+if final_sha256 != "2c76eb046020b444f615f080f3b501d543541fe6acce21efc6be5e4b6aa8b2f1":
+    raise SystemExit(f"Final Duel Realm QA override checksum mismatch: {final_sha256}")
 with tempfile.TemporaryDirectory(prefix="cardworlds-final-overrides-") as final_tmp_name:
     final_tmp = Path(final_tmp_name)
-    with tarfile.open(final_archive, mode="r:gz") as archive:
+    with tarfile.open(fileobj=io.BytesIO(final_payload), mode="r:gz") as archive:
         archive.extractall(final_tmp)
     for rel in final_paths:
         source = final_tmp / rel
