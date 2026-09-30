@@ -138,17 +138,20 @@ new = '''    public boolean duelActive(){return state.duel()!=null&&state.duel()
         if(duelActive()&&duelPage.freeLookDrag(button,deltaX,deltaY))return true;
         return super.mouseDragged(mouseX,mouseY,button,deltaX,deltaY);
     }
-    @Override public boolean mouseScrolled(double mouseX,double mouseY,double horizontalAmount,double verticalAmount){
-        if(duelActive()&&duelPage.freeLookScroll(verticalAmount))return true;
-        return super.mouseScrolled(mouseX,mouseY,horizontalAmount,verticalAmount);
-    }
     @Override public boolean shouldCloseOnEsc(){return !duelActive();}
     @Override public void close(){if(duelActive())return;duelPage.closeScene();super.close();}
     @Override public boolean shouldPause(){return false;}
 }'''
 if old not in s:
     raise SystemExit("CardWorldsScreen close anchor missing")
-p.write_text(s.replace(old, new))
+s = s.replace(old, new)
+
+old = '@Override public boolean mouseScrolled(double x,double y,double h,double v){scroll=Math.max(0,scroll+(v<0?1:-1));return true;}'
+new = '@Override public boolean mouseScrolled(double x,double y,double h,double v){if(duelActive()&&duelPage.freeLookScroll(v))return true;scroll=Math.max(0,scroll+(v<0?1:-1));return true;}'
+if old not in s:
+    raise SystemExit("CardWorldsScreen existing mouseScrolled anchor missing")
+s = s.replace(old, new)
+p.write_text(s)
 
 p = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
 s = p.read_text()
