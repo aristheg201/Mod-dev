@@ -200,14 +200,14 @@ for cid, card in data["cards"].items():
     card["level"] = levels.get(cid, 0) if card.get("category") == "pokemon" else 0
 
 texts = {
-    "charmander":"If this card is Normal Summoned: inflict 300 damage to your opponent.",
-    "charmeleon":"You can evolve this card from Charmander instead of Tribute Summoning it. If evolved: inflict 400 damage to your opponent.",
+    "charmander":"Once per turn: inflict 300 damage to your opponent.",
+    "charmeleon":"You can evolve this card from Charmander instead of Tribute Summoning it. Once per turn: pay 200 Life; inflict 400 damage to your opponent.",
     "charizard":"You can evolve this card from Charmeleon instead of Tribute Summoning it. Once per turn: pay 500 Life; destroy 1 opposing Pokémon.",
     "mega_charizard":"Extra Deck. Must evolve from Charizard. Once per turn: pay 700 Life; destroy 1 opposing Pokémon.",
-    "squirtle":"If this card is Normal Summoned: recover 300 Trainer Life.",
-    "wartortle":"You can evolve this card from Squirtle instead of Tribute Summoning it. If evolved: recover 400 Trainer Life.",
+    "squirtle":"Once per turn: recover 300 Trainer Life.",
+    "wartortle":"You can evolve this card from Squirtle instead of Tribute Summoning it. Once per turn: recover 400 Trainer Life.",
     "blastoise":"You can evolve this card from Wartortle instead of Tribute Summoning it. Once per turn: pay 500 Life; return 1 opposing Pokémon to the hand.",
-    "bulbasaur":"If this card is Normal Summoned: recover 300 Trainer Life.",
+    "bulbasaur":"Once per turn: 1 allied Pokémon gains 200 ATK.",
     "ivysaur":"You can evolve this card from Bulbasaur instead of Tribute Summoning it. Once per turn: 1 allied Pokémon gains 300 ATK.",
     "venusaur":"You can evolve this card from Ivysaur instead of Tribute Summoning it. Once per turn: recover 600 Trainer Life.",
     "pikachu":"Once per turn: pay 300 Life; inflict 500 damage to your opponent.",
@@ -216,7 +216,7 @@ texts = {
     "gengar":"You can evolve this card from Haunter instead of Tribute Summoning it. Once per turn: pay 600 Life; negate the latest Chain effect.",
     "eevee":"If this card is Normal Summoned: recover 200 Trainer Life.",
     "onix":"Once per turn: choose 1 allied Pokémon; protect it from its next destruction.",
-    "ancient_mew":"If Tribute Summoned: draw 1 card. Once per turn: pay 500 Life; draw 1 card.",
+    "ancient_mew":"Once per turn: pay 500 Life; draw 1 card.",
     "shadow_lugia":"Once per turn: pay 800 Life; banish 1 opposing Pokémon."
 }
 for cid, text_value in texts.items():
@@ -228,21 +228,21 @@ def trigger(cause, operation, amount):
     return {"cause":cause,"zone":"FIELD","relation":"self","effect":effect(operation,amount)}
 
 cards=data["cards"]
-cards["charmander"]["triggers"]=[trigger("PLAY","damage",300)]
-cards["charmeleon"]["triggers"]=[trigger("EVOLVE","damage",400)]
+cards["charmander"]["effect"]=effect("damage",300)
+cards["charmeleon"]["effect"]=effect("damage",400,1,200)
 cards["charizard"]["effect"]=effect("destroy",0,1,500,"enemy")
 cards["mega_charizard"]["effect"]=effect("destroy",0,1,700,"enemy")
-cards["squirtle"]["triggers"]=[trigger("PLAY","heal",300)]
-cards["wartortle"]["triggers"]=[trigger("EVOLVE","heal",400)]
+cards["squirtle"]["effect"]=effect("heal",300)
+cards["wartortle"]["effect"]=effect("heal",400)
 cards["blastoise"]["effect"]=effect("return",0,1,500,"enemy")
-cards["bulbasaur"]["triggers"]=[trigger("PLAY","heal",300)]
+cards["bulbasaur"]["effect"]=effect("boost",200,1,0,"ally")
 cards["ivysaur"]["effect"]=effect("boost",300,1,0,"ally")
 cards["venusaur"]["effect"]=effect("heal",600)
 cards["pikachu"]["effect"]=effect("damage",500,1,300)
 cards["haunter"]["effect"]=effect("return",0,1,300,"enemy")
 cards["onix"]["effect"]=effect("shield",1,1,0,"ally")
 cards["ancient_mew"]["effect"]=effect("draw",1,1,500)
-cards["ancient_mew"]["triggers"]=[trigger("TRIBUTE_SUMMON","draw",1)]
+# Ancient Mew has an activated effect only; Tribute Summon itself does not open an automatic Chain.
 cards["shadow_lugia"]["effect"]=effect("banish",0,1,800,"enemy")
 p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
