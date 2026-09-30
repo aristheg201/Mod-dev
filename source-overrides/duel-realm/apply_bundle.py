@@ -70,6 +70,24 @@ with tempfile.TemporaryDirectory(prefix="cardworlds-duelrealm-") as tmp_name:
             check=True,
         )
 
+# Cross-dimension respawn replaces the active GUI with Minecraft's terrain
+# loading screen. Keep an explicit client override that reopens the Duel HUD
+# after the client world has switched to the Realm.
+client_override = here / "TcgClient.java"
+client_target = root / "src/main/java/vn/svarcade/tcg/fabric/TcgClient.java"
+if not client_override.is_file():
+    raise SystemExit("Duel Realm client lifecycle override missing")
+shutil.copyfile(client_override, client_target)
+
+# Mark duelists for an explicit reopen snapshot as a second server-side guard.
+tcg_mod = root / "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java"
+tcg_source = tcg_mod.read_text()
+old_prepare = 'private void prepareRealm(MinecraftServer server,Match m){if(duelRealm==null)duelRealm=new DuelRealmService(server);m.arena=duelRealm.allocate(m.id);ServerPlayerEntity a=server.getPlayerManager().getPlayer(m.a);if(a!=null)duelRealm.enterDuelist(a,m.arena,0);if(!m.npc){ServerPlayerEntity b=server.getPlayerManager().getPlayer(m.b);if(b!=null)duelRealm.enterDuelist(b,m.arena,1);}}'
+new_prepare = 'private void prepareRealm(MinecraftServer server,Match m){if(duelRealm==null)duelRealm=new DuelRealmService(server);m.arena=duelRealm.allocate(m.id);openRequests.add(m.a);ServerPlayerEntity a=server.getPlayerManager().getPlayer(m.a);if(a!=null)duelRealm.enterDuelist(a,m.arena,0);if(!m.npc){openRequests.add(m.b);ServerPlayerEntity b=server.getPlayerManager().getPlayer(m.b);if(b!=null)duelRealm.enterDuelist(b,m.arena,1);}}'
+if old_prepare not in tcg_source:
+    raise SystemExit("Duel Realm reopen prepare anchor missing")
+tcg_mod.write_text(tcg_source.replace(old_prepare, new_prepare, 1))
+
 # A Set card leaves the hand, so spectator-visible hand count must decrement while identity stays hidden.
 engine_test = root / "src/test/java/vn/svarcade/tcg/EngineTest.java"
 test_source = engine_test.read_text()

@@ -117,7 +117,10 @@ public final class DuelRealmService {
     }
 
     private void teleport(ServerPlayerEntity player, double x, double y, double z, float yaw, float pitch) {
-        player.teleport(world(), x, y, z, Set.of(), yaw, pitch);
+        ServerWorld target=world();
+        player.teleport(target, x, y, z, Set.of(), yaw, pitch);
         player.setVelocity(0, 0, 0);
+        LOG.info("CARDWORLDS_DUEL_REALM_TELEPORT_DONE player={} world={} pos=({}, {}, {})",
+            player.getName().getString(), player.getServerWorld().getRegistryKey().getValue(), x, y, z);
     }
 }
