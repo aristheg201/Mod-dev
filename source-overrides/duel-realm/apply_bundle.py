@@ -62,4 +62,13 @@ with tempfile.TemporaryDirectory(prefix="cardworlds-duelrealm-") as tmp_name:
             check=True,
         )
 
+# A Set card leaves the hand, so spectator-visible hand count must decrement while identity stays hidden.
+engine_test = root / "src/test/java/vn/svarcade/tcg/EngineTest.java"
+test_source = engine_test.read_text()
+old = 'assertEquals(5,d.spectatorView().handCounts().getFirst());'
+new = 'assertEquals(4,d.spectatorView().handCounts().getFirst());'
+if old not in test_source:
+    raise SystemExit("Spectator hand-count regression assertion anchor missing")
+engine_test.write_text(test_source.replace(old, new, 1))
+
 print("Applied Duel Realm production bundle")
