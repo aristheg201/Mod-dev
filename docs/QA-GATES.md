@@ -23,3 +23,14 @@ Run `tools/launch_visual_qa.py` on the target client installation and inspect ev
 - a screen that differs materially from the accepted Card Worlds visual language.
 
 The QA driver is allowed to automate navigation and screenshots; it must not fabricate UI state. Screens must be rendered by the actual remapped mod in a real Fabric client.
+
+
+## Targeted Duel Realm completion gate
+
+Production visual QA must prove the runtime systems below, not merely menu rendering:
+
+- spectator mode uses a physical gallery seat in `svarcade_tcg:duel_realm` and exposes no HAND/EXTRA identities;
+- previous-turn Set Trap/Counter Trap cards participate in a three-link chain and resolve server-authoritatively;
+- Creation advanced summon consumes Palkia + Dialga + Giratina and progresses Arceus Defense -> Arceus Judgement -> Ultimate Arceus;
+- admin verification commands are available under `/cardworlds qa spectator|spelltrap|creation`;
+- `19-spectator.png` through `25-arceus-ultimate.png` and their runtime log markers are mandatory evidence.

@@ -60,8 +60,9 @@ public final class DuelColiseumStructure {
         marker(w, c, 18, 0, Blocks.CRYING_OBSIDIAN.getDefaultState());
         marker(w, c, -18, 0, Blocks.CRYING_OBSIDIAN.getDefaultState());
 
-        disc(w, c.add(0, 2, 0), 4, Blocks.CALCITE.getDefaultState());
-        disc(w, c.add(0, 3, 0), 2, Blocks.SEA_LANTERN.getDefaultState());
+        // Flat center inlay keeps the Extra Monster lanes readable in tactical view.
+        fill(w, c.add(-2, 1, -1), c.add(2, 1, 1), Blocks.SMOOTH_STONE.getDefaultState());
+        place(w, c.add(0, 1, 0), Blocks.SEA_LANTERN.getDefaultState());
     }
 
     private static void buildArenaRing(ServerWorld w, BlockPos c) {

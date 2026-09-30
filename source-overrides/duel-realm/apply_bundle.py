@@ -166,4 +166,30 @@ if old not in visual_source:
 visual_source = visual_source.replace(old, new, 1)
 visual.write_text(visual_source)
 
+
+# Final production overrides: deterministic spectator / Spell-Trap / Creation runtime QA.
+final_archive = here / "final-overrides.tgz"
+final_paths = [
+    "src/main/java/vn/svarcade/tcg/duel/Duel.java",
+    "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java",
+    "src/main/java/vn/svarcade/tcg/fabric/CardWorldsCommands.java",
+    "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java",
+    "src/test/java/vn/svarcade/tcg/EngineTest.java",
+    "src/main/resources/data/svarcade_tcg/messages.json",
+    "src/main/resources/data/svarcade_tcg/spell_trap_profiles.json",
+]
+if not final_archive.is_file():
+    raise SystemExit("Final Duel Realm QA override archive missing")
+with tempfile.TemporaryDirectory(prefix="cardworlds-final-overrides-") as final_tmp_name:
+    final_tmp = Path(final_tmp_name)
+    with tarfile.open(final_archive, mode="r:gz") as archive:
+        archive.extractall(final_tmp)
+    for rel in final_paths:
+        source = final_tmp / rel
+        target = root / rel
+        if not source.is_file():
+            raise SystemExit(f"Final override missing {rel}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+
 print("Applied Duel Realm production bundle")
