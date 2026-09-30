@@ -79,9 +79,9 @@ public final class DuelWorldScene {
 
             int slot = slotByController.merge(card.controller(), 1, Integer::sum) - 1;
             int cappedZones = Math.max(1, zones);
-            double x = (slot - (cappedZones - 1) / 2.0) * 1.95;
+            double x = (slot - (cappedZones - 1) / 2.0) * 3.20;
             boolean mine = card.controller() == view.you();
-            double z = mine ? -2.2 : 2.2;
+            double z = mine ? -3.85 : 3.85;
             Vec3d pos = local(x, 0.30, z);
 
             long age = now - actor.born();
@@ -92,7 +92,7 @@ public final class DuelWorldScene {
             }
             if (card.token().equals(attacking) && now - attackAt < 650) {
                 double t = (now - attackAt) / 650.0;
-                double lunge = Math.sin(Math.PI * t) * 1.55;
+                double lunge = Math.sin(Math.PI * t) * 2.35;
                 pos = pos.add(forward.multiply(mine ? lunge : -lunge));
             }
 
@@ -149,9 +149,9 @@ public final class DuelWorldScene {
         double yawRad = Math.toRadians(arenaYaw);
         forward = new Vec3d(-Math.sin(yawRad), 0, Math.cos(yawRad)).normalize();
         right = forward.crossProduct(new Vec3d(0, 1, 0)).normalize();
-        origin = client.player.getPos().add(forward.multiply(7.0)).add(0, 6.0, 0);
+        origin = client.player.getPos().add(forward.multiply(10.0)).add(0, 5.5, 0);
 
-        Vec3d cameraPos = origin.subtract(forward.multiply(7.9)).add(0, 4.7, 0);
+        Vec3d cameraPos = origin.subtract(forward.multiply(15.5)).add(0, 7.4, 0);
         cameraRig = new ArmorStandEntity(world, cameraPos.x, cameraPos.y, cameraPos.z);
         cameraRig.setId(nextId());
         cameraRig.setInvisible(true);
@@ -161,7 +161,7 @@ public final class DuelWorldScene {
         cameraRig.setYaw(arenaYaw);
         cameraRig.setHeadYaw(arenaYaw);
         cameraRig.setBodyYaw(arenaYaw);
-        cameraRig.setPitch(25f);
+        cameraRig.setPitch(23f);
         world.addEntity(cameraRig);
         client.setCameraEntity(cameraRig);
 
@@ -169,21 +169,21 @@ public final class DuelWorldScene {
     }
 
     private void buildArena() {
-        addDisplay(Blocks.POLISHED_BLACKSTONE.getDefaultState(), local(0, -0.18, 0), 12.8f, 0.32f, 8.2f);
-        addDisplay(Blocks.DARK_PRISMARINE.getDefaultState(), local(0, 0.01, 0), 11.9f, 0.08f, 0.30f);
-        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(-6.2, -0.05, 0), 0.18f, 0.16f, 8.0f);
-        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(6.2, -0.05, 0), 0.18f, 0.16f, 8.0f);
+        addDisplay(Blocks.POLISHED_BLACKSTONE.getDefaultState(), local(0, -0.22, 0), 22.4f, 0.40f, 14.0f);
+        addDisplay(Blocks.DARK_PRISMARINE.getDefaultState(), local(0, 0.01, 0), 20.6f, 0.10f, 0.36f);
+        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(-10.85, -0.05, 0), 0.22f, 0.18f, 13.6f);
+        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(10.85, -0.05, 0), 0.22f, 0.18f, 13.6f);
 
         for (int row = 0; row < 2; row++) {
-            double z = row == 0 ? -2.2 : 2.2;
+            double z = row == 0 ? -3.85 : 3.85;
             for (int i = 0; i < 5; i++) {
-                double x = (i - 2) * 1.95;
+                double x = (i - 2) * 3.20;
                 BlockState state = row == 0 ? Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState();
-                addDisplay(state, local(x, 0.02, z), 1.48f, 0.12f, 1.48f);
+                addDisplay(state, local(x, 0.02, z), 2.55f, 0.14f, 2.40f);
             }
         }
-        addDisplay(Blocks.SEA_LANTERN.getDefaultState(), local(0, -0.02, -3.72), 7.8f, 0.08f, 0.12f);
-        addDisplay(Blocks.REDSTONE_LAMP.getDefaultState(), local(0, -0.02, 3.72), 7.8f, 0.08f, 0.12f);
+        addDisplay(Blocks.SEA_LANTERN.getDefaultState(), local(0, -0.02, -6.35), 15.2f, 0.10f, 0.16f);
+        addDisplay(Blocks.REDSTONE_LAMP.getDefaultState(), local(0, -0.02, 6.35), 15.2f, 0.10f, 0.16f);
     }
 
     private PokemonEntity createPokemon(String species, List<String> aspects) {
@@ -249,7 +249,7 @@ public final class DuelWorldScene {
 
         int sx = (int)Math.round((ndcX * 0.5 + 0.5) * width);
         int sy = (int)Math.round((0.5 - ndcY * 0.5) * height);
-        double k = Math.clamp(8.0 / z, 0.60, 1.45);
+        double k = Math.clamp(14.0 / z, 0.72, 1.55);
         int w = (int)Math.round(86 * k);
         int h = (int)Math.round(116 * k);
         return new Rect(sx - w / 2, sy - h / 2, w, h);

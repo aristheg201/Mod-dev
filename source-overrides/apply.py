@@ -19,6 +19,101 @@ import re
 s = re.sub(r"^loom_version=.*$", "loom_version=1.10.5", s, flags=re.M)
 gp.write_text(s)
 
+# Server-authoritative duel-session lifetime. Disconnect no longer equals surrender:
+# the match is paused for a bounded reconnect grace period, then the absent seat concedes.
+p = root / "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java"
+s = p.read_text()
+old = '    private static final Gson JSON=new Gson();\n'
+new = '    private static final Gson JSON=new Gson();\n    private static final long RECONNECT_GRACE_MS=120_000L;\n'
+if old not in s:
+    raise SystemExit("TcgMod constant anchor missing")
+s = s.replace(old, new)
+
+old = '''    private static final class Match {
+        String id=UUID.randomUUID().toString(); UUID a,b; Duel duel;boolean ranked,npc;long activity=System.currentTimeMillis();
+        int seat(UUID id){return id.equals(a)?0:1;}
+    }'''
+new = '''    private static final class Match {
+        String id=UUID.randomUUID().toString(); UUID a,b; Duel duel;boolean ranked,npc;long activity=System.currentTimeMillis();
+        long aDisconnectedAt=-1L,bDisconnectedAt=-1L;
+        int seat(UUID id){return id.equals(a)?0:1;}
+        UUID opponent(UUID id){return id.equals(a)?b:a;}
+        void disconnected(UUID id,long at){if(id.equals(a))aDisconnectedAt=at;else if(id.equals(b))bDisconnectedAt=at;}
+        void connected(UUID id){if(id.equals(a))aDisconnectedAt=-1L;else if(id.equals(b))bDisconnectedAt=-1L;}
+        boolean humanDisconnected(){return aDisconnectedAt>=0||(!npc&&bDisconnectedAt>=0);}
+        int expiredSeat(long now){
+            if(aDisconnectedAt>=0&&now-aDisconnectedAt>=RECONNECT_GRACE_MS)return 0;
+            if(!npc&&bDisconnectedAt>=0&&now-bDisconnectedAt>=RECONNECT_GRACE_MS)return 1;
+            return -1;
+        }
+    }'''
+if old not in s:
+    raise SystemExit("TcgMod Match anchor missing")
+s = s.replace(old, new)
+
+old = '        ServerPlayConnectionEvents.DISCONNECT.register((handler,server)->{UUID id=handler.player.getUuid();Match m=matches.get(id);if(m!=null){m.duel.act(m.seat(id),new Duel.Action("concede","",""),m.duel.revision());finish(server,m);}challenges.remove(id);challenges.entrySet().removeIf(e->e.getValue().challenger.equals(id));rateLimit.remove(id);});'
+new = '''        ServerPlayConnectionEvents.JOIN.register((handler,sender,server)->{
+            UUID id=handler.player.getUuid();Match m=matches.get(id);
+            if(m!=null&&m.duel.winner()<0){
+                m.connected(id);m.activity=System.currentTimeMillis();openRequests.add(id);
+                send(handler.player,"Reconnected. Your duel is still active.",0);
+                ServerPlayerEntity other=server.getPlayerManager().getPlayer(m.opponent(id));
+                if(other!=null)send(other,handler.player.getName().getString()+" reconnected. Duel resumed.",0);
+            }
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler,server)->{
+            UUID id=handler.player.getUuid();Match m=matches.get(id);
+            if(m!=null&&m.duel.winner()<0){
+                long now=System.currentTimeMillis();m.disconnected(id,now);m.activity=now;
+                ServerPlayerEntity other=server.getPlayerManager().getPlayer(m.opponent(id));
+                if(other!=null)send(other,handler.player.getName().getString()+" disconnected. Duel paused for 120 seconds awaiting reconnect.",0);
+            }
+            challenges.remove(id);challenges.entrySet().removeIf(e->e.getValue().challenger.equals(id));rateLimit.remove(id);
+        });'''
+if old not in s:
+    raise SystemExit("TcgMod disconnect anchor missing")
+s = s.replace(old, new)
+
+old = '''        ServerTickEvents.END_SERVER_TICK.register(server->{if(++tick%20==0)for(Match m:new HashSet<>(matches.values())){
+            if(System.currentTimeMillis()-m.activity>600_000){m.duel.act(m.duel.view(0).priority(),new Duel.Action("concede","",""),m.duel.revision());finish(server,m);continue;}
+            if(m.npc&&m.duel.winner()<0&&m.duel.view(1).priority()==1){bot(m);broadcast(server,m);}
+        }});'''
+new = '''        ServerTickEvents.END_SERVER_TICK.register(server->{if(++tick%20==0)for(Match m:new HashSet<>(matches.values())){
+            long now=System.currentTimeMillis();
+            int expired=m.expiredSeat(now);
+            if(expired>=0&&m.duel.winner()<0){
+                m.duel.act(expired,new Duel.Action("concede","",""),m.duel.revision());finish(server,m);continue;
+            }
+            if(!m.humanDisconnected()&&now-m.activity>600_000){m.duel.act(m.duel.view(0).priority(),new Duel.Action("concede","",""),m.duel.revision());finish(server,m);continue;}
+            if(!m.humanDisconnected()&&m.npc&&m.duel.winner()<0&&m.duel.view(1).priority()==1){bot(m);broadcast(server,m);}
+        }});'''
+if old not in s:
+    raise SystemExit("TcgMod tick anchor missing")
+s = s.replace(old, new)
+
+old = '                case "duel" -> {check(a.size()==3,"Choose a duel action.");Match m=matches.get(player);check(m!=null,"You are not in a duel.");m.duel.act(m.seat(player),new Duel.Action(a.get(0),a.get(1),a.get(2)),r.revision());m.activity=System.currentTimeMillis();broadcast(p.getServer(),m);return;}'
+new = '''                case "duel" -> {
+                    check(a.size()==3,"Choose a duel action.");Match m=matches.get(player);check(m!=null,"You are not in a duel.");
+                    check(!m.humanDisconnected(),"Duel paused while a player reconnects.");
+                    m.duel.act(m.seat(player),new Duel.Action(a.get(0),a.get(1),a.get(2)),r.revision());m.activity=System.currentTimeMillis();broadcast(p.getServer(),m);return;
+                }'''
+if old not in s:
+    raise SystemExit("TcgMod duel action anchor missing")
+s = s.replace(old, new)
+p.write_text(s)
+
+# Do not allow the Card Worlds hotkey to dismiss a live duel.
+p = root / "src/main/java/vn/svarcade/tcg/fabric/TcgClient.java"
+s = p.read_text()
+old = '  ClientTickEvents.END_CLIENT_TICK.register(client->{while(OPEN.wasPressed()){if(client.currentScreen==null&&client.player!=null)request("open",List.of(),0);else if(client.currentScreen instanceof CardWorldsScreen screen&&!screen.editing())screen.close();}});'
+new = '''  ClientTickEvents.END_CLIENT_TICK.register(client->{while(OPEN.wasPressed()){
+   if(client.currentScreen==null&&client.player!=null)request("open",List.of(),0);
+   else if(client.currentScreen instanceof CardWorldsScreen screen&&!screen.editing()&&!screen.duelActive())screen.close();
+  }});'''
+if old not in s:
+    raise SystemExit("TcgClient hotkey anchor missing")
+p.write_text(s)
+
 p = root / "src/main/java/vn/svarcade/tcg/client/CardWorldsScreen.java"
 s = p.read_text()
 old = '''        ui.fill(new Rect(0,0,1280,logicalHeight),Ui.BG);
@@ -37,7 +132,9 @@ if old not in s:
 s = s.replace(old, new)
 old = '''    @Override public boolean shouldPause(){return false;}
 }'''
-new = '''    @Override public void close(){duelPage.closeScene();super.close();}
+new = '''    public boolean duelActive(){return state.duel()!=null&&state.duel().winner().isBlank()&&!duelPage.dismissed;}
+    @Override public boolean shouldCloseOnEsc(){return !duelActive();}
+    @Override public void close(){if(duelActive())return;duelPage.closeScene();super.close();}
     @Override public boolean shouldPause(){return false;}
 }'''
 if old not in s:

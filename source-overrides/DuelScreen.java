@@ -41,8 +41,13 @@ public final class DuelScreen implements Page {
     public void render(CardWorldsScreen a, Ui u, Rect b) {
         Duel.View v = a.state.duel();
         if (v == null) { scene.close(); return; }
-        scene.setAttack(attacking, attackAt);
-        scene.sync(v, a.state.rules().pokemonZones());
+        if (!v.winner().isBlank()) {
+            // The authoritative duel is over: destroy the 3D arena immediately.
+            scene.close();
+        } else {
+            scene.setAttack(attacking, attackAt);
+            scene.sync(v, a.state.rules().pokemonZones());
+        }
 
         u.fill(new Rect(0, 0, b.w(), 88), 0xA006111C);
         u.fill(new Rect(0, 88, 188, b.h() - 88), 0x9906111C);
