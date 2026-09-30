@@ -10,6 +10,10 @@ copies = {
     over / "PokemonModels.java": root / "src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java",
     over / "PlayScreen.java": root / "src/main/java/vn/svarcade/tcg/client/screens/PlayScreen.java",
     over / "EconomyRewards.java": root / "src/main/java/vn/svarcade/tcg/integration/EconomyRewards.java",
+    over / "CardWorldsCommands.java": root / "src/main/java/vn/svarcade/tcg/fabric/CardWorldsCommands.java",
+    over / "MessageService.java": root / "src/main/java/vn/svarcade/tcg/fabric/MessageService.java",
+    over / "PlaceholderSupport.java": root / "src/main/java/vn/svarcade/tcg/fabric/PlaceholderSupport.java",
+    over / "messages.json": root / "src/main/resources/data/svarcade_tcg/messages.json",
 }
 for src, dst in copies.items():
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -482,53 +486,107 @@ s = s.replace('shot(c,"17-scale-two")','shot(c,"18-scale-two")')
 p.write_text(s)
 
 
-# PvE/PvP split, bot difficulty, and optional external economy payout.
+# PvE/PvP split, bot difficulty, optional economy payout, and production command layer.
+import json
+
+# Adventure/MiniMessage is bundled; Text Placeholder API remains an optional compile/runtime hook.
+p = root / "build.gradle"
+s = p.read_text()
+if "https://maven.nucleoid.xyz" not in s:
+    s = s.replace("mavenCentral()", "mavenCentral()\n    maven { url 'https://maven.nucleoid.xyz' }", 1)
+if "adventure-platform-fabric:5.14.2" not in s:
+    s = s.replace("dependencies {", """dependencies {
+    modImplementation include('net.kyori:adventure-platform-fabric:5.14.2')
+    modCompileOnly 'eu.pb4:placeholder-api:2.4.2+1.21'""", 1)
+p.write_text(s)
+
+p = root / "src/main/java/vn/svarcade/tcg/economy/CardStore.java"
+s = p.read_text()
+anchor = '    private static List<String> concat(List<String>a,List<String>b){List<String> out=new ArrayList<>(a);out.addAll(b);return out;}\n'
+if anchor not in s:
+    raise SystemExit("CardStore admin grant anchor missing")
+admin_methods = '''    public synchronized boolean hasProfile(String owner){
+        try{return scalar("SELECT COUNT(*) FROM profiles WHERE owner=?",owner)>0;}
+        catch(SQLException ex){throw new IllegalStateException(ex);}
+    }
+    public void adminGrantCard(String owner,String cardId,int amount,String finish){tx(()->{
+        check(hasProfile(owner),"PROFILE_MISSING");check(amount>=1&&amount<=1000,"INVALID_AMOUNT");
+        catalog.card(cardId);check(finish!=null&&!finish.isBlank(),"INVALID_FINISH");
+        for(int i=0;i<amount;i++)mint(owner,cardId,finish,"ADMIN_GRANT");return null;
+    });}
+    public void adminGrantCoins(String owner,long amount){tx(()->{
+        check(hasProfile(owner),"PROFILE_MISSING");check(amount>0&&amount<=1_000_000_000L,"INVALID_AMOUNT");
+        credit(owner,amount);return null;
+    });}
+    public void adminGrantDeck(String owner,String template,String deckName){tx(()->{
+        check(hasProfile(owner),"PROFILE_MISSING");
+        List<String> ids=catalog.starters().get(template);check(ids!=null,"INVALID_TEMPLATE");
+        check(deckName!=null&&!deckName.isBlank()&&deckName.length()<=64,"INVALID_DECK_NAME");
+        List<String> serials=new ArrayList<>();
+        for(String id:ids)serials.add(mint(owner,id,"Normal","ADMIN_DECK:"+template));
+        update("INSERT INTO decks(owner,name,main,extra) VALUES(?,?,?,?) ON CONFLICT(owner,name) DO UPDATE SET main=excluded.main,extra=excluded.extra",
+            owner,deckName,gson.toJson(serials),"[]");
+        update("INSERT INTO deck_formats(owner,name,format) VALUES(?,?,?) ON CONFLICT(owner,name) DO UPDATE SET format=excluded.format",
+            owner,deckName,Format.CASUAL.name());
+        return null;
+    });}
+'''
+s = s.replace(anchor, admin_methods + anchor, 1)
+p.write_text(s)
+
 p = root / "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java"
 s = p.read_text()
 
-# Keep bot difficulty as authoritative match state.
 old = 'Duel duel;boolean ranked,npc;long activity=System.currentTimeMillis();'
 new = 'Duel duel;boolean ranked,npc;String botDifficulty="NONE";long activity=System.currentTimeMillis();'
 if old not in s:
     raise SystemExit("TcgMod botDifficulty Match anchor missing")
 s = s.replace(old, new, 1)
 
-# Optional economy bridge is instantiated only if a HARD PvE win needs a payout.
 field_pattern = re.compile(r'(\bprivate\s+(?:vn\.svarcade\.tcg\.economy\.)?CardStore\s+store\s*;)')
 field_match = field_pattern.search(s)
 if not field_match:
-    raise SystemExit("TcgMod economyRewards field anchor missing")
-s = s[:field_match.end()] + '\n    private vn.svarcade.tcg.integration.EconomyRewards economyRewards;' + s[field_match.end():]
+    raise SystemExit("TcgMod service field anchor missing")
+field_insert = '''
+    private vn.svarcade.tcg.integration.EconomyRewards economyRewards;
+    private MessageService messages;'''
+s = s[:field_match.end()] + field_insert + s[field_match.end():]
 
-# Replace the legacy single NPC action with explicit PvE difficulty.
-pattern = re.compile(r'(?s)\bcase\s+"npc"\s*->\s*\{.*?\}\s*case\s+"duel"\s*->')
-match = pattern.search(s)
-if not match:
-    raise SystemExit("TcgMod npc case block missing")
-replacement = '''
-                case "npc","pve" -> {
+# Register optional Card Worlds placeholders once; handler values remain live against current runtime state.
+payload_anchor = '        PayloadTypeRegistry.playC2S().register(TcgPackets.Input.ID,TcgPackets.Input.CODEC);\n'
+if payload_anchor not in s:
+    raise SystemExit("TcgMod placeholder registration anchor missing")
+s = s.replace(payload_anchor, payload_anchor + '''        if(FabricLoader.getInstance().isModLoaded("placeholder-api"))PlaceholderSupport.register(this);
+''', 1)
+
+old_command = '''        CommandRegistrationCallback.EVENT.register((dispatcher,registry,environment)->dispatcher.register(literal("tcg").executes(ctx->{openRequests.add(ctx.getSource().getPlayerOrThrow().getUuid());send(ctx.getSource().getPlayerOrThrow(),"",0);return 1;})
+            .then(literal("starter").executes(ctx->{handle(ctx.getSource().getPlayerOrThrow(),new TcgPackets.Request("starter",List.of(),0));return 1;}))));'''
+if old_command not in s:
+    raise SystemExit("TcgMod legacy command registration anchor missing")
+s = s.replace(old_command, '        CommandRegistrationCallback.EVENT.register((dispatcher,registry,environment)->CardWorldsCommands.register(dispatcher,this));', 1)
+
+npc_old = '''                case "npc" -> {
+                    check(!matches.containsKey(player),"Finish your current duel first.");Match m=new Match();m.a=player;m.b=UUID.randomUUID();m.npc=true;
+                    try{var da=store.lockDeck(owner,a.isEmpty()?"Starter":a.getFirst(),false,m.id);m.duel=new Duel(catalog,da.get(0),da.get(1),catalog.starters().get("crossroads"),List.of(),rng);}catch(Exception ex){store.unlockDuel(m.id);throw ex;}
+                    matches.put(player,m);notice="The Pewter challenger is ready.";
+                }'''
+npc_new = '''                case "npc","pve" -> {
                     check(!matches.containsKey(player),"Finish your current duel first.");
-                    String difficulty=r.action().equals("npc")?"NORMAL":
-                        (a.size()>=2?a.get(1):"NORMAL").toUpperCase(Locale.ROOT);
+                    String difficulty=r.action().equals("npc")?"NORMAL":(a.size()>=2?a.get(1):"NORMAL").toUpperCase(Locale.ROOT);
                     check(Set.of("EASY","NORMAL","HARD").contains(difficulty),"Bot difficulty must be EASY, NORMAL or HARD.");
                     Match m=new Match();m.a=player;m.b=UUID.randomUUID();m.npc=true;m.botDifficulty=difficulty;
                     String deckName=a.isEmpty()||a.getFirst().isBlank()?"Starter":a.getFirst();
-                    var locked=store.lockDeck(owner,deckName,false,m.id);
-                    try{
-                        m.duel=new Duel(catalog,locked.get(0),locked.get(1),catalog.starters().get("crossroads"),List.of(),rng);
-                    }catch(RuntimeException ex){store.unlockDuel(m.id);throw ex;}
-                    matches.put(player,m);
-                    send(p,"Bot duel started: "+difficulty+(difficulty.equals("HARD")?" — currency reward enabled on victory.":" — practice mode, no currency reward."),0);
-                    broadcast(p.getServer(),m);return;
-                }
-                case "duel" ->'''
-s = s[:match.start()] + replacement + s[match.end():]
+                    try{var da=store.lockDeck(owner,deckName,false,m.id);m.duel=new Duel(catalog,da.get(0),da.get(1),catalog.starters().get("crossroads"),List.of(),rng);}catch(Exception ex){store.unlockDuel(m.id);throw ex;}
+                    matches.put(player,m);notice=difficulty;
+                }'''
+if npc_old not in s:
+    raise SystemExit("TcgMod npc case anchor missing")
+s = s.replace(npc_old, npc_new, 1)
 
-# Difficulty-aware bot. It only evaluates Duel.View(1), so hidden opponent information is never read.
-bot_pattern = re.compile(r'(?s)    private\s+void\s+bot\s*\(\s*Match\s+m\s*\)\s*\{.*?    private\s+void\s+broadcast')
+bot_pattern = re.compile(r'(?s)    private void bot\(Match m\)\s*\{.*?\n    private void broadcast')
 bot_match = bot_pattern.search(s)
 if not bot_match:
-    raise SystemExit("TcgMod bot method block missing")
+    raise SystemExit("TcgMod bot method anchor missing")
 bot_impl = '''    private void bot(Match m){
         Duel.View v=m.duel.view(1);
         List<Duel.Action> actions=new ArrayList<>();
@@ -557,31 +615,23 @@ bot_impl = '''    private void bot(Match m){
             if(d==null||d.effect()==null)continue;
             String target=d.effect().target();
             if(target.equals("none"))actions.add(new Duel.Action("activate",c.token(),""));
-            else if(target.equals("chain")&&!v.chain().isEmpty())
-                actions.add(new Duel.Action("activate",c.token(),Integer.toString(v.chain().size())));
+            else if(target.equals("chain")&&!v.chain().isEmpty())actions.add(new Duel.Action("activate",c.token(),Integer.toString(v.chain().size())));
             else if(target.equals("enemy"))for(var t:enemy)actions.add(new Duel.Action("activate",c.token(),t.token()));
             else if(target.equals("ally"))for(var t:field)actions.add(new Duel.Action("activate",c.token(),t.token()));
-            else if(target.equals("grave"))for(var t:mine)if(t.zone()==Duel.Zone.DISCARD)
-                actions.add(new Duel.Action("activate",c.token(),t.token()));
+            else if(target.equals("grave"))for(var t:mine)if(t.zone()==Duel.Zone.DISCARD)actions.add(new Duel.Action("activate",c.token(),t.token()));
         }
 
         if(v.open()&&v.turnPlayer()==1)actions.add(new Duel.Action("next","",""));
         actions.add(new Duel.Action("pass","",""));
 
-        if("EASY".equals(m.botDifficulty)){
-            Collections.shuffle(actions,rng);
-        }else{
+        if("EASY".equals(m.botDifficulty))Collections.shuffle(actions,rng);
+        else{
             boolean hard="HARD".equals(m.botDifficulty);
-            actions.sort(Comparator.comparingInt((Duel.Action a)->botScore(v,a,hard)).reversed());
-            if(!hard&&actions.size()>2&&rng.nextInt(100)<22){
-                Collections.swap(actions,0,1+rng.nextInt(Math.min(3,actions.size()-1)));
-            }
+            actions.sort(Comparator.comparingInt((Duel.Action action)->botScore(v,action,hard)).reversed());
+            if(!hard&&actions.size()>2&&rng.nextInt(100)<22)Collections.swap(actions,0,1+rng.nextInt(Math.min(3,actions.size()-1)));
         }
 
-        for(var action:actions){
-            try{m.duel.act(1,action,m.duel.revision());return;}
-            catch(IllegalArgumentException ignored){}
-        }
+        for(var action:actions)try{m.duel.act(1,action,m.duel.revision());return;}catch(IllegalArgumentException ignored){}
     }
 
     private Catalog.Card botDefinition(Duel.VisibleCard card){
@@ -594,27 +644,21 @@ bot_impl = '''    private void bot(Match m){
         Duel.VisibleCard source=v.cards().stream().filter(c->c.token().equals(action.card())).findFirst().orElse(null);
         if(source==null)return -90000;
         Catalog.Card def=botDefinition(source);
-
         if(action.kind().equals("play")){
             int score=1200+source.power()+(def==null?0:def.level()*90);
-            if(!action.target().isBlank()){
-                for(String token:action.target().split(",")){
-                    Duel.VisibleCard tribute=v.cards().stream().filter(c->c.token().equals(token)).findFirst().orElse(null);
-                    if(tribute!=null)score-=hard?tribute.power()/2:tribute.power()/3;
-                }
+            if(!action.target().isBlank())for(String token:action.target().split(",")){
+                Duel.VisibleCard tribute=v.cards().stream().filter(c->c.token().equals(token)).findFirst().orElse(null);
+                if(tribute!=null)score-=hard?tribute.power()/2:tribute.power()/3;
             }
             return score;
         }
-
         if(action.kind().equals("attack")){
             if(action.target().isBlank())return 2600+source.power();
             Duel.VisibleCard target=v.cards().stream().filter(c->c.token().equals(action.target())).findFirst().orElse(null);
             if(target==null)return 500;
             int trade=source.power()-target.power();
-            if(hard)return (trade>=0?3600:-1800)+target.power()+trade;
-            return (trade>=0?2500:-500)+target.power()/2;
+            return hard?((trade>=0?3600:-1800)+target.power()+trade):((trade>=0?2500:-500)+target.power()/2);
         }
-
         if(action.kind().equals("activate")&&def!=null&&def.effect()!=null){
             int base=switch(def.effect().operation()){
                 case "negate" -> 5200;
@@ -641,12 +685,8 @@ bot_impl = '''    private void bot(Match m){
     private void broadcast'''
 s = s[:bot_match.start()] + bot_impl + s[bot_match.end():]
 
-# Only HARD PvE victories trigger reward logic. Easy/Normal are practice-only.
-reward_pattern = re.compile(r'(?m)^\s*if\s*\(\s*m\.npc\s*&&\s*winning\s*==\s*0\s*\)\s*store\.npcVictory\([^;]+;\s*
-reward_match = reward_pattern.search(s)
-if not reward_match:
-    raise SystemExit("TcgMod npcVictory finish anchor missing")
-reward_block = '''        if(m.npc&&winning==0){
+reward_old = '        if(m.npc&&winning==0)store.npcVictory(m.a.toString(),"pewter_victory",m.id,Instant.now().getEpochSecond());'
+reward_new = '''        if(m.npc&&winning==0){
             ServerPlayerEntity botWinner=server.getPlayerManager().getPlayer(m.a);
             if("HARD".equals(m.botDifficulty)){
                 store.npcVictory(m.a.toString(),"pewter_victory",m.id,Instant.now().getEpochSecond());
@@ -655,62 +695,107 @@ reward_block = '''        if(m.npc&&winning==0){
                     var payout=economyRewards.payHardWin(botWinner,m.id);
                     send(botWinner,payout.message(),0);
                 }
-            }else if(botWinner!=null){
-                send(botWinner,"Victory — "+m.botDifficulty+" bot duels are practice and award no currency.",0);
             }
         }'''
-s = s[:reward_match.start()] + reward_block + s[reward_match.end():]
+if reward_old not in s:
+    raise SystemExit("TcgMod NPC reward anchor missing")
+s = s.replace(reward_old, reward_new, 1)
+
+method_anchor = '    private static void check(boolean v,String m){if(!v)throw new IllegalArgumentException(m);}\n}'
+if method_anchor not in s:
+    raise SystemExit("TcgMod command service method anchor missing")
+command_methods = '''    MessageService commandMessages(MinecraftServer server){
+        if(messages==null)messages=new MessageService(server);
+        return messages;
+    }
+    Catalog commandCatalog(){return catalog;}
+    CardStore commandStore(){return store;}
+    boolean commandHasActiveDuels(){return !matches.isEmpty();}
+    void commandOpen(ServerPlayerEntity player){openRequests.add(player.getUuid());send(player,"",0);}
+    synchronized void commandReload(MinecraftServer server)throws Exception{
+        commandMessages(server).reload();
+        if(!matches.isEmpty())throw new IllegalStateException("ACTIVE_DUELS");
+        Path config=FabricLoader.getInstance().getConfigDir().resolve("svarcade-tcg");
+        Files.createDirectories(config);
+        Path file=config.resolve("catalog.json");
+        Catalog next=Catalog.load(file);
+        Path db=server.getSavePath(WorldSavePath.ROOT).resolve("svarcade-tcg/cards.db");
+        Catalog previousCatalog=catalog;
+        CardStore previousStore=store;
+        if(previousStore!=null)previousStore.close();
+        try{
+            store=new CardStore(db,next,rng);
+            catalog=next;
+        }catch(Exception ex){
+            catalog=previousCatalog;
+            store=previousCatalog==null?null:new CardStore(db,previousCatalog,rng);
+            throw ex;
+        }
+        economyRewards=new vn.svarcade.tcg.integration.EconomyRewards();
+    }
+    long placeholderCoins(ServerPlayerEntity player){
+        return store==null||!store.hasProfile(player.getUuidAsString())?0:store.profile(player.getUuidAsString()).coins();
+    }
+    int placeholderRating(ServerPlayerEntity player){
+        return store==null||!store.hasProfile(player.getUuidAsString())?0:store.profile(player.getUuidAsString()).rating();
+    }
+    int placeholderCards(ServerPlayerEntity player){
+        return store==null||!store.hasProfile(player.getUuidAsString())?0:store.profile(player.getUuidAsString()).owned();
+    }
+    int placeholderDecks(ServerPlayerEntity player){
+        return store==null||!store.hasProfile(player.getUuidAsString())?0:store.deckNames(player.getUuidAsString()).size();
+    }
+    String placeholderDuelState(ServerPlayerEntity player){
+        Match match=matches.get(player.getUuid());
+        return match==null?"idle":match.npc?"pve":"pvp";
+    }
+    String placeholderBotDifficulty(ServerPlayerEntity player){
+        Match match=matches.get(player.getUuid());
+        return match==null||!match.npc?"none":match.botDifficulty.toLowerCase(Locale.ROOT);
+    }
+'''
+s = s.replace(method_anchor, command_methods + method_anchor, 1)
+
+stop_anchor = 'matches.clear();challenges.clear();rateLimit.clear();});'
+if stop_anchor in s:
+    s = s.replace(stop_anchor, 'matches.clear();challenges.clear();rateLimit.clear();messages=null;});', 1)
+
 p.write_text(s)
 
-# Mark optional economy integrations as supported/suggested, never hard dependencies.
+# Suggested integrations remain optional.
 p = root / "src/main/resources/fabric.mod.json"
 meta = json.loads(p.read_text())
 suggests = meta.setdefault("suggests", {})
-for mod_id in ("beconomy","cobbledollars","impactor"):
+for mod_id in ("placeholder-api","beconomy","cobbledollars","impactor"):
     suggests.setdefault(mod_id, "*")
-p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\\n")
+p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n")
 
-# Runtime QA must exercise the explicit HARD PvE path, not the legacy npc alias.
+# Runtime QA exercises explicit HARD PvE.
 p = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
 s = p.read_text()
-old = 'a.send("npc",a.deckName);'
-new = 'a.send("pve",a.deckName,"HARD");'
-if old not in s:
-    raise SystemExit("VisualRun PvE action anchor missing")
-p.write_text(s.replace(old, new, 1))
-)
-reward_match = reward_pattern.search(s)
-if not reward_match:
-    raise SystemExit("TcgMod npcVictory finish anchor missing")
-reward_block = '''        if(m.npc&&winning==0){
-            ServerPlayerEntity botWinner=server.getPlayerManager().getPlayer(m.a);
-            if("HARD".equals(m.botDifficulty)){
-                store.npcVictory(m.a.toString(),"pewter_victory",m.id,Instant.now().getEpochSecond());
-                if(botWinner!=null){
-                    if(economyRewards==null)economyRewards=new vn.svarcade.tcg.integration.EconomyRewards();
-                    var payout=economyRewards.payHardWin(botWinner,m.id);
-                    send(botWinner,payout.message(),0);
-                }
-            }else if(botWinner!=null){
-                send(botWinner,"Victory — "+m.botDifficulty+" bot duels are practice and award no currency.",0);
-            }
-        }'''
-s = s[:reward_match.start()] + reward_block + s[reward_match.end():]
+if 'a.send("npc",a.deckName);' in s:
+    s = s.replace('a.send("npc",a.deckName);', 'a.send("pve",a.deckName,"HARD");', 1)
 p.write_text(s)
 
-# Mark optional economy integrations as supported/suggested, never hard dependencies.
-p = root / "src/main/resources/fabric.mod.json"
-meta = json.loads(p.read_text())
-suggests = meta.setdefault("suggests", {})
-for mod_id in ("beconomy","cobbledollars","impactor"):
-    suggests.setdefault(mod_id, "*")
-p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\\n")
-
-# Runtime QA must exercise the explicit HARD PvE path, not the legacy npc alias.
-p = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
+# Admin-grant persistence regression tests.
+p = root / "src/test/java/vn/svarcade/tcg/EconomyTest.java"
 s = p.read_text()
-old = 'a.send("npc",a.deckName);'
-new = 'a.send("pve",a.deckName,"HARD");'
-if old not in s:
-    raise SystemExit("VisualRun PvE action anchor missing")
-p.write_text(s.replace(old, new, 1))
+if "adminGrantCommandsPersistCardsCoinsAndDecks" not in s:
+    insert = '''
+    @Test void adminGrantCommandsPersistCardsCoinsAndDecks(){
+        store.createProfile("admin-target","crossroads");
+        long before=store.profile("admin-target").coins();
+        int cardsBefore=store.profile("admin-target").owned();
+        store.adminGrantCard("admin-target","pikachu",2,"Holo");
+        store.adminGrantCoins("admin-target",250);
+        store.adminGrantDeck("admin-target","crossroads","Granted");
+        assertTrue(store.profile("admin-target").coins()>=before+250);
+        assertTrue(store.profile("admin-target").owned()>cardsBefore+1);
+        assertTrue(store.deckNames("admin-target").contains("Granted"));
+        assertTrue(store.completion("admin-target").getOrDefault("pikachu",0)>=2);
+    }
+'''
+    idx=s.rfind("\n}")
+    if idx<0: raise SystemExit("EconomyTest closing brace missing")
+    s=s[:idx]+insert+s[idx:]
+p.write_text(s)
