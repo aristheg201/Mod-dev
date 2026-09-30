@@ -39,6 +39,14 @@ with tempfile.TemporaryDirectory(prefix="cardworlds-duelrealm-") as tmp_name:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, destination)
 
+    # Runtime hot-path overrides are kept uncompressed so performance fixes do
+    # not require repacking the verified rules/engine bundle.
+    for name in ("DuelColiseumStructure.java", "DuelRealmService.java"):
+        override = here / name
+        if not override.is_file():
+            raise SystemExit(f"Duel Realm runtime override missing {name}")
+        shutil.copyfile(override, new_files[name])
+
     patch_order = [
         "catalog_java.patch",
         "catalog_json.patch",
@@ -70,14 +78,5 @@ new = 'assertEquals(4,d.spectatorView().handCounts().getFirst());'
 if old not in test_source:
     raise SystemExit("Spectator hand-count regression assertion anchor missing")
 engine_test.write_text(test_source.replace(old, new, 1))
-
-# Coliseum cells are fully built before any duelist/spectator is teleported into the
-# Duel Realm. Avoid neighbor-notification storms while placing tens of thousands of
-# structure blocks; clients receive the final states when the chunks are sent.
-coliseum = root / "src/main/java/vn/svarcade/tcg/fabric/DuelColiseumStructure.java"
-coliseum_source = coliseum.read_text()
-if "Block.NOTIFY_ALL" not in coliseum_source:
-    raise SystemExit("Duel Coliseum placement optimization anchor missing")
-coliseum.write_text(coliseum_source.replace("Block.NOTIFY_ALL", "0"))
 
 print("Applied Duel Realm production bundle")
