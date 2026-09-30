@@ -217,4 +217,65 @@ if old not in duel_source:
     raise SystemExit("QA Spell/Trap resolve priority anchor missing")
 duel_target.write_text(duel_source.replace(old,new,1))
 
+
+# Spectator HUD is strictly read-only. Server already rejects spectator actions;
+# mirror that authority on the client so the UI never advertises controls a
+# spectator cannot use.
+duel_screen = root / "src/main/java/vn/svarcade/tcg/client/screens/DuelScreen.java"
+duel_screen_source = duel_screen.read_text()
+
+replacements = [
+    (
+        '        Duel.View v = a.state.duel();\n',
+        '        Duel.View v = a.state.duel();\n        boolean spectator = a.state.spectator();\n',
+        "spectator render state",
+    ),
+    (
+        '        String actionPrompt = intent.isBlank() ?',
+        '        String actionPrompt = spectator ? "SPECTATOR • READ ONLY" : intent.isBlank() ?',
+        "spectator action prompt",
+    ),
+    (
+        '        boolean priority = v.priority() == v.you() && v.winner().isBlank();',
+        '        boolean priority = !spectator && v.priority() == v.you() && v.winner().isBlank();',
+        "spectator priority guard",
+    ),
+    (
+        '            u.click(hit, () -> choose(a, card));',
+        '            if (!spectator) u.click(hit, () -> choose(a, card));',
+        "spectator field click guard",
+    ),
+    (
+        '            u.click(r, () -> choose(a, card));',
+        '            if (!spectator) u.click(r, () -> choose(a, card));',
+        "spectator card click guard",
+    ),
+    (
+        '    private void choose(CardWorldsScreen a, Duel.VisibleCard c) {\n',
+        '    private void choose(CardWorldsScreen a, Duel.VisibleCard c) {\n        if (a.state.spectator()) return;\n',
+        "spectator choose guard",
+    ),
+    (
+        '    private void perform(CardWorldsScreen a, String action) {\n',
+        '    private void perform(CardWorldsScreen a, String action) {\n        if (a.state.spectator()) return;\n',
+        "spectator perform guard",
+    ),
+    (
+        '    private boolean targetAllowed(CardWorldsScreen a, Duel.VisibleCard t) {\n',
+        '    private boolean targetAllowed(CardWorldsScreen a, Duel.VisibleCard t) {\n        if (a.state.spectator()) return false;\n',
+        "spectator target guard",
+    ),
+]
+for old, new, label in replacements:
+    if old not in duel_screen_source:
+        raise SystemExit(f"DuelScreen {label} anchor missing")
+    duel_screen_source = duel_screen_source.replace(old, new, 1)
+
+old = 'false, v.winner().isBlank(), () -> a.send("duel", "concede", "", ""));'
+new = 'false, !spectator && v.winner().isBlank(), () -> a.send("duel", "concede", "", ""));'
+if old not in duel_screen_source:
+    raise SystemExit("DuelScreen spectator surrender guard anchor missing")
+duel_screen_source = duel_screen_source.replace(old, new, 1)
+duel_screen.write_text(duel_screen_source)
+
 print("Applied Duel Realm production bundle")
