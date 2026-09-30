@@ -58,7 +58,6 @@ with tempfile.TemporaryDirectory(prefix="cardworlds-duelrealm-") as tmp_name:
         "duel_screen.patch",
         "engine_test.patch",
         "visual_run.patch",
-        "qa_gates.patch",
     ]
     for name in patch_order:
         patch_file = tmp / "patches" / name
