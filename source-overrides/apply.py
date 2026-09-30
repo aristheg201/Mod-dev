@@ -494,14 +494,14 @@ if old not in s:
 s = s.replace(old, new, 1)
 
 # Optional economy bridge is instantiated only if a HARD PvE win needs a payout.
-old = '    private CardStore store;\n'
-new = '    private CardStore store;\n    private vn.svarcade.tcg.integration.EconomyRewards economyRewards;\n'
-if old not in s:
+field_pattern = re.compile(r'(\bprivate\s+(?:vn\.svarcade\.tcg\.economy\.)?CardStore\s+store\s*;)')
+field_match = field_pattern.search(s)
+if not field_match:
     raise SystemExit("TcgMod economyRewards field anchor missing")
-s = s.replace(old, new, 1)
+s = s[:field_match.end()] + '\n    private vn.svarcade.tcg.integration.EconomyRewards economyRewards;' + s[field_match.end():]
 
 # Replace the legacy single NPC action with explicit PvE difficulty.
-pattern = re.compile(r'(?s)\s*case "npc" -> \{.*?\}\s*case "duel" ->')
+pattern = re.compile(r'(?s)\bcase\s+"npc"\s*->\s*\{.*?\}\s*case\s+"duel"\s*->')
 match = pattern.search(s)
 if not match:
     raise SystemExit("TcgMod npc case block missing")
@@ -525,7 +525,7 @@ replacement = '''
 s = s[:match.start()] + replacement + s[match.end():]
 
 # Difficulty-aware bot. It only evaluates Duel.View(1), so hidden opponent information is never read.
-bot_pattern = re.compile(r'(?s)    private void bot\\(Match m\\)\\{.*?\\n    private void broadcast')
+bot_pattern = re.compile(r'(?s)    private\s+void\s+bot\s*\(\s*Match\s+m\s*\)\s*\{.*?    private\s+void\s+broadcast')
 bot_match = bot_pattern.search(s)
 if not bot_match:
     raise SystemExit("TcgMod bot method block missing")
@@ -642,7 +642,43 @@ bot_impl = '''    private void bot(Match m){
 s = s[:bot_match.start()] + bot_impl + s[bot_match.end():]
 
 # Only HARD PvE victories trigger reward logic. Easy/Normal are practice-only.
-reward_pattern = re.compile(r'(?m)^\\s*if\\(m\\.npc&&winning==0\\)store\\.npcVictory\\([^;]+;\\s*$')
+reward_pattern = re.compile(r'(?m)^\s*if\s*\(\s*m\.npc\s*&&\s*winning\s*==\s*0\s*\)\s*store\.npcVictory\([^;]+;\s*
+reward_match = reward_pattern.search(s)
+if not reward_match:
+    raise SystemExit("TcgMod npcVictory finish anchor missing")
+reward_block = '''        if(m.npc&&winning==0){
+            ServerPlayerEntity botWinner=server.getPlayerManager().getPlayer(m.a);
+            if("HARD".equals(m.botDifficulty)){
+                store.npcVictory(m.a.toString(),"pewter_victory",m.id,Instant.now().getEpochSecond());
+                if(botWinner!=null){
+                    if(economyRewards==null)economyRewards=new vn.svarcade.tcg.integration.EconomyRewards();
+                    var payout=economyRewards.payHardWin(botWinner,m.id);
+                    send(botWinner,payout.message(),0);
+                }
+            }else if(botWinner!=null){
+                send(botWinner,"Victory — "+m.botDifficulty+" bot duels are practice and award no currency.",0);
+            }
+        }'''
+s = s[:reward_match.start()] + reward_block + s[reward_match.end():]
+p.write_text(s)
+
+# Mark optional economy integrations as supported/suggested, never hard dependencies.
+p = root / "src/main/resources/fabric.mod.json"
+meta = json.loads(p.read_text())
+suggests = meta.setdefault("suggests", {})
+for mod_id in ("beconomy","cobbledollars","impactor"):
+    suggests.setdefault(mod_id, "*")
+p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\\n")
+
+# Runtime QA must exercise the explicit HARD PvE path, not the legacy npc alias.
+p = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
+s = p.read_text()
+old = 'a.send("npc",a.deckName);'
+new = 'a.send("pve",a.deckName,"HARD");'
+if old not in s:
+    raise SystemExit("VisualRun PvE action anchor missing")
+p.write_text(s.replace(old, new, 1))
+)
 reward_match = reward_pattern.search(s)
 if not reward_match:
     raise SystemExit("TcgMod npcVictory finish anchor missing")
