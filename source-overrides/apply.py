@@ -8,6 +8,8 @@ copies = {
     over / "DuelWorldScene.java": root / "src/main/java/vn/svarcade/tcg/client/render/DuelWorldScene.java",
     over / "DuelScreen.java": root / "src/main/java/vn/svarcade/tcg/client/screens/DuelScreen.java",
     over / "PokemonModels.java": root / "src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java",
+    over / "PlayScreen.java": root / "src/main/java/vn/svarcade/tcg/client/screens/PlayScreen.java",
+    over / "EconomyRewards.java": root / "src/main/java/vn/svarcade/tcg/integration/EconomyRewards.java",
 }
 for src, dst in copies.items():
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -478,3 +480,201 @@ s = s.replace('shot(c,"15-reopen-y")','shot(c,"16-reopen-y")')
 s = s.replace('shot(c,"16-reopen-command")','shot(c,"17-reopen-command")')
 s = s.replace('shot(c,"17-scale-two")','shot(c,"18-scale-two")')
 p.write_text(s)
+
+
+# PvE/PvP split, bot difficulty, and optional external economy payout.
+p = root / "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java"
+s = p.read_text()
+
+# Keep bot difficulty as authoritative match state.
+old = 'Duel duel;boolean ranked,npc;long activity=System.currentTimeMillis();'
+new = 'Duel duel;boolean ranked,npc;String botDifficulty="NONE";long activity=System.currentTimeMillis();'
+if old not in s:
+    raise SystemExit("TcgMod botDifficulty Match anchor missing")
+s = s.replace(old, new, 1)
+
+# Optional economy bridge is instantiated only if a HARD PvE win needs a payout.
+old = '    private CardStore store;\n'
+new = '    private CardStore store;\n    private vn.svarcade.tcg.integration.EconomyRewards economyRewards;\n'
+if old not in s:
+    raise SystemExit("TcgMod economyRewards field anchor missing")
+s = s.replace(old, new, 1)
+
+# Replace the legacy single NPC action with explicit PvE difficulty.
+pattern = re.compile(r'(?s)\s*case "npc" -> \{.*?\}\s*case "duel" ->')
+match = pattern.search(s)
+if not match:
+    raise SystemExit("TcgMod npc case block missing")
+replacement = '''
+                case "npc","pve" -> {
+                    check(!matches.containsKey(player),"Finish your current duel first.");
+                    String difficulty=r.action().equals("npc")?"NORMAL":
+                        (a.size()>=2?a.get(1):"NORMAL").toUpperCase(Locale.ROOT);
+                    check(Set.of("EASY","NORMAL","HARD").contains(difficulty),"Bot difficulty must be EASY, NORMAL or HARD.");
+                    Match m=new Match();m.a=player;m.b=UUID.randomUUID();m.npc=true;m.botDifficulty=difficulty;
+                    String deckName=a.isEmpty()||a.getFirst().isBlank()?"Starter":a.getFirst();
+                    var locked=store.lockDeck(owner,deckName,false,m.id);
+                    try{
+                        m.duel=new Duel(catalog,locked.get(0),locked.get(1),catalog.starters().get("crossroads"),List.of(),rng);
+                    }catch(RuntimeException ex){store.unlockDuel(m.id);throw ex;}
+                    matches.put(player,m);
+                    send(p,"Bot duel started: "+difficulty+(difficulty.equals("HARD")?" — currency reward enabled on victory.":" — practice mode, no currency reward."),0);
+                    broadcast(p.getServer(),m);return;
+                }
+                case "duel" ->'''
+s = s[:match.start()] + replacement + s[match.end():]
+
+# Difficulty-aware bot. It only evaluates Duel.View(1), so hidden opponent information is never read.
+bot_pattern = re.compile(r'(?s)    private void bot\\(Match m\\)\\{.*?\\n    private void broadcast')
+bot_match = bot_pattern.search(s)
+if not bot_match:
+    raise SystemExit("TcgMod bot method block missing")
+bot_impl = '''    private void bot(Match m){
+        Duel.View v=m.duel.view(1);
+        List<Duel.Action> actions=new ArrayList<>();
+        List<Duel.VisibleCard> mine=v.cards().stream().filter(c->c.controller()==1).toList();
+        List<Duel.VisibleCard> field=mine.stream().filter(c->c.zone()==Duel.Zone.FIELD).toList();
+        List<Duel.VisibleCard> enemy=v.cards().stream().filter(c->c.controller()==0&&c.zone()==Duel.Zone.FIELD).toList();
+
+        if(v.open()&&v.turnPlayer()==1&&(v.phase().equals("MAIN1")||v.phase().equals("MAIN2"))){
+            for(var c:mine)if((c.zone()==Duel.Zone.HAND||c.zone()==Duel.Zone.EXTRA)&&c.category().equals("pokemon")){
+                actions.add(new Duel.Action("play",c.token(),""));
+                for(var material:field)actions.add(new Duel.Action("play",c.token(),material.token()));
+                for(int i=0;i<field.size();i++)for(int j=i+1;j<field.size();j++)
+                    actions.add(new Duel.Action("play",c.token(),field.get(i).token()+","+field.get(j).token()));
+            }
+        }
+
+        if(v.open()&&v.turnPlayer()==1&&v.phase().equals("BATTLE")){
+            for(var attacker:field){
+                actions.add(new Duel.Action("attack",attacker.token(),""));
+                for(var target:enemy)actions.add(new Duel.Action("attack",attacker.token(),target.token()));
+            }
+        }
+
+        for(var c:mine)if(c.zone()==Duel.Zone.HAND||c.zone()==Duel.Zone.FIELD){
+            Catalog.Card d=botDefinition(c);
+            if(d==null||d.effect()==null)continue;
+            String target=d.effect().target();
+            if(target.equals("none"))actions.add(new Duel.Action("activate",c.token(),""));
+            else if(target.equals("chain")&&!v.chain().isEmpty())
+                actions.add(new Duel.Action("activate",c.token(),Integer.toString(v.chain().size())));
+            else if(target.equals("enemy"))for(var t:enemy)actions.add(new Duel.Action("activate",c.token(),t.token()));
+            else if(target.equals("ally"))for(var t:field)actions.add(new Duel.Action("activate",c.token(),t.token()));
+            else if(target.equals("grave"))for(var t:mine)if(t.zone()==Duel.Zone.DISCARD)
+                actions.add(new Duel.Action("activate",c.token(),t.token()));
+        }
+
+        if(v.open()&&v.turnPlayer()==1)actions.add(new Duel.Action("next","",""));
+        actions.add(new Duel.Action("pass","",""));
+
+        if("EASY".equals(m.botDifficulty)){
+            Collections.shuffle(actions,rng);
+        }else{
+            boolean hard="HARD".equals(m.botDifficulty);
+            actions.sort(Comparator.comparingInt((Duel.Action a)->botScore(v,a,hard)).reversed());
+            if(!hard&&actions.size()>2&&rng.nextInt(100)<22){
+                Collections.swap(actions,0,1+rng.nextInt(Math.min(3,actions.size()-1)));
+            }
+        }
+
+        for(var action:actions){
+            try{m.duel.act(1,action,m.duel.revision());return;}
+            catch(IllegalArgumentException ignored){}
+        }
+    }
+
+    private Catalog.Card botDefinition(Duel.VisibleCard card){
+        return catalog.cards().values().stream().filter(d->d.name().equals(card.name())).findFirst().orElse(null);
+    }
+
+    private int botScore(Duel.View v,Duel.Action action,boolean hard){
+        if(action.kind().equals("pass"))return -100000;
+        if(action.kind().equals("next"))return -50000;
+        Duel.VisibleCard source=v.cards().stream().filter(c->c.token().equals(action.card())).findFirst().orElse(null);
+        if(source==null)return -90000;
+        Catalog.Card def=botDefinition(source);
+
+        if(action.kind().equals("play")){
+            int score=1200+source.power()+(def==null?0:def.level()*90);
+            if(!action.target().isBlank()){
+                for(String token:action.target().split(",")){
+                    Duel.VisibleCard tribute=v.cards().stream().filter(c->c.token().equals(token)).findFirst().orElse(null);
+                    if(tribute!=null)score-=hard?tribute.power()/2:tribute.power()/3;
+                }
+            }
+            return score;
+        }
+
+        if(action.kind().equals("attack")){
+            if(action.target().isBlank())return 2600+source.power();
+            Duel.VisibleCard target=v.cards().stream().filter(c->c.token().equals(action.target())).findFirst().orElse(null);
+            if(target==null)return 500;
+            int trade=source.power()-target.power();
+            if(hard)return (trade>=0?3600:-1800)+target.power()+trade;
+            return (trade>=0?2500:-500)+target.power()/2;
+        }
+
+        if(action.kind().equals("activate")&&def!=null&&def.effect()!=null){
+            int base=switch(def.effect().operation()){
+                case "negate" -> 5200;
+                case "banish" -> 4900;
+                case "destroy" -> 4700;
+                case "return" -> 4300;
+                case "damage" -> 3500+def.effect().amount();
+                case "draw" -> 3300+def.effect().amount()*300;
+                case "heal" -> 2100+def.effect().amount()/2;
+                case "boost" -> 2300+def.effect().amount();
+                case "shield" -> 2400;
+                default -> 1600;
+            };
+            if(hard)base-=def.effect().lifeCost();
+            if(!action.target().isBlank()){
+                Duel.VisibleCard target=v.cards().stream().filter(c->c.token().equals(action.target())).findFirst().orElse(null);
+                if(target!=null&&target.controller()==0)base+=hard?target.power()/2:target.power()/4;
+            }
+            return base;
+        }
+        return 0;
+    }
+
+    private void broadcast'''
+s = s[:bot_match.start()] + bot_impl + s[bot_match.end():]
+
+# Only HARD PvE victories trigger reward logic. Easy/Normal are practice-only.
+reward_pattern = re.compile(r'(?m)^\\s*if\\(m\\.npc&&winning==0\\)store\\.npcVictory\\([^;]+;\\s*$')
+reward_match = reward_pattern.search(s)
+if not reward_match:
+    raise SystemExit("TcgMod npcVictory finish anchor missing")
+reward_block = '''        if(m.npc&&winning==0){
+            ServerPlayerEntity botWinner=server.getPlayerManager().getPlayer(m.a);
+            if("HARD".equals(m.botDifficulty)){
+                store.npcVictory(m.a.toString(),"pewter_victory",m.id,Instant.now().getEpochSecond());
+                if(botWinner!=null){
+                    if(economyRewards==null)economyRewards=new vn.svarcade.tcg.integration.EconomyRewards();
+                    var payout=economyRewards.payHardWin(botWinner,m.id);
+                    send(botWinner,payout.message(),0);
+                }
+            }else if(botWinner!=null){
+                send(botWinner,"Victory — "+m.botDifficulty+" bot duels are practice and award no currency.",0);
+            }
+        }'''
+s = s[:reward_match.start()] + reward_block + s[reward_match.end():]
+p.write_text(s)
+
+# Mark optional economy integrations as supported/suggested, never hard dependencies.
+p = root / "src/main/resources/fabric.mod.json"
+meta = json.loads(p.read_text())
+suggests = meta.setdefault("suggests", {})
+for mod_id in ("beconomy","cobbledollars","impactor"):
+    suggests.setdefault(mod_id, "*")
+p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\\n")
+
+# Runtime QA must exercise the explicit HARD PvE path, not the legacy npc alias.
+p = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
+s = p.read_text()
+old = 'a.send("npc",a.deckName);'
+new = 'a.send("pve",a.deckName,"HARD");'
+if old not in s:
+    raise SystemExit("VisualRun PvE action anchor missing")
+p.write_text(s.replace(old, new, 1))
