@@ -1,0 +1,32 @@
+name: Card Worlds Source Dump
+
+on:
+  push:
+    branches:
+      - feature/cardworlds-source-dump-temp
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore effective Card Worlds source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bootstrap/cardworlds-src.b64.part* | base64 -d > /tmp/cardworlds-src-tools.tar.gz
+          echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/cardworlds-src-tools.tar.gz
+          python3 source-overrides/apply.py
+          tar -czf /tmp/cardworlds-effective-source.tgz src source-overrides build.gradle gradle.properties settings.gradle docs
+      - name: Upload effective source
+        uses: actions/upload-artifact@v4
+        with:
+          name: CardWorlds-effective-source-${{ github.sha }}
+          path: /tmp/cardworlds-effective-source.tgz
+          if-no-files-found: error
