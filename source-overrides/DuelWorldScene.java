@@ -11,6 +11,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.decoration.DisplayEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
@@ -46,6 +47,9 @@ public final class DuelWorldScene {
     private float arenaYaw;
     private String attacking = "";
     private long attackAt;
+    private float orbitYaw;
+    private float orbitPitch = 25f;
+    private double cameraDistance = 22.5;
 
     public void setAttack(String token, long when) {
         attacking = token == null ? "" : token;
@@ -80,9 +84,9 @@ public final class DuelWorldScene {
 
             int slot = slotByController.merge(card.controller(), 1, Integer::sum) - 1;
             int cappedZones = Math.max(1, zones);
-            double x = (slot - (cappedZones - 1) / 2.0) * 3.20;
+            double x = (slot - (cappedZones - 1) / 2.0) * 4.60;
             boolean mine = card.controller() == view.you();
-            double z = mine ? -3.85 : 3.85;
+            double z = mine ? -5.80 : 5.80;
             Vec3d pos = local(x, 0.30, z);
 
             long age = now - actor.born();
@@ -93,7 +97,7 @@ public final class DuelWorldScene {
             }
             if (card.token().equals(attacking) && now - attackAt < 650) {
                 double t = (now - attackAt) / 650.0;
-                double lunge = Math.sin(Math.PI * t) * 2.35;
+                double lunge = Math.sin(Math.PI * t) * 3.20;
                 pos = pos.add(forward.multiply(mine ? lunge : -lunge));
             }
 
@@ -153,9 +157,9 @@ public final class DuelWorldScene {
         double yawRad = Math.toRadians(arenaYaw);
         forward = new Vec3d(-Math.sin(yawRad), 0, Math.cos(yawRad)).normalize();
         right = forward.crossProduct(new Vec3d(0, 1, 0)).normalize();
-        origin = client.player.getPos().add(forward.multiply(10.0)).add(0, 5.5, 0);
+        origin = client.player.getPos().add(forward.multiply(12.0)).add(0, 4.5, 0);
 
-        Vec3d cameraPos = origin.subtract(forward.multiply(19.5)).add(0, 9.4, 0);
+        Vec3d cameraPos = origin;
         cameraRig = new ArmorStandEntity(world, cameraPos.x, cameraPos.y, cameraPos.z);
         cameraRig.setId(nextId());
         cameraRig.setInvisible(true);
@@ -165,29 +169,73 @@ public final class DuelWorldScene {
         cameraRig.setYaw(arenaYaw);
         cameraRig.setHeadYaw(arenaYaw);
         cameraRig.setBodyYaw(arenaYaw);
-        cameraRig.setPitch(26f);
+        cameraRig.setPitch(25f);
         world.addEntity(cameraRig);
         client.setCameraEntity(cameraRig);
+        orbitYaw = 0f;
+        orbitPitch = 25f;
+        cameraDistance = 22.5;
+        updateCamera();
 
         buildArena();
     }
 
+    public void orbit(double deltaX, double deltaY) {
+        orbitYaw = (float)((orbitYaw - deltaX * 0.34) % 360.0);
+        orbitPitch = (float)Math.clamp(orbitPitch + deltaY * 0.24, 12.0, 62.0);
+        updateCamera();
+    }
+
+    public void zoom(double wheel) {
+        cameraDistance = Math.clamp(cameraDistance - wheel * 1.55, 14.0, 34.0);
+        updateCamera();
+    }
+
+    public void resetView() {
+        orbitYaw = 0f;
+        orbitPitch = 25f;
+        cameraDistance = 22.5;
+        updateCamera();
+    }
+
+    private void updateCamera() {
+        if (cameraRig == null || cameraRig.isRemoved()) return;
+
+        double pitch = Math.toRadians(orbitPitch);
+        double yaw = Math.toRadians(orbitYaw);
+        double horizontal = cameraDistance * Math.cos(pitch);
+        double vertical = cameraDistance * Math.sin(pitch);
+
+        Vec3d back = forward.multiply(-Math.cos(yaw)).add(right.multiply(Math.sin(yaw))).normalize();
+        Vec3d target = origin.add(0, 1.45, 0);
+        Vec3d pos = target.add(back.multiply(horizontal)).add(0, vertical, 0);
+        Vec3d look = target.subtract(pos).normalize();
+
+        float viewYaw = (float)Math.toDegrees(Math.atan2(-look.x, look.z));
+        float viewPitch = (float)Math.toDegrees(-Math.asin(look.y));
+        cameraRig.setPosition(pos.x, pos.y, pos.z);
+        cameraRig.setYaw(viewYaw);
+        cameraRig.setHeadYaw(viewYaw);
+        cameraRig.setBodyYaw(viewYaw);
+        cameraRig.setPitch(viewPitch);
+    }
+
     private void buildArena() {
-        addDisplay(Blocks.POLISHED_BLACKSTONE.getDefaultState(), local(0, -0.22, 0), 22.4f, 0.40f, 14.0f);
-        addDisplay(Blocks.DARK_PRISMARINE.getDefaultState(), local(0, 0.01, 0), 20.6f, 0.10f, 0.36f);
-        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(-10.85, -0.05, 0), 0.22f, 0.18f, 13.6f);
-        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(10.85, -0.05, 0), 0.22f, 0.18f, 13.6f);
+        addDisplay(Blocks.POLISHED_BLACKSTONE.getDefaultState(), local(0, -0.26, 0), 34.0f, 0.46f, 20.0f);
+        addDisplay(Blocks.DARK_PRISMARINE.getDefaultState(), local(0, 0.01, 0), 31.5f, 0.12f, 0.46f);
+        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(-16.55, -0.05, 0), 0.26f, 0.22f, 19.5f);
+        addDisplay(Blocks.OXIDIZED_COPPER.getDefaultState(), local(16.55, -0.05, 0), 0.26f, 0.22f, 19.5f);
 
         for (int row = 0; row < 2; row++) {
-            double z = row == 0 ? -3.85 : 3.85;
+            double z = row == 0 ? -5.80 : 5.80;
             for (int i = 0; i < 5; i++) {
-                double x = (i - 2) * 3.20;
+                double x = (i - 2) * 4.60;
                 BlockState state = row == 0 ? Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState();
-                addDisplay(state, local(x, 0.02, z), 2.55f, 0.14f, 2.40f);
+                addDisplay(state, local(x, 0.02, z), 3.85f, 0.18f, 3.55f);
             }
         }
-        addDisplay(Blocks.SEA_LANTERN.getDefaultState(), local(0, -0.02, -6.35), 15.2f, 0.10f, 0.16f);
-        addDisplay(Blocks.REDSTONE_LAMP.getDefaultState(), local(0, -0.02, 6.35), 15.2f, 0.10f, 0.16f);
+        addDisplay(Blocks.SEA_LANTERN.getDefaultState(), local(0, -0.02, -9.15), 23.0f, 0.12f, 0.20f);
+        addDisplay(Blocks.REDSTONE_LAMP.getDefaultState(), local(0, -0.02, 9.15), 23.0f, 0.12f, 0.20f);
     }
 
     private PokemonEntity createPokemon(String species, List<String> aspects) {
@@ -200,6 +248,8 @@ public final class DuelWorldScene {
             entity.setInvulnerable(true);
             entity.setNoGravity(true);
             entity.setSilent(true);
+            var duelScale = entity.getAttributeInstance(EntityAttributes.GENERIC_SCALE);
+            if (duelScale != null) duelScale.setBaseValue(2.00);
             world.addEntity(entity);
             return entity;
         } catch (RuntimeException ex) {
@@ -217,7 +267,7 @@ public final class DuelWorldScene {
         display.setInvulnerable(true);
         display.setNoGravity(true);
         display.setSilent(true);
-        display.setViewRange(4.0f);
+        display.setViewRange(7.0f);
         display.setShadowRadius(0.0f);
         display.setShadowStrength(0.0f);
         display.setTransformation(new AffineTransformation(
@@ -253,7 +303,7 @@ public final class DuelWorldScene {
 
         int sx = (int)Math.round((ndcX * 0.5 + 0.5) * width);
         int sy = (int)Math.round((0.5 - ndcY * 0.5) * height);
-        double k = Math.clamp(14.0 / z, 0.72, 1.55);
+        double k = Math.clamp(19.0 / z, 0.82, 1.80);
         int w = (int)Math.round(86 * k);
         int h = (int)Math.round(116 * k);
         return new Rect(sx - w / 2, sy - h / 2, w, h);

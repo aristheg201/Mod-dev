@@ -37,6 +37,16 @@ public final class DuelScreen implements Page {
     }
 
     public void closeScene() { scene.close(); }
+    public boolean freeLookDrag(int button, double dx, double dy) {
+        if (button != 1) return false;
+        scene.orbit(dx, dy);
+        return true;
+    }
+    public boolean freeLookScroll(double amount) {
+        scene.zoom(amount);
+        return true;
+    }
+    public void resetCamera() { scene.resetView(); }
 
     public void render(CardWorldsScreen a, Ui u, Rect b) {
         Duel.View v = a.state.duel();
@@ -131,6 +141,8 @@ public final class DuelScreen implements Page {
         u.button(v.open() ? "Next Phase" : "Pass", new Rect(x, y + 135, 190, 36), false, priority,
             () -> a.send("duel", v.open() ? "next" : "pass", "", ""));
         u.button("Surrender", new Rect(x, y + 182, 190, 30), false, v.winner().isBlank(), () -> a.send("duel", "concede", "", ""));
+        u.button("Reset View", new Rect(x, y + 220, 190, 30), false, v.winner().isBlank(), scene::resetView);
+        u.fit("RMB drag: free look  |  Wheel: zoom", new Rect(386, 88, 508, 22), 12, Ui.MUTED);
 
         List<String> chain = v.chain();
         boolean anim = System.currentTimeMillis() - resolvedAt < resolving.size() * 550L;

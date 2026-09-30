@@ -133,6 +133,15 @@ s = s.replace(old, new)
 old = '''    @Override public boolean shouldPause(){return false;}
 }'''
 new = '''    public boolean duelActive(){return state.duel()!=null&&state.duel().winner().isBlank()&&!duelPage.dismissed;}
+    public void resetDuelCamera(){duelPage.resetCamera();}
+    @Override public boolean mouseDragged(double mouseX,double mouseY,int button,double deltaX,double deltaY){
+        if(duelActive()&&duelPage.freeLookDrag(button,deltaX,deltaY))return true;
+        return super.mouseDragged(mouseX,mouseY,button,deltaX,deltaY);
+    }
+    @Override public boolean mouseScrolled(double mouseX,double mouseY,double horizontalAmount,double verticalAmount){
+        if(duelActive()&&duelPage.freeLookScroll(verticalAmount))return true;
+        return super.mouseScrolled(mouseX,mouseY,horizontalAmount,verticalAmount);
+    }
     @Override public boolean shouldCloseOnEsc(){return !duelActive();}
     @Override public void close(){if(duelActive())return;duelPage.closeScene();super.close();}
     @Override public boolean shouldPause(){return false;}
@@ -163,4 +172,19 @@ for old, new in repls:
     if old not in s:
         raise SystemExit("VisualRun anchor missing: " + old[:60])
     s = s.replace(old, new)
+
+old = 'case 16->{shot(c,"13-duel-board");step++;}'
+new = 'case 16->{shot(c,"13-duel-board");((net.minecraft.client.gui.screen.Screen)a).mouseDragged(640,360,1,180,-70);((net.minecraft.client.gui.screen.Screen)a).mouseScrolled(640,360,0,2);next=now+700;step=161;}'
+if old not in s:
+    raise SystemExit("VisualRun free-look anchor missing")
+s = s.replace(old, new)
+old = 'case 17->{'
+new = 'case 161->{shot(c,"14-duel-freelook");a.resetDuelCamera();next=now+500;step=17;}\n    case 17->{'
+if old not in s:
+    raise SystemExit("VisualRun case17 anchor missing")
+s = s.replace(old, new, 1)
+s = s.replace('shot(c,"14-duel-result")','shot(c,"15-duel-result")')
+s = s.replace('shot(c,"15-reopen-y")','shot(c,"16-reopen-y")')
+s = s.replace('shot(c,"16-reopen-command")','shot(c,"17-reopen-command")')
+s = s.replace('shot(c,"17-scale-two")','shot(c,"18-scale-two")')
 p.write_text(s)
