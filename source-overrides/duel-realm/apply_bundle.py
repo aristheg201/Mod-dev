@@ -218,64 +218,52 @@ if old not in duel_source:
 duel_target.write_text(duel_source.replace(old,new,1))
 
 
-# Spectator HUD is strictly read-only. Server already rejects spectator actions;
-# mirror that authority on the client so the UI never advertises controls a
-# spectator cannot use.
+# Spectator HUD is strictly read-only. Server authority already rejects spectator
+# actions; this client layer also removes selection/action affordances.
 duel_screen = root / "src/main/java/vn/svarcade/tcg/client/screens/DuelScreen.java"
 duel_screen_source = duel_screen.read_text()
 
-replacements = [
-    (
-        '        Duel.View v = a.state.duel();\n',
-        '        Duel.View v = a.state.duel();\n        boolean spectator = a.state.spectator();\n',
-        "spectator render state",
-    ),
-    (
-        '        String actionPrompt = intent.isBlank() ?',
-        '        String actionPrompt = spectator ? "SPECTATOR • READ ONLY" : intent.isBlank() ?',
-        "spectator action prompt",
-    ),
-    (
-        '        boolean priority = v.priority() == v.you() && v.winner().isBlank();',
-        '        boolean priority = !spectator && v.priority() == v.you() && v.winner().isBlank();',
-        "spectator priority guard",
-    ),
-    (
-        '            u.click(hit, () -> choose(a, card));',
-        '            if (!spectator) u.click(hit, () -> choose(a, card));',
-        "spectator field click guard",
-    ),
-    (
-        '            u.click(r, () -> choose(a, card));',
-        '            if (!spectator) u.click(r, () -> choose(a, card));',
-        "spectator card click guard",
-    ),
+old = '        Duel.View v = a.state.duel();\n'
+new = '        Duel.View v = a.state.duel();\n        boolean spectator = a.state.spectator();\n'
+if old not in duel_screen_source:
+    raise SystemExit("DuelScreen spectator render-state anchor missing")
+duel_screen_source = duel_screen_source.replace(old, new, 1)
+
+for old, new, label in [
     (
         '    private void choose(CardWorldsScreen a, Duel.VisibleCard c) {\n',
         '    private void choose(CardWorldsScreen a, Duel.VisibleCard c) {\n        if (a.state.spectator()) return;\n',
-        "spectator choose guard",
+        "choose",
     ),
     (
         '    private void perform(CardWorldsScreen a, String action) {\n',
         '    private void perform(CardWorldsScreen a, String action) {\n        if (a.state.spectator()) return;\n',
-        "spectator perform guard",
+        "perform",
     ),
     (
         '    private boolean targetAllowed(CardWorldsScreen a, Duel.VisibleCard t) {\n',
         '    private boolean targetAllowed(CardWorldsScreen a, Duel.VisibleCard t) {\n        if (a.state.spectator()) return false;\n',
-        "spectator target guard",
+        "target",
     ),
-]
-for old, new, label in replacements:
+]:
     if old not in duel_screen_source:
-        raise SystemExit(f"DuelScreen {label} anchor missing")
+        raise SystemExit(f"DuelScreen spectator {label} anchor missing")
     duel_screen_source = duel_screen_source.replace(old, new, 1)
 
-old = 'false, v.winner().isBlank(), () -> a.send("duel", "concede", "", ""));'
-new = 'false, !spectator && v.winner().isBlank(), () -> a.send("duel", "concede", "", ""));'
-if old not in duel_screen_source:
-    raise SystemExit("DuelScreen spectator surrender guard anchor missing")
-duel_screen_source = duel_screen_source.replace(old, new, 1)
+reset_anchor = 'scene::resetView);'
+if reset_anchor not in duel_screen_source:
+    raise SystemExit("DuelScreen Reset View anchor missing")
+spectator_overlay = '''scene::resetView);
+        if (spectator) {
+            Rect spectatorPanel = new Rect(x - 2, y - 30, 194, 232);
+            u.fill(spectatorPanel, 0xF006111C);
+            u.frame(spectatorPanel, Ui.CYAN);
+            u.text("SPECTATOR", spectatorPanel.x() + 48, spectatorPanel.y() + 22, 18, Ui.CYAN);
+            u.fit("READ ONLY", new Rect(spectatorPanel.x() + 18, spectatorPanel.y() + 55, spectatorPanel.w() - 36, 30), 17, Ui.WHITE);
+            u.fit("Hidden hands / Extra Deck stay private.", new Rect(spectatorPanel.x() + 14, spectatorPanel.y() + 95, spectatorPanel.w() - 28, 52), 12, Ui.MUTED);
+            u.fit("RMB drag • Wheel zoom", new Rect(spectatorPanel.x() + 14, spectatorPanel.y() + 150, spectatorPanel.w() - 28, 30), 12, Ui.GOLD);
+        }'''
+duel_screen_source = duel_screen_source.replace(reset_anchor, spectator_overlay, 1)
 duel_screen.write_text(duel_screen_source)
 
 print("Applied Duel Realm production bundle")

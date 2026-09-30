@@ -82,6 +82,10 @@ public final class TcgClient implements ClientModInitializer {
 
     public static void request(String action,List<String> args,long revision){
         var client=MinecraftClient.getInstance();
+        if ("duel".equals(action) && client.currentScreen instanceof CardWorldsScreen screen && screen.state.spectator()) {
+            org.slf4j.LoggerFactory.getLogger("cardworlds-client").info("CARDWORLDS_SPECTATOR_ACTION_BLOCKED");
+            return;
+        }
         if(client.getNetworkHandler()!=null&&ClientPlayNetworking.canSend(TcgPackets.Input.ID))
             ClientPlayNetworking.send(new TcgPackets.Input(JSON.toJson(new TcgPackets.Request(action,args,revision))));
     }
