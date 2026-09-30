@@ -19,6 +19,278 @@ import re
 s = re.sub(r"^loom_version=.*$", "loom_version=1.10.5", s, flags=re.M)
 gp.write_text(s)
 
+# Yu-Gi-Oh-style Level/Tribute rules + visible card rules text.
+p = root / "src/main/java/vn/svarcade/tcg/data/Catalog.java"
+s = p.read_text()
+old = '''    public record Card(String id, String name, String category, String species, List<String> aspects,
+                       String type, String family, String evolvesFrom, boolean extra, int power,
+                       String text, String set, String rarity, List<String> sources, Effect effect,
+                       List<Trigger> triggers,List<Modifier> modifiers) {}'''
+new = '''    public record Card(String id, String name, String category, String species, List<String> aspects,
+                       String type, String family, String evolvesFrom, boolean extra, int level, int power,
+                       String text, String set, String rarity, List<String> sources, Effect effect,
+                       List<Trigger> triggers,List<Modifier> modifiers) {
+        public int tributeCount() {
+            if(!category.equals("pokemon") || extra || level <= 4) return 0;
+            return level <= 6 ? 1 : 2;
+        }
+        public String summonRequirement() {
+            if(!category.equals("pokemon")) return "";
+            if(extra) return "Extra Evolution";
+            int tributes=tributeCount();
+            return tributes==0 ? "No Tribute" : tributes==1 ? "1 Tribute" : "2 Tributes";
+        }
+    }'''
+if old not in s:
+    raise SystemExit("Catalog Card schema anchor missing")
+s = s.replace(old, new)
+old = '            if(!e.getKey().equals(c.id) || c.power < 0 || c.sources.isEmpty()) throw new IllegalArgumentException("Invalid card " + e.getKey());'
+new = '''            if(!e.getKey().equals(c.id) || c.power < 0 || c.sources.isEmpty()) throw new IllegalArgumentException("Invalid card " + e.getKey());
+            if(c.category.equals("pokemon") && (c.level < 1 || c.level > 12)) throw new IllegalArgumentException("Pokemon level must be 1–12: " + c.id);
+            if(!c.category.equals("pokemon") && c.level != 0) throw new IllegalArgumentException("Only Pokemon cards have levels: " + c.id);'''
+if old not in s:
+    raise SystemExit("Catalog validation anchor missing")
+s = s.replace(old, new)
+s = s.replace('Set.of("PLAY","EVOLVE","EXTRA_SUMMON","DRAW","DESTROY","BATTLE","BANISH","RETURN","REVIVE","EFFECT","DISCARD","SYSTEM")',
+              'Set.of("PLAY","TRIBUTE_SUMMON","EVOLVE","EXTRA_SUMMON","DRAW","DESTROY","BATTLE","BANISH","RETURN","REVIVE","EFFECT","DISCARD","SYSTEM")')
+p.write_text(s)
+
+p = root / "src/main/java/vn/svarcade/tcg/duel/Duel.java"
+s = p.read_text()
+old = '    public enum Cause { DRAW, PLAY, EVOLVE, EXTRA_SUMMON, DISCARD, DESTROY, BATTLE, BANISH, RETURN, REVIVE, EFFECT, SYSTEM }'
+new = '    public enum Cause { DRAW, PLAY, TRIBUTE, TRIBUTE_SUMMON, EVOLVE, EXTRA_SUMMON, DISCARD, DESTROY, BATTLE, BANISH, RETURN, REVIVE, EFFECT, SYSTEM }'
+if old not in s:
+    raise SystemExit("Duel cause anchor missing")
+s = s.replace(old, new)
+old = '''    private void play(int actor,String token,String material) {
+        mainAction(actor);Piece p=owned(actor,token);require(p.zone==Zone.HAND||p.zone==Zone.EXTRA,"That card cannot be played here.");
+        require(p.card.category().equals("pokemon"),"Use Activate for this card.");
+        boolean evolve=p.card.evolvesFrom()!=null&&!p.card.evolvesFrom().isBlank();
+        Piece previous=null;
+        if(evolve) {previous=owned(actor,material);require(previous.zone==Zone.FIELD&&previous.card.id().equals(p.card.evolvesFrom()),"Choose the required evolution.");}
+        else {require(!p.card.extra(),"This form requires an evolution material."); require(count(actor,Zone.FIELD)<catalog.rules().pokemonZones(),"Your field is full.");require(normal[actor]<catalog.rules().normalSummons(),"You have used your normal play this turn.");}
+        if(previous!=null) {p.boost=previous.boost;p.shield=previous.shield;p.attacked=previous.attacked;move(previous,Zone.DISCARD,Cause.EVOLVE,p.token,0);}
+        else normal[actor]++;
+        move(p,Zone.FIELD,p.card.extra()?Cause.EXTRA_SUMMON:evolve?Cause.EVOLVE:Cause.PLAY,token,0);
+        note(p.card.name()+" enters the field.");window();
+    }'''
+new = '''    private void play(int actor,String token,String material) {
+        mainAction(actor);Piece p=owned(actor,token);require(p.zone==Zone.HAND||p.zone==Zone.EXTRA,"That card cannot be played here.");
+        require(p.card.category().equals("pokemon"),"Use Activate for this card.");
+        String evolution=p.card.evolvesFrom()==null?"":p.card.evolvesFrom();
+        List<String> materials=materials(material);
+
+        if(p.card.extra()) {
+            require(!evolution.isBlank(),"This Extra Deck form has no evolution material.");
+            require(materials.size()==1,"Choose the required evolution material.");
+            Piece previous=owned(actor,materials.getFirst());
+            require(previous.zone==Zone.FIELD&&previous.card.id().equals(evolution),"Choose the required evolution.");
+            p.boost=previous.boost;p.shield=previous.shield;p.attacked=previous.attacked;
+            move(previous,Zone.DISCARD,Cause.EVOLVE,p.token,0);
+            move(p,Zone.FIELD,Cause.EXTRA_SUMMON,token,0);
+            note(p.card.name()+" evolves from the Extra Deck.");window();return;
+        }
+
+        if(!evolution.isBlank()&&materials.size()==1) {
+            Piece candidate=pieces.get(materials.getFirst());
+            if(candidate!=null&&candidate.controller==actor&&candidate.zone==Zone.FIELD&&candidate.card.id().equals(evolution)) {
+                p.boost=candidate.boost;p.shield=candidate.shield;p.attacked=candidate.attacked;
+                move(candidate,Zone.DISCARD,Cause.EVOLVE,p.token,0);
+                move(p,Zone.FIELD,Cause.EVOLVE,token,0);
+                note(p.card.name()+" evolves from "+candidate.card.name()+".");window();return;
+            }
+        }
+
+        require(p.zone==Zone.HAND,"Main Deck Pokemon must be summoned from the hand.");
+        require(normal[actor]<catalog.rules().normalSummons(),"You have used your Normal Summon this turn.");
+        int required=p.card.tributeCount();
+        require(materials.size()==required, required==0 ? "This Pokemon does not require a Tribute." :
+                "Level "+p.card.level()+" requires "+required+(required==1?" Tribute.":" Tributes."));
+        LinkedHashSet<String> unique=new LinkedHashSet<>(materials);
+        require(unique.size()==materials.size(),"Choose different Tribute Pokemon.");
+        List<Piece> tributes=new ArrayList<>();
+        for(String id:materials) {
+            Piece tribute=owned(actor,id);
+            require(tribute.zone==Zone.FIELD,"Tributes must be your Pokemon on the field.");
+            tributes.add(tribute);
+        }
+        require(count(actor,Zone.FIELD)-tributes.size()<catalog.rules().pokemonZones(),"Your field is full.");
+        for(Piece tribute:tributes) move(tribute,Zone.DISCARD,Cause.TRIBUTE,p.token,0);
+        normal[actor]++;
+        Cause cause=required>0?Cause.TRIBUTE_SUMMON:Cause.PLAY;
+        move(p,Zone.FIELD,cause,token,0);
+        note(required>0 ? p.card.name()+" is Tribute Summoned." : p.card.name()+" is Normal Summoned.");window();
+    }
+    private static List<String> materials(String raw) {
+        if(raw==null||raw.isBlank()) return List.of();
+        return Arrays.stream(raw.split(",")).map(String::trim).filter(s->!s.isBlank()).toList();
+    }'''
+if old not in s:
+    raise SystemExit("Duel play anchor missing")
+s = s.replace(old, new)
+p.write_text(s)
+
+p = root / "src/main/java/vn/svarcade/tcg/client/card/CardRenderer.java"
+s = p.read_text()
+old = '''    public static void draw(Ui ui,Catalog.Card d,Rect r,int count,boolean selected,boolean owned,String key){
+        boolean hover=r.contains(ui.mx,ui.my);int edge=selected?Ui.CYAN:hover?Ui.GOLD:color(d);ui.c.fillGradient(r.x(),r.y(),r.right(),r.bottom(),0xFF283E51,0xFF07131F);ui.ornament(r,edge);
+        ui.fill(new Rect(r.x()+3,r.y()+3,r.w()-6,19),0xEE091522);ui.fit(d.name(),new Rect(r.x()+7,r.y()+5,r.w()-14,17),Math.min(14,Math.max(10,r.w()/9)),Ui.WHITE);
+        Rect art=new Rect(r.x()+5,r.y()+24,r.w()-10,r.h()-57);ui.c.fillGradient(art.x(),art.y(),art.right(),art.bottom(),0xFF142B40,0xFF0A1523);
+        if(d.category().equals("pokemon"))PokemonModels.draw(ui,d.species(),d.aspects(),art,key);
+        else {var item=switch(d.category()){case "item"->Items.POTION;case "trainer"->Items.WRITABLE_BOOK;case "technique"->Items.BLAZE_POWDER;case "reaction"->Items.SHIELD;case "stadium"->Items.BEACON;default->Items.ENCHANTED_BOOK;};int size=Math.min(art.w()-12,art.h()-8);ui.item(item,new Rect(art.x()+(art.w()-size)/2,art.y()+(art.h()-size)/2,size,size));}
+        ui.fill(new Rect(r.x()+4,r.bottom()-31,r.w()-8,27),0xEE0B1925);ui.fit(d.category().equals("pokemon")?d.type().toUpperCase()+"  "+d.power():d.category().toUpperCase(),new Rect(r.x()+8,r.bottom()-28,r.w()-16,12),11,edge);ui.fit(d.rarity(),new Rect(r.x()+8,r.bottom()-15,r.w()-32,12),11,Ui.GOLD);if(count>0)ui.text("×"+count,r.right()-28,r.bottom()-16,12,Ui.WHITE);
+        if(!owned)ui.fill(r,0x66061320);if(selected)ui.frame(r.inset(2),Ui.CYAN);if(hover)ui.tooltip=d.name()+" — "+d.text();
+    }'''
+new = '''    public static void draw(Ui ui,Catalog.Card d,Rect r,int count,boolean selected,boolean owned,String key){
+        boolean hover=r.contains(ui.mx,ui.my);int edge=selected?Ui.CYAN:hover?Ui.GOLD:color(d);
+        ui.c.fillGradient(r.x(),r.y(),r.right(),r.bottom(),0xFF283E51,0xFF07131F);ui.ornament(r,edge);
+
+        boolean pokemon=d.category().equals("pokemon");
+        int headerH=pokemon?31:22;
+        ui.fill(new Rect(r.x()+3,r.y()+3,r.w()-6,headerH-3),0xEE091522);
+        ui.fit(d.name(),new Rect(r.x()+7,r.y()+5,r.w()-14,pokemon?14:17),Math.min(14,Math.max(9,r.w()/9)),Ui.WHITE);
+        if(pokemon){
+            String stars="★".repeat(Math.max(1,d.level()));
+            ui.fit(stars,new Rect(r.x()+7,r.y()+18,r.w()-14,11),Math.min(10,Math.max(7,r.w()/13)),Ui.GOLD);
+        }
+
+        int effectH=pokemon?(r.h()<150?30:Math.min(58,r.h()/3)):Math.max(26,Math.min(44,r.h()/3));
+        int infoH=pokemon?16:14;
+        int artY=r.y()+headerH+3;
+        int artBottom=r.bottom()-effectH-infoH-6;
+        Rect art=new Rect(r.x()+5,artY,r.w()-10,Math.max(24,artBottom-artY));
+        ui.c.fillGradient(art.x(),art.y(),art.right(),art.bottom(),0xFF142B40,0xFF0A1523);
+        if(pokemon)PokemonModels.draw(ui,d.species(),d.aspects(),art,key);
+        else {var item=switch(d.category()){case "item"->Items.POTION;case "trainer"->Items.WRITABLE_BOOK;case "technique"->Items.BLAZE_POWDER;case "reaction"->Items.SHIELD;case "stadium"->Items.BEACON;default->Items.ENCHANTED_BOOK;};int size=Math.min(art.w()-12,art.h()-8);ui.item(item,new Rect(art.x()+(art.w()-size)/2,art.y()+(art.h()-size)/2,size,size));}
+
+        int infoY=art.bottom()+2;
+        ui.fill(new Rect(r.x()+4,infoY,r.w()-8,infoH),0xEE0B1925);
+        String tributeTag=pokemon?(d.tributeCount()==0?"FREE":d.tributeCount()+"T"):"";
+        String info=pokemon?d.type().toUpperCase()+"  ATK "+d.power()+"  •  "+tributeTag:d.category().toUpperCase();
+        ui.fit(info,new Rect(r.x()+8,infoY+3,r.w()-16,infoH-3),Math.min(10,Math.max(7,r.w()/15)),edge);
+
+        Rect rules=new Rect(r.x()+5,infoY+infoH+1,r.w()-10,r.bottom()-(infoY+infoH+1)-4);
+        ui.fill(rules,0xEE08131E);
+        String rulesText=d.text()==null||d.text().isBlank()?(pokemon?"No effect.":""):d.text();
+        ui.paragraph(rulesText,rules.inset(4),Math.max(7,Math.min(10,r.w()/15)),Ui.WHITE);
+
+        if(count>0)ui.text("×"+count,r.right()-28,r.y()+6,11,Ui.WHITE);
+        if(!owned)ui.fill(r,0x66061320);if(selected)ui.frame(r.inset(2),Ui.CYAN);
+        if(hover){
+            String meta=pokemon?" ★"+d.level()+" • "+d.summonRequirement()+" • ATK "+d.power():"";
+            ui.tooltip=d.name()+meta+" — "+rulesText+" — Set: "+d.set()+" • Print rarity: "+d.rarity();
+        }
+    }'''
+if old not in s:
+    raise SystemExit("CardRenderer draw anchor missing")
+s = s.replace(old, new)
+p.write_text(s)
+
+import json
+p = root / "src/main/resources/data/svarcade_tcg/catalog.json"
+data = json.loads(p.read_text())
+levels = {
+    "charmander":4,"charmeleon":5,"charizard":7,"mega_charizard":8,
+    "squirtle":4,"wartortle":5,"blastoise":7,
+    "bulbasaur":4,"ivysaur":5,"venusaur":7,
+    "pikachu":4,"gastly":3,"haunter":5,"gengar":7,"eevee":4,"onix":5,
+    "ancient_mew":8,"shadow_lugia":8
+}
+for cid, card in data["cards"].items():
+    card["level"] = levels.get(cid, 0) if card.get("category") == "pokemon" else 0
+
+texts = {
+    "charmander":"If this card is Normal Summoned: inflict 300 damage to your opponent.",
+    "charmeleon":"You can evolve this card from Charmander instead of Tribute Summoning it. If evolved: inflict 400 damage to your opponent.",
+    "charizard":"You can evolve this card from Charmeleon instead of Tribute Summoning it. Once per turn: pay 500 Life; destroy 1 opposing Pokémon.",
+    "mega_charizard":"Extra Deck. Must evolve from Charizard. Once per turn: pay 700 Life; destroy 1 opposing Pokémon.",
+    "squirtle":"If this card is Normal Summoned: recover 300 Trainer Life.",
+    "wartortle":"You can evolve this card from Squirtle instead of Tribute Summoning it. If evolved: recover 400 Trainer Life.",
+    "blastoise":"You can evolve this card from Wartortle instead of Tribute Summoning it. Once per turn: pay 500 Life; return 1 opposing Pokémon to the hand.",
+    "bulbasaur":"If this card is Normal Summoned: recover 300 Trainer Life.",
+    "ivysaur":"You can evolve this card from Bulbasaur instead of Tribute Summoning it. Once per turn: 1 allied Pokémon gains 300 ATK.",
+    "venusaur":"You can evolve this card from Ivysaur instead of Tribute Summoning it. Once per turn: recover 600 Trainer Life.",
+    "pikachu":"Once per turn: pay 300 Life; inflict 500 damage to your opponent.",
+    "gastly":"Once per turn: pay 400 Life; draw 1 card.",
+    "haunter":"You can evolve this card from Gastly instead of Tribute Summoning it. Once per turn: pay 300 Life; return 1 opposing Pokémon to the hand.",
+    "gengar":"You can evolve this card from Haunter instead of Tribute Summoning it. Once per turn: pay 600 Life; negate the latest Chain effect.",
+    "eevee":"If this card is Normal Summoned: recover 200 Trainer Life.",
+    "onix":"Once per turn: choose 1 allied Pokémon; protect it from its next destruction.",
+    "ancient_mew":"If Tribute Summoned: draw 1 card. Once per turn: pay 500 Life; draw 1 card.",
+    "shadow_lugia":"Once per turn: pay 800 Life; banish 1 opposing Pokémon."
+}
+for cid, text_value in texts.items():
+    data["cards"][cid]["text"] = text_value
+
+def effect(operation, amount=0, speed=1, life=0, target="none", phases=("MAIN1","MAIN2"), once=True):
+    return {"operation":operation,"amount":amount,"speed":speed,"lifeCost":life,"target":target,"phases":list(phases),"oncePerTurn":once}
+def trigger(cause, operation, amount):
+    return {"cause":cause,"zone":"FIELD","relation":"self","effect":effect(operation,amount)}
+
+cards=data["cards"]
+cards["charmander"]["triggers"]=[trigger("PLAY","damage",300)]
+cards["charmeleon"]["triggers"]=[trigger("EVOLVE","damage",400)]
+cards["charizard"]["effect"]=effect("destroy",0,1,500,"enemy")
+cards["mega_charizard"]["effect"]=effect("destroy",0,1,700,"enemy")
+cards["squirtle"]["triggers"]=[trigger("PLAY","heal",300)]
+cards["wartortle"]["triggers"]=[trigger("EVOLVE","heal",400)]
+cards["blastoise"]["effect"]=effect("return",0,1,500,"enemy")
+cards["bulbasaur"]["triggers"]=[trigger("PLAY","heal",300)]
+cards["ivysaur"]["effect"]=effect("boost",300,1,0,"ally")
+cards["venusaur"]["effect"]=effect("heal",600)
+cards["pikachu"]["effect"]=effect("damage",500,1,300)
+cards["haunter"]["effect"]=effect("return",0,1,300,"enemy")
+cards["onix"]["effect"]=effect("shield",1,1,0,"ally")
+cards["ancient_mew"]["effect"]=effect("draw",1,1,500)
+cards["ancient_mew"]["triggers"]=[trigger("TRIBUTE_SUMMON","draw",1)]
+cards["shadow_lugia"]["effect"]=effect("banish",0,1,800,"enemy")
+p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+
+p = root / "src/test/java/vn/svarcade/tcg/EngineTest.java"
+s = p.read_text()
+insert = '''
+    Catalog multiNormal(){var r=base.rules();return new Catalog(new Catalog.Rules(5,60,15,3,5,8000,5,5,4,300,r.rankedLimits(),r.effective()),base.cards(),base.banners(),base.rewards(),base.dealers(),base.starters());}
+    @Test void levelsOneToFourNeedNoTributeAndFiveToSixNeedOne(){
+        Duel d=new Duel(multiNormal(),List.of("charmander","onix","potion","protect","research"),List.of(),List.of("squirtle","wartortle","blastoise","potion","protect"),List.of(),new Random(1));main(d);
+        String low=token(d,0,"Charmander");act(d,0,"play",low,"");act(d,0,"pass","","");act(d,1,"pass","","");
+        String high=token(d,0,"Onix");assertThrows(IllegalArgumentException.class,()->act(d,0,"play",high,""));
+        act(d,0,"play",high,low);assertEquals(Duel.Cause.TRIBUTE_SUMMON,d.history().getLast().cause());
+        assertTrue(d.view(0).cards().stream().anyMatch(c->c.name().equals("Charmander")&&c.zone()==Duel.Zone.DISCARD));
+    }
+    @Test void levelSevenPlusNeedsTwoTributes(){
+        Duel d=new Duel(multiNormal(),List.of("charmander","squirtle","ancient_mew","protect","research"),List.of(),List.of("pikachu","gastly","potion","protect","research"),List.of(),new Random(1));main(d);
+        String a=token(d,0,"Charmander"),b=token(d,0,"Squirtle"),boss=token(d,0,"Ancient Mew");
+        act(d,0,"play",a,"");act(d,0,"pass","","");act(d,1,"pass","","");
+        act(d,0,"play",b,"");act(d,0,"pass","","");act(d,1,"pass","","");
+        assertThrows(IllegalArgumentException.class,()->act(d,0,"play",boss,a));
+        act(d,0,"play",boss,a+","+b);assertEquals(Duel.Cause.TRIBUTE_SUMMON,d.history().getLast().cause());
+    }
+'''
+if "levelsOneToFourNeedNoTributeAndFiveToSixNeedOne" in s:
+    raise SystemExit("Engine tribute tests already present")
+idx = s.rfind("\n}")
+if idx < 0:
+    raise SystemExit("EngineTest closing brace missing")
+s = s[:idx] + insert + s[idx:]
+p.write_text(s)
+
+# NPC duel AI must understand 0, 1 and 2-material summon attempts.
+p = root / "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java"
+s = p.read_text()
+old = '''        if(v.open()&&v.turnPlayer()==1&&(v.phase().equals("MAIN1")||v.phase().equals("MAIN2")))for(var c:v.cards())if(c.controller()==1&&c.zone()==Duel.Zone.HAND&&c.category().equals("pokemon")){
+            actions.add(new Duel.Action("play",c.token(),""));for(var material:v.cards())if(material.controller()==1&&material.zone()==Duel.Zone.FIELD)actions.add(new Duel.Action("play",c.token(),material.token()));
+        }'''
+new = '''        if(v.open()&&v.turnPlayer()==1&&(v.phase().equals("MAIN1")||v.phase().equals("MAIN2")))for(var c:v.cards())if(c.controller()==1&&c.zone()==Duel.Zone.HAND&&c.category().equals("pokemon")){
+            actions.add(new Duel.Action("play",c.token(),""));
+            var field=v.cards().stream().filter(x->x.controller()==1&&x.zone()==Duel.Zone.FIELD).toList();
+            for(var material:field)actions.add(new Duel.Action("play",c.token(),material.token()));
+            for(int i=0;i<field.size();i++)for(int j=i+1;j<field.size();j++)actions.add(new Duel.Action("play",c.token(),field.get(i).token()+","+field.get(j).token()));
+        }'''
+if old not in s:
+    raise SystemExit("TcgMod bot summon anchor missing")
+s = s.replace(old, new)
+p.write_text(s)
+
 # Server-authoritative duel-session lifetime. Disconnect no longer equals surrender:
 # the match is paused for a bounded reconnect grace period, then the absent seat concedes.
 p = root / "src/main/java/vn/svarcade/tcg/fabric/TcgMod.java"
@@ -150,6 +422,21 @@ old = '@Override public boolean mouseScrolled(double x,double y,double h,double 
 new = '@Override public boolean mouseScrolled(double x,double y,double h,double v){if(duelActive()&&duelPage.freeLookScroll(v))return true;scroll=Math.max(0,scroll+(v<0?1:-1));return true;}'
 if old not in s:
     raise SystemExit("CardWorldsScreen existing mouseScrolled anchor missing")
+s = s.replace(old, new)
+p.write_text(s)
+
+
+p = root / "src/main/java/vn/svarcade/tcg/client/screens/CollectionScreen.java"
+s = p.read_text()
+old = 'u.text(card.rarity()+" · "+card.type()+" · "+a.count(card.id())+" owned",r.x()+16,y+30,14,Ui.GOLD);'
+new = 'u.text(card.category().equals("pokemon")?"★"+card.level()+" · "+card.type().toUpperCase()+" · "+card.summonRequirement()+" · "+a.count(card.id())+" owned":card.category().toUpperCase()+" · "+a.count(card.id())+" owned",r.x()+16,y+30,14,Ui.GOLD);'
+if old not in s:
+    raise SystemExit("Collection inspector metadata anchor missing")
+s = s.replace(old, new)
+old = 'u.text(card.set(),r.x()+16,r.bottom()-119,13,Ui.MUTED);'
+new = 'u.text("Set: "+card.set()+" · Print rarity: "+card.rarity(),r.x()+16,r.bottom()-119,13,Ui.MUTED);'
+if old not in s:
+    raise SystemExit("Collection inspector set anchor missing")
 s = s.replace(old, new)
 p.write_text(s)
 

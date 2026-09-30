@@ -14,6 +14,7 @@ import java.util.*;
 public final class DuelScreen implements Page {
     public boolean dismissed;
     private String source = "", intent = "", pile = "HAND";
+    private final LinkedHashSet<String> summonMaterials = new LinkedHashSet<>();
     private List<String> resolving = List.of();
     private long resolvedAt, attackAt;
     private String attacking = "";
@@ -25,6 +26,7 @@ public final class DuelScreen implements Page {
             dismissed = false;
             source = "";
             intent = "";
+            summonMaterials.clear();
             scene.close();
             return;
         }
@@ -86,13 +88,15 @@ public final class DuelScreen implements Page {
         for (Duel.VisibleCard card : v.cards().stream().filter(c -> c.zone() == Duel.Zone.FIELD).toList()) {
             Rect hit = scene.hitBox(card.token(), 1280, b.h());
             if (hit == null) continue;
-            boolean target = targetAllowed(a, card), selected = card.token().equals(source);
-            int edge = target ? Ui.GOLD : selected ? Ui.CYAN : card.controller() == v.you() ? 0xAA49C9F5 : 0xAAE97172;
-            int labelW = Math.max(94, Math.min(154, hit.w() + 36));
+            boolean target = targetAllowed(a, card), selected = card.token().equals(source), material = summonMaterials.contains(card.token());
+            int edge = material ? Ui.GOLD : target ? Ui.GOLD : selected ? Ui.CYAN : card.controller() == v.you() ? 0xAA49C9F5 : 0xAAE97172;
+            int labelW = Math.max(104, Math.min(176, hit.w() + 48));
             Rect label = new Rect(hit.x() + hit.w() / 2 - labelW / 2, hit.bottom() - 4, labelW, 24);
             u.fill(label, 0xB0091724);
             u.frame(label, edge);
-            u.fit(card.name() + "  " + card.power(), label.inset(5), 12, selected || target ? Ui.WHITE : Ui.MUTED);
+            var fieldDef = definition(a, card);
+            String fieldLabel = (material ? "TRIBUTE • " : "") + card.name() + (fieldDef == null ? "" : "  ★" + fieldDef.level()) + "  " + card.power();
+            u.fit(fieldLabel, label.inset(5), 12, selected || target || material ? Ui.WHITE : Ui.MUTED);
             u.click(hit, () -> choose(a, card));
         }
 
@@ -123,11 +127,13 @@ public final class DuelScreen implements Page {
         u.button(">", new Rect(1045, b.h() - 93, 30, 28), false, off + cap < hand.size(), () -> handPage++);
 
         int x = b.w() - 210, y = 228;
-        u.text(intent.isBlank() ? (v.priority() == v.you() ? "YOUR RESPONSE" : "OPPONENT'S RESPONSE") : "CHOOSE A 3D TARGET", x, y - 24, 13, Ui.GOLD);
         var src = source(v);
-        boolean priority = v.priority() == v.you() && v.winner().isBlank();
         var def = src == null ? null : definition(a, src);
-        u.button("Summon", new Rect(x, y, 190, 36), true,
+        String actionPrompt = intent.isBlank() ? (v.priority() == v.you() ? "YOUR RESPONSE" : "OPPONENT'S RESPONSE") :
+            intent.equals("summon") ? summonPrompt(a, v, def) : "CHOOSE A 3D TARGET";
+        u.text(actionPrompt, x, y - 24, 13, Ui.GOLD);
+        boolean priority = v.priority() == v.you() && v.winner().isBlank();
+        u.button(def == null ? "Summon" : "Summon  ★" + def.level(), new Rect(x, y, 190, 36), true,
             priority && v.open() && v.turnPlayer() == v.you() && src != null && src.category().equals("pokemon") &&
                 (src.zone() == Duel.Zone.HAND || src.zone() == Duel.Zone.EXTRA) && (v.phase().equals("MAIN1") || v.phase().equals("MAIN2")),
             () -> perform(a, "play"));
@@ -172,6 +178,30 @@ public final class DuelScreen implements Page {
     private int count(Duel.View v, Duel.Zone zone) { return (int)v.cards().stream().filter(c -> c.controller() == v.you() && c.zone() == zone).count(); }
 
     private void choose(CardWorldsScreen a, Duel.VisibleCard c) {
+        if (intent.equals("summon") && targetAllowed(a, c)) {
+            var v = a.state.duel();
+            var src = source(v);
+            var d = src == null ? null : definition(a, src);
+            var materialDef = definition(a, c);
+            if (d == null || materialDef == null) { clearSummon(); return; }
+
+            boolean evolution = d.evolvesFrom() != null && !d.evolvesFrom().isBlank() && materialDef.id().equals(d.evolvesFrom());
+            if (evolution) {
+                a.send("duel", "play", source, c.token());
+                clearSummon();
+                return;
+            }
+
+            if (d.extra()) return;
+            if (!summonMaterials.add(c.token())) summonMaterials.remove(c.token());
+            int required = d.tributeCount();
+            if (required > 0 && summonMaterials.size() == required) {
+                a.send("duel", "play", source, String.join(",", summonMaterials));
+                clearSummon();
+            }
+            return;
+        }
+
         if (!intent.isBlank() && targetAllowed(a, c)) {
             if (intent.equals("attack")) {
                 attacking = source;
@@ -180,9 +210,14 @@ public final class DuelScreen implements Page {
             }
             a.send("duel", intent, source, c.token());
             intent = "";
+            summonMaterials.clear();
             return;
         }
-        if (c.controller() == a.state.duel().you()) { source = c.token(); intent = ""; }
+        if (c.controller() == a.state.duel().you()) {
+            source = c.token();
+            intent = "";
+            summonMaterials.clear();
+        }
     }
 
     private void perform(CardWorldsScreen a, String action) {
@@ -190,17 +225,32 @@ public final class DuelScreen implements Page {
         var src = source(v);
         if (src == null) return;
         var d = definition(a, src);
+        if (d == null) return;
+
+        if (action.equals("play")) {
+            summonMaterials.clear();
+            boolean canEvolve = d.evolvesFrom() != null && !d.evolvesFrom().isBlank() &&
+                v.cards().stream().filter(c -> c.controller() == v.you() && c.zone() == Duel.Zone.FIELD)
+                    .map(c -> definition(a, c)).filter(Objects::nonNull).anyMatch(x -> x.id().equals(d.evolvesFrom()));
+            if (d.extra() || d.tributeCount() > 0 || canEvolve) {
+                intent = "summon";
+                return;
+            }
+            a.send("duel", "play", source, "");
+            intent = "";
+            return;
+        }
+
         intent = action;
-        if (action.equals("play") && (d.evolvesFrom() == null || d.evolvesFrom().isBlank()) ||
-            action.equals("activate") && d.effect().target().equals("none") ||
+        if (action.equals("activate") && d.effect() != null && d.effect().target().equals("none") ||
             action.equals("attack") && v.cards().stream().noneMatch(c -> c.controller() != v.you() && c.zone() == Duel.Zone.FIELD)) {
             if (action.equals("attack")) { attacking = source; attackAt = System.currentTimeMillis(); scene.setAttack(attacking, attackAt); }
             a.send("duel", action, source, "");
             intent = "";
-        } else if (action.equals("activate") && d.effect().target().equals("chain")) {
+        } else if (action.equals("activate") && d.effect() != null && d.effect().target().equals("chain")) {
             a.send("duel", action, source, Integer.toString(v.chain().size()));
             intent = "";
-        } else if (action.equals("activate") && d.effect().target().equals("grave")) {
+        } else if (action.equals("activate") && d.effect() != null && d.effect().target().equals("grave")) {
             pile = "DISCARD";
             handPage = 0;
         }
@@ -211,17 +261,41 @@ public final class DuelScreen implements Page {
         var src = source(v);
         if (src == null || intent.isBlank()) return false;
         var d = definition(a, src);
+        if (d == null) return false;
         if (intent.equals("attack")) return t.zone() == Duel.Zone.FIELD && t.controller() != v.you();
-        if (intent.equals("play")) {
+        if (intent.equals("summon")) {
+            if (t.controller() != v.you() || t.zone() != Duel.Zone.FIELD) return false;
             var other = definition(a, t);
-            return other != null && other.id().equals(d.evolvesFrom()) && t.controller() == v.you() && t.zone() == Duel.Zone.FIELD;
+            if (other == null) return false;
+            boolean evolution = d.evolvesFrom() != null && !d.evolvesFrom().isBlank() && other.id().equals(d.evolvesFrom());
+            if (d.extra()) return evolution;
+            return evolution || d.tributeCount() > 0;
         }
+        if (d.effect() == null) return false;
         return switch (d.effect().target()) {
             case "ally" -> t.controller() == v.you() && t.zone() == Duel.Zone.FIELD;
             case "enemy" -> t.controller() != v.you() && t.zone() == Duel.Zone.FIELD;
             case "grave" -> t.controller() == v.you() && t.zone() == Duel.Zone.DISCARD && t.category().equals("pokemon");
             default -> false;
         };
+    }
+
+    private String summonPrompt(CardWorldsScreen a, Duel.View v, Catalog.Card d) {
+        if (d == null) return "CHOOSE SUMMON MATERIAL";
+        if (d.extra()) return "CHOOSE EVOLUTION MATERIAL";
+        int required = d.tributeCount();
+        int left = Math.max(0, required - summonMaterials.size());
+        boolean canEvolve = d.evolvesFrom() != null && !d.evolvesFrom().isBlank() &&
+            v.cards().stream().filter(c -> c.controller() == v.you() && c.zone() == Duel.Zone.FIELD)
+                .map(c -> definition(a, c)).filter(Objects::nonNull).anyMatch(x -> x.id().equals(d.evolvesFrom()));
+        if (canEvolve && required > 0) return "EVOLVE OR CHOOSE " + left + (left == 1 ? " TRIBUTE" : " TRIBUTES");
+        if (canEvolve) return "CHOOSE EVOLUTION MATERIAL";
+        return "CHOOSE " + left + (left == 1 ? " TRIBUTE" : " TRIBUTES");
+    }
+
+    private void clearSummon() {
+        intent = "";
+        summonMaterials.clear();
     }
 
     private Duel.VisibleCard source(Duel.View v) { return v.cards().stream().filter(c -> c.token().equals(source)).findFirst().orElse(null); }
