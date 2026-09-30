@@ -448,6 +448,8 @@ p.write_text(s)
 
 p = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
 s = p.read_text()
+# Exercise the production root command, not only the legacy /tcg alias.
+s = s.replace('sendChatCommand("tcg")', 'sendChatCommand("cardworlds")')
 repls = [
     ('private long next;private int step;private boolean worldStarted;private int rounds;',
      'private long next;private int step;private boolean worldStarted;private int rounds;private int preWorldPasses;'),

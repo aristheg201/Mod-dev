@@ -54,8 +54,10 @@ public final class PlayScreen implements Page {
             "Competitive AI. Scores trades, removal, chains and lethal pressure.", "ECONOMY REWARD", deckReady);
 
         u.fill(new Rect(botPanel.x() + 18, botPanel.bottom() - 58, botPanel.w() - 36, 1), Ui.LINE);
-        u.fit("Only a victory on HARD can pay server economy currency. Reward provider and amount are server-configured.",
-            new Rect(botPanel.x() + 18, botPanel.bottom() - 48, botPanel.w() - 36, 36), 11, Ui.MUTED);
+        u.text("Only HARD victories can pay configured server currency.",
+            botPanel.x() + 18, botPanel.bottom() - 46, 10, Ui.MUTED);
+        u.text("Easy and Normal are practice modes.",
+            botPanel.x() + 18, botPanel.bottom() - 29, 10, Ui.MUTED);
 
         u.text("PVP DUEL", pvpPanel.x() + 18, pvpPanel.y() + 16, 22, Ui.WHITE);
         u.text("Human vs Human only • bots never fill this mode", pvpPanel.x() + 18, pvpPanel.y() + 44, 12, Ui.MUTED);
@@ -91,8 +93,8 @@ public final class PlayScreen implements Page {
                 new Rect(pvpPanel.x() + 18, pvpPanel.bottom() - 46, pvpPanel.w() - 36, 34),
                 true, deckReady, () -> a.send("accept", deck));
         } else {
-            u.fit(ranked ? "Ranked uses the server ranked format and result tracking." : "Casual does not affect ranked rating.",
-                new Rect(pvpPanel.x() + 18, pvpPanel.bottom() - 43, pvpPanel.w() - 36, 28), 11, Ui.MUTED);
+            u.text(ranked ? "Ranked uses server format and result tracking." : "Casual does not affect ranked rating.",
+                pvpPanel.x() + 18, pvpPanel.bottom() - 35, 10, Ui.MUTED);
         }
     }
 
