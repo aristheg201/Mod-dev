@@ -801,3 +801,8 @@ if "adminGrantCommandsPersistCardsCoinsAndDecks" not in s:
     if idx<0: raise SystemExit("EconomyTest closing brace missing")
     s=s[:idx]+insert+s[idx:]
 p.write_text(s)
+
+
+# Apply the verified Duel Realm / coliseum / spectator / spell-trap / summon bundle last.
+import runpy
+runpy.run_path(str(root / "source-overrides" / "duel-realm" / "apply_bundle.py"), run_name="__main__")
