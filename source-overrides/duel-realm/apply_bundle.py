@@ -71,4 +71,13 @@ if old not in test_source:
     raise SystemExit("Spectator hand-count regression assertion anchor missing")
 engine_test.write_text(test_source.replace(old, new, 1))
 
+# Coliseum cells are fully built before any duelist/spectator is teleported into the
+# Duel Realm. Avoid neighbor-notification storms while placing tens of thousands of
+# structure blocks; clients receive the final states when the chunks are sent.
+coliseum = root / "src/main/java/vn/svarcade/tcg/fabric/DuelColiseumStructure.java"
+coliseum_source = coliseum.read_text()
+if "Block.NOTIFY_ALL" not in coliseum_source:
+    raise SystemExit("Duel Coliseum placement optimization anchor missing")
+coliseum.write_text(coliseum_source.replace("Block.NOTIFY_ALL", "0"))
+
 print("Applied Duel Realm production bundle")
