@@ -202,8 +202,7 @@ jobs:
           grep -Fq 'CARDWORLDS_ARCEUS_RENDERED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded=true model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json' run/logs/latest.log
           grep -Fq 'CARDWORLDS_FACEUP_DEFENSE_CARD_RENDERED' run/logs/latest.log
-          grep -F 'CARDWORLDS_CARD_BACK_RENDERED' run/logs/latest.log | grep -Fq 'position=FACE_DOWN_DEFENSE'
-          grep -F 'CARDWORLDS_CARD_BACK_RENDERED' run/logs/latest.log | grep -F 'position=FACE_DOWN_DEFENSE' | grep -Fq 'pokemonActorPresent=false'
+          grep -Eq 'CARDWORLDS_CARD_BACK_RENDERED.*position=FACE_DOWN_DEFENSE.*pokemonActorPresent=false' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
 
           python3 - <<'PY'
