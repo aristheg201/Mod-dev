@@ -15,5 +15,11 @@ record DuelVfxProfile(String particle,String fallback,String emitter,String shap
             return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),new TypeToken<Map<String,DuelVfxProfile>>(){}.getType());
         }catch(Exception e){throw new IllegalStateException("Missing duel VFX profiles",e);}
     }
-    static DuelVfxProfile resolve(String element) {return PROFILES.getOrDefault(element,PROFILES.get("normal"));}
+    static String normalizeKey(String element) {
+        String key=element==null?"normal":element.trim().toLowerCase(java.util.Locale.ROOT);
+        int colon=key.lastIndexOf(':');
+        if(colon>=0&&colon+1<key.length())key=key.substring(colon+1);
+        return PROFILES.containsKey(key)?key:"normal";
+    }
+    static DuelVfxProfile resolve(String element) {return PROFILES.get(normalizeKey(element));}
 }
