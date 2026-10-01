@@ -295,6 +295,8 @@ jobs:
           grep -Fq 'CARDWORLDS_VI_DYNAMIC_PROOF turn=Lượt 3 lp=SL 7500' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ENGLISH_FALLBACK_PROOF language=en_us' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_SCROLL_MENU_PROOF' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_SCROLL_PACKS_PROOF' run/logs/latest.log
 
           python3 - <<'PY'
           import re
@@ -353,6 +355,7 @@ jobs:
               print(f"{name}: {width}x{height}, {len(data)} bytes")
           PY
 
+          python3 tools/test_visual_pixels.py
           python3 tools/verify_visual_pixels.py
 
           python3 - <<'PY'

@@ -53,3 +53,5 @@ packet=root/'src/main/java/vn/svarcade/tcg/fabric/TcgPackets.java'
 s=packet.read_text().replace('b.writeString(v.json,2097152),b->new Snapshot(b.readString(2097152))','b.writeByteArray(SnapshotCompression.encode(v.json)),b->new Snapshot(SnapshotCompression.decode(b.readByteArray(900*1024)))')
 packet.write_text(s)
 print('Applied final Card Worlds textured cards, face-up Pokemon, measured grounding, content, and settled visual proof overlay')
+
+runpy.run_path(str(here/"ui_scroll.py"),run_name="__main__")

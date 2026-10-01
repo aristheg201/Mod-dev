@@ -26,10 +26,22 @@ def pixels(path):
   previous=row
  return width,height,result
 
-for path in sorted(Path('run/screenshots').glob('[0-9][0-9]-*.png')):
- width,height,rgb=pixels(path)
- assert width>=1280 and height>=720,(path,width,height)
- assert sum(max(c)>30 for c in rgb)>len(rgb)*.12,(path,'black/near-black frame')
- scene=int(path.name[:2]) in {12,13,14,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34}
- assert len(set(rgb))>(400 if scene else 40),(path,'missing rendered detail')
- print(path.name,'pixel evidence:',width,height,len(set(rgb)),'distinct sampled colors')
+def validate_samples(name,width,height,rgb):
+ assert width>=1280 and height>=720,(name,width,height)
+ # Pack entry/opening deliberately dims the surrounding UI. Inspect the central
+ # animation strip so resolution and dark margins cannot hide an empty pack area.
+ if name.startswith(('08-','09-')):
+  columns=(width+7)//8
+  area=[c for i,c in enumerate(rgb) if abs((i%columns)*8-width/2)<width*.115]
+  assert sum(max(c)>30 for c in area)>len(area)*.25,(name,'pack animation area is blank/near-black')
+  assert len(set(area))>40,(name,'pack animation detail missing')
+ else:
+  assert sum(max(c)>30 for c in rgb)>len(rgb)*.12,(name,'black/near-black frame')
+ scene=int(name[:2]) in {12,13,14,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34}
+ assert len(set(rgb))>(400 if scene else 40),(name,'missing rendered detail')
+
+if __name__=='__main__':
+ for path in sorted(Path('run/screenshots').glob('[0-9][0-9]-*.png')):
+  width,height,rgb=pixels(path)
+  validate_samples(path.name,width,height,rgb)
+  print(path.name,'pixel evidence:',width,height,len(set(rgb)),'distinct sampled colors')
