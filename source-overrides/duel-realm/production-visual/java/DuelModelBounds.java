@@ -14,7 +14,11 @@ final class DuelModelBounds {
         var model = VaryingModelRepository.INSTANCE.getPoser(entity.getPokemon().getSpecies().getResourceIdentifier(), state);
         var resolvedTexture = VaryingModelRepository.INSTANCE.getTextureNoSubstitute(entity.getPokemon().getSpecies().getResourceIdentifier(),state);
         if (resolvedTexture == null) throw new IllegalStateException("No actual model texture for " + entity.getPokemon().getSpecies().getResourceIdentifier());
-        model.setupEntityTypeContext(entity);
+        // Match PokemonRenderer's normal wrapper/context initialization before animation or bone traversal.
+        var entityModel = new com.cobblemon.mod.common.client.render.models.blockbench.pokemon.PosablePokemonEntityModel();
+        entityModel.setPosableModel(model);
+        model.setContext(entityModel.getContext());
+        entityModel.setupEntityTypeContext(entity);
         model.setDefault();
         model.applyAnimations(entity, state, 0, 0, 0, 0, 0);
         MatrixStack matrices = new MatrixStack();
