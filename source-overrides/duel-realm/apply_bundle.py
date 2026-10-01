@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import gzip
 import io
+import re
 import hashlib
 import shutil
 import subprocess
