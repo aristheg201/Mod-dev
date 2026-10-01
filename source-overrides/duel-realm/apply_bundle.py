@@ -364,3 +364,141 @@ finally:
     v3_patch.unlink(missing_ok=True)
 
 print("Applied Duel Realm production bundle")
+
+
+# Card Worlds v4: anime-style physical card states + real Normal Set QA.
+# This overlay is intentionally applied after the compressed v3 payload so the
+# effective source can be fixed without repacking another opaque binary blob.
+def replace_java_method(source: str, start_marker: str, next_marker: str, replacement: str) -> str:
+    start = source.find(start_marker)
+    if start < 0:
+        raise SystemExit(f"Card Worlds v4 method anchor missing: {start_marker}")
+    end = source.find(next_marker, start)
+    if end < 0:
+        raise SystemExit(f"Card Worlds v4 next-method anchor missing: {next_marker}")
+    return source[:start] + replacement.rstrip() + "\n\n" + source[end:]
+
+
+# Duel renderer: make Defense/Set states read as actual thin cards.
+scene = root / "src/main/java/vn/svarcade/tcg/client/render/DuelWorldScene.java"
+scene_source = scene.read_text()
+
+scene_source = replace_java_method(
+    scene_source,
+    "    private void setCardAppearance(",
+    "    private BlockState cardFace(",
+    r'''    private void setCardAppearance(CardActor actor, Duel.VisibleCard card, boolean faceDown) {
+        if (faceDown) {
+            // Deliberately unmistakable card back: black rim, brown/orange spiral-like core.
+            // No species art, text strip, or Pokemon model is shown for a Set monster.
+            actor.border().setBlockState(Blocks.BLACK_CONCRETE.getDefaultState());
+            actor.base().setBlockState(Blocks.BROWN_TERRACOTTA.getDefaultState());
+            actor.art().setBlockState(Blocks.ORANGE_GLAZED_TERRACOTTA.getDefaultState());
+            actor.text().setBlockState(Blocks.BLACK_GLAZED_TERRACOTTA.getDefaultState());
+            actor.emblem().setBlockState(Blocks.CRYING_OBSIDIAN.getDefaultState());
+            LOG.info(
+                "CARDWORLDS_CARD_BACK_RENDERED token={} position={} category={} pokemonActorPresent={}",
+                card.token(), card.position(), card.category(), actors.containsKey(card.token())
+            );
+            return;
+        }
+
+        boolean pokemon = "pokemon".equals(card.category());
+        actor.border().setBlockState((pokemon ? Blocks.CHISELED_POLISHED_BLACKSTONE : Blocks.POLISHED_BLACKSTONE).getDefaultState());
+        actor.base().setBlockState(Blocks.SMOOTH_QUARTZ.getDefaultState());
+        actor.art().setBlockState(cardFace(card));
+        actor.text().setBlockState(Blocks.BLACK_CONCRETE.getDefaultState());
+        actor.emblem().setBlockState((pokemon ? Blocks.GOLD_BLOCK : Blocks.AMETHYST_BLOCK).getDefaultState());
+
+        if ("DEFENSE".equals(card.position())) {
+            LOG.info(
+                "CARDWORLDS_FACEUP_DEFENSE_CARD_RENDERED token={} species={} pokemonActorPresent={}",
+                card.token(), card.species(), actors.containsKey(card.token())
+            );
+        }
+    }'''
+)
+
+scene_source = replace_java_method(
+    scene_source,
+    "    private void setCardPosition(",
+    "    private Vec3d cardPlaneOffset(",
+    r'''    private void setCardPosition(CardActor actor, Vec3d center, float yaw, float width, float height, float depth) {
+        // The old renderer stacked five chunky block displays. Keep the five logical
+        // layers for state styling, but collapse them into a genuinely thin card.
+        float cardWidth = width * 0.82f;
+        float cardDepth = depth * 0.82f;
+        float body = Math.min(height, 0.035f);
+        float skin = Math.max(0.004f, body * 0.16f);
+
+        configureCardDisplay(actor.border(), center, yaw, cardWidth, body, cardDepth);
+
+        Vec3d basePos = center.add(0, body * 0.58, 0);
+        configureCardDisplay(actor.base(), basePos, yaw, cardWidth * 0.94f, skin, cardDepth * 0.94f);
+
+        Vec3d artPos = cardPlaneOffset(center.add(0, body * 0.72, 0), yaw, 0.0, -cardDepth * 0.08);
+        configureCardDisplay(actor.art(), artPos, yaw, cardWidth * 0.78f, skin, cardDepth * 0.54f);
+
+        Vec3d textPos = cardPlaneOffset(center.add(0, body * 0.78, 0), yaw, 0.0, cardDepth * 0.29);
+        configureCardDisplay(actor.text(), textPos, yaw, cardWidth * 0.80f, skin, cardDepth * 0.15f);
+
+        Vec3d emblemPos = cardPlaneOffset(center.add(0, body * 0.84, 0), yaw, cardWidth * 0.33, -cardDepth * 0.37);
+        configureCardDisplay(actor.emblem(), emblemPos, yaw, cardWidth * 0.10f, skin, cardDepth * 0.08f);
+    }'''
+)
+
+# Arceus must resolve through the installed Cobblemon provider stack. In the
+# production modpack that provider is Mega Showdown; do not ship a substitute
+# Arceus model from Card Worlds.
+scene_source, arceus_patch_count = re.subn(
+    r'(    private Actor createPokemon\(String species, List<String> aspects, int \w+, long \w+\) \{\n)',
+    r'''\1        if ("arceus".equalsIgnoreCase(species)) {
+            boolean megaShowdown = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mega_showdown");
+            LOG.info(
+                "CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded={} model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json",
+                megaShowdown
+            );
+        }
+''',
+    scene_source,
+    count=1,
+)
+if arceus_patch_count != 1:
+    raise SystemExit("Card Worlds v4 Arceus provider anchor missing")
+scene.write_text(scene_source)
+
+
+# Engine QA: exercise the real Normal Set path from HAND instead of merely
+# forcing a Piece into FACE_DOWN_DEFENSE on the field.
+duel = root / "src/main/java/vn/svarcade/tcg/duel/Duel.java"
+duel_source = duel.read_text()
+duel_source = replace_java_method(
+    duel_source,
+    "    public synchronized void qaPreparePositionScenario(",
+    "    private void qaReset(",
+    r'''    public synchronized void qaPreparePositionScenario(int actor) {
+        qaReset(actor, 6);
+
+        Piece attack = qaAdd(actor, "arceus_defense", Zone.FIELD);
+        attack.position = BattlePosition.ATTACK;
+        attack.summonedTurn = turn - 1;
+
+        Piece defense = qaAdd(actor, "pikachu", Zone.FIELD);
+        defense.position = BattlePosition.DEFENSE;
+        defense.summonedTurn = turn - 1;
+
+        Piece setMonster = qaAdd(actor, "gengar", Zone.HAND);
+        normal[actor] = 0;
+        setMonster(actor, setMonster.token, "");
+
+        require(setMonster.zone == Zone.FIELD, "QA Normal Set did not move the monster to the field.");
+        require(setMonster.position == BattlePosition.FACE_DOWN_DEFENSE, "QA Normal Set did not produce face-down Defense Position.");
+        require(!faceDown.contains(setMonster.token), "Monster Set must use battle position, not the Spell/Trap faceDown registry.");
+
+        note("QA position scenario ready: Attack Pokemon, face-up Defense card, and real Normal Set face-down Defense card.");
+        revision++;
+    }'''
+)
+duel.write_text(duel_source)
+
+print("Applied Card Worlds v4 card-state / Mega Showdown provider overlay")
