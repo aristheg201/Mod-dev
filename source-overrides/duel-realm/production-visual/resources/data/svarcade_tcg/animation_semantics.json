@@ -15,47 +15,53 @@
     "attack_physical",
     "attack",
     "melee",
-    "cry"
+    "dash",
+    "run",
+    "walk",
+    "special"
   ],
   "ATTACK_SPECIAL": [
     "special",
     "attack_special",
     "cast",
-    "cry"
+    "projectile",
+    "physical",
+    "attack"
   ],
   "CAST_STATUS": [
     "status",
     "cast",
     "special",
-    "cry"
+    "attack_special"
   ],
   "CHARGE": [
     "charge",
     "special",
     "status",
-    "cry"
+    "cast"
   ],
   "PROJECTILE_CAST": [
     "special",
     "cast",
-    "cry"
+    "attack_special",
+    "projectile"
   ],
   "DASH": [
     "dash",
-    "physical",
     "run",
-    "cry"
+    "walk",
+    "physical",
+    "attack"
   ],
   "HIT": [
     "recoil",
     "hit",
-    "hurt",
-    "cry"
+    "hurt"
   ],
   "HEAVY_HIT": [
     "recoil",
     "hurt",
-    "cry"
+    "hit"
   ],
   "FAINT": [
     "faint"
