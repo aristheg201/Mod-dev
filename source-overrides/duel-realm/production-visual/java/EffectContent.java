@@ -16,9 +16,15 @@ public final class EffectContent {
             return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),new com.google.gson.reflect.TypeToken<Map<String,EffectSpec.Presentation>>(){}.getType());
         }catch(Exception e){return Map.of();}
     }
-    public static EffectSpec.Presentation attackPresentation(Catalog.Card card){return ACTIONS.getOrDefault(card.type(),ACTIONS.get("normal"));}
+    private static String actionKey(String type) {
+        String key=type==null?"normal":type.trim().toLowerCase(java.util.Locale.ROOT);
+        int colon=key.lastIndexOf(':');
+        if(colon>=0&&colon+1<key.length())key=key.substring(colon+1);
+        return ACTIONS.containsKey(key)?key:"normal";
+    }
+    public static EffectSpec.Presentation attackPresentation(Catalog.Card card){return ACTIONS.get(actionKey(card.type()));}
     public static EffectSpec.Presentation presentation(Catalog.Card card){
-        return card.effect()!=null&&card.effect().spec()!=null&&card.effect().spec().vfx()!=null?card.effect().spec().vfx():ACTIONS.getOrDefault(card.type(),ACTIONS.get("normal"));
+        return card.effect()!=null&&card.effect().spec()!=null&&card.effect().spec().vfx()!=null?card.effect().spec().vfx():ACTIONS.get(actionKey(card.type()));
     }
     private static Content load() {
         try (var in=EffectContent.class.getResourceAsStream("/data/svarcade_tcg/deep_effects.json")) {
