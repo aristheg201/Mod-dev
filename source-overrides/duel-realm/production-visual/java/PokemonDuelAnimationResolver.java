@@ -60,6 +60,8 @@ public final class PokemonDuelAnimationResolver {
                 for(String name:names){
                     if(Set.of("ATTACK_PHYSICAL","ATTACK_SPECIAL","CAST_STATUS","CHARGE","PROJECTILE_CAST","DASH","HIT","HEAVY_HIT","FAINT").contains(intent)&&name.contains("cry"))continue;
                     var raw=com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockAnimationRepository.INSTANCE.getAnimationOrNull(group,name);
+                    // Repository keys retain the provider JSON's full Bedrock animation identifier.
+                    if(raw==null)raw=com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockAnimationRepository.INSTANCE.getAnimationOrNull(group,"animation."+group+"."+name);
                     if(raw==null)continue;
                     // Provider-owned loops can be played once for an action; keep the original bone/effect data.
                     if(raw.getShouldLoop()){
@@ -68,6 +70,7 @@ public final class PokemonDuelAnimationResolver {
                     }
                     var animation=new com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation(raw);
                     state.addActiveAnimation(animation,s->kotlin.Unit.INSTANCE);
+                    org.slf4j.LoggerFactory.getLogger("cardworlds-animation").info("CARDWORLDS_NATIVE_ANIMATION intent={} resolved={} duration={} provider={}",intent,raw.getName(),animation.getDuration(),entity.getPokemon().getSpecies().getResourceIdentifier());
                     return new Resolution(intent,group+":"+name,Math.max(.2f,Math.min(4f,animation.getDuration())),true);
                 }
             }
