@@ -16,7 +16,8 @@ public final class PokemonDuelAnimationResolver {
     public record Resolution(String intent,String animation,float duration,boolean nativeAnimation) {}
     private static final Map<String,List<String>> ALIASES=load();
     private static final Map<PokemonEntity,String> MODELS=new WeakHashMap<>();
-    public static void invalidate(){MODELS.clear();}
+    private static final Set<String> DIAGNOSTICS=new HashSet<>();
+    public static void invalidate(){MODELS.clear();DIAGNOSTICS.clear();}
     private static Map<String,List<String>> load() {
         try(var in=PokemonDuelAnimationResolver.class.getResourceAsStream("/data/svarcade_tcg/animation_semantics.json")) {
             return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),new TypeToken<Map<String,List<String>>>(){}.getType());
@@ -54,7 +55,8 @@ public final class PokemonDuelAnimationResolver {
                 }catch(RuntimeException ignored){/* Optional animation expression from an addon may be absent. */}
             }
             // A legacy poser may omit a registered action in its own provider animation bundle.
-            var variant=vn.svarcade.tcg.integration.CardWorldsIntegrations.aspects().find(entity.getPokemon().getSpecies().getResourceIdentifier().toString(),entity.getPokemon().getForcedAspects());
+            // The effective client poser uses tracked aspects, including form-derived aspects.
+            var variant=vn.svarcade.tcg.integration.CardWorldsIntegrations.aspects().find(entity.getPokemon().getSpecies().getResourceIdentifier().toString(),state.getCurrentAspects());
             if(variant.isPresent()&&!variant.get().poser().isBlank()){
                 String group=variant.get().poser();int colon=group.indexOf(':');if(colon>=0)group=group.substring(colon+1);
                 for(String name:names){
@@ -74,7 +76,13 @@ public final class PokemonDuelAnimationResolver {
                     return new Resolution(intent,group+":"+name,Math.max(.2f,Math.min(4f,animation.getDuration())),true);
                 }
             }
-        }catch(RuntimeException ignored){/* Preserve the provider's normal idle pose, never force a missing animation. */}
+            String key=entity.getPokemon().getSpecies().getResourceIdentifier()+"#"+state.getCurrentAspects()+"#"+intent;
+            if(DIAGNOSTICS.add(key))org.slf4j.LoggerFactory.getLogger("cardworlds-animation").info("CARDWORLDS_ANIMATION_FALLBACK intent={} tracked={} forced={} variant={}",intent,state.getCurrentAspects(),entity.getPokemon().getForcedAspects(),variant);
+        }catch(RuntimeException failure){
+            String key=entity.getPokemon().getSpecies().getResourceIdentifier()+"#"+state.getCurrentAspects()+"#"+intent;
+            if(DIAGNOSTICS.add(key))org.slf4j.LoggerFactory.getLogger("cardworlds-animation").warn("CARDWORLDS_ANIMATION_FALLBACK intent={} tracked={} forced={} reason={}",intent,state.getCurrentAspects(),entity.getPokemon().getForcedAspects(),failure.toString());
+            /* Preserve the provider's normal idle pose, never force a missing animation. */
+        }
         return new Resolution(intent,"provider_idle",0,false);
     }
     private PokemonDuelAnimationResolver() {}
