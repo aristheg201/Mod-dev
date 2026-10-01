@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 public final class CardWorldsLanguage {
     private static final Map<String,String> ALIASES=load();
     private static final List<String> TERMS=ALIASES.keySet().stream().sorted(Comparator.comparingInt(String::length).reversed()).toList();
+    private static final List<String> KEY_PREFIXES=ALIASES.values().stream().distinct().sorted(Comparator.comparingInt(String::length).reversed()).toList();
     private static final Map<String,String> NAMES=new HashMap<>();
     private static Map<String,String> load() {
         try(var in=CardWorldsLanguage.class.getResourceAsStream("/data/svarcade_tcg/ui_translation_aliases.json")) {
@@ -29,6 +30,8 @@ public final class CardWorldsLanguage {
         if(raw==null)return "";
         if(I18n.hasTranslation(raw))return t(raw);
         String exact=ALIASES.get(raw);if(exact!=null)return t(exact);
+        for(String key:KEY_PREFIXES)if(raw.length()>key.length()&&raw.startsWith(key)&&I18n.hasTranslation(key))
+            return t(key)+raw.substring(key.length());
         if(!language().equals("vi_vn"))return raw;
         // Resolve non-overlapping longest legacy fragments once, preserving player-entered values.
         StringBuilder result=new StringBuilder();int offset=0;
