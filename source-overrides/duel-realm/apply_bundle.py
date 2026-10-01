@@ -458,8 +458,29 @@ scene_source = replace_java_method(
 # Arceus must resolve through the installed Cobblemon provider stack. In the
 # production modpack that provider is Mega Showdown; do not ship a substitute
 # Arceus model from Card Worlds.
-# Arceus provider proof is emitted from setCardAppearance above. The actual
-# model remains resolved by Cobblemon's loaded provider stack (Mega Showdown).
+# Arceus attack-mode Pokemon bypasses setCardAppearance, so bind provider
+# proof to the actual PokemonEntity creation path as well. Use a structural
+# method anchor instead of an exact signature so later parameter renames do not
+# break source restoration again.
+create_marker = "    private Actor createPokemon("
+create_start = scene_source.find(create_marker)
+if create_start < 0:
+    raise SystemExit("Card Worlds v4 createPokemon method anchor missing")
+create_open = scene_source.find("{", create_start)
+if create_open < 0:
+    raise SystemExit("Card Worlds v4 createPokemon opening brace missing")
+create_insert = r'''
+        if (species.toLowerCase(java.util.Locale.ROOT).contains("arceus")) {
+            boolean megaShowdown = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mega_showdown");
+            LOG.info(
+                "CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded={} model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json",
+                megaShowdown
+            );
+        }
+'''
+if "CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded={} model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json" not in scene_source[create_open:create_open + 1200]:
+    scene_source = scene_source[:create_open + 1] + create_insert + scene_source[create_open + 1:]
+
 scene.write_text(scene_source)
 
 
