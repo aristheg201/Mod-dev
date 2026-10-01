@@ -51,10 +51,10 @@ public final class CardWorldsLanguage {
         return result.toString();
     }
     public static String name(Catalog.Card card) {
-        String key="card.svarcade_tcg."+card.id()+".name";if(I18n.hasTranslation(key))return t(key);
-        if(!card.category().equals("pokemon"))return translate(card.name());
+        String key="card.svarcade_tcg."+card.id()+".name";
+        if(!card.category().equals("pokemon"))return I18n.hasTranslation(key)?t(key):translate(card.name());
         return NAMES.computeIfAbsent(language()+"|"+card.id(),ignored->{
-            try {var props=PokemonProperties.Companion.parse(card.species());props.setAspects(new HashSet<>(card.aspects()));String name=props.create(null).getDisplayName(false).getString();return I18n.hasTranslation(card.name())?t(card.name(),name):name;}
+            try {var props=PokemonProperties.Companion.parse(card.species());props.setAspects(new HashSet<>(card.aspects()));String name=props.create(null).getDisplayName(false).getString();return I18n.hasTranslation(key)?t(key,name):I18n.hasTranslation(card.name())?t(card.name(),name):name;}
             catch(RuntimeException e){return card.name();}
         });
     }

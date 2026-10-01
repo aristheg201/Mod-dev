@@ -69,9 +69,10 @@ public final class VisualRun implements ClientModInitializer {
         var source=a.state.duel().cards().stream().filter(q->q.name().equals(definition.name())&&q.zone()==Duel.Zone.FIELD).findFirst();
         if(source.isEmpty()||now<proofReadyAt||!a.duelPage.visualSettled()){if(now>duelDeadline)throw new AssertionError("Special actor did not settle: "+id);next=now+150;return;}
         vfxSource=source.get().token();vfxTarget=a.state.duel().cards().stream().filter(q->q.controller()!=a.state.duel().you()&&q.zone()==Duel.Zone.FIELD).findFirst().map(Duel.VisibleCard::token).orElse(vfxSource);
-        if(specialCapture==2)vfxTarget=a.state.duel().cards().stream().filter(q->q.controller()==a.state.duel().you()&&!q.token().equals(vfxSource)&&q.zone()==Duel.Zone.FIELD).findFirst().orElseThrow().token();
-        a.localNotice="";a.duelPage.previewAuthoredEffect(vfxSource,vfxTarget,specialCapture==3);next=now+a.duelPage.vfxCaptureDelay();step=196;}
-    case 196->{if(specialCapture<3)a.duelPage.verifyAuthoredAnimation(vfxSource);
+        if(specialCapture!=3&&definition.effect().target().equals("none"))vfxTarget=vfxSource;
+        if(specialCapture!=3&&definition.effect().target().equals("ally"))vfxTarget=a.state.duel().cards().stream().filter(q->q.controller()==a.state.duel().you()&&!q.token().equals(vfxSource)&&q.zone()==Duel.Zone.FIELD).findFirst().orElseThrow().token();
+        a.localNotice="";a.duelPage.previewAuthoredEffect(vfxSource,vfxTarget,specialCapture==3);next=now+(int)(a.duelPage.vfxCaptureDelay()*.66);step=196;}
+    case 196->{String localizedName=a.duelPage.localizedCardName(a,vfxSource);if(localizedName.contains("%")||localizedName.contains("card.svarcade_tcg"))throw new AssertionError("Unformatted special card name: "+localizedName);if(specialCapture<3)a.duelPage.verifyAuthoredAnimation(vfxSource);if(specialCapture==1||specialCapture==2)a.duelPage.verifyNativePose(vfxSource,"CAST_STATUS");
         String capture=List.of("35-special-lucario-effect","36-special-solar-effect","37-special-mewtwo-effect","38-advanced-chain-effect").get(specialCapture);shot(c,capture);
         org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_SPECIAL_EFFECT_CAPTURE card={} capture={} realGameplay=true",specialIds.get(specialCapture),capture);
         if(++specialCapture<4){a.send("qa_special",specialIds.get(specialCapture),Boolean.toString(specialCapture==3));proofReadyAt=now+3500;duelDeadline=now+30000;next=now+200;step=195;}

@@ -60,7 +60,12 @@ public final class PokemonDuelAnimationResolver {
                 for(String name:names){
                     if(Set.of("ATTACK_PHYSICAL","ATTACK_SPECIAL","CAST_STATUS","CHARGE","PROJECTILE_CAST","DASH","HIT","HEAVY_HIT","FAINT").contains(intent)&&name.contains("cry"))continue;
                     var raw=com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockAnimationRepository.INSTANCE.getAnimationOrNull(group,name);
-                    if(raw==null||raw.getShouldLoop())continue;
+                    if(raw==null)continue;
+                    // Provider-owned loops can be played once for an action; keep the original bone/effect data.
+                    if(raw.getShouldLoop()){
+                        double duration=Math.clamp(raw.getAnimationLength()>0?raw.getAnimationLength():1.8,.65,3.0);
+                        var once=raw.copy(false,duration,raw.getEffects(),raw.getBoneTimelines());once.setName(raw.getName());raw=once;
+                    }
                     var animation=new com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation(raw);
                     state.addActiveAnimation(animation,s->kotlin.Unit.INSTANCE);
                     return new Resolution(intent,group+":"+name,Math.max(.2f,Math.min(4f,animation.getDuration())),true);

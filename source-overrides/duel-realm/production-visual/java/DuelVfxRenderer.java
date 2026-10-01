@@ -37,7 +37,7 @@ final class DuelVfxRenderer {
             if(v.cue.semantic().equals("ATTACK_PHYSICAL"))shape="TRAIL";
             if(v.cue.semantic().equals("ATTACK_SPECIAL"))shape=v.mode().equals("BEAM")?"BEAM":"TRAIL";
             if(v.cue.semantic().equals("CHAIN_NEGATE"))shape="IMPACT_CONE";
-            Vec3d center=summon?v.source:v.cue.semantic().equals("ATTACK_SPECIAL")?projectile(v,t):v.cue.semantic().equals("ATTACK_PHYSICAL")?v.source.add(v.target.subtract(v.source).multiply(Math.min(.75,Math.clamp((t-v.fraction("windup"))/(v.fraction("impact")-v.fraction("windup")),0,1)))).add(0,1,0):v.target;
+            Vec3d center=(summon||v.cue.semantic().equals("CHARGE"))?v.source:v.cue.semantic().equals("ATTACK_SPECIAL")?projectile(v,t):v.cue.semantic().equals("ATTACK_PHYSICAL")?v.source.add(v.target.subtract(v.source).multiply(Math.min(.75,Math.clamp((t-v.fraction("windup"))/(v.fraction("impact")-v.fraction("windup")),0,1)))).add(0,1,0):v.target;
             for(int i=0;i<count;i++) {
                 Vec3d point=shape(shape,center,v.source,v.target,(v.particles+i)%32,32,t);
                 Vec3d velocity=point.subtract(center).multiply(.02).add(0,summon?.025:.005,0);

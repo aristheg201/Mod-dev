@@ -3,6 +3,7 @@ package vn.svarcade.tcg.client.screens;
 import vn.svarcade.tcg.client.CardWorldsScreen;
 import vn.svarcade.tcg.client.component.Rect;
 import vn.svarcade.tcg.client.component.Ui;
+import vn.svarcade.tcg.client.component.CardWorldsLanguage;
 import vn.svarcade.tcg.client.card.CardRenderer;
 import vn.svarcade.tcg.client.render.DuelWorldScene;
 import vn.svarcade.tcg.duel.Duel;
@@ -57,6 +58,7 @@ public final class DuelScreen implements Page {
     public void prepareGroundingProof() { visualProof=true; scene.groundingCamera(); }
     public void preparePileProof() { visualProof=true; scene.pileCamera(); }
     public void verifyPileActors() { scene.verifyPileActors(); }
+    public String localizedCardName(CardWorldsScreen a,String token){var card=a.state.duel().cards().stream().filter(c->c.token().equals(token)).findFirst().orElseThrow();var definition=definition(a,card);return definition==null?"":CardWorldsLanguage.name(definition);}
     public void verifyAuthoredAnimation(String token){scene.verifyAuthoredAnimation(token);}
     public void previewAuthoredEffect(String source,String target,boolean negate){scene.previewAuthoredEffect(source,target,negate);}
     public void previewVfx(String semantic,String source,String target) { visualProof=true;scene.previewVfx(semantic,source,target); }
@@ -118,7 +120,7 @@ public final class DuelScreen implements Page {
             var fieldDef = definition(a, card);
             boolean facedown=card.category().startsWith("facedown")||"FACE_DOWN_DEFENSE".equals(card.position());
             String position = card.zone()==Duel.Zone.FIELD ? switch(card.position()){case "DEFENSE" -> "  [DEF]"; case "FACE_DOWN_DEFENSE" -> "  [SET]"; default -> "";} : "";
-            String fieldLabel = facedown ? (card.zone()==Duel.Zone.FIELD?"SET POKEMON":"SET CARD") : (material ? "MATERIAL • " : "") + card.name() + (fieldDef == null || !fieldDef.category().equals("pokemon") ? "" : "  ★" + fieldDef.level()) + (card.zone()==Duel.Zone.FIELD?"  "+card.power()+position:"");
+            String fieldLabel = facedown ? (card.zone()==Duel.Zone.FIELD?"SET POKEMON":"SET CARD") : (material ? "MATERIAL • " : "") + (fieldDef==null?CardWorldsLanguage.translate(card.name()):CardWorldsLanguage.name(fieldDef)) + (fieldDef == null || !fieldDef.category().equals("pokemon") ? "" : "  ★" + fieldDef.level()) + (card.zone()==Duel.Zone.FIELD?"  "+card.power()+position:"");
             u.fit(fieldLabel, label.inset(5), 12, selected || target || material ? Ui.WHITE : Ui.MUTED);
             if(!a.state.spectator())u.click(hit, () -> choose(a, card));
         }
