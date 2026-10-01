@@ -32,6 +32,12 @@ jobs:
 
           cat >> build.gradle <<'GRADLE'
 
+          repositories {
+              maven { url 'https://maven.architectury.dev/' }
+              maven { url 'https://maven.wispforest.io/releases' }
+              maven { url 'https://api.modrinth.com/maven' }
+          }
+
           configurations {
               productionRuntimeMods
           }
@@ -40,6 +46,9 @@ jobs:
               productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
               productionRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
               productionRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
+              productionRuntimeMods "dev.architectury:architectury-fabric:13.0.8"
+              productionRuntimeMods "io.wispforest:accessories-fabric:1.1.0-beta.52+1.21.1"
+              productionRuntimeMods "maven.modrinth:SszvX85I:1.2.0+1.8.1+1.21.1-release"
           }
 
           tasks.register('runProductionCardWorldsClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
@@ -191,6 +200,10 @@ jobs:
           grep -Fq 'CARDWORLDS_QA_MONSTER_POSITIONS_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_CATALOG_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ARCEUS_RENDERED' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded=true model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_FACEUP_DEFENSE_CARD_RENDERED' run/logs/latest.log
+          grep -F 'CARDWORLDS_CARD_BACK_RENDERED' run/logs/latest.log | grep -Fq 'position=FACE_DOWN_DEFENSE'
+          grep -F 'CARDWORLDS_CARD_BACK_RENDERED' run/logs/latest.log | grep -F 'position=FACE_DOWN_DEFENSE' | grep -Fq 'pokemonActorPresent=false'
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
 
           python3 - <<'PY'
