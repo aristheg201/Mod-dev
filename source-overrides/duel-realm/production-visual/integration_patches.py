@@ -84,3 +84,9 @@ p=Path('src/main/java/vn/svarcade/tcg/fabric/TcgClient.java');s=p.read_text().re
 p=Path('src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java');s=p.read_text().replace('PokemonProperties props = PokemonProperties.Companion.parse(species);\n                props.setAspects(new HashSet<>(aspects));','''var descriptor=vn.svarcade.tcg.integration.CobblemonBridge.resolve(species,"",aspects,"",false,"");
                 if(!descriptor.available())return;
                 PokemonProperties props=vn.svarcade.tcg.integration.CobblemonBridge.properties(descriptor);''');p.write_text(s)
+
+# Upgrade legacy saved catalogs before strict level validation.
+p=Path('src/main/java/vn/svarcade/tcg/data/Catalog.java');s=p.read_text()
+start=s.index('    public static Catalog load(');end=s.index('    public Card card(',start)
+s=s[:start]+'    public static Catalog load(Path override) throws IOException {\n        return CatalogMigration.load(override);\n    }\n'+s[end:]
+p.write_text(s)

@@ -6,6 +6,8 @@ paths={
  'IntegrationCapabilities.java':'src/main/java/vn/svarcade/tcg/integration',
  'ProviderAspects.java':'src/main/java/vn/svarcade/tcg/integration',
  'ProviderAspectsTest.java':'src/test/java/vn/svarcade/tcg/integration',
+ 'CatalogMigration.java':'src/main/java/vn/svarcade/tcg/data',
+ 'CatalogMigrationTest.java':'src/test/java/vn/svarcade/tcg/data',
  'CardWorldsIntegrations.java':'src/main/java/vn/svarcade/tcg/integration',
  'CobblemonBridge.java':'src/main/java/vn/svarcade/tcg/integration',
  'PlaceholderComponents.java':'src/main/java/vn/svarcade/tcg/integration',
