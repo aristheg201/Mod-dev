@@ -63,6 +63,7 @@ public final class VisualRun implements ClientModInitializer {
   }catch(Throwable e){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").error("CARDWORLDS_QA_FAILED step="+step,e);shot(c,"failure-"+step);c.scheduleStop();}
  }
  private boolean proofReady(CardWorldsScreen a,long now,boolean positions){
+  a.localNotice="";
   long revision=a.state.duel().revision();
   if(proofRevision!=revision){proofRevision=revision;proofReadyAt=now+1800;a.duelPage.prepareVisualProof(positions);return false;}
   return now>=proofReadyAt&&a.duelPage.visualSettled();

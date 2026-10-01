@@ -28,7 +28,9 @@ final class DuelModelBounds {
         // Same model-space anchor used by Minecraft's LivingEntityRenderer.
         matrices.translate(0, -1.501, 0);
         Measure vertices = new Measure();
-        model.getRootPart().render(model.getContext(), matrices, vertices, 0xF000F0, 0, -1);
+        // Render through the wrapper too: it applies Cobblemon's +1.5 model-space correction.
+        // Measuring only root bones buries small models by 1.5 * their natural scale.
+        entityModel.render(matrices, vertices, 0xF000F0, net.minecraft.client.render.OverlayTexture.DEFAULT_UV, -1);
         model.setDefault();
         if (vertices.count == 0 || !Double.isFinite(vertices.minY))
             throw new IllegalStateException("Resolved Pokémon model emitted no measurable vertices: " + entity.getPokemon().getSpecies().getResourceIdentifier());

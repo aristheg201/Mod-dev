@@ -71,8 +71,8 @@ public final class DuelWorldScene {
     public int pokemonActors() { return actors.size(); }
     public int frontCards() { return (int)fieldCards.values().stream().filter(a -> !a.faceDown).count(); }
     public int backCards() { return (int)fieldCards.values().stream().filter(a -> a.faceDown).count(); }
-    public void proofCamera() { orbitYaw = 0; orbitPitch = 48; cameraDistance = 20; updateCamera(); }
-    public void creationCamera() { orbitYaw = 18; orbitPitch = 28; cameraDistance = 23; updateCamera(); }
+    public void proofCamera() { orbitYaw = 0; orbitPitch = 42; cameraDistance = 18; updateCamera(); }
+    public void creationCamera() { orbitYaw = 32; orbitPitch = 27; cameraDistance = 18; updateCamera(); }
 
 
     private final Map<String, Actor> actors = new LinkedHashMap<>();
@@ -178,7 +178,7 @@ public final class DuelWorldScene {
                 CardActor display = fieldCards.computeIfAbsent(card.token(), t -> createCardActor());
                 setCardAppearance(display, card, faceDown);
                 float yaw = arenaYaw + 90f; // Defense cards lie sideways like the anime/TCG.
-                setCardPosition(display, base.add(0, 0.035, 0), yaw, 2.85f, 0.10f, 4.00f);
+                setCardPosition(display, base.add(0, 0.015, 0), yaw, 2.85f, 0.10f, 4.00f);
             }
         }
 
@@ -208,7 +208,7 @@ public final class DuelWorldScene {
             int slot = supportSlots.merge(card.controller(),1,Integer::sum)-1;
             double x = card.zone()==Duel.Zone.STADIUM ? (mine?-18.0:18.0) : (slot-2)*6.0;
             double z = card.zone()==Duel.Zone.STADIUM ? (mine?-10.0:10.0) : (mine?-9.0:9.0);
-            setCardPosition(display, local(x,0.055,z), arenaYaw, 2.70f,0.10f,3.85f);
+            setCardPosition(display, local(x,0.015,z), arenaYaw, 2.70f,0.10f,3.85f);
         }
         for (Iterator<Map.Entry<String,CardActor>> it=supportCards.entrySet().iterator(); it.hasNext();) {
             var e=it.next();
