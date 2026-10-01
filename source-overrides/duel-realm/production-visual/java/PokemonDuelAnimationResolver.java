@@ -42,7 +42,7 @@ public final class PokemonDuelAnimationResolver {
                 if(name.equals("cry")||name.equals("faint"))candidates.add(name);
             }
             for(String name:candidates) {
-                if(!Set.of("SPAWN","CRY","VICTORY").contains(intent)&&name.toLowerCase(Locale.ROOT).contains("cry"))continue;
+                if(Set.of("ATTACK_PHYSICAL","ATTACK_SPECIAL","CAST_STATUS","CHARGE","PROJECTILE_CAST","DASH","HIT","HEAVY_HIT","FAINT").contains(intent)&&name.toLowerCase(Locale.ROOT).contains("cry"))continue;
                 try {
                     var animation=model.getAnimation(state,name,state.getRuntime());
                     if(animation==null)continue;
@@ -58,7 +58,7 @@ public final class PokemonDuelAnimationResolver {
             if(variant.isPresent()&&!variant.get().poser().isBlank()){
                 String group=variant.get().poser();int colon=group.indexOf(':');if(colon>=0)group=group.substring(colon+1);
                 for(String name:names){
-                    if(!Set.of("SPAWN","CRY","VICTORY").contains(intent)&&name.contains("cry"))continue;
+                    if(Set.of("ATTACK_PHYSICAL","ATTACK_SPECIAL","CAST_STATUS","CHARGE","PROJECTILE_CAST","DASH","HIT","HEAVY_HIT","FAINT").contains(intent)&&name.contains("cry"))continue;
                     var raw=com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockAnimationRepository.INSTANCE.getAnimationOrNull(group,name);
                     if(raw==null||raw.getShouldLoop())continue;
                     var animation=new com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation(raw);
