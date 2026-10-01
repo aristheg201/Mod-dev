@@ -30,6 +30,6 @@ for path in sorted(Path('run/screenshots').glob('[0-9][0-9]-*.png')):
  width,height,rgb=pixels(path)
  assert width>=1280 and height>=720,(path,width,height)
  assert sum(max(c)>30 for c in rgb)>len(rgb)*.12,(path,'black/near-black frame')
- scene=int(path.name[:2]) in {12,13,14,19,20,21,22,23,24,25,26,27}
+ scene=int(path.name[:2]) in {12,13,14,19,20,21,22,23,24,25,26,27,28}
  assert len(set(rgb))>(400 if scene else 40),(path,'missing rendered detail')
  print(path.name,'pixel evidence:',width,height,len(set(rgb)),'distinct sampled colors')

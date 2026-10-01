@@ -44,6 +44,9 @@ public final class DuelWorldScene {
     }
     private final Map<String, Vec3d> defenseBases = new LinkedHashMap<>();
     private final DuelCardMeshes meshes = new DuelCardMeshes();
+    private record PileKey(int controller, Duel.Zone zone) {}
+    private record PileActor(int count, net.minecraft.util.Identifier top, Vec3d base, float yaw) {}
+    private final Map<PileKey, PileActor> piles = new LinkedHashMap<>();
     private static DuelWorldScene active;
     private static boolean renderHook;
     private long settledSince;
@@ -62,6 +65,14 @@ public final class DuelWorldScene {
         defenseBases.values().forEach(base -> meshes.defense(context, base));
         fieldCards.values().forEach(card -> meshes.card(context, card.texture, card.center, card.yaw, card.width, card.depth));
         supportCards.values().forEach(card -> meshes.card(context, card.texture, card.center, card.yaw, card.width, card.depth));
+        piles.values().forEach(pile -> {
+            // Bounded paper-thin layers, never display entities or a block-shaped slab.
+            int layers = Math.min(pile.count(), 12);
+            for (int i = 0; i < layers; i++) {
+                var texture = i == layers - 1 ? pile.top() : DuelCardMeshes.BACK;
+                meshes.card(context, texture, pile.base().add(0, .015 + i * .021, 0), pile.yaw(), 2.1f, 3f);
+            }
+        });
     }
     public boolean settled() {
         return cameraRig != null && System.currentTimeMillis() - settledSince >= 1200
@@ -74,6 +85,11 @@ public final class DuelWorldScene {
     public void proofCamera() { orbitYaw = 0; orbitPitch = 37; cameraDistance = 14; updateCamera(); }
     public void groundingCamera() { orbitYaw = 18; orbitPitch = 36; cameraDistance = 27; updateCamera(); }
     public void creationCamera() { orbitYaw = 32; orbitPitch = 27; cameraDistance = 18; updateCamera(); }
+    public void pileCamera() { orbitYaw = 0; orbitPitch = 48; cameraDistance = 34; updateCamera(); }
+    public void verifyPileActors() {
+        if (piles.size() != 8 || piles.values().stream().filter(p -> p.top().equals(DuelCardMeshes.BACK)).count() != 4)
+            throw new AssertionError("Expected eight occupied piles: four hidden decks and four public top cards");
+    }
 
 
     private final Map<String, Actor> actors = new LinkedHashMap<>();
@@ -115,8 +131,7 @@ public final class DuelWorldScene {
         }
 
         active = this;
-        String signature = view.cards().stream().filter(c -> c.zone() == Duel.Zone.FIELD || c.zone() == Duel.Zone.SUPPORT)
-            .map(c -> c.token() + c.position() + c.species() + c.aspects()).reduce("", String::concat);
+        String signature = view.deckCounts() + "|" + view.extraCounts() + "|" + view.cards();
         if (!signature.equals(visualSignature)) { visualSignature = signature; settledSince = System.currentTimeMillis(); }
         List<Duel.VisibleCard> field = view.cards().stream().filter(c -> c.zone() == Duel.Zone.FIELD).toList();
         Set<String> liveActors = new HashSet<>();
@@ -215,6 +230,44 @@ public final class DuelWorldScene {
             var e=it.next();
             if(!liveSupport.contains(e.getKey())) { removeCard(e.getValue()); it.remove(); }
         }
+        syncPiles(view);
+    }
+
+    private void syncPiles(Duel.View view) {
+        Set<PileKey> live = new HashSet<>();
+        for (int controller = 0; controller < view.deckCounts().size(); controller++) {
+            boolean mine = controller == view.you();
+            double side = mine ? -1 : 1;
+            for (Duel.Zone zone : List.of(Duel.Zone.DECK, Duel.Zone.EXTRA, Duel.Zone.DISCARD, Duel.Zone.BANISHED)) {
+                final int seat = controller;
+                List<Duel.VisibleCard> visible = view.cards().stream()
+                    .filter(c -> c.controller() == seat && c.zone() == zone).toList();
+                int count = switch (zone) {
+                    case DECK -> view.deckCounts().get(controller);
+                    case EXTRA -> view.extraCounts().get(controller);
+                    default -> visible.size();
+                };
+                if (count == 0) continue;
+                PileKey key = new PileKey(controller, zone); live.add(key);
+                // Hidden decks use counts only; their identity never enters the front baker.
+                var top = DuelCardMeshes.BACK;
+                if (zone == Duel.Zone.DISCARD || zone == Duel.Zone.BANISHED) {
+                    Duel.VisibleCard card = visible.getLast();
+                    if (!card.category().startsWith("facedown")) top = meshes.front(card);
+                }
+                double x = switch (zone) {
+                    case EXTRA -> side * 18;
+                    default -> -side * 18;
+                };
+                double z = switch (zone) {
+                    case DECK -> side * 10;
+                    case EXTRA, DISCARD -> side * 5;
+                    default -> 0;
+                };
+                piles.put(key, new PileActor(count, top, local(x, 0, z), mine ? arenaYaw : arenaYaw + 180f));
+            }
+        }
+        piles.keySet().retainAll(live);
     }
 
     public Rect hitBox(String token, int logicalWidth, int logicalHeight) {
@@ -246,7 +299,7 @@ public final class DuelWorldScene {
             if (previousPerspective != null) client.options.setPerspective(previousPerspective);
             client.options.hudHidden = previousHudHidden;
         }
-        defenseBases.clear(); meshes.close(); if (active == this) active = null; visualSignature="";
+        defenseBases.clear(); piles.clear(); meshes.close(); if (active == this) active = null; visualSignature="";
         world=null;cameraRig=null;previousCamera=null;previousPerspective=null;attacking="";realmMode=false;spectatorMode=false;
     }
 
