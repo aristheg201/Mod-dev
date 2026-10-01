@@ -161,7 +161,7 @@ public final class DuelWorldScene {
         if(card.effect()==null||card.effect().spec()==null)throw new AssertionError("No executable authored effect");
         var presentation=card.effect().spec().vfx();var a=positions.get(source);var b=positions.getOrDefault(target,a);
         if(a==null||entity(source)==null)throw new AssertionError("Special aspect Pokemon actor missing");
-        if(!entity(source).getPokemon().getAspects().containsAll(card.aspects())||!entity(source).getAspects().containsAll(card.aspects()))throw new AssertionError("Provider aspect did not reach the actual actor");
+        if(!entity(source).getPokemon().getAspects().containsAll(card.aspects())||!entity(source).getAspects().containsAll(card.aspects()))throw new AssertionError("Provider aspect did not reach the actual actor: requested="+card.aspects()+" pokemon="+entity(source).getPokemon().getAspects()+" tracked="+entity(source).getAspects());
         String semantic=negate?"CHAIN_NEGATE":"CAST_STATUS";
         var cue=new Duel.Cue(-3,semantic,source,target,lastView.you(),card.type(),presentation,negate?2:1);
         timeline.preview(cue,a,b,System.currentTimeMillis(),this::startVfx);vfxCamera(a,b);
@@ -509,6 +509,7 @@ public final class DuelWorldScene {
             var descriptor=vn.svarcade.tcg.integration.CobblemonBridge.resolve(species,"",aspects,"",false,"");
             if(!descriptor.available()){unavailableActors.add(availabilityKey);return null;}
             PokemonEntity entity=new PokemonEntity(world,vn.svarcade.tcg.integration.CobblemonBridge.create(descriptor),com.cobblemon.mod.common.CobblemonEntities.POKEMON);
+            entity.getDataTracker().set(PokemonEntity.getASPECTS(),new HashSet<>(entity.getPokemon().getAspects()));
             entity.setId(nextId());entity.setAiDisabled(true);entity.setInvulnerable(true);entity.setNoGravity(true);entity.setSilent(true);
             entity.setOnGround(true);
             var placement = DuelModelBounds.measure(entity);
