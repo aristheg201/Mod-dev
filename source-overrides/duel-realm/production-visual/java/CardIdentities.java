@@ -31,8 +31,9 @@ public final class CardIdentities {
             var first=typed(RECIPES.setup().get(a),card);var second=typed(RECIPES.payoff().get(b),card);var third=typed(RECIPES.setup().get(c),card);
             var original=card.effect();var old=original.spec();
             var vfx=old==null?EffectContent.attackPresentation(card):old.vfx();if(vfx==null)vfx=EffectContent.attackPresentation(card);
+            String profile=EffectSpec.value(vfx.profile(),EffectContent.attackPresentation(card).profile());
             List<EffectSpec.VisualStage> visuals=new ArrayList<>();int code=value;
-            for(int i=0;i<3;i++){String shape=RECIPES.shapes().get(code%RECIPES.shapes().size());code/=RECIPES.shapes().size();visuals.add(new EffectSpec.VisualStage(i==0?"CHARGE":i==1?"CAST_STATUS":"IMPACT",shape,vfx.profile(),.18+i*.27));}
+            for(int i=0;i<3;i++){String shape=RECIPES.shapes().get(code%RECIPES.shapes().size());code/=RECIPES.shapes().size();visuals.add(new EffectSpec.VisualStage(i==0?"CHARGE":i==1?"CAST_STATUS":"IMPACT",shape,profile,.18+i*.27));}
             var presentation=new EffectSpec.Presentation(vfx.mode(),vfx.profile(),vfx.duration(),vfx.animation(),vfx.particle(),vfx.fallback(),vfx.shape(),vfx.sound(),visuals);
             var cost=new EffectSpec.Cost("LP_COST",300+Math.min(card.level(),8)*50,"SELF",null);
             var binding=RECIPES.bindings().get(card.category());var conditions=new ArrayList<>(EffectSpec.list(binding.conditions()));conditions.add(new EffectSpec.Condition("OR",null,null,0,binding.sourceZones().stream().map(zone->new EffectSpec.Condition("SOURCE_ZONE","SELF",zone,0,List.<EffectSpec.Condition>of())).toList()));

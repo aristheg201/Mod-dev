@@ -15,7 +15,7 @@ public final class AuthoredEffectValidator {
     private static void presentation(String id,EffectSpec.Presentation v){
         if(v==null)return;
         if(v.profile()!=null&&!PROFILES.has(v.profile().toLowerCase(Locale.ROOT)))throw new IllegalArgumentException(id+": vfx.profile: "+v.profile());
-        for(var stage:EffectSpec.list(v.stages()))if(!PROFILES.has(stage.profile().toLowerCase(Locale.ROOT)))throw new IllegalArgumentException(id+": vfx.stages.profile: "+stage.profile());
+        for(var stage:EffectSpec.list(v.stages()))if(!PROFILES.has(EffectSpec.value(stage.profile(),EffectSpec.value(v.profile(),"normal")).toLowerCase(Locale.ROOT)))throw new IllegalArgumentException(id+": vfx.stages.profile: "+stage.profile());
     }
     private static void spec(String id,EffectSpec spec){if(spec==null)return;
         try{spec.validate();}catch(RuntimeException e){throw new IllegalArgumentException(id+": effect: "+e.getMessage(),e);}
