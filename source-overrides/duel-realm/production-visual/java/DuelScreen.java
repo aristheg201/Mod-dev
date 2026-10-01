@@ -52,6 +52,7 @@ public final class DuelScreen implements Page {
     private boolean visualProof;
     public void resetCamera() { visualProof=false; scene.resetView(); }
     public void prepareVisualProof(boolean positions) { visualProof=true; if(positions)scene.proofCamera();else scene.creationCamera(); }
+    public void prepareGroundingProof() { visualProof=true; scene.groundingCamera(); }
     public boolean visualSettled() { return scene.settled(); }
     public void verifyPositionActors() {
         if(scene.pokemonActors()!=2||scene.frontCards()!=0||scene.backCards()!=1)

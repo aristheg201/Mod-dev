@@ -71,7 +71,8 @@ public final class DuelWorldScene {
     public int pokemonActors() { return actors.size(); }
     public int frontCards() { return (int)fieldCards.values().stream().filter(a -> !a.faceDown).count(); }
     public int backCards() { return (int)fieldCards.values().stream().filter(a -> a.faceDown).count(); }
-    public void proofCamera() { orbitYaw = 0; orbitPitch = 42; cameraDistance = 18; updateCamera(); }
+    public void proofCamera() { orbitYaw = 0; orbitPitch = 37; cameraDistance = 14; updateCamera(); }
+    public void groundingCamera() { orbitYaw = 18; orbitPitch = 36; cameraDistance = 27; updateCamera(); }
     public void creationCamera() { orbitYaw = 32; orbitPitch = 27; cameraDistance = 18; updateCamera(); }
 
 

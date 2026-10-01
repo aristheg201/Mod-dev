@@ -65,7 +65,7 @@ public final class VisualRun implements ClientModInitializer {
  private boolean proofReady(CardWorldsScreen a,long now,boolean positions){
   a.localNotice="";
   long revision=a.state.duel().revision();
-  if(proofRevision!=revision){proofRevision=revision;proofReadyAt=now+1800;a.duelPage.prepareVisualProof(positions);return false;}
+  if(proofRevision!=revision){proofRevision=revision;proofReadyAt=now+1800;a.duelPage.prepareVisualProof(positions);if(step==176)a.duelPage.prepareGroundingProof();return false;}
   return now>=proofReadyAt&&a.duelPage.visualSettled();
  }
  private static void click(CardWorldsScreen a,int x,int y){double scale=MinecraftClient.getInstance().getWindow().getScaledWidth()/1280.0;((net.minecraft.client.gui.screen.Screen)a).mouseClicked(x*scale,y*scale,0);}
