@@ -1,0 +1,11 @@
+{
+  "type": "svarcade_tcg:duel_realm",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:the_void",
+      "layers": [],
+      "structure_overrides": []
+    }
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "commands": [
+    "beco",
+    "eco"
+  ],
+  "balanceCommands": [
+    "bal",
+    "balance"
+  ],
+  "numberFormat": {
+    "groupingSeparator": ".",
+    "decimalSeparator": ",",
+    "useGrouping": true,
+    "maxDecimalPlaces": 2
+  },
+  "economy": [
+    {
+      "name": "&eCobble Coin",
+      "lore": [
+        "&8This is a &bcurrency",
+        "&8Lore 2"
+      ],
+      "material": "minecraft:paper",
+      "custommodeldata": 7381,
+      "currencyType": "CobbleCoins",
+      "balanceStart": 500,
+      "symbol": "$",
+      "isPrimary": true,
+      "transfer": true,
+      "withdraw": true,
+      "balance": true,
+      "top": true,
+      "showInGlobalBalance": true,
+      "showInGlobalTop": true,
+      "customCommands": {
+        "enabled": false,
+        "aliases": [],
+        "defaultAction": "balance",
+        "balance": true,
+        "top": true,
+        "subcommands": {
+          "balance": [
+            "balance"
+          ],
+          "top": [
+            "top"
+          ]
+        },
+        "permissions": {
+          "command": "beconomy.custom.%currencyType%",
+          "balance": "beconomy.custom.%currencyType%.balance",
+          "balanceOthers": "beconomy.custom.%currencyType%.balance.others",
+          "top": "beconomy.custom.%currencyType%.top"
+        }
+      },
+      "pay": {
+        "minimumAmount": 0,
+        "maximumAmount": -1
+      },
+      "matchOnlyMaterial": false,
+      "denominations": [
+        {
+          "value": 0.5,
+          "material": "minecraft:paper",
+          "custommodeldata": 7382,
+          "name": "&e0.5 CobbleCoins",
+          "lore": [
+            "&7Value: 0.5 CobbleCoins"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "cobble_0"
+        },
+        {
+          "value": 1.0,
+          "material": "minecraft:paper",
+          "custommodeldata": 7383,
+          "name": "&e1 CobbleCoin",
+          "lore": [
+            "&7Value: 1 CobbleCoin"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "cobble_1"
+        },
+        {
+          "value": 5.0,
+          "material": "minecraft:paper",
+          "custommodeldata": 7384,
+          "name": "&e5 CobbleCoins",
+          "lore": [
+            "&7Value: 5 CobbleCoins"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "cobble_5"
+        },
+        {
+          "value": 10,
+          "material": "minecraft:paper",
+          "custommodeldata": 7385,
+          "name": "&e10 CobbleCoins",
+          "lore": [
+            "&7Value: 10 CobbleCoins"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "cobble_10"
+        }
+      ]
+    },
+    {
+      "name": "&eGold Coin",
+      "lore": [
+        "&8This is a &bcurrency",
+        "&8Lore 2"
+      ],
+      "material": "minecraft:paper",
+      "custommodeldata": 8381,
+      "currencyType": "GoldCoins",
+      "balanceStart": 200,
+      "symbol": "$",
+      "isPrimary": false,
+      "transfer": false,
+      "withdraw": true,
+      "balance": true,
+      "top": true,
+      "showInGlobalBalance": true,
+      "showInGlobalTop": true,
+      "customCommands": {
+        "enabled": false,
+        "aliases": [],
+        "defaultAction": "balance",
+        "balance": true,
+        "top": true,
+        "subcommands": {
+          "balance": [
+            "balance"
+          ],
+          "top": [
+            "top"
+          ]
+        },
+        "permissions": {
+          "command": "beconomy.custom.%currencyType%",
+          "balance": "beconomy.custom.%currencyType%.balance",
+          "balanceOthers": "beconomy.custom.%currencyType%.balance.others",
+          "top": "beconomy.custom.%currencyType%.top"
+        }
+      },
+      "pay": {
+        "minimumAmount": 0,
+        "maximumAmount": -1
+      },
+      "matchOnlyMaterial": false,
+      "denominations": [
+        {
+          "value": 0.5,
+          "material": "minecraft:paper",
+          "custommodeldata": 8382,
+          "name": "&e0.5 GoldCoins",
+          "lore": [
+            "&7Value: 0.5 GoldCoins"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "gold_0"
+        },
+        {
+          "value": 1.0,
+          "material": "minecraft:paper",
+          "custommodeldata": 8383,
+          "name": "&e1 GoldCoin",
+          "lore": [
+            "&7Value: 1 GoldCoin"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "gold_1"
+        },
+        {
+          "value": 5.0,
+          "material": "minecraft:paper",
+          "custommodeldata": 8384,
+          "name": "&e5 GoldCoins",
+          "lore": [
+            "&7Value: 5 GoldCoins"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "gold_5"
+        },
+        {
+          "value": 10,
+          "material": "minecraft:paper",
+          "custommodeldata": 8385,
+          "name": "&e10 GoldCoins",
+          "lore": [
+            "&7Value: 10 GoldCoins"
+          ],
+          "matchOnlyMaterial": false,
+          "id": "gold_10"
+        }
+      ]
+    }
+  ],
+  "localSave": true,
+  "databaseSave": false,
+  "database": {
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "databaseName": "economy",
+    "username": "root",
+    "password": "password"
+  }
+}

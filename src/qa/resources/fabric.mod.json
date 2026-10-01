@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"cardworlds_qa","version":"1.0.0","name":"Card Worlds QA Driver","environment":"client","entrypoints":{"client":["vn.svarcade.tcg.qa.VisualRun"]},"depends":{"svarcade_tcg":"*","fabric-api":"*"}}

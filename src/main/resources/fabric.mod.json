@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "svarcade_tcg",
+  "version": "${version}",
+  "name": "SVArcade: Card Worlds",
+  "description": "Card Worlds: duels, collections and card trading.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "vn.svarcade.tcg.fabric.TcgMod"
+    ],
+    "client": [
+      "vn.svarcade.tcg.fabric.TcgClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": ">=0.116.6",
+    "cobblemon": ">=1.8.1"
+  },
+  "suggests": {
+    "placeholder-api": "*",
+    "beconomy": "*",
+    "cobbledollars": "*",
+    "impactor": "*"
+  }
+}

@@ -1,0 +1,1699 @@
+{
+  "rules": {
+    "minDeck": 40,
+    "maxDeck": 60,
+    "extraDeck": 15,
+    "copies": 3,
+    "hand": 5,
+    "life": 8000,
+    "pokemonZones": 5,
+    "supportZones": 5,
+    "normalSummons": 1,
+    "typeBonus": 300,
+    "rankedLimits": {
+      "shadow_lugia": 0
+    },
+    "effective": {
+      "fire": [
+        "grass"
+      ],
+      "water": [
+        "fire",
+        "rock"
+      ],
+      "grass": [
+        "water",
+        "rock"
+      ],
+      "electric": [
+        "water"
+      ],
+      "ghost": [
+        "psychic"
+      ],
+      "rock": [
+        "fire"
+      ]
+    }
+  },
+  "cards": {
+    "charmander": {
+      "id": "charmander",
+      "name": "Charmander",
+      "category": "pokemon",
+      "species": "charmander",
+      "aspects": [],
+      "type": "fire",
+      "family": "charmander",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1000,
+      "text": "Once per turn: inflict 300 damage to your opponent.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "damage",
+        "amount": 300,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 4
+    },
+    "charmeleon": {
+      "id": "charmeleon",
+      "name": "Charmeleon",
+      "category": "pokemon",
+      "species": "charmeleon",
+      "aspects": [],
+      "type": "fire",
+      "family": "charmander",
+      "evolvesFrom": "charmander",
+      "extra": false,
+      "power": 1700,
+      "text": "You can evolve this card from Charmander instead of Tribute Summoning it. Once per turn: pay 200 Life; inflict 400 damage to your opponent.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "damage",
+        "amount": 400,
+        "speed": 1,
+        "lifeCost": 200,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 5
+    },
+    "charizard": {
+      "id": "charizard",
+      "name": "Charizard",
+      "category": "pokemon",
+      "species": "charizard",
+      "aspects": [],
+      "type": "fire",
+      "family": "charmeleon",
+      "evolvesFrom": "charmeleon",
+      "extra": false,
+      "power": 2500,
+      "text": "You can evolve this card from Charmeleon instead of Tribute Summoning it. Once per turn: pay 500 Life; destroy 1 opposing Pokémon.",
+      "set": "Kanto Crossroads",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "destroy",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 500,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 7
+    },
+    "mega_charizard": {
+      "id": "mega_charizard",
+      "name": "Mega Charizard X",
+      "category": "pokemon",
+      "species": "charizard",
+      "aspects": [
+        "mega",
+        "mega-x"
+      ],
+      "type": "dragon",
+      "family": "charizard",
+      "evolvesFrom": "charizard",
+      "extra": true,
+      "power": 3000,
+      "text": "Extra Deck. Must evolve from Charizard. Once per turn: pay 700 Life; destroy 1 opposing Pokémon.",
+      "set": "Kanto Crossroads",
+      "rarity": "Super Rare",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "destroy",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 700,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 8
+    },
+    "squirtle": {
+      "id": "squirtle",
+      "name": "Squirtle",
+      "category": "pokemon",
+      "species": "squirtle",
+      "aspects": [],
+      "type": "water",
+      "family": "squirtle",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1100,
+      "text": "Once per turn: recover 300 Trainer Life.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "heal",
+        "amount": 300,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 4
+    },
+    "wartortle": {
+      "id": "wartortle",
+      "name": "Wartortle",
+      "category": "pokemon",
+      "species": "wartortle",
+      "aspects": [],
+      "type": "water",
+      "family": "squirtle",
+      "evolvesFrom": "squirtle",
+      "extra": false,
+      "power": 1800,
+      "text": "You can evolve this card from Squirtle instead of Tribute Summoning it. Once per turn: recover 400 Trainer Life.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "heal",
+        "amount": 400,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 5
+    },
+    "blastoise": {
+      "id": "blastoise",
+      "name": "Blastoise",
+      "category": "pokemon",
+      "species": "blastoise",
+      "aspects": [],
+      "type": "water",
+      "family": "wartortle",
+      "evolvesFrom": "wartortle",
+      "extra": false,
+      "power": 2600,
+      "text": "You can evolve this card from Wartortle instead of Tribute Summoning it. Once per turn: pay 500 Life; return 1 opposing Pokémon to the hand.",
+      "set": "Kanto Crossroads",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "return",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 500,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 7
+    },
+    "bulbasaur": {
+      "id": "bulbasaur",
+      "name": "Bulbasaur",
+      "category": "pokemon",
+      "species": "bulbasaur",
+      "aspects": [],
+      "type": "grass",
+      "family": "bulbasaur",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1100,
+      "text": "Once per turn: 1 allied Pokémon gains 200 ATK.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "boost",
+        "amount": 200,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 4
+    },
+    "ivysaur": {
+      "id": "ivysaur",
+      "name": "Ivysaur",
+      "category": "pokemon",
+      "species": "ivysaur",
+      "aspects": [],
+      "type": "grass",
+      "family": "bulbasaur",
+      "evolvesFrom": "bulbasaur",
+      "extra": false,
+      "power": 1800,
+      "text": "You can evolve this card from Bulbasaur instead of Tribute Summoning it. Once per turn: 1 allied Pokémon gains 300 ATK.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "boost",
+        "amount": 300,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 5
+    },
+    "venusaur": {
+      "id": "venusaur",
+      "name": "Venusaur",
+      "category": "pokemon",
+      "species": "venusaur",
+      "aspects": [],
+      "type": "grass",
+      "family": "ivysaur",
+      "evolvesFrom": "ivysaur",
+      "extra": false,
+      "power": 2500,
+      "text": "You can evolve this card from Ivysaur instead of Tribute Summoning it. Once per turn: recover 600 Trainer Life.",
+      "set": "Kanto Crossroads",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "heal",
+        "amount": 600,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 7
+    },
+    "pikachu": {
+      "id": "pikachu",
+      "name": "Pikachu",
+      "category": "pokemon",
+      "species": "pikachu",
+      "aspects": [],
+      "type": "electric",
+      "family": "pikachu",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1300,
+      "text": "Once per turn: pay 300 Life; inflict 500 damage to your opponent.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "damage",
+        "amount": 500,
+        "speed": 1,
+        "lifeCost": 300,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 4
+    },
+    "gastly": {
+      "id": "gastly",
+      "name": "Gastly",
+      "category": "pokemon",
+      "species": "gastly",
+      "aspects": [],
+      "type": "ghost",
+      "family": "gastly",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 900,
+      "text": "Once per turn: pay 400 Life; draw 1 card.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "draw",
+        "amount": 1,
+        "speed": 1,
+        "lifeCost": 400,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 3
+    },
+    "haunter": {
+      "id": "haunter",
+      "name": "Haunter",
+      "category": "pokemon",
+      "species": "haunter",
+      "aspects": [],
+      "type": "ghost",
+      "family": "gastly",
+      "evolvesFrom": "gastly",
+      "extra": false,
+      "power": 1700,
+      "text": "You can evolve this card from Gastly instead of Tribute Summoning it. Once per turn: pay 300 Life; return 1 opposing Pokémon to the hand.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "return",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 300,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 5
+    },
+    "gengar": {
+      "id": "gengar",
+      "name": "Gengar",
+      "category": "pokemon",
+      "species": "gengar",
+      "aspects": [],
+      "type": "ghost",
+      "family": "haunter",
+      "evolvesFrom": "haunter",
+      "extra": false,
+      "power": 2400,
+      "text": "You can evolve this card from Haunter instead of Tribute Summoning it. Once per turn: pay 600 Life; negate the latest Chain effect.",
+      "set": "Kanto Crossroads",
+      "rarity": "Super Rare",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "negate_effect",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 600,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 7
+    },
+    "eevee": {
+      "id": "eevee",
+      "name": "Eevee",
+      "category": "pokemon",
+      "species": "eevee",
+      "aspects": [],
+      "type": "normal",
+      "family": "eevee",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1200,
+      "text": "If this card is Normal Summoned: recover 200 Trainer Life.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": null,
+      "triggers": [
+        {
+          "cause": "PLAY",
+          "zone": "FIELD",
+          "relation": "self",
+          "effect": {
+            "operation": "heal",
+            "amount": 200,
+            "speed": 1,
+            "lifeCost": 0,
+            "target": "none",
+            "phases": [
+              "MAIN1",
+              "MAIN2"
+            ],
+            "oncePerTurn": true
+          }
+        }
+      ],
+      "level": 4
+    },
+    "onix": {
+      "id": "onix",
+      "name": "Onix",
+      "category": "pokemon",
+      "species": "onix",
+      "aspects": [],
+      "type": "rock",
+      "family": "onix",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1800,
+      "text": "Once per turn: choose 1 allied Pokémon; protect it from its next destruction.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "NPC_DUEL"
+      ],
+      "effect": {
+        "operation": "shield",
+        "amount": 1,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 5
+    },
+    "ancient_mew": {
+      "id": "ancient_mew",
+      "name": "Ancient Mew",
+      "category": "pokemon",
+      "species": "mew",
+      "aspects": [],
+      "type": "psychic",
+      "family": "ancient_mew",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 1500,
+      "text": "Once per turn: pay 500 Life; draw 1 card.",
+      "set": "Kanto Crossroads",
+      "rarity": "Secret",
+      "sources": [
+        "ARCHAEOLOGY"
+      ],
+      "effect": {
+        "operation": "draw",
+        "amount": 1,
+        "speed": 1,
+        "lifeCost": 500,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 8
+    },
+    "shadow_lugia": {
+      "id": "shadow_lugia",
+      "name": "Shadow Lugia",
+      "category": "pokemon",
+      "species": "lugia",
+      "aspects": [
+        "shadow"
+      ],
+      "type": "psychic",
+      "family": "shadow_lugia",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 2200,
+      "text": "Once per turn: pay 800 Life; banish 1 opposing Pokémon.",
+      "set": "Kanto Crossroads",
+      "rarity": "Secret",
+      "sources": [
+        "BLACK_MARKET"
+      ],
+      "effect": {
+        "operation": "banish",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 800,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 8
+    },
+    "flamethrower": {
+      "id": "flamethrower",
+      "name": "Flamethrower",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "flamethrower",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 200 Life; deal 600 damage to the opposing Trainer.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "damage",
+        "amount": 600,
+        "speed": 1,
+        "lifeCost": 200,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "protect": {
+      "id": "protect",
+      "name": "Protect",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "protect",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 200 Life; negate the latest chain effect.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "negate_effect",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 200,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "feint": {
+      "id": "feint",
+      "name": "Feint",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "feint",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 300 Life; negate the latest activation. Costs remain paid.",
+      "set": "Kanto Crossroads",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "negate_activation",
+        "amount": 0,
+        "speed": 3,
+        "lifeCost": 300,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "exit": {
+      "id": "exit",
+      "name": "Emergency Exit",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "exit",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Return one of your Pokemon to your hand.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "return",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "potion": {
+      "id": "potion",
+      "name": "Potion",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "potion",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Recover 500 Trainer Life.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "heal",
+        "amount": 500,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "research": {
+      "id": "research",
+      "name": "Professor’s Research",
+      "category": "trainer",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "research",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 500 Life; draw 2 cards.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "draw",
+        "amount": 2,
+        "speed": 1,
+        "lifeCost": 500,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "revival": {
+      "id": "revival",
+      "name": "Revival Seed",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "revival",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 800 Life; summon a non-Extra Pokemon from your discard pile.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "revive",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 800,
+        "target": "grave",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "lost_zone": {
+      "id": "lost_zone",
+      "name": "Lost Zone",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "lost_zone",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 600 Life; banish an opposing Pokemon.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "banish",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 600,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "rock_tomb": {
+      "id": "rock_tomb",
+      "name": "Rock Tomb",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "rock_tomb",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Pay 500 Life; destroy an opposing Pokemon.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "destroy",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 500,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "hard_stone": {
+      "id": "hard_stone",
+      "name": "Hard Stone",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "hard_stone",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Protect an ally from its next destruction.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "shield",
+        "amount": 1,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "battle_training": {
+      "id": "battle_training",
+      "name": "Battle Training",
+      "category": "trainer",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "battle_training",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "An ally gains 400 power until the next turn.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "boost",
+        "amount": 400,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "level": 0
+    },
+    "training_ground": {
+      "id": "training_ground",
+      "name": "Training Ground",
+      "category": "stadium",
+      "species": "",
+      "aspects": [],
+      "type": "normal",
+      "family": "training_ground",
+      "evolvesFrom": "",
+      "extra": false,
+      "power": 0,
+      "text": "Your Pokemon gain 100 power while this Stadium remains. Once each turn: an ally gains another 200 power until the next turn.",
+      "set": "Kanto Crossroads",
+      "rarity": "Common",
+      "sources": [
+        "PACK",
+        "GACHA",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "boost",
+        "amount": 200,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true
+      },
+      "modifiers": [
+        {
+          "zone": "STADIUM",
+          "affectedType": "any",
+          "power": 100
+        }
+      ],
+      "level": 0
+    },
+    "palkia": {
+      "id": "palkia",
+      "name": "Palkia",
+      "category": "pokemon",
+      "species": "palkia",
+      "aspects": [],
+      "type": "dragon",
+      "family": "creation",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 8,
+      "power": 2600,
+      "text": "Creation material for the Arceus advanced summon.",
+      "set": "Creation Myth",
+      "rarity": "Secret",
+      "sources": [
+        "PACK"
+      ],
+      "effect": null,
+      "triggers": [],
+      "modifiers": []
+    },
+    "dialga": {
+      "id": "dialga",
+      "name": "Dialga",
+      "category": "pokemon",
+      "species": "dialga",
+      "aspects": [],
+      "type": "dragon",
+      "family": "creation",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 8,
+      "power": 2600,
+      "text": "Creation material for the Arceus advanced summon.",
+      "set": "Creation Myth",
+      "rarity": "Secret",
+      "sources": [
+        "PACK"
+      ],
+      "effect": null,
+      "triggers": [],
+      "modifiers": []
+    },
+    "giratina": {
+      "id": "giratina",
+      "name": "Giratina",
+      "category": "pokemon",
+      "species": "giratina",
+      "aspects": [],
+      "type": "dragon",
+      "family": "creation",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 8,
+      "power": 2700,
+      "text": "Creation material for the Arceus advanced summon.",
+      "set": "Creation Myth",
+      "rarity": "Secret",
+      "sources": [
+        "PACK"
+      ],
+      "effect": null,
+      "triggers": [],
+      "modifiers": []
+    },
+    "arceus_defense": {
+      "id": "arceus_defense",
+      "name": "Arceus - Defense",
+      "category": "pokemon",
+      "species": "arceus",
+      "aspects": [],
+      "type": "dragon",
+      "family": "creation",
+      "evolvesFrom": "",
+      "extra": true,
+      "level": 10,
+      "power": 3000,
+      "text": "Advanced Summon: Palkia + Dialga + Giratina. Locked for 2 of your turns.",
+      "set": "Creation Myth",
+      "rarity": "Secret",
+      "sources": [
+        "PACK"
+      ],
+      "effect": null,
+      "triggers": [],
+      "modifiers": []
+    },
+    "arceus_judgement": {
+      "id": "arceus_judgement",
+      "name": "Arceus - Judgement",
+      "category": "pokemon",
+      "species": "arceus",
+      "aspects": [],
+      "type": "dragon",
+      "family": "creation",
+      "evolvesFrom": "",
+      "extra": true,
+      "level": 11,
+      "power": 3400,
+      "text": "Second stage of Creation Arceus. Advances through the summon state machine.",
+      "set": "Creation Myth",
+      "rarity": "Secret",
+      "sources": [
+        "PACK"
+      ],
+      "effect": null,
+      "triggers": [],
+      "modifiers": []
+    },
+    "ultimate_arceus": {
+      "id": "ultimate_arceus",
+      "name": "Ultimate Arceus",
+      "category": "pokemon",
+      "species": "arceus",
+      "aspects": [],
+      "type": "dragon",
+      "family": "creation",
+      "evolvesFrom": "",
+      "extra": true,
+      "level": 12,
+      "power": 4000,
+      "text": "Final stage of Creation Arceus.",
+      "set": "Creation Myth",
+      "rarity": "Secret",
+      "sources": [
+        "PACK"
+      ],
+      "effect": null,
+      "triggers": [],
+      "modifiers": []
+    },
+    "mirror_barrier": {
+      "species": "",
+      "aspects": [],
+      "type": "trainer",
+      "family": "duel_traps",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "set": "Duel Coliseum",
+      "rarity": "Rare",
+      "sources": [
+        "PACK"
+      ],
+      "triggers": [],
+      "modifiers": [],
+      "id": "mirror_barrier",
+      "name": "Mirror Barrier",
+      "category": "reaction",
+      "text": "Set 1 turn before activation. Negate the latest effect.",
+      "effect": {
+        "operation": "negate_effect",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 200,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true
+      }
+    },
+    "counter_seal": {
+      "species": "",
+      "aspects": [],
+      "type": "trainer",
+      "family": "duel_traps",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "set": "Duel Coliseum",
+      "rarity": "Rare",
+      "sources": [
+        "PACK"
+      ],
+      "triggers": [],
+      "modifiers": [],
+      "id": "counter_seal",
+      "name": "Counter Seal",
+      "category": "reaction",
+      "text": "Counter Trap. Set 1 turn before activation. Negate the latest activation.",
+      "effect": {
+        "operation": "negate_activation",
+        "amount": 0,
+        "speed": 3,
+        "lifeCost": 300,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true
+      }
+    }
+  },
+  "banners": {
+    "crossroads": {
+      "name": "Kanto Crossroads Booster",
+      "family": "crossroads-pack",
+      "source": "PACK",
+      "price": 160,
+      "slots": 8,
+      "hardPity": 40,
+      "softPity": 25,
+      "softBonus": 10,
+      "starts": 0,
+      "ends": 0,
+      "pool": [
+        {
+          "card": "charmander",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "charmeleon",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "charizard",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "mega_charizard",
+          "weight": 8,
+          "featured": false,
+          "high": true
+        },
+        {
+          "card": "squirtle",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "wartortle",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "blastoise",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "bulbasaur",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "ivysaur",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "venusaur",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "pikachu",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "gastly",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "haunter",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "gengar",
+          "weight": 8,
+          "featured": true,
+          "high": true
+        },
+        {
+          "card": "eevee",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "flamethrower",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "protect",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "feint",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "exit",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "potion",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "research",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "revival",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "lost_zone",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "rock_tomb",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "hard_stone",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "battle_training",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "training_ground",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        }
+      ]
+    },
+    "ghost_carnival": {
+      "name": "Ghost Carnival",
+      "family": "ghost",
+      "source": "GACHA",
+      "price": 100,
+      "slots": 1,
+      "hardPity": 20,
+      "softPity": 12,
+      "softBonus": 20,
+      "starts": 0,
+      "ends": 0,
+      "pool": [
+        {
+          "card": "charmander",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "charmeleon",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "charizard",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "mega_charizard",
+          "weight": 8,
+          "featured": false,
+          "high": true
+        },
+        {
+          "card": "squirtle",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "wartortle",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "blastoise",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "bulbasaur",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "ivysaur",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "venusaur",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "pikachu",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "gastly",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "haunter",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "gengar",
+          "weight": 8,
+          "featured": true,
+          "high": true
+        },
+        {
+          "card": "eevee",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "flamethrower",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "protect",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "feint",
+          "weight": 25,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "exit",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "potion",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "research",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "revival",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "lost_zone",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "rock_tomb",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "hard_stone",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "battle_training",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "training_ground",
+          "weight": 100,
+          "featured": false,
+          "high": false
+        }
+      ]
+    }
+  },
+  "rewards": {
+    "desert_discovery": {
+      "name": "Ancient Sands",
+      "source": "ARCHAEOLOGY",
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:desert",
+      "count": 1,
+      "card": "ancient_mew",
+      "supplyCap": 100
+    },
+    "pewter_victory": {
+      "name": "Pewter Challenger",
+      "source": "NPC_DUEL",
+      "dimension": "",
+      "biome": "",
+      "count": 1,
+      "card": "onix",
+      "supplyCap": 0,
+      "coins": 100,
+      "dailyLimit": 5
+    }
+  },
+  "dealers": {
+    "midnight": {
+      "name": "Midnight Collector",
+      "dimension": "minecraft:the_nether",
+      "startHour": 23,
+      "endHour": 2,
+      "reputation": 1,
+      "requestedCard": "gastly",
+      "count": 3,
+      "offeredCard": "shadow_lugia"
+    }
+  },
+  "starters": {
+    "crossroads": [
+      "charmander",
+      "charmander",
+      "charmander",
+      "charmeleon",
+      "charmeleon",
+      "charmeleon",
+      "charizard",
+      "charizard",
+      "charizard",
+      "squirtle",
+      "squirtle",
+      "squirtle",
+      "wartortle",
+      "wartortle",
+      "wartortle",
+      "blastoise",
+      "blastoise",
+      "blastoise",
+      "bulbasaur",
+      "bulbasaur",
+      "bulbasaur",
+      "ivysaur",
+      "ivysaur",
+      "ivysaur",
+      "venusaur",
+      "venusaur",
+      "venusaur",
+      "pikachu",
+      "pikachu",
+      "pikachu",
+      "eevee",
+      "eevee",
+      "eevee",
+      "protect",
+      "protect",
+      "protect",
+      "potion",
+      "potion",
+      "potion",
+      "research"
+    ]
+  }
+}

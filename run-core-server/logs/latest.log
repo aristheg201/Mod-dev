@@ -1,0 +1,252 @@
+[00:43:08] [main/INFO]: Loading Minecraft 1.21.1 with Fabric Loader 0.18.4
+[00:43:08] [main/INFO]: Loading 80 mods:
+	- cobblemon 1.8.1+1.21.1
+	   |-- com_ibm_icu_icu4j 71.1
+	   |-- org_graalvm_js_js 22.3.0
+	   |-- org_graalvm_regex_regex 22.3.0
+	   |-- org_graalvm_sdk_graal-sdk 22.3.0
+	   |-- org_graalvm_truffle_truffle-api 22.3.0
+	   |-- org_mongodb_mongodb-driver-core 4.10.2
+	   \-- org_mongodb_mongodb-driver-sync 4.10.2
+	- fabric-api 0.116.6+1.21.1
+	   |-- fabric-blockrenderlayer-v1 1.1.52+0af3f5a719
+	   |-- fabric-client-tags-api-v1 1.1.15+6573ed8c19
+	   |-- fabric-key-binding-api-v1 1.0.47+0af3f5a719
+	   |-- fabric-keybindings-v0 0.2.45+df3654b319
+	   |-- fabric-model-loading-api-v1 2.1.0+b4d813fc19
+	   |-- fabric-renderer-api-v1 3.4.1+b4d813fc19
+	   |-- fabric-renderer-indigo 1.7.1+c705a49c19
+	   |-- fabric-renderer-registries-v1 3.2.69+df3654b319
+	   |-- fabric-rendering-v0 1.1.72+df3654b319
+	   |-- fabric-rendering-v1 5.1.0+ab4c25a019
+	   |-- fabric-screen-api-v1 2.0.25+8b68f1c719
+	   \-- fabric-sound-api-v1 1.0.23+6573ed8c19
+	- fabric-api-base 0.4.42+6573ed8c19
+	- fabric-api-lookup-api-v1 1.6.71+b559734419
+	- fabric-biome-api-v1 13.0.31+d527f9fd19
+	- fabric-block-api-v1 1.1.0+0bc3503219
+	- fabric-block-view-api-v2 1.0.11+ebb2264e19
+	- fabric-command-api-v1 1.2.49+f71b366f19
+	- fabric-command-api-v2 2.2.28+6ced4dd919
+	- fabric-commands-v0 0.2.66+df3654b319
+	- fabric-content-registries-v0 8.0.19+b559734419
+	- fabric-convention-tags-v1 2.1.5+7f945d5b19
+	- fabric-convention-tags-v2 2.11.1+a406e79519
+	- fabric-crash-report-info-v1 0.2.29+0af3f5a719
+	- fabric-data-attachment-api-v1 1.4.5+6116a37819
+	- fabric-data-generation-api-v1 20.2.33+37516cd619
+	- fabric-dimensions-v1 4.0.1+65213ef819
+	- fabric-entity-events-v1 1.8.0+2b27e0a419
+	- fabric-events-interaction-v0 0.7.13+ba9dae0619
+	- fabric-game-rule-api-v1 1.0.53+6ced4dd919
+	- fabric-gametest-api-v1 2.0.5+6fc22b9919
+	- fabric-item-api-v1 11.2.0+3b3cb2e819
+	- fabric-item-group-api-v1 4.1.7+def88e3a19
+	- fabric-language-kotlin 1.13.6+kotlin.2.2.20
+	   |-- org_jetbrains_kotlin_kotlin-reflect 2.2.20
+	   |-- org_jetbrains_kotlin_kotlin-stdlib 2.2.20
+	   |-- org_jetbrains_kotlin_kotlin-stdlib-jdk7 2.2.20
+	   |-- org_jetbrains_kotlin_kotlin-stdlib-jdk8 2.2.20
+	   |-- org_jetbrains_kotlinx_atomicfu-jvm 0.29.0
+	   |-- org_jetbrains_kotlinx_kotlinx-coroutines-core-jvm 1.10.2
+	   |-- org_jetbrains_kotlinx_kotlinx-coroutines-jdk8 1.10.2
+	   |-- org_jetbrains_kotlinx_kotlinx-datetime-jvm 0.7.1
+	   |-- org_jetbrains_kotlinx_kotlinx-io-bytestring-jvm 0.8.0
+	   |-- org_jetbrains_kotlinx_kotlinx-io-core-jvm 0.8.0
+	   |-- org_jetbrains_kotlinx_kotlinx-serialization-cbor-jvm 1.9.0
+	   |-- org_jetbrains_kotlinx_kotlinx-serialization-core-jvm 1.9.0
+	   \-- org_jetbrains_kotlinx_kotlinx-serialization-json-jvm 1.9.0
+	- fabric-lifecycle-events-v1 2.6.0+0865547519
+	- fabric-loot-api-v2 3.0.15+3f89f5a519
+	- fabric-loot-api-v3 1.0.3+3f89f5a519
+	- fabric-message-api-v1 6.0.14+8aaf3aca19
+	- fabric-networking-api-v1 4.3.0+c7469b2119
+	- fabric-object-builder-api-v1 15.2.1+40875a9319
+	- fabric-particles-v1 4.0.2+6573ed8c19
+	- fabric-recipe-api-v1 5.0.14+248df81c19
+	- fabric-registry-sync-v0 5.3.1+e3eddc2119
+	- fabric-rendering-data-attachment-v1 0.3.49+73761d2e19
+	- fabric-rendering-fluids-v1 3.1.6+1daea21519
+	- fabric-resource-conditions-api-v1 4.3.0+8dc279b119
+	- fabric-resource-loader-v0 1.3.1+5b5275af19
+	- fabric-screen-handler-api-v1 1.3.90+b559734419
+	- fabric-transfer-api-v1 5.4.3+c24bd99419
+	- fabric-transitive-access-wideners-v1 6.2.0+45b9699719
+	- fabricloader 0.18.4
+	   \-- mixinextras 0.5.0
+	- java 21
+	- minecraft 1.21.1
+	- svarcade_tcg 0.2.2-ui-scroll
+	   |-- adventure-platform-fabric 5.14.2
+	   |    |-- net_kyori_adventure-api 4.17.0
+	   |    |-- net_kyori_adventure-key 4.17.0
+	   |    |-- net_kyori_adventure-platform-api 4.3.3
+	   |    |-- net_kyori_adventure-text-logger-slf4j 4.17.0
+	   |    |-- net_kyori_adventure-text-minimessage 4.17.0
+	   |    |-- net_kyori_adventure-text-serializer-ansi 4.17.0
+	   |    |-- net_kyori_adventure-text-serializer-gson 4.17.0
+	   |    |-- net_kyori_adventure-text-serializer-json 4.17.0
+	   |    |-- net_kyori_adventure-text-serializer-plain 4.17.0
+	   |    |-- net_kyori_ansi 1.1.0
+	   |    |-- net_kyori_examination-api 1.3.0
+	   |    |-- net_kyori_examination-string 1.3.0
+	   |    \-- net_kyori_option 1.0.0
+	   \-- org_xerial_sqlite-jdbc 3.46.1.0
+[00:43:08] [main/WARN]: Found 23 non-fabric mods:
+	- kotlin-stdlib-jdk8-2.2.20.jar
+	- kotlin-stdlib-jdk7-2.2.20.jar
+	- kotlin-reflect-2.2.20.jar
+	- kotlinx-coroutines-jdk8-1.10.2.jar
+	- kotlinx-coroutines-core-jvm-1.10.2.jar
+	- kotlinx-serialization-json-jvm-1.9.0.jar
+	- kotlinx-serialization-cbor-jvm-1.9.0.jar
+	- kotlinx-serialization-core-jvm-1.9.0.jar
+	- atomicfu-jvm-0.29.0.jar
+	- kotlinx-datetime-jvm-0.7.1.jar
+	- kotlinx-io-core-jvm-0.8.0.jar
+	- kotlinx-io-bytestring-jvm-0.8.0.jar
+	- kotlin-stdlib-2.2.20.jar
+	- js-22.3.0.jar
+	- regex-22.3.0.jar
+	- truffle-api-22.3.0.jar
+	- graal-sdk-22.3.0.jar
+	- mongodb-driver-sync-4.10.2.jar
+	- icu4j-71.1.jar
+	- mongodb-driver-core-4.10.2.jar
+	- annotations-23.0.0.jar
+	- bson-record-codec-4.10.2.jar
+	- bson-4.10.2.jar
+[00:43:08] [main/INFO]: SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/E:/YU-GI-OH/github-production/run-core-server/libraries/net/fabricmc/sponge-mixin/0.17.0+mixin.0.8.7/sponge-mixin-0.17.0+mixin.0.8.7.jar Service=Knot/Fabric Env=SERVER
+[00:43:08] [main/INFO]: Compatibility level set to JAVA_17
+[00:43:08] [main/INFO]: Compatibility level set to JAVA_21
+[00:43:09] [main/WARN]: Error loading class: juuxel/adorn/block/variant/BlockVariantSets (java.lang.ClassNotFoundException: juuxel/adorn/block/variant/BlockVariantSets)
+[00:43:09] [main/WARN]: @Mixin target juuxel.adorn.block.variant.BlockVariantSets was not found mixins.cobblemon-common.json:invoker.AdornRegisterInvoker from mod cobblemon
+[00:43:09] [main/WARN]: Error loading class: net/minecraft/class_1140 (java.lang.ClassNotFoundException: net/minecraft/class_1140)
+[00:43:09] [main/WARN]: @Mixin target net.minecraft.class_1140 was not found mixins.cobblemon-fabric.json:FabricSoundEngineMixin from mod cobblemon
+[00:43:09] [main/INFO]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.5.0).
+[00:43:17] [main/INFO]: Booting LaxPermissionValidator, permissions will be checked using Minecrafts permission level system, see https://minecraft.wiki/w/Permission_level
+[00:43:17] [main/INFO]: Launching Cobblemon 1.8.1 
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:pokemon
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:empty_pokeball
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:boat
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:chest_boat
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:poke_bobber
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:generic_bedrock
+[00:43:19] [main/ERROR]: No data fixer registered for cobblemon:npc
+[00:43:20] [main/INFO]: Starting the Best Spawner...
+[00:43:20] [main/INFO]: Loaded 7 spawning condition types.
+[00:43:20] [main/INFO]: Loaded 6 spawnable position types.
+[00:43:20] [main/INFO]: Loaded 4 spawn detail types.
+[00:43:20] [Cobblemon Showdown/INFO]: Starting showdown service...
+[00:43:22] [Cobblemon Showdown/INFO]: Showdown has been started!
+[00:43:22] [main/INFO]: Note: Cobblemon data registries are only loaded once per server instance as Pokémon species are not safe to reload.
+[00:43:22] [main/INFO]: Registered the cobblemon:molang registry
+[00:43:22] [main/INFO]: Registered the cobblemon:species_features registry
+[00:43:22] [main/INFO]: Registered the cobblemon:global_species_features registry
+[00:43:22] [main/INFO]: Registered the cobblemon:species_feature_assignments registry
+[00:43:22] [main/INFO]: Registered the cobblemon:action_effects registry
+[00:43:22] [main/INFO]: Registered the cobblemon:moves registry
+[00:43:22] [main/INFO]: Registered the cobblemon:moveset_builders registry
+[00:43:22] [main/INFO]: Registered the cobblemon:abilities registry
+[00:43:22] [main/INFO]: Registered the cobblemon:behaviours registry
+[00:43:22] [main/INFO]: Registered the cobblemon:marks registry
+[00:43:22] [main/INFO]: Registered the cobblemon:species registry
+[00:43:22] [main/INFO]: Registered the cobblemon:species_additions registry
+[00:43:22] [main/INFO]: Registered the cobblemon:pokeballs registry
+[00:43:22] [main/INFO]: Registered the cobblemon:properties_tab_completion registry
+[00:43:22] [main/INFO]: Registered the cobblemon:party_pools registry
+[00:43:22] [main/INFO]: Registered the cobblemon:party_compositions registry
+[00:43:22] [main/INFO]: Registered the cobblemon:spawn_detail_presets registry
+[00:43:22] [main/INFO]: Registered the cobblemon:spawn_rules registry
+[00:43:22] [main/INFO]: Registered the cobblemon:mechanics registry
+[00:43:22] [main/INFO]: Registered the cobblemon:bag_items registry
+[00:43:22] [main/INFO]: Registered the cobblemon:held_items registry
+[00:43:22] [main/INFO]: Registered the cobblemon:dialogues registry
+[00:43:22] [main/INFO]: Registered the cobblemon:natural_materials registry
+[00:43:22] [main/INFO]: Registered the cobblemon:fossils registry
+[00:43:22] [main/INFO]: Registered the cobblemon:npc_preset registry
+[00:43:22] [main/INFO]: Registered the cobblemon:npc registry
+[00:43:22] [main/INFO]: Registered the cobblemon:dex_entries registry
+[00:43:22] [main/INFO]: Registered the cobblemon:dex_entry_additions registry
+[00:43:22] [main/INFO]: Registered the cobblemon:dexes registry
+[00:43:22] [main/INFO]: Registered the cobblemon:dex_additions registry
+[00:43:22] [main/INFO]: Registered the cobblemon:cosmetic_items registry
+[00:43:22] [main/INFO]: Registered the cobblemon:callbacks registry
+[00:43:22] [main/INFO]: Registered the cobblemon:unlockable_pc_box_wallpapers registry
+[00:43:22] [main/INFO]: Registered the cobblemon:starters registry
+[00:43:22] [main/INFO]: Registered the cobblemon:spawn_pool_world registry
+[00:43:22] [main/INFO]: Registered the cobblemon:pokerods registry
+[00:43:22] [main/INFO]: Registered the cobblemon:berries registry
+[00:43:22] [main/INFO]: Registered the cobblemon:habitat_pools registry
+[00:43:22] [main/INFO]: Registered the cobblemon:seasonings registry
+[00:43:22] [main/INFO]: Registered the cobblemon:pokemon_interactions registry
+[00:43:22] [main/INFO]: Registered the cobblemon:spawn_bait_effects registry
+[00:43:22] [main/INFO]: Registered the cobblemon:ride_settings registry
+[00:43:22] [main/INFO]: Registered the cobblemon:technical_machines registry
+[00:43:22] [main/INFO]: CARDWORLDS_INTEGRATION provider=cobblemon available=true
+[00:43:22] [main/INFO]: CARDWORLDS_INTEGRATION provider=mega_showdown available=false
+[00:43:22] [main/INFO]: CARDWORLDS_INTEGRATION provider=placeholder-api available=false
+[00:43:22] [main/INFO]: CARDWORLDS_INTEGRATION provider=beconomy available=false
+[00:43:22] [main/INFO]: CARDWORLDS_INTEGRATION provider=cobbledollars available=false
+[00:43:22] [main/INFO]: CARDWORLDS_INTEGRATION provider=impactor available=false
+[00:43:23] [main/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[00:43:25] [main/INFO]: Loaded 2067 recipes
+[00:43:25] [main/INFO]: Loaded 2167 advancements
+[00:43:25] [main/INFO]: Loaded 11 server scripts and 1 client scripts
+[00:43:28] [main/INFO]: Loaded 936 moves
+[00:43:28] [main/INFO]: Loaded 314 abilities
+[00:43:28] [main/INFO]: Loaded 49 entity behaviours
+[00:43:28] [main/INFO]: Loaded 168 marks
+[00:43:29] [main/INFO]: Finished additions
+[00:43:29] [cobblemon Datafixer Bootstrap/INFO]: 4 Datafixer optimizations took 28 milliseconds
+[00:43:30] [main/INFO]: Loaded 1025 Pokémon species
+[00:43:30] [main/INFO]: Loaded 0 party compositions.
+[00:43:30] [main/INFO]: Loaded 28 spawn detail presets.
+[00:43:30] [main/INFO]: Starting dummy Showdown battle to force it to pre-load data.
+[00:43:31] [main/INFO]: Imported 266 held item IDs from showdown
+[00:43:31] [main/INFO]: Loaded 15 fossils
+[00:43:31] [main/INFO]: Loaded 7 callbacks and 0 client callbacks
+[00:43:32] [main/INFO]: Loaded 70 berries
+[00:43:32] [main/INFO]: Loaded 167 Pokémon interaction sets
+[00:43:33] [main/INFO]: Applied 985 biome modifications to 64 of 64 new biomes in 14.29 ms
+[00:43:33] [Server thread/INFO]: Starting minecraft server version 1.21.1
+[00:43:33] [Server thread/INFO]: Loading properties
+[00:43:33] [Server thread/INFO]: Default game type: SURVIVAL
+[00:43:33] [Server thread/INFO]: Generating keypair
+[00:43:33] [Server thread/INFO]: Starting Minecraft server on 127.0.0.1:25676
+[00:43:33] [Server thread/INFO]: Using default channel type
+[00:43:33] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[00:43:33] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.
+[00:43:33] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[00:43:33] [Server thread/WARN]: To change this, set "online-mode" to "true" in the server.properties file.
+[00:43:33] [Server thread/INFO]: Preparing level "world"
+[00:43:34] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
+[00:43:34] [Worker-Main-15/INFO]: Preparing spawn area: 0%
+[00:43:34] [Server thread/INFO]: Time elapsed: 490 ms
+[00:43:34] [Server thread/INFO]: Done (1.049s)! For help, type "help"
+[00:43:34] [Server thread/INFO]: Starting remote control listener
+[00:43:34] [Server thread/INFO]: Thread RCON Listener started
+[00:43:34] [Server thread/INFO]: RCON running on 127.0.0.1:25686
+[00:43:34] [Server thread/INFO]: Optimizing spawn pools...
+[00:43:35] [Server thread/INFO]: CARDWORLDS_ASPECT_COVERAGE discovered=2711 authored=24 registered=0
+[00:43:35] [Server thread/INFO]: CARDWORLDS_CARD_IDENTITIES mechanics=1426 choreography=1426
+[00:43:35] [Server thread/INFO]: CARDWORLDS_CATALOG_HYDRATED cards=1426 species=1025 fakemon=0 decks=53 banners=13
+[00:43:35] [Server thread/INFO]: CARDWORLDS_FORMS_HYDRATED baseSpecies=1025 forms=367
+[00:43:35] [Server thread/INFO]: CARDWORLDS_EFFECT_COVERAGE primitives=53 nontrivial=1412
+[00:43:35] [Server thread/INFO]: CARDWORLDS_DECK_FAMILIES unique=39 aliases=14
+[00:43:38] [RCON Listener #1/INFO]: Thread RCON Client /127.0.0.1 started
+[00:43:38] [Server thread/INFO]: [Rcon: Stopping the server]
+[00:43:38] [RCON Client /127.0.0.1 #2/INFO]: Thread RCON Client /127.0.0.1 shutting down
+[00:43:38] [Server thread/INFO]: Stopping server
+[00:43:38] [Server thread/INFO]: Saving players
+[00:43:38] [Server thread/INFO]: Saving worlds
+[00:43:38] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[00:43:39] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[00:43:39] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/svarcade_tcg:duel_realm
+[00:43:39] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[00:43:39] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[00:43:39] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[00:43:39] [Server thread/INFO]: ThreadedAnvilChunkStorage (duel_realm): All chunks are saved
+[00:43:39] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[00:43:39] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
+[00:43:39] [Server thread/INFO]: Thread RCON Listener stopped

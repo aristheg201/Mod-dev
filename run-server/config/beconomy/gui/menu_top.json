@@ -1,0 +1,107 @@
+{
+  "title": "&6ᴛᴏᴘ ᴘʟᴀʏᴇʀ ʙᴀʟᴀɴᴄᴇs",
+  "size": 54,
+  "fillersEnabled": true,
+  "fillers": [
+    {
+      "name": " ",
+      "lore": [],
+      "icon": "minecraft:black_stained_glass_pane",
+      "slots": [
+        "0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,44,45,46,47,48,49,50,51,52,53"
+      ],
+      "glow": false,
+      "hideAdditionalTooltip": true,
+      "hideTooltip": true
+    }
+  ],
+  "headSlots": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+  ],
+  "nextPageButton": {
+    "slot": 53,
+    "material": "minecraft:arrow",
+    "name": "&aɴᴇxᴛ ᴘᴀɢᴇ",
+    "customModelData": 0,
+    "lore": [],
+    "glow": false,
+    "hideAdditionalTooltip": true,
+    "hideTooltip": false
+  },
+  "prevPageButton": {
+    "slot": 45,
+    "material": "minecraft:arrow",
+    "name": "&aᴘʀᴇᴠɪᴏᴜs ᴘᴀɢᴇ",
+    "customModelData": 0,
+    "lore": [],
+    "glow": false,
+    "hideAdditionalTooltip": true,
+    "hideTooltip": false
+  },
+  "closeButton": {
+    "slot": 49,
+    "material": "minecraft:barrier",
+    "name": "&cᴄʟᴏsᴇ",
+    "customModelData": 0,
+    "lore": [],
+    "glow": false,
+    "hideAdditionalTooltip": true,
+    "hideTooltip": false
+  },
+  "headLore": [
+    "&7ɴᴀᴍᴇ: &8%playerName%",
+    "&7ʙᴀʟᴀɴᴄᴇ: &8&e%balance%",
+    "&7sᴛᴀᴛᴜs: %status%"
+  ],
+  "currencyButton": {
+    "slot": 51,
+    "material": "minecraft:emerald",
+    "name": "&bCurrency: &f%currencyType%",
+    "customModelData": 0,
+    "lore": [
+      "&7ʟᴇꜰᴛ-ᴄʟɪᴄᴋ: ᴄʜᴀɴɢᴇ ᴄᴜʀʀᴇɴᴄʏ"
+    ],
+    "glow": false,
+    "hideAdditionalTooltip": true,
+    "hideTooltip": false
+  },
+  "sortButton": {
+    "slot": 47,
+    "material": "minecraft:compass",
+    "name": "&bSort: &f%sort%",
+    "customModelData": 0,
+    "lore": [
+      "&7ʟᴇꜰᴛ-ᴄʟɪᴄᴋ: ᴄʜᴀɴɢᴇ sᴏʀᴛɪɴɢ"
+    ],
+    "glow": false,
+    "hideAdditionalTooltip": true,
+    "hideTooltip": false
+  }
+}

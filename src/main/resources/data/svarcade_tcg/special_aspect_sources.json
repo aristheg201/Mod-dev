@@ -1,0 +1,200 @@
+{
+  "provider": "mega_showdown",
+  "version": "1.2.0+1.8.1+1.21.1-release",
+  "sha256": "d724243bdfdd12c266ddf5f5fa0df36c68a759258f015469ed1c405f3ba261a7",
+  "requestedThemesFound": [],
+  "cards": [
+    {
+      "id": "special_lucario_mega",
+      "species": "cobblemon:lucario",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0448_lucario/1_lucario_mega.json"
+    },
+    {
+      "id": "special_mewtwo_mega_x",
+      "species": "cobblemon:mewtwo",
+      "aspects": [
+        "mega_x"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0150_mewtwo/2_mewtwo_mega_x.json"
+    },
+    {
+      "id": "special_mewtwo_mega_y",
+      "species": "cobblemon:mewtwo",
+      "aspects": [
+        "mega_y"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0150_mewtwo/3_mewtwo_mega_y.json"
+    },
+    {
+      "id": "special_venusaur_mega",
+      "species": "cobblemon:venusaur",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0003_venusaur/2_venusaur_mega.json"
+    },
+    {
+      "id": "special_venusaur_gmax",
+      "species": "cobblemon:venusaur",
+      "aspects": [
+        "gmax"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0003_venusaur/3_venusaur_gmax.json"
+    },
+    {
+      "id": "special_charizard_mega_x",
+      "species": "cobblemon:charizard",
+      "aspects": [
+        "mega_x"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0006_charizard/2_charizard_mega_x.json"
+    },
+    {
+      "id": "special_charizard_mega_y",
+      "species": "cobblemon:charizard",
+      "aspects": [
+        "mega_y"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0006_charizard/1_charizard_mega_y.json"
+    },
+    {
+      "id": "special_blastoise_mega",
+      "species": "cobblemon:blastoise",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0009_blastoise/1_blastoise_mega.json"
+    },
+    {
+      "id": "special_gengar_mega",
+      "species": "cobblemon:gengar",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0094_gengar/1_gengar_mega.json"
+    },
+    {
+      "id": "special_gardevoir_mega",
+      "species": "cobblemon:gardevoir",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0282_gardevoir/1_gardevoir_mega.json"
+    },
+    {
+      "id": "special_gallade_mega",
+      "species": "cobblemon:gallade",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0475_gallade/1_gallade_mega.json"
+    },
+    {
+      "id": "special_salamence_mega",
+      "species": "cobblemon:salamence",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0373_salamence/1_salamence_mega.json"
+    },
+    {
+      "id": "special_metagross_mega",
+      "species": "cobblemon:metagross",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0376_metagross/1_metagross_mega.json"
+    },
+    {
+      "id": "special_rayquaza_mega",
+      "species": "cobblemon:rayquaza",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0384_rayquaza/1_rayquaza_mega.json"
+    },
+    {
+      "id": "special_ampharos_mega",
+      "species": "cobblemon:ampharos",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0181_ampharos/1_ampharos_mega.json"
+    },
+    {
+      "id": "special_gyarados_mega",
+      "species": "cobblemon:gyarados",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0130_gyarados/2_gyarados_mega.json"
+    },
+    {
+      "id": "special_tyranitar_mega",
+      "species": "cobblemon:tyranitar",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0248_tyranitar/1_tyranitar_mega.json"
+    },
+    {
+      "id": "special_sceptile_mega",
+      "species": "cobblemon:sceptile",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0254_sceptile/1_sceptile_mega.json"
+    },
+    {
+      "id": "special_blaziken_mega",
+      "species": "cobblemon:blaziken",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0257_blaziken/2_blaziken_mega.json"
+    },
+    {
+      "id": "special_swampert_mega",
+      "species": "cobblemon:swampert",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0260_swampert/1_swampert_mega.json"
+    },
+    {
+      "id": "special_mawile_mega",
+      "species": "cobblemon:mawile",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0303_mawile/1_mawile_mega.json"
+    },
+    {
+      "id": "special_banette_mega",
+      "species": "cobblemon:banette",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0354_banette/1_banette_mega.json"
+    },
+    {
+      "id": "special_absol_mega",
+      "species": "cobblemon:absol",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0359_absol/1_absol_mega.json"
+    },
+    {
+      "id": "special_kangaskhan_mega",
+      "species": "cobblemon:kangaskhan",
+      "aspects": [
+        "mega"
+      ],
+      "resource": "assets/cobblemon/bedrock/pokemon/resolvers/0115_kangaskhan/1_kangaskhan_mega.json"
+    }
+  ]
+}

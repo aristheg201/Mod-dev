@@ -1,0 +1,109 @@
+{
+  "currencyType": "CobbleCoins",
+  "enabled": true,
+  "title": "&f%balance% %symbol%",
+  "size": 36,
+  "depositSlots": [
+    "11-15"
+  ],
+  "behavior": {
+    "leftClick": "STACK",
+    "rightClick": "ONE",
+    "shiftClick": true,
+    "hotbarKeys": true,
+    "depositAllIncludesHotbar": true
+  },
+  "feedback": {
+    "successMessage": "",
+    "invalidMessage": "",
+    "successSound": {
+      "enabled": true,
+      "id": "minecraft:entity.experience_orb.pickup",
+      "volume": 0.5,
+      "pitch": 1.5
+    },
+    "invalidSound": {
+      "enabled": true,
+      "id": "minecraft:block.note_block.bass",
+      "volume": 0.5,
+      "pitch": 0.7
+    }
+  },
+  "commands": {
+    "enabled": false,
+    "aliases": [],
+    "permission": "beconomy.depositgui.%currencyType%"
+  },
+  "fillersEnabled": true,
+  "fillers": [
+    {
+      "material": "minecraft:black_stained_glass_pane",
+      "name": " ",
+      "lore": [],
+      "slots": [
+        "0-3",
+        "5-10",
+        "16-30",
+        "32-35"
+      ],
+      "glow": false,
+      "hideAdditionalTooltip": true,
+      "hideTooltip": true
+    }
+  ],
+  "items": [
+    {
+      "slots": [
+        "4"
+      ],
+      "type": "button",
+      "material": "minecraft:emerald",
+      "name": "&aDeposit All",
+      "lore": [
+        "&7Deposit every valid",
+        "&7%currencyType% banknote.",
+        "",
+        "&fBalance: &e%balance% %symbol%"
+      ],
+      "glow": false,
+      "hideAdditionalTooltip": true,
+      "hideTooltip": false,
+      "actions": {
+        "leftClick": {
+          "type": "deposit_all",
+          "value": "",
+          "closeAfterAction": false
+        },
+        "rightClick": {
+          "type": "deposit_all",
+          "value": "",
+          "closeAfterAction": false
+        }
+      }
+    },
+    {
+      "slots": [
+        "31"
+      ],
+      "type": "button",
+      "material": "minecraft:barrier",
+      "name": "&cClose",
+      "lore": [],
+      "glow": false,
+      "hideAdditionalTooltip": true,
+      "hideTooltip": false,
+      "actions": {
+        "leftClick": {
+          "type": "close",
+          "value": "",
+          "closeAfterAction": false
+        },
+        "rightClick": {
+          "type": "close",
+          "value": "",
+          "closeAfterAction": false
+        }
+      }
+    }
+  ]
+}

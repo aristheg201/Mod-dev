@@ -1,0 +1,652 @@
+﻿Compiled from "PokemonGuiUtilsKt.java"
+public final class com.cobblemon.mod.common.client.gui.PokemonGuiUtilsKt {
+  public static final float HEAD_YAW_FACTOR;
+
+  public static final float HEAD_PITCH_FACTOR;
+
+  public static final float SMOOTHING_FACTOR;
+
+  public static final void drawProfilePokemon(com.cobblemon.mod.common.pokemon.RenderablePokemon, net.minecraft.client.util.math.MatrixStack, org.joml.Quaternionf, com.cobblemon.mod.common.entity.PoseType, com.cobblemon.mod.common.client.render.models.blockbench.PosableState, float, float, com.cobblemon.mod.common.client.gui.ProfileTransformType, boolean, float, float, float, float, float, float, int);
+    Code:
+       0: aload_0
+       1: ldc           #87                 // String renderablePokemon
+       3: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_1
+       7: ldc           #94                 // String matrixStack
+       9: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      12: aload_2
+      13: ldc           #95                 // String rotation
+      15: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      18: aload_3
+      19: ldc           #96                 // String poseType
+      21: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      24: aload         4
+      26: ldc           #97                 // String state
+      28: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      31: aload         7
+      33: ldc           #98                 // String profileTransformType
+      35: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      38: aload_0
+      39: invokevirtual #104                // Method com/cobblemon/mod/common/pokemon/RenderablePokemon.getSpecies:()Lcom/cobblemon/mod/common/pokemon/Species;
+      42: invokevirtual #110                // Method com/cobblemon/mod/common/pokemon/Species.getResourceIdentifier:()Lnet/minecraft/util/Identifier;
+      45: aload_1
+      46: aload_2
+      47: aload_3
+      48: aload         4
+      50: astore        16
+      52: aload         16
+      54: astore        17
+      56: astore        22
+      58: astore        21
+      60: astore        20
+      62: astore        19
+      64: iconst_0
+      65: istore        18
+      67: aload         17
+      69: aload_0
+      70: invokevirtual #114                // Method com/cobblemon/mod/common/pokemon/RenderablePokemon.getAspects:()Ljava/util/Set;
+      73: invokevirtual #120                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableState.setCurrentAspects:(Ljava/util/Set;)V
+      76: getstatic     #126                // Field kotlin/Unit.INSTANCE:Lkotlin/Unit;
+      79: astore        23
+      81: aload         19
+      83: aload         20
+      85: aload         21
+      87: aload         22
+      89: aload         16
+      91: fload         5
+      93: fload         6
+      95: aload         7
+      97: iload         8
+      99: iconst_0
+     100: fload         9
+     102: fload         10
+     104: fload         11
+     106: fload         12
+     108: fload         13
+     110: fload         14
+     112: iload         15
+     114: sipush        512
+     117: aconst_null
+     118: invokestatic  #130                // Method drawProfilePokemon$default:(Lnet/minecraft/util/Identifier;Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Quaternionf;Lcom/cobblemon/mod/common/entity/PoseType;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;FFLcom/cobblemon/mod/common/client/gui/ProfileTransformType;ZZFFFFFFIILjava/lang/Object;)V
+     121: return
+
+  public static void drawProfilePokemon$default(com.cobblemon.mod.common.pokemon.RenderablePokemon, net.minecraft.client.util.math.MatrixStack, org.joml.Quaternionf, com.cobblemon.mod.common.entity.PoseType, com.cobblemon.mod.common.client.render.models.blockbench.PosableState, float, float, com.cobblemon.mod.common.client.gui.ProfileTransformType, boolean, float, float, float, float, float, float, int, int, java.lang.Object);
+    Code:
+       0: iload         16
+       2: bipush        8
+       4: iand
+       5: ifeq          12
+       8: getstatic     #141                // Field com/cobblemon/mod/common/entity/PoseType.PROFILE:Lcom/cobblemon/mod/common/entity/PoseType;
+      11: astore_3
+      12: iload         16
+      14: bipush        64
+      16: iand
+      17: ifeq          24
+      20: ldc           #83                 // float 20.0f
+      22: fstore        6
+      24: iload         16
+      26: sipush        128
+      29: iand
+      30: ifeq          38
+      33: getstatic     #145                // Field com/cobblemon/mod/common/client/gui/ProfileTransformType.PROFILE:Lcom/cobblemon/mod/common/client/gui/ProfileTransformType;
+      36: astore        7
+      38: iload         16
+      40: sipush        256
+      43: iand
+      44: ifeq          50
+      47: iconst_0
+      48: istore        8
+      50: iload         16
+      52: sipush        512
+      55: iand
+      56: ifeq          62
+      59: fconst_1
+      60: fstore        9
+      62: iload         16
+      64: sipush        1024
+      67: iand
+      68: ifeq          74
+      71: fconst_1
+      72: fstore        10
+      74: iload         16
+      76: sipush        2048
+      79: iand
+      80: ifeq          86
+      83: fconst_1
+      84: fstore        11
+      86: iload         16
+      88: sipush        4096
+      91: iand
+      92: ifeq          98
+      95: fconst_1
+      96: fstore        12
+      98: iload         16
+     100: sipush        8192
+     103: iand
+     104: ifeq          110
+     107: fconst_0
+     108: fstore        13
+     110: iload         16
+     112: sipush        16384
+     115: iand
+     116: ifeq          122
+     119: fconst_0
+     120: fstore        14
+     122: iload         16
+     124: ldc           #146                // int 32768
+     126: iand
+     127: ifeq          134
+     130: bipush        13
+     132: istore        15
+     134: aload_0
+     135: aload_1
+     136: aload_2
+     137: aload_3
+     138: aload         4
+     140: fload         5
+     142: fload         6
+     144: aload         7
+     146: iload         8
+     148: fload         9
+     150: fload         10
+     152: fload         11
+     154: fload         12
+     156: fload         13
+     158: fload         14
+     160: iload         15
+     162: invokestatic  #148                // Method drawProfilePokemon:(Lcom/cobblemon/mod/common/pokemon/RenderablePokemon;Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Quaternionf;Lcom/cobblemon/mod/common/entity/PoseType;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;FFLcom/cobblemon/mod/common/client/gui/ProfileTransformType;ZFFFFFFI)V
+     165: return
+
+  public static final void drawProfilePokemon(net.minecraft.util.Identifier, net.minecraft.client.util.math.MatrixStack, org.joml.Quaternionf, com.cobblemon.mod.common.entity.PoseType, com.cobblemon.mod.common.client.render.models.blockbench.PosableState, float, float, com.cobblemon.mod.common.client.gui.ProfileTransformType, boolean, boolean, float, float, float, float, float, float, int);
+    Code:
+       0: aload_0
+       1: ldc           #150                // String species
+       3: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_1
+       7: ldc           #94                 // String matrixStack
+       9: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      12: aload_2
+      13: ldc           #95                 // String rotation
+      15: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      18: aload_3
+      19: ldc           #96                 // String poseType
+      21: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      24: aload         4
+      26: ldc           #97                 // String state
+      28: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      31: aload         7
+      33: ldc           #98                 // String profileTransformType
+      35: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      38: invokestatic  #156                // Method com/mojang/blaze3d/systems/RenderSystem.applyModelViewMatrix:()V
+      41: aload_1
+      42: fload         6
+      44: fload         6
+      46: fload         6
+      48: fneg
+      49: invokevirtual #161                // Method net/minecraft/client/util/math/MatrixStack.scale:(FFF)V
+      52: getstatic     #166                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.INSTANCE:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository;
+      55: aload_0
+      56: aload         4
+      58: getstatic     #171                // Field com/cobblemon/mod/common/client/render/SpriteType.PROFILE:Lcom/cobblemon/mod/common/client/render/SpriteType;
+      61: invokevirtual #175                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.getSprite:(Lnet/minecraft/util/Identifier;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;Lcom/cobblemon/mod/common/client/render/SpriteType;)Lnet/minecraft/util/Identifier;
+      64: astore        17
+      66: aload         17
+      68: ifnonnull     679
+      71: getstatic     #166                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.INSTANCE:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository;
+      74: aload_0
+      75: aload         4
+      77: invokevirtual #179                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.getPoser:(Lnet/minecraft/util/Identifier;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;)Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableModel;
+      80: astore        18
+      82: getstatic     #166                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.INSTANCE:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository;
+      85: aload_0
+      86: aload         4
+      88: invokevirtual #183                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.getTexture:(Lnet/minecraft/util/Identifier;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;)Lnet/minecraft/util/Identifier;
+      91: astore        19
+      93: new           #69                 // class com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext
+      96: dup
+      97: invokespecial #186                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext."<init>":()V
+     100: astore        20
+     102: aload         18
+     104: aload         20
+     106: invokevirtual #192                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.setContext:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext;)V
+     109: getstatic     #166                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.INSTANCE:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository;
+     112: aload_0
+     113: aload         4
+     115: invokevirtual #195                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.getTextureNoSubstitute:(Lnet/minecraft/util/Identifier;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;)Lnet/minecraft/util/Identifier;
+     118: astore        22
+     120: iconst_0
+     121: istore        23
+     123: aload         20
+     125: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     128: invokevirtual #202                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getTEXTURE:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     131: aload         22
+     133: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     136: nop
+     137: aload_0
+     138: invokestatic  #212                // Method com/cobblemon/mod/common/api/pokemon/PokemonSpecies.getByIdentifier:(Lnet/minecraft/util/Identifier;)Lcom/cobblemon/mod/common/pokemon/Species;
+     141: dup
+     142: invokestatic  #216                // Method kotlin/jvm/internal/Intrinsics.checkNotNull:(Ljava/lang/Object;)V
+     145: aload         4
+     147: invokevirtual #219                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableState.getCurrentAspects:()Ljava/util/Set;
+     150: invokevirtual #223                // Method com/cobblemon/mod/common/pokemon/Species.getForm:(Ljava/util/Set;)Lcom/cobblemon/mod/common/pokemon/FormData;
+     153: invokevirtual #229                // Method com/cobblemon/mod/common/pokemon/FormData.getBaseScale:()F
+     156: fstore        21
+     158: aload         20
+     160: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     163: invokevirtual #232                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getSCALE:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     166: fload         21
+     168: invokestatic  #238                // Method java/lang/Float.valueOf:(F)Ljava/lang/Float;
+     171: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     174: aload         20
+     176: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     179: invokevirtual #241                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getSPECIES:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     182: aload_0
+     183: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     186: aload         20
+     188: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     191: invokevirtual #244                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getASPECTS:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     194: aload         4
+     196: invokevirtual #219                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableState.getCurrentAspects:()Ljava/util/Set;
+     199: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     202: aload         20
+     204: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     207: invokevirtual #247                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getRENDER_STATE:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     210: getstatic     #250                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$RenderState.PROFILE:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$RenderState;
+     213: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     216: aload         20
+     218: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     221: invokevirtual #253                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getPOSABLE_STATE:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     224: aload         4
+     226: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     229: aload         20
+     231: getstatic     #198                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.Companion:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion;
+     234: invokevirtual #256                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Companion.getDO_QUIRKS:()Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;
+     237: iload         9
+     239: invokestatic  #261                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     242: invokevirtual #206                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext.put:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext$Key;Ljava/lang/Object;)V
+     245: aload         4
+     247: aload         18
+     249: invokevirtual #265                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableState.setCurrentModel:(Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableModel;)V
+     252: aload         19
+     254: invokestatic  #271                // Method net/minecraft/client/render/RenderLayer.getEntityCutout:(Lnet/minecraft/util/Identifier;)Lnet/minecraft/client/render/RenderLayer;
+     257: astore        22
+     259: aload         4
+     261: aload_3
+     262: invokevirtual #275                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableState.setPoseToFirstSuitable:(Lcom/cobblemon/mod/common/entity/PoseType;)V
+     265: aload         4
+     267: fload         5
+     269: invokevirtual #279                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableState.updatePartialTicks:(F)V
+     272: aload         7
+     274: getstatic     #282                // Field com/cobblemon/mod/common/client/gui/ProfileTransformType.NONE:Lcom/cobblemon/mod/common/client/gui/ProfileTransformType;
+     277: if_acmpne     310
+     280: aload_1
+     281: fconst_0
+     282: fconst_0
+     283: ldc_w         #283                // float -4.0f
+     286: invokevirtual #286                // Method net/minecraft/client/util/math/MatrixStack.translate:(FFF)V
+     289: iload         8
+     291: ifeq          492
+     294: aload_1
+     295: fload         21
+     297: fload         21
+     299: iconst_1
+     300: i2f
+     301: fload         21
+     303: fdiv
+     304: invokevirtual #161                // Method net/minecraft/client/util/math/MatrixStack.scale:(FFF)V
+     307: goto          492
+     310: fconst_0
+     311: fstore        23
+     313: aconst_null
+     314: astore        24
+     316: aload         7
+     318: getstatic     #294                // Field com/cobblemon/mod/common/client/gui/PokemonGuiUtilsKt$WhenMappings.$EnumSwitchMapping$0:[I
+     321: swap
+     322: invokevirtual #298                // Method com/cobblemon/mod/common/client/gui/ProfileTransformType.ordinal:()I
+     325: iaload
+     326: tableswitch   { // 1 to 2
+
+                     1: 348
+
+                     2: 391
+               default: 434
+          }
+     348: aload         18
+     350: invokevirtual #302                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfilePokedexScale:()Ljava/lang/Float;
+     353: dup
+     354: ifnull        363
+     357: invokevirtual #305                // Method java/lang/Float.floatValue:()F
+     360: goto          369
+     363: pop
+     364: aload         18
+     366: invokevirtual #308                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileScale:()F
+     369: fstore        23
+     371: aload         18
+     373: invokevirtual #312                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfilePokedexTranslation:()Lnet/minecraft/util/math/Vec3d;
+     376: dup
+     377: ifnonnull     386
+     380: pop
+     381: aload         18
+     383: invokevirtual #315                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileTranslation:()Lnet/minecraft/util/math/Vec3d;
+     386: astore        24
+     388: goto          448
+     391: aload         18
+     393: invokevirtual #320                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileSummaryScale:()Ljava/lang/Float;
+     396: dup
+     397: ifnull        406
+     400: invokevirtual #305                // Method java/lang/Float.floatValue:()F
+     403: goto          412
+     406: pop
+     407: aload         18
+     409: invokevirtual #308                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileScale:()F
+     412: fstore        23
+     414: aload         18
+     416: invokevirtual #323                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileSummaryTranslation:()Lnet/minecraft/util/math/Vec3d;
+     419: dup
+     420: ifnonnull     429
+     423: pop
+     424: aload         18
+     426: invokevirtual #315                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileTranslation:()Lnet/minecraft/util/math/Vec3d;
+     429: astore        24
+     431: goto          448
+     434: aload         18
+     436: invokevirtual #308                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileScale:()F
+     439: fstore        23
+     441: aload         18
+     443: invokevirtual #315                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.getProfileTranslation:()Lnet/minecraft/util/math/Vec3d;
+     446: astore        24
+     448: aload_1
+     449: aload         24
+     451: getfield      #327                // Field net/minecraft/util/math/Vec3d.x:D
+     454: aload         24
+     456: getfield      #330                // Field net/minecraft/util/math/Vec3d.y:D
+     459: ldc2_w        #331                // double 1.5d
+     462: fload         23
+     464: f2d
+     465: dmul
+     466: dadd
+     467: aload         24
+     469: getfield      #335                // Field net/minecraft/util/math/Vec3d.z:D
+     472: ldc2_w        #336                // double 4.0d
+     475: dsub
+     476: invokevirtual #340                // Method net/minecraft/client/util/math/MatrixStack.translate:(DDD)V
+     479: aload_1
+     480: fload         23
+     482: fload         23
+     484: iconst_1
+     485: i2f
+     486: fload         23
+     488: fdiv
+     489: invokevirtual #161                // Method net/minecraft/client/util/math/MatrixStack.scale:(FFF)V
+     492: aload_1
+     493: aload_2
+     494: invokevirtual #344                // Method net/minecraft/client/util/math/MatrixStack.multiply:(Lorg/joml/Quaternionf;)V
+     497: aload         18
+     499: aconst_null
+     500: aload         4
+     502: fconst_0
+     503: fconst_0
+     504: fconst_0
+     505: fload         14
+     507: fload         15
+     509: invokevirtual #348                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.applyAnimations:(Lnet/minecraft/entity/Entity;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;FFFFF)V
+     512: invokestatic  #353                // Method net/minecraft/client/render/DiffuseLighting.method_34742:()V
+     515: invokestatic  #359                // Method net/minecraft/client/MinecraftClient.getInstance:()Lnet/minecraft/client/MinecraftClient;
+     518: invokevirtual #363                // Method net/minecraft/client/MinecraftClient.getEntityRenderDispatcher:()Lnet/minecraft/client/render/entity/EntityRenderDispatcher;
+     521: astore        23
+     523: aload_2
+     524: invokevirtual #367                // Method org/joml/Quaternionf.conjugate:()Lorg/joml/Quaternionf;
+     527: pop
+     528: aload         23
+     530: aload_2
+     531: invokevirtual #372                // Method net/minecraft/client/render/entity/EntityRenderDispatcher.setRotation:(Lorg/joml/Quaternionf;)V
+     534: aload         23
+     536: iconst_1
+     537: invokevirtual #376                // Method net/minecraft/client/render/entity/EntityRenderDispatcher.setRenderShadows:(Z)V
+     540: invokestatic  #359                // Method net/minecraft/client/MinecraftClient.getInstance:()Lnet/minecraft/client/MinecraftClient;
+     543: invokevirtual #380                // Method net/minecraft/client/MinecraftClient.getBufferBuilders:()Lnet/minecraft/client/render/BufferBuilderStorage;
+     546: invokevirtual #386                // Method net/minecraft/client/render/BufferBuilderStorage.getEntityVertexConsumers:()Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;
+     549: astore        24
+     551: aload         24
+     553: aload         22
+     555: invokevirtual #390                // Method net/minecraft/client/render/VertexConsumerProvider$Immediate.getBuffer:(Lnet/minecraft/client/render/RenderLayer;)Lnet/minecraft/client/render/VertexConsumer;
+     558: astore        25
+     560: new           #392                // class org/joml/Vector3f
+     563: dup
+     564: ldc_w         #393                // float -1.0f
+     567: fconst_1
+     568: fconst_1
+     569: invokespecial #395                // Method org/joml/Vector3f."<init>":(FFF)V
+     572: astore        26
+     574: new           #392                // class org/joml/Vector3f
+     577: dup
+     578: ldc_w         #396                // float 1.3f
+     581: ldc_w         #393                // float -1.0f
+     584: fconst_1
+     585: invokespecial #395                // Method org/joml/Vector3f."<init>":(FFF)V
+     588: astore        27
+     590: aload         26
+     592: aload         27
+     594: invokestatic  #400                // Method com/mojang/blaze3d/systems/RenderSystem.setShaderLights:(Lorg/joml/Vector3f;Lorg/joml/Vector3f;)V
+     597: iload         16
+     599: iconst_0
+     600: invokestatic  #406                // Method net/minecraft/client/render/LightmapTextureManager.pack:(II)I
+     603: istore        28
+     605: fload         10
+     607: fload         11
+     609: fload         12
+     611: fload         13
+     613: invokestatic  #412                // Method com/cobblemon/mod/common/util/MiscUtilsKt.toHex:(FFFF)I
+     616: istore        29
+     618: aload         18
+     620: aload         24
+     622: invokestatic  #216                // Method kotlin/jvm/internal/Intrinsics.checkNotNull:(Ljava/lang/Object;)V
+     625: aload         24
+     627: checkcast     #80                 // class net/minecraft/client/render/VertexConsumerProvider
+     630: aload         4
+     632: getstatic     #166                // Field com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.INSTANCE:Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository;
+     635: aload_0
+     636: aload         4
+     638: invokevirtual #416                // Method com/cobblemon/mod/common/client/render/models/blockbench/repository/VaryingModelRepository.getLayers:(Lnet/minecraft/util/Identifier;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;)Ljava/lang/Iterable;
+     641: aload         18
+     643: aload         20
+     645: aload_1
+     646: aload         25
+     648: iload         28
+     650: iload         29
+     652: aload         24
+     654: invokedynamic #436,  0            // InvokeDynamic #0:invoke:(Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableModel;Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IILnet/minecraft/client/render/VertexConsumerProvider$Immediate;)Lkotlin/jvm/functions/Function0;
+     659: invokevirtual #440                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.withLayerContext:(Lnet/minecraft/client/render/VertexConsumerProvider;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;Ljava/lang/Iterable;Lkotlin/jvm/functions/Function0;)V
+     662: aload         18
+     664: invokevirtual #443                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.setDefault:()V
+     667: aload         23
+     669: iconst_1
+     670: invokevirtual #376                // Method net/minecraft/client/render/entity/EntityRenderDispatcher.setRenderShadows:(Z)V
+     673: invokestatic  #446                // Method net/minecraft/client/render/DiffuseLighting.enableGuiDepthLighting:()V
+     676: goto          685
+     679: aload_1
+     680: aload         17
+     682: invokestatic  #452                // Method com/cobblemon/mod/common/api/gui/GuiUtilsKt.renderSprite:(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/Identifier;)V
+     685: return
+
+  public static void drawProfilePokemon$default(net.minecraft.util.Identifier, net.minecraft.client.util.math.MatrixStack, org.joml.Quaternionf, com.cobblemon.mod.common.entity.PoseType, com.cobblemon.mod.common.client.render.models.blockbench.PosableState, float, float, com.cobblemon.mod.common.client.gui.ProfileTransformType, boolean, boolean, float, float, float, float, float, float, int, int, java.lang.Object);
+    Code:
+       0: iload         17
+       2: bipush        8
+       4: iand
+       5: ifeq          12
+       8: getstatic     #141                // Field com/cobblemon/mod/common/entity/PoseType.PROFILE:Lcom/cobblemon/mod/common/entity/PoseType;
+      11: astore_3
+      12: iload         17
+      14: bipush        64
+      16: iand
+      17: ifeq          24
+      20: ldc           #83                 // float 20.0f
+      22: fstore        6
+      24: iload         17
+      26: sipush        128
+      29: iand
+      30: ifeq          38
+      33: getstatic     #145                // Field com/cobblemon/mod/common/client/gui/ProfileTransformType.PROFILE:Lcom/cobblemon/mod/common/client/gui/ProfileTransformType;
+      36: astore        7
+      38: iload         17
+      40: sipush        256
+      43: iand
+      44: ifeq          50
+      47: iconst_0
+      48: istore        8
+      50: iload         17
+      52: sipush        512
+      55: iand
+      56: ifeq          62
+      59: iconst_0
+      60: istore        9
+      62: iload         17
+      64: sipush        1024
+      67: iand
+      68: ifeq          74
+      71: fconst_1
+      72: fstore        10
+      74: iload         17
+      76: sipush        2048
+      79: iand
+      80: ifeq          86
+      83: fconst_1
+      84: fstore        11
+      86: iload         17
+      88: sipush        4096
+      91: iand
+      92: ifeq          98
+      95: fconst_1
+      96: fstore        12
+      98: iload         17
+     100: sipush        8192
+     103: iand
+     104: ifeq          110
+     107: fconst_1
+     108: fstore        13
+     110: iload         17
+     112: sipush        16384
+     115: iand
+     116: ifeq          122
+     119: fconst_0
+     120: fstore        14
+     122: iload         17
+     124: ldc           #146                // int 32768
+     126: iand
+     127: ifeq          133
+     130: fconst_0
+     131: fstore        15
+     133: iload         17
+     135: ldc_w         #478                // int 65536
+     138: iand
+     139: ifeq          146
+     142: bipush        13
+     144: istore        16
+     146: aload_0
+     147: aload_1
+     148: aload_2
+     149: aload_3
+     150: aload         4
+     152: fload         5
+     154: fload         6
+     156: aload         7
+     158: iload         8
+     160: iload         9
+     162: fload         10
+     164: fload         11
+     166: fload         12
+     168: fload         13
+     170: fload         14
+     172: fload         15
+     174: iload         16
+     176: invokestatic  #480                // Method drawProfilePokemon:(Lnet/minecraft/util/Identifier;Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Quaternionf;Lcom/cobblemon/mod/common/entity/PoseType;Lcom/cobblemon/mod/common/client/render/models/blockbench/PosableState;FFLcom/cobblemon/mod/common/client/gui/ProfileTransformType;ZZFFFFFFI)V
+     179: return
+
+  public static final kotlin.Pair<java.lang.Float, java.lang.Float> calculateHeadYawAndPitch(float, float, org.joml.Quaternionf, int, int, float, float, boolean);
+    Code:
+       0: aload_2
+       1: ldc           #95                 // String rotation
+       3: invokestatic  #93                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: fload_0
+       7: iload_3
+       8: i2f
+       9: fsub
+      10: ldc           #82                 // float 40.0f
+      12: fdiv
+      13: f2d
+      14: invokestatic  #487                // Method java/lang/Math.atan:(D)D
+      17: d2f
+      18: fstore        8
+      20: fload_1
+      21: iload         4
+      23: i2f
+      24: fsub
+      25: ldc           #82                 // float 40.0f
+      27: fdiv
+      28: f2d
+      29: invokestatic  #487                // Method java/lang/Math.atan:(D)D
+      32: d2f
+      33: fstore        9
+      35: aload_2
+      36: invokestatic  #493                // Method com/cobblemon/mod/common/util/math/QuaternionUtilsKt.toEulerXYZDegrees:(Lorg/joml/Quaternionf;)Lorg/joml/Vector3f;
+      39: astore        10
+      41: iload         7
+      43: ifne          60
+      46: fload         8
+      48: ldc           #82                 // float 40.0f
+      50: fmul
+      51: aload         10
+      53: getfield      #495                // Field org/joml/Vector3f.y:F
+      56: fsub
+      57: goto          61
+      60: fconst_0
+      61: fstore        11
+      63: iload         7
+      65: ifne          83
+      68: fload         9
+      70: fneg
+      71: ldc           #83                 // float 20.0f
+      73: fmul
+      74: aload         10
+      76: getfield      #497                // Field org/joml/Vector3f.x:F
+      79: fsub
+      80: goto          84
+      83: fconst_0
+      84: fstore        12
+      86: ldc           #84                 // float 0.05f
+      88: fload         5
+      90: fload         11
+      92: invokestatic  #503                // Method net/minecraft/util/math/MathHelper.lerpAngleDegrees:(FFF)F
+      95: fstore        13
+      97: ldc           #84                 // float 0.05f
+      99: fload         6
+     101: fload         12
+     103: invokestatic  #503                // Method net/minecraft/util/math/MathHelper.lerpAngleDegrees:(FFF)F
+     106: fstore        14
+     108: new           #505                // class kotlin/Pair
+     111: dup
+     112: fload         13
+     114: invokestatic  #238                // Method java/lang/Float.valueOf:(F)Ljava/lang/Float;
+     117: fload         14
+     119: invokestatic  #238                // Method java/lang/Float.valueOf:(F)Ljava/lang/Float;
+     122: invokespecial #508                // Method kotlin/Pair."<init>":(Ljava/lang/Object;Ljava/lang/Object;)V
+     125: areturn
+
+  private static final kotlin.Unit drawProfilePokemon$lambda$2(com.cobblemon.mod.common.client.render.models.blockbench.PosableModel, com.cobblemon.mod.common.client.render.models.blockbench.repository.RenderContext, net.minecraft.client.util.math.MatrixStack, net.minecraft.client.render.VertexConsumer, int, int, net.minecraft.client.render.VertexConsumerProvider$Immediate);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: invokestatic  #216                // Method kotlin/jvm/internal/Intrinsics.checkNotNull:(Ljava/lang/Object;)V
+       7: aload_3
+       8: iload         4
+      10: getstatic     #527                // Field net/minecraft/client/render/OverlayTexture.DEFAULT_UV:I
+      13: iload         5
+      15: invokevirtual #531                // Method com/cobblemon/mod/common/client/render/models/blockbench/PosableModel.render:(Lcom/cobblemon/mod/common/client/render/models/blockbench/repository/RenderContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;III)V
+      18: aload         6
+      20: invokevirtual #534                // Method net/minecraft/client/render/VertexConsumerProvider$Immediate.draw:()V
+      23: getstatic     #126                // Field kotlin/Unit.INSTANCE:Lkotlin/Unit;
+      26: areturn
+}

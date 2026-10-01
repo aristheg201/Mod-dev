@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "updateIntervalTicks": 20,
+  "layout": "%economies%",
+  "separator": "   ",
+  "economies": []
+}

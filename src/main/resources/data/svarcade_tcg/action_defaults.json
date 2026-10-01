@@ -1,0 +1,218 @@
+{
+  "normal": {
+    "mode": "MELEE",
+    "profile": "normal",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "fire": {
+    "mode": "MELEE",
+    "profile": "fire",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "water": {
+    "mode": "PROJECTILE",
+    "profile": "water",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "electric": {
+    "mode": "PROJECTILE",
+    "profile": "electric",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "grass": {
+    "mode": "PROJECTILE",
+    "profile": "grass",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "ice": {
+    "mode": "BEAM",
+    "profile": "ice",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "psychic": {
+    "mode": "PROJECTILE",
+    "profile": "psychic",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "ghost": {
+    "mode": "PROJECTILE",
+    "profile": "ghost",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "dark": {
+    "mode": "MELEE",
+    "profile": "dark",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "fairy": {
+    "mode": "PROJECTILE",
+    "profile": "fairy",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "steel": {
+    "mode": "MELEE",
+    "profile": "steel",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "dragon": {
+    "mode": "BEAM",
+    "profile": "dragon",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "fighting": {
+    "mode": "MELEE",
+    "profile": "fighting",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "poison": {
+    "mode": "PROJECTILE",
+    "profile": "poison",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "ground": {
+    "mode": "AOE",
+    "profile": "ground",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "rock": {
+    "mode": "MELEE",
+    "profile": "rock",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "bug": {
+    "mode": "PROJECTILE",
+    "profile": "bug",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_SPECIAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  },
+  "flying": {
+    "mode": "MELEE",
+    "profile": "flying",
+    "duration": 1400,
+    "animation": {
+      "semantic": "ATTACK_PHYSICAL",
+      "windup": 0.25,
+      "release": 0.46,
+      "impact": 0.72,
+      "recovery": 0.9
+    }
+  }
+}

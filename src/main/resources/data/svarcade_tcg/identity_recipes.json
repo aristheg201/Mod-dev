@@ -1,0 +1,528 @@
+{
+  "setup": [
+    {
+      "type": "ADD_COUNTER",
+      "target": "SELF",
+      "amount": 1,
+      "flags": {
+        "counter": "focus",
+        "max": "3"
+      }
+    },
+    {
+      "type": "LOOK_TOP_DECK",
+      "target": "TOP_DECK",
+      "amount": 3
+    },
+    {
+      "type": "REMEMBER",
+      "target": "ENEMY_MONSTER",
+      "amount": 0,
+      "flags": {
+        "memory": "rival"
+      }
+    },
+    {
+      "type": "MODIFY_POWER",
+      "target": "SELF",
+      "amount": 250,
+      "duration": "TURN_END"
+    },
+    {
+      "type": "PREVENT_DESTROY",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "TURN_END"
+    },
+    {
+      "type": "MILL",
+      "target": "TOP_DECK",
+      "amount": 1
+    },
+    {
+      "type": "BANISH",
+      "target": "GRAVEYARD",
+      "amount": 0,
+      "condition": {
+        "type": "COUNT_AT_LEAST",
+        "target": "GRAVEYARD",
+        "value": "",
+        "amount": 1
+      }
+    },
+    {
+      "type": "CHANGE_POSITION",
+      "target": "ENEMY_MONSTER",
+      "amount": 0,
+      "flags": {
+        "position": "DEFENSE"
+      }
+    },
+    {
+      "type": "REMOVE_STATUS",
+      "target": "SELF",
+      "amount": 0,
+      "flags": {
+        "status": "ALL"
+      }
+    },
+    {
+      "type": "REMEMBER",
+      "target": "ALLY_MONSTER",
+      "amount": 0,
+      "flags": {
+        "memory": "partner"
+      }
+    },
+    {
+      "type": "RETURN_HAND",
+      "target": "GRAVEYARD",
+      "amount": 0,
+      "filter": {
+        "category": "pokemon",
+        "types": [
+          "$type"
+        ]
+      }
+    },
+    {
+      "type": "SEARCH",
+      "target": "DECK",
+      "amount": 1,
+      "filter": {
+        "category": "pokemon",
+        "tags": [
+          "$family"
+        ],
+        "maxLevel": 4
+      }
+    },
+    {
+      "type": "REORDER_DECK",
+      "target": "TOP_DECK",
+      "amount": 3,
+      "flags": {
+        "order": "POWER_DESC"
+      }
+    },
+    {
+      "type": "PIERCE",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "TURN_END"
+    },
+    {
+      "type": "PREVENT_TARGET",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "TURN_END"
+    },
+    {
+      "type": "REMOVE_COUNTER",
+      "target": "SELF",
+      "amount": 1,
+      "flags": {
+        "counter": "focus"
+      },
+      "condition": {
+        "type": "COUNTER_AT_LEAST",
+        "target": "SELF",
+        "value": "focus",
+        "amount": 1
+      }
+    }
+  ],
+  "payoff": [
+    {
+      "type": "IF",
+      "target": "SELF",
+      "amount": 0,
+      "condition": {
+        "type": "COUNTER_AT_LEAST",
+        "target": "SELF",
+        "value": "focus",
+        "amount": 2
+      },
+      "children": [
+        {
+          "type": "REMOVE_COUNTER",
+          "target": "SELF",
+          "amount": 2,
+          "flags": {
+            "counter": "focus"
+          }
+        },
+        {
+          "type": "DRAW",
+          "target": "SELF",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "type": "DELAY",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "NEXT_TURN_END",
+      "flags": {
+        "trigger": "ON_TURN_END"
+      },
+      "children": [
+        {
+          "type": "HEAL_LP",
+          "target": "SELF",
+          "amount": 500
+        }
+      ]
+    },
+    {
+      "type": "REVIVE",
+      "target": "GRAVEYARD",
+      "amount": 0,
+      "filter": {
+        "category": "pokemon",
+        "maxLevel": 4
+      },
+      "children": [
+        {
+          "type": "CANNOT_ATTACK",
+          "target": "SELF",
+          "amount": 0,
+          "duration": "NEXT_TURN_END"
+        }
+      ]
+    },
+    {
+      "type": "MODIFY_POWER",
+      "target": "ALL_ALLIES",
+      "amount": 100,
+      "duration": "TURN_END",
+      "filter": {
+        "category": "pokemon",
+        "types": [
+          "$type"
+        ]
+      }
+    },
+    {
+      "type": "IF",
+      "target": "SELF",
+      "amount": 0,
+      "condition": {
+        "type": "COUNT_AT_LEAST",
+        "target": "BANISHED",
+        "value": "",
+        "amount": 1
+      },
+      "children": [
+        {
+          "type": "RETURN_HAND",
+          "target": "BANISHED",
+          "amount": 0,
+          "filter": {
+            "category": "pokemon",
+            "types": [
+              "$type"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "CANNOT_ATTACK",
+      "target": "ENEMY_MONSTER",
+      "amount": 0,
+      "duration": "TURN_END",
+      "filter": {
+        "category": "pokemon",
+        "maxLevel": 4
+      }
+    },
+    {
+      "type": "DELAY",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "NEXT_TURN_END",
+      "flags": {
+        "trigger": "ON_TURN_START"
+      },
+      "children": [
+        {
+          "type": "REMOVE_STATUS",
+          "target": "SELF",
+          "amount": 0,
+          "flags": {
+            "status": "ALL"
+          }
+        }
+      ]
+    },
+    {
+      "type": "MODIFY_POWER",
+      "target": "ENEMY_MONSTER",
+      "amount": -200,
+      "duration": "TURN_END"
+    },
+    {
+      "type": "IF",
+      "target": "SELF",
+      "amount": 0,
+      "condition": {
+        "type": "COUNT_AT_MOST",
+        "target": "HAND",
+        "value": "",
+        "amount": 2
+      },
+      "children": [
+        {
+          "type": "DRAW",
+          "target": "SELF",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "type": "APPLY_STATUS",
+      "target": "ENEMY_MONSTER",
+      "amount": 0,
+      "duration": "TURN_END",
+      "flags": {
+        "status": "CANNOT_ACTIVATE"
+      },
+      "filter": {
+        "maxLevel": 4
+      }
+    },
+    {
+      "type": "DELAY",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "NEXT_TURN_END",
+      "flags": {
+        "trigger": "ON_TURN_START"
+      },
+      "children": [
+        {
+          "type": "LOOK_TOP_DECK",
+          "target": "TOP_DECK",
+          "amount": 2
+        },
+        {
+          "type": "REORDER_DECK",
+          "target": "TOP_DECK",
+          "amount": 2,
+          "flags": {
+            "order": "POWER_ASC"
+          }
+        }
+      ]
+    },
+    {
+      "type": "HEAL_LP",
+      "target": "SELF",
+      "amount": 300
+    },
+    {
+      "type": "IF",
+      "target": "SELF",
+      "amount": 0,
+      "condition": {
+        "type": "COUNT_AT_LEAST",
+        "target": "GRAVEYARD",
+        "value": "",
+        "amount": 3
+      },
+      "children": [
+        {
+          "type": "RETURN_DECK",
+          "target": "GRAVEYARD",
+          "amount": 0,
+          "flags": {
+            "count": "2",
+            "placement": "BOTTOM"
+          }
+        },
+        {
+          "type": "PREVENT_DAMAGE",
+          "target": "SELF",
+          "amount": 0,
+          "duration": "TURN_END"
+        }
+      ]
+    },
+    {
+      "type": "DELAY",
+      "target": "SELF",
+      "amount": 0,
+      "duration": "NEXT_TURN_END",
+      "flags": {
+        "trigger": "ON_TURN_END"
+      },
+      "children": [
+        {
+          "type": "REMOVE_COUNTER",
+          "target": "SELF",
+          "amount": 1,
+          "flags": {
+            "counter": "focus"
+          }
+        },
+        {
+          "type": "MODIFY_POWER",
+          "target": "SELF",
+          "amount": 150,
+          "duration": "NEXT_TURN_END"
+        }
+      ]
+    },
+    {
+      "type": "IF",
+      "target": "SELF",
+      "amount": 0,
+      "condition": {
+        "type": "COUNTER_AT_LEAST",
+        "target": "SELF",
+        "value": "focus",
+        "amount": 3
+      },
+      "children": [
+        {
+          "type": "REMOVE_COUNTER",
+          "target": "SELF",
+          "amount": 3,
+          "flags": {
+            "counter": "focus"
+          }
+        },
+        {
+          "type": "EXTRA_ATTACK",
+          "target": "SELF",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "type": "IF",
+      "target": "SELF",
+      "amount": 0,
+      "condition": {
+        "type": "LP_AT_MOST",
+        "target": "SELF",
+        "value": "",
+        "amount": 2000
+      },
+      "children": [
+        {
+          "type": "PREVENT_DESTROY",
+          "target": "SELF",
+          "amount": 0,
+          "duration": "TURN_END"
+        },
+        {
+          "type": "HEAL_LP",
+          "target": "SELF",
+          "amount": 300
+        }
+      ]
+    }
+  ],
+  "shapes": [
+    "RING",
+    "ARC",
+    "SPIRAL",
+    "HELIX",
+    "BEAM",
+    "TRAIL",
+    "BURST",
+    "IMPACT_CONE",
+    "SHOCKWAVE",
+    "ORB",
+    "VORTEX",
+    "COLUMN",
+    "AURA",
+    "GLYPH",
+    "CHAIN_LINE"
+  ],
+  "bindings": {
+    "pokemon": {
+      "self": "SELF",
+      "sourceZones": [
+        "FIELD"
+      ],
+      "family": true,
+      "types": true,
+      "speed": 2,
+      "conditions": []
+    },
+    "support": {
+      "self": "ALLY_MONSTER",
+      "sourceZones": [
+        "HAND",
+        "SUPPORT"
+      ],
+      "family": false,
+      "types": false,
+      "speed": 0,
+      "conditions": []
+    },
+    "reaction": {
+      "self": "ALLY_MONSTER",
+      "sourceZones": [
+        "SUPPORT"
+      ],
+      "family": false,
+      "types": false,
+      "speed": 0,
+      "conditions": [
+        {
+          "type": "CHAIN_AT_LEAST",
+          "amount": 1
+        }
+      ]
+    },
+    "stadium": {
+      "self": "ALLY_MONSTER",
+      "sourceZones": [
+        "HAND",
+        "STADIUM"
+      ],
+      "family": false,
+      "types": false,
+      "speed": 0,
+      "conditions": []
+    },
+    "technique": {
+      "self": "ALLY_MONSTER",
+      "sourceZones": [
+        "HAND",
+        "SUPPORT"
+      ],
+      "family": false,
+      "types": false,
+      "speed": 0,
+      "conditions": []
+    },
+    "trainer": {
+      "self": "ALLY_MONSTER",
+      "sourceZones": [
+        "HAND",
+        "SUPPORT"
+      ],
+      "family": false,
+      "types": false,
+      "speed": 0,
+      "conditions": []
+    },
+    "item": {
+      "self": "ALLY_MONSTER",
+      "sourceZones": [
+        "HAND",
+        "SUPPORT"
+      ],
+      "family": false,
+      "types": false,
+      "speed": 0,
+      "conditions": []
+    }
+  }
+}

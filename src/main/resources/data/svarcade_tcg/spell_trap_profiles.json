@@ -1,0 +1,44 @@
+{
+  "protect": {
+    "card": "protect",
+    "kind": "QUICK_PLAY_SPELL",
+    "activateFromHand": true,
+    "persists": false,
+    "minSetTurns": 1
+  },
+  "feint": {
+    "card": "feint",
+    "kind": "QUICK_PLAY_SPELL",
+    "activateFromHand": true,
+    "persists": false,
+    "minSetTurns": 1
+  },
+  "battle_training": {
+    "card": "battle_training",
+    "kind": "CONTINUOUS_SPELL",
+    "activateFromHand": true,
+    "persists": true,
+    "minSetTurns": 0
+  },
+  "training_ground": {
+    "card": "training_ground",
+    "kind": "FIELD_SPELL",
+    "activateFromHand": true,
+    "persists": true,
+    "minSetTurns": 0
+  },
+  "mirror_barrier": {
+    "card": "mirror_barrier",
+    "kind": "NORMAL_TRAP",
+    "activateFromHand": false,
+    "persists": false,
+    "minSetTurns": 1
+  },
+  "counter_seal": {
+    "card": "counter_seal",
+    "kind": "COUNTER_TRAP",
+    "activateFromHand": false,
+    "persists": false,
+    "minSetTurns": 1
+  }
+}

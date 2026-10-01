@@ -1,0 +1,15 @@
+{
+  "creation_arceus": {
+    "id": "creation_arceus",
+    "materials": [
+      {"card":"palkia","zone":"FIELD","count":1},
+      {"card":"dialga","zone":"FIELD","count":1},
+      {"card":"giratina","zone":"FIELD","count":1}
+    ],
+    "stages": [
+      {"card":"arceus_defense","lockTurns":2,"label":"Arceus - Defense"},
+      {"card":"arceus_judgement","lockTurns":1,"label":"Arceus - Judgement"},
+      {"card":"ultimate_arceus","lockTurns":0,"label":"Ultimate Arceus"}
+    ]
+  }
+}

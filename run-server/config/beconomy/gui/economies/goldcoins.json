@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "currencyType": "GoldCoins",
+  "balanceMessage": {
+    "enabled": true,
+    "lines": [
+      "",
+      "&6%currencyType%",
+      "&7Player: &f%player%",
+      "&7Balance: &e%balance% %symbol%",
+      ""
+    ]
+  },
+  "menu": {
+    "enabled": true,
+    "title": "&6%currencyType% Menu",
+    "size": 54,
+    "fillersEnabled": true,
+    "fillers": [
+      {
+        "material": "minecraft:black_stained_glass_pane",
+        "name": " ",
+        "lore": [],
+        "slots": [
+          "0-8",
+          "9",
+          "17",
+          "18",
+          "26",
+          "27",
+          "35",
+          "36",
+          "44",
+          "45-53"
+        ],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": true
+      }
+    ],
+    "leaderboard": {
+      "enabled": true,
+      "slots": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34
+      ],
+      "defaultSort": "PRICE_HIGH",
+      "sortModes": [
+        "PRICE_HIGH",
+        "PRICE_LOW",
+        "A_Z"
+      ],
+      "head": {
+        "name": "&e#%position% &f%top_player%",
+        "lore": [
+          "&7Balance: &e%top_balance% %symbol%"
+        ],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": false,
+        "actions": {
+          "leftClick": {
+            "type": "none",
+            "value": "",
+            "closeAfterAction": false
+          },
+          "rightClick": {
+            "type": "none",
+            "value": "",
+            "closeAfterAction": false
+          }
+        }
+      }
+    },
+    "items": [
+      {
+        "slots": [
+          "46"
+        ],
+        "type": "button",
+        "material": "minecraft:arrow",
+        "name": "&aPrevious Page",
+        "lore": [],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": false,
+        "actions": {
+          "leftClick": {
+            "type": "previous_page",
+            "value": "",
+            "closeAfterAction": false
+          },
+          "rightClick": {
+            "type": "none",
+            "value": "",
+            "closeAfterAction": false
+          }
+        }
+      },
+      {
+        "slots": [
+          "48"
+        ],
+        "type": "button",
+        "material": "minecraft:hopper",
+        "name": "&bSort: &f%sort%",
+        "lore": [
+          "&7Click to change sorting"
+        ],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": false,
+        "actions": {
+          "leftClick": {
+            "type": "change_sort",
+            "value": "",
+            "closeAfterAction": false
+          },
+          "rightClick": {
+            "type": "none",
+            "value": "",
+            "closeAfterAction": false
+          }
+        }
+      },
+      {
+        "slots": [
+          "49"
+        ],
+        "type": "button",
+        "material": "minecraft:barrier",
+        "name": "&cClose",
+        "lore": [],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": false,
+        "actions": {
+          "leftClick": {
+            "type": "close",
+            "value": "",
+            "closeAfterAction": false
+          },
+          "rightClick": {
+            "type": "close",
+            "value": "",
+            "closeAfterAction": false
+          }
+        }
+      },
+      {
+        "slots": [
+          "50"
+        ],
+        "type": "button",
+        "material": "minecraft:clock",
+        "name": "&eRefresh",
+        "lore": [],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": false,
+        "actions": {
+          "leftClick": {
+            "type": "refresh",
+            "value": "",
+            "closeAfterAction": false
+          },
+          "rightClick": {
+            "type": "none",
+            "value": "",
+            "closeAfterAction": false
+          }
+        }
+      },
+      {
+        "slots": [
+          "52"
+        ],
+        "type": "button",
+        "material": "minecraft:arrow",
+        "name": "&aNext Page",
+        "lore": [],
+        "glow": false,
+        "hideAdditionalTooltip": true,
+        "hideTooltip": false,
+        "actions": {
+          "leftClick": {
+            "type": "next_page",
+            "value": "",
+            "closeAfterAction": false
+          },
+          "rightClick": {
+            "type": "none",
+            "value": "",
+            "closeAfterAction": false
+          }
+        }
+      }
+    ]
+  }
+}
