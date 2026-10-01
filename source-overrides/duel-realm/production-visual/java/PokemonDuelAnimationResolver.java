@@ -56,7 +56,7 @@ public final class PokemonDuelAnimationResolver {
             }
             // A legacy poser may omit a registered action in its own provider animation bundle.
             // The effective client poser uses tracked aspects, including form-derived aspects.
-            var variant=vn.svarcade.tcg.integration.CardWorldsIntegrations.aspects().find(entity.getPokemon().getSpecies().getResourceIdentifier().toString(),state.getCurrentAspects());
+            var variant=vn.svarcade.tcg.integration.CardWorldsIntegrations.aspects().findAnimationVariant(entity.getPokemon().getSpecies().getResourceIdentifier().toString(),state.getCurrentAspects());
             if(variant.isPresent()&&!variant.get().poser().isBlank()){
                 String group=variant.get().poser();int colon=group.indexOf(':');if(colon>=0)group=group.substring(colon+1);
                 for(String name:names){

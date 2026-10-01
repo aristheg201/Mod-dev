@@ -21,6 +21,21 @@ public final class ProviderAspects {
     public Optional<Variant> find(String species,Collection<String> aspects) {
         return Optional.ofNullable(variants.get(key(species,aspects)));
     }
+    /** Animation-only lookup: tracked gender/other metadata can extend a provider declaration.
+     * Keep catalog validation exact, and never guess between different equally specific posers. */
+    public Optional<Variant> findAnimationVariant(String species,Collection<String> aspects) {
+        var exact=find(species,aspects);if(exact.isPresent())return exact;
+        String normalized=species(species);Set<String> tracked=new HashSet<>(aspects);
+        List<Variant> matches=variants.values().stream()
+                .filter(v->species(v.species()).equals(normalized)&&!v.aspects().isEmpty()&&tracked.containsAll(v.aspects()))
+                .sorted(Comparator.<Variant>comparingInt(v->v.aspects().size()).reversed()
+                        .thenComparing(v->key(v.species(),v.aspects()))).toList();
+        if(matches.isEmpty())return Optional.empty();
+        Variant best=matches.getFirst();
+        if(matches.stream().anyMatch(v->v.aspects().size()==best.aspects().size()
+                &&(!v.model().equals(best.model())||!v.poser().equals(best.poser()))))return Optional.empty();
+        return Optional.of(best);
+    }
     public static ProviderAspects discover(Map<String,List<Path>> roots) {
         List<Variant> result=new ArrayList<>();Set<String> models=new HashSet<>();
         roots.values().forEach(paths->{for(Path root:paths){Path assets=root.resolve("assets");if(!Files.isDirectory(assets))continue;
