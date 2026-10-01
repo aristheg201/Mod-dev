@@ -131,20 +131,26 @@ public final class DuelWorldScene {
     public int pokemonActors() { return actors.size(); }
     public int frontCards() { return (int)fieldCards.values().stream().filter(a -> !a.faceDown).count(); }
     public int backCards() { return (int)fieldCards.values().stream().filter(a -> a.faceDown).count(); }
-    public void proofCamera() { orbitYaw = 0; orbitPitch = 37; cameraDistance = 14; updateCamera(); }
-    public void groundingCamera() { orbitYaw = 18; orbitPitch = 36; cameraDistance = 27; updateCamera(); }
-    public void creationCamera() { orbitYaw = 32; orbitPitch = 27; cameraDistance = 18; updateCamera(); }
-    public void pileCamera() { orbitYaw = 0; orbitPitch = 48; cameraDistance = 34; updateCamera(); }
-    public void vfxCamera() { orbitYaw=18;orbitPitch=35;cameraDistance=21;updateCamera(); }
+    private void clearVfxFocus(){vfxFocus=null;}
+    public void proofCamera() { clearVfxFocus();orbitYaw = 0; orbitPitch = 37; cameraDistance = 14; updateCamera(); }
+    public void groundingCamera() { clearVfxFocus();orbitYaw = 18; orbitPitch = 36; cameraDistance = 27; updateCamera(); }
+    public void creationCamera() { clearVfxFocus();orbitYaw = 32; orbitPitch = 27; cameraDistance = 18; updateCamera(); }
+    public void pileCamera() { clearVfxFocus();orbitYaw = 0; orbitPitch = 48; cameraDistance = 34; updateCamera(); }
+    private void vfxCamera(Vec3d source,Vec3d target) {
+        vfxFocus=source.lerp(target,.5).add(0,1.0,0);
+        orbitYaw=8;orbitPitch=28;cameraDistance=14.5;updateCamera();
+        LOG.info("CARDWORLDS_VFX_CAMERA distance={} pitch={} focus={}",cameraDistance,orbitPitch,vfxFocus);
+    }
     public void previewVfx(String semantic,String source,String target) {
         if(!Boolean.getBoolean("cardworlds.qa"))throw new IllegalStateException("VFX preview requires the QA driver");
-        PokemonEntity pokemon=entity(source);String element=pokemon==null?"psychic":pokemon.getPokemon().getPrimaryType().getName();
+        PokemonEntity pokemon=entity(source);String element=DuelVfxProfile.normalizeKey(pokemon==null?"psychic":pokemon.getPokemon().getPrimaryType().getName());
         Vec3d a=positions.getOrDefault(source,local(0,0,-4)),b=positions.getOrDefault(target,local(0,0,4));
         if(source.isBlank())a=local(-6,.015,-9);
+        if(target.isBlank())b=a;
         var animation=new vn.svarcade.tcg.data.EffectSpec.Animation(semantic,.25,.46,.72,.9);
         var presentation=new vn.svarcade.tcg.data.EffectSpec.Presentation(semantic.equals("ATTACK_PHYSICAL")?"MELEE":semantic.equals("ATTACK_SPECIAL")?"BEAM":"STATUS",element,2000,animation,null,null,null,null);
         var cue=new Duel.Cue(-1,semantic,source,target,lastView==null?0:lastView.you(),element,presentation,semantic.equals("TRAP_REVEAL")?3:0);
-        timeline.preview(cue,a,b,System.currentTimeMillis(),this::startVfx);vfxCamera();
+        timeline.preview(cue,a,b,System.currentTimeMillis(),this::startVfx);vfxCamera(a,b);
     }
     public int vfxCaptureDelay(){return timeline.active().isEmpty()?600:(int)(timeline.active().getFirst().duration*.82);}
     public void previewChainBreak(String source,String target) {
@@ -154,6 +160,8 @@ public final class DuelWorldScene {
     public void verifyNativePose(String token,String intent) {
         var entity=entity(token);var proof=animationProofs.get(token);
         if(entity==null||proof==null||!proof.nativeAnimation()||!proof.intent().equals(intent))throw new AssertionError("Native animation unresolved for "+intent);
+        if(Set.of("ATTACK_PHYSICAL","ATTACK_SPECIAL","CAST_STATUS","HIT","HEAVY_HIT").contains(intent)&&proof.animation().equalsIgnoreCase("cry"))
+            throw new AssertionError("Combat semantic incorrectly resolved to cry: "+intent);
         var state=(com.cobblemon.mod.common.client.entity.PokemonClientDelegate)entity.getDelegate();
         double animated=DuelModelBounds.measure(entity).poseHash();
         var primary=state.getPrimaryAnimation();var activeAnimations=new ArrayList<>(state.getActiveAnimations());
@@ -188,6 +196,7 @@ public final class DuelWorldScene {
     private boolean previousHudHidden;
     /** Board surface origin, not camera origin. */
     private Vec3d origin = Vec3d.ZERO;
+    private Vec3d vfxFocus;
     private Vec3d forward = new Vec3d(0, 0, 1);
     private Vec3d right = new Vec3d(-1, 0, 0);
     private float arenaYaw;
@@ -405,7 +414,7 @@ public final class DuelWorldScene {
             client.options.hudHidden = previousHudHidden;
         }
         defenseBases.clear(); piles.clear(); meshes.close(); if (active == this) active = null; visualSignature="";
-        world=null;cameraRig=null;previousCamera=null;previousPerspective=null;attacking="";realmMode=false;spectatorMode=false;
+        world=null;cameraRig=null;previousCamera=null;previousPerspective=null;vfxFocus=null;attacking="";realmMode=false;spectatorMode=false;
     }
 
     private void begin(MinecraftClient client, int viewerSeat, boolean spectator) {
@@ -435,13 +444,13 @@ public final class DuelWorldScene {
 
     public void orbit(double deltaX,double deltaY){orbitYaw=(float)((orbitYaw-deltaX*0.34)%360.0);orbitPitch=(float)Math.clamp(orbitPitch+deltaY*0.24,12.0,67.0);updateCamera();}
     public void zoom(double wheel){cameraDistance=Math.clamp(cameraDistance-wheel*(realmMode?2.25:1.55),realmMode?14.0:14.0,realmMode?64.0:34.0);updateCamera();}
-    public void resetView(){orbitYaw=spectatorMode&&realmMode?90f:0f;orbitPitch=realmMode?32f:25f;cameraDistance=realmMode?(spectatorMode?46.0:36.0):22.5;updateCamera();}
+    public void resetView(){clearVfxFocus();orbitYaw=spectatorMode&&realmMode?90f:0f;orbitPitch=realmMode?32f:25f;cameraDistance=realmMode?(spectatorMode?46.0:36.0):22.5;updateCamera();}
 
     private void updateCamera() {
         if(cameraRig==null||cameraRig.isRemoved())return;
         double pitch=Math.toRadians(orbitPitch),yaw=Math.toRadians(orbitYaw);double horizontal=cameraDistance*Math.cos(pitch),vertical=cameraDistance*Math.sin(pitch);
         Vec3d back=forward.multiply(-Math.cos(yaw)).add(right.multiply(Math.sin(yaw))).normalize();
-        Vec3d target=origin.add(0,realmMode?2.15:1.45,0);Vec3d pos=target.add(back.multiply(horizontal)).add(0,vertical+timeline.cameraPunch(System.currentTimeMillis()),0);Vec3d look=target.subtract(pos).normalize();
+        Vec3d target=vfxFocus!=null?vfxFocus:origin.add(0,realmMode?2.15:1.45,0);Vec3d pos=target.add(back.multiply(horizontal)).add(0,vertical+timeline.cameraPunch(System.currentTimeMillis()),0);Vec3d look=target.subtract(pos).normalize();
         float viewYaw=(float)Math.toDegrees(Math.atan2(-look.x,look.z));float viewPitch=(float)Math.toDegrees(-Math.asin(look.y));
         cameraRig.setPosition(pos.x,pos.y,pos.z);cameraRig.setYaw(viewYaw);cameraRig.setHeadYaw(viewYaw);cameraRig.setBodyYaw(viewYaw);cameraRig.setPitch(viewPitch);
     }
