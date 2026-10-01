@@ -305,4 +305,49 @@ with tempfile.TemporaryDirectory(prefix="cardworlds-production-v2-") as producti
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, target)
 
+
+# Final QA registration fix: production-v2 already contains the authoritative
+# position scenario implementation in TcgMod/Duel, but the Brigadier tree omitted
+# a route to it. Register a QA-only root alias and point VisualRun at it.
+commands = root / "src/main/java/vn/svarcade/tcg/fabric/CardWorldsCommands.java"
+commands_source = commands.read_text()
+grant_anchor = '            .then(literal("grant")'
+qa_position_tree = '''            .then(literal("qa_position")
+                .requires(source -> Boolean.getBoolean("cardworlds.qa") && source.hasPermissionLevel(3))
+                .executes(ctx -> qaPosition(ctx, mod)))
+'''
+if grant_anchor not in commands_source:
+    raise SystemExit("CardWorldsCommands grant anchor missing for qa_position")
+commands_source = commands_source.replace(grant_anchor, qa_position_tree + grant_anchor, 1)
+
+method_anchor = '    private static int qaCreation('
+qa_position_method = '''    private static int qaPosition(CommandContext<ServerCommandSource> ctx, TcgMod mod) {
+        ServerCommandSource source = ctx.getSource();
+        ServerPlayerEntity player = source.getPlayer();
+        if (player == null) {
+            messages(mod, source).send(source, "command.player_only");
+            return 0;
+        }
+        try {
+            mod.commandQaPosition(player);
+            messages(mod, source).send(source, "command.qa.success", Map.of("stage", "position"));
+            return 1;
+        } catch (Exception ex) {
+            messages(mod, source).send(source, "command.failed", Map.of("error", safeError(ex)));
+            return 0;
+        }
+    }
+
+'''
+if method_anchor not in commands_source:
+    raise SystemExit("CardWorldsCommands qaCreation method anchor missing")
+commands_source = commands_source.replace(method_anchor, qa_position_method + method_anchor, 1)
+commands.write_text(commands_source)
+
+visual = root / "src/qa/java/vn/svarcade/tcg/qa/VisualRun.java"
+visual_source = visual.read_text()
+if '"cardworlds qa position"' not in visual_source:
+    raise SystemExit("VisualRun qa position command anchor missing")
+visual.write_text(visual_source.replace('"cardworlds qa position"', '"cardworlds qa_position"', 1))
+
 print("Applied Duel Realm production bundle")
