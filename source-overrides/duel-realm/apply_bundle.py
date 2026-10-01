@@ -482,7 +482,7 @@ duel_source = replace_java_method(
         defense.position = BattlePosition.DEFENSE;
         defense.summonedTurn = turn - 1;
 
-        Piece setMonster = qaAdd(actor, "gengar", Zone.HAND);
+        Piece setMonster = qaAdd(actor, "squirtle", Zone.HAND);
         normal[actor] = 0;
         setMonster(actor, setMonster.token, "");
 
