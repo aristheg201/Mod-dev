@@ -350,4 +350,17 @@ if '"cardworlds qa position"' not in visual_source:
     raise SystemExit("VisualRun qa position command anchor missing")
 visual.write_text(visual_source.replace('"cardworlds qa position"', '"cardworlds qa_position"', 1))
 
+# Card Worlds v3: layered physical card states + forms/fakemon/deck-family hydration.
+v3_blob = here / "v3.patch.gz.b64"
+if not v3_blob.is_file():
+    raise SystemExit("Card Worlds v3 patch payload missing")
+v3_patch_bytes = gzip.decompress(base64.b64decode(v3_blob.read_bytes().strip(), validate=True))
+with tempfile.NamedTemporaryFile(prefix="cardworlds-v3-", suffix=".patch", delete=False) as v3_tmp:
+    v3_tmp.write(v3_patch_bytes)
+    v3_patch = Path(v3_tmp.name)
+try:
+    subprocess.run(["patch", "-p0", "--forward", "--batch", "-i", str(v3_patch)], cwd=root, check=True)
+finally:
+    v3_patch.unlink(missing_ok=True)
+
 print("Applied Duel Realm production bundle")

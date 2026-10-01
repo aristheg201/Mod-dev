@@ -200,11 +200,16 @@ jobs:
           m = re.search(r"CARDWORLDS_CATALOG_HYDRATED cards=(\d+) species=(\d+) fakemon=(\d+) decks=(\d+) banners=(\d+)", log)
           assert m, "catalog hydration marker missing"
           cards, species, fakemon, decks, banners = map(int, m.groups())
+          fm = re.search(r"CARDWORLDS_FORMS_HYDRATED baseSpecies=(\d+) forms=(\d+)", log)
+          assert fm, "forms hydration marker missing"
+          base_species, forms = map(int, fm.groups())
           assert species >= 1025, ("loaded species below requested National Dex coverage", species)
+          assert base_species >= 1025, ("base species coverage below National Dex", base_species)
+          assert forms > 0, ("Cobblemon form/aspect coverage missing", forms)
           assert cards >= 1025, ("catalog card coverage below requested baseline", cards)
           assert decks >= 15, ("generated deck coverage too small", decks)
           assert banners >= 10, ("generated pack/banner coverage too small", banners)
-          print({"cards": cards, "species": species, "fakemon": fakemon, "decks": decks, "banners": banners})
+          print({"cards": cards, "species": species, "fakemon": fakemon, "forms": forms, "decks": decks, "banners": banners})
           PY
 
           if grep -Eiq 'CARDWORLDS_QA_FAILED|Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Exception in thread "Render thread"' run/logs/latest.log; then
