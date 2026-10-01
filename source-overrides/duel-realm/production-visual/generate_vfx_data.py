@@ -5,11 +5,12 @@ here=Path(__file__).resolve().parent
 root=here/'resources/data/svarcade_tcg';root.mkdir(parents=True,exist_ok=True)
 aliases={
  'IDLE':['idle'],'SPAWN':['spawn','sendout','cry'],'CRY':['cry'],
- 'ATTACK_PHYSICAL':['physical','attack_physical','attack','melee','cry'],
- 'ATTACK_SPECIAL':['special','attack_special','cast','cry'],'CAST_STATUS':['status','cast','special','cry'],
- 'CHARGE':['charge','special','status','cry'],'PROJECTILE_CAST':['special','cast','cry'],
- 'DASH':['dash','physical','run','cry'],'HIT':['recoil','hit','hurt','cry'],'HEAVY_HIT':['recoil','hurt','cry'],
- 'FAINT':['faint'],'TRANSFORM':['transform','evolve','cry'],'EVOLVE':['evolve','transform','cry'],
+ 'ATTACK_PHYSICAL':['physical','attack_physical','attack','melee','dash','run','walk','special'],
+ 'ATTACK_SPECIAL':['special','attack_special','cast','projectile','physical','attack'],
+ 'CAST_STATUS':['status','cast','special','attack_special'],
+ 'CHARGE':['charge','special','status','cast'],'PROJECTILE_CAST':['special','cast','attack_special','projectile'],
+ 'DASH':['dash','run','walk','physical','attack'],'HIT':['recoil','hit','hurt'],'HEAVY_HIT':['recoil','hurt','hit'],
+ 'FAINT':['faint'],'TRANSFORM':['transform','evolve','spawn','sendout','cry'],'EVOLVE':['evolve','transform','spawn','sendout','cry'],
  'VICTORY':['victory','happy','cry'],
 }
 (root/'animation_semantics.json').write_text(json.dumps(aliases,indent=2)+'\n')
