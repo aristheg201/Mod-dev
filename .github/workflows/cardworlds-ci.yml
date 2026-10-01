@@ -237,9 +237,13 @@ jobs:
           for intent in SPAWN ATTACK_PHYSICAL ATTACK_SPECIAL HIT CAST_STATUS TRANSFORM; do
             grep -Fq "CARDWORLDS_NATIVE_POSE_PROOF intent=$intent " run/logs/latest.log
           done
+          ! grep -Eq 'CARDWORLDS_NATIVE_POSE_PROOF intent=(ATTACK_PHYSICAL|ATTACK_SPECIAL|CAST_STATUS|HIT|HEAVY_HIT) animation=cry' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_VFX_PROFILE semantic=ATTACK_PHYSICAL element=fire profile=fire' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_VFX_CAMERA distance=14.5' run/logs/latest.log
           grep -Fq 'CARDWORLDS_NATIVE_PARTICLE registered=cobblemon:snowstorm' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ANIMATION_FALLBACK_PROOF' run/logs/latest.log
           grep -Fq 'CARDWORLDS_VIETNAMESE_PROOF language=vi_vn' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_VI_DYNAMIC_PROOF turn=Lượt 3 lp=SL 7500' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ENGLISH_FALLBACK_PROOF language=en_us' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
 
