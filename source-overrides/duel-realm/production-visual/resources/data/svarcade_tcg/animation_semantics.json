@@ -32,7 +32,8 @@
     "status",
     "cast",
     "special",
-    "attack_special"
+    "attack_special",
+    "physical"
   ],
   "CHARGE": [
     "charge",

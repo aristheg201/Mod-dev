@@ -14,6 +14,8 @@ import java.util.*;
 /** HUD and interaction layer over the real 3D DuelWorldScene. */
 public final class DuelScreen implements Page {
     public boolean dismissed;
+    private int abilityIndex;
+    private String abilityOwner="";
     private String source = "", intent = "", pile = "HAND";
     private final LinkedHashSet<String> summonMaterials = new LinkedHashSet<>();
     private List<String> resolving = List.of();
@@ -55,6 +57,8 @@ public final class DuelScreen implements Page {
     public void prepareGroundingProof() { visualProof=true; scene.groundingCamera(); }
     public void preparePileProof() { visualProof=true; scene.pileCamera(); }
     public void verifyPileActors() { scene.verifyPileActors(); }
+    public void verifyAuthoredAnimation(String token){scene.verifyAuthoredAnimation(token);}
+    public void previewAuthoredEffect(String source,String target,boolean negate){scene.previewAuthoredEffect(source,target,negate);}
     public void previewVfx(String semantic,String source,String target) { visualProof=true;scene.previewVfx(semantic,source,target); }
     public int vfxCaptureDelay(){return scene.vfxCaptureDelay();}
     public void previewChainBreak(String source,String target){scene.previewChainBreak(source,target);}
@@ -167,10 +171,14 @@ public final class DuelScreen implements Page {
                 if(def!=null&&def.tributeCount()>0){intent="setmonster";}else{a.send("duel","set_monster",source,"");intent="";}
             }else{a.send("duel","play",source,"SET");intent="";}
         });
-        u.button("Activate", new Rect(x, y + 90, 190, 36), false,
+        u.button(vn.svarcade.tcg.client.component.CardWorldsLanguage.t("cardworlds.ui.activate"), new Rect(x, y + 90, 136, 36), false,
             priority && def != null && def.effect() != null && (def.effect().spec()==null||def.effect().spec().optional()||def.effect().spec().triggers().contains("ON_ACTIVATE")||def.effect().spec().triggers().contains("CONTINUOUS")) && def.effect().phases().contains(v.phase()) &&
                 (def.effect().speed() > 1 || v.open() && v.turnPlayer() == v.you()) && !(src.category().equals("pokemon") && src.zone() == Duel.Zone.HAND),
             () -> perform(a, "activate"));
+        var baseDef=src==null?null:a.state.definitions().values().stream().filter(q->q.name().equals(src.name())).findFirst().orElse(null);
+        int abilityCount=src==null||src.effect()==null||src.effect().spec()==null?0:(int)vn.svarcade.tcg.data.EffectSpec.list(src.effect().spec().stages()).stream().filter(q->q.effect().spec().triggers().contains("ON_ACTIVATE")).count();
+        u.button("↻ "+(abilityIndex+1),new Rect(x+140,y+90,50,36),false,priority&&abilityCount>0,()->{abilityIndex=(abilityIndex+1)%(abilityCount+1);intent="";});
+        if(src!=null&&src.counters()!=null&&!src.counters().isEmpty())u.fit(src.counters().entrySet().stream().map(e->vn.svarcade.tcg.client.component.CardWorldsLanguage.t("cardworlds.counter."+e.getKey())+" "+e.getValue()).collect(java.util.stream.Collectors.joining(" · ")),new Rect(x,y-65,190,18),11,Ui.CYAN);
         u.button("Attack", new Rect(x, y + 135, 190, 36), false,
             priority && v.open() && v.turnPlayer() == v.you() && v.phase().equals("BATTLE") && v.turn() > 1 && src != null && src.zone() == Duel.Zone.FIELD && "ATTACK".equals(src.position()),
             () -> perform(a, "attack"));
@@ -258,7 +266,7 @@ public final class DuelScreen implements Page {
                 attackAt = System.currentTimeMillis();
                 scene.setAttack(attacking, attackAt);
             }
-            a.send("duel", intent, source, c.token());
+            sendAbility(a,intent,c.token());
             intent = "";
             summonMaterials.clear();
             return;
@@ -296,10 +304,10 @@ public final class DuelScreen implements Page {
         if (action.equals("activate") && d.effect() != null && d.effect().target().equals("none") ||
             action.equals("attack") && v.cards().stream().noneMatch(c -> c.controller() != v.you() && c.zone() == Duel.Zone.FIELD)) {
             if (action.equals("attack")) { attacking = source; attackAt = System.currentTimeMillis(); scene.setAttack(attacking, attackAt); }
-            a.send("duel", action, source, "");
+            sendAbility(a,action,"");
             intent = "";
         } else if (action.equals("activate") && d.effect() != null && d.effect().target().equals("chain")) {
-            a.send("duel", action, source, Integer.toString(v.chain().size()));
+            sendAbility(a,action,Integer.toString(v.chain().size()));
             intent = "";
         } else if (action.equals("activate") && d.effect() != null && d.effect().target().equals("grave")) {
             pile = "DISCARD";
@@ -357,7 +365,20 @@ public final class DuelScreen implements Page {
     }
 
     private Duel.VisibleCard source(Duel.View v) { return v.cards().stream().filter(c -> c.token().equals(source)).findFirst().orElse(null); }
-    private Catalog.Card definition(CardWorldsScreen a, Duel.VisibleCard c) { var d=a.state.definitions().values().stream().filter(q -> q.name().equals(c.name())).findFirst().orElse(null);if(d==null)return null;return new Catalog.Card(d.id(),d.name(),d.category(),d.species(),d.aspects(),d.type(),d.family(),d.evolvesFrom(),d.extra(),d.level(),d.power(),d.text(),d.set(),d.rarity(),d.sources(),c.effect(),d.triggers(),d.modifiers()); }
+    private Catalog.Card definition(CardWorldsScreen a,Duel.VisibleCard c){
+        var d=a.state.definitions().values().stream().filter(q->q.name().equals(c.name())).findFirst().orElse(null);if(d==null)return null;
+        var effect=c.effect();if(c.token().equals(source)){
+            if(!abilityOwner.equals(source)){abilityOwner=source;abilityIndex=0;}
+            if(abilityIndex>0&&effect!=null&&effect.spec()!=null){var choices=vn.svarcade.tcg.data.EffectSpec.list(effect.spec().stages()).stream().filter(q->q.effect().spec().triggers().contains("ON_ACTIVATE")).toList();if(abilityIndex<=choices.size())effect=choices.get(abilityIndex-1).effect();else abilityIndex=0;}
+        }
+        return new Catalog.Card(d.id(),d.name(),d.category(),d.species(),d.aspects(),d.type(),d.family(),d.evolvesFrom(),d.extra(),d.level(),d.power(),d.text(),d.set(),d.rarity(),d.sources(),effect,d.triggers(),d.modifiers());
+    }
+    private void sendAbility(CardWorldsScreen a,String action,String target){
+        if(action.equals("activate")&&abilityIndex>0){var src=source(a.state.duel());if(src==null||src.effect()==null||src.effect().spec()==null)return;
+            var choices=vn.svarcade.tcg.data.EffectSpec.list(src.effect().spec().stages()).stream().filter(q->q.effect().spec().triggers().contains("ON_ACTIVATE")).toList();if(abilityIndex>choices.size())return;
+            a.send("duel","activate_stage",source,choices.get(abilityIndex-1).id()+"|"+target);
+        }else a.send("duel",action,source,target);
+    }
 
     private void profile(Ui u, Rect r, String name, int life, int max, int color) {
         u.panel(r); u.text(name, r.x() + 15, r.y() + 12, 21, Ui.WHITE); u.text("LP " + life, r.right() - 95, r.y() + 14, 17, Ui.WHITE);

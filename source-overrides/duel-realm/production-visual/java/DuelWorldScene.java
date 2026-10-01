@@ -155,10 +155,31 @@ public final class DuelWorldScene {
         var cue=new Duel.Cue(-1,semantic,source,target,lastView==null?0:lastView.you(),element,presentation,semantic.equals("TRAP_REVEAL")?3:0);
         timeline.preview(cue,a,b,System.currentTimeMillis(),this::startVfx);vfxCamera(a,b);
     }
+    public void previewAuthoredEffect(String source,String target,boolean negate){
+        if(!Boolean.getBoolean("cardworlds.qa"))throw new IllegalStateException("Authored preview requires QA");
+        var card=lastView.cards().stream().filter(c->c.token().equals(source)).findFirst().orElseThrow();
+        if(card.effect()==null||card.effect().spec()==null)throw new AssertionError("No executable authored effect");
+        var presentation=card.effect().spec().vfx();var a=positions.get(source);var b=positions.getOrDefault(target,a);
+        if(a==null||entity(source)==null)throw new AssertionError("Special aspect Pokemon actor missing");
+        if(!entity(source).getPokemon().getAspects().containsAll(card.aspects()))throw new AssertionError("Provider aspect did not reach the actual actor");
+        String semantic=negate?"CHAIN_NEGATE":"CAST_STATUS";
+        var cue=new Duel.Cue(-3,semantic,source,target,lastView.you(),card.type(),presentation,negate?2:1);
+        timeline.preview(cue,a,b,System.currentTimeMillis(),this::startVfx);vfxCamera(a,b);
+        if(negate)PokemonDuelAnimationResolver.play(entity(source),"ATTACK_SPECIAL");
+        LOG.info("CARDWORLDS_SPECIAL_ACTOR_PROOF species={} aspects={} effect={} negate={}",card.species(),card.aspects(),card.effect().spec().textKey(),negate);
+    }
     public int vfxCaptureDelay(){return timeline.active().isEmpty()?600:(int)(timeline.active().getFirst().duration*.82);}
     public void previewChainBreak(String source,String target) {
         var cue=new Duel.Cue(-2,"CHAIN_NEGATE",source,target,lastView.you(),"psychic",null,2);
         timeline.appendPreview(cue,positions.getOrDefault(source,local(-6,0,-9)),positions.getOrDefault(target,local(-6,0,9)),System.currentTimeMillis(),this::startVfx);
+    }
+    public void verifyAuthoredAnimation(String token){
+        var proof=animationProofs.get(token);var pokemon=entity(token);
+        if(proof==null||pokemon==null||!proof.intent().equals("CAST_STATUS"))throw new AssertionError("Special semantic did not reach its Pokemon actor");
+        if(proof.nativeAnimation()){verifyNativePose(token,"CAST_STATUS");return;}
+        var state=(com.cobblemon.mod.common.client.entity.PokemonClientDelegate)pokemon.getDelegate();
+        if(!proof.animation().equals("provider_idle")||state.getCurrentPose()==null||DuelModelBounds.measure(pokemon).height()<=0)throw new AssertionError("Unsafe optional provider animation fallback");
+        LOG.info("CARDWORLDS_SPECIAL_ANIMATION_FALLBACK species={} intent=CAST_STATUS resolved=provider_idle modelVisible=true",pokemon.getPokemon().getSpecies().getResourceIdentifier());
     }
     public void verifyNativePose(String token,String intent) {
         var entity=entity(token);var proof=animationProofs.get(token);
@@ -262,6 +283,7 @@ public final class DuelWorldScene {
                 if (actor == null || !actor.species().equals(card.species()) || !actor.aspects().equals(card.aspects())) {
                     if (actor != null) remove(actor.entity());
                     actor = createPokemon(card.species(), card.aspects(), card.controller(), now);
+                    if(actor==null)continue;
                     actors.put(card.token(), actor);
                 }
 
@@ -398,6 +420,8 @@ public final class DuelWorldScene {
         return card == null ? null : project(card.center.add(0,0.025,0), logicalWidth, logicalHeight);
     }
 
+    private static final Set<String> unavailableActors=new HashSet<>();
+    public static void invalidatePresentation(){unavailableActors.clear();if(active!=null)active.close();}
     public void close() {
         MinecraftClient client = MinecraftClient.getInstance();
         for (Actor actor : actors.values()) remove(actor.entity());
@@ -468,6 +492,7 @@ public final class DuelWorldScene {
     }
 
     private Actor createPokemon(String species,List<String> aspects,int controller,long born) {
+        String availabilityKey=species+"#"+String.join("+",new TreeSet<>(aspects));if(unavailableActors.contains(availabilityKey))return null;
         if (species.toLowerCase(java.util.Locale.ROOT).contains("arceus")) {
             boolean megaShowdown = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mega_showdown");
             var resource = MinecraftClient.getInstance().getResourceManager().getResource(net.minecraft.util.Identifier.of("cobblemon", "bedrock/pokemon/models/0493_arceus/arceus.geo.json"));
@@ -481,7 +506,9 @@ public final class DuelWorldScene {
         }
 
         try {
-            PokemonProperties props=PokemonProperties.Companion.parse(species);props.setAspects(new HashSet<>(aspects));PokemonEntity entity=props.createEntity(world);
+            var descriptor=vn.svarcade.tcg.integration.CobblemonBridge.resolve(species,"",aspects,"",false,"");
+            if(!descriptor.available()){unavailableActors.add(availabilityKey);return null;}
+            PokemonProperties props=PokemonProperties.Companion.parse(descriptor.species());props.setAspects(new HashSet<>(descriptor.aspects()));PokemonEntity entity=props.createEntity(world);
             entity.setId(nextId());entity.setAiDisabled(true);entity.setInvulnerable(true);entity.setNoGravity(true);entity.setSilent(true);
             entity.setOnGround(true);
             var placement = DuelModelBounds.measure(entity);
@@ -496,7 +523,7 @@ public final class DuelWorldScene {
             LOG.info("CARDWORLDS_DUEL_ACTOR species={} naturalHeight={} scale={} boardY={}",species,natural,scale,origin.y);
             if(species.toLowerCase(Locale.ROOT).contains("arceus"))LOG.info("CARDWORLDS_ARCEUS_RENDERED species={} scale={} boardY={}",species,scale,origin.y);
             return new Actor(entity,species,List.copyOf(aspects),controller,born,scale,anchor);
-        } catch(RuntimeException ex){LOG.error("Unable to create duel PokemonEntity for {} {}",species,aspects,ex);throw ex;}
+        } catch(RuntimeException ex){unavailableActors.add(availabilityKey);LOG.warn("Unavailable provider presentation for {} {}: {}",species,aspects,ex.toString());return null;}
     }
 
     private static double zoneIndex(int slot,int total){

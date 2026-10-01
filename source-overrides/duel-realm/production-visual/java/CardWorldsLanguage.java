@@ -24,10 +24,12 @@ public final class CardWorldsLanguage {
             return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),new TypeToken<Map<String,String>>(){}.getType());
         }catch(Exception e){return Map.of();}
     }
+    public static void invalidate(){NAMES.clear();}
     public static String language(){return MinecraftClient.getInstance().getLanguageManager().getLanguage();}
     public static String t(String key,Object... args){return Text.translatable(key,args).getString();}
     public static String translate(String raw) {
         if(raw==null)return "";
+        if(raw.startsWith("family:")){try{return PokemonProperties.Companion.parse(raw.substring(7)).create(null).getDisplayName(false).getString();}catch(RuntimeException ignored){return raw.substring(7);}}
         if(I18n.hasTranslation(raw))return t(raw);
         String exact=ALIASES.get(raw);if(exact!=null)return t(exact);
         for(String key:KEY_PREFIXES)if(raw.length()>key.length()&&raw.startsWith(key)&&I18n.hasTranslation(key))
@@ -52,7 +54,7 @@ public final class CardWorldsLanguage {
         String key="card.svarcade_tcg."+card.id()+".name";if(I18n.hasTranslation(key))return t(key);
         if(!card.category().equals("pokemon"))return translate(card.name());
         return NAMES.computeIfAbsent(language()+"|"+card.id(),ignored->{
-            try {var props=PokemonProperties.Companion.parse(card.species());props.setAspects(new HashSet<>(card.aspects()));return props.create(null).getDisplayName(false).getString();}
+            try {var props=PokemonProperties.Companion.parse(card.species());props.setAspects(new HashSet<>(card.aspects()));String name=props.create(null).getDisplayName(false).getString();return I18n.hasTranslation(card.name())?t(card.name(),name):name;}
             catch(RuntimeException e){return card.name();}
         });
     }
@@ -69,7 +71,7 @@ public final class CardWorldsLanguage {
         if(op.flags()!=null) {
             for(var flag:op.flags().entrySet())if(Set.of("status","counter","position","order","placement","controller","recipient","count").contains(flag.getKey())) {
                 String value=flag.getValue();String key="cardworlds.effect."+value.toLowerCase(Locale.ROOT);
-                if(I18n.hasTranslation(key))value=t(key);else if(I18n.hasTranslation("cardworlds.status."+value.toLowerCase(Locale.ROOT)))value=t("cardworlds.status."+value.toLowerCase(Locale.ROOT));else value=translate(value);
+                if(flag.getKey().equals("counter")&&I18n.hasTranslation("cardworlds.counter."+value))value=t("cardworlds.counter."+value);else if(I18n.hasTranslation(key))value=t(key);else if(I18n.hasTranslation("cardworlds.status."+value.toLowerCase(Locale.ROOT)))value=t("cardworlds.status."+value.toLowerCase(Locale.ROOT));else value=translate(value);
                 result+=" ["+value+"]";
             }
         }
@@ -92,32 +94,33 @@ public final class CardWorldsLanguage {
         if(f.minPower()>0)values.add(t("cardworlds.effect.power_at_least",f.minPower()));
         if(f.maxPower()>0)values.add(t("cardworlds.effect.power_at_most",f.maxPower()));
         EffectSpec.list(f.types()).forEach(v->values.add(t("cardworlds.type."+v)));
-        values.addAll(EffectSpec.list(f.tags()));
+        EffectSpec.list(f.tags()).forEach(v->values.add(translate(v)));
         if(f.position()!=null)values.add(translate(f.position()));if(f.zone()!=null)values.add(translate(f.zone()));
         if(f.controller()!=null)values.add(translate(f.controller()));if(f.faceUp()!=null)values.add(t("cardworlds.condition."+(f.faceUp()?"face_up":"face_down")));
         return String.join(", ",values);
     }
     public static String effect(Catalog.Card card) {
         Catalog.Effect effect=card.effect();List<String> lines=new ArrayList<>();
-        if(effect!=null&&effect.spec()!=null) {
-            var spec=effect.spec();lines.add(t("cardworlds.effect.trigger")+": "+String.join(", ",spec.triggers().stream().map(v->t("cardworlds.trigger."+v.toLowerCase(Locale.ROOT))).toList())+" · "+t("cardworlds.effect.speed",effect.speed()));
+        if(effect!=null&&effect.spec()!=null&&effect.spec().textKey()!=null&&I18n.hasTranslation(effect.spec().textKey()))return t(effect.spec().textKey());
+        if(effect!=null&&effect.spec()!=null&&effect.operation().equals("composite")) {
+            var spec=effect.spec();String intro=String.join(", ",spec.triggers().stream().map(v->t("cardworlds.trigger."+v.toLowerCase(Locale.ROOT))).toList());
             List<String> costs=new ArrayList<>();if(effect.lifeCost()>0)costs.add(t("cardworlds.cost.lp_cost",effect.lifeCost()));
-            for(var c:EffectSpec.list(spec.costs()))costs.add(t("cardworlds.cost."+c.type().toLowerCase(Locale.ROOT),c.amount()));
-            lines.add(t("cardworlds.effect.cost")+": "+(costs.isEmpty()?t("cardworlds.effect.none"):String.join("; ",costs)));
-            if(!EffectSpec.list(spec.conditions()).isEmpty())lines.add(t("cardworlds.effect.condition")+": "+String.join("; ",spec.conditions().stream().map(CardWorldsLanguage::condition).toList()));
-            if(spec.targets()!=null) {
-                var target=spec.targets();String value=target(target.selector());
-                if(target.filter()!=null)value+=" · "+filter(target.filter());
-                lines.add(t("cardworlds.effect.target")+": "+value);
-            }
-            lines.add(t("cardworlds.effect.effect")+": "+String.join("; ",spec.operations().stream().map(CardWorldsLanguage::operation).toList()));
-            if(effect.oncePerTurn()||spec.oncePerDuel())lines.add(t("cardworlds.effect.limit")+": "+(effect.oncePerTurn()?t("cardworlds.effect.once_per_turn"):"")+(spec.oncePerDuel()?" · "+t("cardworlds.effect.once_per_duel"):""));
+            for(var c:EffectSpec.list(spec.costs()))costs.add(t("cardworlds.cost."+c.type().toLowerCase(Locale.ROOT),c.amount())+(c.counter()==null?"":" "+t("cardworlds.counter."+c.counter())));
+            String conditions=EffectSpec.list(spec.conditions()).isEmpty()?"":String.join("; ",spec.conditions().stream().map(CardWorldsLanguage::condition).toList())+"; ";
+            lines.add((effect.speed()>1?"["+t("cardworlds.effect.quick_intro")+"] ":"")+(effect.oncePerTurn()?t("cardworlds.effect.once_per_turn")+", ":"")+intro+": "+conditions+String.join("; ",costs)+(costs.isEmpty()?"":"; ")+String.join("; "+t("cardworlds.effect.then")+" ",spec.operations().stream().map(CardWorldsLanguage::operation).toList())+(spec.oncePerDuel()?" ("+t("cardworlds.effect.once_per_duel")+")":"")+".");
         } else if(effect!=null) {
             String op=switch(effect.operation()){case "damage"->"damage_lp";case "heal"->"heal_lp";case "boost"->"modify_power";case "return"->"return_hand";case "shield"->"prevent_destroy";default->effect.operation();};
             lines.add(t("cardworlds.trigger.on_activate")+" · "+t("cardworlds.effect.speed",effect.speed()));
             if(effect.lifeCost()>0)lines.add(t("cardworlds.cost.lp_cost",effect.lifeCost()));
             String target=target(switch(effect.target()){case "enemy","ally","grave"->"TARGET";case "chain"->"CHAIN_SOURCE";default->"SELF";});
             lines.add(t(effect.operation().equals("shield")?"cardworlds.effect.legacy_shield":"cardworlds.operation."+op,effect.amount(),target)+(effect.operation().equals("boost")?" ("+t("cardworlds.effect.turn_end")+")":""));if(effect.oncePerTurn())lines.add(t("cardworlds.effect.once_per_turn"));
+        }
+        if(effect!=null&&effect.spec()!=null)for(var stage:EffectSpec.list(effect.spec().stages())) {
+            var e=stage.effect();var spec=e.spec();
+            if(spec.textKey()!=null&&I18n.hasTranslation(spec.textKey())){lines.add(t(spec.textKey()));continue;}
+            String intro=String.join(", ",spec.triggers().stream().map(v->t("cardworlds.trigger."+v.toLowerCase(Locale.ROOT))).toList());
+            List<String> costs=new ArrayList<>();for(var cost:EffectSpec.list(spec.costs()))costs.add(t("cardworlds.cost."+cost.type().toLowerCase(Locale.ROOT),cost.amount())+(cost.counter()==null?"":" "+t("cardworlds.counter."+cost.counter())));
+            lines.add((e.speed()>1?"["+t("cardworlds.effect.quick_intro")+"] ":"")+(e.oncePerTurn()?t("cardworlds.effect.once_per_turn")+", ":"")+intro+": "+String.join("; ",costs)+(costs.isEmpty()?"":"; ")+String.join("; "+t("cardworlds.effect.then")+" ",spec.operations().stream().map(CardWorldsLanguage::operation).toList())+".");
         }
         if(card.triggers()!=null)for(var trigger:card.triggers())lines.add(t("cardworlds.trigger."+switch(trigger.cause()){case "PLAY","TRIBUTE_SUMMON","EVOLVE"->"on_summon";case "EXTRA_SUMMON","SPECIAL_SUMMON","REVIVE","SUMMON_STAGE"->"on_special_summon";case "DESTROY","BATTLE"->"on_destroyed";case "DRAW"->"on_draw";case "BANISH"->"on_banish";case "RETURN"->"on_return";case "DISCARD"->"on_discard";default->"on_activate";})+" ["+translate(trigger.zone())+", "+translate(trigger.relation())+"] → "+t("cardworlds.operation."+switch(trigger.effect().operation()){case "damage"->"damage_lp";case "heal"->"heal_lp";default->trigger.effect().operation();},trigger.effect().amount(),target("SELF")));
         if(card.modifiers()!=null)for(var modifier:card.modifiers())lines.add(t("cardworlds.trigger.continuous")+": "+t("cardworlds.operation.modify_power",modifier.power(),target("ALL_ALLIES"))+" ["+t("cardworlds.type."+modifier.affectedType())+"]");

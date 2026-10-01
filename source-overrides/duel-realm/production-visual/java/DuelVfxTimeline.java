@@ -14,7 +14,7 @@ final class DuelVfxTimeline {
         "CONTROL_CHANGE","POSITION_CHANGE","CHARGE");
     static final class Instance {
         final Duel.Cue cue;final DuelVfxProfile profile;final Vec3d source,target;final long started;int duration;
-        int particles;long emitted;boolean released,impacted,hit,sound;boolean preview;
+        int particles;long emitted;boolean released,impacted,hit,sound;boolean preview,visualOnly;
         Instance(Duel.Cue cue,Vec3d source,Vec3d target,long started,boolean preview) {
             this.cue=cue;this.source=source;this.target=target;this.started=started;this.preview=preview;
             profile=DuelVfxProfile.resolve(cue.presentation()==null?cue.element():vn.svarcade.tcg.data.EffectSpec.value(cue.presentation().profile(),cue.element()));
@@ -28,11 +28,12 @@ final class DuelVfxTimeline {
         }
         String mode(){return cue.presentation()==null?"PROJECTILE":vn.svarcade.tcg.data.EffectSpec.value(cue.presentation().mode(),"PROJECTILE");}
     }
-    private long observed;
+    private long observed,lastRevision;
     private final List<Instance> instances=new ArrayList<>();
     private final ArrayDeque<Instance> pending=new ArrayDeque<>();
     List<Instance> active(){return instances;}
     void observe(Duel.View view,Function<String,Vec3d> position,Vec3d origin,java.util.function.BiFunction<Integer,Boolean,Vec3d> fallback,long now) {
+        if(view.revision()<lastRevision){clear();observed=0;}lastRevision=view.revision();
         int resolution=0;long delay=0;long battleDelay=0;
         for(Duel.Cue cue:view.cues()) {
             if(cue.sequence()<=observed)continue;observed=cue.sequence();
@@ -46,6 +47,14 @@ final class DuelVfxTimeline {
             if(cue.semantic().equals("IMPACT"))starts+=battleDelay;
             if(cue.semantic().equals("DESTROY"))starts+=Math.max(450,battleDelay+200);
             if(pending.size()>=24)pending.removeFirst();pending.add(new Instance(cue,source,target,starts,false));
+            if(Set.of("CAST_STATUS","SPELL_ACTIVATE","TRAP_REVEAL","ATTACK_PHYSICAL","ATTACK_SPECIAL").contains(cue.semantic())&&cue.presentation()!=null) {
+                for(var stage:vn.svarcade.tcg.data.EffectSpec.list(cue.presentation().stages())){
+                    if(pending.size()>=24)break;var base=cue.presentation();
+                    var presentation=new vn.svarcade.tcg.data.EffectSpec.Presentation(base.mode(),stage.profile(),650,base.animation(),base.particle(),base.fallback(),stage.shape(),null);
+                    var child=new Duel.Cue(cue.sequence(),stage.semantic(),cue.source(),cue.target(),cue.controller(),cue.element(),presentation,cue.link());
+                    var instance=new Instance(child,source,target,starts+(long)(stage.at()*base.duration()),false);instance.visualOnly=true;pending.add(instance);
+                }
+            }
         }
     }
     void tick(long now,java.util.function.Consumer<Instance> start) {
@@ -53,14 +62,14 @@ final class DuelVfxTimeline {
         for(var it=pending.iterator();it.hasNext();) {
             Instance v=it.next();if(v.started>now)continue;it.remove();
             if(instances.size()>=Math.min(24,v.profile.maxConcurrentInstances()))instances.removeFirst();
-            instances.add(v);start.accept(v);
+            instances.add(v);if(!v.visualOnly)start.accept(v);
         }
     }
     void preview(Duel.Cue cue,Vec3d source,Vec3d target,long now,java.util.function.Consumer<Instance> start) {
-        clear();Instance v=new Instance(cue,source,target,now,true);instances.add(v);start.accept(v);
+        clear();Instance v=new Instance(cue,source,target,now,true);instances.add(v);if(!v.visualOnly)start.accept(v);
     }
     void appendPreview(Duel.Cue cue,Vec3d source,Vec3d target,long now,java.util.function.Consumer<Instance> start) {
-        Instance v=new Instance(cue,source,target,now,true);instances.add(v);start.accept(v);
+        Instance v=new Instance(cue,source,target,now,true);instances.add(v);if(!v.visualOnly)start.accept(v);
     }
     Vec3d motion(String token,long now) {
         for(var v:instances)if(v.cue.source().equals(token)&&v.cue.semantic().equals("ATTACK_PHYSICAL")){

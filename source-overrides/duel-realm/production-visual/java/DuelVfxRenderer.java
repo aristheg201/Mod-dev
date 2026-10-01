@@ -82,10 +82,16 @@ final class DuelVfxRenderer {
     static Vec3d shape(String kind,Vec3d center,Vec3d source,Vec3d target,int i,int count,double t) {
         double a=Math.PI*2*i/Math.max(1,count),r=.4+t*1.8;double f=i/(double)Math.max(1,count-1);
         return switch(kind.toUpperCase(Locale.ROOT)) {
-            case "RING","SHOCKWAVE","GLYPH","AURA" -> center.add(Math.cos(a)*r,.06,Math.sin(a)*r);
+            case "RING" -> center.add(Math.cos(a)*r,.06,Math.sin(a)*r);
+            case "SHOCKWAVE" -> center.add(Math.cos(a)*r*(.3+t*2),.06,Math.sin(a)*r*(.3+t*2));
+            case "GLYPH" -> {double vertex=Math.round(a/(Math.PI/3))*(Math.PI/3);yield center.add(Math.cos(vertex)*r,.12,Math.sin(vertex)*r);}
+            case "AURA" -> center.add(Math.cos(a)*r,.3+f*2,Math.sin(a)*r);
             case "ARC" -> center.add(Math.cos(a*.5)*r,Math.sin(a*.5)*r,0);
-            case "SPIRAL","HELIX","VORTEX" -> center.add(Math.cos(a+t*7)*r*(1-f),f*3,Math.sin(a+t*7)*r*(1-f));
-            case "BEAM","CHAIN_LINE" -> source.add(0,1,0).lerp(target.add(0,1,0),f);
+            case "SPIRAL" -> center.add(Math.cos(a+t*7)*r*(1-f),f*3,Math.sin(a+t*7)*r*(1-f));
+            case "HELIX" -> center.add(Math.cos(a*2+t*7)*r*.6,f*3,Math.sin(a*2+t*7)*r*.6);
+            case "VORTEX" -> center.add(Math.cos(a-t*9)*r*(1-t),f*2,Math.sin(a-t*9)*r*(1-t));
+            case "BEAM" -> source.add(0,1,0).lerp(target.add(0,1,0),f);
+            case "CHAIN_LINE" -> source.add(0,1,0).lerp(target.add(0,1,0),f).add(0,Math.sin(f*Math.PI*6)*.25,0);
             case "TRAIL" -> center.lerp(source.add(0,1,0),f*.5).add(Math.cos(a)*.15,Math.sin(a)*.15,0);
             case "COLUMN" -> center.add(Math.cos(a)*.8,f*4,Math.sin(a)*.8);
             case "ORB" -> center.add(Math.cos(a)*Math.sin(f*Math.PI)*r,Math.cos(f*Math.PI)*r,Math.sin(a)*Math.sin(f*Math.PI)*r);

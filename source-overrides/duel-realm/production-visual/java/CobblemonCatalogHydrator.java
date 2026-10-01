@@ -26,7 +26,8 @@ public final class CobblemonCatalogHydrator {
         } catch (java.io.IOException e) { throw new IllegalStateException("Unable to load deck content",e); }
     }
 
-    record SpeciesDescriptor(String identifier,String namespace,String path,String name,int dex,String type,int bst,List<String> aspects, List<String> tags) {
+    record SpeciesDescriptor(String identifier,String namespace,String path,String name,int dex,String type,int bst,List<String> aspects,List<String> tags,String preEvolution,String evolutionFamily) {
+        SpeciesDescriptor(String identifier,String namespace,String path,String name,int dex,String type,int bst,List<String> aspects,List<String> tags){this(identifier,namespace,path,name,dex,type,bst,aspects,tags,"","");}
         SpeciesDescriptor(String identifier,String namespace,String path,String name,int dex,String type,int bst){this(identifier,namespace,path,name,dex,type,bst,List.of(),List.of());}
         SpeciesDescriptor(String identifier,String namespace,String path,String name,int dex,String type,int bst,List<String> aspects){this(identifier,namespace,path,name,dex,type,bst,aspects,List.of());}
     }
@@ -36,6 +37,14 @@ public final class CobblemonCatalogHydrator {
     public static Catalog expand(Catalog base) {
         List<SpeciesDescriptor> species=readCobblemonSpecies();
         Catalog expanded=expandFromDescriptors(base,species);
+        var aspects=vn.svarcade.tcg.integration.CardWorldsIntegrations.aspects();
+        expanded=vn.svarcade.tcg.data.SpecialAspectCards.apply(expanded,vn.svarcade.tcg.integration.CardWorldsIntegrations.capabilities(),aspects,(id,aa)->vn.svarcade.tcg.integration.CobblemonBridge.resolve(id,"",aa,"",false,"").available());
+        List<String> specialIds=expanded.cards().keySet().stream().filter(id->id.startsWith("special_")).sorted().toList();
+        if(!specialIds.isEmpty()){Map<String,List<String>> starters=new LinkedHashMap<>(expanded.starters());starters.put("special_aspects",makeDeck(specialIds,expanded.cards()));expanded=new Catalog(expanded.rules(),expanded.cards(),expanded.banners(),expanded.rewards(),expanded.dealers(),Map.copyOf(starters));}
+        expanded=vn.svarcade.tcg.data.CardIdentities.apply(expanded);expanded.validate();vn.svarcade.tcg.data.CardIdentities.validateUniqueness(expanded);
+        vn.svarcade.tcg.data.AuthoredEffectValidator.validate(expanded);
+        LOG.info("CARDWORLDS_ASPECT_COVERAGE discovered={} authored={} registered={}",aspects.variants().stream().filter(v->!v.aspects().isEmpty()).count(),vn.svarcade.tcg.data.SpecialAspectCards.definitions().size(),expanded.cards().keySet().stream().filter(id->id.startsWith("special_")).count());
+        LOG.info("CARDWORLDS_CARD_IDENTITIES mechanics={} choreography={}",expanded.cards().size(),expanded.cards().size());
         long fakemon=species.stream().filter(s->isAddon(s)&&s.aspects().isEmpty()).map(s->s.namespace()+":"+s.path()).distinct().count();
         long forms=species.stream().filter(s->!s.aspects().isEmpty()).count();
         long bases=species.stream().map(s->s.namespace()+":"+s.path()).distinct().count();
@@ -66,10 +75,13 @@ public final class CobblemonCatalogHydrator {
                 int power=power(d.bst(),level);
                 String runtimeSpecies=d.namespace().equals("cobblemon")?d.path():d.identifier();
                 existing=new Catalog.Card(cardId,d.name(),"pokemon",runtimeSpecies,d.aspects(),normalizeType(d.type()),
-                    !isAddon(d)?regionName(d.dex()):"fakemon:"+d.namespace(),"",false,level,power,
+                    d.evolutionFamily().isBlank()?(!isAddon(d)?regionName(d.dex()):"fakemon:"+d.namespace()):"family:"+d.evolutionFamily(),d.preEvolution().isBlank()?"":registryCardId(d.preEvolution()),false,level,power,
                     "Registry Pokémon card generated from the active Cobblemon species data.",
                     !isAddon(d)?"National Dex":"Addon · "+d.namespace(),rarity(level),List.of("PACK"),null,List.of(),List.of());
                 cards.put(cardId,existing);
+            }
+            if(!d.evolutionFamily().isBlank()){
+                existing=new Catalog.Card(existing.id(),existing.name(),existing.category(),existing.species(),existing.aspects(),existing.type(),"family:"+d.evolutionFamily(),existing.evolvesFrom().isBlank()&&!d.preEvolution().isBlank()?registryCardId(d.preEvolution()):existing.evolvesFrom(),existing.extra(),existing.level(),existing.power(),existing.text(),existing.set(),existing.rarity(),existing.sources(),existing.effect(),existing.triggers(),existing.modifiers());cards.put(cardId,existing);
             }
             cardByIdentifier.put(d.identifier(),cardId);
             descriptorByCard.put(cardId,d);
@@ -167,6 +179,7 @@ public final class CobblemonCatalogHydrator {
     private static int power(int bst,int level){return Math.clamp(bst>0?650+bst*3:900+level*220,900,3200);}
     private static String rarity(int level){return level>=8?"Secret":level>=7?"Ultra Rare":level>=6?"Super Rare":level>=5?"Rare":"Common";}
     private static String cardId(SpeciesDescriptor d){String base=d.namespace().equals("cobblemon")?safe(d.path()):"fakemon__"+safe(d.namespace())+"__"+safe(d.path());return d.aspects().isEmpty()?base:base+"__form__"+safe(String.join("_",new TreeSet<>(d.aspects())));}
+    private static String registryCardId(String identifier){String[] parts=identifier.split(":",2);return parts.length<2||parts[0].equals("cobblemon")?safe(parts.length<2?parts[0]:parts[1]):"fakemon__"+safe(parts[0])+"__"+safe(parts[1]);}
     private static String safe(String raw){return raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]+","_").replaceAll("_+","_").replaceAll("^_|_$","");}
     private static String title(String raw){String[] parts=raw.split("_");StringBuilder b=new StringBuilder();for(String p:parts){if(p.isBlank())continue;if(b.length()>0)b.append(' ');b.append(Character.toUpperCase(p.charAt(0))).append(p.substring(1));}return b.toString();}
     private static String normalizeType(String type){String v=type==null?"normal":type.toLowerCase(Locale.ROOT);int dot=v.lastIndexOf('.');if(dot>=0)v=v.substring(dot+1);return safe(v.isBlank()?"normal":v);}
@@ -189,20 +202,24 @@ public final class CobblemonCatalogHydrator {
                 String[] split=identifier.split(":",2);String namespace=split.length==2?split[0]:"cobblemon",path=split.length==2?split[1]:split[0];
                 String name=string(call(species,"getName"));if(name.isBlank())name=title(path);
                 int dex=number(call(species,"getNationalPokedexNumber"));String type=typeName(call(species,"getPrimaryType"));int bst=readBst(call(species,"getBaseStats"));
-                result.add(new SpeciesDescriptor(identifier,namespace,path,name,dex,type,bst,List.of(),stringList(call(species,"getLabels"))));
+                String pre=string(call(call(call(species,"getPreEvolution"),"getSpecies"),"getResourceIdentifier"));
+                Object rootSpecies=species;Set<String> visited=new HashSet<>();
+                for(int depth=0;depth<12;depth++){Object parent=call(call(rootSpecies,"getPreEvolution"),"getSpecies");if(parent==null||!visited.add(string(call(parent,"getResourceIdentifier"))))break;rootSpecies=parent;}
+                String family=string(call(rootSpecies,"getResourceIdentifier"));
+                result.add(new SpeciesDescriptor(identifier,namespace,path,name,dex,type,bst,List.of(),stringList(call(species,"getLabels")),pre,family));
                 Object formsRaw=call(species,"getForms");
                 if(formsRaw instanceof Collection<?> forms){
                     Set<String> seenForms=new HashSet<>();
                     for(Object form:forms){
                         List<String> aspects=stringList(call(form,"getAspects"));
                         if(aspects.isEmpty())continue;
-                        List<String> normalized=aspects.stream().filter(v->v!=null&&!v.isBlank()).map(v->v.toLowerCase(Locale.ROOT)).distinct().sorted().toList();
+                        List<String> normalized=aspects.stream().filter(v->v!=null&&!v.isBlank()).distinct().sorted().toList();
                         if(normalized.isEmpty())continue;
                         String formKey=String.join("+",normalized);if(!seenForms.add(formKey))continue;
                         String formName=string(call(form,"getName"));if(formName.isBlank())formName=title(formKey.replace('+','_'));
                         String formType=typeName(call(form,"getPrimaryType"));if(formType.equals("normal")&&!type.equals("normal"))formType=type;
                         int formBst=readBst(call(form,"getBaseStats"));if(formBst<=0)formBst=bst;
-                        result.add(new SpeciesDescriptor(identifier+"#"+formKey,namespace,path,name+" · "+formName,dex,formType,formBst,normalized,stringList(call(form,"getLabels"))));
+                        result.add(new SpeciesDescriptor(identifier+"#"+formKey,namespace,path,name+" · "+formName,dex,formType,formBst,normalized,stringList(call(form,"getLabels")),pre,family));
                     }
                 }
             }

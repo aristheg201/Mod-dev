@@ -15,6 +15,8 @@ import java.util.*;
 public final class PokemonDuelAnimationResolver {
     public record Resolution(String intent,String animation,float duration,boolean nativeAnimation) {}
     private static final Map<String,List<String>> ALIASES=load();
+    private static final Map<PokemonEntity,String> MODELS=new WeakHashMap<>();
+    public static void invalidate(){MODELS.clear();}
     private static Map<String,List<String>> load() {
         try(var in=PokemonDuelAnimationResolver.class.getResourceAsStream("/data/svarcade_tcg/animation_semantics.json")) {
             return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),new TypeToken<Map<String,List<String>>>(){}.getType());
@@ -23,8 +25,12 @@ public final class PokemonDuelAnimationResolver {
     public static Resolution play(PokemonEntity entity,String intent) {
         var state=(PokemonClientDelegate)entity.getDelegate();
         try {
-            var model=VaryingModelRepository.INSTANCE.getPoser(entity.getPokemon().getSpecies().getResourceIdentifier(),state);
-            state.setCurrentModel(model);
+            String signature=entity.getPokemon().getSpecies().getResourceIdentifier()+"#"+String.join("+",new TreeSet<>(entity.getPokemon().getAspects()));
+            var model=state.getCurrentModel();
+            if(model==null||!signature.equals(MODELS.get(entity))){
+                state.setPrimaryAnimation(null);state.getActiveAnimations().clear();state.setCurrentPose(null);
+                model=VaryingModelRepository.INSTANCE.getPoser(entity.getPokemon().getSpecies().getResourceIdentifier(),state);state.setCurrentModel(model);MODELS.put(entity,signature);
+            }
             if(state.getCurrentPose()==null)state.setPoseToFirstSuitable(PoseType.STAND);
             if(intent.equals("IDLE"))return new Resolution(intent,"provider_idle",0,false);
             LinkedHashSet<String> exposed=new LinkedHashSet<>(model.getAnimations().keySet());
@@ -36,6 +42,7 @@ public final class PokemonDuelAnimationResolver {
                 if(name.equals("cry")||name.equals("faint"))candidates.add(name);
             }
             for(String name:candidates) {
+                if(!Set.of("SPAWN","CRY","VICTORY").contains(intent)&&name.toLowerCase(Locale.ROOT).contains("cry"))continue;
                 try {
                     var animation=model.getAnimation(state,name,state.getRuntime());
                     if(animation==null)continue;
@@ -45,6 +52,19 @@ public final class PokemonDuelAnimationResolver {
                     org.slf4j.LoggerFactory.getLogger("cardworlds-animation").info("CARDWORLDS_NATIVE_ANIMATION intent={} resolved={} duration={} provider={}",intent,name,duration,entity.getPokemon().getSpecies().getResourceIdentifier());
                     return new Resolution(intent,name,duration,true);
                 }catch(RuntimeException ignored){/* Optional animation expression from an addon may be absent. */}
+            }
+            // A legacy poser may omit a registered action in its own provider animation bundle.
+            var variant=vn.svarcade.tcg.integration.CardWorldsIntegrations.aspects().find(entity.getPokemon().getSpecies().getResourceIdentifier().toString(),entity.getPokemon().getForcedAspects());
+            if(variant.isPresent()&&!variant.get().poser().isBlank()){
+                String group=variant.get().poser();int colon=group.indexOf(':');if(colon>=0)group=group.substring(colon+1);
+                for(String name:names){
+                    if(!Set.of("SPAWN","CRY","VICTORY").contains(intent)&&name.contains("cry"))continue;
+                    var raw=com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockAnimationRepository.INSTANCE.getAnimationOrNull(group,name);
+                    if(raw==null||raw.getShouldLoop())continue;
+                    var animation=new com.cobblemon.mod.common.client.render.models.blockbench.bedrock.animation.BedrockActiveAnimation(raw);
+                    state.addActiveAnimation(animation,s->kotlin.Unit.INSTANCE);
+                    return new Resolution(intent,group+":"+name,Math.max(.2f,Math.min(4f,animation.getDuration())),true);
+                }
             }
         }catch(RuntimeException ignored){/* Preserve the provider's normal idle pose, never force a missing animation. */}
         return new Resolution(intent,"provider_idle",0,false);
