@@ -206,6 +206,12 @@ jobs:
             26-monster-positions
             27-model-grounding
             28-field-piles
+            29-summon-vfx
+            30-physical-attack-vfx
+            31-special-attack-vfx
+            32-spell-activate-vfx
+            33-trap-chain-vfx
+            34-vietnamese-duel-ui
           )
 
           for name in "${expected[@]}"; do
@@ -214,7 +220,7 @@ jobs:
           done
 
           count="$(find run/screenshots -maxdepth 1 -type f -name '[0-9][0-9]-*.png' | wc -l)"
-          test "$count" -eq 28
+          test "$count" -eq 34
           ! find run/screenshots -maxdepth 1 -type f -name 'failure-*.png' | grep -q .
           grep -Fq 'CARDWORLDS_QA_DUEL_REALM_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_SPECTATOR_CONFIRMED' run/logs/latest.log
@@ -228,6 +234,13 @@ jobs:
           grep -Fq 'CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded=true model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json' run/logs/latest.log
           grep -Fq 'CARDWORLDS_FACEUP_DEFENSE_POKEMON_RENDERED' run/logs/latest.log
           grep -Eq 'CARDWORLDS_CARD_BACK_RENDERED.*position=FACE_DOWN_DEFENSE.*pokemonActorPresent=false' run/logs/latest.log
+          for intent in SPAWN ATTACK_PHYSICAL ATTACK_SPECIAL HIT CAST_STATUS TRANSFORM; do
+            grep -Fq "CARDWORLDS_NATIVE_POSE_PROOF intent=$intent " run/logs/latest.log
+          done
+          grep -Fq 'CARDWORLDS_NATIVE_PARTICLE registered=cobblemon:snowstorm' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_ANIMATION_FALLBACK_PROOF' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_VIETNAMESE_PROOF language=vi_vn' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_ENGLISH_FALLBACK_PROOF language=en_us' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
 
           python3 - <<'PY'
@@ -245,6 +258,8 @@ jobs:
           assert species >= 1025, ("loaded species below requested National Dex coverage", species)
           assert base_species >= 1025, ("base species coverage below National Dex", base_species)
           assert forms > 0, ("Cobblemon form/aspect coverage missing", forms)
+          effects=re.search(r"CARDWORLDS_EFFECT_COVERAGE primitives=(\d+) nontrivial=(\d+)",log)
+          assert effects and int(effects[1])==49 and int(effects[2])>=1000, "executable composition coverage missing"
           assert cards >= 1025, ("catalog card coverage below requested baseline", cards)
           assert decks >= 15, ("generated deck coverage too small", decks)
           assert banners >= 10, ("generated pack/banner coverage too small", banners)
@@ -271,6 +286,8 @@ jobs:
               "22-spelltrap-resolved", "23-arceus-defense",
               "24-arceus-judgement", "25-arceus-ultimate",
               "26-monster-positions", "27-model-grounding", "28-field-piles",
+              "29-summon-vfx", "30-physical-attack-vfx", "31-special-attack-vfx",
+              "32-spell-activate-vfx", "33-trap-chain-vfx", "34-vietnamese-duel-ui",
           ]
           for name in expected:
               p = Path("run/screenshots") / f"{name}.png"

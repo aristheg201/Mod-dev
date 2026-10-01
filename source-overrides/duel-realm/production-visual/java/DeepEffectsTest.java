@@ -1,0 +1,43 @@
+package vn.svarcade.tcg.duel;
+
+import org.junit.jupiter.api.*;
+import vn.svarcade.tcg.data.*;
+import java.nio.file.Path;
+import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Exercises real validated actions and executable authored content, not tooltip declarations. */
+class DeepEffectsTest {
+    Catalog catalog;
+    @BeforeEach void load() throws Exception {
+        Catalog base=Catalog.load(Path.of("absent-effect-test-catalog.json"));var r=base.rules();
+        catalog=new Catalog(new Catalog.Rules(5,60,15,3,5,8000,5,5,1,300,r.rankedLimits(),r.effective()),base.cards(),base.banners(),base.rewards(),base.dealers(),base.starters());
+    }
+    Duel duel() {
+        var d=new Duel(catalog,List.of("charmander","squirtle","protect","potion","research"),List.of(),List.of("charmander","squirtle","protect","potion","research"),List.of(),new Random(31));
+        d.qaReset(0,3);for(int seat=0;seat<2;seat++)for(int i=0;i<8;i++)d.qaAdd(seat,"charmander",Duel.Zone.DECK);return d;
+    }
+    void act(Duel d,int seat,String kind,String source,String target){d.act(seat,new Duel.Action(kind,source,target),d.revision());}
+    void passes(Duel d){for(int i=0;i<2;i++)act(d,d.view(0).priority(),"pass","","");}
+    void resolve(Duel d){assertFalse(d.view(0).chain().isEmpty());passes(d);}
+    void activate(Duel d,Duel.Piece source,Duel.Piece target){act(d,source.controller,"activate",source.token,target==null?"":target.token);resolve(d);}
+    int power(Duel d,Duel.Piece p){return d.view(p.controller).cards().stream().filter(c->c.token().equals(p.token)).findFirst().orElseThrow().power();}
+    void nextTurnMain(Duel d){int n=0;while(!(d.view(0).turnPlayer()==1&&d.view(0).phase().equals("MAIN1")&&d.view(0).open())){if(n++>80)fail("Turn did not advance");var v=d.view(0);act(d,v.priority(),v.open()?"next":"pass","","");}}
+
+    @Test void targetedDestroyLeavesOtherEnemyAndBoostsAllies(){var d=duel();var a=d.qaAdd(0,"charmander",Duel.Zone.FIELD);var t=d.qaAdd(1,"squirtle",Duel.Zone.FIELD);var other=d.qaAdd(1,"charmander",Duel.Zone.FIELD);activate(d,d.qaAdd(0,"shatter_gate",Duel.Zone.HAND),t);assertEquals(Duel.Zone.DISCARD,t.zone);assertEquals(Duel.Zone.FIELD,other.zone);assertEquals(a.card.power()+150,power(d,a));}
+    @Test void banishPaysDiscardAndDraws(){var d=duel();var payment=d.qaAdd(0,"potion",Duel.Zone.HAND);var t=d.qaAdd(1,"squirtle",Duel.Zone.FIELD);var s=d.qaAdd(0,"void_seal",Duel.Zone.HAND);activate(d,s,t);assertEquals(Duel.Zone.BANISHED,t.zone);assertEquals(Duel.Zone.DISCARD,payment.zone);assertEquals(1,d.view(0).handCounts().getFirst());}
+    @Test void returnHandDoesNotDestroyAndChangesRemainingPosition(){var d=duel();var t=d.qaAdd(1,"squirtle",Duel.Zone.FIELD);var other=d.qaAdd(1,"charmander",Duel.Zone.FIELD);activate(d,d.qaAdd(0,"tidal_recall",Duel.Zone.HAND),t);assertEquals(Duel.Zone.HAND,t.zone);assertEquals(Duel.BattlePosition.DEFENSE,other.position);assertTrue(d.history().stream().anyMatch(e->e.card().equals(t.token)&&e.cause()==Duel.Cause.RETURN));}
+    @Test void drawFilterAndDiscardExecuteInOrder(){var d=duel();int before=d.view(0).deckCounts().getFirst();activate(d,d.qaAdd(0,"stellar_filter",Duel.Zone.HAND),null);assertEquals(before-2,d.view(0).deckCounts().getFirst());assertEquals(1,d.view(0).handCounts().getFirst());assertEquals(1,d.view(0).cards().stream().filter(c->c.zone()==Duel.Zone.DECK).count());assertTrue(d.spectatorView().cards().stream().noneMatch(c->c.zone()==Duel.Zone.DECK));}
+    @Test void searchRespectsCategoryAndLevelAndRevealsOnlyItsResult(){var d=duel();var s=d.qaAdd(0,"recruit_signal",Duel.Zone.HAND);activate(d,s,null);var found=d.view(0).cards().stream().filter(c->c.zone()==Duel.Zone.HAND).findFirst().orElseThrow();assertEquals("pokemon",found.category());assertTrue(catalog.cards().values().stream().filter(c->c.name().equals(found.name())).findFirst().orElseThrow().level()<=4);assertTrue(d.view(1).cards().stream().anyMatch(c->c.token().equals(found.token())));assertTrue(d.spectatorView().cards().stream().noneMatch(c->c.zone()==Duel.Zone.HAND));}
+    @Test void revivePaysSeparateGraveCostAndRestoresPokemon(){var d=duel();var revived=d.qaAdd(0,"charmander",Duel.Zone.DISCARD);var payment=d.qaAdd(0,"potion",Duel.Zone.DISCARD);activate(d,d.qaAdd(0,"grave_bloom",Duel.Zone.HAND),revived);assertEquals(Duel.Zone.FIELD,revived.zone);assertEquals(Duel.Zone.BANISHED,payment.zone);assertTrue(d.history().stream().anyMatch(e->e.card().equals(revived.token)&&e.cause()==Duel.Cause.REVIVE));}
+    @Test void oncePerTurnRejectsRepeatedIdentityWithoutPayingAgain(){var d=duel();var a=d.qaAdd(0,"charmander",Duel.Zone.FIELD);var b=d.qaAdd(0,"charmander",Duel.Zone.FIELD);activate(d,a,null);passes(d);int before=power(d,b);assertThrows(IllegalArgumentException.class,()->act(d,0,"activate",b.token,""));assertEquals(before,power(d,b));}
+    @Test void invalidTargetAndUnaffordableCostsAreAtomic(){var d=duel();var s=d.qaAdd(0,"void_seal",Duel.Zone.HAND);var target=d.qaAdd(1,"squirtle",Duel.Zone.FIELD);long revision=d.revision();var life=d.view(0).life();assertThrows(IllegalArgumentException.class,()->act(d,0,"activate",s.token,target.token));assertEquals(revision,d.revision());assertEquals(Duel.Zone.HAND,s.zone);assertEquals(life,d.view(0).life());var payment=d.qaAdd(0,"potion",Duel.Zone.HAND);assertThrows(IllegalArgumentException.class,()->act(d,0,"activate",s.token,payment.token));assertEquals(Duel.Zone.HAND,payment.zone);}
+    @Test void continuousRegistersOnceAndUnregistersWhenSourceLeaves(){var d=duel();var ally=d.qaAdd(0,"charmander",Duel.Zone.FIELD);var domain=d.qaAdd(0,"ember_domain",Duel.Zone.HAND);activate(d,domain,null);assertEquals(1,d.registeredEffects());assertEquals(1,d.registeredEffects());assertEquals(ally.card.power()+250,power(d,ally));passes(d);nextTurnMain(d);var removal=d.qaAdd(1,"shatter_gate",Duel.Zone.HAND); // target canonical enemy monster only: remove aura with a generic zone operation fixture below.
+        var effect=new Catalog.Effect("composite",0,2,0,"none",List.of("MAIN1"),false,new EffectSpec(List.of("ON_ACTIVATE"),List.of(),List.of(),new EffectSpec.Target("SELF",null,0,1),List.of(new EffectSpec.Operation("RETURN_HAND",0,"ENEMY_CARD",null,null,Map.of("count","6"),null,null,null)),false,false,null,null));
+        // A JSON-shaped generic operation fixture exercises aura removal through the same action pipeline.
+        removal.grantedEffect=effect;activate(d,removal,null);assertEquals(Duel.Zone.HAND,domain.zone);assertEquals(0,d.registeredEffects());}
+    @Test void actualSetCounterNegatesActivationCostsStayPaidAndChainReverses(){var d=duel();var counter=d.qaAdd(0,"counter_gate",Duel.Zone.HAND);var payment=d.qaAdd(0,"potion",Duel.Zone.HAND);act(d,0,"play",counter.token,"SET");passes(d);assertThrows(IllegalArgumentException.class,()->act(d,0,"activate",counter.token,"1"));nextTurnMain(d);var flame=d.qaAdd(1,"flamethrower",Duel.Zone.HAND);act(d,1,"activate",flame.token,"");act(d,0,"activate",counter.token,"1");resolve(d);assertEquals(Duel.Zone.DISCARD,payment.zone);assertEquals(List.of(8000,7800),d.view(0).life());assertTrue(d.view(0).log().contains("Flamethrower was negated."));assertTrue(d.view(0).log().indexOf("Counter Gate resolves.")<d.view(0).log().indexOf("Flamethrower was negated."));var links=d.view(0).cues().stream().filter(c->c.semantic().equals("CHAIN_RESOLVE")).map(Duel.Cue::link).toList();assertEquals(List.of(2,1),links);}
+    @Test void conditionsAndTemporaryControlResolveThenExpire(){var d=duel();var enemy=d.qaAdd(1,"squirtle",Duel.Zone.FIELD);activate(d,d.qaAdd(0,"mind_theft",Duel.Zone.HAND),enemy);assertEquals(0,enemy.controller);assertEquals(7200,d.view(0).life().getFirst());passes(d);nextTurnMain(d);assertEquals(1,enemy.controller);assertFalse(enemy.flags.contains("CANNOT_ATTACK"));}
+    @Test void richCatalogSnapshotCompressionIsLosslessAndBounded(){String json="{\"effect\":\"Triệu hồi Đặc biệt\"}".repeat(70000);byte[] compressed=vn.svarcade.tcg.fabric.SnapshotCompression.encode(json);assertTrue(compressed.length<900*1024);assertEquals(json,vn.svarcade.tcg.fabric.SnapshotCompression.decode(compressed));assertThrows(IllegalArgumentException.class,()->vn.svarcade.tcg.fabric.SnapshotCompression.decode(new byte[]{1,2,3}));}
+    @Test void compositionsValidateAndAuthoredCardsAreMechanicallyDistinct(){Set<List<String>> signatures=new HashSet<>();long count=0;for(var c:catalog.cards().values())if(c.effect()!=null&&c.effect().spec()!=null){c.effect().spec().validate();if(!c.category().equals("pokemon")){count++;signatures.add(c.effect().spec().operations().stream().map(EffectSpec.Operation::type).toList());}}assertTrue(count>=20);assertTrue(signatures.size()>=18);assertEquals(49,Duel.effectPrimitiveCount());}
+}

@@ -32,7 +32,7 @@ final class DuelCardMeshes {
     private final Map<String,Identifier> fronts = new LinkedHashMap<>();
 
     Identifier front(Duel.VisibleCard card) {
-        String key = card.name()+"|"+card.species()+"|"+card.aspects()+"|"+card.type()+"|"+card.power();
+        String key = vn.svarcade.tcg.client.component.CardWorldsLanguage.language()+"|"+card.name()+"|"+card.species()+"|"+card.aspects()+"|"+card.type()+"|"+card.power()+"|"+card.effect();
         Identifier cached = fronts.get(key);
         if (cached != null) return cached;
         MinecraftClient client = MinecraftClient.getInstance();
@@ -55,7 +55,11 @@ final class DuelCardMeshes {
             ui.fill(new Rect(10,10,330,480),identity);
             ui.fill(new Rect(17,17,316,466),0xFFF0E4CD);
             ui.fill(new Rect(24,25,302,42),0xFF24364B);
-            ui.fit(card.name().toUpperCase(Locale.ROOT),new Rect(34,39,280,28),20,0xFFFFE3A4);
+            vn.svarcade.tcg.data.Catalog.Card definition=null;
+            if(client.currentScreen instanceof vn.svarcade.tcg.client.CardWorldsScreen screen)definition=screen.state.definitions().values().stream().filter(d->d.name().equals(card.name())).findFirst().orElse(null);
+            if(definition!=null){var d=definition;definition=new vn.svarcade.tcg.data.Catalog.Card(d.id(),d.name(),d.category(),d.species(),d.aspects(),d.type(),d.family(),d.evolvesFrom(),d.extra(),d.level(),d.power(),d.text(),d.set(),d.rarity(),d.sources(),card.effect(),d.triggers(),d.modifiers());}
+            String title=definition==null?card.name():vn.svarcade.tcg.client.component.CardWorldsLanguage.name(definition);
+            ui.fit(title.toUpperCase(Locale.ROOT),new Rect(34,39,280,28),20,0xFFFFE3A4);
             ui.fill(new Rect(24,76,302,299),0xFFBA9B64);
             ui.c.fillGradient(29,81,321,370,0xFF456579,0xFF0B1829);
             // A quiet radial stage behind the actual resolved Pokémon artwork.
@@ -87,7 +91,7 @@ final class DuelCardMeshes {
             }
             ui.fit(card.type().toUpperCase(Locale.ROOT)+" / "+card.category().toUpperCase(Locale.ROOT),new Rect(28,386,298,20),15,0xFF443726);
             ui.fill(new Rect(27,412,296,39),0xFFE2D3B6);
-            ui.fit("SPELL / TRAP",new Rect(35,425,280,18),13,0xFF57452F);
+            ui.fit(definition==null?vn.svarcade.tcg.client.component.CardWorldsLanguage.translate(card.text()):vn.svarcade.tcg.client.component.CardWorldsLanguage.effect(definition),new Rect(35,425,280,18),11,0xFF57452F);
             ui.fill(new Rect(26,462,298,2),0xFF8A6240);
             ui.fit("ATK / "+card.power(),new Rect(195,474,127,18),16,0xFF342B26);
             ui.text("CARD WORLDS",28,474,13,0xFF806C50);
@@ -115,14 +119,19 @@ final class DuelCardMeshes {
         plane(context,DEFENSE,base.add(0,.018,0),0,4.7f,4.7f,0xFFFFFFFF);
     }
     void board(WorldRenderContext context,Vec3d origin) {
-        plane(context,BOARD,origin.add(0,.006,0),0,43,29,0xFFFFFFFF);
+        Identifier board=vn.svarcade.tcg.client.component.CardWorldsLanguage.language().equals("vi_vn")?Identifier.of("svarcade_tcg","textures/duel/board_vi.png"):BOARD;
+        plane(context,board,origin.add(0,.006,0),0,43,29,0xFFFFFFFF);
     }
     void card(WorldRenderContext context,Identifier front,Vec3d center,float yaw,float width,float depth) {
+        card(context,front,center,yaw,width,depth,0);
+    }
+    void card(WorldRenderContext context,Identifier front,Vec3d center,float yaw,float width,float depth,float tilt) {
         if(front==null)return;
         MatrixStack stack=context.matrixStack();if(stack==null||context.consumers()==null)return;
         stack.push();
         Vec3d camera=context.camera().getPos();stack.translate(center.x-camera.x,center.y-camera.y,center.z-camera.z);
         stack.multiply(new Quaternionf().rotationY((float)Math.toRadians(yaw)));
+        stack.multiply(new Quaternionf().rotationX(tilt));
         var entry=stack.peek();
         var buffer=context.consumers().getBuffer(RenderLayer.getEntityCutoutNoCull(front));
         float x=width/2,z=depth/2,half=.009f;

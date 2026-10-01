@@ -1,0 +1,78 @@
+{
+  "IDLE": [
+    "idle"
+  ],
+  "SPAWN": [
+    "spawn",
+    "sendout",
+    "cry"
+  ],
+  "CRY": [
+    "cry"
+  ],
+  "ATTACK_PHYSICAL": [
+    "physical",
+    "attack_physical",
+    "attack",
+    "melee",
+    "cry"
+  ],
+  "ATTACK_SPECIAL": [
+    "special",
+    "attack_special",
+    "cast",
+    "cry"
+  ],
+  "CAST_STATUS": [
+    "status",
+    "cast",
+    "special",
+    "cry"
+  ],
+  "CHARGE": [
+    "charge",
+    "special",
+    "status",
+    "cry"
+  ],
+  "PROJECTILE_CAST": [
+    "special",
+    "cast",
+    "cry"
+  ],
+  "DASH": [
+    "dash",
+    "physical",
+    "run",
+    "cry"
+  ],
+  "HIT": [
+    "recoil",
+    "hit",
+    "hurt",
+    "cry"
+  ],
+  "HEAVY_HIT": [
+    "recoil",
+    "hurt",
+    "cry"
+  ],
+  "FAINT": [
+    "faint"
+  ],
+  "TRANSFORM": [
+    "transform",
+    "evolve",
+    "cry"
+  ],
+  "EVOLVE": [
+    "evolve",
+    "transform",
+    "cry"
+  ],
+  "VICTORY": [
+    "victory",
+    "happy",
+    "cry"
+  ]
+}

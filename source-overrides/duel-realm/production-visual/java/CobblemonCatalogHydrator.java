@@ -43,6 +43,7 @@ public final class CobblemonCatalogHydrator {
             expanded.cards().size(),bases,fakemon,expanded.starters().size(),expanded.banners().size());
         long officialBases=species.stream().filter(s -> !isAddon(s)).map(s->s.namespace()+":"+s.path()).distinct().count();
         LOG.info("CARDWORLDS_FORMS_HYDRATED baseSpecies={} forms={}",officialBases,forms);
+        LOG.info("CARDWORLDS_EFFECT_COVERAGE primitives={} nontrivial={}",vn.svarcade.tcg.duel.Duel.effectPrimitiveCount(),expanded.cards().values().stream().filter(c->c.effect()!=null&&c.effect().spec()!=null&&c.effect().spec().operations().stream().anyMatch(op->!Set.of("DAMAGE_LP","HEAL_LP","DRAW").contains(op.type()))).count());
         if (Boolean.getBoolean("cardworlds.qa.requireFakemon") && fakemon == 0) throw new IllegalStateException("QA requires real addon species, but none registered");
         LOG.info("CARDWORLDS_DECK_FAMILIES unique={} aliases={}",expanded.starters().values().stream().map(d -> new TreeMap<>(d.stream().collect(java.util.stream.Collectors.groupingBy(id -> id,java.util.stream.Collectors.counting())))).distinct().count(),content().aliases().size());
         return expanded;
@@ -110,6 +111,7 @@ public final class CobblemonCatalogHydrator {
         }
 
         Catalog result=new Catalog(base.rules(),cards,banners,base.rewards(),base.dealers(),starters);
+        result=vn.svarcade.tcg.data.EffectContent.apply(result);
         result.validate();
         return result;
     }

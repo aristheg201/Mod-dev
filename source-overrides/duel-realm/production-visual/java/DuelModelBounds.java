@@ -8,7 +8,7 @@ import net.minecraft.client.util.math.MatrixStack;
 
 /** Measures vertices from the effective Cobblemon poser, including addon providers. */
 final class DuelModelBounds {
-    record Bounds(double height, double span, double minY, double centerX, double centerZ) {}
+    record Bounds(double height, double span, double minY, double centerX, double centerZ, double poseHash) {}
     static Bounds measure(PokemonEntity entity) {
         var state = (PokemonClientDelegate)entity.getDelegate();
         var model = VaryingModelRepository.INSTANCE.getPoser(entity.getPokemon().getSpecies().getResourceIdentifier(), state);
@@ -36,14 +36,15 @@ final class DuelModelBounds {
             throw new IllegalStateException("Resolved Pokémon model emitted no measurable vertices: " + entity.getPokemon().getSpecies().getResourceIdentifier());
         return new Bounds(Math.max(.1, vertices.maxY - vertices.minY),
             Math.max(vertices.maxX - vertices.minX, vertices.maxZ - vertices.minZ), vertices.minY,
-            (vertices.minX + vertices.maxX)/2, (vertices.minZ + vertices.maxZ)/2);
+            (vertices.minX + vertices.maxX)/2, (vertices.minZ + vertices.maxZ)/2,vertices.poseHash);
     }
     private static final class Measure implements VertexConsumer {
         int count;
+        double poseHash;
         double minX=Double.POSITIVE_INFINITY,minY=minX,minZ=minX;
         double maxX=Double.NEGATIVE_INFINITY,maxY=maxX,maxZ=maxX;
         public VertexConsumer vertex(float x,float y,float z) {
-            count++; minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);return this;
+            count++;poseHash+=Math.sin(x*7.11+y*3.7+z*2.2)*(count%17+1); minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);return this;
         }
         public VertexConsumer color(int r,int g,int b,int a){return this;}
         public VertexConsumer texture(float u,float v){return this;}

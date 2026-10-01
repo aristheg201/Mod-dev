@@ -37,7 +37,7 @@ public final class DuelWorldScene {
     private record Actor(PokemonEntity entity, String species, List<String> aspects, int controller, long born, double scale, Vec3d anchor) {}
     private static final class CardActor {
         Duel.VisibleCard card;
-        boolean faceDown;
+        boolean faceDown;long cueKey;
         Vec3d center = Vec3d.ZERO;
         float yaw, width, depth;
         net.minecraft.util.Identifier texture;
@@ -51,6 +51,14 @@ public final class DuelWorldScene {
     private static boolean renderHook;
     private long settledSince;
     private String visualSignature = "";
+    private final DuelVfxTimeline timeline=new DuelVfxTimeline();
+    private final DuelVfxRenderer vfx=new DuelVfxRenderer();
+    private record Departing(PokemonEntity entity,long until) {}
+    private final Map<String,Departing> departing=new LinkedHashMap<>();
+    private final Map<String,Vec3d> positions=new LinkedHashMap<>();
+    private final Map<String,CardActor> activationCards=new LinkedHashMap<>();
+    private Duel.View lastView;
+    private final Map<String,PokemonDuelAnimationResolver.Resolution> animationProofs=new HashMap<>();
 
     public DuelWorldScene() {
         if (!renderHook) {
@@ -64,7 +72,9 @@ public final class DuelWorldScene {
         if (realmMode) meshes.board(context, origin);
         defenseBases.values().forEach(base -> meshes.defense(context, base));
         fieldCards.values().forEach(card -> meshes.card(context, card.texture, card.center, card.yaw, card.width, card.depth));
-        supportCards.values().forEach(card -> meshes.card(context, card.texture, card.center, card.yaw, card.width, card.depth));
+        long now=System.currentTimeMillis();
+        supportCards.values().forEach(card -> renderSupport(context,card,now));
+        activationCards.forEach((token,card)->{if(!supportCards.containsKey(token)&&timeline.card(token)!=null)renderSupport(context,card,now);});
         piles.values().forEach(pile -> {
             // Bounded paper-thin layers, never display entities or a block-shaped slab.
             int layers = Math.min(pile.count(), 12);
@@ -73,9 +83,48 @@ public final class DuelWorldScene {
                 meshes.card(context, texture, pile.base().add(0, .015 + i * .021, 0), pile.yaw(), 2.1f, 3f);
             }
         });
+        for(CardActor card:supportCards.values())if(!card.faceDown&&card.card!=null&&Set.of("trainer","stadium").contains(card.card.category()))vfx.persistent(context,card.center,0x5592BCE6,now);
+        vfx.render(context,timeline.active(),now);
+    }
+    private void renderSupport(net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext context,CardActor card,long now) {
+        var effect=card.card==null?timeline.active().stream().filter(v->v.cue.sequence()==card.cueKey).findFirst().orElse(null):timeline.card(card.card.token());
+        if(effect==null){meshes.card(context,card.texture,card.center,card.yaw,card.width,card.depth);return;}
+        double t=effect.progress(now),lift=Math.sin(Math.PI*t)*1.35;
+        float tilt=effect.cue.semantic().equals("TRAP_REVEAL")?(float)(Math.PI*(1-Math.min(1,t*2.4))):(float)(-.75*Math.sin(Math.PI*t));
+        meshes.card(context,card.texture,card.center.add(0,lift,0),card.yaw,card.width,card.depth,tilt);
+    }
+    private PokemonEntity entity(String token) {
+        Actor actor=actors.get(token);if(actor!=null)return actor.entity();
+        Departing old=departing.get(token);return old==null?null:old.entity();
+    }
+    private void startVfx(DuelVfxTimeline.Instance instance) {
+        String semantic=instance.cue.semantic(),intent=switch(semantic){
+            case "ATTACK_PHYSICAL" -> "ATTACK_PHYSICAL";case "ATTACK_SPECIAL" -> "ATTACK_SPECIAL";
+            case "CAST_STATUS" -> "CAST_STATUS";case "CHARGE" -> "CHARGE";
+            case "IMPACT","DAMAGE" -> "HIT";case "DESTROY","SEND_GRAVE" -> "FAINT";case "BANISH" -> "TRANSFORM";
+            case "SUMMON_EVOLUTION" -> "EVOLVE";case "SUMMON_TRANSFORM" -> "TRANSFORM";
+            default -> semantic.startsWith("SUMMON")||semantic.equals("REVIVE")?"SPAWN":"IDLE";
+        };
+        PokemonEntity source=entity(instance.cue.source()),target=entity(instance.cue.target());
+        if(intent.equals("HIT")){if(target!=null)animationProofs.put(instance.cue.target(),PokemonDuelAnimationResolver.play(target,"HIT"));}
+        else if(source!=null&&!intent.equals("IDLE")){
+            var resolved=PokemonDuelAnimationResolver.play(source,intent);animationProofs.put(instance.cue.source(),resolved);
+            if(instance.preview&&resolved.nativeAnimation())instance.duration=Math.clamp((int)(resolved.duration()*1000),650,instance.profile.maxLifetime());
+        }
+        if(Set.of("DRAW","SEARCH","DISCARD","MILL","RETURN_DECK","RETURN_HAND").contains(semantic)){
+            CardActor card=activationCards.computeIfAbsent("cue:"+instance.cue.sequence(),t->createCardActor());card.cueKey=instance.cue.sequence();card.texture=DuelCardMeshes.BACK;card.faceDown=true;
+            setCardPosition(card,instance.source.add(0,.05,0),arenaYaw,2.1f,.1f,3f);
+        }
+        if(Set.of("SPELL_ACTIVATE","TRAP_REVEAL","CHAIN_LINK","CHAIN_RESOLVE","CHAIN_NEGATE").contains(semantic)&&lastView!=null){
+            var card=lastView.cards().stream().filter(c->c.token().equals(instance.cue.source())&&!c.category().equals("pokemon")&&!c.category().startsWith("facedown")).findFirst();
+            if(card.isPresent()){
+                CardActor actor=activationCards.computeIfAbsent(card.get().token(),t->createCardActor());setCardAppearance(actor,card.get(),false);
+                setCardPosition(actor,instance.source.add(0,.015,0),arenaYaw,2.7f,.1f,3.85f);
+            }
+        }
     }
     public boolean settled() {
-        return cameraRig != null && System.currentTimeMillis() - settledSince >= 1200
+        return cameraRig != null && timeline.settled() && departing.isEmpty() && System.currentTimeMillis() - settledSince >= 1200
             && actors.values().stream().allMatch(a -> System.currentTimeMillis() - a.born() >= 1200)
             && fieldCards.values().stream().allMatch(a -> a.texture != null);
     }
@@ -86,6 +135,42 @@ public final class DuelWorldScene {
     public void groundingCamera() { orbitYaw = 18; orbitPitch = 36; cameraDistance = 27; updateCamera(); }
     public void creationCamera() { orbitYaw = 32; orbitPitch = 27; cameraDistance = 18; updateCamera(); }
     public void pileCamera() { orbitYaw = 0; orbitPitch = 48; cameraDistance = 34; updateCamera(); }
+    public void vfxCamera() { orbitYaw=18;orbitPitch=35;cameraDistance=21;updateCamera(); }
+    public void previewVfx(String semantic,String source,String target) {
+        if(!Boolean.getBoolean("cardworlds.qa"))throw new IllegalStateException("VFX preview requires the QA driver");
+        PokemonEntity pokemon=entity(source);String element=pokemon==null?"psychic":pokemon.getPokemon().getPrimaryType().getName();
+        Vec3d a=positions.getOrDefault(source,local(0,0,-4)),b=positions.getOrDefault(target,local(0,0,4));
+        if(source.isBlank())a=local(-6,.015,-9);
+        var animation=new vn.svarcade.tcg.data.EffectSpec.Animation(semantic,.25,.46,.72,.9);
+        var presentation=new vn.svarcade.tcg.data.EffectSpec.Presentation(semantic.equals("ATTACK_PHYSICAL")?"MELEE":semantic.equals("ATTACK_SPECIAL")?"BEAM":"STATUS",element,2000,animation,null,null,null,null);
+        var cue=new Duel.Cue(-1,semantic,source,target,lastView==null?0:lastView.you(),element,presentation,semantic.equals("TRAP_REVEAL")?3:0);
+        timeline.preview(cue,a,b,System.currentTimeMillis(),this::startVfx);vfxCamera();
+    }
+    public int vfxCaptureDelay(){return timeline.active().isEmpty()?600:(int)(timeline.active().getFirst().duration*.82);}
+    public void previewChainBreak(String source,String target) {
+        var cue=new Duel.Cue(-2,"CHAIN_NEGATE",source,target,lastView.you(),"psychic",null,2);
+        timeline.appendPreview(cue,positions.getOrDefault(source,local(-6,0,-9)),positions.getOrDefault(target,local(-6,0,9)),System.currentTimeMillis(),this::startVfx);
+    }
+    public void verifyNativePose(String token,String intent) {
+        var entity=entity(token);var proof=animationProofs.get(token);
+        if(entity==null||proof==null||!proof.nativeAnimation()||!proof.intent().equals(intent))throw new AssertionError("Native animation unresolved for "+intent);
+        var state=(com.cobblemon.mod.common.client.entity.PokemonClientDelegate)entity.getDelegate();
+        double animated=DuelModelBounds.measure(entity).poseHash();
+        var primary=state.getPrimaryAnimation();var activeAnimations=new ArrayList<>(state.getActiveAnimations());
+        double idle;
+        try {state.setPrimaryAnimation(null);state.getActiveAnimations().clear();idle=DuelModelBounds.measure(entity).poseHash();}
+        finally {state.setPrimaryAnimation(primary);state.getActiveAnimations().clear();state.getActiveAnimations().addAll(activeAnimations);}
+        double deformation=Math.abs(animated-idle);
+        if(deformation<.00001)throw new AssertionError("Resolved native animation did not deform rendered model vertices: "+intent);
+        LOG.info("CARDWORLDS_NATIVE_POSE_PROOF intent={} animation={} deformation={}",intent,proof.animation(),deformation);
+    }
+    public void verifyAnimationFallback(String token) {
+        var entity=entity(token);if(entity==null)throw new AssertionError("Fallback QA entity missing");
+        var result=PokemonDuelAnimationResolver.play(entity,"__missing_optional_animation__");
+        var state=(com.cobblemon.mod.common.client.entity.PokemonClientDelegate)entity.getDelegate();
+        if(result.nativeAnimation()||state.getCurrentPose()==null)throw new AssertionError("Missing semantic did not safely preserve provider idle");
+        LOG.info("CARDWORLDS_ANIMATION_FALLBACK_PROOF pose={} provider={}",state.getCurrentPose(),entity.getPokemon().getSpecies().getResourceIdentifier());
+    }
     public void verifyPileActors() {
         if (piles.size() != 8 || piles.values().stream().filter(p -> p.top().equals(DuelCardMeshes.BACK)).count() != 4)
             throw new AssertionError("Expected eight occupied piles: four hidden decks and four public top cards");
@@ -131,6 +216,7 @@ public final class DuelWorldScene {
         }
 
         active = this;
+        lastView=view;
         String signature = view.deckCounts() + "|" + view.extraCounts() + "|" + view.cards();
         if (!signature.equals(visualSignature)) { visualSignature = signature; settledSince = System.currentTimeMillis(); }
         List<Duel.VisibleCard> field = view.cards().stream().filter(c -> c.zone() == Duel.Zone.FIELD).toList();
@@ -150,6 +236,7 @@ public final class DuelWorldScene {
             boolean mine = card.controller() == view.you();
             double z = mine ? (realmMode ? -4.0 : -5.80) : (realmMode ? 4.0 : 5.80);
             Vec3d base = local(x, 0, z);
+            positions.put(card.token(),base);
 
             String position = card.position() == null || card.position().isBlank() ? "ATTACK" : card.position();
             boolean faceDown = "FACE_DOWN_DEFENSE".equals(position) || card.category().startsWith("facedown");
@@ -167,17 +254,14 @@ public final class DuelWorldScene {
                 }
 
                 Vec3d pos = base;
-                if (card.token().equals(attacking) && now - attackAt < 650) {
-                    double t = (now - attackAt) / 650.0;
-                    double lunge = Math.sin(Math.PI * t) * 3.20;
-                    pos = pos.add(forward.multiply(mine ? lunge : -lunge));
-                }
+                pos=pos.add(timeline.motion(card.token(),now));
 
                 PokemonEntity entity = actor.entity();
                 // Entity position is the feet anchor. Keeping Y on the actual board surface
                 // guarantees every model touches the board instead of floating above it.
                 double yawRad = Math.toRadians((mine ? arenaYaw : arenaYaw + 180f) - 180f);
                 Vec3d anchor = actor.anchor();
+                entity.setInvisible(timeline.active().stream().anyMatch(v->v.cue.source().equals(card.token())&&v.cue.semantic().startsWith("SUMMON")&&v.progress(now)<.25));
                 entity.setOnGround(true);
                 entity.setPosition(pos.x + anchor.x * Math.cos(yawRad) - anchor.z * Math.sin(yawRad),
                     pos.y + anchor.y, pos.z + anchor.x * Math.sin(yawRad) + anchor.z * Math.cos(yawRad));
@@ -198,10 +282,25 @@ public final class DuelWorldScene {
             }
         }
 
+        timeline.observe(view,token->{
+            Vec3d cached=positions.get(token);if(cached!=null)return cached;
+            var card=view.cards().stream().filter(c->c.token().equals(token)).findFirst();
+            if(card.isPresent()&&(card.get().zone()==Duel.Zone.SUPPORT||card.get().zone()==Duel.Zone.STADIUM)){
+                var c=card.get();boolean mine=c.controller()==view.you();
+                int slot=view.cards().stream().filter(q->q.controller()==c.controller()&&q.zone()==Duel.Zone.SUPPORT).toList().indexOf(c);
+                return local(c.zone()==Duel.Zone.STADIUM?(mine?-18:18):(slot-2)*6,0,c.zone()==Duel.Zone.STADIUM?(mine?-10:10):(mine?-9:9));
+            }return null;
+        },origin,(controller,targetPoint)->targetPoint?local(0,1,controller==view.you()?4:-4):local(controller==view.you()?18:-18,.1,controller==view.you()?-10:10),now);
+        timeline.tick(now,this::startVfx);
+        for(var instance:timeline.active())if(!instance.hit&&instance.progress(now)>=instance.fraction("impact")&&Set.of("ATTACK_PHYSICAL","ATTACK_SPECIAL").contains(instance.cue.semantic())){
+            instance.hit=true;PokemonEntity victim=entity(instance.cue.target());if(victim!=null)animationProofs.put(instance.cue.target(),PokemonDuelAnimationResolver.play(victim,"HIT"));
+        }
+        vfx.tick(timeline.active(),now);
         for (Iterator<Map.Entry<String, Actor>> it = actors.entrySet().iterator(); it.hasNext();) {
             var entry = it.next();
             if (!liveActors.contains(entry.getKey())) {
-                remove(entry.getValue().entity());
+                if(timeline.departing(entry.getKey()))departing.put(entry.getKey(),new Departing(entry.getValue().entity(),now+2800));
+                else remove(entry.getValue().entity());
                 it.remove();
             }
         }
@@ -225,12 +324,17 @@ public final class DuelWorldScene {
             double x = card.zone()==Duel.Zone.STADIUM ? (mine?-18.0:18.0) : (slot-2)*6.0;
             double z = card.zone()==Duel.Zone.STADIUM ? (mine?-10.0:10.0) : (mine?-9.0:9.0);
             setCardPosition(display, local(x,0.015,z), arenaYaw, 2.70f,0.10f,3.85f);
+            positions.put(card.token(),local(x,0,z));
         }
         for (Iterator<Map.Entry<String,CardActor>> it=supportCards.entrySet().iterator(); it.hasNext();) {
             var e=it.next();
             if(!liveSupport.contains(e.getKey())) { removeCard(e.getValue()); it.remove(); }
         }
         syncPiles(view);
+        for(var it=departing.entrySet().iterator();it.hasNext();){var old=it.next();if(now>=old.getValue().until()){remove(old.getValue().entity());it.remove();}}
+        activationCards.entrySet().removeIf(e->e.getValue().card==null?timeline.active().stream().noneMatch(v->v.cue.sequence()==e.getValue().cueKey):timeline.card(e.getKey())==null);
+        while(positions.size()>256)positions.remove(positions.keySet().iterator().next());
+        updateCamera();
     }
 
     private void syncPiles(Duel.View view) {
@@ -286,6 +390,7 @@ public final class DuelWorldScene {
         MinecraftClient client = MinecraftClient.getInstance();
         for (Actor actor : actors.values()) remove(actor.entity());
         actors.clear();
+        departing.values().forEach(a->remove(a.entity()));departing.clear();positions.clear();activationCards.clear();animationProofs.clear();timeline.clear();lastView=null;
         for (CardActor card : fieldCards.values()) removeCard(card);
         fieldCards.clear();
         for (CardActor card : supportCards.values()) removeCard(card);
@@ -336,7 +441,7 @@ public final class DuelWorldScene {
         if(cameraRig==null||cameraRig.isRemoved())return;
         double pitch=Math.toRadians(orbitPitch),yaw=Math.toRadians(orbitYaw);double horizontal=cameraDistance*Math.cos(pitch),vertical=cameraDistance*Math.sin(pitch);
         Vec3d back=forward.multiply(-Math.cos(yaw)).add(right.multiply(Math.sin(yaw))).normalize();
-        Vec3d target=origin.add(0,realmMode?2.15:1.45,0);Vec3d pos=target.add(back.multiply(horizontal)).add(0,vertical,0);Vec3d look=target.subtract(pos).normalize();
+        Vec3d target=origin.add(0,realmMode?2.15:1.45,0);Vec3d pos=target.add(back.multiply(horizontal)).add(0,vertical+timeline.cameraPunch(System.currentTimeMillis()),0);Vec3d look=target.subtract(pos).normalize();
         float viewYaw=(float)Math.toDegrees(Math.atan2(-look.x,look.z));float viewPitch=(float)Math.toDegrees(-Math.asin(look.y));
         cameraRig.setPosition(pos.x,pos.y,pos.z);cameraRig.setYaw(viewYaw);cameraRig.setHeadYaw(viewYaw);cameraRig.setBodyYaw(viewYaw);cameraRig.setPitch(viewPitch);
     }

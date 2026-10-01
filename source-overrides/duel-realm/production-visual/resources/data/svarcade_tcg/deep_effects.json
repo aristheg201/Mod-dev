@@ -1,0 +1,4607 @@
+{
+  "monsterRules": [
+    {
+      "types": [],
+      "minLevel": 1,
+      "maxLevel": 12,
+      "form": true,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_SUMMON",
+            "ON_SPECIAL_SUMMON"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": 200,
+              "target": "SELF",
+              "duration": "NEXT_TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": null,
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "fire"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DESTROY",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 200,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "fire",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "fire"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": 200,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PIERCE",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "fire",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "water"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": -150,
+              "target": "ALL_ENEMIES",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "water",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "water"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": -150,
+              "target": "ALL_ENEMIES",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "water",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "electric"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "APPLY_STATUS",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {
+                "status": "CANNOT_ATTACK"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": -200,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "electric",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "electric"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "APPLY_STATUS",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {
+                "status": "CANNOT_ATTACK"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": -200,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "electric",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "grass"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_SUMMON",
+            "ON_SPECIAL_SUMMON"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "HEAL_LP",
+              "amount": 300,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "ADD_COUNTER",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {
+                "counter": "growth"
+              }
+            },
+            {
+              "type": "SEARCH",
+              "amount": 1,
+              "target": "DECK",
+              "duration": null,
+              "flags": {
+                "count": "1",
+                "reveal": "true"
+              }
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "IF",
+              "amount": 0,
+              "target": "SELF",
+              "condition": {
+                "type": "COUNTER_AT_LEAST",
+                "value": "growth",
+                "amount": 2,
+                "target": "SELF",
+                "children": []
+              },
+              "children": [
+                {
+                  "type": "REMOVE_COUNTER",
+                  "amount": 2,
+                  "target": "SELF",
+                  "duration": null,
+                  "flags": {
+                    "counter": "growth"
+                  }
+                },
+                {
+                  "type": "HEAL_LP",
+                  "amount": 500,
+                  "target": "SELF",
+                  "duration": null,
+                  "flags": {}
+                }
+              ]
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "grass",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "grass"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "HEAL_LP",
+              "amount": 300,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "ADD_COUNTER",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {
+                "counter": "growth"
+              }
+            },
+            {
+              "type": "SEARCH",
+              "amount": 1,
+              "target": "DECK",
+              "duration": null,
+              "flags": {
+                "count": "1",
+                "reveal": "true"
+              }
+            },
+            {
+              "type": "IF",
+              "amount": 0,
+              "target": "SELF",
+              "condition": {
+                "type": "COUNTER_AT_LEAST",
+                "value": "growth",
+                "amount": 2,
+                "target": "SELF",
+                "children": []
+              },
+              "children": [
+                {
+                  "type": "REMOVE_COUNTER",
+                  "amount": 2,
+                  "target": "SELF",
+                  "duration": null,
+                  "flags": {
+                    "counter": "growth"
+                  }
+                },
+                {
+                  "type": "HEAL_LP",
+                  "amount": 500,
+                  "target": "SELF",
+                  "duration": null,
+                  "flags": {}
+                }
+              ]
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "grass",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "ice"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {
+                "position": "DEFENSE"
+              }
+            },
+            {
+              "type": "CANNOT_ATTACK",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "BEAM",
+            "profile": "ice",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "ice"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {
+                "position": "DEFENSE"
+              }
+            },
+            {
+              "type": "CANNOT_ATTACK",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "BEAM",
+            "profile": "ice",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "psychic"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "LOOK_TOP_DECK",
+              "amount": 3,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "REORDER_DECK",
+              "amount": 3,
+              "target": "SELF",
+              "duration": null,
+              "flags": {
+                "order": "POWER_DESC"
+              }
+            },
+            {
+              "type": "DRAW",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "psychic"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 200,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "LOOK_TOP_DECK",
+              "amount": 3,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "REORDER_DECK",
+              "amount": 3,
+              "target": "SELF",
+              "duration": null,
+              "flags": {
+                "order": "POWER_DESC"
+              }
+            },
+            {
+              "type": "DRAW",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "ghost"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_SEND_GRAVE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1
+          },
+          "operations": [
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "HEAL_LP",
+              "amount": 200,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "ghost",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "ghost"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "grave",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 200,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "REVIVE",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "CANNOT_ATTACK",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "ghost",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "dark"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DISCARD",
+              "amount": 0,
+              "target": "RANDOM_HAND",
+              "duration": null,
+              "flags": {
+                "controller": "ENEMY"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 150,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "dark",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "dark"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 200,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DISCARD",
+              "amount": 0,
+              "target": "RANDOM_HAND",
+              "duration": null,
+              "flags": {
+                "controller": "ENEMY"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 150,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "dark",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "steel"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": false,
+        "spec": {
+          "triggers": [
+            "CONTINUOUS"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 100,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "steel",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "steel"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 100,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "steel",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "dragon"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DESTROY",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 200,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "BEAM",
+            "profile": "dragon",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "dragon"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": 300,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "EXTRA_ATTACK",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "BEAM",
+            "profile": "dragon",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "fairy"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "REMOVE_STATUS",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {
+                "status": "ALL"
+              }
+            },
+            {
+              "type": "PREVENT_TARGET",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "HEAL_LP",
+              "amount": 200,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "fairy",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "fairy"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "REMOVE_STATUS",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {
+                "status": "ALL"
+              }
+            },
+            {
+              "type": "PREVENT_TARGET",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "HEAL_LP",
+              "amount": 200,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "fairy",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "fighting"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DESTROY",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 200,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "fighting",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "fighting"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": 200,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PIERCE",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "fighting",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "poison"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": -300,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "CANNOT_ACTIVATE",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "poison",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "poison"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": -300,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "CANNOT_ACTIVATE",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "poison",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "ground"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "ALL_ENEMIES",
+              "duration": null,
+              "flags": {
+                "position": "DEFENSE"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 100,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "AOE",
+            "profile": "ground",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "ground"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "ALL_ENEMIES",
+              "duration": null,
+              "flags": {
+                "position": "DEFENSE"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 100,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "AOE",
+            "profile": "ground",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "rock"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "ADD_COUNTER",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {
+                "counter": "fortitude"
+              }
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "rock",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "rock"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "ADD_COUNTER",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {
+                "counter": "fortitude"
+              }
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "rock",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "bug"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "SEARCH",
+              "amount": 1,
+              "target": "DECK",
+              "duration": null,
+              "flags": {
+                "reveal": "true"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 100,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "bug",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "bug"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "SEARCH",
+              "amount": 1,
+              "target": "DECK",
+              "duration": null,
+              "flags": {
+                "reveal": "true"
+              }
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 100,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "PROJECTILE",
+            "profile": "bug",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_SPECIAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "flying"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_TARGET",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "ENEMY_MONSTER",
+              "duration": null,
+              "flags": {
+                "count": "1",
+                "position": "DEFENSE"
+              }
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "flying",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "flying"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_TARGET",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "ENEMY_MONSTER",
+              "duration": null,
+              "flags": {
+                "count": "1",
+                "position": "DEFENSE"
+              }
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "flying",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "normal"
+      ],
+      "minLevel": 7,
+      "maxLevel": 12,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DRAW",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "DISCARD",
+              "amount": 0,
+              "target": "HAND",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "SELF",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "normal",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    },
+    {
+      "types": [
+        "normal"
+      ],
+      "minLevel": 1,
+      "maxLevel": 6,
+      "form": null,
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DRAW",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "DISCARD",
+              "amount": 0,
+              "target": "HAND",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "MELEE",
+            "profile": "normal",
+            "duration": 1400,
+            "animation": {
+              "semantic": "ATTACK_PHYSICAL",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      }
+    }
+  ],
+  "cards": {
+    "shatter_gate": {
+      "id": "shatter_gate",
+      "name": "Shatter Gate",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DESTROY",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MODIFY_POWER",
+              "amount": 150,
+              "target": "ALL_ALLIES",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "void_seal": {
+      "id": "void_seal",
+      "name": "Void Seal",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "ghost",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "DISCARD",
+              "amount": 1,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "BANISH",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "DRAW",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "ghost",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "tidal_recall": {
+      "id": "tidal_recall",
+      "name": "Tidal Recall",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "water",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "ENEMY_MONSTER",
+              "duration": null,
+              "flags": {
+                "position": "DEFENSE"
+              }
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "water",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "recruit_signal": {
+      "id": "recruit_signal",
+      "name": "Recruit Signal",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": {
+              "category": "pokemon",
+              "maxLevel": 4
+            }
+          },
+          "operations": [
+            {
+              "type": "SEARCH",
+              "amount": 1,
+              "target": "DECK",
+              "duration": null,
+              "flags": {
+                "reveal": "true"
+              }
+            },
+            {
+              "type": "SHUFFLE",
+              "amount": 0,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "grave_bloom": {
+      "id": "grave_bloom",
+      "name": "Grave Bloom",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "grass",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "grave",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "BANISH_GRAVE",
+              "amount": 1,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "REVIVE",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "grass",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "counter_gate": {
+      "id": "counter_gate",
+      "name": "Counter Gate",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Super Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 3,
+        "lifeCost": 0,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [
+            {
+              "type": "CHAIN_AT_LEAST",
+              "value": "",
+              "amount": 1,
+              "target": "SELF",
+              "children": []
+            }
+          ],
+          "costs": [
+            {
+              "type": "DISCARD",
+              "amount": 1,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "CHAIN_SOURCE",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "NEGATE_ACTIVATION",
+              "amount": 0,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "DRAW",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "attack_mirror": {
+      "id": "attack_mirror",
+      "name": "Attack Mirror",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ATTACK_DECLARE"
+          ],
+          "conditions": [
+            {
+              "type": "COUNT_AT_LEAST",
+              "value": "",
+              "amount": 1,
+              "target": "ATTACKER",
+              "children": []
+            }
+          ],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "NEGATE_ATTACK",
+              "amount": 0,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "CHANGE_POSITION",
+              "amount": 0,
+              "target": "ATTACKER",
+              "duration": null,
+              "flags": {
+                "position": "DEFENSE"
+              }
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "summon_snare": {
+      "id": "summon_snare",
+      "name": "Summon Snare",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_SUMMON",
+            "ON_SPECIAL_SUMMON"
+          ],
+          "conditions": [
+            {
+              "type": "COUNT_AT_LEAST",
+              "value": "",
+              "amount": 1,
+              "target": "ENEMY_MONSTER",
+              "children": []
+            },
+            {
+              "type": "EVENT_CONTROLLER",
+              "value": "ENEMY",
+              "amount": 0,
+              "target": "SELF",
+              "children": []
+            }
+          ],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "ENEMY_MONSTER",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "CANNOT_SUMMON",
+              "amount": 0,
+              "target": "ALL_ENEMIES",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "ember_domain": {
+      "id": "ember_domain",
+      "name": "Ember Domain",
+      "category": "stadium",
+      "species": "",
+      "aspects": [],
+      "type": "fire",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "CONTINUOUS"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": {
+              "types": [
+                "fire"
+              ]
+            }
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": 250,
+              "target": "ALL_ALLIES",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "fire",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "guardian_domain": {
+      "id": "guardian_domain",
+      "name": "Guardian Domain",
+      "category": "trainer",
+      "species": "",
+      "aspects": [],
+      "type": "steel",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "CONTINUOUS"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": {
+              "position": "DEFENSE"
+            }
+          },
+          "operations": [
+            {
+              "type": "PREVENT_DESTROY",
+              "amount": 0,
+              "target": "ALL_ALLIES",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "steel",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "soul_exchange": {
+      "id": "soul_exchange",
+      "name": "Soul Exchange",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "ghost",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "SUMMON_FROM_BANISHED",
+              "amount": 0,
+              "target": "BANISHED",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "MILL",
+              "amount": 2,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "ghost",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "mind_theft": {
+      "id": "mind_theft",
+      "name": "Mind Theft",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Super Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 800,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "CONTROL_CHANGE",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "CANNOT_ATTACK",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "battle_drive": {
+      "id": "battle_drive",
+      "name": "Battle Drive",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "fighting",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "MODIFY_POWER",
+              "amount": 400,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PIERCE",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "EXTRA_ATTACK",
+              "amount": 1,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "fighting",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "crystal_ward": {
+      "id": "crystal_ward",
+      "name": "Crystal Ward",
+      "category": "technique",
+      "species": "",
+      "aspects": [],
+      "type": "ice",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "ally",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 300,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "PREVENT_DAMAGE",
+              "amount": 0,
+              "target": "ALL_ALLIES",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "PREVENT_TARGET",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "ice",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "memory_echo": {
+      "id": "memory_echo",
+      "name": "Memory Echo",
+      "category": "trainer",
+      "species": "",
+      "aspects": [],
+      "type": "psychic",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "enemy",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "DISCARD",
+              "amount": 1,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "TARGET",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "COPY_EFFECT",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": "TURN_END",
+              "flags": {}
+            },
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "TARGET",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "psychic",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "grave_harvest": {
+      "id": "grave_harvest",
+      "name": "Grave Harvest",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "grass",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 200,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "RETURN_HAND",
+              "amount": 0,
+              "target": "GRAVEYARD",
+              "duration": null,
+              "flags": {
+                "count": "2"
+              }
+            },
+            {
+              "type": "HEAL_LP",
+              "amount": 300,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "grass",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "stellar_filter": {
+      "id": "stellar_filter",
+      "name": "Stellar Filter",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "fairy",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DRAW",
+              "amount": 2,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "DISCARD",
+              "amount": 0,
+              "target": "HAND",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "LOOK_TOP_DECK",
+              "amount": 1,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "fairy",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "dark_current": {
+      "id": "dark_current",
+      "name": "Dark Current",
+      "category": "item",
+      "species": "",
+      "aspects": [],
+      "type": "dark",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Super Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 1,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "MAIN1",
+          "MAIN2"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [
+            {
+              "type": "COUNT_AT_LEAST",
+              "value": "",
+              "amount": 2,
+              "target": "ENEMY_MONSTER",
+              "children": []
+            }
+          ],
+          "costs": [
+            {
+              "type": "LP_COST",
+              "amount": 1500,
+              "target": null
+            }
+          ],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "DESTROY",
+              "amount": 0,
+              "target": "ALL_ENEMIES",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "CANNOT_ATTACK",
+              "amount": 0,
+              "target": "ALL_ALLIES",
+              "duration": "TURN_END",
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "dark",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "reversal_seal": {
+      "id": "reversal_seal",
+      "name": "Reversal Seal",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "ghost",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Super Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 3,
+        "lifeCost": 0,
+        "target": "chain",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [
+            {
+              "type": "CHAIN_AT_LEAST",
+              "value": "",
+              "amount": 1,
+              "target": "SELF",
+              "children": []
+            }
+          ],
+          "costs": [],
+          "targets": {
+            "selector": "CHAIN_SOURCE",
+            "min": 1,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "NEGATE_EFFECT",
+              "amount": 0,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "RETURN_DECK",
+              "amount": 0,
+              "target": "CHAIN_SOURCE",
+              "duration": null,
+              "flags": {
+                "placement": "BOTTOM"
+              }
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "ghost",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    },
+    "emergency_rise": {
+      "id": "emergency_rise",
+      "name": "Emergency Rise",
+      "category": "reaction",
+      "species": "",
+      "aspects": [],
+      "type": "fairy",
+      "family": "arcane_tactics",
+      "evolvesFrom": "",
+      "extra": false,
+      "level": 0,
+      "power": 0,
+      "text": "@effect",
+      "set": "Duel Tactics",
+      "rarity": "Rare",
+      "sources": [
+        "PACK",
+        "STARTER"
+      ],
+      "effect": {
+        "operation": "composite",
+        "amount": 0,
+        "speed": 2,
+        "lifeCost": 0,
+        "target": "none",
+        "phases": [
+          "DRAW",
+          "STANDBY",
+          "MAIN1",
+          "BATTLE",
+          "MAIN2",
+          "END"
+        ],
+        "oncePerTurn": true,
+        "spec": {
+          "triggers": [
+            "ON_ACTIVATE"
+          ],
+          "conditions": [
+            {
+              "type": "LP_AT_MOST",
+              "value": "",
+              "amount": 2500,
+              "target": "SELF",
+              "children": []
+            },
+            {
+              "type": "COUNT_AT_LEAST",
+              "value": "",
+              "amount": 1,
+              "target": "GRAVEYARD",
+              "children": []
+            }
+          ],
+          "costs": [],
+          "targets": {
+            "selector": "SELF",
+            "min": 0,
+            "max": 1,
+            "filter": null
+          },
+          "operations": [
+            {
+              "type": "REVIVE",
+              "amount": 0,
+              "target": "GRAVEYARD",
+              "duration": null,
+              "flags": {}
+            },
+            {
+              "type": "HEAL_LP",
+              "amount": 500,
+              "target": "SELF",
+              "duration": null,
+              "flags": {}
+            }
+          ],
+          "oncePerDuel": false,
+          "optional": false,
+          "textKey": "cardworlds.effect.structured",
+          "vfx": {
+            "mode": "STATUS",
+            "profile": "fairy",
+            "duration": 1400,
+            "animation": {
+              "semantic": "CAST_STATUS",
+              "windup": 0.25,
+              "release": 0.46,
+              "impact": 0.72,
+              "recovery": 0.9
+            }
+          }
+        }
+      },
+      "triggers": [],
+      "modifiers": []
+    }
+  },
+  "banners": {
+    "duel_tactics": {
+      "name": "Duel Tactics",
+      "family": "arcane_tactics",
+      "source": "PACK",
+      "price": 800,
+      "slots": 5,
+      "hardPity": 80,
+      "softPity": 60,
+      "softBonus": 3,
+      "starts": 0,
+      "ends": 9223372036854775807,
+      "pool": [
+        {
+          "card": "shatter_gate",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "void_seal",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "tidal_recall",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "recruit_signal",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "grave_bloom",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "counter_gate",
+          "weight": 6,
+          "featured": true,
+          "high": true
+        },
+        {
+          "card": "attack_mirror",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "summon_snare",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "ember_domain",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "guardian_domain",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "soul_exchange",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "mind_theft",
+          "weight": 6,
+          "featured": true,
+          "high": true
+        },
+        {
+          "card": "battle_drive",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "crystal_ward",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "memory_echo",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "grave_harvest",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "stellar_filter",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        },
+        {
+          "card": "dark_current",
+          "weight": 6,
+          "featured": true,
+          "high": true
+        },
+        {
+          "card": "reversal_seal",
+          "weight": 6,
+          "featured": true,
+          "high": true
+        },
+        {
+          "card": "emergency_rise",
+          "weight": 12,
+          "featured": false,
+          "high": false
+        }
+      ]
+    }
+  }
+}

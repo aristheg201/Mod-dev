@@ -55,6 +55,11 @@ public final class DuelScreen implements Page {
     public void prepareGroundingProof() { visualProof=true; scene.groundingCamera(); }
     public void preparePileProof() { visualProof=true; scene.pileCamera(); }
     public void verifyPileActors() { scene.verifyPileActors(); }
+    public void previewVfx(String semantic,String source,String target) { visualProof=true;scene.previewVfx(semantic,source,target); }
+    public int vfxCaptureDelay(){return scene.vfxCaptureDelay();}
+    public void previewChainBreak(String source,String target){scene.previewChainBreak(source,target);}
+    public void verifyNativePose(String token,String intent){scene.verifyNativePose(token,intent);}
+    public void verifyAnimationFallback(String token){scene.verifyAnimationFallback(token);}
     public boolean visualSettled() { return scene.settled(); }
     public void verifyPositionActors() {
         if(scene.pokemonActors()!=2||scene.frontCards()!=0||scene.backCards()!=1)
@@ -163,7 +168,7 @@ public final class DuelScreen implements Page {
             }else{a.send("duel","play",source,"SET");intent="";}
         });
         u.button("Activate", new Rect(x, y + 90, 190, 36), false,
-            priority && def != null && def.effect() != null && def.effect().phases().contains(v.phase()) &&
+            priority && def != null && def.effect() != null && (def.effect().spec()==null||def.effect().spec().optional()||def.effect().spec().triggers().contains("ON_ACTIVATE")||def.effect().spec().triggers().contains("CONTINUOUS")) && def.effect().phases().contains(v.phase()) &&
                 (def.effect().speed() > 1 || v.open() && v.turnPlayer() == v.you()) && !(src.category().equals("pokemon") && src.zone() == Duel.Zone.HAND),
             () -> perform(a, "activate"));
         u.button("Attack", new Rect(x, y + 135, 190, 36), false,
@@ -352,7 +357,7 @@ public final class DuelScreen implements Page {
     }
 
     private Duel.VisibleCard source(Duel.View v) { return v.cards().stream().filter(c -> c.token().equals(source)).findFirst().orElse(null); }
-    private Catalog.Card definition(CardWorldsScreen a, Duel.VisibleCard c) { return a.state.definitions().values().stream().filter(d -> d.name().equals(c.name())).findFirst().orElse(null); }
+    private Catalog.Card definition(CardWorldsScreen a, Duel.VisibleCard c) { var d=a.state.definitions().values().stream().filter(q -> q.name().equals(c.name())).findFirst().orElse(null);if(d==null)return null;return new Catalog.Card(d.id(),d.name(),d.category(),d.species(),d.aspects(),d.type(),d.family(),d.evolvesFrom(),d.extra(),d.level(),d.power(),d.text(),d.set(),d.rarity(),d.sources(),c.effect(),d.triggers(),d.modifiers()); }
 
     private void profile(Ui u, Rect r, String name, int life, int max, int color) {
         u.panel(r); u.text(name, r.x() + 15, r.y() + 12, 21, Ui.WHITE); u.text("LP " + life, r.right() - 95, r.y() + 14, 17, Ui.WHITE);
