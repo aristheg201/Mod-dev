@@ -98,7 +98,10 @@ public final class DuelWorldScene {
         Departing old=departing.get(token);return old==null?null:old.entity();
     }
     private void startVfx(DuelVfxTimeline.Instance instance) {
-        String semantic=instance.cue.semantic(),intent=switch(semantic){
+        String semantic=instance.cue.semantic();
+        String requestedProfile=instance.cue.presentation()==null?instance.cue.element():vn.svarcade.tcg.data.EffectSpec.value(instance.cue.presentation().profile(),instance.cue.element());
+        LOG.info("CARDWORLDS_VFX_PROFILE semantic={} element={} profile={}",semantic,DuelVfxProfile.normalizeKey(instance.cue.element()),DuelVfxProfile.normalizeKey(requestedProfile));
+        String intent=switch(semantic){
             case "ATTACK_PHYSICAL" -> "ATTACK_PHYSICAL";case "ATTACK_SPECIAL" -> "ATTACK_SPECIAL";
             case "CAST_STATUS" -> "CAST_STATUS";case "CHARGE" -> "CHARGE";
             case "IMPACT","DAMAGE" -> "HIT";case "DESTROY","SEND_GRAVE" -> "FAINT";case "BANISH" -> "TRANSFORM";
