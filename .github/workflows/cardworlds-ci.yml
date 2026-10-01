@@ -61,6 +61,12 @@ jobs:
               runDir = file('run')
               useXVFB = true
           }
+          tasks.register('runProductionCardWorldsServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+              dependsOn tasks.named('remapJar')
+              mods.from configurations.productionRuntimeMods
+              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
+              runDir = file('run-server')
+          }
           GRADLE
           test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
           test -f src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java
@@ -104,6 +110,22 @@ jobs:
             build/internal-evidence.json
             build/reports/tests/test/**
           if-no-files-found: error
+
+      - name: Boot production dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run-server
+          echo 'eula=true' > run-server/eula.txt
+          printf 'online-mode=false\nview-distance=3\nsimulation-distance=3\n' > run-server/server.properties
+          set +e
+          timeout --signal=INT --kill-after=15s 150s gradle --no-daemon runProductionCardWorldsServer > build/dedicated-server.log 2>&1
+          status=$?
+          set -e
+          test "$status" -eq 0 -o "$status" -eq 124 -o "$status" -eq 137
+          grep -Fq 'Done (' run-server/logs/latest.log
+          grep -Fq 'CARDWORLDS_CATALOG_HYDRATED' run-server/logs/latest.log
+          ! grep -Eiq 'Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-server/logs/latest.log
 
       - name: Install headless OpenGL runtime
         shell: bash
@@ -182,6 +204,7 @@ jobs:
             24-arceus-judgement
             25-arceus-ultimate
             26-monster-positions
+            27-model-grounding
           )
 
           for name in "${expected[@]}"; do
@@ -190,7 +213,7 @@ jobs:
           done
 
           count="$(find run/screenshots -maxdepth 1 -type f -name '[0-9][0-9]-*.png' | wc -l)"
-          test "$count" -eq 26
+          test "$count" -eq 27
           ! find run/screenshots -maxdepth 1 -type f -name 'failure-*.png' | grep -q .
           grep -Fq 'CARDWORLDS_QA_DUEL_REALM_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_SPECTATOR_CONFIRMED' run/logs/latest.log
@@ -201,7 +224,7 @@ jobs:
           grep -Fq 'CARDWORLDS_QA_CATALOG_CONFIRMED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ARCEUS_RENDERED' run/logs/latest.log
           grep -Fq 'CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded=true model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_FACEUP_DEFENSE_CARD_RENDERED' run/logs/latest.log
+          grep -Fq 'CARDWORLDS_FACEUP_DEFENSE_POKEMON_RENDERED' run/logs/latest.log
           grep -Eq 'CARDWORLDS_CARD_BACK_RENDERED.*position=FACE_DOWN_DEFENSE.*pokemonActorPresent=false' run/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
 
@@ -212,6 +235,8 @@ jobs:
           m = re.search(r"CARDWORLDS_CATALOG_HYDRATED cards=(\d+) species=(\d+) fakemon=(\d+) decks=(\d+) banners=(\d+)", log)
           assert m, "catalog hydration marker missing"
           cards, species, fakemon, decks, banners = map(int, m.groups())
+          if Path("qa-runtime/require-fakemon").exists():
+              assert fakemon > 0, "real addon content installed but no addon species hydrated"
           fm = re.search(r"CARDWORLDS_FORMS_HYDRATED baseSpecies=(\d+) forms=(\d+)", log)
           assert fm, "forms hydration marker missing"
           base_species, forms = map(int, fm.groups())
@@ -243,17 +268,19 @@ jobs:
               "19-spectator", "20-spelltrap-set", "21-spelltrap-chain",
               "22-spelltrap-resolved", "23-arceus-defense",
               "24-arceus-judgement", "25-arceus-ultimate",
-              "26-monster-positions",
+              "26-monster-positions", "27-model-grounding",
           ]
           for name in expected:
               p = Path("run/screenshots") / f"{name}.png"
               data = p.read_bytes()
               assert data[:8] == b"\x89PNG\r\n\x1a\n", (name, "not png")
               width, height = struct.unpack(">II", data[16:24])
-              assert width >= 640 and height >= 360, (name, width, height)
+              assert width >= 1280 and height >= 720, (name, width, height)
               assert len(data) >= 20_000, (name, "suspiciously small", len(data))
               print(f"{name}: {width}x{height}, {len(data)} bytes")
           PY
+
+          python3 tools/verify_visual_pixels.py
 
           python3 - <<'PY'
           import json, os
@@ -281,6 +308,8 @@ jobs:
             run/screenshots/*.png
             run/logs/latest.log
             run/crash-reports/**
+            run-server/logs/latest.log
+            build/dedicated-server.log
             build/libs/qa.fabric.mod.json
             build/visual-evidence.json
           if-no-files-found: warn

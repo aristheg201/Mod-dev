@@ -518,3 +518,7 @@ duel_source = replace_java_method(
 duel.write_text(duel_source)
 
 print("Applied Card Worlds v4 card-state / Mega Showdown provider overlay")
+
+# Reviewable source overlay after v3/v4; do not rebuild the opaque snapshots.
+import runpy
+runpy.run_path(str(here / "production-visual" / "apply.py"), run_name="__main__")
