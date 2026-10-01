@@ -72,8 +72,8 @@ jobs:
           }
           tasks.register('runProductionCardWorldsCoreServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
               dependsOn tasks.named('remapJar')
-              mods.from configurations.coreRuntimeMods
-              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
+              // Replace Loom's default productionRuntimeMods collection for a genuine absence test.
+              mods.setFrom(configurations.coreRuntimeMods, tasks.named('remapJar').flatMap { it.archiveFile })
               runDir = file('run-core-server')
           }
           tasks.register('runProductionCardWorldsServer' , net.fabricmc.loom.task.prod.ServerProductionRunTask) {
