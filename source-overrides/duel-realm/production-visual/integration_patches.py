@@ -79,3 +79,8 @@ p=Path('src/main/java/vn/svarcade/tcg/fabric/TcgClient.java');s=p.read_text().re
                 vn.svarcade.tcg.client.render.DuelWorldScene.invalidatePresentation();
             }
         });''');p.write_text(s)
+
+# GUI renderables retain their requested aspects, but must use the same validated identity.
+p=Path('src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java');s=p.read_text().replace('PokemonProperties props = PokemonProperties.Companion.parse(species);\n                props.setAspects(new HashSet<>(aspects));','''var descriptor=vn.svarcade.tcg.integration.CobblemonBridge.resolve(species,"",aspects,"",false,"");
+                if(!descriptor.available())return;
+                PokemonProperties props=vn.svarcade.tcg.integration.CobblemonBridge.properties(descriptor);''');p.write_text(s)
