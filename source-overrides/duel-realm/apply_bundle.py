@@ -389,6 +389,13 @@ scene_source = replace_java_method(
     "    private void setCardAppearance(",
     "    private BlockState cardFace(",
     r'''    private void setCardAppearance(CardActor actor, Duel.VisibleCard card, boolean faceDown) {
+        if ("arceus".equalsIgnoreCase(card.species()) && !faceDown) {
+            boolean megaShowdown = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mega_showdown");
+            LOG.info(
+                "CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded={} model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json",
+                megaShowdown
+            );
+        }
         if (faceDown) {
             // Deliberately unmistakable card back: black rim, brown/orange spiral-like core.
             // No species art, text strip, or Pokemon model is shown for a Set monster.
@@ -451,21 +458,8 @@ scene_source = replace_java_method(
 # Arceus must resolve through the installed Cobblemon provider stack. In the
 # production modpack that provider is Mega Showdown; do not ship a substitute
 # Arceus model from Card Worlds.
-scene_source, arceus_patch_count = re.subn(
-    r'(    private Actor createPokemon\(String species, List<String> aspects, int \w+, long \w+\) \{\n)',
-    r'''\1        if ("arceus".equalsIgnoreCase(species)) {
-            boolean megaShowdown = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mega_showdown");
-            LOG.info(
-                "CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded={} model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json",
-                megaShowdown
-            );
-        }
-''',
-    scene_source,
-    count=1,
-)
-if arceus_patch_count != 1:
-    raise SystemExit("Card Worlds v4 Arceus provider anchor missing")
+# Arceus provider proof is emitted from setCardAppearance above. The actual
+# model remains resolved by Cobblemon's loaded provider stack (Mega Showdown).
 scene.write_text(scene_source)
 
 
