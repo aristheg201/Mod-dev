@@ -155,11 +155,13 @@ jobs:
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
           JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true -Dcardworlds.qa.focused.visual=true'
+          CARDWORLDS_FOCUSED_VISUAL: 'true'
         shell: bash
         run: |
           set -euo pipefail
-          timeout 240s gradle --no-daemon --stacktrace runFocusedCardWorldsClient
+          timeout 150s gradle --no-daemon --stacktrace runFocusedCardWorldsClient
           test -f run-focused-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_DRIVER_LOADED focusedVisual=true' run-focused-visual/logs/latest.log
           for name in focused-01-effect-card focused-02-economy-rewards focused-03-gacha-currencies; do
             test -f "run-focused-visual/screenshots/$name.png"
             grep -Fq "Captured $name" run-focused-visual/logs/latest.log
