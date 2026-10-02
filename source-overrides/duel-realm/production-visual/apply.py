@@ -16,6 +16,7 @@ paths={
  'PlaceholderValues.java':'src/main/java/vn/svarcade/tcg/integration',
  'EconomyRewards.java':'src/main/java/vn/svarcade/tcg/integration',
  'BEconomyCardWorlds.java':'src/main/java/vn/svarcade/tcg/integration',
+ 'CardWorldsCurrency.java':'src/main/java/vn/svarcade/tcg/economy',
  'EffectEconomyQa.java':'src/main/java/vn/svarcade/tcg/data',
  'PlaceholderSupport.java':'src/main/java/vn/svarcade/tcg/fabric',
  'MessageService.java':'src/main/java/vn/svarcade/tcg/fabric',
