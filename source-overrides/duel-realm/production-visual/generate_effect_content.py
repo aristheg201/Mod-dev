@@ -86,7 +86,7 @@ high_ops={
  'normal':[op('DRAW',2),op('DISCARD',target='HAND'),op('PREVENT_DESTROY',duration='TURN_END')],
 }
 for typ,(ops,target,mode) in identities.items():
-    high_target='enemy' if typ in ('fire','ice','dark','dragon','fighting','poison') else 'ally' if typ=='fairy' else 'none'
+    high_target='enemy' if typ in ('fire','water','electric','ice','dark','dragon','fighting','poison') else 'ally' if typ=='fairy' else 'none'
     rules.append(dict(types=[typ],minLevel=7,maxLevel=12,form=None,effect=effect(high_ops.get(typ,ops),high_target,2 if typ=='electric' else 1,high_costs.get(typ,[]),mode=mode,element=typ)))
     rules.append(dict(types=[typ],minLevel=1,maxLevel=6,form=None,effect=effect(ops,target,2 if typ=='electric' else 1,low_costs.get(typ,[]),mode=mode,element=typ)))
 cards={}
