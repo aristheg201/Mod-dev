@@ -103,12 +103,39 @@ public final class BEconomyCardWorlds {
         } catch(Throwable e) { return BigDecimal.ZERO; }
     }
 
+    /** Read existing dedicated-server balances. Never substitutes CardStore coins or initializes the economy. */
+    public static CardWorldsCurrency.Balances snapshotBalances(net.minecraft.server.network.ServerPlayerEntity player) {
+        if(!player.getServer().isDedicated()||!FabricLoader.getInstance().isModLoaded("beconomy"))
+            return CardWorldsCurrency.Balances.unavailable();
+        try {
+            // api() only accesses an already initialized provider; it never calls BEconomy's initializer.
+            return readBalances(api(),player.getUuid());
+        } catch(RuntimeException e) {
+            LOG.debug("Card Worlds currency balances unavailable: {}",e.toString());
+            return CardWorldsCurrency.Balances.unavailable();
+        }
+    }
+
+    private static CardWorldsCurrency.Balances readBalances(Object api,UUID player) {
+        requireCurrency(api,BEAST);requireCurrency(api,HUNTER);
+        try {
+            Method get=find(api.getClass(),"getBalance",2);
+            Object beast=get.invoke(api,player,BEAST),hunter=get.invoke(api,player,HUNTER);
+            if(!(beast instanceof BigDecimal b)||!(hunter instanceof BigDecimal h))
+                throw new IllegalStateException("BEconomy returned invalid currency balances");
+            return new CardWorldsCurrency.Balances(b,h,true);
+        } catch(RuntimeException e){throw e;}
+        catch(Exception e){throw new IllegalStateException("Cannot read BEconomy currency balances",e);}
+    }
+
     public static void verifyRuntime() {
         Object api=api();
         boolean beast=currencyExists(api,BEAST),hunter=currencyExists(api,HUNTER);
         if(!beast||!hunter) throw new IllegalStateException("Required BEconomy currencies missing: beastcoin="+beast+" huntercoin="+hunter);
         LOG.info("CARDWORLDS_QA_ECONOMY authority=dedicated_server beastcoin={} huntercoin={}",beast,hunter);
         LOG.info("CARDWORLDS_QA_GACHA beastcoin={} huntercoin={} exchange_display=25000:1",PULL_BEAST,PULL_HUNTER);
+        var balances=readBalances(api,new UUID(0,1));
+        LOG.info("CARDWORLDS_QA_BALANCES source=beconomy beastcoin={} huntercoin={} available={}",balances.beast(),balances.hunter(),balances.available());
         LOG.info("CARDWORLDS_QA_REWARDS easy_win={} easy_loss={} normal_win={} normal_loss={} hard_win={} hard_loss={} pvp_win={} pvp_loss={} ranked_win={} ranked_loss={} currency={} hunter_reward=0",
             rewardAmount(true,"EASY",false,true),rewardAmount(true,"EASY",false,false),
             rewardAmount(true,"NORMAL",false,true),rewardAmount(true,"NORMAL",false,false),

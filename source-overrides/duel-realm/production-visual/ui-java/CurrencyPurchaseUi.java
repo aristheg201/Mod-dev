@@ -37,6 +37,22 @@ public final class CurrencyPurchaseUi {
         u.text("25k = 1 Hunter Coin",ix,info.bottom()-25,11,Ui.GOLD);
     }
 
+    /** Both header icons use the same ItemStacks as the purchase buttons, including CMD 6 / CMD 2. */
+    public static void renderBalances(Ui u,CardWorldsCurrency.Balances balances) {
+        boolean available=balances!=null&&balances.available();
+        balance(u,CardWorldsCurrency.BEAST,"Beast Coin",available?balances.beast():null,748);
+        balance(u,CardWorldsCurrency.HUNTER,"Hunter Coin",available?balances.hunter():null,902);
+    }
+
+    private static void balance(Ui u,String currency,String label,java.math.BigDecimal value,int x) {
+        draw(u,coin(currency),new Rect(x,16,23,23));
+        u.text(label,x+31,9,12,Ui.GOLD);
+        String amount=value==null?"—":java.text.NumberFormat.getNumberInstance(java.util.Locale.ROOT).format(value);
+        int size=16;
+        while(size>8&&u.textWidth(amount,size)>110)size--;
+        u.text(amount,x+31,27,size,Ui.WHITE);
+    }
+
     private static void pull(CardWorldsScreen a,TcgMod.BannerView selected,String currency) {
         a.reveal.await(selected.previewCard(),selected.name());
         a.send("pull",selected.id(),currency+":"+UUID.randomUUID());

@@ -132,4 +132,15 @@ old='''catalog=CobblemonCatalogHydrator.expand(Catalog.load(file));store=new Car
 new=old+'''if(server.isDedicated()&&Boolean.getBoolean("cardworlds.qa.focused")){vn.svarcade.tcg.integration.BEconomyCardWorlds.verifyRuntime();vn.svarcade.tcg.data.EffectEconomyQa.verify(catalog);}'''
 if old not in s: raise RuntimeError('focused runtime QA startup anchor missing')
 s=s.replace(old,new)
+
+# Balance presentation crosses the snapshot boundary as shared data, never as a client API call.
+old='Map<String,String> sellers){}'
+if old not in s: raise RuntimeError('Snapshot currency balance component anchor missing')
+s=s.replace(old,'Map<String,String> sellers,vn.svarcade.tcg.economy.CardWorldsCurrency.Balances currencyBalances){}')
+old='var snap=new Snapshot('
+if old not in s: raise RuntimeError('Snapshot currency balance construction anchor missing')
+s=s.replace(old,'var currencyBalances=p.getServer().isDedicated()?vn.svarcade.tcg.integration.BEconomyCardWorlds.snapshotBalances(p):vn.svarcade.tcg.economy.CardWorldsCurrency.Balances.unavailable();\n        '+old)
+old='orElse("Collector"))));'
+if s.count(old)!=1: raise RuntimeError('Snapshot currency balance argument anchor missing')
+s=s.replace(old,'orElse("Collector"))),currencyBalances);')
 p.write_text(s)

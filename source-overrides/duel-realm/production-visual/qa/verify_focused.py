@@ -12,6 +12,10 @@ descriptor = json.loads((focused / "resources/fabric.mod.json").read_text())
 assert descriptor["entrypoints"] == {"client": [initializer]}, descriptor
 currency = (main / "client/component/CurrencyPurchaseUi.java").read_text()
 assert "BEconomy" not in currency, "CurrencyPurchaseUi must be client safe"
+header=(main / "client/CardWorldsScreen.java").read_text()
+assert "CurrencyPurchaseUi.renderBalances(ui,state.currencyBalances())" in header
+assert "state.profile().coins()" not in header and "Items.GOLD_NUGGET" not in header
+assert "draw(u,coin(currency)" in currency and '"Beast Coin"' in currency and '"Hunter Coin"' in currency
 assert (main / "economy/CardWorldsCurrency.java").is_file()
 for path in (main / "client").rglob("*.java"):
     assert "BEconomyCardWorlds" not in path.read_text(), path
@@ -32,6 +36,7 @@ assert 'focusedServerRuntimeMods "maven.modrinth:4Kma4Oms:9rGoa3aP"' in gradle
 assert 'focusedClientRuntimeMods "maven.modrinth:4Kma4Oms' not in gradle
 startup = (main / "fabric/TcgMod.java").read_text()
 assert 'if(server.isDedicated()&&Boolean.getBoolean("cardworlds.qa.focused"))' in startup
+assert 'p.getServer().isDedicated()?vn.svarcade.tcg.integration.BEconomyCardWorlds.snapshotBalances(p)' in startup
 assert 'card.effect().lifeCost()==0' in (main / "data/EffectContent.java").read_text()
 assert '"LP_COST"' not in (main / "data/CardIdentities.java").read_text()
 effect_qa = (main / "data/EffectEconomyQa.java").read_text()

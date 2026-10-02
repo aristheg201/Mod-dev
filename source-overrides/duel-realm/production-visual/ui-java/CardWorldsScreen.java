@@ -99,7 +99,7 @@ public final class CardWorldsScreen extends Screen {
         endScroll(ui,navigation);
         ui.text("cardworlds.ui.kanto_crossroads",18,logicalHeight-46,12,Ui.GOLD);ui.text(state.total()+" catalog · "+state.collected()+" collected",18,logicalHeight-27,12,Ui.MUTED);
         ui.item(Items.PLAYER_HEAD,new Rect(196,10,34,34));ui.text(state.playerName(),243,14,18,Ui.WHITE);ui.text("cardworlds.ui.collector",243,35,12,Ui.MUTED);
-        ui.item(Items.GOLD_NUGGET,new Rect(862,16,23,23));ui.text(String.format(Locale.ROOT,"%,d",state.profile().coins()),892,20,19,Ui.GOLD);
+        CurrencyPurchaseUi.renderBalances(ui,state.currencyBalances());
         ui.item(Items.AMETHYST_SHARD,new Rect(1042,17,21,21));ui.text(state.profile().rating()+" RP",1072,20,18,Ui.WHITE);ui.button("cardworlds.ui.close",new Rect(1180,14,72,29),false,true,this::close);
     }
     @Override public boolean mouseClicked(double x,double y,int button){if(button!=0)return super.mouseClicked(x,y,button);

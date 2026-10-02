@@ -90,6 +90,9 @@ public final class FocusedEconomyEffectVisualRun implements ClientModInitializer
             c.getToastManager().clear();
             if (step == Step.SNAPSHOT) {
                 if (!a.state.definitions().containsKey("charizard") || a.state.banners().isEmpty()) return;
+                if (a.state.currencyBalances()==null || a.state.currencyBalances().available())
+                    throw failure(c,"Integrated client must receive unavailable dedicated currency balances");
+                LOG.info("CARDWORLDS_FOCUSED_HEADER currencies=beastcoin,huntercoin balances=unavailable item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2");
                 // Configure the filter in this tick, before the first Collection frame renders.
                 a.fields.put("search", "Charizard");
                 a.category = "pokemon";

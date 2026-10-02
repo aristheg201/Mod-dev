@@ -17,6 +17,9 @@ public final class CardWorldsCurrency {
     public static final int HUNTER_EXCHANGE_VND=25_000;
 
     public record Visual(String itemId,int customModelData) {}
+    public record Balances(java.math.BigDecimal beast,java.math.BigDecimal hunter,boolean available) {
+        public static Balances unavailable(){return new Balances(null,null,false);}
+    }
 
     // These values are the resource-pack contract, not BEconomy-owned assets.
     public static final Visual BEAST_VISUAL=new Visual("minecraft:gold_ingot",6);
