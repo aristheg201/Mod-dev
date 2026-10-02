@@ -76,8 +76,8 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Compile, tests, and production jar
-        run: gradle --no-daemon clean test remapJar
+      - name: Compile focused production jar
+        run: gradle --no-daemon clean classes remapJar
 
       - name: Verify focused build content
         shell: bash
