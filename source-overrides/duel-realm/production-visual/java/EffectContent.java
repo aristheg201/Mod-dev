@@ -36,7 +36,9 @@ public final class EffectContent {
         Map<String,Catalog.Card> cards=new LinkedHashMap<>(base.cards());
         cards.putAll(CONTENT.cards());
         for (Catalog.Card card : List.copyOf(cards.values())) {
-            if(!card.category().equals("pokemon") || card.effect()!=null)continue;
+            // Existing zero-LP effects remain intact; legacy monster LP taxes must receive the rebalance.
+            if(!card.category().equals("pokemon") || card.effect()!=null
+                && card.effect().lifeCost()==0)continue;
             for (Rule rule : CONTENT.monsterRules()) {
                 if(!rule.types().isEmpty()&&!rule.types().contains(card.type()))continue;
                 if(card.level()<rule.minLevel()||rule.maxLevel()>0&&card.level()>rule.maxLevel())continue;

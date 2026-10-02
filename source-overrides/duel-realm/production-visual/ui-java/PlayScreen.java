@@ -57,8 +57,8 @@ public final class PlayScreen implements Page {
 
         a.endScroll(u,botScroll);
         u.fill(new Rect(botPanel.x() + 18, botPanel.bottom() - 58, botPanel.w() - 36, 1), Ui.LINE);
-        u.text("Rewards use BEconomy Beast Coin only. Hunter Coin is never a battle reward.",
-            botPanel.x() + 18, botPanel.bottom() - 42, 10, Ui.MUTED);
+        u.text("Beast Coin only. Hunter Coin is NEVER a battle reward.",
+            botPanel.x() + 18, botPanel.bottom() - 42, 12, Ui.MUTED);
 
         u.text("cardworlds.ui.pvp_duel", pvpPanel.x() + 18, pvpPanel.y() + 16, 22, Ui.WHITE);
         u.text("cardworlds.ui.human_vs_human_only_bots_never_fill_this_mode", pvpPanel.x() + 18, pvpPanel.y() + 44, 12, Ui.MUTED);
@@ -73,7 +73,11 @@ public final class PlayScreen implements Page {
             a.format = "RANKED";
         });
 
-        int y = pvpPanel.y() + 116;
+        u.text("Casual PvP - WIN +30 BEAST COIN - LOSS +15",
+            pvpPanel.x() + 18, pvpPanel.y() + 114, 14, Ui.CYAN);
+        u.text("Ranked - WIN +50 BEAST COIN - LOSS +25",
+            pvpPanel.x() + 18, pvpPanel.y() + 140, 14, Ui.GOLD);
+        int y = pvpPanel.y() + 182;
         u.text("cardworlds.ui.online_duelists", pvpPanel.x() + 18, y, 13, Ui.CYAN);
         y += 26;
         Rect players=new Rect(pvpPanel.x()+18,y,pvpPanel.w()-36,Math.max(50,pvpPanel.bottom()-58-y));
@@ -96,9 +100,6 @@ public final class PlayScreen implements Page {
             u.button("cardworlds.ui.accept_challenge_from" + a.state.challenge(),
                 new Rect(pvpPanel.x() + 18, pvpPanel.bottom() - 46, pvpPanel.w() - 36, 34),
                 true, deckReady, () -> a.send("accept", deck));
-        } else {
-            u.text(ranked ? "Ranked - WIN +50 BEAST COIN - LOSS +25" : "Casual - WIN +30 BEAST COIN - LOSS +15",
-                pvpPanel.x() + 18, pvpPanel.bottom() - 35, 10, Ui.MUTED);
         }
     }
 
@@ -110,7 +111,7 @@ public final class PlayScreen implements Page {
         u.frame(row, index == 2 ? Ui.GOLD : Ui.LINE);
         u.text(name, row.x() + 14, row.y() + 11, 18, index == 2 ? Ui.GOLD : Ui.WHITE);
         u.fit(description, new Rect(row.x() + 14, row.y() + 37, row.w() - 154, 34), 11, Ui.MUTED);
-        u.text(reward, row.right() - 126, row.y() + 12, 10, index == 2 ? Ui.GOLD : Ui.MUTED);
+        u.fit(reward, new Rect(row.x() + 14, row.y() + 65, row.w() - 140, 16), 14, index == 2 ? Ui.GOLD : Ui.MUTED);
         u.button("DUEL", new Rect(row.right() - 118, row.y() + 40, 102, 32), index == 2, enabled,
             () -> a.send("pve", selectedDeck(a), name));
     }

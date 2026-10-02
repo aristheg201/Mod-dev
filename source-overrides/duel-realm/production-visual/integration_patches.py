@@ -129,7 +129,7 @@ if old not in s: raise RuntimeError('battle result notice anchor missing')
 s=s.replace(old,new)
 
 old='''catalog=CobblemonCatalogHydrator.expand(Catalog.load(file));store=new CardStore(server.getSavePath(WorldSavePath.ROOT).resolve("svarcade-tcg/cards.db"),catalog,rng);duelRealm=new DuelRealmService(server);duelRealm.world();'''
-new=old+'''if(Boolean.getBoolean("cardworlds.qa.focused")){vn.svarcade.tcg.integration.BEconomyCardWorlds.verifyRuntime();vn.svarcade.tcg.data.EffectEconomyQa.verify(catalog);}'''
+new=old+'''if(server.isDedicated()&&Boolean.getBoolean("cardworlds.qa.focused")){vn.svarcade.tcg.integration.BEconomyCardWorlds.verifyRuntime();vn.svarcade.tcg.data.EffectEconomyQa.verify(catalog);}'''
 if old not in s: raise RuntimeError('focused runtime QA startup anchor missing')
 s=s.replace(old,new)
 p.write_text(s)

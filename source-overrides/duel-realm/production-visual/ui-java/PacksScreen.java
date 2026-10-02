@@ -29,7 +29,7 @@ public final class PacksScreen implements Page {
   u.meter(new Rect(ix,info.y()+149,info.w()-34,8),selected.pity()/(double)selected.hardPity(),Ui.GOLD);
   u.fit(selected.guaranteed()?"Next high rarity: featured":"Featured guarantee available",new Rect(ix,info.y()+173,info.w()-34,19),13,Ui.MUTED);
   u.text("cardworlds.ui.next_card_rates",ix,info.y()+207,15,Ui.GOLD);
-  Rect rates=new Rect(ix,info.y()+234,info.w()-34,Math.max(50,info.h()-312));
+  Rect rates=new Rect(ix,info.y()+234,info.w()-34,Math.max(50,info.h()-392));
   var rateScroll=a.beginScroll(u,"packs/rates/"+selected.id(),rates,selected.rates().size()*22);
   for(int i=0;i<selected.rates().size();i++){Rect line=new Rect(ix,rates.y()+i*22-rateScroll.offset(),rates.w()-14,20);if(u.visible(line))u.fit(selected.rates().get(i),line,14,Ui.MUTED);}
   a.endScroll(u,rateScroll);

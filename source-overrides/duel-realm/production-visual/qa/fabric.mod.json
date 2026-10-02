@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"cardworlds_focused_qa","version":"1.0.0","name":"Card Worlds Focused Economy Effect QA","environment":"client","entrypoints":{"client":["vn.svarcade.tcg.qa.FocusedEconomyEffectVisualRun"]},"depends":{"svarcade_tcg":"*","fabric-api":"*"}}

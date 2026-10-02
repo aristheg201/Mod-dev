@@ -1,0 +1,62 @@
+// Isolated focused QA source set: VisualRun.class is never included in this JAR.
+def loomLoader = tasks.named('remapJar').get().getClass().classLoader
+sourceSets {
+    focusedQa {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+tasks.register('focusedQaJar', Jar) {
+    dependsOn tasks.named('focusedQaClasses')
+    archiveClassifier = 'focused-qa-driver-dev'
+    from sourceSets.focusedQa.output
+}
+tasks.register('remapFocusedQaJar', loomLoader.loadClass('net.fabricmc.loom.task.RemapJarTask')) {
+    dependsOn tasks.named('focusedQaJar')
+    inputFile = tasks.named('focusedQaJar').flatMap { it.archiveFile }
+    archiveClassifier = 'focused-qa-driver'
+}
+
+
+repositories {
+    maven { url 'https://maven.architectury.dev/' }
+    maven { url 'https://maven.wispforest.io/releases' }
+    maven { url 'https://api.modrinth.com/maven' }
+}
+
+configurations {
+    focusedClientRuntimeMods
+    focusedServerRuntimeMods { extendsFrom focusedClientRuntimeMods }
+}
+
+dependencies {
+    focusedClientRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    focusedClientRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
+    focusedClientRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
+    focusedClientRuntimeMods "dev.architectury:architectury-fabric:13.0.8"
+    focusedClientRuntimeMods "io.wispforest:accessories-fabric:1.1.0-beta.52+1.21.1"
+    focusedClientRuntimeMods "maven.modrinth:SszvX85I:1.2.0+1.8.1+1.21.1-release"
+    focusedClientRuntimeMods "maven.modrinth:eXts2L7r:U5bhVym2"
+    focusedServerRuntimeMods "maven.modrinth:4Kma4Oms:9rGoa3aP"
+    focusedClientRuntimeMods "maven.modrinth:s7N7AsqL:NQdxKsW7"
+    focusedClientRuntimeMods "maven.modrinth:LdBYVaPS:KwNU9SQW"
+    focusedClientRuntimeMods "maven.modrinth:Vebnzrzj:l47d4ZWk"
+}
+
+tasks.register('runFocusedCardWorldsServer', loomLoader.loadClass('net.fabricmc.loom.task.prod.ServerProductionRunTask')) {
+    dependsOn tasks.named('remapJar')
+    mods.setFrom(configurations.focusedServerRuntimeMods, tasks.named('remapJar').flatMap { it.archiveFile })
+    jvmArgs.add('-Dcardworlds.qa.focused=true')
+    runDir = file('run-focused')
+}
+tasks.register('runFocusedCardWorldsClient', loomLoader.loadClass('net.fabricmc.loom.task.prod.ClientProductionRunTask')) {
+    dependsOn tasks.named('remapJar'), tasks.named('remapFocusedQaJar')
+    mods.setFrom(configurations.focusedClientRuntimeMods,
+        tasks.named('remapJar').flatMap { it.archiveFile },
+        tasks.named('remapFocusedQaJar').flatMap { it.archiveFile })
+    // Card Worlds itself is present on both sides. BEconomy is dedicated-server authority only.
+    // Client rendering uses the shared currency descriptor + the server-served resource pack CMD mapping.
+    programArgs.addAll(['--width','1280','--height','720'])
+    runDir = file('run-focused-visual')
+    useXVFB = true
+}

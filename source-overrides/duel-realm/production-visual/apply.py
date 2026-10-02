@@ -60,3 +60,10 @@ packet.write_text(s)
 print('Applied final Card Worlds textured cards, face-up Pokemon, measured grounding, content, and settled visual proof overlay')
 
 runpy.run_path(str(here/"ui_scroll.py"),run_name="__main__")
+
+# Separate source set and mod descriptor: later UI overrides cannot replace this entrypoint.
+focused=root/'src/focusedQa'
+(focused/'java/vn/svarcade/tcg/qa').mkdir(parents=True,exist_ok=True)
+(focused/'resources').mkdir(parents=True,exist_ok=True)
+shutil.copyfile(here/'qa/FocusedEconomyEffectVisualRun.java',focused/'java/vn/svarcade/tcg/qa/FocusedEconomyEffectVisualRun.java')
+shutil.copyfile(here/'qa/fabric.mod.json',focused/'resources/fabric.mod.json')

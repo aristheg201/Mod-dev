@@ -10,7 +10,7 @@ import vn.svarcade.tcg.economy.CardWorldsCurrency;
 
 import java.util.UUID;
 
-/** Dual-currency purchase controls. Visuals are a Card Worlds/resource-pack contract; balances stay server authoritative in BEconomy. */
+/** Dual-currency purchase controls. ItemStack visuals follow the server resource-pack contract. */
 public final class CurrencyPurchaseUi {
     public static ItemStack coin(String currency) {
         int cmd=switch(currency) {
@@ -27,7 +27,7 @@ public final class CurrencyPurchaseUi {
 
     public static void render(CardWorldsScreen a,Ui u,TcgMod.BannerView selected,Rect info,int ix) {
         int width=info.w()-34;
-        u.text("cardworlds.ui.pull_currency",ix,info.bottom()-126,12,Ui.MUTED);
+        u.text("Choose payment currency",ix,info.bottom()-126,12,Ui.MUTED);
         Rect beast=new Rect(ix,info.bottom()-106,width,34);
         Rect hunter=new Rect(ix,info.bottom()-66,width,34);
         u.button("150 Beast Coin",beast,true,true,()->pull(a,selected,CardWorldsCurrency.BEAST));

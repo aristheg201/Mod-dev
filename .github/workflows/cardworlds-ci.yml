@@ -32,52 +32,8 @@ jobs:
           test -f src/main/java/vn/svarcade/tcg/data/EffectEconomyQa.java
           test -f src/main/java/vn/svarcade/tcg/client/component/CurrencyPurchaseUi.java
 
-          cat >> build.gradle <<'GRADLE'
-
-          repositories {
-              maven { url 'https://maven.architectury.dev/' }
-              maven { url 'https://maven.wispforest.io/releases' }
-              maven { url 'https://api.modrinth.com/maven' }
-          }
-
-          configurations {
-              focusedRuntimeMods
-          }
-
-          dependencies {
-              focusedRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-              focusedRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
-              focusedRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
-              focusedRuntimeMods "dev.architectury:architectury-fabric:13.0.8"
-              focusedRuntimeMods "io.wispforest:accessories-fabric:1.1.0-beta.52+1.21.1"
-              focusedRuntimeMods "maven.modrinth:SszvX85I:1.2.0+1.8.1+1.21.1-release"
-              focusedRuntimeMods "maven.modrinth:eXts2L7r:U5bhVym2"
-              focusedRuntimeMods "maven.modrinth:4Kma4Oms:9rGoa3aP"
-              focusedRuntimeMods "maven.modrinth:s7N7AsqL:NQdxKsW7"
-              focusedRuntimeMods "maven.modrinth:LdBYVaPS:KwNU9SQW"
-              focusedRuntimeMods "maven.modrinth:Vebnzrzj:l47d4ZWk"
-          }
-
-          tasks.register('runFocusedCardWorldsServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
-              dependsOn tasks.named('remapJar')
-              mods.from configurations.focusedRuntimeMods
-              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
-              jvmArgs.add('-Dcardworlds.qa.focused=true')
-              runDir = file('run-focused')
-          }
-          tasks.register('runFocusedCardWorldsClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
-              dependsOn tasks.named('remapJar'), tasks.named('remapQaJar')
-              mods.from configurations.focusedRuntimeMods
-              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
-              mods.from tasks.named('remapQaJar').flatMap { it.archiveFile }
-              // Card Worlds itself is present on both sides. BEconomy is dedicated-server authority only.
-              // Client rendering uses the shared currency descriptor + the server-served resource pack CMD mapping.
-              jvmArgs.addAll('-Dcardworlds.qa=true','-Dcardworlds.qa.focused.visual=true')
-              programArgs.addAll(['--width','1280','--height','720'])
-              runDir = file('run-focused-visual')
-              useXVFB = true
-          }
-          GRADLE
+          python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py
+          echo "apply from: 'source-overrides/duel-realm/production-visual/qa/focused.gradle'" >> build.gradle
 
       - uses: actions/setup-java@v4
         with:
@@ -89,7 +45,7 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: Compile focused production jar
-        run: gradle --no-daemon clean classes remapJar remapQaJar
+        run: gradle --no-daemon clean classes remapJar remapFocusedQaJar
 
       - name: Verify focused build content
         shell: bash
@@ -111,6 +67,7 @@ jobs:
           assert 'LP_COST' in m['costKinds'] and 'DISCARD' in m['costKinds'] and 'TRIBUTE' in m['costKinds']
           print(m)
           PY
+          python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py --jars
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
       - name: Prepare focused BEconomy runtime
@@ -148,30 +105,37 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
           gradle --no-daemon downloadAssets
-          mkdir -p run-focused-visual/config/beconomy run-focused-visual/screenshots
-          cp source-overrides/duel-realm/production-visual/qa/beconomy-config.json run-focused-visual/config/beconomy/config.json
+          mkdir -p run-focused-visual/screenshots
 
       - name: Capture focused effect, reward, and gacha screens
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true -Dcardworlds.qa.focused.visual=true'
-          CARDWORLDS_FOCUSED_VISUAL: 'true'
         shell: bash
         run: |
           set -euo pipefail
-          timeout 150s gradle --no-daemon --stacktrace runFocusedCardWorldsClient
+          timeout --signal=INT --kill-after=15s 240s gradle --no-daemon --stacktrace runFocusedCardWorldsClient > build/focused-client.log 2>&1 || { cat build/focused-client.log; exit 1; }
+          cat build/focused-client.log
           test -f run-focused-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_DRIVER_LOADED focusedVisual=true' run-focused-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_FOCUSED_VISUAL_DRIVER initializer=FocusedEconomyEffectVisualRun' run-focused-visual/logs/latest.log
           for name in focused-01-effect-card focused-02-economy-rewards focused-03-gacha-currencies; do
             test -f "run-focused-visual/screenshots/$name.png"
             grep -Fq "Captured $name" run-focused-visual/logs/latest.log
           done
-          grep -Fq 'CARDWORLDS_FOCUSED_CURRENCY_RENDER item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2 source=server_resource_pack' run-focused-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_FOCUSED_CURRENCY_RENDER item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2 proof=descriptor_only server_resource_pack_loaded=false' run-focused-visual/logs/latest.log
           grep -Fq 'CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3' run-focused-visual/logs/latest.log
-          ! find run-focused-visual/screenshots -maxdepth 1 -type f -name 'focused-failure-*.png' | grep -q .
+          grep -Fq 'CARDWORLDS_FOCUSED_CLIENT beconomy=absent dependency=NONE' run-focused-visual/logs/latest.log
+          for step in boot collection play packs; do
+            grep -Fq "CARDWORLDS_FOCUSED_VISUAL_STEP $step" run-focused-visual/logs/latest.log
+          done
+          if grep -E 'CARDWORLDS_QA_CREATE_WORLD|CARDWORLDS_QA_DRIVER_LOADED|CARDWORLDS_QA_FAILED|CARDWORLDS_FOCUSED_VISUAL_QA_FAILED|CARDWORLDS_SCROLL_PACKS_PROOF|Captured 0[1-9]-' run-focused-visual/logs/latest.log; then
+            echo 'Focused client entered a forbidden full-suite path or failed readiness' >&2
+            exit 1
+          fi
           python3 - <<'PY'
           from pathlib import Path
           import struct
+          expected={"focused-01-effect-card.png","focused-02-economy-rewards.png","focused-03-gacha-currencies.png"}
+          assert {p.name for p in Path("run-focused-visual/screenshots").glob("*.png")}==expected
           for name in ("focused-01-effect-card","focused-02-economy-rewards","focused-03-gacha-currencies"):
               p=Path("run-focused-visual/screenshots")/(name+".png")
               data=p.read_bytes()
@@ -192,6 +156,7 @@ jobs:
             build/libs/SHA256.txt
             build/deep_effects.built.json
             build/focused-runtime.log
+            build/focused-client.log
             run-focused/logs/latest.log
             run-focused-visual/screenshots/*.png
             run-focused-visual/logs/latest.log

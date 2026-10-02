@@ -35,9 +35,9 @@ public final class CardIdentities {
             List<EffectSpec.VisualStage> visuals=new ArrayList<>();int code=value;
             for(int i=0;i<3;i++){String shape=RECIPES.shapes().get(code%RECIPES.shapes().size());code/=RECIPES.shapes().size();visuals.add(new EffectSpec.VisualStage(i==0?"CHARGE":i==1?"CAST_STATUS":"IMPACT",shape,profile,.18+i*.27));}
             var presentation=new EffectSpec.Presentation(vfx.mode(),vfx.profile(),vfx.duration(),vfx.animation(),vfx.particle(),vfx.fallback(),vfx.shape(),vfx.sound(),visuals);
-            var cost=new EffectSpec.Cost("LP_COST",300+Math.min(card.level(),8)*50,"SELF",null);
             var binding=RECIPES.bindings().get(card.category());var conditions=new ArrayList<>(EffectSpec.list(binding.conditions()));conditions.add(new EffectSpec.Condition("OR",null,null,0,binding.sourceZones().stream().map(zone->new EffectSpec.Condition("SOURCE_ZONE","SELF",zone,0,List.<EffectSpec.Condition>of())).toList()));
-            var spec=new EffectSpec(List.of("ON_ACTIVATE"),List.copyOf(conditions),List.of(cost),null,List.of(first,second,third),false,false,null,presentation,List.of(),"CARD_NAME");
+            // Identity stages retain their setup conditions and once-per-turn limit, without a blanket LP tax.
+            var spec=new EffectSpec(List.of("ON_ACTIVATE"),List.copyOf(conditions),List.of(),null,List.of(first,second,third),false,false,null,presentation,List.of(),"CARD_NAME");
             int speed=binding.speed()==0?original.speed():binding.speed();var identity=new Catalog.Effect("composite",0,speed,0,"none",speed==1?List.of("MAIN1","MAIN2"):List.of("DRAW","STANDBY","MAIN1","BATTLE","MAIN2","END"),true,spec);
             var stage=new EffectSpec.Stage("signature",identity,RECIPES.bindings().get(card.category()).sourceZones(),false);
             var root=new EffectSpec(old==null?List.of("ON_ACTIVATE"):old.triggers(),old==null?List.of():old.conditions(),old==null?List.of():old.costs(),old==null?null:old.targets(),old==null?List.of():old.operations(),old!=null&&old.oncePerDuel(),old!=null&&old.optional(),old==null?null:old.textKey(),presentation,List.of(stage),old==null?null:old.limitScope());
