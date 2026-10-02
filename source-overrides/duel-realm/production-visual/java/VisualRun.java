@@ -107,7 +107,16 @@ public final class VisualRun implements ClientModInitializer {
     case 1->{if(a.state.total()<1025)throw new AssertionError("Focused QA catalog missing");a.navigate("Collection");a.ownership="All";a.category="pokemon";a.selected="charizard";a.details=true;focusedNext=now+1800;focusedStep++;}
     case 2->{if(a.selectedCard()==null)throw new AssertionError("Charizard card missing");String effect=vn.svarcade.tcg.client.component.CardWorldsLanguage.effect(a.selectedCard());if(effect.contains("Pay 500 LP")||effect.contains("Pay 200 LP"))throw new AssertionError("Blanket monster LP cost still visible: "+effect);shot(c,"focused-01-effect-card");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE effect_card=charizard");a.details=false;a.navigate("Play");focusedNext=now+1500;focusedStep++;}
     case 3->{shot(c,"focused-02-economy-rewards");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE economy_rewards=true");a.navigate("Packs");focusedNext=now+1500;focusedStep++;}
-    case 4->{if(a.state.banners().isEmpty())throw new AssertionError("No gacha banners available");shot(c,"focused-03-gacha-currencies");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE gacha=beastcoin:150,huntercoin:2");focusedStep++;focusedNext=now+500;}
+    case 4->{if(a.state.banners().isEmpty())throw new AssertionError("No gacha banners available");
+        var beast=vn.svarcade.tcg.client.component.CurrencyPurchaseUi.coin(vn.svarcade.tcg.economy.CardWorldsCurrency.BEAST);
+        var hunter=vn.svarcade.tcg.client.component.CurrencyPurchaseUi.coin(vn.svarcade.tcg.economy.CardWorldsCurrency.HUNTER);
+        var beastCmd=beast.get(net.minecraft.component.DataComponentTypes.CUSTOM_MODEL_DATA);
+        var hunterCmd=hunter.get(net.minecraft.component.DataComponentTypes.CUSTOM_MODEL_DATA);
+        if(!new net.minecraft.component.type.CustomModelDataComponent(6).equals(beastCmd)||!new net.minecraft.component.type.CustomModelDataComponent(2).equals(hunterCmd))
+            throw new AssertionError("Currency resource-pack CMD contract mismatch: beast="+beastCmd+" hunter="+hunterCmd);
+        shot(c,"focused-03-gacha-currencies");
+        org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_CURRENCY_RENDER item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2 source=server_resource_pack");
+        org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE gacha=beastcoin:150,huntercoin:2");focusedStep++;focusedNext=now+500;}
     case 5->{org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3");c.scheduleStop();focusedStep++;}
    }
   }catch(Throwable e){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").error("CARDWORLDS_FOCUSED_QA_FAILED step="+focusedStep,e);shot(c,"focused-failure-"+focusedStep);c.scheduleStop();}
