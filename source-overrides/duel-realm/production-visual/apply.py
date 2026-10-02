@@ -15,6 +15,8 @@ paths={
  'PlaceholderBridge.java':'src/main/java/vn/svarcade/tcg/integration',
  'PlaceholderValues.java':'src/main/java/vn/svarcade/tcg/integration',
  'EconomyRewards.java':'src/main/java/vn/svarcade/tcg/integration',
+ 'BEconomyCardWorlds.java':'src/main/java/vn/svarcade/tcg/integration',
+ 'EffectEconomyQa.java':'src/main/java/vn/svarcade/tcg/data',
  'PlaceholderSupport.java':'src/main/java/vn/svarcade/tcg/fabric',
  'MessageService.java':'src/main/java/vn/svarcade/tcg/fabric',
  'EffectContext.java':'src/main/java/vn/svarcade/tcg/duel',
@@ -41,6 +43,8 @@ paths={
  'VisualRun.java':'src/qa/java/vn/svarcade/tcg/qa',
  'DuelPileVisibilityTest.java':'src/test/java/vn/svarcade/tcg',
 }
+import runpy
+runpy.run_path(str(here/'generate_effect_content.py'),run_name='__main__')
 for name,directory in paths.items():
  target=root/directory/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(here/'java'/name,target)
 shutil.copytree(here/'resources',root/'src/main/resources',dirs_exist_ok=True)
