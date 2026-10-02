@@ -6,18 +6,20 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import vn.svarcade.tcg.client.CardWorldsScreen;
 import vn.svarcade.tcg.fabric.TcgMod;
-import vn.svarcade.tcg.integration.BEconomyCardWorlds;
+import vn.svarcade.tcg.economy.CardWorldsCurrency;
 
 import java.util.UUID;
 
-/** Dual-currency pack purchase controls using the server's actual BEconomy item models. */
+/** Dual-currency purchase controls. Visuals are a Card Worlds/resource-pack contract; balances stay server authoritative in BEconomy. */
 public final class CurrencyPurchaseUi {
     public static ItemStack coin(String currency) {
         int cmd=switch(currency) {
-            case BEconomyCardWorlds.BEAST -> BEconomyCardWorlds.BEAST_CUSTOM_MODEL_DATA;
-            case BEconomyCardWorlds.HUNTER -> BEconomyCardWorlds.HUNTER_CUSTOM_MODEL_DATA;
+            case CardWorldsCurrency.BEAST -> CardWorldsCurrency.BEAST_VISUAL.customModelData();
+            case CardWorldsCurrency.HUNTER -> CardWorldsCurrency.HUNTER_VISUAL.customModelData();
             default -> throw new IllegalArgumentException("Unknown Card Worlds currency "+currency);
         };
+        if(!CardWorldsCurrency.visual(currency).itemId().equals("minecraft:gold_ingot"))
+            throw new IllegalStateException("Unsupported currency render item "+CardWorldsCurrency.visual(currency).itemId());
         ItemStack stack=new ItemStack(Items.GOLD_INGOT);
         stack.set(DataComponentTypes.CUSTOM_MODEL_DATA,new CustomModelDataComponent(cmd));
         return stack;
