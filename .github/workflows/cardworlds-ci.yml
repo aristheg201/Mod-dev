@@ -70,8 +70,8 @@ jobs:
               mods.from configurations.focusedRuntimeMods
               mods.from tasks.named('remapJar').flatMap { it.archiveFile }
               mods.from tasks.named('remapQaJar').flatMap { it.archiveFile }
-              // BEconomy is server-environment only and is intentionally not loaded in the client process.
-              // The standalone focused server step already validates live BEconomy. Client visual QA only renders the three requested screens.
+              // Card Worlds itself is present on both sides. BEconomy is dedicated-server authority only.
+              // Client rendering uses the shared currency descriptor + the server-served resource pack CMD mapping.
               jvmArgs.addAll('-Dcardworlds.qa=true','-Dcardworlds.qa.focused.visual=true')
               programArgs.addAll(['--width','1280','--height','720'])
               runDir = file('run-focused-visual')
@@ -135,7 +135,7 @@ jobs:
           grep -Fq 'Done (' run-focused/logs/latest.log
 
           grep -Eq 'CARDWORLDS_QA_EFFECT_COSTS pokemon_lp=0 total_lp=[0-9]+ kinds=.* signature=mind_theft:800 dark_current_lp=false' run-focused/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_ECONOMY beastcoin=true huntercoin=true beast_visual=minecraft:gold_ingot:6 hunter_visual=minecraft:gold_ingot:2' run-focused/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_ECONOMY authority=dedicated_server beastcoin=true huntercoin=true' run-focused/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_GACHA beastcoin=150 huntercoin=2 exchange_display=25000:1' run-focused/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_REWARDS easy_win=0 easy_loss=0 normal_win=15 normal_loss=0 hard_win=20 hard_loss=5 pvp_win=30 pvp_loss=15 ranked_win=50 ranked_loss=25 currency=beastcoin hunter_reward=0' run-focused/logs/latest.log
 
@@ -164,6 +164,7 @@ jobs:
             test -f "run-focused-visual/screenshots/$name.png"
             grep -Fq "Captured $name" run-focused-visual/logs/latest.log
           done
+          grep -Fq 'CARDWORLDS_FOCUSED_CURRENCY_RENDER item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2 source=server_resource_pack' run-focused-visual/logs/latest.log
           grep -Fq 'CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3' run-focused-visual/logs/latest.log
           ! find run-focused-visual/screenshots -maxdepth 1 -type f -name 'focused-failure-*.png' | grep -q .
           python3 - <<'PY'
