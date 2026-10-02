@@ -70,7 +70,9 @@ jobs:
               mods.from configurations.focusedRuntimeMods
               mods.from tasks.named('remapJar').flatMap { it.archiveFile }
               mods.from tasks.named('remapQaJar').flatMap { it.archiveFile }
-              jvmArgs.addAll('-Dcardworlds.qa=true','-Dcardworlds.qa.focused=true','-Dcardworlds.qa.focused.visual=true')
+              // BEconomy is server-environment only and is intentionally not loaded in the client process.
+              // The standalone focused server step already validates live BEconomy. Client visual QA only renders the three requested screens.
+              jvmArgs.addAll('-Dcardworlds.qa=true','-Dcardworlds.qa.focused.visual=true')
               programArgs.addAll(['--width','1280','--height','720'])
               runDir = file('run-focused-visual')
               useXVFB = true
@@ -152,7 +154,7 @@ jobs:
       - name: Capture focused effect, reward, and gacha screens
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true -Dcardworlds.qa.focused=true -Dcardworlds.qa.focused.visual=true'
+          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true -Dcardworlds.qa.focused.visual=true'
         shell: bash
         run: |
           set -euo pipefail
