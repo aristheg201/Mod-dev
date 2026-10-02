@@ -28,7 +28,28 @@ s=s.replace('private static final Map<String,String> NAMES=new HashMap<>();','''
 s=s.replace('NAMES.clear();','NAMES.clear();RULES.clear();')
 s=s.replace('public static String effect(Catalog.Card card) {','public static String effect(Catalog.Card card){return RULES.computeIfAbsent(new RuleKey(card,language()),k->buildEffect(card));}\n    private static String buildEffect(Catalog.Card card) {')
 p.write_text(s)
-p=base/'client/render/PokemonModels.java';s=p.read_text().replace('CACHE = new LinkedHashMap<>();','CACHE = new LinkedHashMap<>(64,.75f,true);');p.write_text(s)
+p=base/'client/render/PokemonModels.java';s=p.read_text().replace('CACHE = new LinkedHashMap<>();','CACHE = new LinkedHashMap<>(64,.75f,true);')
+# Base-card descriptors have no explicit form. Preserve the provider's declared
+# standard-form and assigned feature defaults instead of asking its resolver for an
+# impossible empty-aspect model (e.g. Xerneas neutral-mode). Explicit forms win.
+anchor='PokemonProperties props=vn.svarcade.tcg.integration.CobblemonBridge.properties(descriptor);'
+assert anchor in s
+s=s.replace(anchor,anchor+'''
+                if (descriptor.aspects().isEmpty()) {
+                    var actual = com.cobblemon.mod.common.api.pokemon.PokemonSpecies.getByIdentifier(
+                        net.minecraft.util.Identifier.of(descriptor.species()));
+                    var displayAspects = new HashSet<>(actual.getStandardForm().getAspects());
+                    for (var feature : com.cobblemon.mod.common.api.pokemon.feature.SpeciesFeatures.getFeaturesFor(actual)) {
+                        if (feature instanceof com.cobblemon.mod.common.api.pokemon.feature.ChoiceSpeciesFeatureProvider choice
+                            && choice.isAspect() && choice.getDefault() != null && !choice.getDefault().isBlank()
+                            && !choice.getKeys().isEmpty()) {
+                            displayAspects.add(choice.getAspect(new com.cobblemon.mod.common.api.pokemon.feature.StringSpeciesFeature(
+                                choice.getKeys().getFirst(), choice.getDefault())));
+                        }
+                    }
+                    props.setAspects(displayAspects);
+                }''')
+p.write_text(s)
 p=base/'client/CardWorldsScreen.java';s=p.read_text();s=s.replace('private final vn.svarcade.tcg.performance.CollectionCache collectionCache=', 'private final vn.svarcade.tcg.performance.CollectionCache deckPoolCache=new vn.svarcade.tcg.performance.CollectionCache();\n    private final vn.svarcade.tcg.performance.CollectionCache collectionCache=');s=s.replace('    public List<String> rarityOptions()', '    public List<Catalog.Card> deckCards(){return deckPoolCache.get(state.definitions(),state.counts(),Set.of(),List.of(fields.getOrDefault("search",""),"all","All","All","Owned"),CardWorldsLanguage.language(),CardWorldsLanguage::name);}\n    public List<String> rarityOptions()');s=s.replace('Files.write(FabricLoader.getInstance().getConfigDir().resolve("cardworlds-favorites.txt"),favorites);','TcgClient.saveFavorites(FabricLoader.getInstance().getConfigDir().resolve("cardworlds-favorites.txt"),List.copyOf(favorites));');p.write_text(s)
 p=base/'client/screens/DeckBuilderScreen.java';s=p.read_text();a=s.index('  var cards=');b=s.index('\n',a);s=s[:a]+'  var cards=a.deckCards();'+s[b:];s=s.replace('for(int i=0;i<cards.size();i++)','for(int i=vn.svarcade.tcg.performance.CollectionCache.first(poolScroll.offset(),170,3),end=vn.svarcade.tcg.performance.CollectionCache.last(poolScroll.offset(),cardPool.h(),170,3,cards.size());i<end;i++)');p.write_text(s)
 # Same-language resource reloads also invalidate filtered names/rules without scanning every frame.

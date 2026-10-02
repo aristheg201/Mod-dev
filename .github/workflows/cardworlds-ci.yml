@@ -115,7 +115,7 @@ jobs:
           gradle --no-daemon downloadAssets
           mkdir -p run-focused-visual/screenshots
 
-      - name: Capture focused effect, reward, and gacha screens
+      - name: Capture focused screens and verify every pack preview
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         shell: bash
@@ -133,7 +133,8 @@ jobs:
           grep -Fq 'CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3' run-focused-visual/logs/latest.log
           grep -Fq 'CARDWORLDS_FOCUSED_CLIENT beconomy=absent dependency=NONE' run-focused-visual/logs/latest.log
           grep -Fq 'CARDWORLDS_FOCUSED_HEADER currencies=beastcoin,huntercoin balances=unavailable item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2' run-focused-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_FOCUSED_PACK_SCOPE banner=crossroads previews=1' run-focused-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_FOCUSED_PACK_SCOPE packs=14' run-focused-visual/logs/latest.log
+          python3 source-overrides/duel-realm/production-visual/qa/verify_pack_evidence.py
           for step in boot collection play packs; do
             grep -Fq "CARDWORLDS_FOCUSED_VISUAL_STEP $step" run-focused-visual/logs/latest.log
           done
@@ -172,5 +173,6 @@ jobs:
             build/focused-client.log
             run-focused/logs/latest.log
             run-focused-visual/screenshots/*.png
+            run-focused-visual/packs-qa/screenshots/*.png
             run-focused-visual/logs/latest.log
           if-no-files-found: warn

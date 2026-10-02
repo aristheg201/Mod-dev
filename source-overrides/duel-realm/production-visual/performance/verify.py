@@ -26,5 +26,6 @@ s=(base/'fabric/TcgPackets.java').read_text();assert 'SnapshotCompression.encode
 s=(base/'fabric/TcgMod.java').read_text();assert 'request.terminal()' in s and 'terminalValid' in s
 
 s=(base/'client/screens/PacksScreen.java').read_text();assert 'CollectionCache.first(' in s and 'CollectionCache.last(' in s
-assert 'a.state = a.state.withBanners(focusedBanners)' in Path('src/focusedQa/java/vn/svarcade/tcg/qa/FocusedEconomyEffectVisualRun.java').read_text()
+runner = Path('src/focusedQa/java/vn/svarcade/tcg/qa/FocusedEconomyEffectVisualRun.java').read_text()
+assert 'withBanners(' not in runner and 'packIds.size() != 14' in runner
 print('CARDWORLDS_PERFORMANCE_PREFLIGHT_OK pools=bounded gameplay_owner=main effects=indexed catalog=complete')

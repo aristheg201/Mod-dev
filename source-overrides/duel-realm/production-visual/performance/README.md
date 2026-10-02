@@ -78,6 +78,9 @@ Timing evidence is recorded rather than used as a machine-dependent CI gate.
 
 The single focused workflow also boots the dedicated server, proves BEconomy
 authority/reward rules/effect-cost rules, checks clean shutdown, and captures only
-the existing three UI screenshots because this pass changes grid rendering.
+the existing three UI screenshots and all 14 pack previews with the complete
+production list retained. Pack QA scrolls to and selects each banner, checks its
+preview/rates/currency descriptors, rejects model/rendering errors, and records
+one extra image per pack. It never executes a purchase or enters the full suite.
 It uploads benchmark JSON, JUnit results, server/client logs, production JAR,
 SHA256, built effects and screenshots together.

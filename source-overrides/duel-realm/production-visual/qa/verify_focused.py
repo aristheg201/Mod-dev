@@ -27,6 +27,13 @@ assert 'a.ownership = "Favorites"' in runner and 'visible.size() != 1' in runner
 assert "BEconomyCardWorlds" not in runner and "Class.forName" not in runner
 assert 'send("pull"' not in runner and "VisualRun.class" not in runner
 assert runner.count('shot(c, "focused-') == 3
+assert 'withBanners(' not in runner, "Pack verification must retain every production banner"
+assert 'packIds.size() != 14' in runner and 'CARDWORLDS_FOCUSED_PACK_VERIFIED' in runner
+assert 'packIndex * 112' in runner and 'packShot(c,' in runner
+assert 'Unable to find a poser' in runner and 'purchases=0' in runner
+models=(main / 'client/render/PokemonModels.java').read_text()
+assert 'descriptor.aspects().isEmpty()' in models and 'actual.getStandardForm().getAspects()' in models
+assert 'SpeciesFeatures.getFeaturesFor(actual)' in models and 'choice.getDefault()' in models
 gradle = (root / "source-overrides/duel-realm/production-visual/qa/focused.gradle").read_text()
 client_task = gradle.split("tasks.register('runFocusedCardWorldsClient'", 1)[1]
 assert "remapFocusedQaJar" in client_task and "remapQaJar" not in client_task

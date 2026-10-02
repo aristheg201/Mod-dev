@@ -18,6 +18,8 @@ import vn.svarcade.tcg.economy.CardWorldsCurrency;
 
 import java.nio.file.Files;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** The only entrypoint in the focused QA JAR. No full-suite runner or purchase actions. */
@@ -29,6 +31,9 @@ public final class FocusedEconomyEffectVisualRun implements ClientModInitializer
     private boolean worldStarted, stopped;
     private final AtomicInteger saved = new AtomicInteger();
     private volatile String screenshotFailure;
+    private final List<String> packIds = new ArrayList<>();
+    private int packIndex;
+    private boolean packPositioned;
 
     @Override public void onInitializeClient() {
         LOG.info("CARDWORLDS_FOCUSED_VISUAL_DRIVER initializer=FocusedEconomyEffectVisualRun");
@@ -132,17 +137,35 @@ public final class FocusedEconomyEffectVisualRun implements ClientModInitializer
                 case PLAY -> {
                     if (!a.page.equals("Play")) return;
                     shot(c, "focused-02-economy-rewards");
-                    a.banner = "crossroads";
-                    // Currency QA needs one known-safe booster, not unrelated regional model previews.
-                    var focusedBanners = a.state.banners().stream().filter(b -> b.id().equals("crossroads")).toList();
-                    if (focusedBanners.size() != 1) throw failure(c, "Focused Crossroads booster missing");
-                    a.state = a.state.withBanners(focusedBanners);
-                    LOG.info("CARDWORLDS_FOCUSED_PACK_SCOPE banner=crossroads previews=1 catalog={}", a.state.definitions().size());
+                    packIds.addAll(a.state.banners().stream().map(b -> b.id()).toList());
+                    if (packIds.size() != 14 || new HashSet<>(packIds).size() != 14)
+                        throw failure(c, "Expected all 14 distinct packs: " + packIds);
+                    LOG.info("CARDWORLDS_FOCUSED_PACK_SCOPE packs={} catalog={} ids={}", packIds.size(), a.state.definitions().size(), packIds);
+                    a.banner = packIds.getFirst();
                     a.navigate("Packs");
                     enter(Step.PACKS, 15_000);
                 }
                 case PACKS -> {
                     if (!a.page.equals("Packs") || a.state.banners().isEmpty()) return;
+                    if (!a.state.banners().stream().map(b -> b.id()).toList().equals(packIds))
+                        throw failure(c, "Pack list changed during verification");
+                    var region = a.scrolling.region("packs/list");
+                    if (region.isEmpty()) return;
+                    if (!packPositioned) {
+                        a.scrolling.move("packs/list", packIndex * 112 - region.get().offset());
+                        packPositioned = true;
+                        readyAt = now + 2_000;
+                        return;
+                    }
+                    String id = packIds.get(packIndex);
+                    var banner = a.state.banners().get(packIndex);
+                    var preview = vn.svarcade.tcg.client.screens.PacksScreen.preview(a);
+                    if (!a.banner.equals(id) || preview == null || !preview.id().equals(banner.previewCard())
+                        || banner.slots() <= 0 || banner.rates().isEmpty())
+                        throw failure(c, "Incomplete selected pack " + id);
+                    int rowY = region.get().box().y() + packIndex * 112 - region.get().offset();
+                    if (rowY >= region.get().box().bottom() || rowY + 99 <= region.get().box().y())
+                        throw failure(c, "Selected pack is unreachable in list: " + id);
                     var beast = CurrencyPurchaseUi.coin(CardWorldsCurrency.BEAST);
                     var hunter = CurrencyPurchaseUi.coin(CardWorldsCurrency.HUNTER);
                     var beastCmd = beast.get(DataComponentTypes.CUSTOM_MODEL_DATA);
@@ -150,16 +173,41 @@ public final class FocusedEconomyEffectVisualRun implements ClientModInitializer
                     if (!beast.isOf(Items.GOLD_INGOT) || beastCmd == null || beastCmd.value() != 6
                         || !hunter.isOf(Items.GOLD_INGOT) || hunterCmd == null || hunterCmd.value() != 2)
                         throw failure(c, "Currency ItemStack descriptor mismatch");
-                    LOG.info("CARDWORLDS_FOCUSED_CURRENCY_RENDER item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2 proof=descriptor_only server_resource_pack_loaded=false");
-                    LOG.info("CARDWORLDS_FOCUSED_RESOURCE_PACKS loaded={}", c.getResourcePackManager().getEnabledProfiles().stream().map(profile -> profile.getId()).toList());
-                    shot(c, "focused-03-gacha-currencies");
+                    LOG.info("CARDWORLDS_FOCUSED_PACK_VERIFIED index={} id={} preview={} slots={} rates={} beast=150 hunter=2 beast_cmd=6 hunter_cmd=2 list_offset={}",
+                        packIndex + 1, id, preview.id(), banner.slots(), banner.rates().size(), region.get().offset());
+                    packShot(c, String.format(java.util.Locale.ROOT, "pack-%02d-%s", packIndex + 1, id));
+                    if (packIndex == 0) {
+                        LOG.info("CARDWORLDS_FOCUSED_CURRENCY_RENDER item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2 proof=descriptor_only server_resource_pack_loaded=false");
+                        LOG.info("CARDWORLDS_FOCUSED_RESOURCE_PACKS loaded={}", c.getResourcePackManager().getEnabledProfiles().stream().map(profile -> profile.getId()).toList());
+                        shot(c, "focused-03-gacha-currencies");
+                    }
+                    if (++packIndex < packIds.size()) {
+                        a.banner = packIds.get(packIndex);
+                        packPositioned = false;
+                        deadline = now + 15_000;
+                        readyAt = now;
+                        return;
+                    }
+                    LOG.info("CARDWORLDS_FOCUSED_PACK_QA_COMPLETE packs={} purchases=0", packIndex);
                     enter(Step.SAVING, 10_000);
                 }
                 case SAVING -> {
-                    if (saved.get() != 3) return;
+                    if (saved.get() != 3 + packIds.size()) return;
                     for (String name : List.of("focused-01-effect-card", "focused-02-economy-rewards", "focused-03-gacha-currencies"))
                         if (!Files.isRegularFile(c.runDirectory.toPath().resolve("screenshots").resolve(name + ".png")))
                             throw failure(c, "Screenshot file missing: " + name);
+                    for (int i = 0; i < packIds.size(); i++)
+                        if (!Files.isRegularFile(c.runDirectory.toPath().resolve("packs-qa/screenshots")
+                            .resolve(String.format(java.util.Locale.ROOT, "pack-%02d-%s.png", i + 1, packIds.get(i)))))
+                            throw failure(c, "Pack screenshot missing: " + packIds.get(i));
+                    String log = Files.readString(c.runDirectory.toPath().resolve("logs/latest.log"));
+                    int start = log.indexOf("CARDWORLDS_FOCUSED_PACK_SCOPE");
+                    if (start < 0) throw failure(c, "Pack verification log marker missing");
+                    String rendering = log.substring(start);
+                    for (String error : List.of("Unable to find a poser", "Could not render Cobblemon card model",
+                        "CARDWORLDS_VARIANT_UNAVAILABLE", "[Render thread/ERROR]", "[STDERR]: java."))
+                        if (rendering.contains(error)) throw failure(c, "Pack rendering error: " + rendering.lines()
+                            .filter(line -> line.contains(error)).findFirst().orElse(error));
                     LOG.info("CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3");
                     step = Step.COMPLETE;
                     stopped = true;
@@ -178,8 +226,18 @@ public final class FocusedEconomyEffectVisualRun implements ClientModInitializer
     }
 
     private void shot(MinecraftClient c, String name) {
-        ScreenshotRecorder.saveScreenshot(c.runDirectory, name + ".png", c.getFramebuffer(), result -> {
-            if (!Files.isRegularFile(c.runDirectory.toPath().resolve("screenshots").resolve(name + ".png"))) {
+        capture(c, c.runDirectory, name);
+    }
+
+    private void packShot(MinecraftClient c, String name) {
+        capture(c, c.runDirectory.toPath().resolve("packs-qa").toFile(), name);
+    }
+
+    private void capture(MinecraftClient c, java.io.File directory, String name) {
+        try { Files.createDirectories(directory.toPath().resolve("screenshots")); }
+        catch (java.io.IOException e) { throw failure(c, "Cannot create screenshot directory: " + e); }
+        ScreenshotRecorder.saveScreenshot(directory, name + ".png", c.getFramebuffer(), result -> {
+            if (!Files.isRegularFile(directory.toPath().resolve("screenshots").resolve(name + ".png"))) {
                 screenshotFailure = "Screenshot save failed: " + name + " " + result.getString();
                 return;
             }
