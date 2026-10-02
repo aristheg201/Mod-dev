@@ -108,7 +108,10 @@ public final class BEconomyCardWorlds {
         Object api=api();
         boolean beast=currencyExists(api,BEAST),hunter=currencyExists(api,HUNTER);
         if(!beast||!hunter) throw new IllegalStateException("Required BEconomy currencies missing: beastcoin="+beast+" huntercoin="+hunter);
-        LOG.info("CARDWORLDS_QA_ECONOMY beastcoin={} huntercoin={} beast_cmd={} hunter_cmd={}",beast,hunter,BEAST_CUSTOM_MODEL_DATA,HUNTER_CUSTOM_MODEL_DATA);
+        Map<String,String> visuals=currencyVisuals(api);
+        if(!"minecraft:gold_ingot:6".equals(visuals.get(BEAST)))throw new IllegalStateException("Beast Coin visual config mismatch: "+visuals.get(BEAST));
+        if(!"minecraft:gold_ingot:2".equals(visuals.get(HUNTER)))throw new IllegalStateException("Hunter Coin visual config mismatch: "+visuals.get(HUNTER));
+        LOG.info("CARDWORLDS_QA_ECONOMY beastcoin={} huntercoin={} beast_visual={} hunter_visual={}",beast,hunter,visuals.get(BEAST),visuals.get(HUNTER));
         LOG.info("CARDWORLDS_QA_GACHA beastcoin={} huntercoin={} exchange_display=25000:1",PULL_BEAST,PULL_HUNTER);
         LOG.info("CARDWORLDS_QA_REWARDS easy_win={} easy_loss={} normal_win={} normal_loss={} hard_win={} hard_loss={} pvp_win={} pvp_loss={} ranked_win={} ranked_loss={} currency={} hunter_reward=0",
             rewardAmount(true,"EASY",false,true),rewardAmount(true,"EASY",false,false),
@@ -138,6 +141,20 @@ public final class BEconomyCardWorlds {
             } catch(RuntimeException e) { throw e; }
             catch(Throwable e) { throw new IllegalStateException("BEconomy 1.5 API unavailable",e); }
         }
+    }
+
+    private static Map<String,String> currencyVisuals(Object api) {
+        Map<String,String> out=new HashMap<>();
+        try {
+            Object list=find(api.getClass(),"getCurrencyList",0).invoke(api);
+            if(list instanceof Iterable<?> values)for(Object cfg:values) {
+                String type=String.valueOf(find(cfg.getClass(),"getCurrencyType",0).invoke(cfg));
+                String material=String.valueOf(find(cfg.getClass(),"getMaterial",0).invoke(cfg));
+                int cmd=((Number)find(cfg.getClass(),"getCustommodeldata",0).invoke(cfg)).intValue();
+                out.put(type.toLowerCase(Locale.ROOT),material.toLowerCase(Locale.ROOT)+":"+cmd);
+            }
+        } catch(Throwable e) { throw new IllegalStateException("Cannot inspect BEconomy currency visuals",e); }
+        return out;
     }
 
     private static boolean currencyExists(Object api,String currency) {
