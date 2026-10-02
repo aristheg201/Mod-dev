@@ -5,61 +5,73 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/** Data supplies the vocabulary. Stable catalog order chooses distinct executable compositions. */
+/** Card gameplay is an exact content lookup. Existing presentation remains independent. */
 public final class CardIdentities {
-    public record Binding(String self,List<String> sourceZones,boolean family,boolean types,int speed,List<EffectSpec.Condition> conditions) {}
-    public record Recipes(List<EffectSpec.Operation> setup,List<EffectSpec.Operation> payoff,List<String> shapes,Map<String,Binding> bindings) {}
-    private static final Recipes RECIPES=load();
-    private static Recipes load(){try(var in=CardIdentities.class.getResourceAsStream("/data/svarcade_tcg/identity_recipes.json")){
-        return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),Recipes.class);
+    private record PresentationRecipes(List<String> shapes) {}
+    private static final PresentationRecipes RECIPES=load();
+    private static PresentationRecipes load(){try(var in=CardIdentities.class.getResourceAsStream("/data/svarcade_tcg/identity_recipes.json")){
+        return new Gson().fromJson(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8),PresentationRecipes.class);
     }catch(IOException e){throw new IllegalStateException(e);}}
-    private static EffectSpec.Condition bindCondition(EffectSpec.Condition c,Binding binding){if(c==null)return null;
-        return new EffectSpec.Condition(c.type(),"SELF".equals(c.target())?binding.self():c.target(),c.value(),c.amount(),EffectSpec.list(c.children()).stream().map(child->bindCondition(child,binding)).toList());
-    }
-    private static EffectSpec.Operation typed(EffectSpec.Operation op,Catalog.Card card){
-        Binding binding=Objects.requireNonNull(RECIPES.bindings().get(card.category()),"Unconfigured card category "+card.category());
-        var f=op.filter();if(f!=null)f=new EffectSpec.Filter(f.category(),EffectSpec.list(f.types()).contains("$type")?(binding.types()?List.of(card.type()):List.of()):f.types(),EffectSpec.list(f.tags()).contains("$family")?(binding.family()?List.of(card.family()):List.of()):f.tags(),f.minLevel(),f.maxLevel(),f.minPower(),f.maxPower(),f.position(),f.zone(),f.controller(),f.faceUp());
-        return new EffectSpec.Operation(op.type(),op.amount(),"SELF".equals(op.target())?binding.self():op.target(),op.zone(),op.duration(),op.flags(),EffectSpec.list(op.children()).stream().map(child->typed(child,card)).toList(),bindCondition(op.condition(),binding),EffectSpec.list(op.otherwise()).stream().map(child->typed(child,card)).toList(),f);
-    }
     public static Catalog apply(Catalog catalog){
         Map<String,Catalog.Card> cards=new LinkedHashMap<>(catalog.cards());int index=0;
         for(var card:cards.values().stream().sorted(Comparator.comparing(Catalog.Card::id)).toList()){
-            if(card.effect()==null)throw new IllegalStateException("No executable identity for "+card.id());
-            if(card.effect().spec()!=null&&EffectSpec.list(card.effect().spec().stages()).stream().anyMatch(stage->!stage.id().equals("signature")))continue;
-            int value=index++,a=value%RECIPES.setup().size(),b=value/RECIPES.setup().size()%RECIPES.payoff().size(),c=value/(RECIPES.setup().size()*RECIPES.payoff().size());
-            if(c>=RECIPES.setup().size())throw new IllegalStateException("Identity recipe budget exceeded; author more recipes");
-            var first=typed(RECIPES.setup().get(a),card);var second=typed(RECIPES.payoff().get(b),card);var third=typed(RECIPES.setup().get(c),card);
-            var original=card.effect();var old=original.spec();
+            // Provider-authored special cards already carry their own complete mechanics and presentation.
+            if(card.id().startsWith("special_")&&card.effect()!=null&&card.effect().spec()!=null)continue;
+            if(CardGameplayEffects.definition(card)==null&&card.effect()!=null&&card.effect().spec()!=null&&EffectSpec.list(card.effect().spec().stages()).stream().anyMatch(stage->!stage.id().equals("signature")))continue;
+            int value=index++;
+            var original=card.effect();var old=original==null?null:original.spec();
             var vfx=old==null?EffectContent.attackPresentation(card):old.vfx();if(vfx==null)vfx=EffectContent.attackPresentation(card);
             String profile=EffectSpec.value(vfx.profile(),EffectContent.attackPresentation(card).profile());
             List<EffectSpec.VisualStage> visuals=new ArrayList<>();int code=value;
             for(int i=0;i<3;i++){String shape=RECIPES.shapes().get(code%RECIPES.shapes().size());code/=RECIPES.shapes().size();visuals.add(new EffectSpec.VisualStage(i==0?"CHARGE":i==1?"CAST_STATUS":"IMPACT",shape,profile,.18+i*.27));}
             var presentation=new EffectSpec.Presentation(vfx.mode(),vfx.profile(),vfx.duration(),vfx.animation(),vfx.particle(),vfx.fallback(),vfx.shape(),vfx.sound(),visuals);
-            var binding=RECIPES.bindings().get(card.category());var conditions=new ArrayList<>(EffectSpec.list(binding.conditions()));conditions.add(new EffectSpec.Condition("OR",null,null,0,binding.sourceZones().stream().map(zone->new EffectSpec.Condition("SOURCE_ZONE","SELF",zone,0,List.<EffectSpec.Condition>of())).toList()));
-            // Identity stages retain their setup conditions and once-per-turn limit, without a blanket LP tax.
-            var spec=new EffectSpec(List.of("ON_ACTIVATE"),List.copyOf(conditions),List.of(),null,List.of(first,second,third),false,false,null,presentation,List.of(),"CARD_NAME");
-            int speed=binding.speed()==0?original.speed():binding.speed();var identity=new Catalog.Effect("composite",0,speed,0,"none",speed==1?List.of("MAIN1","MAIN2"):List.of("DRAW","STANDBY","MAIN1","BATTLE","MAIN2","END"),true,spec);
-            var stage=new EffectSpec.Stage("signature",identity,RECIPES.bindings().get(card.category()).sourceZones(),false);
-            var root=new EffectSpec(old==null?List.of("ON_ACTIVATE"):old.triggers(),old==null?List.of():old.conditions(),old==null?List.of():old.costs(),old==null?null:old.targets(),old==null?List.of():old.operations(),old!=null&&old.oncePerDuel(),old!=null&&old.optional(),old==null?null:old.textKey(),presentation,List.of(stage),old==null?null:old.limitScope());
-            var effect=new Catalog.Effect(original.operation(),original.amount(),original.speed(),original.lifeCost(),original.target(),original.phases(),original.oncePerTurn(),root);
-            cards.put(card.id(),new Catalog.Card(card.id(),card.name(),card.category(),card.species(),card.aspects(),card.type(),card.family(),card.evolvesFrom(),card.extra(),card.level(),card.power(),card.text(),card.set(),card.rarity(),card.sources(),effect,card.triggers(),card.modifiers()));
+            var effect=CardGameplayEffects.identity(card,presentation);
+            cards.put(card.id(),new Catalog.Card(card.id(),card.name(),card.category(),card.species(),card.aspects(),card.type(),card.family(),card.evolvesFrom(),card.extra(),card.level(),card.power(),"@effect",card.set(),card.rarity(),card.sources(),effect,card.triggers(),card.modifiers()));
         }
         return new Catalog(catalog.rules(),Map.copyOf(cards),catalog.banners(),catalog.rewards(),catalog.dealers(),catalog.starters());
     }
+    /** Ignore cosmetics and numeric tuning. Costs, conditions, selectors and operation topology matter. */
     private static JsonElement fingerprint(JsonElement value){
-        if(value.isJsonObject()){var object=value.getAsJsonObject();object.remove("vfx");object.remove("textKey");
-            for(String key:new ArrayList<>(object.keySet())){if(key.equals("amount")){int n=object.get(key).getAsInt();object.addProperty(key,Integer.signum(n));}else fingerprint(object.get(key));}
-        }else if(value.isJsonArray())value.getAsJsonArray().forEach(CardIdentities::fingerprint);
-        return value;
+        if(value.isJsonObject()){
+            var input=value.getAsJsonObject();var out=new JsonObject();
+            for(String key:new TreeSet<>(input.keySet())){
+                if(Set.of("vfx","textKey","id").contains(key))continue;
+                var v=input.get(key);if(v.isJsonNull()||v.isJsonArray()&&v.getAsJsonArray().isEmpty()||v.isJsonObject()&&v.getAsJsonObject().isEmpty())continue;
+                if(key.equals("operations")&&v.isJsonArray()){
+                    var parts=new TreeMap<String,JsonElement>();for(var part:v.getAsJsonArray()){var normalized=fingerprint(part);parts.put(normalized.toString(),normalized);}
+                    var array=new JsonArray();parts.values().forEach(array::add);out.add(key,array);continue;
+                }
+                if(Set.of("types","tags").contains(key)){var array=new JsonArray();array.add("typed-filter");out.add(key,array);continue;}
+                if(key.equals("value")&&input.has("type")&&Set.of("TYPE","TAG").contains(input.get("type").getAsString())){out.addProperty(key,"typed-condition");continue;}
+                if(Set.of("amount","lifeCost","minLevel","maxLevel","minPower","maxPower","max","count").contains(key)&&v.isJsonPrimitive()){
+                    try{out.addProperty(key,Integer.signum(v.getAsInt()));continue;}catch(NumberFormatException ignored){}
+                }
+                if(Set.of("counter","memory").contains(key)||key.equals("value")&&input.has("type")&&input.get("type").getAsString().startsWith("COUNTER_")){out.addProperty(key,"named-slot");continue;}
+                out.add(key,fingerprint(v));
+            }
+            return out;
+        }
+        if(value.isJsonArray()){var a=new JsonArray();for(var v:value.getAsJsonArray())a.add(fingerprint(v));return a;}
+        return value.deepCopy();
+    }
+    public static String mechanics(Catalog.Effect effect,boolean primaryOnly){
+        var data=new Gson().toJsonTree(effect);if(primaryOnly&&data.getAsJsonObject().has("spec"))data.getAsJsonObject().getAsJsonObject("spec").remove("stages");
+        return fingerprint(data).toString();
     }
     public static void validateUniqueness(Catalog catalog){
-        Set<String> mechanics=new HashSet<>(),visuals=new HashSet<>();Gson json=new Gson();
+        Map<String,String> mechanics=new HashMap<>(),primary=new HashMap<>();int external=0;
         for(var c:catalog.cards().values()){
             if(c.effect()==null||c.effect().spec()==null)throw new IllegalArgumentException(c.id()+": effect is missing");
-            var spec=c.effect().spec();
-            if(!mechanics.add(fingerprint(json.toJsonTree(List.of(c.effect().operation(),EffectSpec.list(spec.operations()),EffectSpec.list(spec.stages())))).toString()))throw new IllegalArgumentException(c.id()+": duplicate executable effect graph");
-            if(!visuals.add(json.toJson(spec.vfx())))throw new IllegalArgumentException(c.id()+": duplicate VFX choreography");
+            // External addon species can supply authored effects without changing this mod's official registry.
+            if(CardGameplayEffects.definition(c)==null&&!c.id().startsWith("special_")&&c.category().equals("pokemon")){
+                external++;continue;
+            }
+            String duplicate=mechanics.putIfAbsent(mechanics(c.effect(),false),c.id());
+            if(duplicate!=null)throw new IllegalArgumentException(c.id()+": duplicate executable effect graph of "+duplicate);
+            duplicate=primary.putIfAbsent(mechanics(c.effect(),true),c.id());
+            if(duplicate!=null)throw new IllegalArgumentException(c.id()+": duplicate primary gameplay effect of "+duplicate);
         }
+        org.slf4j.LoggerFactory.getLogger("cardworlds-gameplay").info("CARDWORLDS_GAMEPLAY_IDENTITIES catalog={} validated={} external={} duplicatePrimary=0 duplicateMechanics=0 ordinalRecipes=0",catalog.cards().size(),primary.size(),external);
     }
     private CardIdentities(){}
 }

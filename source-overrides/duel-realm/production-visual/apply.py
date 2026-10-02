@@ -22,6 +22,7 @@ paths={
  'MessageService.java':'src/main/java/vn/svarcade/tcg/fabric',
  'EffectContext.java':'src/main/java/vn/svarcade/tcg/duel',
  'CardIdentities.java':'src/main/java/vn/svarcade/tcg/data',
+ 'CardGameplayEffects.java':'src/main/java/vn/svarcade/tcg/data',
  'SpecialAspectCards.java':'src/main/java/vn/svarcade/tcg/data',
  'AuthoredEffectValidator.java':'src/main/java/vn/svarcade/tcg/data',
  'SnapshotCompression.java':'src/main/java/vn/svarcade/tcg/fabric',
@@ -69,3 +70,7 @@ shutil.copyfile(here/'qa/FocusedEconomyEffectVisualRun.java',focused/'java/vn/sv
 shutil.copyfile(here/'qa/fabric.mod.json',focused/'resources/fabric.mod.json')
 
 runpy.run_path(str(here/'performance/patch.py'),run_name='__main__')
+
+runpy.run_path(str(here/'card-gameplay/patch.py'),run_name='__main__')
+
+runpy.run_path(str(here/'quality/apply_market.py'),run_name='__main__')

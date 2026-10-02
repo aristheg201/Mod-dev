@@ -1,0 +1,41 @@
+    public record MarketPayment(String request,String listing,String buyer,String seller,String serial,String currency,long price,long tax,String state) {}
+    private MarketPayment marketPayment(String request)throws SQLException {
+        try(var s=statement("SELECT * FROM market_payments WHERE request=?",request);var r=s.executeQuery()){
+            if(!r.next())return null;
+            return new MarketPayment(request,r.getString("listing"),r.getString("buyer"),r.getString("seller"),r.getString("serial"),r.getString("currency"),r.getLong("price"),r.getLong("tax"),r.getString("state"));
+        }
+    }
+    public String listEconomy(String owner,String serial,long price){return tx(()->{
+        check(price>0&&price<=1_000_000_000L,"Price must be between 1 and 1,000,000,000.");
+        String id=UUID.randomUUID().toString();lock(owner,serial,"market:"+id);
+        update("INSERT INTO listings(id,seller,serial,price,currency) VALUES(?,?,?,?,?)",id,owner,serial,price,CardWorldsCurrency.BEAST);
+        return id;
+    });}
+    public MarketPayment prepareMarketPayment(String buyer,String listing,String request){return tx(()->{
+        check(request!=null&&!request.isBlank()&&request.length()<=128,"Invalid market receipt.");
+        var existing=marketPayment(request);
+        if(existing!=null){check(existing.buyer().equals(buyer)&&existing.listing().equals(listing),"Market receipt belongs to another purchase.");return existing;}
+        check(scalar("SELECT COUNT(*) FROM market_payments WHERE listing=? AND state NOT IN ('DECLINED')",listing)==0,"This listing already has a payment in progress.");
+        try(var s=statement("SELECT * FROM listings WHERE id=?",listing);var r=s.executeQuery()){
+            check(r.next(),"That listing has already closed.");
+            String seller=r.getString("seller"),serial=r.getString("serial"),currency=r.getString("currency");long price=r.getLong("price"),tax=Math.max(1,price/20);
+            check(CardWorldsCurrency.BEAST.equals(currency),"The seller must update this listing's price before it can be bought.");
+            check(!buyer.equals(seller),"You own this listing.");var c=get(serial);
+            check(c.owner().equals(seller)&&c.lock().equals("market:"+listing),"Listing escrow mismatch.");
+            update("INSERT INTO market_payments(request,listing,buyer,seller,serial,currency,price,tax,state) VALUES(?,?,?,?,?,?,?,?,?)",request,listing,buyer,seller,serial,currency,price,tax,"RESERVED");
+            return marketPayment(request);
+        }
+    });}
+    public void marketPaymentState(String request,String expected,String next){tx(()->{
+        check(Set.of("RESERVED:DEBITING","DEBITING:DECLINED","DEBITING:DEBITED","DEBITED:CREDITING","CREDITING:CREDITED").contains(expected+":"+next),"Invalid market receipt transition.");
+        check(update("UPDATE market_payments SET state=? WHERE request=? AND state=?",next,request,expected)==1,"Market receipt state changed.");return null;
+    });}
+    public void completeMarketPayment(String request){tx(()->{
+        var payment=marketPayment(request);check(payment!=null,"Market receipt missing.");if(payment.state().equals("COMPLETE"))return null;
+        check(payment.state().equals("CREDITED"),"Market payment has not completed.");var c=get(payment.serial());
+        check(c.owner().equals(payment.seller())&&c.lock().equals("market:"+payment.listing()),"Listing escrow mismatch.");
+        transfer(payment.serial(),payment.seller(),payment.buyer(),"MARKET");
+        check(update("DELETE FROM listings WHERE id=?",payment.listing())==1,"Listing has already closed.");
+        update("INSERT INTO sales(id,card,seller,buyer,price,tax,at,currency) VALUES(?,?,?,?,?,?,?,?)",payment.listing(),c.card(),payment.seller(),payment.buyer(),payment.price(),payment.tax(),Instant.now().getEpochSecond(),payment.currency());
+        check(update("UPDATE market_payments SET state='COMPLETE' WHERE request=? AND state='CREDITED'",request)==1,"Market receipt state changed.");return null;
+    });}

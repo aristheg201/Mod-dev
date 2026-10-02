@@ -16,7 +16,7 @@ concurrency:
 jobs:
   focused-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +34,7 @@ jobs:
 
           python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py
           python3 source-overrides/duel-realm/production-visual/performance/verify.py
+          python3 source-overrides/duel-realm/production-visual/card-gameplay/verify.py
           echo "apply from: 'source-overrides/duel-realm/production-visual/qa/focused.gradle'" >> build.gradle
 
       - uses: actions/setup-java@v4
@@ -58,6 +59,7 @@ jobs:
           jar tf "$JAR" | grep -Fq 'vn/svarcade/tcg/client/component/CurrencyPurchaseUi.class'
           jar tf "$JAR" | grep -Fq 'data/svarcade_tcg/deep_effects.json'
           unzip -p "$JAR" data/svarcade_tcg/deep_effects.json > build/deep_effects.built.json
+          unzip -p "$JAR" data/svarcade_tcg/pokemon_effects.json > build/pokemon_effects.built.json
           python3 - <<'PY'
           import json
           d=json.load(open('build/deep_effects.built.json'))
@@ -97,6 +99,7 @@ jobs:
           python3 source-overrides/duel-realm/production-visual/performance/check_server.py
           test -f run-focused/logs/latest.log
           grep -Fq 'Done (' run-focused/logs/latest.log
+          grep -Eq 'CARDWORLDS_GAMEPLAY_IDENTITIES catalog=[0-9]+ validated=[0-9]+ external=0 duplicatePrimary=0 duplicateMechanics=0 ordinalRecipes=0' run-focused/logs/latest.log
 
           grep -Eq 'CARDWORLDS_QA_EFFECT_COSTS pokemon_lp=0 total_lp=[0-9]+ kinds=.* signature=mind_theft:800 dark_current_lp=false' run-focused/logs/latest.log
           grep -Fq 'CARDWORLDS_QA_ECONOMY authority=dedicated_server beastcoin=true huntercoin=true' run-focused/logs/latest.log
@@ -166,6 +169,7 @@ jobs:
             build/libs/*.jar
             build/libs/SHA256.txt
             build/deep_effects.built.json
+            build/pokemon_effects.built.json
             build/performance/*.json
             build/load-*.log
             build/test-results/test/*.xml
