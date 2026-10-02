@@ -30,10 +30,10 @@ public final class CurrencyPurchaseUi {
         u.text("cardworlds.ui.pull_currency",ix,info.bottom()-126,12,Ui.MUTED);
         Rect beast=new Rect(ix,info.bottom()-106,width,34);
         Rect hunter=new Rect(ix,info.bottom()-66,width,34);
-        u.button("150 Beast Coin",beast,true,true,()->pull(a,selected,BEconomyCardWorlds.BEAST));
-        u.button("2 Hunter Coin",hunter,false,true,()->pull(a,selected,BEconomyCardWorlds.HUNTER));
-        draw(u,coin(BEconomyCardWorlds.BEAST),new Rect(beast.x()+7,beast.y()+7,20,20));
-        draw(u,coin(BEconomyCardWorlds.HUNTER),new Rect(hunter.x()+7,hunter.y()+7,20,20));
+        u.button("150 Beast Coin",beast,true,true,()->pull(a,selected,CardWorldsCurrency.BEAST));
+        u.button("2 Hunter Coin",hunter,false,true,()->pull(a,selected,CardWorldsCurrency.HUNTER));
+        draw(u,coin(CardWorldsCurrency.BEAST),new Rect(beast.x()+7,beast.y()+7,20,20));
+        draw(u,coin(CardWorldsCurrency.HUNTER),new Rect(hunter.x()+7,hunter.y()+7,20,20));
         u.text("25k = 1 Hunter Coin",ix,info.bottom()-25,11,Ui.GOLD);
     }
 
