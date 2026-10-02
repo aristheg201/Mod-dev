@@ -33,9 +33,8 @@ public final class PacksScreen implements Page {
   var rateScroll=a.beginScroll(u,"packs/rates/"+selected.id(),rates,selected.rates().size()*22);
   for(int i=0;i<selected.rates().size();i++){Rect line=new Rect(ix,rates.y()+i*22-rateScroll.offset(),rates.w()-14,20);if(u.visible(line))u.fit(selected.rates().get(i),line,14,Ui.MUTED);}
   a.endScroll(u,rateScroll);
-  u.text("cardworlds.ui.scroll_to_view_all_rates",ix,info.bottom()-72,12,Ui.MUTED);
-  u.button("cardworlds.ui.open_1"+selected.price(),new Rect(ix,info.bottom()-48,info.w()-34,34),true,a.state.profile().coins()>=selected.price(),()->{
-   a.reveal.await(selected.previewCard(),selected.name());a.send("pull",selected.id(),UUID.randomUUID().toString());});
+  u.text("cardworlds.ui.scroll_to_view_all_rates",ix,info.bottom()-145,12,Ui.MUTED);
+  CurrencyPurchaseUi.render(a,u,selected,info,ix);
  }
  public static void pack(Ui u,Rect r,String name,Catalog.Card mascot,String key){
   u.c.fillGradient(r.x(),r.y(),r.right(),r.bottom(),0xFF46547E,0xFF151226);u.ornament(r,Ui.GOLD);u.frame(r.inset(7),0xFF958061);
