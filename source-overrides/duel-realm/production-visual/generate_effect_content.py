@@ -1,3 +1,4 @@
+# Card Worlds effect content: authored costs are data-driven; LP cost is signature-only.
 """Reproducible authored effect compositions and generic registry species rules."""
 import json
 from pathlib import Path
