@@ -65,6 +65,16 @@ jobs:
               jvmArgs.add('-Dcardworlds.qa.focused=true')
               runDir = file('run-focused')
           }
+          tasks.register('runFocusedCardWorldsClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+              dependsOn tasks.named('remapJar'), tasks.named('remapQaJar')
+              mods.from configurations.focusedRuntimeMods
+              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
+              mods.from tasks.named('remapQaJar').flatMap { it.archiveFile }
+              jvmArgs.addAll('-Dcardworlds.qa=true','-Dcardworlds.qa.focused=true','-Dcardworlds.qa.focused.visual=true')
+              programArgs.addAll(['--width','1280','--height','720'])
+              runDir = file('run-focused-visual')
+              useXVFB = true
+          }
           GRADLE
 
       - uses: actions/setup-java@v4
@@ -77,7 +87,7 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: Compile focused production jar
-        run: gradle --no-daemon clean classes remapJar
+        run: gradle --no-daemon clean classes remapJar remapQaJar
 
       - name: Verify focused build content
         shell: bash
@@ -129,6 +139,44 @@ jobs:
 
           ! grep -Eiq 'Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-focused/logs/latest.log
 
+      - name: Install focused visual runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
+          gradle --no-daemon downloadAssets
+          mkdir -p run-focused-visual/config/beconomy run-focused-visual/screenshots
+          cp source-overrides/duel-realm/production-visual/qa/beconomy-config.json run-focused-visual/config/beconomy/config.json
+
+      - name: Capture focused effect, reward, and gacha screens
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true -Dcardworlds.qa.focused=true -Dcardworlds.qa.focused.visual=true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 240s gradle --no-daemon --stacktrace runFocusedCardWorldsClient
+          test -f run-focused-visual/logs/latest.log
+          for name in focused-01-effect-card focused-02-economy-rewards focused-03-gacha-currencies; do
+            test -f "run-focused-visual/screenshots/$name.png"
+            grep -Fq "Captured $name" run-focused-visual/logs/latest.log
+          done
+          grep -Fq 'CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3' run-focused-visual/logs/latest.log
+          ! find run-focused-visual/screenshots -maxdepth 1 -type f -name 'focused-failure-*.png' | grep -q .
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          for name in ("focused-01-effect-card","focused-02-economy-rewards","focused-03-gacha-currencies"):
+              p=Path("run-focused-visual/screenshots")/(name+".png")
+              data=p.read_bytes()
+              assert data[:8]==b"\x89PNG\r\n\x1a\n", name
+              w,h=struct.unpack(">II",data[16:24])
+              assert w>=1280 and h>=720,(name,w,h)
+              assert len(data)>=20000,(name,len(data))
+              print(name,w,h,len(data))
+          PY
+
       - name: Upload focused build evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -140,4 +188,6 @@ jobs:
             build/deep_effects.built.json
             build/focused-runtime.log
             run-focused/logs/latest.log
+            run-focused-visual/screenshots/*.png
+            run-focused-visual/logs/latest.log
           if-no-files-found: warn
