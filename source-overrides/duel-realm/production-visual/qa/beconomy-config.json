@@ -1,0 +1,42 @@
+{
+  "commands": ["beco", "eco"],
+  "balanceCommands": ["bal", "balance"],
+  "economy": [
+    {
+      "name": "&eBeastcoin",
+      "lore": ["&6QA activity reward currency"],
+      "material": "minecraft:gold_ingot",
+      "custommodeldata": 6,
+      "currencyType": "beastcoin",
+      "balanceStart": 0,
+      "symbol": "$",
+      "isPrimary": true,
+      "transfer": true,
+      "withdraw": true,
+      "matchOnlyMaterial": false
+    },
+    {
+      "name": "&eHuntercoin",
+      "lore": ["&6QA premium currency"],
+      "material": "minecraft:gold_ingot",
+      "custommodeldata": 2,
+      "currencyType": "huntercoin",
+      "balanceStart": 0,
+      "symbol": "⋈",
+      "isPrimary": true,
+      "transfer": false,
+      "withdraw": true,
+      "matchOnlyMaterial": false
+    }
+  ],
+  "localSave": true,
+  "databaseSave": false,
+  "database": {
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "databaseName": "qa",
+    "username": "qa",
+    "password": "qa"
+  }
+}
