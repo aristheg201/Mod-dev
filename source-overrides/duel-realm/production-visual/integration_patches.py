@@ -90,3 +90,46 @@ p=Path('src/main/java/vn/svarcade/tcg/data/Catalog.java');s=p.read_text()
 start=s.index('    public static Catalog load(');end=s.index('    public Card card(',start)
 s=s[:start]+'    public static Catalog load(Path override) throws IOException {\n        return CatalogMigration.load(override);\n    }\n'+s[end:]
 p.write_text(s)
+
+
+# Focused BEconomy reward + gacha overlay. Applied last so it owns all battle payouts and pack charges.
+p=Path('src/main/java/vn/svarcade/tcg/economy/CardStore.java');s=p.read_text()
+old="Catalog.Banner b=catalog.banners().get(bannerId);check(b!=null,\"Banner not found.\");check(now>=b.starts()&&(b.ends()==0||now<b.ends()),\"This banner is closed.\");debit(owner,b.price());Pity p=pity(owner,b.family());"
+new="Catalog.Banner b=catalog.banners().get(bannerId);check(b!=null,\"Banner not found.\");check(now>=b.starts()&&(b.ends()==0||now<b.ends()),\"This banner is closed.\");Pity p=pity(owner,b.family());"
+if old not in s: raise RuntimeError('CardStore pull debit anchor missing')
+s=s.replace(old,new)
+if 'public synchronized boolean hasReceipt(String owner,String request)' not in s:
+    s=s.rstrip()[:-1]+'''\n    public synchronized boolean hasReceipt(String owner,String request){try{return scalar("SELECT COUNT(*) FROM receipts WHERE owner=? AND request=?",owner,request)>0;}catch(SQLException e){throw new IllegalStateException(e);}}\n}\n'''
+p.write_text(s)
+
+p=Path('src/main/java/vn/svarcade/tcg/fabric/TcgMod.java');s=p.read_text()
+old='''                case "pull" -> {check(a.size()==2,"Choose a banner.");var results=store.pull(owner,a.get(0),a.get(1),Instant.now().getEpochSecond());reveals.put(player,results);}'''
+new='''                case "pull" -> {
+                    check(a.size()==2,"Choose a banner and payment currency.");
+                    String request=a.get(1);boolean existing=store.hasReceipt(owner,request);
+                    if(!existing)vn.svarcade.tcg.integration.BEconomyCardWorlds.chargePull(owner,request);
+                    try{var results=store.pull(owner,a.get(0),request,Instant.now().getEpochSecond());reveals.put(player,results);}
+                    catch(RuntimeException ex){if(!existing)vn.svarcade.tcg.integration.BEconomyCardWorlds.refundPull(owner,request);throw ex;}
+                }'''
+if old not in s: raise RuntimeError('TcgMod pull anchor missing')
+s=s.replace(old,new)
+
+finish='''        store.unlockDuel(m.id);UUID winner=winning==0?m.a:m.b,loser=winning==0?m.b:m.a;'''
+if finish not in s: raise RuntimeError('TcgMod finish anchor missing')
+s=s.replace(finish,finish+'''\n        vn.svarcade.tcg.integration.BEconomyCardWorlds.rewardMatch(m.id,m.a.toString(),m.b.toString(),m.npc,m.botDifficulty,m.ranked,winning);''')
+
+# The legacy hard-PvE path mints an NPC card/internal coins and invokes EconomyRewards.
+# Battle economy is now exclusively BEconomyCardWorlds, so keep that historical path unreachable.
+if '        if(m.npc&&winning==0){' not in s: raise RuntimeError('legacy hard-PvE reward anchor missing')
+s=s.replace('        if(m.npc&&winning==0){','        if(false&&m.npc&&winning==0){',1)
+
+old='''for(UUID id:viewers){var p=server.getPlayerManager().getPlayer(id);if(p!=null)send(p,id.equals(winner)?"Victory!":"Duel complete.",0);}'''
+new='''for(UUID id:viewers){var p=server.getPlayerManager().getPlayer(id);if(p!=null){String base=id.equals(winner)?"Victory!":"Duel complete.";send(p,vn.svarcade.tcg.integration.BEconomyCardWorlds.resultMessage(base,m.id,id.toString()),0);}}'''
+if old not in s: raise RuntimeError('battle result notice anchor missing')
+s=s.replace(old,new)
+
+old='''catalog=CobblemonCatalogHydrator.expand(Catalog.load(file));store=new CardStore(server.getSavePath(WorldSavePath.ROOT).resolve("svarcade-tcg/cards.db"),catalog,rng);duelRealm=new DuelRealmService(server);duelRealm.world();'''
+new=old+'''if(Boolean.getBoolean("cardworlds.qa.focused")){vn.svarcade.tcg.integration.BEconomyCardWorlds.verifyRuntime();vn.svarcade.tcg.data.EffectEconomyQa.verify(catalog);}'''
+if old not in s: raise RuntimeError('focused runtime QA startup anchor missing')
+s=s.replace(old,new)
+p.write_text(s)
