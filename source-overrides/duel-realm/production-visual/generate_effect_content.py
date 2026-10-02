@@ -10,7 +10,7 @@ def condition(kind,value='',amount=0,target='SELF',children=None):
 def effect(operations,target='none',speed=1,costs=None,conditions=None,once=True,triggers=None,mode='STATUS',element=None,filter=None):
     selectors={'enemy':'TARGET','ally':'TARGET','grave':'TARGET','chain':'CHAIN_SOURCE','none':'SELF'}
     return dict(operation='composite',amount=0,speed=speed,lifeCost=0,target=target,phases=['DRAW','STANDBY','MAIN1','BATTLE','MAIN2','END'] if speed>1 else ['MAIN1','MAIN2'],oncePerTurn=once,
-      spec=dict(triggers=triggers or ['ON_ACTIVATE'],conditions=conditions or [],costs=costs or [],targets=dict(selector=selectors[target],min=0 if target=='none' else 1,max=1,filter=filter),operations=operations,oncePerDuel=False,optional=False,textKey='cardworlds.effect.structured',
+      spec=dict(triggers=triggers or ['ON_ACTIVATE'],conditions=conditions or [],costs=costs or [],targets=dict(selector=selectors[target],min=0 if target=='none' else 1,max=1,filter=filter),operations=operations,oncePerDuel=False,optional=False,textKey=None,
       vfx=dict(mode=mode,profile=element,duration=1400,animation=dict(semantic='CAST_STATUS' if mode=='STATUS' else 'ATTACK_PHYSICAL' if mode=='MELEE' else 'ATTACK_SPECIAL',windup=.25,release=.46,impact=.72,recovery=.9))))
 def cost(kind,amount=1,target=None,filter=None,counter=None):
     return dict(type=kind,amount=amount,target=target,filter=filter,counter=counter)
