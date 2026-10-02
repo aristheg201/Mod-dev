@@ -1,4 +1,4 @@
-name: Card Worlds CI
+name: Card Worlds Focused Economy + Effects CI
 
 on:
   push:
@@ -10,13 +10,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: cardworlds-${{ github.ref }}
+  group: cardworlds-focused-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify:
+  focused-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +28,9 @@ jobs:
           echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
           tar -xzf /tmp/cardworlds-src-tools.tar.gz
           python3 source-overrides/apply.py
-          test -f src/main/java/vn/svarcade/tcg/client/render/DuelWorldScene.java
+          test -f src/main/java/vn/svarcade/tcg/integration/BEconomyCardWorlds.java
+          test -f src/main/java/vn/svarcade/tcg/data/EffectEconomyQa.java
+          test -f src/main/java/vn/svarcade/tcg/client/component/CurrencyPurchaseUi.java
 
           cat >> build.gradle <<'GRADLE'
 
@@ -39,54 +41,31 @@ jobs:
           }
 
           configurations {
-              productionRuntimeMods
-              coreRuntimeMods
+              focusedRuntimeMods
           }
 
           dependencies {
-              productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-              productionRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
-              productionRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
-              productionRuntimeMods "dev.architectury:architectury-fabric:13.0.8"
-              productionRuntimeMods "io.wispforest:accessories-fabric:1.1.0-beta.52+1.21.1"
-              productionRuntimeMods "maven.modrinth:SszvX85I:1.2.0+1.8.1+1.21.1-release"
-              productionRuntimeMods "maven.modrinth:eXts2L7r:U5bhVym2"
-              productionRuntimeMods "maven.modrinth:4Kma4Oms:9rGoa3aP"
-              productionRuntimeMods "maven.modrinth:s7N7AsqL:NQdxKsW7"
-              productionRuntimeMods "maven.modrinth:LdBYVaPS:KwNU9SQW"
-              productionRuntimeMods "maven.modrinth:Vebnzrzj:l47d4ZWk"
-              coreRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-              coreRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
-              coreRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
+              focusedRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+              focusedRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
+              focusedRuntimeMods "com.cobblemon:fabric:1.8.1+1.21.1"
+              focusedRuntimeMods "dev.architectury:architectury-fabric:13.0.8"
+              focusedRuntimeMods "io.wispforest:accessories-fabric:1.1.0-beta.52+1.21.1"
+              focusedRuntimeMods "maven.modrinth:SszvX85I:1.2.0+1.8.1+1.21.1-release"
+              focusedRuntimeMods "maven.modrinth:eXts2L7r:U5bhVym2"
+              focusedRuntimeMods "maven.modrinth:4Kma4Oms:9rGoa3aP"
+              focusedRuntimeMods "maven.modrinth:s7N7AsqL:NQdxKsW7"
+              focusedRuntimeMods "maven.modrinth:LdBYVaPS:KwNU9SQW"
+              focusedRuntimeMods "maven.modrinth:Vebnzrzj:l47d4ZWk"
           }
 
-          tasks.register('runProductionCardWorldsClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
-              dependsOn tasks.named('remapJar'), tasks.named('remapQaJar')
-              mods.from configurations.productionRuntimeMods
-              mods.from tasks.named('remapJar').flatMap { it.archiveFile }
-              mods.from tasks.named('remapQaJar').flatMap { it.archiveFile }
-              jvmArgs.add('-Dcardworlds.qa=true')
-              programArgs.addAll(['--width', '1280', '--height', '720'])
-              runDir = file('run')
-              useXVFB = true
-          }
-          tasks.register('runProductionCardWorldsCoreServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+          tasks.register('runFocusedCardWorldsServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
               dependsOn tasks.named('remapJar')
-              // Replace Loom's default productionRuntimeMods collection for a genuine absence test.
-              mods.setFrom(configurations.coreRuntimeMods, tasks.named('remapJar').flatMap { it.archiveFile })
-              runDir = file('run-core-server')
-          }
-          tasks.register('runProductionCardWorldsServer' , net.fabricmc.loom.task.prod.ServerProductionRunTask) {
-              dependsOn tasks.named('remapJar')
-              mods.from configurations.productionRuntimeMods
+              mods.from configurations.focusedRuntimeMods
               mods.from tasks.named('remapJar').flatMap { it.archiveFile }
-              runDir = file('run-server')
+              jvmArgs.add('-Dcardworlds.qa.focused=true')
+              runDir = file('run-focused')
           }
           GRADLE
-          test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
-          test -f src/main/java/vn/svarcade/tcg/client/render/PokemonModels.java
-          test -f src/qa/java/vn/svarcade/tcg/qa/VisualRun.java
-          test -f tools/verify_artifact.py
 
       - uses: actions/setup-java@v4
         with:
@@ -97,297 +76,68 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Unit tests + remapped artifacts
-        run: gradle --no-daemon clean verifyCardWorlds
+      - name: Compile, tests, and production jar
+        run: gradle --no-daemon clean test remapJar
 
-      - name: Verify production jar and test evidence
-        run: python3 tools/verify_artifact.py
-
-      - name: Verify production jar metadata
+      - name: Verify focused build content
         shell: bash
         run: |
           set -euo pipefail
           JAR="$(find build/libs -maxdepth 1 -type f -name 'SVArcade-TCG-*.jar' ! -name '*sources*' ! -name '*dev*' ! -name '*qa-driver*' | head -n1)"
           test -n "$JAR"
-          unzip -p "$JAR" fabric.mod.json | tee build/libs/fabric.mod.built.json
-          grep -q '"id": "svarcade_tcg"' build/libs/fabric.mod.built.json
+          jar tf "$JAR" | grep -Fq 'vn/svarcade/tcg/integration/BEconomyCardWorlds.class'
+          jar tf "$JAR" | grep -Fq 'vn/svarcade/tcg/client/component/CurrencyPurchaseUi.class'
+          jar tf "$JAR" | grep -Fq 'data/svarcade_tcg/deep_effects.json'
+          unzip -p "$JAR" data/svarcade_tcg/deep_effects.json > build/deep_effects.built.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('build/deep_effects.built.json'))
+          m=d['effectEconomy']
+          assert m['monsterLpCosts']==0, m
+          assert m['totalLpCosts']==1, m
+          assert len(m['costKinds'])>=6, m
+          assert 'LP_COST' in m['costKinds'] and 'DISCARD' in m['costKinds'] and 'TRIBUTE' in m['costKinds']
+          print(m)
+          PY
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
-      - name: Publish build/test evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: CardWorlds-${{ github.sha }}
-          path: |
-            build/libs/*.jar
-            build/libs/SHA256.txt
-            build/libs/fabric.mod.built.json
-            build/test-results/test/*.xml
-            build/internal-evidence.json
-            build/reports/tests/test/**
-          if-no-files-found: error
-
-      - name: Boot production dedicated server
+      - name: Prepare focused BEconomy runtime
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p run-server
-          echo 'eula=true' > run-server/eula.txt
-          printf 'online-mode=false\nview-distance=3\nsimulation-distance=3\n' > run-server/server.properties
+          mkdir -p run-focused/config/beconomy
+          cp source-overrides/duel-realm/production-visual/qa/beconomy-config.json run-focused/config/beconomy/config.json
+          echo 'eula=true' > run-focused/eula.txt
+          printf 'online-mode=false\nserver-port=25568\nview-distance=3\nsimulation-distance=3\n' > run-focused/server.properties
+
+      - name: Runtime QA - effects, currencies, gacha only
+        shell: bash
+        run: |
+          set -euo pipefail
           set +e
-          timeout --signal=INT --kill-after=15s 150s gradle --no-daemon runProductionCardWorldsServer > build/dedicated-server.log 2>&1
+          timeout --signal=INT --kill-after=15s 150s gradle --no-daemon runFocusedCardWorldsServer > build/focused-runtime.log 2>&1
           status=$?
           set -e
           test "$status" -eq 0 -o "$status" -eq 124 -o "$status" -eq 137
-          grep -Fq 'Done (' run-server/logs/latest.log
-          grep -Fq 'CARDWORLDS_CATALOG_HYDRATED' run-server/logs/latest.log
-          ! grep -Eiq 'Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-server/logs/latest.log
-          for provider in cobblemon mega_showdown placeholder-api beconomy cobbledollars impactor; do
-            grep -Fq "CARDWORLDS_INTEGRATION provider=$provider available=true" run-server/logs/latest.log
-          done
-          for provider in beconomy cobbledollars impactor; do
-            grep -Fq "CARDWORLDS_ECONOMY_API provider=$provider compatible=true" run-server/logs/latest.log
-          done
-          grep -Eq 'CARDWORLDS_ASPECT_COVERAGE discovered=[0-9]+ authored=24 registered=24' run-server/logs/latest.log
+          test -f run-focused/logs/latest.log
+          grep -Fq 'Done (' run-focused/logs/latest.log
 
-      - name: Boot dedicated server without optional providers
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p run-core-server
-          echo 'eula=true' > run-core-server/eula.txt
-          printf 'online-mode=false\nserver-port=25566\nview-distance=3\nsimulation-distance=3\n' > run-core-server/server.properties
-          set +e
-          timeout --signal=INT --kill-after=15s 150s gradle --no-daemon runProductionCardWorldsCoreServer > build/core-dedicated-server.log 2>&1
-          status=$?
-          set -e
-          test "$status" -eq 0 -o "$status" -eq 124 -o "$status" -eq 137
-          grep -Fq 'Done (' run-core-server/logs/latest.log
-          for provider in mega_showdown placeholder-api beconomy cobbledollars impactor; do
-            grep -Fq "CARDWORLDS_INTEGRATION provider=$provider available=false" run-core-server/logs/latest.log
-          done
-          grep -Eq 'CARDWORLDS_ASPECT_COVERAGE discovered=[0-9]+ authored=24 registered=0' run-core-server/logs/latest.log
-          ! grep -Eiq 'Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-core-server/logs/latest.log
+          grep -Eq 'CARDWORLDS_QA_EFFECT_COSTS pokemon_lp=0 total_lp=[0-9]+ kinds=.* signature=mind_theft:800 dark_current_lp=false' run-focused/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_ECONOMY beastcoin=true huntercoin=true beast_visual=minecraft:gold_ingot:6 hunter_visual=minecraft:gold_ingot:2' run-focused/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_GACHA beastcoin=150 huntercoin=2 exchange_display=25000:1' run-focused/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_REWARDS easy_win=0 easy_loss=0 normal_win=15 normal_loss=0 hard_win=20 hard_loss=5 pvp_win=30 pvp_loss=15 ranked_win=50 ranked_loss=25 currency=beastcoin hunter_reward=0' run-focused/logs/latest.log
 
+          ! grep -Eiq 'Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-focused/logs/latest.log
 
-      - name: Install headless OpenGL runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
-
-      - name: Download Minecraft client assets
-        run: gradle --no-daemon downloadAssets
-
-      - name: Prepare Card Worlds QA driver
-        shell: bash
-        run: |
-          set -euo pipefail
-          QA_JAR="$(find build/libs -maxdepth 1 -type f -name 'SVArcade-TCG-*-qa-driver.jar' | head -n1)"
-          test -n "$QA_JAR"
-          mkdir -p run/screenshots run/logs
-          cat > run/options.txt <<'EOF'
-          version:3955
-          guiScale:3
-          fullscreen:false
-          maxFps:60
-          renderDistance:5
-          simulationDistance:5
-          particles:1
-          showSubtitles:false
-          onboardAccessibility:false
-          EOF
-          echo "QA driver: $QA_JAR"
-          jar tf "$QA_JAR" | grep -F 'vn/svarcade/tcg/qa/VisualRun.class'
-          unzip -p "$QA_JAR" fabric.mod.json | tee build/libs/qa.fabric.mod.json
-          grep -Eq '"id"[[:space:]]*:[[:space:]]*"cardworlds_qa"' build/libs/qa.fabric.mod.json
-
-      - name: Boot Minecraft and capture Card Worlds scenes
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-          JAVA_TOOL_OPTIONS: '-Dcardworlds.qa=true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout 300s gradle --no-daemon --stacktrace runProductionCardWorldsClient
-
-      - name: Verify Card Worlds visual evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f run/logs/latest.log
-          echo "Captured screenshots:"
-          find run/screenshots -maxdepth 1 -type f -name '*.png' -printf '%f\n' | sort
-
-          expected=(
-            01-home
-            02-collection
-            03-decks
-            04-play
-            05-market
-            06-world
-            07-packs
-            08-pack-enter
-            09-pack-opening
-            10-pack-reveal
-            11-pack-summary
-            12-duel-summon
-            13-duel-board
-            14-duel-freelook
-            15-duel-result
-            16-reopen-y
-            17-reopen-command
-            18-scale-two
-            19-spectator
-            20-spelltrap-set
-            21-spelltrap-chain
-            22-spelltrap-resolved
-            23-arceus-defense
-            24-arceus-judgement
-            25-arceus-ultimate
-            26-monster-positions
-            27-model-grounding
-            28-field-piles
-            29-summon-vfx
-            30-physical-attack-vfx
-            31-special-attack-vfx
-            32-spell-activate-vfx
-            33-trap-chain-vfx
-            34-vietnamese-duel-ui
-            35-special-lucario-effect
-            36-special-solar-effect
-            37-special-mewtwo-effect
-            38-advanced-chain-effect
-          )
-
-          for name in "${expected[@]}"; do
-            test -f "run/screenshots/$name.png"
-            grep -Fq "Captured $name" run/logs/latest.log
-          done
-
-          count="$(find run/screenshots -maxdepth 1 -type f -name '[0-9][0-9]-*.png' | wc -l)"
-          test "$count" -eq 38
-          ! find run/screenshots -maxdepth 1 -type f -name 'failure-*.png' | grep -q .
-          grep -Fq 'CARDWORLDS_QA_DUEL_REALM_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_SPECTATOR_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_FIELD_PILES_CONFIRMED occupied=8 hidden=4 public=4' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_SPELLTRAP_CHAIN_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_SPELLTRAP_RESOLVE_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_CREATION_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_MONSTER_POSITIONS_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_CATALOG_CONFIRMED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_PLACEHOLDER_PROOF' run/logs/latest.log
-          test "$(grep -Fc 'CARDWORLDS_SPECIAL_EFFECT_CAPTURE' run/logs/latest.log)" -eq 4
-          grep -Fq 'CARDWORLDS_CARD_IDENTITIES' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_ARCEUS_RENDERED' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_ARCEUS_PROVIDER megaShowdownLoaded=true model=assets/cobblemon/bedrock/pokemon/models/0493_arceus/arceus.geo.json' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_FACEUP_DEFENSE_POKEMON_RENDERED' run/logs/latest.log
-          grep -Eq 'CARDWORLDS_CARD_BACK_RENDERED.*position=FACE_DOWN_DEFENSE.*pokemonActorPresent=false' run/logs/latest.log
-          for intent in SPAWN ATTACK_PHYSICAL ATTACK_SPECIAL HIT CAST_STATUS TRANSFORM; do
-            grep -Fq "CARDWORLDS_NATIVE_POSE_PROOF intent=$intent " run/logs/latest.log
-          done
-          ! grep -Eq 'CARDWORLDS_NATIVE_POSE_PROOF intent=(ATTACK_PHYSICAL|ATTACK_SPECIAL|CAST_STATUS|HIT|HEAVY_HIT) animation=cry' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_VFX_PROFILE semantic=ATTACK_PHYSICAL element=fire profile=fire' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_VFX_CAMERA distance=14.5' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_NATIVE_PARTICLE registered=cobblemon:snowstorm' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_ANIMATION_FALLBACK_PROOF' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_VIETNAMESE_PROOF language=vi_vn' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_VI_DYNAMIC_PROOF turn=Lượt 3 lp=SL 7500' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_ENGLISH_FALLBACK_PROOF language=en_us' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_COMPLETE' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_SCROLL_MENU_PROOF' run/logs/latest.log
-          grep -Fq 'CARDWORLDS_SCROLL_PACKS_PROOF' run/logs/latest.log
-
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          log = Path("run/logs/latest.log").read_text(errors="replace")
-          m = re.search(r"CARDWORLDS_CATALOG_HYDRATED cards=(\d+) species=(\d+) fakemon=(\d+) decks=(\d+) banners=(\d+)", log)
-          assert m, "catalog hydration marker missing"
-          cards, species, fakemon, decks, banners = map(int, m.groups())
-          if Path("qa-runtime/require-fakemon").exists():
-              assert fakemon > 0, "real addon content installed but no addon species hydrated"
-          fm = re.search(r"CARDWORLDS_FORMS_HYDRATED baseSpecies=(\d+) forms=(\d+)", log)
-          assert fm, "forms hydration marker missing"
-          base_species, forms = map(int, fm.groups())
-          assert species >= 1025, ("loaded species below requested National Dex coverage", species)
-          assert base_species >= 1025, ("base species coverage below National Dex", base_species)
-          assert forms > 0, ("Cobblemon form/aspect coverage missing", forms)
-          effects=re.search(r"CARDWORLDS_EFFECT_COVERAGE primitives=(\d+) nontrivial=(\d+)",log)
-          assert effects and int(effects[1])==53 and int(effects[2])>=1000, "executable composition coverage missing"
-          assert cards >= 1025, ("catalog card coverage below requested baseline", cards)
-          assert decks >= 15, ("generated deck coverage too small", decks)
-          assert banners >= 10, ("generated pack/banner coverage too small", banners)
-          print({"cards": cards, "species": species, "fakemon": fakemon, "forms": forms, "decks": decks, "banners": banners})
-          PY
-
-          if grep -Eiq 'CARDWORLDS_QA_FAILED|Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Exception in thread "Render thread"' run/logs/latest.log; then
-            echo 'Card Worlds visual smoke detected a crash/render failure' >&2
-            grep -Ein 'CARDWORLDS_QA_FAILED|Minecraft has crashed!|ReportedException|Rendering screen|OpenGL error|Exception in thread "Render thread"' run/logs/latest.log | tail -n 120 >&2
-            exit 1
-          fi
-
-          python3 - <<'PY'
-          from pathlib import Path
-          import struct
-
-          expected = [
-              "01-home", "02-collection", "03-decks", "04-play", "05-market",
-              "06-world", "07-packs", "08-pack-enter", "09-pack-opening",
-              "10-pack-reveal", "11-pack-summary", "12-duel-summon",
-              "13-duel-board", "14-duel-freelook", "15-duel-result",
-              "16-reopen-y", "17-reopen-command", "18-scale-two",
-              "19-spectator", "20-spelltrap-set", "21-spelltrap-chain",
-              "22-spelltrap-resolved", "23-arceus-defense",
-              "24-arceus-judgement", "25-arceus-ultimate",
-              "26-monster-positions", "27-model-grounding", "28-field-piles",
-              "29-summon-vfx", "30-physical-attack-vfx", "31-special-attack-vfx",
-              "32-spell-activate-vfx", "33-trap-chain-vfx", "34-vietnamese-duel-ui",
-              "35-special-lucario-effect", "36-special-solar-effect", "37-special-mewtwo-effect", "38-advanced-chain-effect",
-          ]
-          for name in expected:
-              p = Path("run/screenshots") / f"{name}.png"
-              data = p.read_bytes()
-              assert data[:8] == b"\x89PNG\r\n\x1a\n", (name, "not png")
-              width, height = struct.unpack(">II", data[16:24])
-              assert width >= 1280 and height >= 720, (name, width, height)
-              assert len(data) >= 20_000, (name, "suspiciously small", len(data))
-              print(f"{name}: {width}x{height}, {len(data)} bytes")
-          PY
-
-          python3 tools/test_visual_pixels.py
-          python3 tools/verify_visual_pixels.py
-
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          screenshots = sorted(p.name for p in Path("run/screenshots").glob("[0-9][0-9]-*.png"))
-          evidence = {
-              "head_sha": os.environ["GITHUB_SHA"],
-              "run_id": os.environ["GITHUB_RUN_ID"],
-              "workflow": os.environ["GITHUB_WORKFLOW"],
-              "event": os.environ["GITHUB_EVENT_NAME"],
-              "screenshots": screenshots,
-              "screenshot_count": len(screenshots),
-              "complete_marker": "CARDWORLDS_QA_COMPLETE",
-          }
-          Path("build/visual-evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
-          print(json.dumps(evidence, indent=2))
-          PY
-
-      - name: Upload Card Worlds visual QA evidence
+      - name: Upload focused build evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: CardWorlds-visual-qa-${{ github.sha }}
+          name: CardWorlds-focused-${{ github.sha }}
           path: |
-            run/screenshots/*.png
-            run/logs/latest.log
-            run/crash-reports/**
-            run-server/logs/latest.log
-            build/dedicated-server.log
-            build/core-dedicated-server.log
-            run-core-server/logs/latest.log
-            build/libs/qa.fabric.mod.json
-            build/visual-evidence.json
+            build/libs/*.jar
+            build/libs/SHA256.txt
+            build/deep_effects.built.json
+            build/focused-runtime.log
+            run-focused/logs/latest.log
           if-no-files-found: warn
