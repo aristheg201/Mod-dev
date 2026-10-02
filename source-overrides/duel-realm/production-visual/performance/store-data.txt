@@ -1,0 +1,17 @@
+    /** Immutable derived UI data. Loaded on owned IO workers; never used to validate a spend or gameplay action. */
+    public record UiData(long revision,Profile profile,List<Owned> binder,List<Owned> inventory,Map<String,Integer> counts,List<Deck> decks,List<String> deckNames,Map<String,String> formats,List<Listing> market,List<Trade> trades,List<vn.svarcade.tcg.fabric.TcgMod.BannerView> banners,DuelStatistics statistics,int rank){}
+    private record UiKey(String owner,int page){}
+    private volatile long dataRevision;
+    private final LinkedHashMap<UiKey,UiData> uiCache=new LinkedHashMap<>(16,0.75f,true);
+    public long dataRevision(){return dataRevision;}
+    public synchronized int uiCacheSize(){return uiCache.size();}
+    public synchronized UiData uiData(String owner,int page){
+        var key=new UiKey(owner,page);var cached=uiCache.get(key);if(cached!=null&&cached.revision()==dataRevision)return cached;
+        long started=vn.svarcade.tcg.performance.CardWorldsPerfStats.start();try{
+            var profile=profile(owner);var binder=binder(owner,page);var inventory=collection(owner);var counts=Map.copyOf(completion(owner));var names=deckNames(owner);var decks=names.stream().map(n->deck(owner,n)).toList();var formats=Map.copyOf(formats(owner));var market=market(page);var trades=trades(owner);
+            List<vn.svarcade.tcg.fabric.TcgMod.BannerView> banners=new ArrayList<>();var previews=vn.svarcade.tcg.data.PackPreviews.select(catalog);
+            catalog.banners().forEach((id,b)->{var pity=pity(owner,b.family());var rates=probabilities(owner,id).entrySet().stream().map(e->e.getKey()+": "+String.format(Locale.ROOT,"%.2f%%",e.getValue())).toList();banners.add(new vn.svarcade.tcg.fabric.TcgMod.BannerView(id,b.name(),b.price(),b.slots(),pity.pulls(),b.hardPity(),pity.guaranteed(),rates,previews.getOrDefault(id,"")));});
+            var data=new UiData(dataRevision,profile,binder,inventory,counts,decks,names,formats,market,trades,List.copyOf(banners),duelStatistics(owner),1+playersAboveRating(profile.rating()));
+            if(uiCache.size()>=256)uiCache.remove(uiCache.keySet().iterator().next());uiCache.put(key,data);return data;
+        }finally{vn.svarcade.tcg.performance.CardWorldsPerfStats.finish(vn.svarcade.tcg.performance.CardWorldsPerfStats.Path.CARDSTORE,started);}
+    }

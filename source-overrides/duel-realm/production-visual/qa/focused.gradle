@@ -47,6 +47,7 @@ tasks.register('runFocusedCardWorldsServer', loomLoader.loadClass('net.fabricmc.
     dependsOn tasks.named('remapJar')
     mods.setFrom(configurations.focusedServerRuntimeMods, tasks.named('remapJar').flatMap { it.archiveFile })
     jvmArgs.add('-Dcardworlds.qa.focused=true')
+    jvmArgs.add('-Dcardworlds.qa.stopAfterVerify=true')
     runDir = file('run-focused')
 }
 tasks.register('runFocusedCardWorldsClient', loomLoader.loadClass('net.fabricmc.loom.task.prod.ClientProductionRunTask')) {
@@ -60,3 +61,5 @@ tasks.register('runFocusedCardWorldsClient', loomLoader.loadClass('net.fabricmc.
     runDir = file('run-focused-visual')
     useXVFB = true
 }
+
+apply from: 'source-overrides/duel-realm/production-visual/performance/performance.gradle'

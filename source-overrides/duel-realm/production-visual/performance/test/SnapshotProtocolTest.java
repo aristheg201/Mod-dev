@@ -1,0 +1,19 @@
+package vn.svarcade.tcg.duel;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+import vn.svarcade.tcg.performance.*;
+import vn.svarcade.tcg.fabric.*;
+import vn.svarcade.tcg.data.*;
+import vn.svarcade.tcg.economy.*;
+import java.nio.file.*;
+import java.util.*;
+import static org.junit.jupiter.api.Assertions.*;
+class SnapshotProtocolTest {
+ @TempDir Path temp;
+ @Test void generationAndUiMismatchRecoverFullStateAndLatePacketsNeverRollBack()throws Exception{var catalog=HeadlessCatalog.load();try(var store=new CardStore(temp.resolve("cards.db"),catalog,new Random(1))){store.createProfile("player","crossroads");var d=DeterminismTest.fixture(catalog,1);var full=LoadSnapshotFixture.full(catalog,store.uiData("player",0),d.view(0));var content=new SnapshotPipeline.Content(catalog.cards(),catalog.starters(),catalog.rules());var receiver=new SnapshotReceiver();String key=store.dataRevision()+":0:";
+  var initial=new SnapshotPipeline.Wire(1,1,key,true,false,"match",d.revision(),content,full.withContent(null));var first=receiver.accept(SnapshotPipeline.decode(SnapshotPipeline.encode(initial).bytes()));assertFalse(first.resync());assertEquals(full.profile(),first.state().profile());assertEquals(catalog.cards(),first.state().definitions());
+  d.act(d.priority(),new Duel.Action("pass","",""),d.revision());var compact=LoadSnapshotFixture.dynamic(full,d.view(0));var update=new SnapshotPipeline.Wire(2,1,key,false,false,"match",d.revision(),null,compact);var next=receiver.accept(SnapshotPipeline.decode(SnapshotPipeline.encode(update).bytes()));assertFalse(next.resync());assertSame(first.state().definitions(),next.state().definitions());assertSame(first.state().counts(),next.state().counts());assertEquals(d.revision(),next.state().duel().revision());assertNull(receiver.accept(initial).state());assertEquals(2,receiver.sequence());
+  assertTrue(receiver.accept(new SnapshotPipeline.Wire(3,2,key,false,false,"match",d.revision(),null,compact)).resync());assertTrue(receiver.accept(new SnapshotPipeline.Wire(3,1,"missing",false,false,"match",d.revision(),null,compact)).resync());receiver.reset();assertTrue(receiver.accept(update).resync());assertFalse(receiver.accept(initial).resync());
+ }}
+ @Test void coalescingKeepsEveryOrderedCueAndTerminalView()throws Exception{var catalog=HeadlessCatalog.load();try(var store=new CardStore(temp.resolve("cards.db"),catalog,new Random(1))){store.createProfile("player","crossroads");var d=DeterminismTest.fixture(catalog,1);var source=d.view(0).cards().stream().filter(c->c.controller()==0&&c.zone()==Duel.Zone.HAND&&c.name().equals("Flamethrower")).findFirst().orElseThrow();var victim=d.view(0).cards().stream().filter(c->c.controller()==1&&c.zone()==Duel.Zone.FIELD).findFirst().orElseThrow();d.act(0,new Duel.Action("activate",source.token(),victim.token()),d.revision());int guard=0;while(!d.view(0).chain().isEmpty()&&guard++<20)d.act(d.priority(),new Duel.Action("pass","",""),d.revision());assertTrue(d.view(0).chain().isEmpty());assertFalse(d.view(0).cues().isEmpty());var full=LoadSnapshotFixture.full(catalog,store.uiData("player",0),d.view(0));var original=new SnapshotPipeline.Wire(1,1,store.dataRevision()+":0:",true,false,"match",d.revision(),null,full.withContent(null));d.act(d.priority(),new Duel.Action("concede","",""),d.revision());var terminal=LoadSnapshotFixture.full(catalog,store.uiData("player",0),d.view(0));var ended=new SnapshotPipeline.Wire(2,1,original.uiKey(),true,true,"match",d.revision(),null,terminal.withContent(null));var merged=SnapshotPipeline.merge(original,ended);assertTrue(merged.terminal());assertFalse(merged.state().duel().winner().isBlank());List<Long> cues=merged.state().duel().cues().stream().map(Duel.Cue::sequence).toList();assertEquals(cues.stream().distinct().sorted().toList(),cues);for(var cue:original.state().duel().cues())assertTrue(cues.contains(cue.sequence()));}}
+}

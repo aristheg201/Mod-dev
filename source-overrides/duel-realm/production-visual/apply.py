@@ -67,3 +67,5 @@ focused=root/'src/focusedQa'
 (focused/'resources').mkdir(parents=True,exist_ok=True)
 shutil.copyfile(here/'qa/FocusedEconomyEffectVisualRun.java',focused/'java/vn/svarcade/tcg/qa/FocusedEconomyEffectVisualRun.java')
 shutil.copyfile(here/'qa/fabric.mod.json',focused/'resources/fabric.mod.json')
+
+runpy.run_path(str(here/'performance/patch.py'),run_name='__main__')

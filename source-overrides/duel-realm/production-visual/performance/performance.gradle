@@ -1,0 +1,10 @@
+repositories { maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' } }
+tasks.register('cardWorldsLoad', JavaExec) {
+ group = 'verification'
+ description = 'Headless full-effect deterministic concurrent-duel benchmark; timings are evidence, not flaky gates.'
+ dependsOn tasks.named('testClasses')
+ classpath = sourceSets.test.runtimeClasspath
+ mainClass = 'vn.svarcade.tcg.duel.PerformanceLoadHarness'
+ args providers.gradleProperty('duels').getOrElse('8'), providers.gradleProperty('loadTicks').getOrElse('120')
+ maxHeapSize = '1G'
+}

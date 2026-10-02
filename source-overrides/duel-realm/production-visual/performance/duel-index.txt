@@ -1,0 +1,47 @@
+    // All indexes are owned by the same thread as Duel state. Stable ranks preserve old target/trigger order.
+    private final EnumMap<Zone,NavigableMap<Long,Piece>> zoneIndex=new EnumMap<>(Zone.class);
+    private final Map<Piece,Long> pieceOrder=new IdentityHashMap<>();private long nextOrder;
+    private final Map<String,Set<Piece>> primaryIndex=new HashMap<>(),legacyIndex=new HashMap<>();
+    private final Map<Piece,Set<String>> primaryKeys=new IdentityHashMap<>(),legacyKeys=new IdentityHashMap<>();
+    private final NavigableMap<Long,List<LiveStage>> liveStages=new TreeMap<>();
+    private final NavigableMap<Long,Piece> modifierSources=new TreeMap<>();
+    private final Set<Piece> dirtyLive=new LinkedHashSet<>();private boolean stagesDirty=true,opsDirty=true,qaMutable;private long liveEpoch,mutationEpoch;
+    private record ContinuousOp(Map.Entry<String,vn.svarcade.tcg.data.EffectSpec> entry,vn.svarcade.tcg.data.EffectSpec.Operation operation){}
+    private final Map<String,List<ContinuousOp>> continuousOpIndex=new HashMap<>();
+    public synchronized int priority(){return priority;}
+    void qaSeal(){refreshQaIndexes();qaMutable=false;syncContinuous();}
+    private void markLive(Piece p){if(p!=null){dirtyLive.add(p);mutationEpoch++;}}
+    private boolean hide(Piece p){markLive(p);return faceDown.add(p.token);}
+    private boolean reveal(Piece p){markLive(p);return faceDown.remove(p.token);}
+    private void removeStatus(Piece p,String key){p.flags.remove(key);markLive(p);}
+    private void removeStatuses(Piece p){p.flags.removeIf(f->f.startsWith("CANNOT_")||f.equals("EFFECT_REMOVED"));markLive(p);}
+    private void addIndexed(Piece p){long n=++nextOrder;pieceOrder.put(p,n);zoneIndex.computeIfAbsent(p.zone,z->new TreeMap<>()).put(n,p);markLive(p);}
+    private void indexMove(Piece p,Zone to){Long rank=pieceOrder.get(p);if(rank==null){addIndexed(p);rank=pieceOrder.get(p);}var old=zoneIndex.get(p.zone);if(old!=null)old.remove(rank);zoneIndex.computeIfAbsent(to,z->new TreeMap<>()).put(rank,p);}
+    private void clearIndexes(){zoneIndex.clear();pieceOrder.clear();primaryIndex.clear();legacyIndex.clear();primaryKeys.clear();legacyKeys.clear();liveStages.clear();modifierSources.clear();dirtyLive.clear();continuousOpIndex.clear();stagesDirty=true;opsDirty=true;nextOrder=0;}
+    private void reindexOrder(){zoneIndex.clear();pieceOrder.clear();liveStages.clear();modifierSources.clear();nextOrder=0;for(Piece p:pieces.values())addIndexed(p);}
+    private void refreshQaIndexes(){for(Piece p:pieces.values()){if(!pieceOrder.containsKey(p))addIndexed(p);refreshLive(p);}dirtyLive.clear();}
+    private void unregister(Map<String,Set<Piece>> index,Map<Piece,Set<String>> reverse,Piece p){var keys=reverse.remove(p);if(keys!=null)for(String key:keys){var set=index.get(key);if(set!=null){set.remove(p);if(set.isEmpty())index.remove(key);}}}
+    private void register(Map<String,Set<Piece>> index,Map<Piece,Set<String>> reverse,Piece p,Collection<String> keys){var set=new LinkedHashSet<>(keys);reverse.put(p,set);for(String key:set)index.computeIfAbsent(key,k->new LinkedHashSet<>()).add(p);}
+    private void refreshLive(Piece p){liveEpoch++;
+        unregister(primaryIndex,primaryKeys,p);unregister(legacyIndex,legacyKeys,p);
+        long rank=pieceOrder.get(p);liveStages.remove(rank);modifierSources.remove(rank);stagesDirty=true;
+        Catalog.Effect e=effectiveEffect(p);
+        if(e!=null&&e.spec()!=null){var spec=e.spec();
+            if(!spec.triggers().contains("ON_ACTIVATE")&&!spec.triggers().contains("CONTINUOUS")&&Set.of(Zone.FIELD,Zone.SUPPORT,Zone.STADIUM,Zone.DISCARD,Zone.BANISHED).contains(p.zone))register(primaryIndex,primaryKeys,p,spec.triggers());
+            List<LiveStage> stages=new ArrayList<>();for(var stage:vn.svarcade.tcg.data.EffectSpec.list(spec.stages()))if(stage.sourceZones().contains(p.zone.name())&&!faceDown.contains(p.token)&&p.position!=BattlePosition.FACE_DOWN_DEFENSE)stages.add(new LiveStage(p,stage));
+            if(!stages.isEmpty())liveStages.put(rank,List.copyOf(stages));
+        }
+        if(p.card.triggers()!=null)register(legacyIndex,legacyKeys,p,p.card.triggers().stream().filter(t->t.zone().equals(p.zone.name())).map(Catalog.Trigger::cause).toList());
+        if(p.card.modifiers()!=null&&p.card.modifiers().stream().anyMatch(m->m.zone().equals(p.zone.name())))modifierSources.put(rank,p);
+        boolean active=e!=null&&e.spec()!=null&&e.spec().triggers().contains("CONTINUOUS")&&(p.card.category().equals("pokemon")||activatedContinuous.contains(p.token))&&(p.zone==Zone.FIELD||p.zone==Zone.SUPPORT||p.zone==Zone.STADIUM)&&!faceDown.contains(p.token)&&p.position!=BattlePosition.FACE_DOWN_DEFENSE&&!p.flags.contains("CANNOT_ACTIVATE");
+        var old=continuous.get(p.token);if(active){if(old!=e.spec()){continuous.put(p.token,e.spec());opsDirty=true;}}else if(continuous.remove(p.token)!=null)opsDirty=true;
+        if(p.zone!=Zone.FIELD&&p.zone!=Zone.SUPPORT&&p.zone!=Zone.STADIUM)activatedContinuous.remove(p.token);
+    }
+    private List<ContinuousOp> continuousOperations(String type){if(opsDirty){opsDirty=false;continuousOpIndex.clear();for(var e:continuous.entrySet())for(var op:e.getValue().operations())continuousOpIndex.computeIfAbsent(op.type(),k->new ArrayList<>()).add(new ContinuousOp(Map.entry(e.getKey(),e.getValue()),op));}return continuousOpIndex.getOrDefault(type,List.of());}
+    private List<Piece> ordered(Collection<Piece> candidates){var result=new ArrayList<>(candidates);result.sort(Comparator.comparingLong(pieceOrder::get));return result;}
+    private List<Piece> legacyCandidates(List<Event> events){syncContinuous();Set<Piece> all=new LinkedHashSet<>();for(var e:events)all.addAll(legacyIndex.getOrDefault(e.cause().name(),Set.of()));return ordered(all);}
+    private List<Piece> triggerCandidates(List<Event> events){Set<Piece> all=new LinkedHashSet<>();for(var e:events){all.addAll(primaryIndex.getOrDefault(e.kind(),Set.of()));for(String key:moveTriggers(e))all.addAll(primaryIndex.getOrDefault(key,Set.of()));}return ordered(all);}
+    private List<String> moveTriggers(Event e){List<String> keys=new ArrayList<>();if(e.to()==Zone.FIELD&&Set.of(Cause.PLAY,Cause.TRIBUTE_SUMMON,Cause.EVOLVE).contains(e.cause()))keys.add("ON_SUMMON");if(e.to()==Zone.FIELD&&Set.of(Cause.SPECIAL_SUMMON,Cause.EXTRA_SUMMON,Cause.REVIVE,Cause.SUMMON_STAGE).contains(e.cause()))keys.add("ON_SPECIAL_SUMMON");if(e.to()==Zone.DISCARD){keys.add("ON_SEND_GRAVE");if(e.cause()==Cause.BATTLE||e.cause()==Cause.DESTROY)keys.add("ON_DESTROYED");}if(e.to()==Zone.BANISHED)keys.add("ON_BANISH");if(e.cause()==Cause.RETURN)keys.add("ON_RETURN");if(e.to()==Zone.HAND&&e.cause()==Cause.DRAW)keys.add("ON_DRAW");if(e.cause()==Cause.DISCARD)keys.add("ON_DISCARD");return keys;}
+    private Collection<Piece> selectorCandidates(String selector){Zone zone=switch(selector){case "ALLY_MONSTER","ENEMY_MONSTER","ANY_MONSTER","ALL_FIELD","ALL_ALLIES","ALL_ENEMIES"->Zone.FIELD;case "HAND","RANDOM_HAND"->Zone.HAND;case "GRAVEYARD"->Zone.DISCARD;case "BANISHED"->Zone.BANISHED;case "DECK","TOP_DECK","BOTTOM_DECK"->Zone.DECK;case "EXTRA_DECK"->Zone.EXTRA;default->null;};if(zone!=null)return zoneIndex.getOrDefault(zone,new TreeMap<>()).values();if(Set.of("ALLY_CARD","ENEMY_CARD","ANY_FIELD_CARD").contains(selector)){List<Piece> all=new ArrayList<>();for(Zone z:List.of(Zone.FIELD,Zone.SUPPORT,Zone.STADIUM))all.addAll(zoneIndex.getOrDefault(z,new TreeMap<>()).values());return ordered(all);}return List.of();}
+
+    private Iterable<Piece> liveTriggerCandidates(List<Event> events){return ()->new Iterator<>(){long after=-1,epoch=-1;List<Piece> list=List.of();int cursor;public boolean hasNext(){syncContinuous();if(epoch!=liveEpoch){list=triggerCandidates(events);epoch=liveEpoch;cursor=0;while(cursor<list.size()&&pieceOrder.get(list.get(cursor))<=after)cursor++;}return cursor<list.size();}public Piece next(){if(!hasNext())throw new NoSuchElementException();Piece p=list.get(cursor++);after=pieceOrder.get(p);return p;}};}

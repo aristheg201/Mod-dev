@@ -133,6 +133,11 @@ public final class FocusedEconomyEffectVisualRun implements ClientModInitializer
                     if (!a.page.equals("Play")) return;
                     shot(c, "focused-02-economy-rewards");
                     a.banner = "crossroads";
+                    // Currency QA needs one known-safe booster, not unrelated regional model previews.
+                    var focusedBanners = a.state.banners().stream().filter(b -> b.id().equals("crossroads")).toList();
+                    if (focusedBanners.size() != 1) throw failure(c, "Focused Crossroads booster missing");
+                    a.state = a.state.withBanners(focusedBanners);
+                    LOG.info("CARDWORLDS_FOCUSED_PACK_SCOPE banner=crossroads previews=1 catalog={}", a.state.definitions().size());
                     a.navigate("Packs");
                     enter(Step.PACKS, 15_000);
                 }

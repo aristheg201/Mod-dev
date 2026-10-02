@@ -1,4 +1,4 @@
-name: Card Worlds Focused Economy + Effects CI
+name: Card Worlds Focused Performance + Correctness CI
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   focused-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +33,7 @@ jobs:
           test -f src/main/java/vn/svarcade/tcg/client/component/CurrencyPurchaseUi.java
 
           python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py
+          python3 source-overrides/duel-realm/production-visual/performance/verify.py
           echo "apply from: 'source-overrides/duel-realm/production-visual/qa/focused.gradle'" >> build.gradle
 
       - uses: actions/setup-java@v4
@@ -44,8 +45,8 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Compile focused production jar
-        run: gradle --no-daemon clean classes remapJar remapFocusedQaJar
+      - name: Compile and test gameplay determinism, races, persistence and UI
+        run: gradle --no-daemon --max-workers=4 clean test remapJar remapFocusedQaJar
 
       - name: Verify focused build content
         shell: bash
@@ -70,6 +71,16 @@ jobs:
           python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py --jars
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
+      - name: Benchmark populated concurrent duels (timings are evidence)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for duels in 8 16 32; do
+            gradle --no-daemon --max-workers=4 cardWorldsLoad -Pduels="$duels" -PloadTicks=120 | tee "build/load-$duels.log"
+            test -f "build/performance/load-$duels.json"
+            grep -Fq "CARDWORLDS_LOAD_PASS duels=$duels" "build/load-$duels.log"
+          done
+
       - name: Prepare focused BEconomy runtime
         shell: bash
         run: |
@@ -83,11 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          set +e
-          timeout --signal=INT --kill-after=15s 150s gradle --no-daemon runFocusedCardWorldsServer > build/focused-runtime.log 2>&1
-          status=$?
-          set -e
-          test "$status" -eq 0 -o "$status" -eq 124 -o "$status" -eq 137
+          python3 source-overrides/duel-realm/production-visual/performance/check_server.py
           test -f run-focused/logs/latest.log
           grep -Fq 'Done (' run-focused/logs/latest.log
 
@@ -126,10 +133,11 @@ jobs:
           grep -Fq 'CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3' run-focused-visual/logs/latest.log
           grep -Fq 'CARDWORLDS_FOCUSED_CLIENT beconomy=absent dependency=NONE' run-focused-visual/logs/latest.log
           grep -Fq 'CARDWORLDS_FOCUSED_HEADER currencies=beastcoin,huntercoin balances=unavailable item=minecraft:gold_ingot beast_cmd=6 hunter_cmd=2' run-focused-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_FOCUSED_PACK_SCOPE banner=crossroads previews=1' run-focused-visual/logs/latest.log
           for step in boot collection play packs; do
             grep -Fq "CARDWORLDS_FOCUSED_VISUAL_STEP $step" run-focused-visual/logs/latest.log
           done
-          if grep -E 'CARDWORLDS_QA_CREATE_WORLD|CARDWORLDS_QA_DRIVER_LOADED|CARDWORLDS_QA_FAILED|CARDWORLDS_FOCUSED_VISUAL_QA_FAILED|CARDWORLDS_SCROLL_PACKS_PROOF|Captured 0[1-9]-' run-focused-visual/logs/latest.log; then
+          if grep -E 'CARDWORLDS_QA_CREATE_WORLD|CARDWORLDS_QA_DRIVER_LOADED|CARDWORLDS_QA_FAILED|CARDWORLDS_FOCUSED_VISUAL_QA_FAILED|CARDWORLDS_SCROLL_PACKS_PROOF|Captured 0[1-9]-|Unable to find a poser' run-focused-visual/logs/latest.log; then
             echo 'Focused client entered a forbidden full-suite path or failed readiness' >&2
             exit 1
           fi
@@ -152,11 +160,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: CardWorlds-focused-${{ github.sha }}
+          name: CardWorlds-performance-${{ github.sha }}
           path: |
             build/libs/*.jar
             build/libs/SHA256.txt
             build/deep_effects.built.json
+            build/performance/*.json
+            build/load-*.log
+            build/test-results/test/*.xml
             build/focused-runtime.log
             build/focused-client.log
             run-focused/logs/latest.log
