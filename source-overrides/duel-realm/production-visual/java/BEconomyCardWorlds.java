@@ -131,7 +131,7 @@ public final class BEconomyCardWorlds {
         Object value=cachedApi;if(value!=null)return value;
         synchronized(LOCK) {
             if(cachedApi!=null)return cachedApi;
-            if(!CardWorldsIntegrations.capabilities().has("beconomy"))throw new IllegalStateException("BEconomy is required for Card Worlds rewards and pulls.");
+            if(!FabricLoader.getInstance().isModLoaded("beconomy"))throw new IllegalStateException("BEconomy is required for Card Worlds rewards and pulls.");
             try {
                 Class<?> bridge=Class.forName("org.krripe.beconomy.api.BEconomy");
                 Object instance=bridge.getField("INSTANCE").get(null);
