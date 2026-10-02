@@ -16,8 +16,9 @@ import java.util.*;
 /** Separate QA-only mod. Real client, real integrated server, real snapshots; no fabricated UI state. */
 public final class VisualRun implements ClientModInitializer {
  private java.util.concurrent.CompletableFuture<Void> languageReload;private String vfxSource="",vfxTarget="";private int specialCapture;private final List<String> specialIds=List.of("special_lucario_mega","special_charizard_mega_y","special_mewtwo_mega_x","special_lucario_mega");private long next;private int step;private boolean worldStarted;private int rounds;private int preWorldPasses;private long duelDeadline;private long proofRevision=-1;private long proofReadyAt;
+ private long focusedNext;private int focusedStep;private boolean focusedWorldStarted;private int focusedPreWorldPasses;
  @Override public void onInitializeClient(){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_DRIVER_LOADED");ClientTickEvents.END_CLIENT_TICK.register(this::tick);}
- private void tick(MinecraftClient c){if(c.currentScreen instanceof CardWorldsScreen)c.getToastManager().clear();long now=System.currentTimeMillis();if(now<next)return;next=now+1800;
+ private void tick(MinecraftClient c){if(Boolean.getBoolean("cardworlds.qa.focused.visual")){focusedTick(c);return;}if(c.currentScreen instanceof CardWorldsScreen)c.getToastManager().clear();long now=System.currentTimeMillis();if(now<next)return;next=now+1800;
   try{
    if(c.player==null){if(!worldStarted&&c.currentScreen!=null){if(++preWorldPasses<10)return;worldStarted=true;org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_CREATE_WORLD screen={}",c.currentScreen.getClass().getName());var info=new net.minecraft.world.level.LevelInfo("Card Worlds QA",net.minecraft.world.GameMode.CREATIVE,false,net.minecraft.world.Difficulty.PEACEFUL,true,new net.minecraft.world.GameRules(),net.minecraft.resource.DataConfiguration.SAFE_MODE);c.createIntegratedServerLoader().createAndStart("cardworlds-qa",info,net.minecraft.world.gen.GeneratorOptions.createRandom(),registries->registries.get(net.minecraft.registry.RegistryKeys.WORLD_PRESET).getOrThrow(net.minecraft.world.gen.WorldPresets.DEFAULT).createDimensionsRegistryHolder(),new TitleScreen());}return;}
    if(step==0){c.setScreen(null);c.getNetworkHandler().sendChatCommand("cardworlds");step++;return;}
@@ -86,6 +87,30 @@ public final class VisualRun implements ClientModInitializer {
     case 27->{org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_COMPLETE");c.scheduleStop();step=30;}
    }
   }catch(Throwable e){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").error("CARDWORLDS_QA_FAILED step="+step,e);shot(c,"failure-"+step);c.scheduleStop();}
+ }
+ private void focusedTick(MinecraftClient c){
+  if(c.currentScreen instanceof CardWorldsScreen)c.getToastManager().clear();
+  long now=System.currentTimeMillis();if(now<focusedNext)return;focusedNext=now+1300;
+  try{
+   if(c.player==null){
+    if(!focusedWorldStarted&&c.currentScreen!=null){
+     if(++focusedPreWorldPasses<8)return;
+     focusedWorldStarted=true;
+     var info=new net.minecraft.world.level.LevelInfo("Card Worlds Focused QA",net.minecraft.world.GameMode.CREATIVE,false,net.minecraft.world.Difficulty.PEACEFUL,true,new net.minecraft.world.GameRules(),net.minecraft.resource.DataConfiguration.SAFE_MODE);
+     c.createIntegratedServerLoader().createAndStart("cardworlds-focused-qa",info,net.minecraft.world.gen.GeneratorOptions.createRandom(),registries->registries.get(net.minecraft.registry.RegistryKeys.WORLD_PRESET).getOrThrow(net.minecraft.world.gen.WorldPresets.DEFAULT).createDimensionsRegistryHolder(),new TitleScreen());
+    }
+    return;
+   }
+   if(focusedStep==0){c.setScreen(null);c.getNetworkHandler().sendChatCommand("cardworlds");focusedStep++;return;}
+   if(!(c.currentScreen instanceof CardWorldsScreen a))return;
+   switch(focusedStep){
+    case 1->{if(a.state.total()<1025)throw new AssertionError("Focused QA catalog missing");a.navigate("Collection");a.ownership="All";a.category="pokemon";a.selected="charizard";a.details=true;focusedNext=now+1800;focusedStep++;}
+    case 2->{if(a.selectedCard()==null)throw new AssertionError("Charizard card missing");String effect=vn.svarcade.tcg.client.component.CardWorldsLanguage.effect(a.selectedCard());if(effect.contains("Pay 500 LP")||effect.contains("Pay 200 LP"))throw new AssertionError("Blanket monster LP cost still visible: "+effect);shot(c,"focused-01-effect-card");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE effect_card=charizard");a.details=false;a.navigate("Play");focusedNext=now+1500;focusedStep++;}
+    case 3->{shot(c,"focused-02-economy-rewards");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE economy_rewards=true");a.navigate("Packs");focusedNext=now+1500;focusedStep++;}
+    case 4->{if(a.state.banners().isEmpty())throw new AssertionError("No gacha banners available");shot(c,"focused-03-gacha-currencies");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_IMAGE gacha=beastcoin:150,huntercoin:2");focusedStep++;focusedNext=now+500;}
+    case 5->{org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_FOCUSED_VISUAL_QA_COMPLETE screenshots=3");c.scheduleStop();focusedStep++;}
+   }
+  }catch(Throwable e){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").error("CARDWORLDS_FOCUSED_QA_FAILED step="+focusedStep,e);shot(c,"focused-failure-"+focusedStep);c.scheduleStop();}
  }
  private boolean proofReady(CardWorldsScreen a,long now,boolean positions){
   a.localNotice="";
