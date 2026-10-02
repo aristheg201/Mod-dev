@@ -49,18 +49,16 @@ public final class PlayScreen implements Page {
         Rect botRows=new Rect(botPanel.x()+18,botPanel.y()+104,botPanel.w()-36,Math.max(60,botPanel.h()-174));
         var botScroll=a.beginScroll(u,"play/bots",botRows,312);Rect botContent=new Rect(botPanel.x(),botPanel.y()-botScroll.offset(),botPanel.w()-14,botPanel.h());
         difficulty(u, a, botContent, 0, "EASY",
-            "Forgiving AI. Legal moves are mostly randomized.", "NO CURRENCY", deckReady);
+            "Forgiving AI. Legal moves are mostly randomized.", "PRACTICE - NO REWARD", deckReady);
         difficulty(u, a, botContent, 1, "NORMAL",
-            "Balanced AI. Prioritizes sensible summons, effects and attacks.", "NO CURRENCY", deckReady);
+            "Balanced AI. Prioritizes sensible summons, effects and attacks.", "WIN +15 BEAST COIN - LOSS 0", deckReady);
         difficulty(u, a, botContent, 2, "HARD",
-            "Competitive AI. Scores trades, removal, chains and lethal pressure.", "ECONOMY REWARD", deckReady);
+            "Competitive AI. Scores trades, removal, chains and lethal pressure.", "WIN +20 BEAST COIN - LOSS +5", deckReady);
 
         a.endScroll(u,botScroll);
         u.fill(new Rect(botPanel.x() + 18, botPanel.bottom() - 58, botPanel.w() - 36, 1), Ui.LINE);
-        u.text("cardworlds.ui.only_hard_victories_can_pay_configured_server_currency",
-            botPanel.x() + 18, botPanel.bottom() - 46, 10, Ui.MUTED);
-        u.text("cardworlds.ui.easy_and_normal_are_practice_modes",
-            botPanel.x() + 18, botPanel.bottom() - 29, 10, Ui.MUTED);
+        u.text("Rewards use BEconomy Beast Coin only. Hunter Coin is never a battle reward.",
+            botPanel.x() + 18, botPanel.bottom() - 42, 10, Ui.MUTED);
 
         u.text("cardworlds.ui.pvp_duel", pvpPanel.x() + 18, pvpPanel.y() + 16, 22, Ui.WHITE);
         u.text("cardworlds.ui.human_vs_human_only_bots_never_fill_this_mode", pvpPanel.x() + 18, pvpPanel.y() + 44, 12, Ui.MUTED);
@@ -99,7 +97,7 @@ public final class PlayScreen implements Page {
                 new Rect(pvpPanel.x() + 18, pvpPanel.bottom() - 46, pvpPanel.w() - 36, 34),
                 true, deckReady, () -> a.send("accept", deck));
         } else {
-            u.text(ranked ? "Ranked uses server format and result tracking." : "Casual does not affect ranked rating.",
+            u.text(ranked ? "Ranked - WIN +50 BEAST COIN - LOSS +25" : "Casual - WIN +30 BEAST COIN - LOSS +15",
                 pvpPanel.x() + 18, pvpPanel.bottom() - 35, 10, Ui.MUTED);
         }
     }
