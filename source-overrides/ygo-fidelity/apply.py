@@ -132,9 +132,18 @@ s=s.replace('if(attacker!=null){battle();attacker=null;target=null;if(winner<0)w
 
 # Real DEF in battle and expose helpers.
 s=s.replace('int difference=attack-power(d);','int difference=attack-defense(d);',1)
-power_line='private int power(Piece p) {if(p.zone!=Zone.FIELD)return p.card.power();int result=p.card.power()+p.boost;for(Piece source:pieces.values())if(source.controller==p.controller&&source.card.modifiers()!=null)for(var m:source.card.modifiers())if(source.zone.name().equals(m.zone())&&(m.affectedType().equals("any")||m.affectedType().equals(p.card.type())))result+=m.power();return compositePower(p,result);}'
-if power_line not in s: raise SystemExit('power() anchor missing')
-s=s.replace(power_line,power_line+'''
+def java_method_end(text,marker):
+    start=text.find(marker)
+    if start<0: raise SystemExit('Java method marker missing: '+marker)
+    brace=text.find('{',start); depth=0
+    for i in range(brace,len(text)):
+        if text[i]=='{': depth+=1
+        elif text[i]=='}':
+            depth-=1
+            if depth==0:return i+1
+    raise SystemExit('Unbalanced Java method: '+marker)
+power_end=java_method_end(s,'    private int power(Piece p)')
+helpers='''
     private int defense(Piece p) {if(p.zone!=Zone.FIELD)return p.card.defense();return compositeDefense(p,p.card.defense()+p.defBoost);}
     private boolean damageStepLegal(Catalog.Effect effect) {
         if(effect==null)return false;
@@ -149,7 +158,8 @@ s=s.replace(power_line,power_line+'''
             if(!damageStepOperations(op.children())||!damageStepOperations(op.otherwise()))return false;
         }
         return true;
-    }''',1)
+    }'''
+s=s[:power_end]+helpers+s[power_end:]
 
 # Correct phase transition.
 old='''        if(phase==Phase.END){turn++;turnPlayer=1-turnPlayer;phase=Phase.DRAW;normal[turnPlayer]=0;used.clear();pieces.values().forEach(p->{p.attacked=false;p.boost=p.permanentBoost+expiries.stream().filter(e->e.token().equals(p.token)&&e.key().equals("BOOST")&&e.endTurn()>=turn).mapToInt(Expiry::value).sum();});tickAdvancedSummons(turnPlayer);draw(turnPlayer);}
@@ -175,19 +185,12 @@ s=s.replace('case "POWER_AT_LEAST" -> targets.stream().anyMatch(p->(powerConditi
             case "DEF_AT_LEAST" -> targets.stream().anyMatch(p->defense(p)>=c.amount());''',1)
 
 # Continuous DEF calculation.
-anchor='''    private int compositePower(Piece p,int value) {
-        if(powerCondition)return Math.max(0,value);powerCondition=true;try {
-        if(p.fixedPower>=0)value=p.fixedPower;
-        for(var entry:continuous.entrySet()) {
-            Piece source=pieces.get(entry.getKey());if(source==null)continue;
-            for(var op:entry.getValue().operations())if(op.type().equals("MODIFY_POWER")
-                &&condition(op.condition(),source,p.token,source.controller)&&select(op.target(),source,p.token,source.controller,op.filter()!=null?op.filter():entry.getValue().targets()==null?null:entry.getValue().targets().filter()).contains(p))value+=op.amount();
-        }
-        return Math.max(0,value);
-        }finally{powerCondition=false;}
-    }'''
-if anchor not in s: raise SystemExit('compositePower anchor missing')
-s=s.replace(anchor,anchor.replace('op.type().equals("MODIFY_POWER")','Set.of("MODIFY_POWER","MODIFY_ATK").contains(op.type())')+'''
+comp_start=s.find('    private int compositePower(Piece p,int value)')
+comp_end=java_method_end(s,'    private int compositePower(Piece p,int value)')
+comp=s[comp_start:comp_end].replace('op.type().equals("MODIFY_POWER")','Set.of("MODIFY_POWER","MODIFY_ATK").contains(op.type())')
+s=s[:comp_start]+comp+s[comp_end:]
+comp_end=comp_start+len(comp)
+s=s[:comp_end]+'''
     private int compositeDefense(Piece p,int value) {
         if(p.fixedDefense>=0)value=p.fixedDefense;
         for(var entry:continuous.entrySet()) {
@@ -196,8 +199,10 @@ s=s.replace(anchor,anchor.replace('op.type().equals("MODIFY_POWER")','Set.of("MO
                 &&condition(op.condition(),source,p.token,source.controller)&&select(op.target(),source,p.token,source.controller,op.filter()!=null?op.filter():entry.getValue().targets()==null?null:entry.getValue().targets().filter()).contains(p))value+=op.amount();
         }
         return Math.max(0,value);
-    }''',1)
+    }
+'''+s[comp_end:]
 
+# Expiry restores both ATK and DEF modifiers.
 # Expiry restores both ATK and DEF modifiers.
 s=s.replace('case "BOOST" -> p.boost-=expiry.value();\n                case "SET_POWER" -> p.fixedPower=expiry.value();',
 '''case "BOOST" -> p.boost-=expiry.value();
