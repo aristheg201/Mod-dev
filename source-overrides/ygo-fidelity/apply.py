@@ -333,7 +333,7 @@ new_method='''    private static List<String> strictSignature(Catalog.Card card)
             }else if(c.category().equals("pokemon")&&!c.id().startsWith("special_"))external++;
         }
         for(int i=0;i<authored.size();i++)for(int j=i+1;j<authored.size();j++){
-            var a=strictSignature(authored.get(i)),b=strictSignature(authored.get(j));int distance=0;
+            var a=strictSignature(authored.get(i));var b=strictSignature(authored.get(j));int distance=0;
             for(int k=0;k<12;k++)if(!a.get(k).equals(b.get(k)))distance++;
             if(distance<10)throw new IllegalArgumentException(authored.get(i).id()+" / "+authored.get(j).id()+": near-duplicate gameplay signature distance "+distance+"/12");
         }
