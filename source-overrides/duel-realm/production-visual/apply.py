@@ -74,3 +74,6 @@ runpy.run_path(str(here/'performance/patch.py'),run_name='__main__')
 runpy.run_path(str(here/'card-gameplay/patch.py'),run_name='__main__')
 
 runpy.run_path(str(here/'quality/apply_market.py'),run_name='__main__')
+
+# Final Yu-Gi-Oh rules fidelity and strict card identity pass.
+runpy.run_path(str(root/'source-overrides/ygo-fidelity/apply.py'),run_name='__main__')
