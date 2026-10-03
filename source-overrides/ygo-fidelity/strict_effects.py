@@ -196,8 +196,8 @@ def validate(data,reg,codes):
         for b,wb in pitems[i+1:]:
             if sum(x==y for x,y in zip(wa,wb))>1 or len(set(wa)&set(wb))>2:
                 raise AssertionError('near-duplicate choreography: '+a+' / '+b)
-    print('CARDWORLDS_STRICT_IDENTITY_OK definitions=%d presentation=%d minGameplayHamming=10/12 worstGameplay=%.4f worstWordingShape=%.4f'%
-          (len(defs),len(reg),worst_game[0],worst_words[0]))
+    print('CARDWORLDS_STRICT_IDENTITY_OK definitions=%d presentation=%d minGameplayHamming=10/12 worstGameplay=%.4f wordingStructureDuplicates=0'%
+          (len(defs),len(reg),worst_game[0]))
 
 data=json.loads(POKE.read_text())
 data,codes=strict_gameplay(data)
