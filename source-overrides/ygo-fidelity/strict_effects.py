@@ -66,7 +66,7 @@ def strict_gameplay(data):
               'id':'identity_facet_v5'+('a' if facet==0 else 'b'),
               'effect':{'operation':'composite','amount':0,'speed':2,'lifeCost':0,'target':'none',
                 'phases':['DRAW','STANDBY','MAIN1','BATTLE','MAIN2','END'],'oncePerTurn':False,
-                'spec':{'triggers':[TRIGGERS[(code[facet]+facet)%len(TRIGGERS)]],
+                'spec':{'triggers':['ON_ACTIVATE'],
                   'conditions':[{'type':'SOURCE_ZONE','target':'SELF','value':'FIELD','amount':0,'children':[]}],
                   'costs':[],'targets':None,'operations':ops,'oncePerDuel':True,'optional':False,
                   'stages':[],'limitScope':'CARD_NAME','resolutionConditions':[]}},
