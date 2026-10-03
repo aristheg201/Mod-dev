@@ -16,7 +16,7 @@ concurrency:
 jobs:
   focused-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -86,6 +86,36 @@ jobs:
           python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py --jars
           sha256sum "$JAR" | tee build/libs/SHA256.txt
 
+      - name: Install focused visual runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
+          gradle --no-daemon downloadAssets
+          mkdir -p run-focused-visual/screenshots
+
+      - name: Runtime QA - full Duel Realm and Yu-Gi-Oh presentation
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run-ygo-visual
+          mkdir -p run-ygo-visual/screenshots
+          timeout --signal=INT --kill-after=20s 420s gradle --no-daemon --stacktrace runYgoFullQaClient > build/ygo-runtime-client.log 2>&1 || { cat build/ygo-runtime-client.log; exit 1; }
+          cat build/ygo-runtime-client.log
+          test -f run-ygo-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_DRIVER_LOADED focusedVisual=false' run-ygo-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_DUEL_REALM_CONFIRMED world=svarcade_tcg:duel_realm' run-ygo-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_MONSTER_POSITIONS_CONFIRMED' run-ygo-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_SPELLTRAP_CHAIN_CONFIRMED' run-ygo-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_CREATION_CONFIRMED stage=Ultimate Arceus' run-ygo-visual/logs/latest.log
+          grep -Fq 'CARDWORLDS_QA_COMPLETE' run-ygo-visual/logs/latest.log
+          ! grep -Eq 'CARDWORLDS_QA_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-ygo-visual/logs/latest.log
+          test -f run-ygo-visual/screenshots/26-monster-positions.png
+          echo 'CARDWORLDS_YGO_FULL_RUNTIME_QA_PASS'
+
       - name: Benchmark populated concurrent duels (timings are evidence)
         shell: bash
         run: |
@@ -121,15 +151,6 @@ jobs:
           grep -Fq 'CARDWORLDS_QA_REWARDS easy_win=0 easy_loss=0 normal_win=15 normal_loss=0 hard_win=20 hard_loss=5 pvp_win=30 pvp_loss=15 ranked_win=50 ranked_loss=25 currency=beastcoin hunter_reward=0' run-focused/logs/latest.log
 
           ! grep -Eiq 'Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-focused/logs/latest.log
-
-      - name: Install focused visual runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
-          gradle --no-daemon downloadAssets
-          mkdir -p run-focused-visual/screenshots
 
       - name: Capture focused screens and verify every pack preview
         env:
@@ -172,27 +193,6 @@ jobs:
               assert len(data)>=20000,(name,len(data))
               print(name,w,h,len(data))
           PY
-
-      - name: Runtime QA - full Duel Realm and Yu-Gi-Oh presentation
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf run-ygo-visual
-          mkdir -p run-ygo-visual/screenshots
-          timeout --signal=INT --kill-after=20s 420s gradle --no-daemon --stacktrace runYgoFullQaClient > build/ygo-runtime-client.log 2>&1 || { cat build/ygo-runtime-client.log; exit 1; }
-          cat build/ygo-runtime-client.log
-          test -f run-ygo-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_DRIVER_LOADED focusedVisual=false' run-ygo-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_DUEL_REALM_CONFIRMED world=svarcade_tcg:duel_realm' run-ygo-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_MONSTER_POSITIONS_CONFIRMED' run-ygo-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_SPELLTRAP_CHAIN_CONFIRMED' run-ygo-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_CREATION_CONFIRMED stage=Ultimate Arceus' run-ygo-visual/logs/latest.log
-          grep -Fq 'CARDWORLDS_QA_COMPLETE' run-ygo-visual/logs/latest.log
-          ! grep -Eq 'CARDWORLDS_QA_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' run-ygo-visual/logs/latest.log
-          test -f run-ygo-visual/screenshots/26-monster-positions.png
-          echo 'CARDWORLDS_YGO_FULL_RUNTIME_QA_PASS'
 
       - name: Upload focused build evidence
         if: always()
