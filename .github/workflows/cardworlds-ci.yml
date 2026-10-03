@@ -28,7 +28,8 @@ jobs:
           echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
           tar -xzf /tmp/cardworlds-src-tools.tar.gz
           python3 source-overrides/apply.py
-          python3 .github/scripts/patch_ygo_qa.py\n          test -f src/main/java/vn/svarcade/tcg/integration/BEconomyCardWorlds.java
+          python3 .github/scripts/patch_ygo_qa.py
+          test -f src/main/java/vn/svarcade/tcg/integration/BEconomyCardWorlds.java
           test -f src/main/java/vn/svarcade/tcg/data/EffectEconomyQa.java
           test -f src/main/java/vn/svarcade/tcg/client/component/CurrencyPurchaseUi.java
 
