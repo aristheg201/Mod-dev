@@ -17,7 +17,8 @@ import java.util.*;
 public final class VisualRun implements ClientModInitializer {
  private java.util.concurrent.CompletableFuture<Void> languageReload;private String vfxSource="",vfxTarget="";private int specialCapture;private final List<String> specialIds=List.of("special_lucario_mega","special_charizard_mega_y","special_mewtwo_mega_x","special_lucario_mega");private long next;private int step;private boolean worldStarted;private int rounds;private int preWorldPasses;private long duelDeadline;private long proofRevision=-1;private long proofReadyAt;
  private long focusedNext;private int focusedStep;private boolean focusedWorldStarted;private int focusedPreWorldPasses;
- private static boolean focusedVisualMode(){return Boolean.getBoolean("cardworlds.qa.focused.visual")||"true".equalsIgnoreCase(System.getenv("CARDWORLDS_FOCUSED_VISUAL"));}\n private static boolean ygoOnlyMode(){return Boolean.getBoolean("cardworlds.qa.ygo.only");}
+ private static boolean focusedVisualMode(){return Boolean.getBoolean("cardworlds.qa.focused.visual")||"true".equalsIgnoreCase(System.getenv("CARDWORLDS_FOCUSED_VISUAL"));}
+ private static boolean ygoOnlyMode(){return Boolean.getBoolean("cardworlds.qa.ygo.only");}
  @Override public void onInitializeClient(){org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_DRIVER_LOADED focusedVisual={}",focusedVisualMode());ClientTickEvents.END_CLIENT_TICK.register(this::tick);}
  private void tick(MinecraftClient c){if(focusedVisualMode()){focusedTick(c);return;}if(c.currentScreen instanceof CardWorldsScreen)c.getToastManager().clear();long now=System.currentTimeMillis();if(now<next)return;next=now+1800;
   try{
