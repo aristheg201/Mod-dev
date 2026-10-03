@@ -78,3 +78,5 @@ tasks.register('verifyCardWorlds') {
     description = 'Runs unit tests and produces both production and QA remapped jars.'
     dependsOn tasks.named('test'), tasks.named('remapJar'), tasks.named('remapQaJar')
 }
+
+apply from: 'source-overrides/physical-card-worlds/physical.gradle'

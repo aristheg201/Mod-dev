@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "vn.svarcade.tcg.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlankCaptureMixin",
+    "CaptureBallAccess"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "SVArcade-TCG-refmap.json"
+}

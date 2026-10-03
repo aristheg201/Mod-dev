@@ -1,0 +1,65 @@
+{
+  "tables": {
+    "minecraft:chests/simple_dungeon": {
+      "physicalChance": 0.25,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/abandoned_mineshaft": {
+      "physicalChance": 0.18,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/stronghold_corridor": {
+      "physicalChance": 0.25,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/stronghold_library": {
+      "physicalChance": 0.35,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/woodland_mansion": {
+      "physicalChance": 0.35,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/ancient_city": {
+      "physicalChance": 0.4,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/end_city_treasure": {
+      "physicalChance": 0.4,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/trial_chambers/reward": {
+      "physicalChance": 0.3,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    },
+    "minecraft:chests/trial_chambers/reward_rare": {
+      "physicalChance": 0.45,
+      "blankChance": 0.45,
+      "minBlank": 1,
+      "maxBlank": 4
+    }
+  },
+  "rarityWeights": {
+    "Common": 60,
+    "Rare": 25,
+    "Super Rare": 10,
+    "Ultra Rare": 4,
+    "Secret": 1
+  }
+}

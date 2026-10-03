@@ -1,0 +1,4 @@
+{
+  "command.grant.blank.success": "<green>Gave <amount> Blank Card(s) to <target>.</green>",
+  "command.grant.physical.success": "<green>Gave a physical card to <target>. Redeem it to enter the collection.</green>"
+}

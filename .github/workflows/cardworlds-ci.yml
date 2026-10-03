@@ -29,6 +29,7 @@ jobs:
           tar -xzf /tmp/cardworlds-src-tools.tar.gz
           python3 source-overrides/apply.py
           python3 .github/scripts/patch_ygo_qa.py
+          python3 source-overrides/physical-card-worlds/apply.py
           test -f src/main/java/vn/svarcade/tcg/integration/BEconomyCardWorlds.java
           test -f src/main/java/vn/svarcade/tcg/data/EffectEconomyQa.java
           test -f src/main/java/vn/svarcade/tcg/client/component/CurrencyPurchaseUi.java
@@ -36,7 +37,6 @@ jobs:
           python3 source-overrides/duel-realm/production-visual/qa/verify_focused.py
           python3 source-overrides/duel-realm/production-visual/performance/verify.py
           python3 source-overrides/duel-realm/production-visual/card-gameplay/verify.py
-          echo "apply from: 'source-overrides/duel-realm/production-visual/qa/focused.gradle'" >> build.gradle
           cat >> build.gradle <<'GRADLE'
           def ygoFullQaLoomLoader = tasks.named('remapJar').get().getClass().classLoader
           tasks.register('runYgoFullQaClient', ygoFullQaLoomLoader.loadClass('net.fabricmc.loom.task.prod.ClientProductionRunTask')) {
@@ -62,7 +62,7 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: Compile and test gameplay determinism, races, persistence and UI
-        run: gradle --no-daemon --max-workers=4 clean test remapJar remapQaJar remapFocusedQaJar
+        run: gradle --no-daemon --max-workers=4 clean test remapJar remapQaJar remapFocusedQaJar remapPhysicalQaJar
 
       - name: Verify focused build content
         shell: bash
@@ -96,6 +96,17 @@ jobs:
           sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
           gradle --no-daemon downloadAssets
           mkdir -p run-focused-visual/screenshots
+
+      - name: Runtime QA - physical cards and real Blank Card capture
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run-physical-visual/screenshots
+          timeout --signal=INT --kill-after=20s 600s gradle --no-daemon --max-workers=4 --stacktrace runPhysicalCardWorldsClient > build/physical-runtime-client.log 2>&1 || { cat build/physical-runtime-client.log; exit 1; }
+          cat build/physical-runtime-client.log
+          python3 source-overrides/physical-card-worlds/verify_runtime.py
 
       - name: Runtime QA - full Duel Realm and Yu-Gi-Oh presentation
         env:
@@ -216,6 +227,9 @@ jobs:
             run-focused-visual/screenshots/*.png
             run-focused-visual/packs-qa/screenshots/*.png
             run-focused-visual/logs/latest.log
+            build/physical-runtime-client.log
+            run-physical-visual/screenshots/*.png
+            run-physical-visual/logs/latest.log
             build/ygo-runtime-client.log
             run-ygo-visual/screenshots/*.png
             run-ygo-visual/logs/latest.log

@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"cardworlds_physical_qa","version":"1.0.0","name":"Physical Card Runtime QA","environment":"client","entrypoints":{"client":["vn.svarcade.tcg.qa.PhysicalCardRun"]},"depends":{"svarcade_tcg":"*"}}
