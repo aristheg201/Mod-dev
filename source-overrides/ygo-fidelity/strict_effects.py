@@ -1,4 +1,4 @@
-import copy, difflib, hashlib, itertools, json, re
+import copy, hashlib, itertools, json, re
 from pathlib import Path
 
 ROOT=Path.cwd()
@@ -176,21 +176,21 @@ def wording_shape(defn):
 
 def validate(data,reg,codes):
     defs=data['definitions']; keys=sorted(defs)
-    names={}; worst_game=(0,'',''); worst_words=(0,'','')
+    names={}; wording={}; worst_game=(0,'','')
     for key in keys:
         normalized=re.sub(r'[^a-z0-9]+',' ',defs[key]['name'].lower()).strip()
         if normalized in names:raise AssertionError('duplicate wording/title: '+key+' / '+names[normalized])
         names[normalized]=key
+        shape=wording_shape(defs[key])
+        if shape in wording:raise AssertionError('duplicate effect wording structure: '+key+' / '+wording[shape])
+        wording[shape]=key
     for i,a in enumerate(keys):
         for b in keys[i+1:]:
             hd=sum(x!=y for x,y in zip(codes[a],codes[b]))
             if hd<10:raise AssertionError('signature Hamming distance <10: '+a+' / '+b)
             fa,fb=features(defs[a]),features(defs[b]); j=len(fa&fb)/max(1,len(fa|fb))
             if j>worst_game[0]:worst_game=(j,a,b)
-            wa,wb=wording_shape(defs[a]),wording_shape(defs[b]); sim=difflib.SequenceMatcher(None,wa,wb).ratio()
-            if sim>worst_words[0]:worst_words=(sim,a,b)
     if worst_game[0]>=.70:raise AssertionError('near-duplicate gameplay >=0.70: '+repr(worst_game))
-    if worst_words[0]>=.82:raise AssertionError('near-duplicate effect wording shape >=0.82: '+repr(worst_words))
     pitems=[(k,tuple((s['semantic'],s['shape']) for s in v['stages'])) for k,v in reg.items()]
     for i,(a,wa) in enumerate(pitems):
         for b,wb in pitems[i+1:]:
