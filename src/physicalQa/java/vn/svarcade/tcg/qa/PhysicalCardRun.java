@@ -55,6 +55,7 @@ public final class PhysicalCardRun implements ClientModInitializer {
                         p.teleport(p.getServerWorld(),.5,121,.5,0,0);check(CardItems.PHYSICAL_CARD.getMaxCount()==1&&CardItems.BLANK_CARD.getMaxCount()==64,"principal item max count");
                         ownedBefore=PhysicalCards.catalog()==null?-1:0;
                         invalidTargets(p);
+                        creativeOverflow(p);
                     });step=2;next=now+2200;}
                 case 2->{shot(c,"physical-01-blank-held");c.setScreen(new InventoryScreen(c.player));step=3;next=now+1000;}
                 case 3->{shot(c,"physical-02-blank-inventory");c.setScreen(null);mark("CARDWORLDS_PHYSICAL_CARD_ITEM_PASS");
@@ -117,6 +118,21 @@ public final class PhysicalCardRun implements ClientModInitializer {
         var pokemon=PokemonProperties.Companion.parse(species+" level=62").create(null);if(easy)pokemon.setCurrentHealth(1);
         target=new PokemonEntity(p.getServerWorld(),pokemon,CobblemonEntities.POKEMON);target.setPosition(.5,121,3.5);target.setAiDisabled(true);
         check(p.getServerWorld().spawnEntity(target),"spawn failed");targetId=target.getId();ball=null;blankBefore=blankCount(p);
+    }
+    private void creativeOverflow(ServerPlayerEntity p){
+        var inventory=p.getInventory();List<ItemStack> saved=new ArrayList<>();for(int i=0;i<inventory.size();i++){saved.add(inventory.getStack(i).copy());inventory.setStack(i,new ItemStack(Items.STONE,64));}
+        boolean creative=p.getAbilities().creativeMode;p.getAbilities().creativeMode=true;
+        try{
+            var reward=PhysicalCards.create("charizard","Normal","ADMIN_GRANT",p);var token=reward.get(CardItems.DATA).physicalId();
+            check(PhysicalCards.giveOrDrop(p,reward),"Creative full inventory deleted the physical reward");
+            var drops=p.getServerWorld().getEntitiesByClass(ItemEntity.class,p.getBoundingBox().expand(8),e->e.getStack().isOf(CardItems.PHYSICAL_CARD)&&e.getStack().get(CardItems.DATA).physicalId().equals(token));
+            check(drops.size()==1,"Creative overflow must drop the exact token once");drops.getFirst().discard();
+            inventory.setStack(1,new ItemStack(CardItems.BLANK_CARD,60));
+            check(PhysicalCards.giveOrDrop(p,new ItemStack(CardItems.BLANK_CARD,5)),"Creative partial overflow was deleted");
+            var blanks=p.getServerWorld().getEntitiesByClass(ItemEntity.class,p.getBoundingBox().expand(8),e->e.getStack().isOf(CardItems.BLANK_CARD));
+            check(inventory.getStack(1).getCount()==64&&blanks.size()==1&&blanks.getFirst().getStack().getCount()==1,"partial insertion must preserve the remainder exactly");
+            blanks.getFirst().discard();mark("CARDWORLDS_CREATIVE_FULL_INVENTORY_DROP_PASS");
+        }finally{p.getAbilities().creativeMode=creative;for(int i=0;i<inventory.size();i++)inventory.setStack(i,saved.get(i));inventory.markDirty();p.currentScreenHandler.sendContentUpdates();}
     }
     private void invalidTargets(ServerPlayerEntity p){
         int before=blankCount(p);spawn(p,"magikarp",true);target.discard();check(!BlankCapture.attempt(p,target,Hand.MAIN_HAND)&&blankCount(p)==before,"removed target consumed blank");

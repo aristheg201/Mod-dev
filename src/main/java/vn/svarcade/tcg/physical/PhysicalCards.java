@@ -59,7 +59,20 @@ public final class PhysicalCards {
     }
     /** Inventory insertion may partially consume a stack; only the remainder is dropped. */
     public static boolean giveOrDrop(ServerPlayerEntity player,ItemStack stack){
-        serverThread(player);player.getInventory().insertStack(stack);boolean dropped=!stack.isEmpty();
+        serverThread(player);var inventory=player.getInventory();
+        // Vanilla insertStack discards overflow in Creative mode. Insert explicitly so rewards survive.
+        while(!stack.isEmpty()){
+            int slot=inventory.getOccupiedSlotWithRoomForStack(stack);
+            if(slot<0){
+                slot=inventory.getEmptySlot();if(slot<0)break;
+                inventory.setStack(slot,stack.split(Math.min(stack.getMaxCount(),inventory.getMaxCountPerStack())));
+            }else{
+                ItemStack existing=inventory.getStack(slot);
+                int count=Math.min(stack.getCount(),Math.min(existing.getMaxCount(),inventory.getMaxCountPerStack())-existing.getCount());
+                if(count<=0)break;existing.increment(count);stack.decrement(count);
+            }
+        }
+        boolean dropped=!stack.isEmpty();
         if(dropped){ItemEntity item=new ItemEntity(player.getServerWorld(),player.getX(),player.getY()+.5,player.getZ(),stack.copy());item.setOwner(player.getUuid());item.setPickupDelay(10);if(!player.getServerWorld().spawnEntity(item))throw new IllegalStateException("Physical reward could not be dropped");stack.setCount(0);}
         player.getInventory().markDirty();player.currentScreenHandler.sendContentUpdates();return dropped;
     }
