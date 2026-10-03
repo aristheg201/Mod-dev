@@ -143,7 +143,7 @@ s=s.replace(power_line,power_line+'''
         if(effect==null)return false;
         if(effect.speed()>=3)return true;
         if(effect.spec()==null)return Set.of("negate_effect","negate_activation","boost","shield").contains(effect.operation());
-        return damageStepOperations(effect.spec().operations())&&EffectSpec.list(effect.spec().stages()).stream().allMatch(stage->damageStepOperations(stage.effect().spec().operations()));
+        return damageStepOperations(effect.spec().operations())&&vn.svarcade.tcg.data.EffectSpec.list(effect.spec().stages()).stream().allMatch(stage->damageStepOperations(stage.effect().spec().operations()));
     }
     private boolean damageStepOperations(List<vn.svarcade.tcg.data.EffectSpec.Operation> operations) {
         Set<String> legal=Set.of("MODIFY_POWER","MODIFY_ATK","MODIFY_DEF","SET_POWER","SET_ATK","SET_DEF","SWAP_ATK_DEF","NEGATE_EFFECT","NEGATE_ACTIVATION","PREVENT_DESTROY","REMOVE_STATUS","IF");
