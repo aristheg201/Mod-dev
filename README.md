@@ -38,3 +38,5 @@ The branch keeps the implemented duel engine, response/chain flow, collection/de
 The supplied Codex evidence from 2026-09-29 recorded 31 passing tests (13 engine + 18 economy). This branch does **not** reuse that number as proof after code changes: GitHub CI must run again and become the branch authority.
 
 See `docs/QA-GATES.md` and `docs/RULES-REFERENCE.md`.
+
+<!-- CardWorlds local source export branch -->
