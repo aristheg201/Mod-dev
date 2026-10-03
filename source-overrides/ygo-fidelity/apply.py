@@ -93,6 +93,7 @@ if not old: raise SystemExit('VisibleCard anchor missing')
 new='''    public record VisibleCard(String token, String name, String species, List<String> aspects, String type, String category, int power, int defense, String text, Zone zone, int controller, String position,Catalog.Effect effect,Map<String,Integer> counters) {
         public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,String text,Zone zone,int controller,String position,Catalog.Effect effect){this(token,name,species,aspects,type,category,power,power,text,zone,controller,position,effect,Map.of());}
         public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,String text,Zone zone,int controller,String position){this(token,name,species,aspects,type,category,power,power,text,zone,controller,position,null,Map.of());}
+        public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,int defense,String text,Zone zone,int controller,String position){this(token,name,species,aspects,type,category,power,defense,text,zone,controller,position,null,Map.of());}
     }'''
 s=s[:old.start()]+new+s[old.end():]
 
