@@ -21,11 +21,9 @@ def patch(path,fn):
 # ---------------------------------------------------------------------------
 catalog=JAVA/'data/Catalog.java'
 s=catalog.read_text()
-old='''    public record Card(String id, String name, String category, String species, List<String> aspects,
-                       String type, String family, String evolvesFrom, boolean extra, int level, int power,
-                       String text, String set, String rarity, List<String> sources, Effect effect,
-                       List<Trigger> triggers,List<Modifier> modifiers) {
-        public int tributeCount() {'''
+card_start=s.find('    public record Card(')
+tribute=s.find('        public int tributeCount() {',card_start)
+if card_start<0 or tribute<0: raise SystemExit('Catalog.Card structural anchor missing')
 new='''    public record Card(String id, String name, String category, String species, List<String> aspects,
                        String type, String family, String evolvesFrom, boolean extra, int level, int power, int defense,
                        String text, String set, String rarity, List<String> sources, Effect effect,
@@ -47,9 +45,8 @@ new='''    public record Card(String id, String name, String category, String sp
             int identity=(Math.floorMod((id==null?"":id).hashCode(),9)-4)*35;
             return Math.clamp((int)Math.round(atk*.78)+bias+(level-4)*35+identity,500,3500);
         }
-        public int tributeCount() {'''
-if old not in s: raise SystemExit('Catalog.Card schema anchor missing')
-s=s.replace(old,new,1)
+'''
+s=s[:card_start]+new+s[tribute:]
 s=s.replace('if(!e.getKey().equals(c.id) || c.power < 0 || c.sources.isEmpty())','if(!e.getKey().equals(c.id) || c.power < 0 || c.defense < 0 || c.sources.isEmpty())',1)
 s=s.replace('if(c.category.equals("pokemon") && (c.level < 1 || c.level > 12))','if(c.category.equals("pokemon") && (c.level < 1 || c.level > 12 || c.defense<=0))',1)
 catalog.write_text(s)
