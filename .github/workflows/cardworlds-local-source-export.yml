@@ -1,0 +1,76 @@
+name: Card Worlds Local Source Export
+
+on:
+  push:
+    branches:
+      - export/cardworlds-local-source-acd175d6
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore effective Card Worlds source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bootstrap/cardworlds-src.b64.part* | base64 -d > /tmp/cardworlds-src-tools.tar.gz
+          echo "4e3596c43da9a15d98c44d56c76b0d58d70388dd2c70ab65db1d11f5a1e2aa37  /tmp/cardworlds-src-tools.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/cardworlds-src-tools.tar.gz
+          python3 source-overrides/apply.py
+
+          test -d src/main/java/vn/svarcade/tcg
+          test -f src/main/java/vn/svarcade/tcg/client/render/DuelWorldScene.java
+          test -f src/main/java/vn/svarcade/tcg/duel/Duel.java
+          test -f src/main/java/vn/svarcade/tcg/data/CardGameplayEffects.java
+          test -f source-overrides/duel-realm/production-visual/resources/data/svarcade_tcg/pokemon_effects.json
+
+      - name: Package local fixed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          PKG="CardWorlds-local-fixed-source-acd175d6"
+          mkdir -p "$PKG"
+
+          cp -a src "$PKG/"
+          cp -a source-overrides "$PKG/"
+          mkdir -p "$PKG/.github/workflows"
+          cp .github/workflows/cardworlds-ci.yml "$PKG/.github/workflows/"
+
+          for f in build.gradle settings.gradle settings.gradle.kts gradle.properties gradlew gradlew.bat README.md INTERNAL-BUILD.md; do
+            if [ -e "$f" ]; then cp -a "$f" "$PKG/"; fi
+          done
+          if [ -d gradle ]; then cp -a gradle "$PKG/"; fi
+
+          cat > "$PKG/SOURCE-EXPORT.txt" <<'EOF'
+Card Worlds local fixed source
+Production source commit: acd175d6ac90afbbb697a9ce067d14743e5f42d9
+Branch: feature/yugioh-card-worlds-production-20260930
+
+This package contains the EFFECTIVE source tree after:
+  1. restoring bootstrap/cardworlds-src
+  2. applying source-overrides/apply.py
+
+Edit src/ directly for local/internal work.
+The source-overrides directory is also included for provenance and regeneration.
+EOF
+
+          zip -qr "$PKG.zip" "$PKG"
+          sha256sum "$PKG.zip" | tee "$PKG.zip.sha256"
+          du -h "$PKG.zip"
+
+      - name: Upload local fixed source
+        uses: actions/upload-artifact@v4
+        with:
+          name: CardWorlds-local-fixed-source-acd175d6
+          path: |
+            CardWorlds-local-fixed-source-acd175d6.zip
+            CardWorlds-local-fixed-source-acd175d6.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
