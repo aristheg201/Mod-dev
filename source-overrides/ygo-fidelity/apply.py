@@ -298,6 +298,14 @@ if 'SIGNATURES=loadSignatures()' not in s:
     s=s.replace(old,new,1)
 effect_content.write_text(s)
 
+# Preserve provider-authored external card mechanics exactly; generated identity facets must never rewrite a provider's own ability graph.
+ident_path=JAVA/'data/CardIdentities.java'
+ident_src=ident_path.read_text()
+ident_src=ident_src.replace(
+    'if(CardGameplayEffects.definition(card)==null&&card.effect()!=null&&card.effect().spec()!=null&&EffectSpec.list(card.effect().spec().stages()).stream().anyMatch(stage->!stage.id().equals("signature")))continue;',
+    'if(CardGameplayEffects.definition(card)==null&&card.effect()!=null&&card.effect().spec()!=null)continue;')
+ident_path.write_text(ident_src)
+
 # Author + validate strict distinctness only after all other resource generators have run.
 runpy.run_path(str(ROOT/'source-overrides/ygo-fidelity/strict_effects.py'),run_name='__main__')
 
@@ -357,5 +365,68 @@ idx=s.rfind('\n}')
 if idx<0: raise SystemExit('EngineTest closing brace missing')
 s=s[:idx]+'\n'+insert+s[idx:]
 test.write_text(s)
+
+# ---------------------------------------------------------------------------
+# 8) Update frozen deterministic baseline and legacy tests for intentional rule changes.
+# ---------------------------------------------------------------------------
+# Deck-out test follows the actual phase graph instead of assuming six fixed transitions on turn 1.
+test=ROOT/'src/test/java/vn/svarcade/tcg/EngineTest.java'
+ts=test.read_text()
+ts=ts.replace(
+    '@Test void deckExhaustionProducesWinner(){Duel d=duel();for(int step=0;step<6;step++){act(d,0,"next","","");act(d,1,"pass","","");}assertEquals(0,d.winner());}',
+    '@Test void deckExhaustionProducesWinner(){Duel d=duel();int guard=24;while(d.winner()<0&&guard-->0){var v=d.view(0);if(v.open())act(d,v.turnPlayer(),"next","","");else act(d,v.priority(),"pass","","");}assertTrue(guard>0);assertEquals(0,d.winner());}')
+test.write_text(ts)
+
+deep=ROOT/'src/test/java/vn/svarcade/tcg/duel/DeepEffectsTest.java'
+if deep.exists():
+    ds=deep.read_text().replace('assertEquals(53,Duel.effectPrimitiveCount())','assertEquals(58,Duel.effectPrimitiveCount())')
+    deep.write_text(ds)
+
+# AI evaluates a Defense Position target with DEF, not ATK.
+for ai in (ROOT/'src/main/java/vn/svarcade/tcg/performance/AiPlanner.java',
+           ROOT/'src/test/java/vn/svarcade/tcg/duel/BaselineAiPlanner.java'):
+    if ai.exists():
+        x=ai.read_text()
+        x=x.replace(
+            'int trade=source.power()-target.power();\n            return hard?((trade>=0?3600:-1800)+target.power()+trade):((trade>=0?2500:-500)+target.power()/2);',
+            'int targetStat=target.position().equals("ATTACK")?target.power():target.defense();int trade=source.power()-targetStat;\n            return hard?((trade>=0?3600:-1800)+targetStat+trade):((trade>=0?2500:-500)+targetStat/2);')
+        ai.write_text(x)
+
+# Frozen baseline remains deliberately unoptimized, but it must model the same new ATK/DEF and Battle Step semantics.
+baseline=ROOT/'src/test/java/vn/svarcade/tcg/duel/BaselineDuel.java'
+if baseline.exists():
+    b=baseline.read_text()
+    b=b.replace('public enum BattlePosition { ATTACK, DEFENSE, FACE_DOWN_DEFENSE }',
+                'public enum BattlePosition { ATTACK, DEFENSE, FACE_DOWN_DEFENSE }\n    private enum BattleWindow { NONE, DECLARE, DAMAGE }',1)
+    old_vis='public record VisibleCard(String token, String name, String species, List<String> aspects, String type, String category, int power, String text, Zone zone, int controller, String position,Catalog.Effect effect,Map<String,Integer> counters) {public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,String text,Zone zone,int controller,String position,Catalog.Effect effect){this(token,name,species,aspects,type,category,power,text,zone,controller,position,effect,Map.of());}public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,String text,Zone zone,int controller,String position){this(token,name,species,aspects,type,category,power,text,zone,controller,position,null,Map.of());}}'
+    new_vis='''public record VisibleCard(String token, String name, String species, List<String> aspects, String type, String category, int power, int defense, String text, Zone zone, int controller, String position,Catalog.Effect effect,Map<String,Integer> counters) {
+        public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,String text,Zone zone,int controller,String position,Catalog.Effect effect){this(token,name,species,aspects,type,category,power,power,text,zone,controller,position,effect,Map.of());}
+        public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,String text,Zone zone,int controller,String position){this(token,name,species,aspects,type,category,power,power,text,zone,controller,position,null,Map.of());}
+        public VisibleCard(String token,String name,String species,List<String> aspects,String type,String category,int power,int defense,String text,Zone zone,int controller,String position){this(token,name,species,aspects,type,category,power,defense,text,zone,controller,position,null,Map.of());}
+    }'''
+    if old_vis in b:b=b.replace(old_vis,new_vis,1)
+    b=b.replace('final String token; final Catalog.Card card; final int owner; int controller; Zone zone; int boost, shield, generation; boolean attacked;\n        int fixedPower=-1,extraAttacks,lookedBy=-1,permanentBoost;',
+                'final String token; final Catalog.Card card; final int owner; int controller; Zone zone; int boost, defBoost, shield, generation; boolean attacked;\n        int fixedPower=-1,fixedDefense=-1,extraAttacks,lookedBy=-1,permanentBoost,permanentDefBoost;',1)
+    b=b.replace('private boolean open=true,advance=false;\n    private String attacker,target;',
+                'private boolean open=true,advance=false,endRequested=false;\n    private BattleWindow battleWindow=BattleWindow.NONE;\n    private String attacker,target;',1)
+    b=b.replace('case "next" -> {require(open&&actor==turnPlayer,"Finish the response window first.");advance=true;open=false;passes=1;priority=1-actor;}',
+                'case "next" -> {require(open&&actor==turnPlayer,"Finish the response window first.");advance=true;open=false;passes=1;priority=1-actor;}\n            case "end" -> {require(open&&actor==turnPlayer&&(phase==Phase.MAIN1||phase==Phase.MAIN2),"You can end the turn only from a Main Phase.");endRequested=true;advance=true;open=false;passes=1;priority=1-actor;}',1)
+    b=b.replace('if(p.attacked)p.extraAttacks--;p.attacked=true;attacker=token;target=selected;',
+                'if(p.attacked)p.extraAttacks--;p.attacked=true;attacker=token;target=selected;battleWindow=BattleWindow.DECLARE;',1)
+    b=b.replace('if(attacker!=null){battle();attacker=null;target=null;if(winner<0)window();return;}',
+                'if(attacker!=null){if(battleWindow==BattleWindow.DECLARE){battleWindow=BattleWindow.DAMAGE;note("Damage Step.");window();return;}battle();attacker=null;target=null;battleWindow=BattleWindow.NONE;if(winner<0)window();return;}',1)
+    b=b.replace('int difference=attack-power(d);','int difference=attack-defense(d);',1)
+    pe=java_method_end(b,'    private int power(Piece p)')
+    b=b[:pe]+'''\n    private int defense(Piece p){int value=p.fixedDefense>=0?p.fixedDefense:p.card.defense()+p.defBoost;return Math.max(0,value);}\n'''+b[pe:]
+    b=b.replace('hiddenCategory,0,"",p.zone,p.controller,p.position.name())','hiddenCategory,0,0,"",p.zone,p.controller,p.position.name())',1)
+    b=b.replace('p.card.type(),category,power(p),p.card.text(),p.zone,p.controller,p.position.name(),effectiveEffect(p),Map.copyOf(p.counters))',
+                'p.card.type(),category,power(p),defense(p),p.card.text(),p.zone,p.controller,p.position.name(),effectiveEffect(p),Map.copyOf(p.counters))',1)
+    old_phase='''        if(phase==Phase.END){turn++;turnPlayer=1-turnPlayer;phase=Phase.DRAW;normal[turnPlayer]=0;used.clear();pieces.values().forEach(p->{p.attacked=false;p.boost=p.permanentBoost+expiries.stream().filter(e->e.token().equals(p.token)&&e.key().equals("BOOST")&&e.endTurn()>=turn).mapToInt(Expiry::value).sum();});tickAdvancedSummons(turnPlayer);draw(turnPlayer);}
+        else phase=Phase.values()[phase.ordinal()+1];'''
+    new_phase='''        if(phase==Phase.END){turn++;turnPlayer=1-turnPlayer;phase=Phase.DRAW;normal[turnPlayer]=0;used.clear();endRequested=false;battleWindow=BattleWindow.NONE;pieces.values().forEach(p->{p.attacked=false;p.boost=p.permanentBoost+expiries.stream().filter(e->e.token().equals(p.token)&&e.key().equals("BOOST")&&e.endTurn()>=turn).mapToInt(Expiry::value).sum();});tickAdvancedSummons(turnPlayer);draw(turnPlayer);}
+        else if(phase==Phase.MAIN1&&(turn==1||endRequested)){phase=Phase.END;endRequested=false;}
+        else phase=Phase.values()[phase.ordinal()+1];'''
+    if old_phase in b:b=b.replace(old_phase,new_phase,1)
+    baseline.write_text(b)
 
 print('CARDWORLDS_YGO_FIDELITY_APPLIED atkDef=true firstTurnBattleSkip=true main1End=true damageStepGate=true strictIdentityV5=true')
