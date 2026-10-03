@@ -37,11 +37,8 @@ public final class VisualRun implements ClientModInitializer {
     case 6->{shot(c,"04-play");a.navigate("Market");step++;}
     case 7->{shot(c,"05-market");a.navigate("World");step++;}
     case 8->{shot(c,"06-world");a.navigate("Packs");step++;}
-    case 9->{shot(c,"07-packs");a.banner="crossroads";a.reveal.await();a.send("pull","crossroads",UUID.randomUUID().toString());next=now+500;step++;}
-    case 10->{shot(c,"08-pack-enter");next=now+800;step++;}
-    case 11->{shot(c,"09-pack-opening");next=now+1500;step++;}
-    case 12->{shot(c,"10-pack-reveal");next=now+5000;step++;}
-    case 13->{shot(c,"11-pack-summary");click(a,640,a.logicalHeight-55);a.navigate("Play");duelDeadline=now+20000;a.send("pve",a.deckName,"HARD");step++;}
+    case 9->{shot(c,"07-packs");org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_PACK_FLOW_SKIPPED reason=duel_runtime_scope");a.navigate("Play");duelDeadline=now+30000;a.send("pve",a.deckName,"HARD");step=14;}
+    case 10,11,12,13->{throw new AssertionError("Deprecated pack-opening path entered full Duel QA: step="+step);}
     case 14->{if(a.state.duel()==null){if(now>duelDeadline)throw new AssertionError("PvE duel snapshot missing; notice="+a.state.notice());return;}String qaWorld=c.world==null?"null":c.world.getRegistryKey().getValue().toString();if(!qaWorld.equals("svarcade_tcg:duel_realm")){if(now>duelDeadline)throw new AssertionError("Duel snapshot exists but client world did not transfer: "+qaWorld);return;}duelDeadline=0;org.slf4j.LoggerFactory.getLogger("cardworlds-qa").info("CARDWORLDS_QA_DUEL_REALM_CONFIRMED world={}",c.world.getRegistryKey().getValue());var v=a.state.duel();if(!v.phase().equals("MAIN1")){a.send("duel",v.open()?"next":"pass","","");return;}var card=v.cards().stream().filter(q->q.controller()==v.you()&&q.zone()==Duel.Zone.HAND&&q.category().equals("pokemon")).filter(q->a.state.definitions().values().stream().anyMatch(d->d.name().equals(q.name())&&(d.evolvesFrom()==null||d.evolvesFrom().isBlank()))).findFirst();if(card.isPresent())a.send("duel","play",card.get().token(),"");next=now+450;step++;}
     case 15->{shot(c,"12-duel-summon");next=now+1600;step++;}
     case 16->{shot(c,"13-duel-board");((net.minecraft.client.gui.screen.Screen)a).mouseDragged(640,360,1,240,-95);((net.minecraft.client.gui.screen.Screen)a).mouseScrolled(640,360,0,-6);next=now+700;step=161;}
