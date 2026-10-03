@@ -427,6 +427,29 @@ if baseline.exists():
         else if(phase==Phase.MAIN1&&(turn==1||endRequested)){phase=Phase.END;endRequested=false;}
         else phase=Phase.values()[phase.ordinal()+1];'''
     if old_phase in b:b=b.replace(old_phase,new_phase,1)
+    # Keep the frozen deterministic baseline behaviorally identical to production during Damage Step.
+    baseline_phase_anchor='require(e.phases().contains(phase.name()),"This effect cannot be used in this phase.");\n        if(e.speed()==1) mainAction(actor);'
+    baseline_phase_replacement='require(e.phases().contains(phase.name()),"This effect cannot be used in this phase.");\n        if(phase==Phase.BATTLE&&battleWindow==BattleWindow.DAMAGE)require(damageStepLegal(e),"This effect cannot be activated during the Damage Step.");\n        if(e.speed()==1) mainAction(actor);'
+    if baseline_phase_anchor not in b: raise SystemExit('BaselineDuel Damage Step activation anchor missing')
+    b=b.replace(baseline_phase_anchor,baseline_phase_replacement,1)
+    defense_marker='    private int defense(Piece p){int value=p.fixedDefense>=0?p.fixedDefense:p.card.defense()+p.defBoost;return Math.max(0,value);}'
+    damage_helpers='''    private boolean damageStepLegal(Catalog.Effect effect) {
+        if(effect==null)return false;
+        if(effect.speed()>=3)return true;
+        if(effect.spec()==null)return Set.of("negate_effect","negate_activation","boost","shield").contains(effect.operation());
+        return damageStepOperations(effect.spec().operations())&&vn.svarcade.tcg.data.EffectSpec.list(effect.spec().stages()).stream().allMatch(stage->damageStepOperations(stage.effect().spec().operations()));
+    }
+    private boolean damageStepOperations(List<vn.svarcade.tcg.data.EffectSpec.Operation> operations) {
+        Set<String> legal=Set.of("MODIFY_POWER","MODIFY_ATK","MODIFY_DEF","SET_POWER","SET_ATK","SET_DEF","SWAP_ATK_DEF","NEGATE_EFFECT","NEGATE_ACTIVATION","PREVENT_DESTROY","REMOVE_STATUS","IF");
+        for(var op:vn.svarcade.tcg.data.EffectSpec.list(operations)){
+            if(!legal.contains(op.type()))return false;
+            if(!damageStepOperations(op.children())||!damageStepOperations(op.otherwise()))return false;
+        }
+        return true;
+    }
+'''
+    if defense_marker not in b: raise SystemExit('BaselineDuel defense helper anchor missing')
+    b=b.replace(defense_marker,defense_marker+'\n'+damage_helpers,1)
     baseline.write_text(b)
 
 print('CARDWORLDS_YGO_FIDELITY_APPLIED atkDef=true firstTurnBattleSkip=true main1End=true damageStepGate=true strictIdentityV5=true')
