@@ -41,6 +41,7 @@ public final class LivingWorld {
     }
     public static final class Settlement {
         public String id,name,region,archetype,faction,economicIdentity="";
+        public int generationVersion=1;public vn.worldcomesalive.generation.v2.SettlementPlan generationPlan;
         public Map<UUID,vn.worldcomesalive.agriculture.Agriculture.Plot> fields=new LinkedHashMap<>();public Map<UUID,vn.worldcomesalive.agriculture.Agriculture.Pasture> pastures=new LinkedHashMap<>();public Map<UUID,vn.worldcomesalive.agriculture.Agriculture.Livestock> livestock=new LinkedHashMap<>();
         public long seed,lastEconomyDay=-1,lastSocialDay=-1;
         public Pos center;

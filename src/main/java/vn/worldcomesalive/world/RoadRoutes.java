@@ -6,6 +6,7 @@ import java.util.*;
 public final class RoadRoutes {
     private final Map<String,List<Pos>> cache=new HashMap<>();
     public List<Pos> route(Settlement s,Pos start,Building destination){
+        if(s.generationVersion>=2&&s.generationPlan!=null)return vn.worldcomesalive.generation.v2.GraphNavigation.route(s,start,destination);
         Pos entrance=destination.point(Marker.ENTRANCE);String key=s.id+":"+Math.round(start.x()/4)+":"+Math.round(start.z()/4)+":"+destination.id;
         List<Pos> tail=cache.computeIfAbsent(key,k->{
             List<Pos> points=new ArrayList<>();Building source=s.buildings.values().stream().filter(b->b.contains(start)).findFirst().orElse(null);

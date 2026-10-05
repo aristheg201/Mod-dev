@@ -9,7 +9,7 @@ public final class LodgingManager {
     private final WorldSimulation sim;
     public final PersonalStorage storage=new PersonalStorage();
     public LodgingManager(WorldSimulation sim){this.sim=sim;}
-    public void initialize(Settlement s){for(var r:Lodging.rooms(s))sim.state.rooms.putIfAbsent(r.id,r);}
+    public void initialize(Settlement s){if(s.generationVersion>=2)return;for(var r:Lodging.rooms(s))sim.state.rooms.putIfAbsent(r.id,r);}
     public Lodging.Room at(Pos pos){return sim.state.rooms.values().stream().filter(r->r.contains(pos)).findFirst().orElse(null);}
     public List<InteractionPackets.MenuRow> menu(Npc host,UUID player){return sim.state.rooms.values().stream().filter(r->r.building.equals(host.workplace)).map(r->new InteractionPackets.MenuRow(r.id.toString(),r.name+" · "+r.quality+" · "+r.beds.size()+" bed(s) · "+r.state+(r.permitted(player,sim.state.clock)?" · yours":""),"Rooms",r.price,r.state.equals("AVAILABLE")?1:0)).toList();}
     public List<String> actions(Npc host,UUID player){List<String> a=new ArrayList<>();if(!host.profession.equals("innkeeper"))return a;for(var r:sim.state.rooms.values())if(r.building.equals(host.workplace)){if(r.state.equals("AVAILABLE"))a.add("rent:"+r.id);if(r.permitted(player,sim.state.clock)){a.add("renew:"+r.id);a.add("checkout:"+r.id);}}a.add("recover");return a;}

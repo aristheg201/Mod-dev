@@ -562,7 +562,7 @@
           "width": 5,
           "depth": 4,
           "floor": 1,
-          "composition": "dining_window",
+          "composition": "study_window",
           "beds": 0
         },
         {
@@ -572,7 +572,7 @@
           "width": 6,
           "depth": 4,
           "floor": 1,
-          "composition": "dining_hearth",
+          "composition": "living_reading",
           "beds": 0
         }
       ],
@@ -639,7 +639,7 @@
           "width": 5,
           "depth": 4,
           "floor": 1,
-          "composition": "dining_window",
+          "composition": "study_window",
           "beds": 0
         },
         {
@@ -649,7 +649,7 @@
           "width": 8,
           "depth": 4,
           "floor": 1,
-          "composition": "dining_hearth",
+          "composition": "living_reading",
           "beds": 0
         }
       ],
@@ -1004,7 +1004,7 @@
           "width": 9,
           "depth": 5,
           "floor": 1,
-          "composition": "dining_window",
+          "composition": "study_window",
           "beds": 0
         }
       ],
@@ -4044,33 +4044,6 @@
           "kind": "rug",
           "x": 8,
           "y": 0,
-          "z": 4,
-          "facing": "north",
-          "layer": "detail",
-          "markers": []
-        },
-        {
-          "kind": "rug",
-          "x": 8,
-          "y": 0,
-          "z": 5,
-          "facing": "north",
-          "layer": "detail",
-          "markers": []
-        },
-        {
-          "kind": "rug",
-          "x": 8,
-          "y": 0,
-          "z": 6,
-          "facing": "north",
-          "layer": "detail",
-          "markers": []
-        },
-        {
-          "kind": "rug",
-          "x": 8,
-          "y": 0,
           "z": 7,
           "facing": "north",
           "layer": "detail",
@@ -4351,6 +4324,224 @@
           "x": 3,
           "y": 1,
           "z": 6,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "study_window": {
+      "id": "study_window",
+      "roomType": "STUDY",
+      "atoms": [
+        {
+          "kind": "writing_desk",
+          "x": 0,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": [
+            "READING_POINT"
+          ]
+        },
+        {
+          "kind": "wooden_stool",
+          "x": 1,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "paper_quill",
+          "x": 0,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "medieval_bookshelf",
+          "x": 4,
+          "y": 0,
+          "z": 0,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "book_stack",
+          "x": 4,
+          "y": 1,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "wall_shelf",
+          "x": 0,
+          "y": 1,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "book_stack",
+          "x": 0,
+          "y": 2,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "rug",
+          "x": 2,
+          "y": 0,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "wall_sconce",
+          "x": 4,
+          "y": 2,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "cabinet",
+          "x": 4,
+          "y": 0,
+          "z": 3,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "personal_belongings",
+          "x": 4,
+          "y": 1,
+          "z": 3,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "living_reading": {
+      "id": "living_reading",
+      "roomType": "LIVING_ROOM",
+      "atoms": [
+        {
+          "kind": "armchair",
+          "x": 0,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": [
+            "SOCIAL_POINT"
+          ]
+        },
+        {
+          "kind": "armchair",
+          "x": 2,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": [
+            "SOCIAL_POINT"
+          ]
+        },
+        {
+          "kind": "small_table",
+          "x": 1,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "book_stack",
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "medieval_bookshelf",
+          "x": 4,
+          "y": 0,
+          "z": 0,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": [
+            "READING_POINT"
+          ]
+        },
+        {
+          "kind": "flower_vase",
+          "x": 4,
+          "y": 1,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "rug",
+          "x": 1,
+          "y": 0,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "rug",
+          "x": 2,
+          "y": 0,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "wall_shelf",
+          "x": 0,
+          "y": 1,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "book_stack",
+          "x": 0,
+          "y": 2,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "wall_sconce",
+          "x": 4,
+          "y": 2,
+          "z": 3,
           "facing": "north",
           "layer": "detail",
           "markers": []

@@ -1,0 +1,11 @@
+package vn.worldcomesalive.generation.v2;
+import vn.worldcomesalive.model.LivingWorld.*;
+import java.util.*;
+/** Uses the accepted street/lot graph at every simulation LOD, then local Minecraft navigation executes segments. */
+public final class GraphNavigation {
+    private record Entry(Pos point,double distance){}
+    public static List<Pos> route(Settlement s,Pos start,Building destination){Map<Pos,Map<Pos,Double>> graph=new LinkedHashMap<>();int cursor=0;for(var road:s.generationPlan.roads){Pos previous=null;for(int i=0;i<road.points().size();i++){Pos p=s.roads.get(cursor++);graph.computeIfAbsent(p,k->new LinkedHashMap<>());if(previous!=null){graph.get(p).put(previous,p.distance(previous));graph.get(previous).put(p,p.distance(previous));}previous=p;}}
+        Pos target=destination.point(Marker.ENTRANCE),source=graph.keySet().stream().min(Comparator.comparingDouble(p->p.distance(start))).orElseThrow(),end=graph.keySet().stream().min(Comparator.comparingDouble(p->p.distance(target))).orElseThrow();Map<Pos,Double> distances=new HashMap<>();Map<Pos,Pos> previous=new HashMap<>();PriorityQueue<Entry> queue=new PriorityQueue<>(Comparator.comparingDouble(Entry::distance));distances.put(source,0.0);queue.add(new Entry(source,0));while(!queue.isEmpty()){var e=queue.remove();if(e.distance()>distances.getOrDefault(e.point(),Double.MAX_VALUE))continue;if(e.point().equals(end))break;for(var edge:graph.get(e.point()).entrySet()){double next=e.distance()+edge.getValue();if(next<distances.getOrDefault(edge.getKey(),Double.MAX_VALUE)){distances.put(edge.getKey(),next);previous.put(edge.getKey(),e.point());queue.add(new Entry(edge.getKey(),next));}}}if(!distances.containsKey(end))throw new IllegalStateException("Accepted settlement graph became disconnected");List<Pos> road=new ArrayList<>();Pos point=end;while(point!=null){road.add(point);point=previous.get(point);}Collections.reverse(road);List<Pos> result=new ArrayList<>();result.add(start);result.addAll(road);result.add(target);return result;
+    }
+    private GraphNavigation(){}
+}

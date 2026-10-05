@@ -8,6 +8,7 @@ import vn.worldcomesalive.ai.CognitiveQueue;
 import vn.worldcomesalive.ai.CognitiveQueue.Wake;
 import vn.worldcomesalive.world.*;
 import vn.worldcomesalive.WorldComesAlive;
+import vn.worldcomesalive.generation.v2.*;
 import net.minecraft.server.*;
 import net.minecraft.server.world.*;
 import net.minecraft.entity.Entity;
@@ -44,6 +45,7 @@ public final class WorldSimulation {
     private final ArrayDeque<SettlementStructures.Placement> placements=new ArrayDeque<>();
     private final ArrayDeque<ChunkPos> discoveries=new ArrayDeque<>();
     private String buildingSettlement="";
+    private TerrainCapture terrainCapture;private TerrainSnapshot generationTerrain;private java.util.concurrent.CompletableFuture<SettlementPlan> generationFuture;private SettlementProgram generationProgram;private GenerationCatalog generationCatalog;private Spatial.Point generationCenter;
     private final Set<Building> furnishing=new HashSet<>();
     public long lastMicros,maxMicros,deferred,nearbyCount,urgentReactions;
     private long nextCheckpoint;
@@ -51,9 +53,10 @@ public final class WorldSimulation {
     private final Set<String> cardNights=new HashSet<>();
     public WorldSimulation(MinecraftServer server,WorldContent data)throws IOException{
         this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;domestic=new vn.worldcomesalive.domestic.DomesticManager(this);agriculture=new vn.worldcomesalive.agriculture.AgriculturalRuntime(this);lodging=new vn.worldcomesalive.civilization.LodgingManager(this);civilization=new vn.worldcomesalive.civilization.CivilizationManager(this);
-        for(Settlement s:state.settlements.values())if(s.ready){lodging.initialize(s);Building inn=s.service("tavern");if(inn!=null&&inn.lodgingVersion<1){vn.worldcomesalive.civilization.LodgingStructures.generate(inn,LodgingRooms(inn),placements);furnishing.add(inn);}for(Building b:s.buildings.values())if(b.furnitureVersion<vn.worldcomesalive.furniture.FurnitureLayout.VERSION){SettlementStructures.retrofitFurniture(b,world,placements);furnishing.add(b);}domestic.initialize(s);}
+        // Historical V1 settlements keep their state and geometry; no automatic spatial conversion.
+        for(Settlement s:state.settlements.values())if(s.ready){lodging.initialize(s);domestic.initialize(s);}
         for(Npc n:state.npcs.values())enqueue(n,Math.max(state.clock,n.nextCognition),3);
-        for(Settlement s:state.settlements.values())if(!s.ready){queueBuild(s);break;}
+        for(Settlement s:state.settlements.values())if(!s.ready&&s.generationVersion>=2){beginTerrain(s.center,s.generationPlan.program);break;}
         LOG.info("WCA_LOADED settlements={} npcs={} revision={} identities={}",state.settlements.size(),state.npcs.size(),state.revision,state.npcs.keySet());
     }
     public void reload(WorldContent content){data=content;routes.invalidate();for(Npc n:state.npcs.values()){n.plan.clear();var profession=data.professions.get(n.profession);if(profession!=null){n.schedule.put("work_start",profession.start());n.schedule.put("work_end",profession.end());}n.version++;enqueue(n,state.clock,3);}LOG.info("WCA_DATA_RELOADED professions={} dialogue={} archetypes={}",data.professions.size(),data.dialogue.size(),data.archetypes.size());}
@@ -68,21 +71,34 @@ public final class WorldSimulation {
         int variance=0;for(int dx:new int[]{-35,0,35})for(int dz:new int[]{-35,0,35}){world.getChunk((x+dx)>>4,(z+dz)>>4);variance=Math.max(variance,Math.abs(world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x+dx,z+dz)-1-y));}if(variance>18)return;
         String biome=world.getBiome(new BlockPos(x,y,z)).getKey().map(k->k.getValue().toString()).orElse("plains");if(biome.contains("ocean")||biome.contains("river"))return;
         long seed=siteSeed(world.getSeed(),Math.floorDiv(pos.x,data.regionChunks),Math.floorDiv(pos.z,data.regionChunks));
-        String archetype=data.archetypes.get((int)Math.floorMod(seed,Math.min(4,data.archetypes.size()))).id();
-        Settlement s=SettlementBootstrap.create(seed,new Pos(x,y,z),biome,data,archetype);state.settlements.put(s.id,s);
-        for(Settlement other:state.settlements.values())if(!other.id.equals(s.id)&&other.center.distance(s.center)<1200){s.routes.add(other.id);other.routes.add(s.id);}
-        queueBuild(s);LOG.info("WCA_GENERATED id={} name={} archetype={} region={} origin={} plots={} manualSetup=false",s.id,s.name,s.archetype,s.region,s.center,s.buildings.size());
+        String archetype=Math.floorMod(seed,3)==0?"market_town":"farming_village";
+        beginTerrain(new Pos(x,y,z),SettlementProgram.create(seed,archetype,data.region(biome).id(),GenerationCatalog.active));
     }
-    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);vn.worldcomesalive.agriculture.Landscape.roads(s,world,placements);vn.worldcomesalive.agriculture.Landscape.generate(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built){SettlementStructures.building(b,region,world,placements);if(b.type.equals("tavern")){lodging.initialize(s);vn.worldcomesalive.civilization.LodgingStructures.generate(b,new ArrayList<>(state.rooms.values().stream().filter(r->r.building.equals(b.id)).toList()),placements);}}}
+    private void beginTerrain(Pos center,SettlementProgram program){generationCatalog=GenerationCatalog.active;generationProgram=program;generationCenter=new Spatial.Point(center.x(),center.z());terrainCapture=new TerrainCapture(world,(int)center.x(),(int)center.z());LOG.info("WCA_V2_TERRAIN_START seed={} archetype={} population={} foodCapacity={} center={}",program.seed(),program.archetype(),program.populationTarget(),program.foodCapacity(),center);}
+    private void generationTick(){
+        if(terrainCapture==null)return;
+        try{
+            if(generationFuture==null){if(!terrainCapture.tick())return;generationTerrain=terrainCapture.snapshot();var terrain=generationTerrain;var program=generationProgram;var center=generationCenter;var catalog=generationCatalog;generationFuture=java.util.concurrent.CompletableFuture.supplyAsync(()->SettlementPlanner.plan(program,center,terrain,catalog),workers);return;}
+            if(!generationFuture.isDone())return;
+            SettlementPlan plan=generationFuture.join();if(generationCatalog!=GenerationCatalog.active)throw new IllegalArgumentException("Generation catalog changed during planning; candidate will be resurveyed");
+            Settlement existing=state.settlements.values().stream().filter(s->s.seed==plan.program.seed()).findFirst().orElse(null);Settlement s=existing!=null?existing:SemanticRegistration.create(plan,data);if(existing==null)state.settlements.put(s.id,s);
+            s.roads.clear();for(var r:plan.roads)for(var point:r.points())s.roads.add(new Pos(point.x(),generationTerrain.at(point.x(),point.z()).height()+1,point.z()));
+            SemanticRegistration.agriculture(s,generationTerrain);new BlockMaterializer(s,generationTerrain,generationCatalog,state,data).materialize(placements);buildingSettlement=s.id;
+            for(Settlement other:state.settlements.values())if(!other.id.equals(s.id)&&other.center.distance(s.center)<1500){s.routes.add(other.id);other.routes.add(s.id);}
+            generationFuture=null;LOG.info("WCA_V2_ACCEPTED id={} buildings={} fields={} quality={} placements={} manualSetup=false",s.id,s.buildings.size(),s.fields.size(),plan.quality,placements.size());
+        }catch(RuntimeException rejected){LOG.warn("WCA_V2_REJECTED seed={} reason={}",generationProgram.seed(),rejected.toString());generationFuture=null;terrainCapture.close();terrainCapture=null;generationTerrain=null;}
+    }
+    public boolean generationPending(){return terrainCapture!=null||!buildingSettlement.isBlank();}
     public void tick(){
         long start=System.nanoTime();state.clock=world.getTime();
+        if(buildingSettlement.isBlank())generationTick();
         while(!unloadedCitizens.isEmpty())citizenUnloaded(unloadedCitizens.removeFirst());
         for(int i=0;i<512&&!placements.isEmpty();i++){var p=placements.remove();world.setBlockState(p.pos(),p.state(),2);}
         if(placements.isEmpty()&&!buildingSettlement.isBlank()){
-            Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=1;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);civilization.initialize(s);buildingSettlement="";save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
+            Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=s.generationVersion>=2?20:vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=s.generationVersion>=2?2:1;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);civilization.initialize(s);buildingSettlement="";if(terrainCapture!=null){terrainCapture.close();terrainCapture=null;generationTerrain=null;}save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
         }
         if(placements.isEmpty()&&!furnishing.isEmpty()){furnishing.forEach(b->{b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=1;});furnishing.clear();save();}
-        if(placements.isEmpty()&&!discoveries.isEmpty())generate(discoveries.remove());
+        if(terrainCapture==null&&placements.isEmpty()&&!discoveries.isEmpty())generate(discoveries.remove());
         int processed=0;long budget=System.nanoTime()+2_000_000;
         while(wakes.hasReady(state.clock)&&processed<64){
             if(System.nanoTime()>budget){deferred++;break;}
@@ -239,5 +255,5 @@ public final class WorldSimulation {
     public Collection<CitizenEntity> visible(){return List.copyOf(entities.values());}
     public String status(){return "Settlements "+state.settlements.size()+" | Residents "+state.npcs.size()+" | Visible "+nearbyCount+" | Transactions "+state.transactions+" | Meals "+domestic.mealsServed+" / drinks "+domestic.drinksConsumed+" / batches "+domestic.productionCompleted+" | Decisions "+state.decisions+" | AI " +lastMicros+" us | Max "+maxMicros+" us | Deferred "+deferred+" | Materializations "+state.materializations+" / dematerializations "+state.dematerializations;}
     public void save(){try{store.save(state);}catch(IOException failure){LOG.error("WCA_SAVE_FAILED: retaining in-memory state",failure);}}
-    public void close(){workers.shutdownNow();save();var visibleCitizens=List.copyOf(entities.values());entities.clear();for(var e:visibleCitizens)e.discard();for(var e:partners.values())e.discard();active=null;LOG.info("WCA_SAVED settlements={} npcs={} transactions={} identities={}",state.settlements.size(),state.npcs.size(),state.transactions,state.npcs.keySet());}
+    public void close(){if(terrainCapture!=null)terrainCapture.close();workers.shutdownNow();save();var visibleCitizens=List.copyOf(entities.values());entities.clear();for(var e:visibleCitizens)e.discard();for(var e:partners.values())e.discard();active=null;LOG.info("WCA_SAVED settlements={} npcs={} transactions={} identities={}",state.settlements.size(),state.npcs.size(),state.transactions,state.npcs.keySet());}
 }

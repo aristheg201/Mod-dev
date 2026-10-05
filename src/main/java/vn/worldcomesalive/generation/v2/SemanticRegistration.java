@@ -1,0 +1,19 @@
+package vn.worldcomesalive.generation.v2;
+import vn.worldcomesalive.model.LivingWorld.*;
+import vn.worldcomesalive.model.LivingWorld;
+import vn.worldcomesalive.data.WorldContent;
+import vn.worldcomesalive.world.SettlementBootstrap;
+import vn.worldcomesalive.agriculture.Agriculture;
+import java.util.*;
+/** Converts accepted spatial records to existing simulation services. UUIDs derive from the accepted program. */
+public final class SemanticRegistration {
+    public static Settlement create(SettlementPlan plan,WorldContent content){var s=new Settlement();s.generationVersion=2;s.generationPlan=plan;s.seed=plan.program.seed();s.id="settlement_"+Long.toUnsignedString(s.seed,36);var style=content.regions.stream().filter(r->r.id().equals(plan.program.region())).findFirst().orElse(content.regions.getLast());s.region=style.id();s.faction=style.faction();s.archetype=plan.program.archetype();s.economicIdentity=String.join(" / ",plan.program.economies());s.center=new Pos(plan.center.x(),plan.buildings.getFirst().foundation(),plan.center.z());var rng=new Random(s.seed);s.name=content.lastNames.get(rng.nextInt(content.lastNames.size()))+List.of("ford","haven","ridge","mere").get(rng.nextInt(4));
+        for(var bp:plan.buildings){var def=GenerationCatalog.active.buildings.get(bp.program());Building b=new Building();b.id=global(s,bp.id());b.type=def.type();b.profession=def.profession();b.width=bp.bounds().width();b.depth=bp.bounds().depth();b.height=bp.floors()*def.storey();b.beds=def.beds();b.origin=new Pos(bp.bounds().x(),bp.foundation(),bp.bounds().z());b.region=s.region;b.wealth=plan.lots.stream().filter(l->l.id().equals(bp.lot())).findFirst().orElseThrow().wealth();b.furnishingStyle=s.region+":"+(b.wealth>.8?"wealthy":b.wealth<.3?"poor":"common");b.furnitureVersion=20;b.lodgingVersion=2;var entrance=bp.local(def.width()/2.0,def.depth()-1);b.mark(Marker.ENTRANCE,new Pos(entrance.x()+.5,bp.foundation()+1,entrance.z()+.5));b.mark(Marker.DOOR,b.point(Marker.ENTRANCE));b.mark(Marker.ROAD_CONNECTION,b.point(Marker.ENTRANCE));b.mark(Marker.HOME,b.point(Marker.ENTRANCE));s.buildings.put(b.id,b);}
+        for(var r:plan.roads)for(var p:r.points())s.roads.add(new Pos(p.x(),s.center.y()+1,p.z()));return s;
+    }
+    public static void agriculture(Settlement s,TerrainSnapshot terrain){for(var field:s.generationPlan.fields){var r=field.boundary();var owner=s.generationPlan.lots.stream().filter(l->l.id().equals(field.ownerLot())).findFirst().orElseThrow();String home=global(s,owner.building()),storage=global(s,field.storageBuilding());if(field.kind().equals("PASTURE")){var p=new Agriculture.Pasture();p.id=SettlementBootstrap.uuid(s.id+field.id());p.settlement=s.id;p.owner=home;p.storage=storage;p.origin=new Pos(r.x(),terrain.foundation(r),r.z());p.width=r.width();p.depth=r.depth();s.pastures.put(p.id,p);for(int i=0;i<6;i++){var animal=new Agriculture.Livestock();animal.id=SettlementBootstrap.uuid(p.id+"animal"+i);animal.species=i<3?"sheep":i<5?"cow":"chicken";animal.pasture=p.id.toString();animal.location=new Pos(r.x()+4+i*2,terrain.at(r.x()+4+i*2,r.z()+6).height()+1,r.z()+6);p.animals.add(animal.id);s.livestock.put(animal.id,animal);}continue;}if(field.kind().equals("ORCHARD"))continue;
+            var p=new Agriculture.Plot();p.id=SettlementBootstrap.uuid(s.id+field.id());p.settlement=s.id;p.owner=home;p.building=home;p.storage=storage;p.crop=field.crop();p.width=r.width()-2;p.depth=r.depth()-2;p.origin=new Pos(r.x()+1,terrain.at(r.x()+1,r.z()+1).height(),r.z()+1);p.state=Math.floorMod(p.id.hashCode(),3)==0?"MATURE":"GROWING";p.due=1800+Math.floorMod(p.id.hashCode(),2000);for(int x=r.x()+1;x<r.maxX()-1;x++)for(int z=r.z()+1;z<r.maxZ()-1;z++)if((x-r.x())%7!=0)p.cells.add(new Pos(x,terrain.at(x,z).height(),z));p.capacity=p.cells.size();s.fields.put(p.id,p);
+        }}
+    public static String global(Settlement s,String id){return s.id+"_v2_"+id;}
+    private SemanticRegistration(){}
+}

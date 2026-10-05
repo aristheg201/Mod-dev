@@ -33,7 +33,7 @@ public final class RuntimeRun implements ClientModInitializer {
     private Path qa;
     private Set<UUID> expected;
     private Pos oldLocation;
-    @Override public void onInitializeClient(){ClientTickEvents.END_CLIENT_TICK.register(this::tick);LOG.info("WCA_QA_DRIVER_REAL_CLIENT remapped=true");}
+    @Override public void onInitializeClient(){if(Boolean.getBoolean("worldcomesalive.qa.v2")){new GenerationV2Run().initialize();return;}ClientTickEvents.END_CLIENT_TICK.register(this::tick);LOG.info("WCA_QA_DRIVER_REAL_CLIENT remapped=true");}
     private void tick(MinecraftClient c){long now=System.currentTimeMillis();if(now<next)return;next=now+250;try{
         if(failure!=null)throw new AssertionError("Server QA failed",failure);
         if(work!=null){if(!work.isDone())return;work.join();work=null;}
