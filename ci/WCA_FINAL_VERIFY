@@ -1,3 +1,5 @@
 World Comes Alive final verification trigger.
 Branch: feature/world-comes-alive
 Purpose: compile, tests, remapped JAR, and real client V2 runtime visual QA.
+
+Retry after compile fix: DungeonRuntime structural repair.
