@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "course=meal": {
+      "model": "worldcomesalive:block/setting_meal"
+    },
+    "course=drink": {
+      "model": "worldcomesalive:block/setting_drink"
+    },
+    "course=both": {
+      "model": "worldcomesalive:block/setting_both"
+    },
+    "course=dirty": {
+      "model": "worldcomesalive:block/setting_dirty"
+    }
+  }
+}

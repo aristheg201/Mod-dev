@@ -1,0 +1,65 @@
+{
+  "textures": {
+    "wood": "minecraft:block/oak_planks",
+    "frame": "minecraft:block/dark_oak_planks",
+    "cloth": "minecraft:block/red_wool",
+    "metal": "minecraft:block/iron_block",
+    "books": "minecraft:block/bookshelf",
+    "particle": "minecraft:block/oak_planks",
+    "pottery": "minecraft:block/terracotta",
+    "drink": "minecraft:block/brown_terracotta",
+    "wine": "minecraft:block/red_terracotta",
+    "water": "minecraft:block/light_blue_terracotta",
+    "food": "minecraft:block/orange_terracotta",
+    "leaf": "minecraft:block/green_wool",
+    "paper": "minecraft:block/white_wool"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        14
+      ],
+      "to": [
+        16,
+        24,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#cloth"
+        },
+        "south": {
+          "texture": "#cloth"
+        },
+        "east": {
+          "texture": "#cloth"
+        },
+        "west": {
+          "texture": "#cloth"
+        },
+        "up": {
+          "texture": "#cloth"
+        },
+        "down": {
+          "texture": "#cloth"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import java.util.*;
 /** Authoritative identities and simulation state. No entity or client objects belong here. */
 public final class LivingWorld {
     public int schema=1;
+    public vn.worldcomesalive.domestic.DomesticState domestic=new vn.worldcomesalive.domestic.DomesticState();
     public long clock, revision, transactions, materializations, dematerializations, decisions;
     public Map<String,Settlement> settlements=new LinkedHashMap<>();
     public Map<UUID,Npc> npcs=new LinkedHashMap<>();
@@ -16,11 +17,18 @@ public final class LivingWorld {
         public double distance(Pos b){return Math.sqrt((x-b.x)*(x-b.x)+(y-b.y)*(y-b.y)+(z-b.z)*(z-b.z));}
         public Pos between(Pos b,double t){return new Pos(x+(b.x-x)*t,y+(b.y-y)*t,z+(b.z-z)*t);}
     }
-    public enum Marker { HOME,BED,WORKSTATION,SHOP_COUNTER,STORAGE,CUSTOMER_POINT,SOCIAL_POINT,DINING_POINT,ENTRANCE,DOOR,ROAD_CONNECTION,STABLE,HORSE_OR_MOUNT_POINT,FARM_FIELD,GUARD_POST,PATROL_POINT,CARD_DUEL_TABLE,TAVERN_SEAT,FESTIVAL_POINT,OWNER_SLOT }
+    public enum Marker { HOME,BED,WORKSTATION,SHOP_COUNTER,STORAGE,CUSTOMER_POINT,SOCIAL_POINT,DINING_POINT,ENTRANCE,DOOR,ROAD_CONNECTION,STABLE,HORSE_OR_MOUNT_POINT,FARM_FIELD,GUARD_POST,PATROL_POINT,CARD_DUEL_TABLE,TAVERN_SEAT,FESTIVAL_POINT,OWNER_SLOT,DINING_TABLE,FOOD_STORAGE,DRINK_STORAGE,KITCHEN_POINT,READING_POINT,SERVING_POINT }
     public static final class Building {
         public String id,type,profession,owner="";
         public Pos origin;
-        public int width,depth,height,beds;
+        public int width,depth,height,beds,furnitureVersion;
+        public List<vn.worldcomesalive.furniture.FurnitureLayout.Room> rooms=new ArrayList<>();
+        public String furnishingStyle="";public boolean furnishingValid,cardInterest;public List<String> furnishingFailures=new ArrayList<>();public Map<String,Double> visualPersonality=new LinkedHashMap<>();
+        public Map<UUID,Pos> visitors=new LinkedHashMap<>();public int seatCapacity,standingCapacity,serviceCapacity;
+        public String region="temperate_kingdom";
+        public double wealth=.6;
+        public Map<String,Integer> quality=new LinkedHashMap<>();
+        public boolean domesticInitialized;
         public Map<Marker,List<Pos>> markers=new EnumMap<>(Marker.class);
         public Map<String,Integer> stock=new LinkedHashMap<>();
         public long money=100;
@@ -30,7 +38,8 @@ public final class LivingWorld {
         public boolean contains(Pos p){return p.x>=origin.x&&p.x<origin.x+width&&p.z>=origin.z&&p.z<origin.z+depth&&Math.abs(p.y-origin.y)<height+3;}
     }
     public static final class Settlement {
-        public String id,name,region,archetype,faction;
+        public String id,name,region,archetype,faction,economicIdentity="";
+        public Map<UUID,vn.worldcomesalive.agriculture.Agriculture.Plot> fields=new LinkedHashMap<>();public Map<UUID,vn.worldcomesalive.agriculture.Agriculture.Pasture> pastures=new LinkedHashMap<>();public Map<UUID,vn.worldcomesalive.agriculture.Agriculture.Livestock> livestock=new LinkedHashMap<>();
         public long seed,lastEconomyDay=-1,lastSocialDay=-1;
         public Pos center;
         public Map<String,Building> buildings=new LinkedHashMap<>();
@@ -46,11 +55,17 @@ public final class LivingWorld {
         public UUID id;
         public String name,home;
         public List<UUID> members=new ArrayList<>();
+        public Map<String,Integer> supplies=new LinkedHashMap<>(),equipment=new LinkedHashMap<>();
+        public double wealth=.6;
     }
     public static final class Npc {
         public UUID id,household;
         public String name,lifeStage="adult",appearance="",gender="male",profession="resident",home,workplace="",settlement,faction;
         public int age,birthday;
+        public double intoxication,alcoholTolerance=1;
+        public long intoxicationAt,lastFamilyDay=-1,lastDrink=-24000;
+        public String servingOrder="";
+        public Map<String,Double> preferences=new LinkedHashMap<>();
         public long money=30,lastCognition,nextCognition,cognitionVersion,lastGiftDay=-1,version;
         public Pos location;
         public Travel travel;
@@ -98,6 +113,8 @@ public final class LivingWorld {
     }
     public static final class PlayerLife {
         public long money=60;
+        public double intoxication;
+        public long intoxicationAt,lastStudy=-24000;
         public Map<String,Double> skills=new LinkedHashMap<>();
         public Map<String,Long> bounty=new LinkedHashMap<>();
         public Set<String> property=new LinkedHashSet<>();

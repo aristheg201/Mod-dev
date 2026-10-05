@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/water_pitcher",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks"
+  }
+}

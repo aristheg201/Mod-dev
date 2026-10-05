@@ -14,22 +14,23 @@ public final class SettlementBootstrap {
         var shape=data.archetypes.stream().filter(a->a.id().equals(archetype)).findFirst().orElse(data.archetypes.getFirst());
         int index=0;
         for(var p:shape.plots()){
-            Building b=new Building();b.id=s.id+"_"+p.type()+"_"+index++;b.type=p.type();b.profession=p.profession();b.width=p.width();b.depth=p.depth();b.height=4;b.beds=p.beds();b.origin=new Pos(center.x()+p.x(),center.y(),center.z()+p.z());
+            Building b=new Building();b.id=s.id+"_"+p.type()+"_"+index++;b.type=p.type();b.profession=p.profession();b.region=s.region;b.wealth=Math.max(.15,Math.min(.95,s.prosperity+Math.floorMod(b.id.hashCode(),100)/100.0*.8-.35));b.width=p.width();b.depth=p.depth();b.height=4;b.beds=p.beds();b.origin=new Pos(center.x()+p.x(),center.y(),center.z()+p.z());
             Pos entrance=new Pos(b.origin.x()+b.width/2.0,center.y()+1,b.origin.z()+b.depth-1.5);
             b.mark(Marker.ENTRANCE,entrance);b.mark(Marker.DOOR,entrance);b.mark(Marker.ROAD_CONNECTION,new Pos(entrance.x(),center.y()+1,0+center.z()));
             for(String m:p.markers())if(!m.equals("BED"))b.mark(Marker.valueOf(m),new Pos(b.origin.x()+b.width/2.0,center.y()+1,b.origin.z()+b.depth/2.0));
             for(int bed=0;bed<b.beds;bed++)b.mark(Marker.BED,new Pos(b.origin.x()+2+(bed%3)*2,center.y()+1,b.origin.z()+2+(bed/3)*3));
             b.stock.put("minecraft:bread",b.type.equals("bakery")?24:2);b.stock.put("minecraft:wheat",b.type.equals("farm")?36:0);if(b.type.equals("forge"))b.stock.put("minecraft:iron_ingot",24);
-            s.buildings.put(b.id,b);s.roads.add(b.point(Marker.ROAD_CONNECTION));
+            vn.worldcomesalive.furniture.FurnitureLayout.plan(b);s.buildings.put(b.id,b);s.roads.add(b.point(Marker.ROAD_CONNECTION));
         }
-        s.roads.sort(Comparator.comparingDouble(Pos::x));return s;
+        Building post=new Building();post.id=s.id+"_trading_post";post.type="trading_post";post.profession="merchant";post.width=11;post.depth=11;post.height=5;post.beds=2;post.region=s.region;post.wealth=.7;post.origin=new Pos(center.x()+2,center.y(),center.z()-46);post.mark(Marker.ENTRANCE,new Pos(post.origin.x()+5.5,center.y()+1,post.origin.z()+9.5));post.mark(Marker.ROAD_CONNECTION,new Pos(post.origin.x()-1.5,center.y()+1,center.z()));post.mark(Marker.WORKSTATION,new Pos(post.origin.x()+6.5,center.y()+1,post.origin.z()+6.5));post.mark(Marker.SHOP_COUNTER,post.point(Marker.WORKSTATION));vn.worldcomesalive.furniture.FurnitureLayout.plan(post);s.buildings.put(post.id,post);
+        vn.worldcomesalive.agriculture.Agriculture.plan(s);s.roads.sort(Comparator.comparingDouble(Pos::x));return s;
     }
     public static void populate(LivingWorld world,Settlement s,WorldContent data,List<String> deck){
         if(!s.residents.isEmpty())return;Random rng=new Random(s.seed^0x5D3319L);List<Npc> adults=new ArrayList<>();
         for(Building b:s.buildings.values())if(b.beds>0){
             Household h=new Household();h.id=uuid(b.id+"household");h.home=b.id;h.name=data.lastNames.get(rng.nextInt(data.lastNames.size()));s.households.put(h.id,h);b.owner=h.id.toString();
             for(int i=0;i<b.beds;i++){
-                Npc n=new Npc();n.id=uuid(b.id+"resident_"+i);n.gender=rng.nextBoolean()?"male":"female";List<String> names=data.genderNames.getOrDefault(n.gender,data.firstNames);n.name=names.get(rng.nextInt(names.size()))+" "+h.name;n.household=h.id;n.home=b.id;n.settlement=s.id;n.faction=s.faction;n.age=i<2?22+rng.nextInt(30):8+rng.nextInt(9);n.lifeStage=n.age<18?"child":"adult";n.birthday=rng.nextInt(96);n.location=b.markers.get(Marker.BED).get(i);n.nextCognition=world.clock+rng.nextInt(100);n.lastCognition=world.clock;n.appearance=s.region+":"+rng.nextInt(8);n.schedule.put("work_start",data.professions.get("resident").start());n.schedule.put("work_end",data.professions.get("resident").end());n.schedule.put("sleep",13000);n.knownLocations.addAll(s.buildings.keySet());n.ownership.add(b.id);n.inventory.put("minecraft:bread",2);
+                Npc n=new Npc();n.id=uuid(b.id+"resident_"+i);n.gender=rng.nextBoolean()?"male":"female";List<String> names=data.genderNames.getOrDefault(n.gender,data.firstNames);n.name=names.get(rng.nextInt(names.size()))+" "+h.name;n.household=h.id;n.home=b.id;n.settlement=s.id;n.faction=s.faction;n.money=15+(long)(b.wealth*70);n.age=i<2?22+rng.nextInt(30):8+rng.nextInt(9);n.lifeStage=n.age<18?"child":"adult";n.birthday=rng.nextInt(96);n.location=b.markers.get(Marker.BED).get(i);n.nextCognition=world.clock+rng.nextInt(100);n.lastCognition=world.clock;n.appearance=s.region+":"+rng.nextInt(8);n.schedule.put("work_start",data.professions.get("resident").start());n.schedule.put("work_end",data.professions.get("resident").end());n.schedule.put("sleep",13000);n.knownLocations.addAll(s.buildings.keySet());n.ownership.add(b.id);n.inventory.put("minecraft:bread",2);
                 for(String trait:data.traits)n.personality.put(trait,0.1+rng.nextDouble()*0.8);n.interests.add(n.trait("curiosity")>.5?"pokemon":"food");n.needs.put("hunger",rng.nextDouble()*.4);n.needs.put("fatigue",rng.nextDouble()*.2);n.needs.put("loneliness",rng.nextDouble()*.2);
                 if(n.age>=18){adults.add(n);if(rng.nextDouble()<.45){n.cardArchetype=List.of("casual","collector","competitive","scholar").get(rng.nextInt(4));setDeck(n,deck);}}
                 h.members.add(n.id);s.residents.add(n.id);world.npcs.put(n.id,n);
@@ -42,7 +43,10 @@ public final class SettlementBootstrap {
             if(!prof.pokemon().isBlank()){Partner partner=new Partner();partner.id=uuid(n.id+"partner");partner.species=prof.pokemon();partner.role=prof.pokemonRole();n.pokemon.add(partner);}
             if(n.profession.equals("innkeeper")){n.cardArchetype="gambler";setDeck(n,deck);}
         }
-        s.ready=true;world.revision++;
+        Building venue=s.service("tavern");if(venue!=null){Npc cook=adults.stream().filter(n->!employed.contains(n.id)&&n.home.equals(venue.id)).findFirst().orElse(null);if(cook!=null){cook.profession="cook";cook.workplace=venue.id;cook.skills.put("cooking",.25);cook.schedule.put("work_start",4000);cook.schedule.put("work_end",14000);}}
+        for(Building home:s.buildings.values()){List<Npc> household=s.residents.stream().map(world.npcs::get).filter(n->n.home.equals(home.id)).toList();if(!household.isEmpty()){home.visualPersonality.put("curiosity",household.stream().mapToDouble(n->n.trait("curiosity")).average().orElse(.5));home.visualPersonality.put("patience",household.stream().mapToDouble(n->n.trait("patience")).average().orElse(.5));home.cardInterest=household.stream().anyMatch(n->!n.decks.isEmpty());}}
+        for(Building b:s.buildings.values())if(b.beds==0){Building farm=s.service("farm");b.owner=farm!=null?farm.owner:s.households.values().iterator().next().id.toString();b.markers.putIfAbsent(Marker.BED,List.of());}
+        vn.worldcomesalive.agriculture.Agriculture.assign(world,s);s.ready=true;world.revision++;
     }
     private static void setDeck(Npc n,List<String> deck){if(deck.isEmpty())return;n.decks.put("casual",new ArrayList<>(deck));n.decks.put("serious",new ArrayList<>(deck));n.decks.put("tournament",new ArrayList<>(deck));for(String card:deck)n.collection.merge(card,1,Integer::sum);n.skills.put("cards",.1+n.trait("curiosity")*.4);}
     public static UUID uuid(String key){return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8));}

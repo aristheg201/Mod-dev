@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/writing_desk",
+  "textures": {
+    "wood": "minecraft:block/spruce_planks",
+    "particle": "minecraft:block/spruce_planks"
+  }
+}

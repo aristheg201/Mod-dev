@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/flour_sack",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

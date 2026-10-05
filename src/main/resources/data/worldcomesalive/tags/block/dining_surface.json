@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "worldcomesalive:medieval_table",
+    "worldcomesalive:writing_desk",
+    "worldcomesalive:small_table",
+    "worldcomesalive:dining_table",
+    "worldcomesalive:long_tavern_table",
+    "worldcomesalive:work_table",
+    "worldcomesalive:bedside_table"
+  ]
+}

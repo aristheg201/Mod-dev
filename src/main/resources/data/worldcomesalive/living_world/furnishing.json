@@ -1,0 +1,1804 @@
+{
+  "styles": [
+    {
+      "id": "wca:nordic_poor",
+      "region": "nordic",
+      "wealth": "poor",
+      "wood": "spruce",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:nordic_common",
+      "region": "nordic",
+      "wealth": "common",
+      "wood": "spruce",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:nordic_wealthy",
+      "region": "nordic",
+      "wealth": "wealthy",
+      "wood": "spruce",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:highland_poor",
+      "region": "highland",
+      "wealth": "poor",
+      "wood": "spruce",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:highland_common",
+      "region": "highland",
+      "wealth": "common",
+      "wood": "spruce",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:highland_wealthy",
+      "region": "highland",
+      "wealth": "wealthy",
+      "wood": "spruce",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:forest_poor",
+      "region": "forest",
+      "wealth": "poor",
+      "wood": "dark_oak",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:forest_common",
+      "region": "forest",
+      "wealth": "common",
+      "wood": "dark_oak",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:forest_wealthy",
+      "region": "forest",
+      "wealth": "wealthy",
+      "wood": "dark_oak",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:coastal_poor",
+      "region": "coastal",
+      "wealth": "poor",
+      "wood": "oak",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:coastal_common",
+      "region": "coastal",
+      "wealth": "common",
+      "wood": "oak",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:coastal_wealthy",
+      "region": "coastal",
+      "wealth": "wealthy",
+      "wood": "oak",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:mountain_poor",
+      "region": "mountain",
+      "wealth": "poor",
+      "wood": "spruce",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:mountain_common",
+      "region": "mountain",
+      "wealth": "common",
+      "wood": "spruce",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:mountain_wealthy",
+      "region": "mountain",
+      "wealth": "wealthy",
+      "wood": "spruce",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:swamp_poor",
+      "region": "swamp",
+      "wealth": "poor",
+      "wood": "mangrove",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:swamp_common",
+      "region": "swamp",
+      "wealth": "common",
+      "wood": "mangrove",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:swamp_wealthy",
+      "region": "swamp",
+      "wealth": "wealthy",
+      "wood": "mangrove",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:desert_poor",
+      "region": "desert",
+      "wealth": "poor",
+      "wood": "acacia",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:desert_common",
+      "region": "desert",
+      "wealth": "common",
+      "wood": "acacia",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:desert_wealthy",
+      "region": "desert",
+      "wealth": "wealthy",
+      "wood": "acacia",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    },
+    {
+      "id": "wca:temperate_kingdom_poor",
+      "region": "temperate_kingdom",
+      "wealth": "poor",
+      "wood": "oak",
+      "seat": "wooden_stool",
+      "storage": "crate",
+      "decorationBudget": 24,
+      "density": 0.4,
+      "lighting": "candle",
+      "tableware": "poor"
+    },
+    {
+      "id": "wca:temperate_kingdom_common",
+      "region": "temperate_kingdom",
+      "wealth": "common",
+      "wood": "oak",
+      "seat": "medieval_chair",
+      "storage": "medieval_cabinet",
+      "decorationBudget": 40,
+      "density": 0.52,
+      "lighting": "lantern",
+      "tableware": "common"
+    },
+    {
+      "id": "wca:temperate_kingdom_wealthy",
+      "region": "temperate_kingdom",
+      "wealth": "wealthy",
+      "wood": "oak",
+      "seat": "armchair",
+      "storage": "wardrobe",
+      "decorationBudget": 64,
+      "density": 0.62,
+      "lighting": "lantern",
+      "tableware": "wealthy"
+    }
+  ],
+  "clusters": {
+    "master_bedroom": [
+      {
+        "type": "bed_foot",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "BED"
+        ]
+      },
+      {
+        "type": "bed_head",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bed_foot",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "BED"
+        ]
+      },
+      {
+        "type": "bed_head",
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bedside_table",
+        "x": 3,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "candle_holder",
+        "x": 3,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "@storage",
+        "x": 0,
+        "y": 0,
+        "z": 3,
+        "facing": "east",
+        "layer": "primary",
+        "markers": [
+          "FOOD_STORAGE"
+        ]
+      },
+      {
+        "type": "folded_cloth",
+        "x": 0,
+        "y": 1,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 2,
+        "y": 0,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "tapestry",
+        "x": 0,
+        "y": 1,
+        "z": 1,
+        "facing": "east",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_shelf",
+        "x": 3,
+        "y": 1,
+        "z": 0,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "personal_belongings",
+        "x": 3,
+        "y": 2,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "child_bedroom": [
+      {
+        "type": "bed_foot",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "east",
+        "layer": "primary",
+        "markers": [
+          "BED"
+        ]
+      },
+      {
+        "type": "bed_head",
+        "x": 3,
+        "y": 0,
+        "z": 1,
+        "facing": "east",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "writing_desk",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": [
+          "READING_POINT"
+        ]
+      },
+      {
+        "type": "wooden_stool",
+        "x": 0,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "book_stack",
+        "x": 0,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "storage_chest",
+        "x": 2,
+        "y": 0,
+        "z": 3,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "personal_belongings",
+        "x": 2,
+        "y": 1,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_shelf",
+        "x": 3,
+        "y": 1,
+        "z": 3,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "flower_vase",
+        "x": 3,
+        "y": 2,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "dining_family": [
+      {
+        "type": "medieval_table",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_TABLE"
+        ]
+      },
+      {
+        "type": "@seat",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "east",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT"
+        ]
+      },
+      {
+        "type": "@seat",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT"
+        ]
+      },
+      {
+        "type": "@seat",
+        "x": 1,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT"
+        ]
+      },
+      {
+        "type": "idle_tableware",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 0,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 2,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "tapestry",
+        "x": -1,
+        "y": 1,
+        "z": 1,
+        "facing": "east",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "coat_rack",
+        "x": -1,
+        "y": 0,
+        "z": 3,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      }
+    ],
+    "kitchen_corner": [
+      {
+        "type": "preparation_counter",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": [
+          "KITCHEN_POINT"
+        ]
+      },
+      {
+        "type": "preparation_counter",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "chopping_board",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "cooking_pot",
+        "x": 2,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "food_pantry",
+        "x": 2,
+        "y": 0,
+        "z": -1,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": [
+          "FOOD_STORAGE"
+        ]
+      },
+      {
+        "type": "ingredient_shelf",
+        "x": 2,
+        "y": 1,
+        "z": 0,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "hanging_herbs",
+        "x": 2,
+        "y": 2,
+        "z": 0,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "produce_basket",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "water_pitcher",
+        "x": 2,
+        "y": 1,
+        "z": -1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_shelf",
+        "x": 1,
+        "y": 1,
+        "z": -2,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "plate_stack",
+        "x": 1,
+        "y": 2,
+        "z": -2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "hearth_corner": [
+      {
+        "type": "hearth_base",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "hearth",
+        "x": 0,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "chimney",
+        "x": 0,
+        "y": 2,
+        "z": 0,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "firewood",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "armchair",
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "SOCIAL_POINT"
+        ]
+      },
+      {
+        "type": "rug",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_sconce",
+        "x": 0,
+        "y": 2,
+        "z": 2,
+        "facing": "east",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "reading_corner": [
+      {
+        "type": "writing_desk",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "READING_POINT"
+        ]
+      },
+      {
+        "type": "wooden_stool",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "east",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "book_stack",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "medieval_bookshelf",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "paper_quill",
+        "x": 1,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_sconce",
+        "x": 1,
+        "y": 2,
+        "z": 1,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "tavern_guest_beds": [
+      {
+        "type": "bed_foot",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "BED"
+        ]
+      },
+      {
+        "type": "bed_head",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bedside_table",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "candle_holder",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "bed_foot",
+        "x": 3,
+        "y": 0,
+        "z": 2,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "BED"
+        ]
+      },
+      {
+        "type": "bed_head",
+        "x": 2,
+        "y": 0,
+        "z": 2,
+        "facing": "west",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "storage_chest",
+        "x": 3,
+        "y": 0,
+        "z": 0,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": [
+          "FOOD_STORAGE"
+        ]
+      },
+      {
+        "type": "folded_cloth",
+        "x": 3,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 1,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "coat_rack",
+        "x": 0,
+        "y": 0,
+        "z": 3,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "tapestry",
+        "x": -1,
+        "y": 1,
+        "z": 1,
+        "facing": "east",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "tavern_kitchen": [
+      {
+        "type": "oven_hearth",
+        "x": 3,
+        "y": 0,
+        "z": 1,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "KITCHEN_POINT"
+        ]
+      },
+      {
+        "type": "cooking_pot",
+        "x": 3,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "chimney",
+        "x": 3,
+        "y": 2,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "preparation_counter",
+        "x": 0,
+        "y": 0,
+        "z": 3,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "preparation_counter",
+        "x": 1,
+        "y": 0,
+        "z": 3,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "preparation_counter",
+        "x": 2,
+        "y": 0,
+        "z": 3,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "chopping_board",
+        "x": 0,
+        "y": 1,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "plate_stack",
+        "x": 1,
+        "y": 1,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "water_pitcher",
+        "x": 2,
+        "y": 1,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "ingredient_shelf",
+        "x": 1,
+        "y": 1,
+        "z": 0,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "hanging_herbs",
+        "x": 1,
+        "y": 2,
+        "z": 0,
+        "facing": "south",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "food_pantry",
+        "x": 3,
+        "y": 0,
+        "z": 3,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": [
+          "FOOD_STORAGE"
+        ]
+      },
+      {
+        "type": "produce_basket",
+        "x": 3,
+        "y": 1,
+        "z": 3,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "flour_sack",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "firewood",
+        "x": 3,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "cookware_rack",
+        "x": 3,
+        "y": 2,
+        "z": 3,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "bar_service": [
+      {
+        "type": "bar_counter",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bar_counter",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bar_counter",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": [
+          "SHOP_COUNTER"
+        ]
+      },
+      {
+        "type": "bar_counter",
+        "x": 3,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bar_counter",
+        "x": 4,
+        "y": 0,
+        "z": 1,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bar_counter",
+        "x": 0,
+        "y": 0,
+        "z": 2,
+        "facing": "east",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bar_counter",
+        "x": 0,
+        "y": 0,
+        "z": 3,
+        "facing": "east",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bar_counter",
+        "x": 0,
+        "y": 0,
+        "z": 4,
+        "facing": "east",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bottle_shelf",
+        "x": 2,
+        "y": 1,
+        "z": -2,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "mug_rack",
+        "x": 3,
+        "y": 1,
+        "z": -2,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "bottle_shelf",
+        "x": 4,
+        "y": 1,
+        "z": 0,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "keg",
+        "x": 4,
+        "y": 0,
+        "z": 0,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": [
+          "DRINK_STORAGE"
+        ]
+      },
+      {
+        "type": "keg",
+        "x": 3,
+        "y": 0,
+        "z": 0,
+        "facing": "south",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "serving_tray_prop",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "mug_cluster",
+        "x": 3,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wine_rack",
+        "x": 4,
+        "y": 1,
+        "z": 2,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "wall_sconce",
+        "x": 4,
+        "y": 2,
+        "z": 3,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "long_dining_group": [
+      {
+        "type": "long_tavern_table",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_TABLE"
+        ]
+      },
+      {
+        "type": "medieval_table",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_TABLE"
+        ]
+      },
+      {
+        "type": "wooden_bench",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "east",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "wooden_bench",
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "facing": "east",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "@seat",
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "@seat",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "idle_tableware",
+        "x": 1,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "bread_basket",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 0,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 1,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "rug",
+        "x": 2,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "small_tavern_group": [
+      {
+        "type": "small_table",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_TABLE"
+        ]
+      },
+      {
+        "type": "tavern_stool",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "east",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "dining_chair",
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "facing": "west",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "idle_tableware",
+        "x": 1,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "tapestry",
+        "x": -1,
+        "y": 1,
+        "z": 0,
+        "facing": "east",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "card_corner": [
+      {
+        "type": "dining_table",
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_TABLE",
+          "CARD_DUEL_TABLE"
+        ]
+      },
+      {
+        "type": "dining_table",
+        "x": 2,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_TABLE",
+          "CARD_DUEL_TABLE"
+        ]
+      },
+      {
+        "type": "dining_chair",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "south",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "dining_chair",
+        "x": 2,
+        "y": 0,
+        "z": 2,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "DINING_POINT",
+          "TAVERN_SEAT"
+        ]
+      },
+      {
+        "type": "wooden_bench",
+        "x": 4,
+        "y": 0,
+        "z": 1,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": [
+          "SOCIAL_POINT"
+        ]
+      },
+      {
+        "type": "card_set",
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "mug_cluster",
+        "x": 2,
+        "y": 1,
+        "z": 1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "medieval_bookshelf",
+        "x": 4,
+        "y": 0,
+        "z": 0,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "card_set",
+        "x": 4,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "tapestry",
+        "x": 4,
+        "y": 1,
+        "z": 2,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_sconce",
+        "x": 4,
+        "y": 2,
+        "z": 3,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "smith_workspace": [
+      {
+        "type": "anvil",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "primary",
+        "markers": [
+          "WORKSTATION"
+        ]
+      },
+      {
+        "type": "work_table",
+        "x": 3,
+        "y": 0,
+        "z": 0,
+        "facing": "west",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "tool_samples",
+        "x": 3,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "tool_rack",
+        "x": 3,
+        "y": 1,
+        "z": -1,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "ore_crate",
+        "x": 3,
+        "y": 0,
+        "z": 1,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "oven_hearth",
+        "x": 2,
+        "y": 0,
+        "z": -2,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "chimney",
+        "x": 2,
+        "y": 1,
+        "z": -2,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "cookware_rack",
+        "x": 2,
+        "y": 2,
+        "z": -2,
+        "facing": "south",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "merchant_display": [
+      {
+        "type": "serving_counter",
+        "x": 1,
+        "y": 0,
+        "z": 0,
+        "facing": "south",
+        "layer": "primary",
+        "markers": [
+          "SHOP_COUNTER"
+        ]
+      },
+      {
+        "type": "serving_counter",
+        "x": 2,
+        "y": 0,
+        "z": 0,
+        "facing": "south",
+        "layer": "primary",
+        "markers": []
+      },
+      {
+        "type": "bread_basket",
+        "x": 1,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "produce_basket",
+        "x": 2,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "crate",
+        "x": 3,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "flour_sack",
+        "x": 3,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "ingredient_shelf",
+        "x": 3,
+        "y": 1,
+        "z": -1,
+        "facing": "west",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "wall_sconce",
+        "x": 3,
+        "y": 2,
+        "z": 0,
+        "facing": "west",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "personal_scholar": [
+      {
+        "type": "medieval_bookshelf",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "east",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "paper_quill",
+        "x": 0,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_shelf",
+        "x": 0,
+        "y": 1,
+        "z": -1,
+        "facing": "east",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "book_stack",
+        "x": 0,
+        "y": 2,
+        "z": -1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "personal_farmer": [
+      {
+        "type": "produce_basket",
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "tool_rack",
+        "x": 0,
+        "y": 1,
+        "z": -1,
+        "facing": "east",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "flour_sack",
+        "x": 0,
+        "y": 0,
+        "z": -1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ],
+    "personal_cards": [
+      {
+        "type": "card_set",
+        "x": 0,
+        "y": 1,
+        "z": 0,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      },
+      {
+        "type": "wall_shelf",
+        "x": 0,
+        "y": 1,
+        "z": -1,
+        "facing": "east",
+        "layer": "secondary",
+        "markers": []
+      },
+      {
+        "type": "book_stack",
+        "x": 0,
+        "y": 2,
+        "z": -1,
+        "facing": "north",
+        "layer": "detail",
+        "markers": []
+      }
+    ]
+  },
+  "variants": {
+    "BEDROOM": [
+      "master_bedroom",
+      "child_bedroom"
+    ],
+    "KITCHEN": [
+      "kitchen_corner",
+      "tavern_kitchen"
+    ],
+    "DINING_ROOM": [
+      "dining_family",
+      "small_tavern_group",
+      "long_dining_group"
+    ],
+    "TAVERN_COMMON_ROOM": [
+      "long_dining_group",
+      "small_tavern_group"
+    ],
+    "TAVERN_BAR": [
+      "bar_service",
+      "bar_service_mirrored"
+    ],
+    "SHOP_FLOOR": [
+      "merchant_display",
+      "merchant_display_mirrored"
+    ],
+    "BLACKSMITH_WORKSPACE": [
+      "smith_workspace",
+      "smith_workspace_mirrored"
+    ],
+    "TAVERN_GUEST_ROOM": [
+      "tavern_guest_beds",
+      "tavern_guest_beds_mirrored"
+    ]
+  }
+}

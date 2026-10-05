@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/bread_basket",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks"
+  }
+}

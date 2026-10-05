@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/serving_tray_prop",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks"
+  }
+}

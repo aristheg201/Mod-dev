@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/book_stack",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks",
+    "particle": "minecraft:block/acacia_planks"
+  }
+}

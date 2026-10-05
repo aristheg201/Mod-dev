@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/small_table",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks",
+    "particle": "minecraft:block/mangrove_planks"
+  }
+}

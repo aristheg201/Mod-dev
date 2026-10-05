@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "worldcomesalive:wall_sconce",
+    "worldcomesalive:hanging_herbs",
+    "worldcomesalive:cookware_rack",
+    "worldcomesalive:tool_rack",
+    "worldcomesalive:tapestry",
+    "worldcomesalive:wall_shelf"
+  ]
+}

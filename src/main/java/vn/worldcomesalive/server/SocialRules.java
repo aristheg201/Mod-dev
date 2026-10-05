@@ -15,6 +15,7 @@ public final class SocialRules {
     public static double gift(Npc n,UUID actor,String item,Set<String> tags,LivingWorld w,WorldContent data){
         int repeats=n.repeatedGifts.getOrDefault(item,0);double value=-1;
         for(var rule:data.gifts)if(tags.contains(rule.tag())&&(rule.profession().equals("*")||rule.profession().equals(n.profession)))value=Math.max(value,rule.value()*(.5+n.trait("kindness"))+(rule.need().isBlank()?0:n.need(rule.need())*3));
+        var domestic=vn.worldcomesalive.domestic.DomesticContent.active.good(item);if(domestic!=null){if(n.preferences.getOrDefault(item,.5)<0)return -1;value*=.6+n.preferences.getOrDefault(item,.5);}
         value+=n.trait("curiosity")-n.trait("greed");if((w.clock/24000)%96==n.birthday)value+=3;
         if(n.lastGiftDay==w.clock/24000)value-=5;value-=Math.min(8,repeats*1.5);
         var r=n.relationship(actor);if(r.fear>30||r.trust< -20)value=-5;

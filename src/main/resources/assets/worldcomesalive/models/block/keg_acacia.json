@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/keg",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks",
+    "particle": "minecraft:block/acacia_planks"
+  }
+}

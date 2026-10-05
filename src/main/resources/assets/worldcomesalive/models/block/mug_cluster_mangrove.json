@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/mug_cluster",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

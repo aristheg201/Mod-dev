@@ -1,0 +1,84 @@
+{
+  "variants": {
+    "facing=north,wood=oak": {
+      "model": "worldcomesalive:block/mug_cluster",
+      "y": 0
+    },
+    "facing=east,wood=oak": {
+      "model": "worldcomesalive:block/mug_cluster",
+      "y": 90
+    },
+    "facing=south,wood=oak": {
+      "model": "worldcomesalive:block/mug_cluster",
+      "y": 180
+    },
+    "facing=west,wood=oak": {
+      "model": "worldcomesalive:block/mug_cluster",
+      "y": 270
+    },
+    "facing=north,wood=spruce": {
+      "model": "worldcomesalive:block/mug_cluster_spruce",
+      "y": 0
+    },
+    "facing=east,wood=spruce": {
+      "model": "worldcomesalive:block/mug_cluster_spruce",
+      "y": 90
+    },
+    "facing=south,wood=spruce": {
+      "model": "worldcomesalive:block/mug_cluster_spruce",
+      "y": 180
+    },
+    "facing=west,wood=spruce": {
+      "model": "worldcomesalive:block/mug_cluster_spruce",
+      "y": 270
+    },
+    "facing=north,wood=dark_oak": {
+      "model": "worldcomesalive:block/mug_cluster_dark_oak",
+      "y": 0
+    },
+    "facing=east,wood=dark_oak": {
+      "model": "worldcomesalive:block/mug_cluster_dark_oak",
+      "y": 90
+    },
+    "facing=south,wood=dark_oak": {
+      "model": "worldcomesalive:block/mug_cluster_dark_oak",
+      "y": 180
+    },
+    "facing=west,wood=dark_oak": {
+      "model": "worldcomesalive:block/mug_cluster_dark_oak",
+      "y": 270
+    },
+    "facing=north,wood=acacia": {
+      "model": "worldcomesalive:block/mug_cluster_acacia",
+      "y": 0
+    },
+    "facing=east,wood=acacia": {
+      "model": "worldcomesalive:block/mug_cluster_acacia",
+      "y": 90
+    },
+    "facing=south,wood=acacia": {
+      "model": "worldcomesalive:block/mug_cluster_acacia",
+      "y": 180
+    },
+    "facing=west,wood=acacia": {
+      "model": "worldcomesalive:block/mug_cluster_acacia",
+      "y": 270
+    },
+    "facing=north,wood=mangrove": {
+      "model": "worldcomesalive:block/mug_cluster_mangrove",
+      "y": 0
+    },
+    "facing=east,wood=mangrove": {
+      "model": "worldcomesalive:block/mug_cluster_mangrove",
+      "y": 90
+    },
+    "facing=south,wood=mangrove": {
+      "model": "worldcomesalive:block/mug_cluster_mangrove",
+      "y": 180
+    },
+    "facing=west,wood=mangrove": {
+      "model": "worldcomesalive:block/mug_cluster_mangrove",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/medieval_counter",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks",
+    "particle": "minecraft:block/acacia_planks"
+  }
+}

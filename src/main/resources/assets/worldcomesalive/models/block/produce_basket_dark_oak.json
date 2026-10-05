@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/produce_basket",
+  "textures": {
+    "wood": "minecraft:block/dark_oak_planks"
+  }
+}

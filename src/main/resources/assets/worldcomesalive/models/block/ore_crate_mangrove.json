@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/ore_crate",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

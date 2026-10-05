@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "worldcomesalive:medieval_chair",
+    "worldcomesalive:wooden_stool",
+    "worldcomesalive:wooden_bench",
+    "worldcomesalive:dining_chair",
+    "worldcomesalive:tavern_stool",
+    "worldcomesalive:armchair",
+    "worldcomesalive:throne",
+    "worldcomesalive:outdoor_bench"
+  ]
+}

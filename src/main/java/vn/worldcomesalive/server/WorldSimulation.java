@@ -31,6 +31,8 @@ public final class WorldSimulation {
     public final ServerWorld world;
     public LivingWorld state;
     public WorldContent data;
+    public final vn.worldcomesalive.domestic.DomesticManager domestic;
+    public final vn.worldcomesalive.agriculture.AgriculturalRuntime agriculture;
     private final WorldStore store;
     private final RoadRoutes routes=new RoadRoutes();
     private final Map<UUID,CitizenEntity> entities=new HashMap<>();
@@ -40,12 +42,14 @@ public final class WorldSimulation {
     private final ArrayDeque<SettlementStructures.Placement> placements=new ArrayDeque<>();
     private final ArrayDeque<ChunkPos> discoveries=new ArrayDeque<>();
     private String buildingSettlement="";
+    private final Set<Building> furnishing=new HashSet<>();
     public long lastMicros,maxMicros,deferred,nearbyCount,urgentReactions;
     private long nextCheckpoint;
     private final java.util.concurrent.ExecutorService workers=java.util.concurrent.Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"wca-pure-planning");t.setDaemon(true);return t;});
     private final Set<String> cardNights=new HashSet<>();
     public WorldSimulation(MinecraftServer server,WorldContent data)throws IOException{
-        this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;
+        this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;domestic=new vn.worldcomesalive.domestic.DomesticManager(this);agriculture=new vn.worldcomesalive.agriculture.AgriculturalRuntime(this);
+        for(Settlement s:state.settlements.values())if(s.ready){for(Building b:s.buildings.values())if(b.furnitureVersion<vn.worldcomesalive.furniture.FurnitureLayout.VERSION){SettlementStructures.retrofitFurniture(b,world,placements);furnishing.add(b);}domestic.initialize(s);}
         for(Npc n:state.npcs.values())enqueue(n,Math.max(state.clock,n.nextCognition),3);
         for(Settlement s:state.settlements.values())if(!s.ready){queueBuild(s);break;}
         LOG.info("WCA_LOADED settlements={} npcs={} revision={} identities={}",state.settlements.size(),state.npcs.size(),state.revision,state.npcs.keySet());
@@ -67,14 +71,15 @@ public final class WorldSimulation {
         for(Settlement other:state.settlements.values())if(!other.id.equals(s.id)&&other.center.distance(s.center)<1200){s.routes.add(other.id);other.routes.add(s.id);}
         queueBuild(s);LOG.info("WCA_GENERATED id={} name={} archetype={} region={} origin={} plots={} manualSetup=false",s.id,s.name,s.archetype,s.region,s.center,s.buildings.size());
     }
-    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);SettlementStructures.roads(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built)SettlementStructures.building(b,region,world,placements);}
+    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);vn.worldcomesalive.agriculture.Landscape.roads(s,world,placements);vn.worldcomesalive.agriculture.Landscape.generate(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built)SettlementStructures.building(b,region,world,placements);}
     public void tick(){
         long start=System.nanoTime();state.clock=world.getTime();
         while(!unloadedCitizens.isEmpty())citizenUnloaded(unloadedCitizens.removeFirst());
         for(int i=0;i<512&&!placements.isEmpty();i++){var p=placements.remove();world.setBlockState(p.pos(),p.state(),2);}
         if(placements.isEmpty()&&!buildingSettlement.isBlank()){
-            Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->b.built=true);SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);buildingSettlement="";save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
+            Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);buildingSettlement="";save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
         }
+        if(placements.isEmpty()&&!furnishing.isEmpty()){furnishing.forEach(b->b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION);furnishing.clear();save();}
         if(placements.isEmpty()&&!discoveries.isEmpty())generate(discoveries.remove());
         int processed=0;long budget=System.nanoTime()+2_000_000;
         while(wakes.hasReady(state.clock)&&processed<64){
@@ -82,6 +87,7 @@ public final class WorldSimulation {
             Wake wake=wakes.remove();Npc n=state.npcs.get(wake.npc());if(n==null||wake.version()!=n.cognitionVersion)continue;
             think(n);processed++;state.decisions++;
         }
+        domestic.tick();agriculture.tick();
         if(state.clock%10==0)moveVisible();
         if(state.clock%20==0)relevance();
         if(state.clock%600==0)events();
@@ -92,11 +98,12 @@ public final class WorldSimulation {
     private void think(Npc n){
         Settlement s=state.settlements.get(n.settlement);if(s==null||!s.ready)return;
         if(n.lifeStage.equals("deceased"))return;
+        if(vn.svarcade.tcg.fabric.TcgMod.livingNpcBusy(n.id)){enqueue(n,state.clock+100,1);return;}
         if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.interactionUntil,1);return;}
         if(n.travel!=null){if(!entities.containsKey(n.id)){n.location=n.travel.at(state.clock);if(n.travel.arrived(state.clock)){n.location=n.travel.route.getLast();n.travel=null;}}if(n.travel!=null){enqueue(n,state.clock+100,3);return;}}
         if(n.actionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.actionUntil,3);return;}
         if(n.plan.isEmpty()){
-            Building market=s.service("bakery");var d=Cognition.decide(n,state.clock,data,market!=null&&market.stock.getOrDefault("minecraft:bread",0)>0);n.goal=d.goal();n.plan=new ArrayList<>(d.plan());
+            Building market=s.service("bakery");Household h=s.households.get(n.household);if(h!=null&&h.supplies.values().stream().anyMatch(v->v>0))n.inventory.put("pantry_available",1);else n.inventory.remove("pantry_available");var d=Cognition.decide(n,state.clock,data,market!=null&&market.stock.getOrDefault("minecraft:bread",0)>0);n.goal=d.goal();n.plan=new ArrayList<>(d.plan());
         }
         if(!n.plan.isEmpty()){
             String next=n.plan.removeFirst();var action=data.actions.stream().filter(a->a.id().equals(next)).findFirst().orElse(null);if(action!=null)execute(n,s,action.execution());
@@ -107,21 +114,25 @@ public final class WorldSimulation {
         Building home=s.buildings.get(n.home),work=s.buildings.get(n.workplace),tavern=s.service("tavern"),market=s.service("bakery"),guard=s.service("guardhouse");
         switch(action){
             case "home"->travel(n,s,home,"returning home");
-            case "work"->travel(n,s,work==null?home:work,"going to work");
+            case "work"->{var field=n.profession.equals("farmer")?vn.worldcomesalive.agriculture.Agriculture.workPlot(s,n):null;if(field!=null){Pos target=new Pos(field.origin.x()+field.width/2.0,field.origin.y()+1,field.origin.z()+field.depth/2.0);Travel t=new Travel();t.departure=state.clock;t.destination=field.id.toString();t.route=new ArrayList<>(List.of(n.location,s.buildings.get(n.workplace).point(Marker.ENTRANCE),target));n.travel=t;n.activity="going to field";}else travel(n,s,work==null?home:work,"going to work");}
             case "tavern"->travel(n,s,tavern==null?home:tavern,"visiting tavern");
             case "market"->travel(n,s,market==null?home:market,"shopping");
             case "guard"->{travel(n,s,guard==null?home:guard,"seeking safety");n.emotion="alarmed";n.plan.clear();}
-            case "sleep"->{n.activity="sleeping";n.needs.put("fatigue",Math.max(0,n.need("fatigue")-.35));n.actionUntil=state.clock+1800;}
+            case "sleep"->{if(n.location.distance(seatPoint(n,home,Marker.BED))>2){travel(n,s,home,"going to bed");repeat(n,"sleep");break;}n.activity="sleeping";n.needs.put("fatigue",Math.max(0,n.need("fatigue")-.35));n.actionUntil=state.clock+1800;}
             case "buy"->{if(market!=null&&n.money>=3&&market.stock.getOrDefault("minecraft:bread",0)>0){market.stock.merge("minecraft:bread",-1,Integer::sum);market.money+=3;n.money-=3;n.inventory.merge("minecraft:bread",1,Integer::sum);state.transact(n.id.toString(),market.id,"minecraft:bread",1,3,"food purchase");}else n.plan.clear();}
             case "gather"->{n.inventory.merge("minecraft:bread",1,Integer::sum);state.transact("wilderness",n.id.toString(),"minecraft:bread",1,0,"foraged meal");}
-            case "eat"->{if(n.inventory.getOrDefault("minecraft:bread",0)>0){n.inventory.merge("minecraft:bread",-1,Integer::sum);n.needs.put("hunger",Math.max(0,n.need("hunger")-.65));n.activity="dining";n.actionUntil=state.clock+400;}else n.plan.clear();}
+            case "eat"->{if(n.location.distance(seatPoint(n,home,Marker.DINING_POINT))>2){travel(n,s,home,"going to meal");repeat(n,"eat");break;}if(domestic.homeMeal(n,home)){n.activity="dining";n.actionUntil=state.clock+420;}else n.plan.clear();}
+            case "store"->{var h=s.households.get(n.household);for(String id:new ArrayList<>(n.inventory.keySet()))if(id.contains("pickaxe")||id.contains("axe")||id.contains("hoe")){int count=n.inventory.remove(id);h.equipment.merge(id,count,Integer::sum);}n.activity="storing work equipment";n.actionUntil=state.clock+100;}
+            case "family_meal"->{if(domestic.homeMeal(n,home)){n.activity="dining";n.actionUntil=state.clock+420;}}
+            case "family_social"->{for(UUID id:s.households.get(n.household).members)if(!id.equals(n.id)){Npc relative=npc(id);if(relative.location.distance(n.location)<15)SocialRules.socialize(state,n,relative);}n.activity="family conversation";n.actionUntil=state.clock+200;}
+            case "read"->{n.activity="reading";n.skills.merge("speech",.001,Double::sum);n.lastFamilyDay=state.clock/24000;n.actionUntil=state.clock+400;}
             case "produce"->{n.activity="working";produce(n,work);n.actionUntil=state.clock+1200;}
-            case "social"->{n.activity="socializing";n.needs.put("loneliness",Math.max(0,n.need("loneliness")-.3));List<Npc> company=s.residents.stream().map(state.npcs::get).filter(b->!b.id.equals(n.id)&&b.location.distance(n.location)<20).limit(4).toList();for(Npc friend:company){SocialRules.socialize(state,n,friend);if(SocialRules.acceptsCards(n,friend.id,state.clock,0)&&SocialRules.acceptsCards(friend,n.id,state.clock,0))abstractDuel(n,friend);}n.actionUntil=state.clock+800;}
+            case "social"->{n.activity="socializing";domestic.tavernVisit(n,s,tavern);n.needs.put("loneliness",Math.max(0,n.need("loneliness")-.3));List<Npc> company=s.residents.stream().map(state.npcs::get).filter(b->!b.id.equals(n.id)&&b.location.distance(n.location)<20).limit(4).toList();for(Npc friend:company){SocialRules.socialize(state,n,friend);if(SocialRules.acceptsCards(n,friend.id,state.clock,0)&&SocialRules.acceptsCards(friend,n.id,state.clock,0))abstractDuel(n,friend);}n.actionUntil=state.clock+800;}
             case "train"->{n.activity="training Pokémon";n.skills.merge("pokemon_training",.002,Double::sum);for(Partner p:n.pokemon)p.level=Math.min(100,12+(int)(n.skills.get("pokemon_training")*30));n.actionUntil=state.clock+600;}
         }
     }
     private void produce(Npc n,Building business){
-        if(business==null)return;for(var r:data.recipes)if(r.profession().equals(n.profession)){
+        if(business==null)return;if(n.profession.equals("farmer")){agriculture.work(n,state.settlements.get(n.settlement));return;}domestic.work(state.settlements.get(n.settlement),business,n.profession,n.skills.getOrDefault("cooking",.2));for(var r:data.recipes)if(r.profession().equals(n.profession)){
             if(!r.input().isBlank()&&business.stock.getOrDefault(r.input(),0)<r.consumed()){
                 Settlement s=state.settlements.get(n.settlement);Building supplier=s.buildings.values().stream().filter(b->b.stock.getOrDefault(r.input(),0)>=r.consumed()).findFirst().orElse(null);
                 if(supplier==null||routeBlocked(s.id)||business.money<r.consumed())continue;
@@ -132,24 +143,41 @@ public final class WorldSimulation {
         }
     }
     private void abstractDuel(Npc a,Npc b){
+        if(vn.svarcade.tcg.fabric.TcgMod.livingNpcBusy(a.id)||vn.svarcade.tcg.fabric.TcgMod.livingNpcBusy(b.id))return;long versionA=a.version,versionB=b.version;
         String key=a.id.compareTo(b.id)<0?a.id+":"+b.id:b.id+":"+a.id;if(!cardNights.add(key))return;
-        List<String> deckA=List.copyOf(a.decks.get("casual")),deckB=List.copyOf(b.decks.get("casual"));long seed=state.clock^a.id.hashCode();double skillA=a.skills.getOrDefault("cards",.2),skillB=b.skills.getOrDefault("cards",.2);
+        List<String> deckA=List.copyOf(a.decks.get("casual")),deckB=List.copyOf(b.decks.get("casual"));long seed=state.clock^a.id.hashCode();double skillA=domestic.cardSkill(a),skillB=domestic.cardSkill(b);
         workers.submit(()->{try{int result=vn.svarcade.tcg.fabric.TcgMod.simulateLivingDuel(deckA,deckB,seed,skillA,skillB);server.execute(()->{
-            cardNights.remove(key);if(active!=this||result<0||!deckA.equals(a.decks.get("casual"))||!deckB.equals(b.decks.get("casual")))return;
+            cardNights.remove(key);if(active!=this||result<0||a.version!=versionA||b.version!=versionB||!deckA.equals(a.decks.get("casual"))||!deckB.equals(b.decks.get("casual")))return;
             Npc winner=result==0?a:b,loser=result==0?b:a;winner.skills.merge("cards",.005,Double::sum);loser.skills.merge("cards",.003,Double::sum);loser.relationship(winner.id).respect+=1;
             state.remember(loser,new Memory("lost_card_duel",winner.id,loser.settlement,state.clock,.5,-.1,1,"witnessed"));if(winner.skills.get("cards")>.7)winner.cardArchetype="tournament";
         });}catch(RuntimeException failure){server.execute(()->{cardNights.remove(key);LOG.warn("Card night deferred: {}",failure.getMessage());});}});
     }
+    private void repeat(Npc n,String execution){data.actions.stream().filter(a->a.execution().equals(execution)).findFirst().ifPresent(a->n.plan.addFirst(a.id()));}
+    private Pos seatPoint(Npc n,Building b,Marker marker){
+        List<Pos> points=b.markers.getOrDefault(marker,List.of(b.origin));if(b.visitors.containsKey(n.id)&&marker!=Marker.BED)return b.visitors.get(n.id);
+        var household=state.settlements.get(n.settlement).households.get(n.household);
+        int index=b.id.equals(n.home)?household.members.indexOf(n.id):n.id.hashCode();
+        return points.get(Math.floorMod(index,points.size()));
+    }
     private void travel(Npc n,Settlement s,Building destination,String activity){
-        if(destination==null)return;n.activity=activity;
-        Pos target=activity.equals("going to work")?destination.point(Marker.WORKSTATION):activity.equals("returning home")?destination.point(Marker.DINING_POINT):destination.point(Marker.ENTRANCE);
+        if(destination==null)return;
+        if(activity.equals("visiting tavern")){Pos seat=vn.worldcomesalive.furniture.VenueCapacity.reserve(destination,n);if(seat==null){destination=s.buildings.get(n.home);activity="returning home";}}
+        else vn.worldcomesalive.furniture.VenueCapacity.release(s,n.id);
+        n.activity=activity;
+        Pos target=activity.equals("going to work")?seatPoint(n,destination,Marker.WORKSTATION):activity.equals("going to bed")?seatPoint(n,destination,Marker.BED):activity.equals("returning home")||activity.equals("going to meal")?seatPoint(n,destination,Marker.DINING_POINT):activity.equals("visiting tavern")?seatPoint(n,destination,Marker.SOCIAL_POINT):destination.point(Marker.ENTRANCE);
         if(n.location.distance(target)<1.5)return;Travel t=new Travel();t.route=destination.contains(n.location)?new ArrayList<>(List.of(n.location,target)):routes.route(s,n.location,destination);if(t.route.getLast().distance(target)>.1)t.route.add(target);t.departure=state.clock;t.destination=destination.id;n.travel=t;
     }
-    public void interrupt(Npc n,String event,UUID actor){if(n.interruptUntil>state.clock&&n.interrupt.equals(event))return;n.interrupt=event;n.interruptUntil=state.clock+400;n.plan.clear();n.travel=null;n.actionUntil=0;n.version++;state.remember(n,new Memory(event,actor,n.settlement,state.clock,event.equals("assault")?.95:.8,-.8,1,"witnessed"));n.relationship(actor==null?n.id:actor).fear+=8;enqueue(n,state.clock,0);urgentReactions++;}
+    public void interrupt(Npc n,String event,UUID actor){vn.worldcomesalive.furniture.VenueCapacity.release(state.settlements.get(n.settlement),n.id);if(n.interruptUntil>state.clock&&n.interrupt.equals(event))return;n.interrupt=event;n.interruptUntil=state.clock+400;n.plan.clear();n.travel=null;n.actionUntil=0;n.version++;state.remember(n,new Memory(event,actor,n.settlement,state.clock,event.equals("assault")?.95:.8,-.8,1,"witnessed"));n.relationship(actor==null?n.id:actor).fear+=8;enqueue(n,state.clock,0);urgentReactions++;}
     public void perceive(CitizenEntity entity){Npc n=state.npcs.get(entity.getUuid());if(n==null){entity.discard();return;}if(entity.isOnFire()){interrupt(n,"fire",null);return;}if(entity.age%20!=0)return;BlockPos p=entity.getBlockPos();if(world.getBlockState(p.down()).isOf(Blocks.FIRE)||world.getBlockState(p.east()).isOf(Blocks.FIRE))interrupt(n,"fire",null);}
     private void moveVisible(){
         for(var entry:new ArrayList<>(entities.entrySet())){
             Npc n=state.npcs.get(entry.getKey());CitizenEntity e=entry.getValue();if(e.isRemoved()){citizenUnloaded(e);continue;}
+            boolean sitting=n.travel==null&&Set.of("dining","drinking","socializing").contains(n.activity)&&n.interruptUntil<=state.clock;
+            if(e.hasVehicle()&&!sitting){Entity seat=e.getVehicle();e.stopRiding();if(seat instanceof vn.worldcomesalive.furniture.SeatEntity)seat.discard();}
+            if(sitting&&!e.hasVehicle()){
+                Settlement s=state.settlements.get(n.settlement);var meal=domestic.meal(n.id);Building venue=meal!=null?s.buildings.get(meal.building):s.buildings.values().stream().filter(b->b.contains(n.location)).findFirst().orElse(s.buildings.get(n.home));
+                if(venue!=null){Pos point=seatPoint(n,venue,Marker.DINING_POINT);if(new Pos(e.getX(),e.getY(),e.getZ()).distance(point)<2.5&&vn.worldcomesalive.furniture.FurnitureRegistry.sit(e,world,BlockPos.ofFloored(point.x(),point.y(),point.z())))e.getNavigation().stop();}
+            }
             n.location=new Pos(e.getX(),e.getY(),e.getZ());
             if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){e.getNavigation().stop();if(n.travel!=null)n.travel.pausedTicks+=10;continue;}
             if(n.travel!=null){
@@ -186,7 +214,7 @@ public final class WorldSimulation {
             if(n.lifeStage.equals("deceased")){var dead=entities.remove(n.id);if(dead!=null)dead.discard();continue;}
             boolean relevant=players.stream().anyMatch(p->new Pos(p.getX(),p.getY(),p.getZ()).distance(n.location)<data.relevance)&&world.isChunkLoaded((int)n.location.x()>>4,(int)n.location.z()>>4);
             CitizenEntity e=entities.get(n.id);
-            if(relevant){nearbyCount++;n.simulation="full";if(e==null){Entity old=world.getEntity(n.id);if(old instanceof CitizenEntity citizen&&!citizen.isRemoved()){e=citizen;if(n.travel!=null)n.location=n.travel.at(state.clock);e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),e.getYaw(),e.getPitch());e.presentation(n.gender,n.appearance.hashCode());}else{e=WorldComesAlive.CITIZEN.create(world);if(e==null)continue;if(n.travel!=null)n.location=n.travel.at(state.clock);e.setUuid(n.id);e.presentation(n.gender,n.appearance.hashCode());e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),0,0);e.setCustomName(Text.literal(n.name+" · "+n.profession));e.setCustomNameVisible(true);if(n.age<18)e.setBreedingAge(-24000);world.spawnEntity(e);state.materializations++;LOG.info("WCA_MATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}entities.put(n.id,e);}materializePartner(n,e);}
+            if(relevant){nearbyCount++;n.simulation="full";if(e==null){Entity old=world.getEntity(n.id);if(old instanceof CitizenEntity citizen&&!citizen.isRemoved()){e=citizen;if(n.travel!=null)n.location=n.travel.at(state.clock);e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),e.getYaw(),e.getPitch());e.presentation(n.gender,n.appearance.hashCode());state.materializations++;LOG.info("WCA_MATERIALIZE npc={} activity={} location={} reason=chunk_restore",n.id,n.activity,n.location);}else{e=WorldComesAlive.CITIZEN.create(world);if(e==null)continue;if(n.travel!=null)n.location=n.travel.at(state.clock);e.setUuid(n.id);e.presentation(n.gender,n.appearance.hashCode());e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),0,0);e.setCustomName(Text.literal(n.name+" · "+n.profession));e.setCustomNameVisible(false);if(n.age<18)e.setBreedingAge(-24000);world.spawnEntity(e);state.materializations++;LOG.info("WCA_MATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}entities.put(n.id,e);}materializePartner(n,e);}
             else{n.simulation=world.isChunkLoaded((int)n.location.x()>>4,(int)n.location.z()>>4)?"reduced":"abstract";if(e!=null){n.location=new Pos(e.getX(),e.getY(),e.getZ());entities.remove(n.id);e.discard();var partner=partners.remove(n.id);if(partner!=null)partner.discard();state.dematerializations++;LOG.info("WCA_DEMATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}}
         }
     }
@@ -195,7 +223,7 @@ public final class WorldSimulation {
         Partner p=n.pokemon.getFirst();var existing=world.getEntity(p.id);if(existing instanceof com.cobblemon.mod.common.entity.pokemon.PokemonEntity saved){partners.put(n.id,saved);return;}try{
             var properties=com.cobblemon.mod.common.api.pokemon.PokemonProperties.Companion.parse(p.species+" level="+p.level);var pokemon=p.data.isBlank()?properties.create():new com.cobblemon.mod.common.pokemon.Pokemon();
             if(!p.data.isBlank())pokemon.loadFromJSON(world.getRegistryManager(),com.google.gson.JsonParser.parseString(p.data).getAsJsonObject());pokemon.setUuid(p.id);
-            var e=new com.cobblemon.mod.common.entity.pokemon.PokemonEntity(world,pokemon,com.cobblemon.mod.common.CobblemonEntities.POKEMON);e.setUuid(p.id);e.refreshPositionAndAngles(owner.getX()+2,owner.getY(),owner.getZ(),0,0);e.setCustomName(Text.literal(n.name+"'s "+p.species+" · "+p.role));e.setCustomNameVisible(true);e.setPersistent();world.spawnEntity(e);partners.put(n.id,e);p.data=pokemon.saveToJSON(world.getRegistryManager(),new com.google.gson.JsonObject()).toString();LOG.info("WCA_POKEMON npc={} partner={} species={} role={}",n.id,p.id,p.species,p.role);
+            var e=new com.cobblemon.mod.common.entity.pokemon.PokemonEntity(world,pokemon,com.cobblemon.mod.common.CobblemonEntities.POKEMON);e.setUuid(p.id);e.refreshPositionAndAngles(owner.getX()+2,owner.getY(),owner.getZ(),0,0);e.setCustomName(Text.literal(n.name+"'s "+p.species+" · "+p.role));e.setCustomNameVisible(false);e.setPersistent();world.spawnEntity(e);partners.put(n.id,e);p.data=pokemon.saveToJSON(world.getRegistryManager(),new com.google.gson.JsonObject()).toString();LOG.info("WCA_POKEMON npc={} partner={} species={} role={}",n.id,p.id,p.species,p.role);
         }catch(Exception failure){LOG.warn("WCA_PARTNER_UNAVAILABLE species={} cause={}",p.species,failure.toString());}
     }
     private boolean routeBlocked(String settlement){return state.events.stream().anyMatch(e->e.settlement.equals(settlement)&&e.state.equals("active")&&e.type.equals("route_damage"));}
@@ -203,9 +231,10 @@ public final class WorldSimulation {
         for(WorldEvent e:state.events)if(e.state.equals("active")&&state.clock>=e.ends){e.state="resolved";for(UUID id:e.witnesses){Npc n=state.npcs.get(id);if(n!=null){n.activeEvents.remove(e.id);state.remember(n,new Memory("event_resolved:"+e.type,null,e.settlement,state.clock,.7,.2,.9,"experienced"));}}LOG.info("WCA_EVENT_RESOLVED id={} type={}",e.id,e.type);}
         for(Settlement s:state.settlements.values())if(s.ready&&s.lastSocialDay<state.clock/24000){s.lastSocialDay=state.clock/24000;Random rng=new Random(s.seed^s.lastSocialDay);for(var def:data.events)if(rng.nextDouble()<def.chance()){WorldEvent e=new WorldEvent();e.id=s.id+"_"+def.type()+"_"+s.lastSocialDay;e.type=def.type();e.settlement=s.id;e.starts=state.clock;e.ends=state.clock+def.duration();e.witnesses.addAll(s.residents);state.events.add(e);for(UUID id:s.residents){Npc n=state.npcs.get(id);n.activeEvents.add(e.id);state.remember(n,new Memory("event:"+e.type,null,s.id,state.clock,.8,e.type.equals("festival")?.5:-.3,1,"experienced"));}}}
     }
+    public void queuePlacement(SettlementStructures.Placement placement){placements.add(placement);}
     public Npc npc(UUID id){return state.npcs.get(id);}
     public Collection<CitizenEntity> visible(){return List.copyOf(entities.values());}
-    public String status(){return "Settlements "+state.settlements.size()+" | Residents "+state.npcs.size()+" | Visible "+nearbyCount+" | Transactions "+state.transactions+" | Decisions "+state.decisions+" | AI " +lastMicros+" us | Max "+maxMicros+" us | Deferred "+deferred+" | Materializations "+state.materializations+" / dematerializations "+state.dematerializations;}
+    public String status(){return "Settlements "+state.settlements.size()+" | Residents "+state.npcs.size()+" | Visible "+nearbyCount+" | Transactions "+state.transactions+" | Meals "+domestic.mealsServed+" / drinks "+domestic.drinksConsumed+" / batches "+domestic.productionCompleted+" | Decisions "+state.decisions+" | AI " +lastMicros+" us | Max "+maxMicros+" us | Deferred "+deferred+" | Materializations "+state.materializations+" / dematerializations "+state.dematerializations;}
     public void save(){try{store.save(state);}catch(IOException failure){LOG.error("WCA_SAVE_FAILED: retaining in-memory state",failure);}}
     public void close(){workers.shutdownNow();save();var visibleCitizens=List.copyOf(entities.values());entities.clear();for(var e:visibleCitizens)e.discard();for(var e:partners.values())e.discard();active=null;LOG.info("WCA_SAVED settlements={} npcs={} transactions={} identities={}",state.settlements.size(),state.npcs.size(),state.transactions,state.npcs.keySet());}
 }

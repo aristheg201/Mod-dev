@@ -16,9 +16,10 @@ public final class Cognition {
         utility.put("nourished",n.need("hunger")*100);
         utility.put("worked",!n.workplace.isBlank()&&time>=n.schedule.getOrDefault("work_start",p.start())&&time<n.schedule.getOrDefault("work_end",p.end())?55+n.trait("ambition")*15:0.0);
         utility.put("social",12+n.need("loneliness")*55+n.trait("sociability")*12+(time>=10000&&time<=13000?20:0));
+        utility.put("domestic",time>=10500&&time<13000&&(n.age<18||n.trait("loyalty")>.55)&&n.lastFamilyDay!=clock/24000?65.0:0.0);
         utility.put("trained",n.pokemon.isEmpty()?0.0:n.trait("curiosity")*16);
         String goal=utility.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
-        Set<String> facts=new HashSet<>();facts.add("alive");if(n.inventory.getOrDefault("minecraft:bread",0)>0)facts.add("food");if(shopOpen&&n.money>=3)facts.add("shop_open");if(n.profession.equals("farmer")||n.profession.equals("hunter"))facts.add("can_gather");
+        Set<String> facts=new HashSet<>();facts.add("alive");if(n.inventory.containsKey("pantry_available")||n.inventory.entrySet().stream().anyMatch(e->e.getValue()>0&&(e.getKey().equals("minecraft:bread")||(vn.worldcomesalive.domestic.DomesticContent.active.good(e.getKey())!=null&&vn.worldcomesalive.domestic.DomesticContent.active.good(e.getKey()).nutrition()>0))))facts.add("food");if(shopOpen&&n.money>=3)facts.add("shop_open");if(n.profession.equals("farmer")||n.profession.equals("hunter"))facts.add("can_gather");
         return new Decision(goal,GoalPlanner.plan(facts,goal,data.actions),Map.copyOf(utility));
     }
     private Cognition(){}

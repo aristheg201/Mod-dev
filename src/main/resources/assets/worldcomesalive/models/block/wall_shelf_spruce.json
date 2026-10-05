@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/wall_shelf",
+  "textures": {
+    "wood": "minecraft:block/spruce_planks",
+    "particle": "minecraft:block/spruce_planks"
+  }
+}

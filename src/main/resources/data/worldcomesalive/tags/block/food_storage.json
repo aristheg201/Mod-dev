@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "worldcomesalive:medieval_cabinet",
+    "worldcomesalive:cabinet",
+    "worldcomesalive:cupboard",
+    "worldcomesalive:wardrobe",
+    "worldcomesalive:dresser",
+    "worldcomesalive:food_pantry",
+    "worldcomesalive:crate",
+    "worldcomesalive:storage_chest"
+  ]
+}

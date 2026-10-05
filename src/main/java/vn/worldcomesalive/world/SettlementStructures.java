@@ -22,7 +22,7 @@ public final class SettlementStructures {
             world.getChunk(x>>4,z>>4);
             for(int y=ground+1;y<=ground+32;y++){
                 BlockPos pos=new BlockPos(x,y,z);BlockState state=world.getBlockState(pos);
-                if(state.isIn(net.minecraft.registry.tag.BlockTags.LOGS)||state.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)||state.isIn(net.minecraft.registry.tag.BlockTags.REPLACEABLE)||(!state.isAir()&&y<ground+4&&state.isIn(net.minecraft.registry.tag.BlockTags.DIRT)))q.add(new Placement(pos,Blocks.AIR.getDefaultState()));
+                if(state.isIn(net.minecraft.registry.tag.BlockTags.LOGS)||state.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)||state.isIn(net.minecraft.registry.tag.BlockTags.REPLACEABLE))q.add(new Placement(pos,Blocks.AIR.getDefaultState()));
             }
         }
     }
@@ -65,12 +65,35 @@ public final class SettlementStructures {
         add(q,doorX,y+1,doorZ,door.getDefaultState().with(DoorBlock.FACING,Direction.SOUTH).with(DoorBlock.HALF,DoubleBlockHalf.LOWER).with(DoorBlock.OPEN,true));
         add(q,doorX,y+2,doorZ,door.getDefaultState().with(DoorBlock.FACING,Direction.SOUTH).with(DoorBlock.HALF,DoubleBlockHalf.UPPER).with(DoorBlock.OPEN,true));
         add(q,ox+1,y+3,oz+1,Blocks.LANTERN.getDefaultState());
-        for(Pos p:b.markers.getOrDefault(Marker.BED,List.of())){int xx=(int)p.x(),zz=(int)p.z();add(q,xx,y+1,zz,Blocks.RED_BED.getDefaultState().with(BedBlock.FACING,Direction.NORTH).with(BedBlock.PART,BedPart.FOOT));add(q,xx,y+1,zz-1,Blocks.RED_BED.getDefaultState().with(BedBlock.FACING,Direction.NORTH).with(BedBlock.PART,BedPart.HEAD));}
-        if(b.markers.containsKey(Marker.STORAGE)){add(q,ox+1,y+1,oz+b.depth-3,Blocks.CHEST.getDefaultState());b.markers.put(Marker.STORAGE,List.of(new Pos(ox+1.5,y+1,oz+b.depth-2.5)));}
         if(b.markers.containsKey(Marker.WORKSTATION)){Block work=switch(b.profession){case "blacksmith"->Blocks.ANVIL;case "baker"->Blocks.SMOKER;case "farmer"->Blocks.COMPOSTER;case "healer"->Blocks.BREWING_STAND;default->Blocks.CRAFTING_TABLE;};add(q,ox+b.width-2,y+1,oz+3,work.getDefaultState());b.markers.put(Marker.WORKSTATION,List.of(new Pos(ox+b.width-3.5,y+1,oz+3.5)));}
-        if(b.markers.containsKey(Marker.SHOP_COUNTER)){for(int x=2;x<b.width-2;x++)add(q,ox+x,y+1,oz+b.depth-4,Blocks.OAK_SLAB.getDefaultState());b.markers.put(Marker.CUSTOMER_POINT,List.of(new Pos(ox+b.width/2.0,y+1,oz+b.depth-2.5)));}
-        if(b.type.equals("tavern")){add(q,ox+3,y+1,oz+5,Blocks.CARTOGRAPHY_TABLE.getDefaultState());add(q,ox+2,y+1,oz+5,Blocks.OAK_STAIRS.getDefaultState().with(StairsBlock.FACING,Direction.EAST));add(q,ox+4,y+1,oz+5,Blocks.OAK_STAIRS.getDefaultState().with(StairsBlock.FACING,Direction.WEST));b.markers.put(Marker.CARD_DUEL_TABLE,List.of(new Pos(ox+3.5,y+1,oz+5.5)));b.markers.put(Marker.SOCIAL_POINT,List.of(new Pos(ox+5.5,y+1,oz+6.5)));}
-        if(b.type.equals("farm")){for(int x=0;x<9;x++)for(int z=0;z<6;z++){ground(world,q,ox+x,y,oz+b.depth+5+z,Blocks.FARMLAND.getDefaultState());add(q,ox+x,y+1,oz+b.depth+5+z,Blocks.WHEAT.getDefaultState().with(CropBlock.AGE,7));}for(int z=0;z<6;z++)add(q,ox+9,y,oz+b.depth+5+z,Blocks.WATER.getDefaultState());b.markers.put(Marker.FARM_FIELD,List.of(new Pos(ox+4.5,y+1,oz+b.depth+7.5)));}
+        if(b.markers.containsKey(Marker.SHOP_COUNTER))b.markers.put(Marker.CUSTOMER_POINT,List.of(new Pos(ox+7.5,y+1,oz+b.depth-2.5)));
+        furniture(b,q);
+
+    }
+    public static void furniture(Building b,Queue<Placement> q){
+        for(var piece:vn.worldcomesalive.furniture.FurnitureLayout.plan(b)){
+            BlockState state=switch(piece.type()){
+                case "barrel"->Blocks.BARREL.getDefaultState();
+                case "bed_foot","bed_head"->Blocks.RED_BED.getDefaultState().with(BedBlock.FACING,Direction.byName(piece.facing())).with(BedBlock.PART,piece.type().equals("bed_head")?BedPart.HEAD:BedPart.FOOT);
+                case "partition"->Blocks.STRIPPED_OAK_LOG.getDefaultState();
+                case "timber_beam"->Blocks.STRIPPED_DARK_OAK_LOG.getDefaultState().with(PillarBlock.AXIS,Direction.Axis.X);
+                case "hanging_lantern"->Blocks.LANTERN.getDefaultState().with(LanternBlock.HANGING,true);
+                case "chimney"->Blocks.STONE_BRICKS.getDefaultState();
+                case "anvil"->Blocks.ANVIL.getDefaultState();
+                case "hearth_base"->Blocks.STONE_BRICKS.getDefaultState();
+                case "hearth"->Blocks.CAMPFIRE.getDefaultState().with(CampfireBlock.LIT,true);
+                default->{var region=vn.worldcomesalive.WorldComesAlive.content.regions.stream().filter(r->r.id().equals(b.region)).findFirst().orElse(vn.worldcomesalive.WorldComesAlive.content.regions.getLast());vn.worldcomesalive.furniture.FurnitureBlock.Wood wood;try{wood=vn.worldcomesalive.furniture.FurnitureBlock.Wood.valueOf(region.wood().toUpperCase(java.util.Locale.ROOT));}catch(IllegalArgumentException missing){wood=vn.worldcomesalive.furniture.FurnitureBlock.Wood.OAK;}yield vn.worldcomesalive.furniture.FurnitureRegistry.BLOCKS.get(piece.type()).getDefaultState().with(HorizontalFacingBlock.FACING,Direction.byName(piece.facing())).with(vn.worldcomesalive.furniture.FurnitureBlock.WOOD,wood);}
+            };
+            add(q,(int)b.origin.x()+piece.x(),(int)b.origin.y()+piece.y(),(int)b.origin.z()+piece.z(),state);
+        }
+    }
+    public static void retrofitFurniture(Building b,ServerWorld world,Queue<Placement> q){
+        for(int x=1;x<b.width-1;x++)for(int z=1;z<b.depth-1;z++)for(int y=1;y<=3;y++){BlockPos old=BlockPos.ofFloored(b.origin.x()+x,b.origin.y()+y,b.origin.z()+z);var block=world.getBlockState(old).getBlock();if(block instanceof vn.worldcomesalive.furniture.FurnitureBlock||block instanceof BedBlock||block instanceof vn.worldcomesalive.furniture.TableSettingBlock||block==Blocks.CAMPFIRE)q.add(new Placement(old,Blocks.AIR.getDefaultState()));}
+        if(b.markers.containsKey(Marker.SHOP_COUNTER))for(int x=2;x<b.width-2;x++){
+            BlockPos old=new BlockPos((int)b.origin.x()+x,(int)b.origin.y()+1,(int)b.origin.z()+b.depth-4);
+            if(world.getBlockState(old).isOf(Blocks.OAK_SLAB))q.add(new Placement(old,Blocks.AIR.getDefaultState()));
+        }
+        furniture(b,q);
     }
     private SettlementStructures(){}
 }

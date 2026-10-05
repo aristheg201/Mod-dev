@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/flower_vase",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks",
+    "particle": "minecraft:block/mangrove_planks"
+  }
+}

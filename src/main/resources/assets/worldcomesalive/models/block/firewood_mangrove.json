@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/firewood",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

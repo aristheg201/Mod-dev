@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/paper_quill",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

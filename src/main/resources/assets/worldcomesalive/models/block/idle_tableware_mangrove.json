@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/idle_tableware",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

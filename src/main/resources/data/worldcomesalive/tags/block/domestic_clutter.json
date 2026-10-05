@@ -1,0 +1,24 @@
+{
+  "replace": false,
+  "values": [
+    "worldcomesalive:idle_tableware",
+    "worldcomesalive:folded_cloth",
+    "worldcomesalive:personal_belongings",
+    "worldcomesalive:hanging_herbs",
+    "worldcomesalive:produce_basket",
+    "worldcomesalive:water_pitcher",
+    "worldcomesalive:plate_stack",
+    "worldcomesalive:firewood",
+    "worldcomesalive:wall_sconce",
+    "worldcomesalive:paper_quill",
+    "worldcomesalive:flour_sack",
+    "worldcomesalive:cookware_rack",
+    "worldcomesalive:serving_tray_prop",
+    "worldcomesalive:mug_cluster",
+    "worldcomesalive:bread_basket",
+    "worldcomesalive:card_set",
+    "worldcomesalive:tool_samples",
+    "worldcomesalive:tool_rack",
+    "worldcomesalive:ore_crate"
+  ]
+}

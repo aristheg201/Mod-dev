@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/storage_chest",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks",
+    "particle": "minecraft:block/mangrove_planks"
+  }
+}

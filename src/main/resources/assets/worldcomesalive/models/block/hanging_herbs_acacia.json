@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/hanging_herbs",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks"
+  }
+}

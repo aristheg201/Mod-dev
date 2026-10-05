@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/chopping_board",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks",
+    "particle": "minecraft:block/acacia_planks"
+  }
+}

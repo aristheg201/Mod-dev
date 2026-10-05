@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/folded_cloth",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks"
+  }
+}

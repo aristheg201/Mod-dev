@@ -1,0 +1,129 @@
+{
+  "textures": {
+    "wood": "minecraft:block/oak_planks",
+    "frame": "minecraft:block/dark_oak_planks",
+    "cloth": "minecraft:block/red_wool",
+    "metal": "minecraft:block/iron_block",
+    "books": "minecraft:block/bookshelf",
+    "particle": "minecraft:block/oak_planks",
+    "pottery": "minecraft:block/terracotta",
+    "drink": "minecraft:block/brown_terracotta",
+    "wine": "minecraft:block/red_terracotta",
+    "water": "minecraft:block/light_blue_terracotta",
+    "food": "minecraft:block/orange_terracotta",
+    "leaf": "minecraft:block/green_wool",
+    "paper": "minecraft:block/white_wool"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        0,
+        5
+      ],
+      "to": [
+        11,
+        6,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pottery"
+        },
+        "south": {
+          "texture": "#pottery"
+        },
+        "east": {
+          "texture": "#pottery"
+        },
+        "west": {
+          "texture": "#pottery"
+        },
+        "up": {
+          "texture": "#pottery"
+        },
+        "down": {
+          "texture": "#pottery"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        6,
+        7
+      ],
+      "to": [
+        9,
+        12,
+        9
+      ],
+      "faces": {
+        "north": {
+          "texture": "#leaf"
+        },
+        "south": {
+          "texture": "#leaf"
+        },
+        "east": {
+          "texture": "#leaf"
+        },
+        "west": {
+          "texture": "#leaf"
+        },
+        "up": {
+          "texture": "#leaf"
+        },
+        "down": {
+          "texture": "#leaf"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        11,
+        5
+      ],
+      "to": [
+        11,
+        14,
+        11
+      ],
+      "faces": {
+        "north": {
+          "texture": "#cloth"
+        },
+        "south": {
+          "texture": "#cloth"
+        },
+        "east": {
+          "texture": "#cloth"
+        },
+        "west": {
+          "texture": "#cloth"
+        },
+        "up": {
+          "texture": "#cloth"
+        },
+        "down": {
+          "texture": "#cloth"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "scale": [
+        0.65,
+        0.65,
+        0.65
+      ]
+    }
+  }
+}

@@ -1,0 +1,2350 @@
+{
+  "goods": {
+    "worldcomesalive:dark_bread": {
+      "name": "Dark Bread",
+      "category": "grain",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "grain",
+        "food"
+      ],
+      "regions": [
+        "temperate_kingdom"
+      ],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:flatbread": {
+      "name": "Flatbread",
+      "category": "grain",
+      "nutrition": 4,
+      "saturation": 0.6,
+      "value": 2,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "grain",
+        "food"
+      ],
+      "regions": [
+        "temperate_kingdom"
+      ],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:roll": {
+      "name": "Bread Roll",
+      "category": "grain",
+      "nutrition": 3,
+      "saturation": 0.6,
+      "value": 2,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "grain",
+        "food"
+      ],
+      "regions": [
+        "temperate_kingdom"
+      ],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:porridge": {
+      "name": "Porridge",
+      "category": "grain",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "worldcomesalive:bowl",
+      "alcohol": 0,
+      "tags": [
+        "grain",
+        "food"
+      ],
+      "regions": [
+        "temperate_kingdom"
+      ],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:roast_beef": {
+      "name": "Roast Beef",
+      "category": "meat",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:roast_pork": {
+      "name": "Roast Pork",
+      "category": "meat",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:roast_poultry": {
+      "name": "Roast Poultry",
+      "category": "meat",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:game_roast": {
+      "name": "Roast Game",
+      "category": "meat",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 8,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:sausage": {
+      "name": "Sausage",
+      "category": "meat",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:smoked_meat": {
+      "name": "Smoked Meat",
+      "category": "meat",
+      "nutrition": 7,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [
+        "nordic"
+      ],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:roast_fish": {
+      "name": "Roast Fish",
+      "category": "fish",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fish",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:smoked_fish": {
+      "name": "Smoked Fish",
+      "category": "fish",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 6,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fish",
+        "food"
+      ],
+      "regions": [
+        "nordic"
+      ],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:fish_stew": {
+      "name": "Fish Stew",
+      "category": "meal",
+      "nutrition": 9,
+      "saturation": 0.6,
+      "value": 8,
+      "container": "worldcomesalive:bowl",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:potato_dish": {
+      "name": "Herbed Potatoes",
+      "category": "vegetable",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "vegetable",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:carrot_dish": {
+      "name": "Roast Carrots",
+      "category": "vegetable",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "vegetable",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:cabbage": {
+      "name": "Cabbage",
+      "category": "vegetable",
+      "nutrition": 3,
+      "saturation": 0.6,
+      "value": 2,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "vegetable",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:mushroom_dish": {
+      "name": "Mushroom Skillet",
+      "category": "vegetable",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "vegetable",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:vegetable_stew": {
+      "name": "Vegetable Stew",
+      "category": "meal",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 6,
+      "container": "worldcomesalive:bowl",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:cheese": {
+      "name": "Cheese",
+      "category": "dairy",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "dairy",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:butter": {
+      "name": "Butter",
+      "category": "dairy",
+      "nutrition": 2,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "dairy",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:grapes": {
+      "name": "Grapes",
+      "category": "fruit",
+      "nutrition": 3,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fruit",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:berry_compote": {
+      "name": "Berry Compote",
+      "category": "fruit",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fruit",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:beef_stew": {
+      "name": "Beef Stew",
+      "category": "meal",
+      "nutrition": 10,
+      "saturation": 0.6,
+      "value": 8,
+      "container": "worldcomesalive:bowl",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:vegetable_soup": {
+      "name": "Vegetable Soup",
+      "category": "meal",
+      "nutrition": 7,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "worldcomesalive:bowl",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:roast_dinner": {
+      "name": "Roast Dinner",
+      "category": "meal",
+      "nutrition": 12,
+      "saturation": 0.6,
+      "value": 12,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:meat_pie": {
+      "name": "Meat Pie",
+      "category": "meal",
+      "nutrition": 10,
+      "saturation": 0.6,
+      "value": 9,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:vegetable_pie": {
+      "name": "Vegetable Pie",
+      "category": "meal",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:fish_meal": {
+      "name": "Fish Supper",
+      "category": "meal",
+      "nutrition": 9,
+      "saturation": 0.6,
+      "value": 8,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:breakfast": {
+      "name": "Farmhouse Breakfast",
+      "category": "meal",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 6,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:travel_ration": {
+      "name": "Travel Ration",
+      "category": "meal",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 6,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:feast_platter": {
+      "name": "Feast Platter",
+      "category": "meal",
+      "nutrition": 16,
+      "saturation": 0.6,
+      "value": 20,
+      "container": "worldcomesalive:plate",
+      "alcohol": 0,
+      "tags": [
+        "meal",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:honey_pastry": {
+      "name": "Honey Pastry",
+      "category": "dessert",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "dessert",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:berry_tart": {
+      "name": "Berry Tart",
+      "category": "dessert",
+      "nutrition": 6,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "dessert",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:apple_pie": {
+      "name": "Apple Pie",
+      "category": "dessert",
+      "nutrition": 7,
+      "saturation": 0.6,
+      "value": 6,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "dessert",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:honey_cake": {
+      "name": "Honey Cake",
+      "category": "dessert",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "dessert",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:water_jug": {
+      "name": "Water Jug",
+      "category": "drink",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "worldcomesalive:jug",
+      "alcohol": 0,
+      "tags": [
+        "drink",
+        "nonalcoholic"
+      ],
+      "regions": [],
+      "method": "brew",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:milk_cup": {
+      "name": "Milk Cup",
+      "category": "drink",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 2,
+      "container": "worldcomesalive:cup",
+      "alcohol": 0,
+      "tags": [
+        "drink",
+        "nonalcoholic"
+      ],
+      "regions": [],
+      "method": "brew",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:tea": {
+      "name": "Tea",
+      "category": "drink",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "worldcomesalive:cup",
+      "alcohol": 0,
+      "tags": [
+        "drink",
+        "nonalcoholic"
+      ],
+      "regions": [],
+      "method": "brew",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:herbal_tea": {
+      "name": "Herbal Tea",
+      "category": "drink",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "worldcomesalive:cup",
+      "alcohol": 0,
+      "tags": [
+        "drink",
+        "nonalcoholic"
+      ],
+      "regions": [],
+      "method": "brew",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:apple_juice": {
+      "name": "Apple Juice",
+      "category": "drink",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "worldcomesalive:wooden_mug",
+      "alcohol": 0,
+      "tags": [
+        "drink",
+        "nonalcoholic"
+      ],
+      "regions": [],
+      "method": "brew",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:berry_juice": {
+      "name": "Berry Juice",
+      "category": "drink",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "worldcomesalive:cup",
+      "alcohol": 0,
+      "tags": [
+        "drink",
+        "nonalcoholic"
+      ],
+      "regions": [],
+      "method": "brew",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:ale": {
+      "name": "Ale Tankard",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "worldcomesalive:tankard",
+      "alcohol": 0.8,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [
+        "nordic",
+        "highland"
+      ],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:beer": {
+      "name": "Beer Mug",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "worldcomesalive:wooden_mug",
+      "alcohol": 0.7,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:stout": {
+      "name": "Stout Tankard",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "worldcomesalive:tankard",
+      "alcohol": 1,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [
+        "nordic",
+        "highland"
+      ],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:cider": {
+      "name": "Cider Mug",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "worldcomesalive:wooden_mug",
+      "alcohol": 0.8,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:mead": {
+      "name": "Mead Goblet",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "worldcomesalive:goblet",
+      "alcohol": 1.1,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:red_wine": {
+      "name": "Red Wine Goblet",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "worldcomesalive:goblet",
+      "alcohol": 1.2,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [
+        "temperate_kingdom",
+        "coastal"
+      ],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:white_wine": {
+      "name": "White Wine Goblet",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 7,
+      "container": "worldcomesalive:goblet",
+      "alcohol": 1.2,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [
+        "temperate_kingdom",
+        "coastal"
+      ],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:berry_wine": {
+      "name": "Berry Wine Bottle",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 6,
+      "container": "worldcomesalive:bottle",
+      "alcohol": 1.1,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [
+        "temperate_kingdom",
+        "coastal"
+      ],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:mulled_wine": {
+      "name": "Mulled Wine Goblet",
+      "category": "drink",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 8,
+      "container": "worldcomesalive:goblet",
+      "alcohol": 1.2,
+      "tags": [
+        "drink",
+        "alcohol"
+      ],
+      "regions": [
+        "temperate_kingdom",
+        "coastal"
+      ],
+      "method": "ferment",
+      "quality": true,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:plate": {
+      "name": "Plate",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:bowl": {
+      "name": "Bowl",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:fork": {
+      "name": "Fork",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:spoon": {
+      "name": "Spoon",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:knife": {
+      "name": "Knife",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:cup": {
+      "name": "Cup",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:wooden_mug": {
+      "name": "Wooden Mug",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:tankard": {
+      "name": "Tankard",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:goblet": {
+      "name": "Goblet",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:wine_glass": {
+      "name": "Wine Glass",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:bottle": {
+      "name": "Bottle",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:serving_tray": {
+      "name": "Serving Tray",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:jug": {
+      "name": "Jug",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:cooking_pot": {
+      "name": "Cooking Pot",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:pan": {
+      "name": "Pan",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:letter": {
+      "name": "Letter",
+      "category": "tableware",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "tableware"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:malt": {
+      "name": "Malt",
+      "category": "ingredient",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "ingredient"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:wort": {
+      "name": "Wort",
+      "category": "ingredient",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "ingredient"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:crushed_grapes": {
+      "name": "Crushed Grapes",
+      "category": "ingredient",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "ingredient"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "worldcomesalive:unfermented_mead": {
+      "name": "Unfermented Mead",
+      "category": "ingredient",
+      "nutrition": 0,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "ingredient"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    }
+  },
+  "recipes": [
+    {
+      "id": "malt",
+      "output": "worldcomesalive:malt",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "preparation",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "wort",
+      "output": "worldcomesalive:wort",
+      "inputs": {
+        "worldcomesalive:malt": 2,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "keg",
+      "ticks": 160,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "ale",
+      "output": "worldcomesalive:ale",
+      "inputs": {
+        "worldcomesalive:wort": 1
+      },
+      "station": "fermentation",
+      "ticks": 300,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "beer",
+      "output": "worldcomesalive:beer",
+      "inputs": {
+        "worldcomesalive:wort": 1
+      },
+      "station": "fermentation",
+      "ticks": 300,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "stout",
+      "output": "worldcomesalive:stout",
+      "inputs": {
+        "worldcomesalive:wort": 1
+      },
+      "station": "fermentation",
+      "ticks": 300,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "crush_grapes",
+      "output": "worldcomesalive:crushed_grapes",
+      "inputs": {
+        "worldcomesalive:grapes": 2
+      },
+      "station": "preparation",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "vintner",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "red_wine",
+      "output": "worldcomesalive:red_wine",
+      "inputs": {
+        "worldcomesalive:crushed_grapes": 1
+      },
+      "station": "fermentation",
+      "ticks": 360,
+      "count": 2,
+      "roles": [
+        "vintner",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "white_wine",
+      "output": "worldcomesalive:white_wine",
+      "inputs": {
+        "worldcomesalive:crushed_grapes": 1
+      },
+      "station": "fermentation",
+      "ticks": 360,
+      "count": 2,
+      "roles": [
+        "vintner",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "berry_wine",
+      "output": "worldcomesalive:berry_wine",
+      "inputs": {
+        "worldcomesalive:crushed_grapes": 1
+      },
+      "station": "fermentation",
+      "ticks": 360,
+      "count": 2,
+      "roles": [
+        "vintner",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "unfermented_mead",
+      "output": "worldcomesalive:unfermented_mead",
+      "inputs": {
+        "minecraft:honey_bottle": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "keg",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "mead",
+      "output": "worldcomesalive:mead",
+      "inputs": {
+        "worldcomesalive:unfermented_mead": 1
+      },
+      "station": "fermentation",
+      "ticks": 300,
+      "count": 2,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "cider",
+      "output": "worldcomesalive:cider",
+      "inputs": {
+        "minecraft:apple": 2
+      },
+      "station": "fermentation",
+      "ticks": 300,
+      "count": 3,
+      "roles": [
+        "brewer",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "mulled_wine",
+      "output": "worldcomesalive:mulled_wine",
+      "inputs": {
+        "worldcomesalive:red_wine": 1,
+        "minecraft:sweet_berries": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "tea",
+      "output": "worldcomesalive:tea",
+      "inputs": {
+        "minecraft:kelp": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "herbal_tea",
+      "output": "worldcomesalive:herbal_tea",
+      "inputs": {
+        "minecraft:dandelion": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "apple_juice",
+      "output": "worldcomesalive:apple_juice",
+      "inputs": {
+        "minecraft:apple": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "berry_juice",
+      "output": "worldcomesalive:berry_juice",
+      "inputs": {
+        "minecraft:sweet_berries": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 100,
+      "count": 3,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "milk_cup",
+      "output": "worldcomesalive:milk_cup",
+      "inputs": {
+        "minecraft:milk_bucket": 1
+      },
+      "station": "preparation",
+      "ticks": 80,
+      "count": 4,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "dark_bread",
+      "output": "worldcomesalive:dark_bread",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "flatbread",
+      "output": "worldcomesalive:flatbread",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "roll",
+      "output": "worldcomesalive:roll",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "porridge",
+      "output": "worldcomesalive:porridge",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "roast_beef",
+      "output": "worldcomesalive:roast_beef",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "roast_pork",
+      "output": "worldcomesalive:roast_pork",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "roast_poultry",
+      "output": "worldcomesalive:roast_poultry",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "game_roast",
+      "output": "worldcomesalive:game_roast",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "sausage",
+      "output": "worldcomesalive:sausage",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "smoked_meat",
+      "output": "worldcomesalive:smoked_meat",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "roast_fish",
+      "output": "worldcomesalive:roast_fish",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:cod": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "smoked_fish",
+      "output": "worldcomesalive:smoked_fish",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:cod": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "fish_stew",
+      "output": "worldcomesalive:fish_stew",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:cod": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "potato_dish",
+      "output": "worldcomesalive:potato_dish",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "carrot_dish",
+      "output": "worldcomesalive:carrot_dish",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "cabbage",
+      "output": "worldcomesalive:cabbage",
+      "inputs": {
+        "minecraft:carrot": 2
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "mushroom_dish",
+      "output": "worldcomesalive:mushroom_dish",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "vegetable_stew",
+      "output": "worldcomesalive:vegetable_stew",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "cheese",
+      "output": "worldcomesalive:cheese",
+      "inputs": {
+        "minecraft:milk_bucket": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "butter",
+      "output": "worldcomesalive:butter",
+      "inputs": {
+        "minecraft:milk_bucket": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "grapes",
+      "output": "worldcomesalive:grapes",
+      "inputs": {
+        "minecraft:sweet_berries": 2
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "berry_compote",
+      "output": "worldcomesalive:berry_compote",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:sweet_berries": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "beef_stew",
+      "output": "worldcomesalive:beef_stew",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "vegetable_soup",
+      "output": "worldcomesalive:vegetable_soup",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "worldcomesalive:water_jug": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "roast_dinner",
+      "output": "worldcomesalive:roast_dinner",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "meat_pie",
+      "output": "worldcomesalive:meat_pie",
+      "inputs": {
+        "minecraft:wheat": 2,
+        "minecraft:beef": 1
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "vegetable_pie",
+      "output": "worldcomesalive:vegetable_pie",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "fish_meal",
+      "output": "worldcomesalive:fish_meal",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:cod": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "breakfast",
+      "output": "worldcomesalive:breakfast",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "travel_ration",
+      "output": "worldcomesalive:travel_ration",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "feast_platter",
+      "output": "worldcomesalive:feast_platter",
+      "inputs": {
+        "minecraft:potato": 1,
+        "minecraft:carrot": 1,
+        "minecraft:beef": 1
+      },
+      "station": "hearth",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "honey_pastry",
+      "output": "worldcomesalive:honey_pastry",
+      "inputs": {
+        "minecraft:wheat": 2,
+        "minecraft:honey_bottle": 1
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "berry_tart",
+      "output": "worldcomesalive:berry_tart",
+      "inputs": {
+        "minecraft:wheat": 2,
+        "minecraft:sweet_berries": 1
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "apple_pie",
+      "output": "worldcomesalive:apple_pie",
+      "inputs": {
+        "minecraft:wheat": 2
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "honey_cake",
+      "output": "worldcomesalive:honey_cake",
+      "inputs": {
+        "minecraft:wheat": 2,
+        "minecraft:honey_bottle": 1
+      },
+      "station": "oven",
+      "ticks": 160,
+      "count": 2,
+      "roles": [
+        "cook",
+        "innkeeper",
+        "resident",
+        "baker"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_plate",
+      "output": "worldcomesalive:plate",
+      "inputs": {
+        "minecraft:oak_planks": 1
+      },
+      "station": "work_table",
+      "ticks": 140,
+      "count": 2,
+      "roles": [
+        "carpenter",
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_bowl",
+      "output": "worldcomesalive:bowl",
+      "inputs": {
+        "minecraft:oak_planks": 1
+      },
+      "station": "work_table",
+      "ticks": 140,
+      "count": 2,
+      "roles": [
+        "carpenter",
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_wooden_mug",
+      "output": "worldcomesalive:wooden_mug",
+      "inputs": {
+        "minecraft:oak_planks": 1
+      },
+      "station": "work_table",
+      "ticks": 140,
+      "count": 2,
+      "roles": [
+        "carpenter",
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_tankard",
+      "output": "worldcomesalive:tankard",
+      "inputs": {
+        "minecraft:oak_planks": 1
+      },
+      "station": "work_table",
+      "ticks": 140,
+      "count": 2,
+      "roles": [
+        "carpenter",
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_serving_tray",
+      "output": "worldcomesalive:serving_tray",
+      "inputs": {
+        "minecraft:oak_planks": 1
+      },
+      "station": "work_table",
+      "ticks": 140,
+      "count": 2,
+      "roles": [
+        "carpenter",
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_jug",
+      "output": "worldcomesalive:jug",
+      "inputs": {
+        "minecraft:oak_planks": 1
+      },
+      "station": "work_table",
+      "ticks": 140,
+      "count": 2,
+      "roles": [
+        "carpenter",
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_cup",
+      "output": "worldcomesalive:cup",
+      "inputs": {
+        "minecraft:clay_ball": 1
+      },
+      "station": "oven",
+      "ticks": 180,
+      "count": 2,
+      "roles": [
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_bottle",
+      "output": "worldcomesalive:bottle",
+      "inputs": {
+        "minecraft:clay_ball": 1
+      },
+      "station": "oven",
+      "ticks": 180,
+      "count": 2,
+      "roles": [
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_wine_glass",
+      "output": "worldcomesalive:wine_glass",
+      "inputs": {
+        "minecraft:clay_ball": 1
+      },
+      "station": "oven",
+      "ticks": 180,
+      "count": 2,
+      "roles": [
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_goblet",
+      "output": "worldcomesalive:goblet",
+      "inputs": {
+        "minecraft:clay_ball": 1
+      },
+      "station": "oven",
+      "ticks": 180,
+      "count": 2,
+      "roles": [
+        "potter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_fork",
+      "output": "worldcomesalive:fork",
+      "inputs": {
+        "minecraft:iron_nugget": 1
+      },
+      "station": "forge",
+      "ticks": 120,
+      "count": 2,
+      "roles": [
+        "blacksmith",
+        "carpenter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_spoon",
+      "output": "worldcomesalive:spoon",
+      "inputs": {
+        "minecraft:iron_nugget": 1
+      },
+      "station": "forge",
+      "ticks": 120,
+      "count": 2,
+      "roles": [
+        "blacksmith",
+        "carpenter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_knife",
+      "output": "worldcomesalive:knife",
+      "inputs": {
+        "minecraft:iron_nugget": 1
+      },
+      "station": "forge",
+      "ticks": 120,
+      "count": 2,
+      "roles": [
+        "blacksmith",
+        "carpenter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_pan",
+      "output": "worldcomesalive:pan",
+      "inputs": {
+        "minecraft:iron_nugget": 1
+      },
+      "station": "forge",
+      "ticks": 120,
+      "count": 2,
+      "roles": [
+        "blacksmith",
+        "carpenter"
+      ],
+      "quality": 1
+    },
+    {
+      "id": "make_cooking_pot",
+      "output": "worldcomesalive:cooking_pot",
+      "inputs": {
+        "minecraft:iron_nugget": 1
+      },
+      "station": "forge",
+      "ticks": 120,
+      "count": 2,
+      "roles": [
+        "blacksmith",
+        "carpenter"
+      ],
+      "quality": 1
+    }
+  ],
+  "alcohol": {
+    "enabled": true,
+    "decayPerTick": 0.0003,
+    "relaxed": 0.3,
+    "tipsy": 1.5,
+    "drunk": 3,
+    "veryDrunk": 5,
+    "maxCardPenalty": 0.2
+  },
+  "spoilage": false,
+  "publicTableware": true,
+  "npcDrinkInterval": 2400,
+  "initialFarmResources": {
+    "minecraft:wheat": 60,
+    "minecraft:potato": 32,
+    "minecraft:carrot": 32,
+    "minecraft:beef": 16,
+    "minecraft:cod": 12,
+    "minecraft:apple": 16,
+    "minecraft:sweet_berries": 18,
+    "worldcomesalive:grapes": 16,
+    "worldcomesalive:water_jug": 40,
+    "minecraft:honey_bottle": 6,
+    "minecraft:milk_bucket": 8,
+    "minecraft:dandelion": 8,
+    "minecraft:kelp": 8,
+    "minecraft:oak_planks": 24,
+    "minecraft:clay_ball": 16
+  }
+}

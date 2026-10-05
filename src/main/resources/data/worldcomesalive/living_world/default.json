@@ -296,8 +296,8 @@
           "profession": "innkeeper",
           "x": 18,
           "z": 12,
-          "width": 11,
-          "depth": 11,
+          "width": 17,
+          "depth": 17,
           "beds": 2,
           "markers": [
             "HOME",
@@ -411,8 +411,8 @@
           "profession": "innkeeper",
           "x": 18,
           "z": 12,
-          "width": 11,
-          "depth": 11,
+          "width": 17,
+          "depth": 17,
           "beds": 2,
           "markers": [
             "HOME",
@@ -508,8 +508,8 @@
           "profession": "innkeeper",
           "x": 18,
           "z": 12,
-          "width": 11,
-          "depth": 11,
+          "width": 17,
+          "depth": 17,
           "beds": 2,
           "markers": [
             "HOME",
@@ -674,8 +674,8 @@
           "profession": "innkeeper",
           "x": 18,
           "z": 12,
-          "width": 11,
-          "depth": 11,
+          "width": 17,
+          "depth": 17,
           "beds": 2,
           "markers": [
             "HOME",
@@ -862,8 +862,8 @@
           "profession": "innkeeper",
           "x": -5,
           "z": 10,
-          "width": 11,
-          "depth": 11,
+          "width": 17,
+          "depth": 17,
           "beds": 4,
           "markers": [
             "HOME",
@@ -1113,6 +1113,48 @@
       "start": 1000,
       "end": 9000,
       "skill": "mining"
+    },
+    "cook": {
+      "pokemon": "fidough",
+      "pokemonRole": "kitchen companion",
+      "start": 4000,
+      "end": 14000,
+      "skill": "cooking"
+    },
+    "brewer": {
+      "pokemon": "",
+      "pokemonRole": "",
+      "start": 3000,
+      "end": 11000,
+      "skill": "cooking"
+    },
+    "vintner": {
+      "pokemon": "",
+      "pokemonRole": "",
+      "start": 3000,
+      "end": 11000,
+      "skill": "cooking"
+    },
+    "carpenter": {
+      "pokemon": "timburr",
+      "pokemonRole": "workshop helper",
+      "start": 1000,
+      "end": 9000,
+      "skill": "crafting"
+    },
+    "potter": {
+      "pokemon": "",
+      "pokemonRole": "",
+      "start": 1000,
+      "end": 9000,
+      "skill": "crafting"
+    },
+    "merchant": {
+      "pokemon": "mudsdale",
+      "pokemonRole": "cargo transport",
+      "start": 2000,
+      "end": 11000,
+      "skill": "trading"
     }
   },
   "actions": [
@@ -1247,6 +1289,51 @@
       ],
       "cost": 3,
       "execution": "train"
+    },
+    {
+      "id": "store_equipment",
+      "requires": [
+        "home"
+      ],
+      "adds": [
+        "stored"
+      ],
+      "cost": 1,
+      "execution": "store"
+    },
+    {
+      "id": "family_dinner",
+      "requires": [
+        "stored",
+        "food"
+      ],
+      "adds": [
+        "family_fed"
+      ],
+      "cost": 2,
+      "execution": "family_meal"
+    },
+    {
+      "id": "family_conversation",
+      "requires": [
+        "family_fed"
+      ],
+      "adds": [
+        "family_talked"
+      ],
+      "cost": 1,
+      "execution": "family_social"
+    },
+    {
+      "id": "read_at_home",
+      "requires": [
+        "family_talked"
+      ],
+      "adds": [
+        "domestic"
+      ],
+      "cost": 2,
+      "execution": "read"
     }
   ],
   "dialogue": [

@@ -1,0 +1,243 @@
+{
+  "textures": {
+    "wood": "minecraft:block/oak_planks",
+    "frame": "minecraft:block/dark_oak_planks",
+    "cloth": "minecraft:block/red_wool",
+    "metal": "minecraft:block/iron_block",
+    "books": "minecraft:block/bookshelf",
+    "particle": "minecraft:block/oak_planks",
+    "pottery": "minecraft:block/terracotta",
+    "drink": "minecraft:block/brown_terracotta",
+    "wine": "minecraft:block/red_terracotta",
+    "water": "minecraft:block/light_blue_terracotta",
+    "food": "minecraft:block/orange_terracotta",
+    "leaf": "minecraft:block/green_wool",
+    "paper": "minecraft:block/white_wool"
+  },
+  "elements": [
+    {
+      "from": [
+        3.4,
+        -2.0,
+        4.4
+      ],
+      "to": [
+        8.2,
+        -1.4,
+        9.2
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pottery"
+        },
+        "south": {
+          "texture": "#pottery"
+        },
+        "east": {
+          "texture": "#pottery"
+        },
+        "west": {
+          "texture": "#pottery"
+        },
+        "up": {
+          "texture": "#pottery"
+        },
+        "down": {
+          "texture": "#pottery"
+        }
+      }
+    },
+    {
+      "from": [
+        2.8,
+        -1.4,
+        3.8
+      ],
+      "to": [
+        4.0,
+        1.0,
+        9.8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pottery"
+        },
+        "south": {
+          "texture": "#pottery"
+        },
+        "east": {
+          "texture": "#pottery"
+        },
+        "west": {
+          "texture": "#pottery"
+        },
+        "up": {
+          "texture": "#pottery"
+        },
+        "down": {
+          "texture": "#pottery"
+        }
+      }
+    },
+    {
+      "from": [
+        7.6,
+        -1.4,
+        3.8
+      ],
+      "to": [
+        8.8,
+        1.0,
+        9.8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pottery"
+        },
+        "south": {
+          "texture": "#pottery"
+        },
+        "east": {
+          "texture": "#pottery"
+        },
+        "west": {
+          "texture": "#pottery"
+        },
+        "up": {
+          "texture": "#pottery"
+        },
+        "down": {
+          "texture": "#pottery"
+        }
+      }
+    },
+    {
+      "from": [
+        4.0,
+        -1.4,
+        3.8
+      ],
+      "to": [
+        7.6,
+        1.0,
+        5.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pottery"
+        },
+        "south": {
+          "texture": "#pottery"
+        },
+        "east": {
+          "texture": "#pottery"
+        },
+        "west": {
+          "texture": "#pottery"
+        },
+        "up": {
+          "texture": "#pottery"
+        },
+        "down": {
+          "texture": "#pottery"
+        }
+      }
+    },
+    {
+      "from": [
+        4.0,
+        -1.4,
+        8.6
+      ],
+      "to": [
+        7.6,
+        1.0,
+        9.8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pottery"
+        },
+        "south": {
+          "texture": "#pottery"
+        },
+        "east": {
+          "texture": "#pottery"
+        },
+        "west": {
+          "texture": "#pottery"
+        },
+        "up": {
+          "texture": "#pottery"
+        },
+        "down": {
+          "texture": "#pottery"
+        }
+      }
+    },
+    {
+      "from": [
+        12,
+        -2,
+        2
+      ],
+      "to": [
+        12.5,
+        -1.5,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        11.5,
+        -2,
+        10
+      ],
+      "to": [
+        13,
+        -1.5,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        }
+      }
+    }
+  ]
+}

@@ -185,8 +185,10 @@ public final class TcgMod implements ModInitializer {
     }
     /** World Comes Alive adapter: identities/decks remain owned by the living-world store. */
     public static List<String> livingWorldDeck(){return livingInstance==null||livingInstance.catalog==null?List.of():List.copyOf(livingInstance.catalog.starters().get("crossroads"));}
+    public static boolean livingNpcBusy(UUID npc){TcgMod self=livingInstance;return self!=null&&self.matches.values().stream().anyMatch(m->m.npc&&m.b.equals(npc));}
     public static void challengeLivingNpc(ServerPlayerEntity player,UUID npc,String name,List<String> deck,double skill,java.util.function.Consumer<Boolean> result){
         TcgMod self=livingInstance;check(self!=null&&self.store!=null,"Card Worlds is not ready.");check(!self.matches.containsKey(player.getUuid()),"Finish your current duel first.");
+        check(self.matches.values().stream().noneMatch(active->active.npc&&active.b.equals(npc)),"This citizen is already in a Card Worlds duel.");
         check(deck!=null&&!deck.isEmpty(),"This citizen has no deck.");String owner=player.getUuidAsString();if(!self.store.hasProfile(owner))self.store.createProfile(owner,"crossroads");
         String selected=self.selectedDecks.getOrDefault(player.getUuid(),self.store.deckNames(owner).getFirst());
         Match m=new Match();m.a=player.getUuid();m.b=npc;m.npc=true;m.livingName=name;m.livingResult=result;m.botDifficulty=skill>.65?"HARD":skill<.25?"EASY":"NORMAL";

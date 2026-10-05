@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/tool_rack",
+  "textures": {
+    "wood": "minecraft:block/acacia_planks"
+  }
+}

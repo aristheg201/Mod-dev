@@ -1,0 +1,6 @@
+{
+  "parent": "worldcomesalive:block/card_set",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks"
+  }
+}

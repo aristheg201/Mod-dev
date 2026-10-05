@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "worldcomesalive:medieval_cabinet",
+    "worldcomesalive:bottle_shelf",
+    "worldcomesalive:keg",
+    "worldcomesalive:wine_rack",
+    "worldcomesalive:barrel_rack"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "worldcomesalive:block/food_pantry",
+  "textures": {
+    "wood": "minecraft:block/mangrove_planks",
+    "particle": "minecraft:block/mangrove_planks"
+  }
+}
