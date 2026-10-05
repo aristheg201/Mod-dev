@@ -32,6 +32,7 @@ public final class LivingWorld {
         public Map<String,Integer> quality=new LinkedHashMap<>();
         public boolean domesticInitialized;
         public Map<Marker,List<Pos>> markers=new EnumMap<>(Marker.class);
+        public Map<Marker,List<Pos>> activityAccess=new EnumMap<>(Marker.class);
         public Map<String,Integer> stock=new LinkedHashMap<>();
         public long money=100;
         public boolean built;

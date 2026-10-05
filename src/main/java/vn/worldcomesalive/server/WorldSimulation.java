@@ -173,7 +173,7 @@ public final class WorldSimulation {
     }
     private void repeat(Npc n,String execution){data.actions.stream().filter(a->a.execution().equals(execution)).findFirst().ifPresent(a->n.plan.addFirst(a.id()));}
     private Pos seatPoint(Npc n,Building b,Marker marker){
-        List<Pos> points=b.markers.getOrDefault(marker,List.of(b.origin));if(b.visitors.containsKey(n.id)&&marker!=Marker.BED)return b.visitors.get(n.id);
+        List<Pos> points=b.activityAccess.getOrDefault(marker,b.markers.getOrDefault(marker,List.of(b.origin)));if(b.visitors.containsKey(n.id)&&marker!=Marker.BED)return b.visitors.get(n.id);
         var household=state.settlements.get(n.settlement).households.get(n.household);
         int index=b.id.equals(n.home)?household.members.indexOf(n.id):n.id.hashCode();
         return points.get(Math.floorMod(index,points.size()));
