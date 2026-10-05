@@ -808,9 +808,7 @@
         }
       ],
       "exterior": [
-        "tavern_service",
-        "outdoor_dining",
-        "stable"
+        "delivery_yard"
       ]
     },
     "smithy": {
@@ -867,7 +865,7 @@
         }
       ],
       "exterior": [
-        "smith_yard"
+        "forge_yard"
       ]
     },
     "bakery": {
@@ -961,8 +959,7 @@
         }
       ],
       "exterior": [
-        "cargo_yard",
-        "stable"
+        "delivery_yard"
       ]
     },
     "civic_hall": {
@@ -4564,5 +4561,361 @@
       "house_guild",
       "house_noble"
     ]
+  },
+  "exteriors": {
+    "domestic_yard": {
+      "anchor": "front",
+      "atoms": [
+        {
+          "kind": "firewood",
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "tool_rack",
+          "x": 1,
+          "y": 1,
+          "z": 0,
+          "facing": "south",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "flower_vase",
+          "x": 2,
+          "y": 0,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "outdoor_bench",
+          "x": 8,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "crate",
+          "x": 0,
+          "y": 0,
+          "z": 2,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "personal_belongings",
+          "x": 0,
+          "y": 1,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "forge_yard": {
+      "anchor": "rear",
+      "atoms": [
+        {
+          "kind": "ore_crate",
+          "x": 3,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "ore_crate",
+          "x": 4,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "tool_samples",
+          "x": 3,
+          "y": 1,
+          "z": -2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "anvil",
+          "x": 1,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "crate",
+          "x": 5,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "tool_rack",
+          "x": 5,
+          "y": 1,
+          "z": -2,
+          "facing": "south",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "delivery_yard": {
+      "anchor": "side",
+      "atoms": [
+        {
+          "kind": "keg",
+          "x": -2,
+          "y": 0,
+          "z": 3,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "crate",
+          "x": -2,
+          "y": 1,
+          "z": 3,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "keg",
+          "x": -2,
+          "y": 0,
+          "z": 6,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "mug_cluster",
+          "x": -2,
+          "y": 1,
+          "z": 6,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "barrel_rack",
+          "x": -3,
+          "y": 0,
+          "z": 9,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "bottle_shelf",
+          "x": -3,
+          "y": 1,
+          "z": 9,
+          "facing": "east",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "notice_board",
+          "x": -2,
+          "y": 0,
+          "z": 12,
+          "facing": "west",
+          "layer": "secondary",
+          "markers": []
+        }
+      ]
+    },
+    "farm_yard": {
+      "anchor": "rear",
+      "atoms": [
+        {
+          "kind": "hay_storage",
+          "x": 2,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "hay_storage",
+          "x": 3,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "flour_sack",
+          "x": 3,
+          "y": 1,
+          "z": -2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "tool_rack",
+          "x": 4,
+          "y": 1,
+          "z": -2,
+          "facing": "south",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "water_pitcher",
+          "x": 5,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "crate",
+          "x": 7,
+          "y": 0,
+          "z": -2,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "produce_basket",
+          "x": 7,
+          "y": 1,
+          "z": -2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "civic_forecourt": {
+      "anchor": "front",
+      "atoms": [
+        {
+          "kind": "notice_board",
+          "x": 2,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "outdoor_bench",
+          "x": 4,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "flower_vase",
+          "x": 5,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "tapestry",
+          "x": 1,
+          "y": 2,
+          "z": -1,
+          "facing": "south",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "market_stalls": {
+      "anchor": "front",
+      "atoms": [
+        {
+          "kind": "serving_counter",
+          "x": 2,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "serving_counter",
+          "x": 3,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "produce_basket",
+          "x": 2,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "bread_basket",
+          "x": 3,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "crate",
+          "x": 1,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "flour_sack",
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    }
   }
 }
