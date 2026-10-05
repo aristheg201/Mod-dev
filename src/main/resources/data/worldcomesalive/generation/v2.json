@@ -387,7 +387,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "timber_common"
     },
     "house_long": {
       "id": "house_long",
@@ -444,7 +445,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "timber_common"
     },
     "house_crofter": {
       "id": "house_crofter",
@@ -501,7 +503,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "crofter"
     },
     "house_guild": {
       "id": "house_guild",
@@ -578,7 +581,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "timber_common"
     },
     "house_noble": {
       "id": "house_noble",
@@ -655,7 +659,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "noble"
     },
     "farmstead": {
       "id": "farmstead",
@@ -712,7 +717,8 @@
       ],
       "exterior": [
         "farm_yard"
-      ]
+      ],
+      "facade": "farm"
     },
     "crowned_inn": {
       "id": "crowned_inn",
@@ -809,7 +815,8 @@
       ],
       "exterior": [
         "delivery_yard"
-      ]
+      ],
+      "facade": "rustic_inn"
     },
     "smithy": {
       "id": "smithy",
@@ -866,7 +873,8 @@
       ],
       "exterior": [
         "forge_yard"
-      ]
+      ],
+      "facade": "forge"
     },
     "bakery": {
       "id": "bakery",
@@ -913,7 +921,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "merchant"
     },
     "trading_hall": {
       "id": "trading_hall",
@@ -960,7 +969,8 @@
       ],
       "exterior": [
         "delivery_yard"
-      ]
+      ],
+      "facade": "merchant"
     },
     "civic_hall": {
       "id": "civic_hall",
@@ -1007,7 +1017,8 @@
       ],
       "exterior": [
         "civic_forecourt"
-      ]
+      ],
+      "facade": "civic"
     },
     "guard_lodge": {
       "id": "guard_lodge",
@@ -1064,7 +1075,8 @@
       ],
       "exterior": [
         "domestic_yard"
-      ]
+      ],
+      "facade": "timber_common"
     },
     "barn": {
       "id": "barn",
@@ -1101,7 +1113,8 @@
       ],
       "exterior": [
         "farm_yard"
-      ]
+      ],
+      "facade": "barn"
     },
     "market_hall": {
       "id": "market_hall",
@@ -1128,7 +1141,8 @@
       ],
       "exterior": [
         "market_stalls"
-      ]
+      ],
+      "facade": "merchant"
     }
   },
   "compositions": {
@@ -5229,6 +5243,116 @@
           "mandatory": false
         }
       ]
+    }
+  },
+  "facades": {
+    "timber_common": {
+      "id": "timber_common",
+      "wall": "minecraft:white_terracotta",
+      "plinth": "minecraft:stone_bricks",
+      "porchWidth": 5,
+      "porchDepth": 3,
+      "canopyHeight": 4,
+      "roof": "$timber_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": false
+    },
+    "crofter": {
+      "id": "crofter",
+      "wall": "minecraft:brown_terracotta",
+      "plinth": "minecraft:mossy_cobblestone",
+      "porchWidth": 3,
+      "porchDepth": 2,
+      "canopyHeight": 3,
+      "roof": "$timber_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": false
+    },
+    "noble": {
+      "id": "noble",
+      "wall": "minecraft:calcite",
+      "plinth": "minecraft:stone_bricks",
+      "porchWidth": 7,
+      "porchDepth": 3,
+      "canopyHeight": 4,
+      "roof": "minecraft:dark_oak_stairs",
+      "shutters": true,
+      "balcony": true,
+      "serviceCanopy": false
+    },
+    "rustic_inn": {
+      "id": "rustic_inn",
+      "wall": "minecraft:white_terracotta",
+      "plinth": "minecraft:stone_bricks",
+      "porchWidth": 7,
+      "porchDepth": 4,
+      "canopyHeight": 4,
+      "roof": "minecraft:spruce_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": true
+    },
+    "forge": {
+      "id": "forge",
+      "wall": "minecraft:bricks",
+      "plinth": "minecraft:stone_bricks",
+      "porchWidth": 5,
+      "porchDepth": 3,
+      "canopyHeight": 4,
+      "roof": "minecraft:stone_brick_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": true
+    },
+    "civic": {
+      "id": "civic",
+      "wall": "minecraft:white_terracotta",
+      "plinth": "minecraft:polished_andesite",
+      "porchWidth": 9,
+      "porchDepth": 4,
+      "canopyHeight": 4,
+      "roof": "minecraft:dark_oak_stairs",
+      "shutters": true,
+      "balcony": true,
+      "serviceCanopy": false
+    },
+    "farm": {
+      "id": "farm",
+      "wall": "minecraft:mud_bricks",
+      "plinth": "minecraft:mossy_cobblestone",
+      "porchWidth": 5,
+      "porchDepth": 3,
+      "canopyHeight": 4,
+      "roof": "minecraft:spruce_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": true
+    },
+    "barn": {
+      "id": "barn",
+      "wall": "minecraft:spruce_planks",
+      "plinth": "minecraft:cobblestone",
+      "porchWidth": 7,
+      "porchDepth": 3,
+      "canopyHeight": 4,
+      "roof": "minecraft:spruce_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": true
+    },
+    "merchant": {
+      "id": "merchant",
+      "wall": "minecraft:yellow_terracotta",
+      "plinth": "minecraft:stone_bricks",
+      "porchWidth": 5,
+      "porchDepth": 3,
+      "canopyHeight": 4,
+      "roof": "$timber_stairs",
+      "shutters": true,
+      "balcony": false,
+      "serviceCanopy": true
     }
   }
 }

@@ -22,7 +22,7 @@ public final class LivingWorld {
     public enum Marker { HOME,BED,WORKSTATION,SHOP_COUNTER,STORAGE,CUSTOMER_POINT,SOCIAL_POINT,DINING_POINT,ENTRANCE,DOOR,ROAD_CONNECTION,STABLE,HORSE_OR_MOUNT_POINT,FARM_FIELD,GUARD_POST,PATROL_POINT,CARD_DUEL_TABLE,TAVERN_SEAT,FESTIVAL_POINT,OWNER_SLOT,DINING_TABLE,FOOD_STORAGE,DRINK_STORAGE,KITCHEN_POINT,READING_POINT,SERVING_POINT }
     public static final class Building {
         public String id,type,profession,owner="";
-        public Pos origin;
+        public Pos origin,sign;
         public int width,depth,height,beds,furnitureVersion,lodgingVersion;
         public List<vn.worldcomesalive.furniture.FurnitureLayout.Room> rooms=new ArrayList<>();
         public String furnishingStyle="";public boolean furnishingValid,cardInterest;public List<String> furnishingFailures=new ArrayList<>();public Map<String,Double> visualPersonality=new LinkedHashMap<>();

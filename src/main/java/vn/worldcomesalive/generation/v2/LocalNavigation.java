@@ -14,8 +14,8 @@ public final class LocalNavigation {
         Pos source=building.walkable.stream().min(Comparator.comparingDouble(p->p.distance(start))).orElseThrow();
         Pos destination=building.walkable.stream().min(Comparator.comparingDouble(p->p.distance(target))).orElseThrow();
         Cell from=Cell.of(source),to=Cell.of(destination);Map<Cell,Cell> previous=new HashMap<>();Set<Cell> seen=new HashSet<>();ArrayDeque<Cell> queue=new ArrayDeque<>();queue.add(from);seen.add(from);
-        while(!queue.isEmpty()){Cell p=queue.remove();if(p.equals(to))break;for(int[] d:new int[][]{{1,0},{-1,0},{0,1},{0,-1}})for(int dy:new int[]{0,1,-1}){Cell next=new Cell(p.x+d[0],p.y+dy,p.z+d[1]);if(cells.containsKey(next)&&seen.add(next)){previous.put(next,p);queue.add(next);}}}
-        if(!seen.contains(to))throw new IllegalArgumentException("Disconnected furnished circulation in "+building.id);
+        while(!queue.isEmpty()){Cell p=queue.remove();for(int[] d:new int[][]{{1,0},{-1,0},{0,1},{0,-1}})for(int dy:new int[]{0,1,-1}){Cell next=new Cell(p.x+d[0],p.y+dy,p.z+d[1]);if(cells.containsKey(next)&&seen.add(next)){previous.put(next,p);queue.add(next);}}}
+        if(!seen.contains(to)){var accessible=building.walkable.stream().filter(p->seen.contains(Cell.of(p))).min(Comparator.comparingDouble(p->p.distance(target))).orElseThrow();if(accessible.distance(target)>1.6)throw new IllegalArgumentException("Disconnected furnished circulation in "+building.id+" from="+start+" target="+target+" closestReachable="+accessible);to=Cell.of(accessible);}
         List<Pos> result=new ArrayList<>();for(Cell p=to;p!=null;p=previous.get(p))result.add(cells.get(p));Collections.reverse(result);result.addFirst(start);
         // Furniture is approached from its reachable adjacent cell; sitting/sleeping is a separate physical action.
         return result;
