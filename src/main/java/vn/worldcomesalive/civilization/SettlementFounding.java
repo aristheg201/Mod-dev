@@ -37,14 +37,13 @@ public final class SettlementFounding {
             player.sendMessage(Text.literal("Plow detached from "+pokemon.getSpecies().getName()+"."),true);sim.save();return true;
         }
         ItemStack held=player.getMainHandStack();if(!held.isOf(PLOW))return false;
-        held.decrement(1);PlowAttachment a=new PlowAttachment();a.pokemon=entity.getUuid();a.owner=player.getUuid();a.species=pokemon.getSpecies().getResourceIdentifier().toString();a.attachedAt=sim.state.clock;
+        held.decrement(1);PlowAttachment a=new PlowAttachment();a.pokemon=entity.getUuid();a.owner=player.getUuid();a.species=pokemon.getSpecies().getName();a.attachedAt=sim.state.clock;
         sim.state.civilization.plowAttachments.put(entity.getUuid(),a);sim.save();player.sendMessage(Text.literal("Plow attached. Lead this Pokemon to suitable land and use the ground to found a settlement."),true);return true;
     }
 
     public static PokemonEntity nearbyPlowPokemon(ServerPlayerEntity player){
         WorldSimulation sim=WorldSimulation.active();if(sim==null)return null;
-        for(var e:sim.world.iterateEntities()){
-            if(!(e instanceof PokemonEntity pokemon)||pokemon.squaredDistanceTo(player)>144)continue;
+        for(PokemonEntity pokemon:sim.world.getEntitiesByClass(PokemonEntity.class,player.getBoundingBox().expand(12),e->true)){
             var a=sim.state.civilization.plowAttachments.get(pokemon.getUuid());
             if(a!=null&&a.owner.equals(player.getUuid()))return pokemon;
         }
