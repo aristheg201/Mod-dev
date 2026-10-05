@@ -23,7 +23,8 @@ public final class TradeNetwork {
         public String route,origin,destination,item,status="PREPARING";
         public int quantity;
         public long depart,eta;
-        public boolean sealed=true,damaged;
+        public boolean sealed=true,damaged,riskResolved;
+        public Pos lastKnown;
     }
 
     public static String id(String a,String b){return a.compareTo(b)<0?a+"<->"+b:b+"<->"+a;}
@@ -98,6 +99,18 @@ public final class TradeNetwork {
         route.lastShipment=world.clock;
         return shipment;
     }
+
+
+    public static Pos position(LivingWorld world,Shipment shipment){Settlement a=world.settlements.get(shipment.origin),b=world.settlements.get(shipment.destination);if(a==null||b==null)return shipment.lastKnown;double span=Math.max(1,shipment.eta-shipment.depart);double t=Math.max(0,Math.min(1,(world.clock-shipment.depart)/span));return a.center.between(b.center,t);}
+
+    public static void tick(LivingWorld world){refresh(world);for(Route route:world.civilization.tradeRoutes.values()){boolean active=world.civilization.shipments.values().stream().anyMatch(s->s.route.equals(route.id)&&Set.of("PREPARING","IN_TRANSIT","DELAYED").contains(s.status));if(!active&&world.clock-route.lastShipment>=2400)opportunity(world,route).ifPresent(t->dispatch(world,t,null));}
+        for(Shipment shipment:world.civilization.shipments.values()){if(!Set.of("PREPARING","IN_TRANSIT","DELAYED").contains(shipment.status))continue;Route route=world.civilization.tradeRoutes.get(shipment.route);if(route==null){shipment.status="LOST";continue;}if(shipment.status.equals("PREPARING"))shipment.status="IN_TRANSIT";shipment.lastKnown=position(world,shipment);if(route.blocked){shipment.status="DELAYED";shipment.eta+=100;continue;}if(shipment.status.equals("DELAYED"))shipment.status="IN_TRANSIT";if(!shipment.riskResolved&&world.clock>=shipment.depart+(shipment.eta-shipment.depart)/2){shipment.riskResolved=true;long roll=Math.floorMod(shipment.id.getMostSignificantBits()^shipment.id.getLeastSignificantBits(),100);if(roll<Math.round(route.danger*.12)){shipment.damaged=true;shipment.quantity=Math.max(1,shipment.quantity-(int)Math.max(1,shipment.quantity/4));}}
+            if(world.clock>=shipment.eta&&shipment.status.equals("IN_TRANSIT"))deliver(world,shipment,route);}
+    }
+
+    public static Shipment dispatch(LivingWorld world,Transfer transfer,UUID contract){Route route=world.civilization.tradeRoutes.get(transfer.route());if(route==null||route.blocked)return null;Settlement origin=world.settlements.get(transfer.origin());if(origin==null)return null;int remaining=transfer.quantity();for(Building b:origin.buildings.values())if(remaining>0){int have=b.stock.getOrDefault(transfer.item(),0);if(have<=0)continue;int take=Math.min(have,remaining);b.stock.put(transfer.item(),have-take);remaining-=take;world.transact(b.id,"shipment:"+transfer.route(),transfer.item(),take,0,"caravan loading");}int loaded=transfer.quantity()-remaining;if(loaded<=0)return null;Transfer actual=new Transfer(transfer.route(),transfer.origin(),transfer.destination(),transfer.item(),loaded,transfer.score());return createShipment(world,actual,contract);}
+
+    private static void deliver(LivingWorld world,Shipment shipment,Route route){Settlement destination=world.settlements.get(shipment.destination);if(destination==null){shipment.status="LOST";return;}Building depot=destination.service("trading_post");if(depot==null)depot=destination.service("bakery");if(depot==null&& !destination.buildings.isEmpty())depot=destination.buildings.values().iterator().next();if(depot==null){shipment.status="LOST";return;}depot.stock.merge(shipment.item,shipment.quantity,Integer::sum);route.moved.merge(shipment.item,shipment.quantity,Integer::sum);shipment.status="DELIVERED";shipment.lastKnown=destination.center;world.transact("shipment:"+shipment.id,depot.id,shipment.item,shipment.quantity,0,"caravan delivery");}
 
     private TradeNetwork(){}
 }
