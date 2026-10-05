@@ -5243,6 +5243,143 @@
           "mandatory": false
         }
       ]
+    },
+    "bandit_stronghold": {
+      "id": "bandit_stronghold",
+      "history": "A roadside fort abandoned by the crown and reclaimed by an organized bandit company preying on regional trade.",
+      "faction": "BANDITS",
+      "width": 52,
+      "depth": 70,
+      "rooms": [
+        {
+          "id": "entrance",
+          "role": "ENTRANCE",
+          "zone": "OUTER_CAMP",
+          "x": -5,
+          "z": 13,
+          "width": 11,
+          "depth": 9,
+          "level": 0,
+          "composition": "tavern_common_rustic",
+          "encounter": "minecraft:pillager",
+          "lootBudget": 2
+        },
+        {
+          "id": "gatehouse",
+          "role": "GUARD",
+          "zone": "OUTER_DEFENSE",
+          "x": -5,
+          "z": 0,
+          "width": 11,
+          "depth": 10,
+          "level": 0,
+          "composition": "forge_tools",
+          "encounter": "minecraft:pillager",
+          "lootBudget": 4
+        },
+        {
+          "id": "courtyard",
+          "role": "HUB",
+          "zone": "FORT_YARD",
+          "x": -7,
+          "z": -15,
+          "width": 15,
+          "depth": 12,
+          "level": 0,
+          "composition": "tavern_common_rustic",
+          "encounter": "minecraft:pillager",
+          "lootBudget": 4
+        },
+        {
+          "id": "barracks",
+          "role": "BARRACKS",
+          "zone": "LIVING",
+          "x": -23,
+          "z": -16,
+          "width": 13,
+          "depth": 12,
+          "level": 0,
+          "composition": "shared_children",
+          "encounter": "minecraft:pillager",
+          "lootBudget": 6
+        },
+        {
+          "id": "stores",
+          "role": "STORAGE",
+          "zone": "STOLEN_GOODS",
+          "x": 12,
+          "z": -16,
+          "width": 12,
+          "depth": 12,
+          "level": 0,
+          "composition": "pantry_full",
+          "encounter": "minecraft:pillager",
+          "lootBudget": 12
+        },
+        {
+          "id": "cell",
+          "role": "PRISON",
+          "zone": "PRISON",
+          "x": -23,
+          "z": -34,
+          "width": 11,
+          "depth": 10,
+          "level": 1,
+          "composition": "guest_standard",
+          "encounter": "",
+          "lootBudget": 2
+        },
+        {
+          "id": "captain",
+          "role": "BOSS",
+          "zone": "INNER_KEEP",
+          "x": -6,
+          "z": -36,
+          "width": 13,
+          "depth": 13,
+          "level": 1,
+          "composition": "council_hall",
+          "encounter": "minecraft:vindicator",
+          "lootBudget": 22
+        }
+      ],
+      "links": [
+        {
+          "from": "entrance",
+          "to": "gatehouse",
+          "mandatory": true
+        },
+        {
+          "from": "gatehouse",
+          "to": "courtyard",
+          "mandatory": true
+        },
+        {
+          "from": "courtyard",
+          "to": "barracks",
+          "mandatory": false
+        },
+        {
+          "from": "courtyard",
+          "to": "stores",
+          "mandatory": false
+        },
+        {
+          "from": "barracks",
+          "to": "cell",
+          "mandatory": false
+        },
+        {
+          "from": "courtyard",
+          "to": "captain",
+          "mandatory": true
+        },
+        {
+          "from": "cell",
+          "to": "captain",
+          "mandatory": false
+        }
+      ]
     }
   },
   "facades": {
