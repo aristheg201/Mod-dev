@@ -126,6 +126,7 @@ public final class LivingWorld {
         public Map<String,Long> bounty=new LinkedHashMap<>();
         public Set<String> property=new LinkedHashSet<>();
         public UUID spouse;
+        public String foundedSettlement="";
     }
     public static final class WorldEvent {
         public String id,type,settlement,state="active";
