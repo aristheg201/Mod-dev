@@ -33,7 +33,7 @@ tasks.register('runWorldComesAliveClient',loomTypes.loadClass('net.fabricmc.loom
     dependsOn tasks.named('stageWcaClientRuntime')
     mods.setFrom(configurations.wcaRuntimeMods,files('build/wca-runtime/client/World-Comes-Alive-'+project.version+'.jar','build/wca-runtime/client/World-Comes-Alive-'+project.version+'-wca-qa.jar'))
     programArgs.addAll(['--width','1280','--height','720','--username','WcaRuntimeQA','--uuid','19daa819-9ed8-472b-a589-182b7513ca5b'])
-    jvmArgs.addAll(['-Xmx5G','-Dworldcomesalive.qa=true','-Dworldcomesalive.qa.v2=true','-Dworldcomesalive.qa.seed='+System.getenv().getOrDefault('WCA_QA_SEED','414212')])
+    jvmArgs.addAll(['-Xmx5G','-Dworldcomesalive.qa=true','-Dworldcomesalive.qa.v2=true','-Dworldcomesalive.qa.seed='+System.getenv().getOrDefault('WCA_QA_SEED','414212'),'-Dworldcomesalive.qa.surveyOnly='+System.getenv().getOrDefault('WCA_QA_SURVEY_ONLY','false')])
     runDir=file('run-wca')
     useXVFB=false
 }

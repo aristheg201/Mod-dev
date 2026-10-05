@@ -3,9 +3,11 @@ import java.util.*;
 import static vn.worldcomesalive.generation.v2.Spatial.*;
 /** Persistable spatial world program, including authored composition choices and validation evidence. */
 public final class SettlementPlan {
-    public int generationVersion=2;
+    public int generationVersion=2,orientation;
     public SettlementProgram program;
     public Point center;public DungeonPlan dungeon;
+    public record PublicSpace(String id,String kind,Rect boundary){}
+    public List<PublicSpace> publicSpaces=new ArrayList<>();
     public List<District> districts=new ArrayList<>();
     public List<Road> roads=new ArrayList<>();
     public List<Lot> lots=new ArrayList<>();
