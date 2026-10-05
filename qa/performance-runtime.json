@@ -1,0 +1,13 @@
+{
+  "npcPopulation": 48,
+  "full": 24,
+  "elapsedSeconds": 15.07,
+  "observedTPS": 19.973457199734572,
+  "serverMeanTickMs": 11.539288520812988,
+  "simulationLastUs": 1,
+  "simulationMaxUs": 6423,
+  "decisions": 733,
+  "transactions": 18,
+  "materializations": 161,
+  "dematerializations": 136
+}

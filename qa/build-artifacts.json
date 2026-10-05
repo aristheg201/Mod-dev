@@ -1,0 +1,20 @@
+{
+  "implementationCommit": "c41ad3c88b8d2dfa8da88840fa1fedca4799bcd4",
+  "java": "21",
+  "minecraft": "1.21.1",
+  "productionContainsQaDriver": false,
+  "artifacts": [
+    {
+      "path": "build/libs/World-Comes-Alive-0.3.0-wca.jar",
+      "bytes": 16156036,
+      "sha256": "68b762bc37a4fdb3db9486f74dcd1e32f29294c848a27e40339c1927fdc9c07b",
+      "purpose": "production"
+    },
+    {
+      "path": "build/libs/World-Comes-Alive-0.3.0-wca-wca-qa.jar",
+      "bytes": 14973438,
+      "sha256": "56359f83f20eb83b3ab960d69ffb62eb784f9e38df70726e559b43651b32364b",
+      "purpose": "isolated QA driver; do not ship"
+    }
+  ]
+}
