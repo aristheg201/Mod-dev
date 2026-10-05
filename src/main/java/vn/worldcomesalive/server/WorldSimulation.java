@@ -35,6 +35,7 @@ public final class WorldSimulation {
     private final RoadRoutes routes=new RoadRoutes();
     private final Map<UUID,CitizenEntity> entities=new HashMap<>();
     private final Map<UUID,com.cobblemon.mod.common.entity.pokemon.PokemonEntity> partners=new HashMap<>();
+    private final ArrayDeque<CitizenEntity> unloadedCitizens=new ArrayDeque<>();
     private final CognitiveQueue wakes=new CognitiveQueue();
     private final ArrayDeque<SettlementStructures.Placement> placements=new ArrayDeque<>();
     private final ArrayDeque<ChunkPos> discoveries=new ArrayDeque<>();
@@ -69,6 +70,7 @@ public final class WorldSimulation {
     private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);SettlementStructures.roads(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built)SettlementStructures.building(b,region,world,placements);}
     public void tick(){
         long start=System.nanoTime();state.clock=world.getTime();
+        while(!unloadedCitizens.isEmpty())citizenUnloaded(unloadedCitizens.removeFirst());
         for(int i=0;i<512&&!placements.isEmpty();i++){var p=placements.remove();world.setBlockState(p.pos(),p.state(),2);}
         if(placements.isEmpty()&&!buildingSettlement.isBlank()){
             Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->b.built=true);SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);buildingSettlement="";save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
@@ -147,7 +149,7 @@ public final class WorldSimulation {
     public void perceive(CitizenEntity entity){Npc n=state.npcs.get(entity.getUuid());if(n==null){entity.discard();return;}if(entity.isOnFire()){interrupt(n,"fire",null);return;}if(entity.age%20!=0)return;BlockPos p=entity.getBlockPos();if(world.getBlockState(p.down()).isOf(Blocks.FIRE)||world.getBlockState(p.east()).isOf(Blocks.FIRE))interrupt(n,"fire",null);}
     private void moveVisible(){
         for(var entry:new ArrayList<>(entities.entrySet())){
-            Npc n=state.npcs.get(entry.getKey());CitizenEntity e=entry.getValue();if(e.isRemoved()){entities.remove(entry.getKey());continue;}
+            Npc n=state.npcs.get(entry.getKey());CitizenEntity e=entry.getValue();if(e.isRemoved()){citizenUnloaded(e);continue;}
             n.location=new Pos(e.getX(),e.getY(),e.getZ());
             if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){e.getNavigation().stop();if(n.travel!=null)n.travel.pausedTicks+=10;continue;}
             if(n.travel!=null){
@@ -163,18 +165,33 @@ public final class WorldSimulation {
             e.setVillagerData(e.getVillagerData().withProfession(switch(n.profession){case "farmer"->VillagerProfession.FARMER;case "blacksmith"->VillagerProfession.TOOLSMITH;case "baker","innkeeper"->VillagerProfession.BUTCHER;case "healer"->VillagerProfession.CLERIC;case "guard"->VillagerProfession.ARMORER;default->VillagerProfession.NONE;}));
         }
     }
+    /** Native chunk unloading is the same full-to-logical transition as leaving relevance. */
+    public void queueCitizenUnload(CitizenEntity entity){unloadedCitizens.addLast(entity);}
+    public void citizenUnloaded(CitizenEntity entity){
+        if(entities.remove(entity.getUuid(),entity)){
+            Npc n=npc(entity.getUuid());if(n==null)return;
+            n.location=new Pos(entity.getX(),entity.getY(),entity.getZ());n.simulation="abstract";
+            var partner=partners.remove(n.id);if(partner!=null)partner.discard();
+            state.dematerializations++;
+            LOG.info("WCA_DEMATERIALIZE npc={} activity={} location={} reason=chunk_unload",n.id,n.activity,n.location);
+        }
+    }
+    public void citizenLoaded(CitizenEntity entity){
+        Npc n=npc(entity.getUuid());if(n==null){entity.discard();return;}
+        entity.presentation(n.gender,n.appearance.hashCode());
+    }
     private void relevance(){
         List<net.minecraft.server.network.ServerPlayerEntity> players=world.getPlayers();nearbyCount=0;
         for(Npc n:state.npcs.values()){
             if(n.lifeStage.equals("deceased")){var dead=entities.remove(n.id);if(dead!=null)dead.discard();continue;}
             boolean relevant=players.stream().anyMatch(p->new Pos(p.getX(),p.getY(),p.getZ()).distance(n.location)<data.relevance)&&world.isChunkLoaded((int)n.location.x()>>4,(int)n.location.z()>>4);
             CitizenEntity e=entities.get(n.id);
-            if(relevant){nearbyCount++;n.simulation="full";if(e==null){Entity old=world.getEntity(n.id);if(old instanceof CitizenEntity citizen)e=citizen;else{e=WorldComesAlive.CITIZEN.create(world);if(e==null)continue;if(n.travel!=null)n.location=n.travel.at(state.clock);e.setUuid(n.id);e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),0,0);e.setCustomName(Text.literal(n.name+" · "+n.profession));e.setCustomNameVisible(true);if(n.age<18)e.setBreedingAge(-24000);world.spawnEntity(e);state.materializations++;LOG.info("WCA_MATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}entities.put(n.id,e);}materializePartner(n,e);}
-            else{n.simulation=world.isChunkLoaded((int)n.location.x()>>4,(int)n.location.z()>>4)?"reduced":"abstract";if(e!=null){n.location=new Pos(e.getX(),e.getY(),e.getZ());e.discard();entities.remove(n.id);var partner=partners.remove(n.id);if(partner!=null)partner.discard();state.dematerializations++;LOG.info("WCA_DEMATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}}
+            if(relevant){nearbyCount++;n.simulation="full";if(e==null){Entity old=world.getEntity(n.id);if(old instanceof CitizenEntity citizen&&!citizen.isRemoved()){e=citizen;if(n.travel!=null)n.location=n.travel.at(state.clock);e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),e.getYaw(),e.getPitch());e.presentation(n.gender,n.appearance.hashCode());}else{e=WorldComesAlive.CITIZEN.create(world);if(e==null)continue;if(n.travel!=null)n.location=n.travel.at(state.clock);e.setUuid(n.id);e.presentation(n.gender,n.appearance.hashCode());e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),0,0);e.setCustomName(Text.literal(n.name+" · "+n.profession));e.setCustomNameVisible(true);if(n.age<18)e.setBreedingAge(-24000);world.spawnEntity(e);state.materializations++;LOG.info("WCA_MATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}entities.put(n.id,e);}materializePartner(n,e);}
+            else{n.simulation=world.isChunkLoaded((int)n.location.x()>>4,(int)n.location.z()>>4)?"reduced":"abstract";if(e!=null){n.location=new Pos(e.getX(),e.getY(),e.getZ());entities.remove(n.id);e.discard();var partner=partners.remove(n.id);if(partner!=null)partner.discard();state.dematerializations++;LOG.info("WCA_DEMATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}}
         }
     }
     private void materializePartner(Npc n,CitizenEntity owner){
-        if(n.pokemon.isEmpty()||partners.containsKey(n.id)||n.activity.equals("sleeping"))return;
+        if(partners.get(n.id)!=null&&partners.get(n.id).isRemoved())partners.remove(n.id);if(n.pokemon.isEmpty()||partners.containsKey(n.id)||n.activity.equals("sleeping"))return;
         Partner p=n.pokemon.getFirst();var existing=world.getEntity(p.id);if(existing instanceof com.cobblemon.mod.common.entity.pokemon.PokemonEntity saved){partners.put(n.id,saved);return;}try{
             var properties=com.cobblemon.mod.common.api.pokemon.PokemonProperties.Companion.parse(p.species+" level="+p.level);var pokemon=p.data.isBlank()?properties.create():new com.cobblemon.mod.common.pokemon.Pokemon();
             if(!p.data.isBlank())pokemon.loadFromJSON(world.getRegistryManager(),com.google.gson.JsonParser.parseString(p.data).getAsJsonObject());pokemon.setUuid(p.id);
@@ -190,5 +207,5 @@ public final class WorldSimulation {
     public Collection<CitizenEntity> visible(){return List.copyOf(entities.values());}
     public String status(){return "Settlements "+state.settlements.size()+" | Residents "+state.npcs.size()+" | Visible "+nearbyCount+" | Transactions "+state.transactions+" | Decisions "+state.decisions+" | AI " +lastMicros+" us | Max "+maxMicros+" us | Deferred "+deferred+" | Materializations "+state.materializations+" / dematerializations "+state.dematerializations;}
     public void save(){try{store.save(state);}catch(IOException failure){LOG.error("WCA_SAVE_FAILED: retaining in-memory state",failure);}}
-    public void close(){workers.shutdownNow();save();for(var e:entities.values())e.discard();for(var e:partners.values())e.discard();active=null;LOG.info("WCA_SAVED settlements={} npcs={} transactions={} identities={}",state.settlements.size(),state.npcs.size(),state.transactions,state.npcs.keySet());}
+    public void close(){workers.shutdownNow();save();var visibleCitizens=List.copyOf(entities.values());entities.clear();for(var e:visibleCitizens)e.discard();for(var e:partners.values())e.discard();active=null;LOG.info("WCA_SAVED settlements={} npcs={} transactions={} identities={}",state.settlements.size(),state.npcs.size(),state.transactions,state.npcs.keySet());}
 }

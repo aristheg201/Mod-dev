@@ -4,7 +4,6 @@ import vn.worldcomesalive.server.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
-import net.minecraft.client.render.entity.VillagerEntityRenderer;
 
 public final class WorldComesAliveClient implements ClientModInitializer {
     @Override public void onInitializeClient(){net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry.registerModelLayer(CitizenRenderer.MALE,()->CitizenModels.mesh(false));

@@ -34,7 +34,8 @@ public final class WorldComesAlive implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(server->{if(WorldSimulation.active()!=null)WorldSimulation.active().close();interactions=null;});
         ServerTickEvents.END_SERVER_TICK.register(server->{if(WorldSimulation.active()!=null)WorldSimulation.active().tick();});
         ServerChunkEvents.CHUNK_LOAD.register((world,chunk)->{var sim=WorldSimulation.active();if(sim!=null&&world==sim.world)sim.discover(chunk.getPos());});
-        ServerEntityEvents.ENTITY_LOAD.register((entity,world)->{if(entity instanceof CitizenEntity&&WorldSimulation.active()!=null&&WorldSimulation.active().npc(entity.getUuid())==null)entity.discard();});
+        ServerEntityEvents.ENTITY_LOAD.register((entity,world)->{if(entity instanceof CitizenEntity citizen&&WorldSimulation.active()!=null)WorldSimulation.active().citizenLoaded(citizen);});
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity,world)->{if(entity instanceof CitizenEntity citizen&&WorldSimulation.active()!=null)WorldSimulation.active().queueCitizenUnload(citizen);});
         UseEntityCallback.EVENT.register((player,world,hand,entity,hit)->{if(entity instanceof CitizenEntity citizen){if(!world.isClient&&player instanceof ServerPlayerEntity server&&interactions!=null)interactions.open(server,citizen);return ActionResult.SUCCESS;}return ActionResult.PASS;});
         AttackEntityCallback.EVENT.register((player,world,hand,entity,hit)->{if(!world.isClient&&player instanceof ServerPlayerEntity server&&entity instanceof CitizenEntity&&interactions!=null){var n=WorldSimulation.active().npc(entity.getUuid());if(n!=null)interactions.crime(server,n,"assault",30);}return ActionResult.PASS;});
         PlayerBlockBreakEvents.AFTER.register((world,player,pos,state,blockEntity)->{
