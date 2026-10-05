@@ -10,7 +10,7 @@ public final class ContractDirector {
     public static void tick(LivingWorld world){
         if(world.clock%1200!=0)return;
         TradeNetwork.refresh(world);
-        for(var route:world.civilization.tradeRoutes.values())TradeNetwork.opportunity(world,route).ifPresent(t->supply(world,route,t));
+        for(var route:world.civilization.tradeRoutes.values())TradeNetwork.opportunity(world,route).ifPresent(t->supply(world,route,t));for(var target:world.civilization.huntingTargets.values())if(target.status.equals("ACTIVE"))HuntingSystem.ensureContract(world,target);
     }
 
     private static CivilizationState.Contract supply(LivingWorld world,TradeNetwork.Route route,TradeNetwork.Transfer transfer){
