@@ -10,7 +10,7 @@ public final class ContractDirector {
     public static void tick(LivingWorld world){
         if(world.clock%1200!=0)return;
         TradeNetwork.refresh(world);
-        for(var route:world.civilization.tradeRoutes.values())TradeNetwork.opportunity(world,route).ifPresent(t->supply(world,route,t));for(var target:world.civilization.huntingTargets.values())if(target.status.equals("ACTIVE"))HuntingSystem.ensureContract(world,target);
+        for(var route:world.civilization.tradeRoutes.values())TradeNetwork.opportunity(world,route).ifPresent(t->supply(world,route,t));for(var target:world.civilization.huntingTargets.values())if(target.status.equals("ACTIVE"))HuntingSystem.ensureContract(world,target);for(var settlement:world.settlements.values())ensureDungeonSecurity(world,settlement);
     }
 
     private static CivilizationState.Contract supply(LivingWorld world,TradeNetwork.Route route,TradeNetwork.Transfer transfer){
@@ -38,6 +38,8 @@ public final class ContractDirector {
         return c;
     }
 
+
+    private static CivilizationState.Contract ensureDungeonSecurity(LivingWorld world,Settlement settlement){var dungeon=settlement.generationPlan==null?null:settlement.generationPlan.dungeon;if(dungeon==null||!dungeon.faction.equals("BANDITS")||Set.of("CLEARED","ABANDONED").contains(dungeon.state))return null;for(var c:world.civilization.contracts.values())if(c.type.equals("CLEAR_BANDIT_STRONGHOLD")&&dungeon.id.equals(c.worldTarget)&&!Set.of("COMPLETED","FAILED","EXPIRED").contains(c.status))return c;var gov=world.civilization.governments.get(settlement.id);Npc requester=null;if(gov!=null&&gov.leader!=null)requester=world.npcs.get(gov.leader);if(requester==null)requester=settlement.residents.stream().map(world.npcs::get).filter(Objects::nonNull).filter(n->n.profession.equals("guard")).findFirst().orElse(null);if(requester==null)return null;long reward=55;if(gov!=null){reward=Math.min(reward,Math.max(0,gov.treasury));gov.treasury-=reward;}if(reward<=0)return null;CivilizationState.Contract c=new CivilizationState.Contract();c.id=SettlementBootstrap.uuid("bandit-clear:"+dungeon.id);c.requester=requester.id;c.settlement=settlement.id;c.type="CLEAR_BANDIT_STRONGHOLD";c.title="Clear the bandit stronghold";c.description="Bandits have occupied an old fort and are threatening regional trade. Remove the hostile force and make the route safe again.";c.worldTarget=dungeon.id;c.required=dungeon.occupants.size();c.reward=reward;c.deadline=world.clock+96000;c.locationQuality=dungeon.state.equals("UNEXPLORED")?"APPROXIMATE":"EXACT";c.target=new Pos(dungeon.anchor.x(),dungeon.surface,dungeon.anchor.z());c.knownInformation=dungeon.state.equals("UNEXPLORED")?"Scouts place the fort somewhere near "+Math.round(dungeon.anchor.x())+", "+Math.round(dungeon.anchor.z())+". Exact internal strength is unknown.":"The stronghold has been discovered. Last confirmed at "+Math.round(dungeon.anchor.x())+", "+Math.round(dungeon.anchor.z())+".";world.civilization.contracts.put(c.id,c);world.transact(settlement.id+":treasury",c.id.toString(),"security contract escrow",1,reward,"bandit stronghold clearance");world.remember(requester,new Memory("bandit_stronghold_threat",null,dungeon.id,world.clock,.9,-.7,.9,"scout report"));return c;}
     private static String display(String item){int colon=item.indexOf(':');return (colon>=0?item.substring(colon+1):item).replace('_',' ');}
     private ContractDirector(){}
 }
