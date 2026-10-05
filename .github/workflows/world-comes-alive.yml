@@ -1,7 +1,5 @@
 name: World Comes Alive
 on:
-  push:
-    branches: [feature/world-comes-alive]
   workflow_dispatch:
 permissions:
   contents: read

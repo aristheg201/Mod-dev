@@ -5,6 +5,8 @@ import java.util.*;
 /** Authoritative identities and simulation state. No entity or client objects belong here. */
 public final class LivingWorld {
     public int schema=1;
+    public vn.worldcomesalive.civilization.CivilizationState civilization=new vn.worldcomesalive.civilization.CivilizationState();
+    public Map<UUID,vn.worldcomesalive.civilization.Lodging.Room> rooms=new LinkedHashMap<>();
     public vn.worldcomesalive.domestic.DomesticState domestic=new vn.worldcomesalive.domestic.DomesticState();
     public long clock, revision, transactions, materializations, dematerializations, decisions;
     public Map<String,Settlement> settlements=new LinkedHashMap<>();
@@ -21,7 +23,7 @@ public final class LivingWorld {
     public static final class Building {
         public String id,type,profession,owner="";
         public Pos origin;
-        public int width,depth,height,beds,furnitureVersion;
+        public int width,depth,height,beds,furnitureVersion,lodgingVersion;
         public List<vn.worldcomesalive.furniture.FurnitureLayout.Room> rooms=new ArrayList<>();
         public String furnishingStyle="";public boolean furnishingValid,cardInterest;public List<String> furnishingFailures=new ArrayList<>();public Map<String,Double> visualPersonality=new LinkedHashMap<>();
         public Map<UUID,Pos> visitors=new LinkedHashMap<>();public int seatCapacity,standingCapacity,serviceCapacity;
@@ -73,6 +75,7 @@ public final class LivingWorld {
         public long interruptUntil,actionUntil,interactionUntil;
         public List<String> plan=new ArrayList<>();
         public Map<String,Integer> schedule=new LinkedHashMap<>();
+        public Set<String> roles=new LinkedHashSet<>();
         public Set<String> interests=new LinkedHashSet<>();
         public Map<String,Double> personality=new LinkedHashMap<>(),needs=new LinkedHashMap<>(),skills=new LinkedHashMap<>(),reputation=new LinkedHashMap<>();
         public Map<String,Integer> inventory=new LinkedHashMap<>(),collection=new LinkedHashMap<>();
@@ -112,6 +115,7 @@ public final class LivingWorld {
         public boolean arrived(long time){return at(time).distance(route.getLast())<0.05;}
     }
     public static final class PlayerLife {
+        public List<String> recovery=new ArrayList<>();
         public long money=60;
         public double intoxication;
         public long intoxicationAt,lastStudy=-24000;

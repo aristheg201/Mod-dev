@@ -1199,6 +1199,125 @@
       "method": "raw",
       "quality": false,
       "freshnessTicks": 72000
+    },
+    "minecraft:bread": {
+      "name": "Bread",
+      "category": "grain",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 3,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "grain",
+        "food"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "minecraft:carrot": {
+      "name": "Carrot",
+      "category": "vegetable",
+      "nutrition": 3,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "vegetable",
+        "food"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "minecraft:potato": {
+      "name": "Potato",
+      "category": "vegetable",
+      "nutrition": 1,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "vegetable",
+        "food"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "minecraft:apple": {
+      "name": "Apple",
+      "category": "fruit",
+      "nutrition": 4,
+      "saturation": 0.6,
+      "value": 2,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fruit",
+        "food"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "minecraft:sweet_berries": {
+      "name": "Berries",
+      "category": "fruit",
+      "nutrition": 2,
+      "saturation": 0.6,
+      "value": 1,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fruit",
+        "food"
+      ],
+      "regions": [],
+      "method": "raw",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "minecraft:cooked_beef": {
+      "name": "Cooked Beef",
+      "category": "meat",
+      "nutrition": 8,
+      "saturation": 0.6,
+      "value": 5,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "meat",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": false,
+      "freshnessTicks": 72000
+    },
+    "minecraft:cooked_cod": {
+      "name": "Cooked Fish",
+      "category": "fish",
+      "nutrition": 5,
+      "saturation": 0.6,
+      "value": 4,
+      "container": "",
+      "alcohol": 0,
+      "tags": [
+        "fish",
+        "food"
+      ],
+      "regions": [],
+      "method": "cook",
+      "quality": false,
+      "freshnessTicks": 72000
     }
   },
   "recipes": [

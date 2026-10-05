@@ -33,6 +33,8 @@ public final class WorldSimulation {
     public WorldContent data;
     public final vn.worldcomesalive.domestic.DomesticManager domestic;
     public final vn.worldcomesalive.agriculture.AgriculturalRuntime agriculture;
+    public final vn.worldcomesalive.civilization.LodgingManager lodging;
+    public final vn.worldcomesalive.civilization.CivilizationManager civilization;
     private final WorldStore store;
     private final RoadRoutes routes=new RoadRoutes();
     private final Map<UUID,CitizenEntity> entities=new HashMap<>();
@@ -48,8 +50,8 @@ public final class WorldSimulation {
     private final java.util.concurrent.ExecutorService workers=java.util.concurrent.Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"wca-pure-planning");t.setDaemon(true);return t;});
     private final Set<String> cardNights=new HashSet<>();
     public WorldSimulation(MinecraftServer server,WorldContent data)throws IOException{
-        this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;domestic=new vn.worldcomesalive.domestic.DomesticManager(this);agriculture=new vn.worldcomesalive.agriculture.AgriculturalRuntime(this);
-        for(Settlement s:state.settlements.values())if(s.ready){for(Building b:s.buildings.values())if(b.furnitureVersion<vn.worldcomesalive.furniture.FurnitureLayout.VERSION){SettlementStructures.retrofitFurniture(b,world,placements);furnishing.add(b);}domestic.initialize(s);}
+        this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;domestic=new vn.worldcomesalive.domestic.DomesticManager(this);agriculture=new vn.worldcomesalive.agriculture.AgriculturalRuntime(this);lodging=new vn.worldcomesalive.civilization.LodgingManager(this);civilization=new vn.worldcomesalive.civilization.CivilizationManager(this);
+        for(Settlement s:state.settlements.values())if(s.ready){lodging.initialize(s);Building inn=s.service("tavern");if(inn!=null&&inn.lodgingVersion<1){vn.worldcomesalive.civilization.LodgingStructures.generate(inn,LodgingRooms(inn),placements);furnishing.add(inn);}for(Building b:s.buildings.values())if(b.furnitureVersion<vn.worldcomesalive.furniture.FurnitureLayout.VERSION){SettlementStructures.retrofitFurniture(b,world,placements);furnishing.add(b);}domestic.initialize(s);}
         for(Npc n:state.npcs.values())enqueue(n,Math.max(state.clock,n.nextCognition),3);
         for(Settlement s:state.settlements.values())if(!s.ready){queueBuild(s);break;}
         LOG.info("WCA_LOADED settlements={} npcs={} revision={} identities={}",state.settlements.size(),state.npcs.size(),state.revision,state.npcs.keySet());
@@ -71,15 +73,15 @@ public final class WorldSimulation {
         for(Settlement other:state.settlements.values())if(!other.id.equals(s.id)&&other.center.distance(s.center)<1200){s.routes.add(other.id);other.routes.add(s.id);}
         queueBuild(s);LOG.info("WCA_GENERATED id={} name={} archetype={} region={} origin={} plots={} manualSetup=false",s.id,s.name,s.archetype,s.region,s.center,s.buildings.size());
     }
-    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);vn.worldcomesalive.agriculture.Landscape.roads(s,world,placements);vn.worldcomesalive.agriculture.Landscape.generate(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built)SettlementStructures.building(b,region,world,placements);}
+    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);vn.worldcomesalive.agriculture.Landscape.roads(s,world,placements);vn.worldcomesalive.agriculture.Landscape.generate(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built){SettlementStructures.building(b,region,world,placements);if(b.type.equals("tavern")){lodging.initialize(s);vn.worldcomesalive.civilization.LodgingStructures.generate(b,new ArrayList<>(state.rooms.values().stream().filter(r->r.building.equals(b.id)).toList()),placements);}}}
     public void tick(){
         long start=System.nanoTime();state.clock=world.getTime();
         while(!unloadedCitizens.isEmpty())citizenUnloaded(unloadedCitizens.removeFirst());
         for(int i=0;i<512&&!placements.isEmpty();i++){var p=placements.remove();world.setBlockState(p.pos(),p.state(),2);}
         if(placements.isEmpty()&&!buildingSettlement.isBlank()){
-            Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);buildingSettlement="";save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
+            Settlement s=state.settlements.get(buildingSettlement);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=1;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);civilization.initialize(s);buildingSettlement="";save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
         }
-        if(placements.isEmpty()&&!furnishing.isEmpty()){furnishing.forEach(b->b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION);furnishing.clear();save();}
+        if(placements.isEmpty()&&!furnishing.isEmpty()){furnishing.forEach(b->{b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=1;});furnishing.clear();save();}
         if(placements.isEmpty()&&!discoveries.isEmpty())generate(discoveries.remove());
         int processed=0;long budget=System.nanoTime()+2_000_000;
         while(wakes.hasReady(state.clock)&&processed<64){
@@ -87,7 +89,7 @@ public final class WorldSimulation {
             Wake wake=wakes.remove();Npc n=state.npcs.get(wake.npc());if(n==null||wake.version()!=n.cognitionVersion)continue;
             think(n);processed++;state.decisions++;
         }
-        domestic.tick();agriculture.tick();
+        domestic.tick();agriculture.tick();lodging.tick();civilization.tick();
         if(state.clock%10==0)moveVisible();
         if(state.clock%20==0)relevance();
         if(state.clock%600==0)events();
@@ -231,6 +233,7 @@ public final class WorldSimulation {
         for(WorldEvent e:state.events)if(e.state.equals("active")&&state.clock>=e.ends){e.state="resolved";for(UUID id:e.witnesses){Npc n=state.npcs.get(id);if(n!=null){n.activeEvents.remove(e.id);state.remember(n,new Memory("event_resolved:"+e.type,null,e.settlement,state.clock,.7,.2,.9,"experienced"));}}LOG.info("WCA_EVENT_RESOLVED id={} type={}",e.id,e.type);}
         for(Settlement s:state.settlements.values())if(s.ready&&s.lastSocialDay<state.clock/24000){s.lastSocialDay=state.clock/24000;Random rng=new Random(s.seed^s.lastSocialDay);for(var def:data.events)if(rng.nextDouble()<def.chance()){WorldEvent e=new WorldEvent();e.id=s.id+"_"+def.type()+"_"+s.lastSocialDay;e.type=def.type();e.settlement=s.id;e.starts=state.clock;e.ends=state.clock+def.duration();e.witnesses.addAll(s.residents);state.events.add(e);for(UUID id:s.residents){Npc n=state.npcs.get(id);n.activeEvents.add(e.id);state.remember(n,new Memory("event:"+e.type,null,s.id,state.clock,.8,e.type.equals("festival")?.5:-.3,1,"experienced"));}}}
     }
+    private List<vn.worldcomesalive.civilization.Lodging.Room> LodgingRooms(Building inn){return state.rooms.values().stream().filter(r->r.building.equals(inn.id)).toList();}
     public void queuePlacement(SettlementStructures.Placement placement){placements.add(placement);}
     public Npc npc(UUID id){return state.npcs.get(id);}
     public Collection<CitizenEntity> visible(){return List.copyOf(entities.values());}
