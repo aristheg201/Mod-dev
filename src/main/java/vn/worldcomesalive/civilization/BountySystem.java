@@ -77,5 +77,11 @@ public final class BountySystem {
         return bounty.reward;
     }
 
+    public static Optional<Bounty> activeForTarget(LivingWorld world,UUID target){return world.civilization.bounties.values().stream().filter(b->b.target.equals(target)&&Set.of("WANTED","FUGITIVE").contains(b.status)).max(Comparator.comparingLong(b->b.reward));}
+
+    public static List<Bounty> listings(LivingWorld world,String settlement){return world.civilization.bounties.values().stream().filter(b->b.jurisdiction.equals(settlement)&&Set.of("WANTED","FUGITIVE").contains(b.status)).sorted(Comparator.comparingLong((Bounty b)->b.reward).reversed()).toList();}
+
+    public static String describe(LivingWorld world,Bounty bounty){Npc target=world.npcs.get(bounty.target);String name=target==null?bounty.target.toString():(target.name==null||target.name.isBlank()?bounty.target.toString():target.name);String where=bounty.lastKnown==null?"UNKNOWN":bounty.lastKnown.toString();long age=Math.max(0,world.clock-bounty.lastSeen);return name+" · "+bounty.requirement+" · "+bounty.reward+" crowns\nCrimes: "+bounty.crimes.size()+" · Last known: "+where+" ("+age+" ticks ago)\nJurisdiction: "+bounty.jurisdiction+" · Status: "+bounty.status;}
+
     private BountySystem(){}
 }
