@@ -134,5 +134,6 @@
   "block.worldcomesalive.card_set": "Card Set",
   "block.worldcomesalive.tool_samples": "Tool Samples",
   "block.worldcomesalive.tool_rack": "Tool Rack",
-  "block.worldcomesalive.ore_crate": "Ore Crate"
+  "block.worldcomesalive.ore_crate": "Ore Crate",
+  "item.worldcomesalive.settlement_plow": "Settlement Plow"
 }
