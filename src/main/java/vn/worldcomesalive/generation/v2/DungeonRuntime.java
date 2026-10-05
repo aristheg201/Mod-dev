@@ -7,6 +7,7 @@ import net.minecraft.util.*;
 import net.minecraft.util.math.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.block.entity.ChestBlockEntity;
+import java.util.*;
 /** Actual native occupants/loot, player discovery and persistent death consequences; no timer-based respawns. */
 public final class DungeonRuntime {
     private final WorldSimulation sim;
