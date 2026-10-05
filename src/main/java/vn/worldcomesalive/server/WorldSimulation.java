@@ -46,7 +46,7 @@ public final class WorldSimulation {
     private final ArrayDeque<SettlementStructures.Placement> placements=new ArrayDeque<>();
     private final ArrayDeque<ChunkPos> discoveries=new ArrayDeque<>();
     private String buildingSettlement="";
-    private TerrainCapture terrainCapture;private TerrainSnapshot generationTerrain;private java.util.concurrent.CompletableFuture<SettlementPlan> generationFuture;private SettlementProgram generationProgram;private GenerationCatalog generationCatalog;private Spatial.Point generationCenter;
+    private TerrainCapture terrainCapture;private TerrainSnapshot generationTerrain;private java.util.concurrent.CompletableFuture<SettlementPlan> generationFuture;private SettlementProgram generationProgram;private GenerationCatalog generationCatalog;private Spatial.Point generationCenter;private UUID pendingFounder;
     private final Set<Building> furnishing=new HashSet<>();
     public long lastMicros,maxMicros,deferred,nearbyCount,urgentReactions;
     private long nextCheckpoint;
@@ -75,6 +75,24 @@ public final class WorldSimulation {
         String archetype=Math.floorMod(seed,3)==0?"market_town":"farming_village";
         beginTerrain(new Pos(x,y,z),SettlementProgram.create(seed,archetype,data.region(biome).id(),GenerationCatalog.active));
     }
+    public boolean tryFoundSettlement(net.minecraft.server.network.ServerPlayerEntity player,BlockPos pos){
+        if(generationPending()){player.sendMessage(Text.literal("A settlement survey is already being processed."),true);return false;}
+        Pos here=new Pos(pos.getX()+.5,pos.getY()+1,pos.getZ()+.5);
+        Settlement nearby=state.settlements.values().stream().filter(v->v.ready&&v.center.distance(here)<480).findFirst().orElse(null);
+        if(nearby!=null){player.sendMessage(Text.literal("This land is already within the sphere of "+nearby.name+"."),true);return false;}
+        var life=state.players.computeIfAbsent(player.getUuid(),id->new PlayerLife());
+        if(!life.foundedSettlement.isBlank()){player.sendMessage(Text.literal("You already founded "+life.foundedSettlement+"."),true);return false;}
+        var plow=vn.worldcomesalive.civilization.SettlementFounding.nearbyPlowPokemon(player);
+        if(plow==null){player.sendMessage(Text.literal("Bring your Pokemon with an attached settlement plow nearby."),true);return false;}
+        int y=world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,pos.getX(),pos.getZ())-1;
+        if(y<=world.getSeaLevel()+1){player.sendMessage(Text.literal("This ground is unsuitable for a settlement."),true);return false;}
+        String biome=world.getBiome(new BlockPos(pos.getX(),y,pos.getZ())).getKey().map(k->k.getValue().toString()).orElse("plains");
+        long seed=siteSeed(world.getSeed(),pos.getX()>>4,pos.getZ()>>4)^player.getUuid().getMostSignificantBits();
+        pendingFounder=player.getUuid();
+        beginTerrain(new Pos(pos.getX(),y,pos.getZ()),SettlementProgram.create(seed,"farming_village",data.region(biome).id(),GenerationCatalog.active));
+        player.sendMessage(Text.literal("Settlement survey started. The WCA planner will lay out roads, lots, farms and services from this site."),false);
+        return true;
+    }
     private void beginTerrain(Pos center,SettlementProgram program){generationCatalog=GenerationCatalog.active;generationProgram=program;generationCenter=new Spatial.Point(center.x(),center.z());terrainCapture=new TerrainCapture(world,(int)center.x(),(int)center.z());LOG.info("WCA_V2_TERRAIN_START seed={} archetype={} population={} foodCapacity={} center={}",program.seed(),program.archetype(),program.populationTarget(),program.foodCapacity(),center);}
     private void generationTick(){
         if(terrainCapture==null)return;
@@ -96,7 +114,7 @@ public final class WorldSimulation {
         while(!unloadedCitizens.isEmpty())citizenUnloaded(unloadedCitizens.removeFirst());
         for(int i=0;i<512&&!placements.isEmpty();i++){var p=placements.remove();world.setBlockState(p.pos(),p.state(),2);}
         if(placements.isEmpty()&&!buildingSettlement.isBlank()){
-            Settlement s=state.settlements.get(buildingSettlement);for(Building b:s.buildings.values())for(Pos bed:b.markers.getOrDefault(Marker.BED,List.of()))if(!(world.getBlockState(BlockPos.ofFloored(bed.x(),bed.y(),bed.z())).getBlock() instanceof net.minecraft.block.BedBlock))throw new IllegalStateException("Physical semantic bed missing before bootstrap: "+b.id+" "+bed);world.getChunkManager().save(true);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=s.generationVersion>=2?20:vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=s.generationVersion>=2?2:1;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(var building:s.buildings.values())if(building.sign!=null&&world.getBlockEntity(BlockPos.ofFloored(building.sign.x(),building.sign.y(),building.sign.z())) instanceof net.minecraft.block.entity.SignBlockEntity sign){sign.setText(sign.getFrontText().withMessage(0,Text.literal(building.type.replace("_"," "))).withMessage(1,Text.literal(s.name)),true);sign.markDirty();}for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);civilization.initialize(s);buildingSettlement="";if(terrainCapture!=null){terrainCapture.close();terrainCapture=null;generationTerrain=null;}save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
+            Settlement s=state.settlements.get(buildingSettlement);for(Building b:s.buildings.values())for(Pos bed:b.markers.getOrDefault(Marker.BED,List.of()))if(!(world.getBlockState(BlockPos.ofFloored(bed.x(),bed.y(),bed.z())).getBlock() instanceof net.minecraft.block.BedBlock))throw new IllegalStateException("Physical semantic bed missing before bootstrap: "+b.id+" "+bed);world.getChunkManager().save(true);s.buildings.values().forEach(b->{b.built=true;b.furnitureVersion=s.generationVersion>=2?20:vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=s.generationVersion>=2?2:1;});SettlementBootstrap.populate(state,s,data,vn.svarcade.tcg.fabric.TcgMod.livingWorldDeck());for(var building:s.buildings.values())if(building.sign!=null&&world.getBlockEntity(BlockPos.ofFloored(building.sign.x(),building.sign.y(),building.sign.z())) instanceof net.minecraft.block.entity.SignBlockEntity sign){sign.setText(sign.getFrontText().withMessage(0,Text.literal(building.type.replace("_"," "))).withMessage(1,Text.literal(s.name)),true);sign.markDirty();}for(UUID id:s.residents)enqueue(state.npcs.get(id),state.clock+Math.floorMod(id.hashCode(),200),3);domestic.initialize(s);agriculture.register(s);civilization.initialize(s);if(pendingFounder!=null){var life=state.players.computeIfAbsent(pendingFounder,id->new PlayerLife());life.foundedSettlement=s.id;var government=state.civilization.governments.get(s.id);if(government!=null){government.type="PLAYER_GOVERNED";government.playerLeader=pendingFounder;}s.archetype="player_founded";s.faction="player:"+pendingFounder;pendingFounder=null;}buildingSettlement="";if(terrainCapture!=null){terrainCapture.close();terrainCapture=null;generationTerrain=null;}save();LOG.info("WCA_BOOTSTRAP_READY id={} households={} residents={} beds={} manualSetup=false",s.id,s.households.size(),s.residents.size(),s.buildings.values().stream().mapToInt(b->b.beds).sum());
         }
         if(placements.isEmpty()&&!furnishing.isEmpty()){furnishing.forEach(b->{b.furnitureVersion=vn.worldcomesalive.furniture.FurnitureLayout.VERSION;b.lodgingVersion=1;});furnishing.clear();save();}
         if(terrainCapture==null&&placements.isEmpty()&&!discoveries.isEmpty())generate(discoveries.remove());
