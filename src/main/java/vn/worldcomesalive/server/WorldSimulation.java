@@ -67,9 +67,9 @@ public final class WorldSimulation {
     public void discover(ChunkPos pos){ChunkPos candidate=candidate(world.getSeed(),Math.floorDiv(pos.x,data.regionChunks),Math.floorDiv(pos.z,data.regionChunks),data.regionChunks);if(candidate.equals(pos)&&!state.surveyed.contains(pos.toString()))discoveries.add(pos);}
     private void generate(ChunkPos pos){
         String survey=pos.toString();if(!state.surveyed.add(survey))return;
-        int x=pos.getCenterX(),z=pos.getCenterZ();world.getChunk(x>>4,z>>4);int y=world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z)-1;
+        int x=pos.getCenterX(),z=pos.getCenterZ();if(!world.isChunkLoaded(pos.x,pos.z)){state.surveyed.remove(survey);discoveries.addLast(pos);return;}int y=world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z)-1;
         if(y<=world.getSeaLevel()+1||y>180)return;
-        int variance=0;for(int dx:new int[]{-35,0,35})for(int dz:new int[]{-35,0,35}){world.getChunk((x+dx)>>4,(z+dz)>>4);variance=Math.max(variance,Math.abs(world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x+dx,z+dz)-1-y));}if(variance>18)return;
+        // Detailed suitability is evaluated against the completed immutable terrain snapshot. Never synchronously load neighboring chunks here.
         String biome=world.getBiome(new BlockPos(x,y,z)).getKey().map(k->k.getValue().toString()).orElse("plains");if(biome.contains("ocean")||biome.contains("river"))return;
         long seed=siteSeed(world.getSeed(),Math.floorDiv(pos.x,data.regionChunks),Math.floorDiv(pos.z,data.regionChunks));
         String archetype=Math.floorMod(seed,3)==0?"market_town":"farming_village";
@@ -83,11 +83,11 @@ public final class WorldSimulation {
             if(!generationFuture.isDone())return;
             SettlementPlan plan=generationFuture.join();if(generationCatalog!=GenerationCatalog.active)throw new IllegalArgumentException("Generation catalog changed during planning; candidate will be resurveyed");
             Settlement existing=state.settlements.values().stream().filter(s->s.seed==plan.program.seed()).findFirst().orElse(null);Settlement s=existing!=null?existing:SemanticRegistration.create(plan,data);if(existing==null)state.settlements.put(s.id,s);
-            s.roads.clear();for(var r:plan.roads)for(var point:r.points())s.roads.add(new Pos(point.x(),generationTerrain.heightAt(point.x(),point.z())+1,point.z()));
+            s.roads.clear();for(var r:plan.roads)for(var point:r.points())s.roads.add(new Pos(Math.round(point.x())+.5,generationTerrain.heightAt(point.x(),point.z())+1,Math.round(point.z())+.5));
             SemanticRegistration.agriculture(s,generationTerrain);new BlockMaterializer(s,generationTerrain,generationCatalog,state,data).materialize(placements);buildingSettlement=s.id;
             for(Settlement other:state.settlements.values())if(!other.id.equals(s.id)&&other.center.distance(s.center)<1500){s.routes.add(other.id);other.routes.add(s.id);}
             generationFuture=null;LOG.info("WCA_V2_ACCEPTED id={} buildings={} fields={} quality={} placements={} manualSetup=false",s.id,s.buildings.size(),s.fields.size(),plan.quality,placements.size());
-        }catch(RuntimeException rejected){LOG.warn("WCA_V2_REJECTED seed={} reason={}",generationProgram.seed(),rejected.toString());generationFuture=null;terrainCapture.close();terrainCapture=null;generationTerrain=null;}
+        }catch(RuntimeException rejected){LOG.warn("WCA_V2_REJECTED seed={} reason={}",generationProgram.seed(),rejected.toString());generationFuture=null;var failed=state.settlements.values().stream().filter(s->!s.ready&&s.seed==generationProgram.seed()).findFirst().orElse(null);if(failed!=null){state.settlements.remove(failed.id);state.rooms.values().removeIf(r->r.settlement.equals(failed.id));}placements.clear();buildingSettlement="";terrainCapture.close();terrainCapture=null;generationTerrain=null;}
     }
     public boolean generationPending(){return terrainCapture!=null||!buildingSettlement.isBlank();}
     public void tick(){
@@ -133,7 +133,7 @@ public final class WorldSimulation {
         Building home=s.buildings.get(n.home),work=s.buildings.get(n.workplace),tavern=s.service("tavern"),market=s.service("bakery"),guard=s.service("guardhouse");
         switch(action){
             case "home"->travel(n,s,home,"returning home");
-            case "work"->{var field=n.profession.equals("farmer")?vn.worldcomesalive.agriculture.Agriculture.workPlot(s,n):null;if(field!=null){Pos target=new Pos(field.origin.x()+field.width/2.0,field.origin.y()+1,field.origin.z()+field.depth/2.0);Travel t=new Travel();t.departure=state.clock;t.destination=field.id.toString();t.route=new ArrayList<>(List.of(n.location,s.buildings.get(n.workplace).point(Marker.ENTRANCE),target));n.travel=t;n.activity="going to field";}else travel(n,s,work==null?home:work,"going to work");}
+            case "work"->{var field=n.profession.equals("farmer")?vn.worldcomesalive.agriculture.Agriculture.workPlot(s,n):null;if(field!=null){Pos target=field.entrance==null?new Pos(field.origin.x()+field.width/2.0,field.origin.y()+1,field.origin.z()+field.depth/2.0):field.entrance;Travel t=new Travel();t.departure=state.clock;t.destination=field.id.toString();t.route=s.generationVersion>=2?vn.worldcomesalive.generation.v2.GraphNavigation.routeTo(s,n.location,target):new ArrayList<>(List.of(n.location,s.buildings.get(n.workplace).point(Marker.ENTRANCE),target));n.travel=t;n.activity="going to field";}else travel(n,s,work==null?home:work,"going to work");}
             case "tavern"->travel(n,s,tavern==null?home:tavern,"visiting tavern");
             case "market"->travel(n,s,market==null?home:market,"shopping");
             case "guard"->{travel(n,s,guard==null?home:guard,"seeking safety");n.emotion="alarmed";n.plan.clear();}

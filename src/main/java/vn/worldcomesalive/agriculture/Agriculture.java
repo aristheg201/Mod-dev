@@ -6,9 +6,9 @@ import java.util.*;
 /** Economy-first agricultural capacity and persistent crop lifecycle, shared across simulation LOD. */
 public final class Agriculture {
     public static final class Plot {
-        public UUID id;public String settlement,owner,building,crop,state="GROWING",storage;public Pos origin;public int width,depth,capacity;public double fertility=.8;public long due;public List<UUID> workers=new ArrayList<>();public List<Pos> cells=new ArrayList<>();
+        public UUID id;public String settlement,owner,building,crop,state="GROWING",storage;public Pos origin,entrance;public int width,depth,capacity;public double fertility=.8;public long due;public List<UUID> workers=new ArrayList<>();public List<Pos> cells=new ArrayList<>();
     }
-    public static final class Pasture {public UUID id;public String settlement,owner,storage;public Pos origin;public int width=16,depth=14;public List<UUID> animals=new ArrayList<>();}
+    public static final class Pasture {public UUID id;public String settlement,owner,storage;public Pos origin,entrance;public int width=16,depth=14;public List<UUID> animals=new ArrayList<>();}
     public static final class Livestock {public UUID id;public String species="sheep",pasture;public Pos location;public long lastFed;public boolean alive=true;}
     public static void plan(Settlement s){
         if(!s.fields.isEmpty())return;int population=s.buildings.values().stream().mapToInt(b->b.beds).sum();s.economicIdentity=s.service("farm")!=null?"AGRICULTURE / CRAFT / TRADE":"CRAFT / REGIONAL TRADE";
