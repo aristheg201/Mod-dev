@@ -1,0 +1,6 @@
+package vn.worldcomesalive.generation.v2;
+import java.util.*;
+/** Economy and population are resolved before any spatial building geometry. */
+public record SettlementProgram(long seed,String archetype,String region,int populationTarget,int foodCapacity,List<String> economies,Map<String,Integer> services,List<String> homes) {
+    public static SettlementProgram create(long seed,String archetype,String region,GenerationCatalog data){var a=data.archetypes.get(archetype);if(a==null)throw new IllegalArgumentException("Unknown archetype "+archetype);Random rng=new Random(seed);Map<String,Integer> services=new LinkedHashMap<>(a.services());int serviceBeds=services.entrySet().stream().mapToInt(e->data.buildings.get(e.getKey()).beds()*e.getValue()).sum();List<String> pool=data.residential.get(archetype);List<String> homes=new ArrayList<>();int minimum=a.minPopulation(),target=minimum+rng.nextInt(a.maxPopulation()-minimum+1),capacity=serviceBeds;while(capacity<target){String id=pool.get(homes.size()%pool.size());homes.add(id);capacity+=data.buildings.get(id).beds();}return new SettlementProgram(seed,archetype,region,capacity,capacity*a.foodCellsPerPerson(),List.copyOf(a.economies()),Collections.unmodifiableMap(new LinkedHashMap<>(services)),List.copyOf(homes));}
+}
