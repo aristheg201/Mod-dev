@@ -9,5 +9,6 @@ libs/*.jar
 *.db-wal
 *.db-shm
 
-run-wca/
+run-wca*/
 run-wca-server/
+qa/regressions/

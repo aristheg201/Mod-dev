@@ -29,7 +29,7 @@ public final class SettlementBootstrap {
         for(Building b:s.buildings.values())if(b.beds>0){
             Household h=new Household();h.id=uuid(b.id+"household");h.home=b.id;h.name=data.lastNames.get(rng.nextInt(data.lastNames.size()));s.households.put(h.id,h);b.owner=h.id.toString();
             for(int i=0;i<b.beds;i++){
-                Npc n=new Npc();n.id=uuid(b.id+"resident_"+i);n.name=data.firstNames.get(rng.nextInt(data.firstNames.size()))+" "+h.name;n.household=h.id;n.home=b.id;n.settlement=s.id;n.faction=s.faction;n.age=i<2?22+rng.nextInt(30):8+rng.nextInt(9);n.lifeStage=n.age<18?"child":"adult";n.birthday=rng.nextInt(96);n.location=b.point(Marker.ENTRANCE);n.nextCognition=world.clock+rng.nextInt(100);n.lastCognition=world.clock;n.appearance=s.region+":"+rng.nextInt(8);n.knownLocations.addAll(s.buildings.keySet());n.ownership.add(b.id);n.inventory.put("minecraft:bread",2);
+                Npc n=new Npc();n.id=uuid(b.id+"resident_"+i);n.gender=rng.nextBoolean()?"male":"female";List<String> names=data.genderNames.getOrDefault(n.gender,data.firstNames);n.name=names.get(rng.nextInt(names.size()))+" "+h.name;n.household=h.id;n.home=b.id;n.settlement=s.id;n.faction=s.faction;n.age=i<2?22+rng.nextInt(30):8+rng.nextInt(9);n.lifeStage=n.age<18?"child":"adult";n.birthday=rng.nextInt(96);n.location=b.point(Marker.ENTRANCE);n.nextCognition=world.clock+rng.nextInt(100);n.lastCognition=world.clock;n.appearance=s.region+":"+rng.nextInt(8);n.schedule.put("work_start",data.professions.get("resident").start());n.schedule.put("work_end",data.professions.get("resident").end());n.schedule.put("sleep",13000);n.interests.add(n.trait("curiosity")>.5?"pokemon":"food");n.knownLocations.addAll(s.buildings.keySet());n.ownership.add(b.id);n.inventory.put("minecraft:bread",2);
                 for(String trait:data.traits)n.personality.put(trait,0.1+rng.nextDouble()*0.8);n.needs.put("hunger",rng.nextDouble()*.4);n.needs.put("fatigue",rng.nextDouble()*.2);n.needs.put("loneliness",rng.nextDouble()*.2);
                 if(n.age>=18){adults.add(n);if(rng.nextDouble()<.45){n.cardArchetype=List.of("casual","collector","competitive","scholar").get(rng.nextInt(4));setDeck(n,deck);}}
                 h.members.add(n.id);s.residents.add(n.id);world.npcs.put(n.id,n);
@@ -38,7 +38,7 @@ public final class SettlementBootstrap {
         }
         Set<UUID> employed=new HashSet<>();for(Building b:s.buildings.values())if(!b.profession.equals("resident")){
             Npc n=adults.stream().filter(a->a.home.equals(b.id)&&!employed.contains(a.id)).findFirst().orElseGet(()->adults.stream().filter(a->!employed.contains(a.id)).findFirst().orElse(null));if(n==null)continue;
-            employed.add(n.id);n.profession=b.profession;n.workplace=b.id;n.skills.put(data.professions.get(n.profession).skill(),.15);var prof=data.professions.get(n.profession);
+            employed.add(n.id);n.profession=b.profession;n.workplace=b.id;n.skills.put(data.professions.get(n.profession).skill(),.15);var prof=data.professions.get(n.profession);n.schedule.put("work_start",prof.start());n.schedule.put("work_end",prof.end());
             if(!prof.pokemon().isBlank()){Partner partner=new Partner();partner.id=uuid(n.id+"partner");partner.species=prof.pokemon();partner.role=prof.pokemonRole();n.pokemon.add(partner);}
             if(n.profession.equals("innkeeper")){n.cardArchetype="gambler";setDeck(n,deck);}
         }

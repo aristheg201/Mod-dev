@@ -1535,5 +1535,35 @@
     }
   ],
   "regionChunks": 24,
-  "relevance": 80
+  "relevance": 80,
+  "genderNames": {
+    "male": [
+      "Alden",
+      "Cedric",
+      "Edric",
+      "Gareth",
+      "Ivor",
+      "Kael",
+      "Merrin",
+      "Oren",
+      "Quinn",
+      "Soren",
+      "Ulric",
+      "Wren"
+    ],
+    "female": [
+      "Brina",
+      "Dara",
+      "Freya",
+      "Hilda",
+      "Jora",
+      "Lyra",
+      "Nora",
+      "Petra",
+      "Rhea",
+      "Talia",
+      "Vera",
+      "Yara"
+    ]
+  }
 }

@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"worldcomesalive_qa","version":"1.0.0","name":"World Comes Alive runtime QA driver","environment":"client","entrypoints":{"client":["vn.worldcomesalive.qa.RuntimeRun"]},"depends":{"svarcade_tcg":"*"}}

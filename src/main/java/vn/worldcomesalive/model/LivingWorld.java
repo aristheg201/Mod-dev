@@ -49,14 +49,16 @@ public final class LivingWorld {
     }
     public static final class Npc {
         public UUID id,household;
-        public String name,lifeStage="adult",appearance="",profession="resident",home,workplace="",settlement,faction;
+        public String name,lifeStage="adult",appearance="",gender="male",profession="resident",home,workplace="",settlement,faction;
         public int age,birthday;
         public long money=30,lastCognition,nextCognition,cognitionVersion,lastGiftDay=-1,version;
         public Pos location;
         public Travel travel;
         public String goal="socialize",activity="settling in",emotion="content",interrupt="",simulation="abstract",cardArchetype="none";
-        public long interruptUntil,actionUntil;
+        public long interruptUntil,actionUntil,interactionUntil;
         public List<String> plan=new ArrayList<>();
+        public Map<String,Integer> schedule=new LinkedHashMap<>();
+        public Set<String> interests=new LinkedHashSet<>();
         public Map<String,Double> personality=new LinkedHashMap<>(),needs=new LinkedHashMap<>(),skills=new LinkedHashMap<>(),reputation=new LinkedHashMap<>();
         public Map<String,Integer> inventory=new LinkedHashMap<>(),collection=new LinkedHashMap<>();
         public Map<String,List<String>> decks=new LinkedHashMap<>();
@@ -81,7 +83,10 @@ public final class LivingWorld {
         public String species,role,data="";
         public int level=12;
     }
-    public record Memory(String type,UUID actor,String location,long time,double importance,double emotion,double confidence,String source) {}
+    public record Memory(String type,UUID actor,String location,long time,double importance,double emotion,double confidence,String source,double decayRate) {
+        public Memory(String type,UUID actor,String location,long time,double importance,double emotion,double confidence,String source){this(type,actor,location,time,importance,emotion,confidence,source,importance>=.8?0:.0000001);}
+        public double reliability(long now){return confidence*Math.exp(-decayRate*Math.max(0,now-time));}
+    }
     public record Belief(String fact,UUID actor,double confidence,String source,long time,int evidence) {}
     public static final class Travel {
         public List<Pos> route=new ArrayList<>();

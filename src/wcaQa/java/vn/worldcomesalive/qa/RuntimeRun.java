@@ -1,0 +1,78 @@
+package vn.worldcomesalive.qa;
+
+import vn.worldcomesalive.server.*;
+import vn.worldcomesalive.client.CitizenScreen;
+import vn.worldcomesalive.model.LivingWorld.*;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.util.ScreenshotRecorder;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.*;
+import net.minecraft.text.Text;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** Observes real generation. Only the test player is positioned/equipped; no NPCs/structures are placed. */
+public final class RuntimeRun implements ClientModInitializer {
+    private static final org.slf4j.Logger LOG=org.slf4j.LoggerFactory.getLogger("wca-runtime-qa");
+    private int boot,step,siteAttempts;
+    private long next,deadline;
+    private boolean started,reload;
+    private CompletableFuture<Void> work;
+    private volatile Settlement settlement;
+    private volatile UUID focus;
+    private volatile Throwable failure;
+    private long transactionsBefore,materializationsBefore,dematerializationsBefore,decisionsBefore;
+    private long profileWall,profileTick;
+    private double profileMillis;
+    private Path qa;
+    private Set<UUID> expected;
+    private Pos oldLocation;
+    @Override public void onInitializeClient(){ClientTickEvents.END_CLIENT_TICK.register(this::tick);LOG.info("WCA_QA_DRIVER_REAL_CLIENT remapped=true");}
+    private void tick(MinecraftClient c){long now=System.currentTimeMillis();if(now<next)return;next=now+250;try{
+        if(failure!=null)throw new AssertionError("Server QA failed",failure);
+        if(work!=null){if(!work.isDone())return;work.join();work=null;}
+        if(c.player==null){if(!started&&c.currentScreen instanceof TitleScreen&&++boot>20){started=true;qa=c.runDirectory.toPath().toAbsolutePath().getParent().resolve("qa");Files.createDirectories(qa);reload=Files.exists(qa.resolve("expected-identity.json"))&&Files.exists(c.runDirectory.toPath().resolve("saves/wca-qa/level.dat"));
+            if(reload){expected=new HashSet<>(Arrays.asList(WorldStore.JSON.fromJson(Files.readString(qa.resolve("expected-identity.json")),UUID[].class)));c.createIntegratedServerLoader().start("wca-qa",()->c.setScreen(new TitleScreen()));}
+            else{var rules=new net.minecraft.world.GameRules();rules.get(net.minecraft.world.GameRules.DO_MOB_SPAWNING).set(false,null);var info=new net.minecraft.world.level.LevelInfo("World Comes Alive QA",net.minecraft.world.GameMode.CREATIVE,false,net.minecraft.world.Difficulty.PEACEFUL,true,rules,net.minecraft.resource.DataConfiguration.SAFE_MODE);c.createIntegratedServerLoader().createAndStart("wca-qa",info,new net.minecraft.world.gen.GeneratorOptions(414212L,true,false),r->r.get(net.minecraft.registry.RegistryKeys.WORLD_PRESET).getOrThrow(net.minecraft.world.gen.WorldPresets.DEFAULT).createDimensionsRegistryHolder(),new TitleScreen());}}
+            return;
+        }
+        switch(step){
+            case 0->{c.setScreen(null);c.options.getGuiScale().setValue(2);c.options.getViewDistance().setValue(8);c.options.getSimulationDistance().setValue(8);c.options.getMaxFps().setValue(40);c.onResolutionChanged();if(reload){run(c,p->{var sim=WorldSimulation.active();check(sim.state.npcs.keySet().equals(expected),"NPC UUID identities changed across actual reload");settlement=sim.state.settlements.values().stream().filter(s->s.ready).findFirst().orElseThrow();check(settlement.households.size()>0,"Households lost");check(sim.state.npcs.values().stream().anyMatch(n->n.memories.stream().anyMatch(m->m.type().equals("gift"))),"Gift memory lost after reload");check(sim.state.transactions>0,"Transactions lost");LOG.info("WCA_QA_PERSISTENCE_CONFIRMED identities={} households={} transactions={} actualServerRestart=true",expected,settlement.households.size(),sim.state.transactions);camera(p,settlement.center,0,35,62,180,28);});step=90;next=now+6000;}else{step=1;deadline=now+360000;}}
+            case 1->{run(c,p->{var sim=WorldSimulation.active();settlement=sim.state.settlements.values().stream().filter(s->s.ready&&s.buildings.size()>=9).findFirst().orElse(null);if(settlement!=null){camera(p,settlement.center,0,35,60,180,28);return;}if(sim.state.settlements.values().stream().anyMatch(s->!s.ready))return;int cell=sim.data.regionChunks;int rx=(siteAttempts%5)-2,rz=(siteAttempts/5)-2;var site=WorldSimulation.candidate(sim.world.getSeed(),rx,rz,cell);siteAttempts++;int x=site.getCenterX(),z=site.getCenterZ();sim.world.getChunk(x>>4,z>>4);int y=sim.world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z);p.teleport(sim.world,x+.5,y+20,z+.5,180,30);p.getAbilities().flying=true;p.sendAbilitiesUpdate();LOG.info("WCA_QA_EXPLORATION site={} terrainY={} noPlacement=true",site,y);});step=2;next=now+5000;}
+            case 2->{if(settlement==null){if(now>deadline)throw new AssertionError("No suitable naturally generated town after exploration");step=1;return;}check(settlement.residents.size()>=20,"Meaningful capacity-derived population absent");shot(c,"worldgen-settlement-overview");step=3;next=now+2000;}
+            case 3->{shot(c,"generated-town-road-layout");run(c,p->{var sim=WorldSimulation.active();check(sim.state.npcs.size()>=20,"NPC population missing");check(settlement.households.size()>=8,"Households missing");for(UUID id:settlement.residents)check(sim.npc(id).household!=null,"No household assigned");camera(p,settlement.center,0,3,7,160,5);});step=4;next=now+3000;}
+            case 4->{shot(c,"npc-population");run(c,p->{var sim=WorldSimulation.active();Npc n=settlement.residents.stream().map(sim::npc).filter(a->a.age>=18&&a.gender.equals("male")).findFirst().orElseThrow();focus=n.id;camera(p,n.location,0,.1,2.6,180,4);});step=41;next=now+1800;}
+            case 41->{shot(c,"npc-male-model");run(c,p->{var sim=WorldSimulation.active();Npc n=settlement.residents.stream().map(sim::npc).filter(a->a.age>=18&&a.gender.equals("female")).findFirst().orElseThrow();focus=n.id;camera(p,n.location,0,.1,2.6,180,4);});step=42;next=now+1800;}
+            case 42->{shot(c,"npc-female-model");run(c,p->{var sim=WorldSimulation.active();Npc n=settlement.residents.stream().map(sim::npc).filter(a->a.age>=18&&settlement.buildings.get(a.home).contains(a.location)).findFirst().orElse(sim.npc(settlement.residents.getFirst()));focus=n.id;camera(p,n.location,2,2,5,165,12);LOG.info("WCA_QA_HOME npc={} home={} household={} actualLocation={}",n.id,n.home,n.household,n.location);});step=5;next=now+2000;}
+            case 5->{shot(c,"npc-home-routine");run(c,p->{var sim=WorldSimulation.active();Npc n=settlement.residents.stream().map(sim::npc).filter(a->!a.workplace.isBlank()&&a.activity.equals("working")).findFirst().orElseThrow();focus=n.id;camera(p,n.location,0,.2,2.5,180,6);LOG.info("WCA_QA_WORK npc={} profession={} activity={} workplace={} location={}",n.id,n.profession,n.activity,n.workplace,n.location);});step=6;next=now+3000;}
+            case 6->{shot(c,"npc-work-routine");run(c,p->{var sim=WorldSimulation.active();Npc n=settlement.residents.stream().map(sim::npc).filter(a->a.profession.equals("farmer")).findFirst().orElseThrow();focus=n.id;camera(p,n.location,0,.2,2.5,180,6);});step=61;next=now+2500;}
+            case 61->{shot(c,"cobblemon-npc-integration");c.setScreen(null);interact(c);step=7;next=now+1800;}
+            case 7->{CitizenScreen screen=screen(c);check(screen.view.partner().contains("wooloo"),"Cobblemon partner metadata missing");shot(c,"contextual-dialogue");command(c,"give "+c.player.getName().getString()+" minecraft:bread 4");screen.send("gift");step=8;next=now+1800;}
+            case 8->{CitizenScreen screen=screen(c);check(screen.view.text().contains("remember this gift"),"Server did not accept held gift: "+screen.view.text());check(screen.view.friendship()>0,"Gift relationship did not change");shot(c,"relationship-interaction");transactionsBefore=WorldSimulation.active().state.transactions;screen.send("trade");step=9;next=now+1800;}
+            case 9->{CitizenScreen screen=screen(c);check(screen.view.text().contains("loaf"),"Shop did not perform transaction: "+screen.view.text());check(WorldSimulation.active().state.transactions>transactionsBefore,"No real shop ledger transaction");shot(c,"economic-interaction");c.setScreen(null);run(c,p->{var sim=WorldSimulation.active();Npc n=settlement.residents.stream().map(sim::npc).filter(a->a.profession.equals("innkeeper")).findFirst().orElseThrow();focus=n.id;camera(p,n.location,0,.2,2.5,180,6);});step=10;next=now+3000;}
+            case 10->{interact(c);step=11;next=now+1600;}
+            case 11->{CitizenScreen screen=screen(c);check(screen.view.options().contains("cards"),"Card duel challenge not available");shot(c,"card-world-challenge");screen.send("cards");step=12;deadline=now+90000;}
+            case 12->{if(!(c.currentScreen instanceof vn.svarcade.tcg.client.CardWorldsScreen screen)||screen.state.duel()==null){if(now>deadline)throw new AssertionError("Persistent NPC did not launch actual Card Worlds duel");return;}check(screen.state.opponentName().equals(WorldSimulation.active().npc(focus).name),"Duel lost persistent NPC name");shot(c,"card-world-duel-runtime");LOG.info("WCA_QA_CARD_DUEL_CONFIRMED npc={} name={} deckSize={} serverEngine=true",focus,screen.state.opponentName(),WorldSimulation.active().npc(focus).decks.get("casual").size());screen.send("act","concede","","");step=13;next=now+5000;}
+            case 13->{c.setScreen(null);run(c,p->{var sim=WorldSimulation.active();materializationsBefore=sim.state.materializations;dematerializationsBefore=sim.state.dematerializations;decisionsBefore=sim.state.decisions;oldLocation=sim.npc(settlement.residents.getFirst()).location;camera(p,settlement.center,800,30,800,0,0);});step=14;next=now+15000;}
+            case 14->{run(c,p->{var sim=WorldSimulation.active();check(sim.state.dematerializations>dematerializationsBefore,"No entity to abstract transition");check(sim.state.decisions>decisionsBefore,"Unloaded NPC lives froze");LOG.info("WCA_QA_ABSTRACT_CONFIRMED decisionsBefore={} after={} dematerializationsBefore={} after={} oldPosition={} logicalPosition={}",decisionsBefore,sim.state.decisions,dematerializationsBefore,sim.state.dematerializations,oldLocation,sim.npc(settlement.residents.getFirst()).location);camera(p,settlement.center,0,8,35,180,14);});step=15;next=now+7000;}
+            case 15->{run(c,p->{var sim=WorldSimulation.active();check(sim.state.materializations>materializationsBefore,"No abstract to full materialization");check(sim.state.npcs.keySet().containsAll(settlement.residents),"NPC identities lost across transition");profileWall=System.currentTimeMillis();profileTick=sim.state.clock;sim.maxMicros=0;});step=16;next=now+15000;}
+            case 16->{run(c,p->{var sim=WorldSimulation.active();double elapsed=(System.currentTimeMillis()-profileWall)/1000.0;double tps=(sim.state.clock-profileTick)/elapsed;profileMillis=sim.server.getAverageTickTime();Map<String,Object> result=new LinkedHashMap<>();result.put("npcPopulation",sim.state.npcs.size());result.put("full",sim.nearbyCount);result.put("elapsedSeconds",elapsed);result.put("observedTPS",tps);result.put("serverMeanTickMs",profileMillis);result.put("simulationLastUs",sim.lastMicros);result.put("simulationMaxUs",sim.maxMicros);result.put("decisions",sim.state.decisions);result.put("transactions",sim.state.transactions);result.put("materializations",sim.state.materializations);result.put("dematerializations",sim.state.dematerializations);try{Files.writeString(qa.resolve("performance-runtime.json"),WorldStore.JSON.toJson(result));}catch(Exception e){throw new RuntimeException(e);}LOG.info("WCA_QA_PERFORMANCE {}",result);check(tps>15,"Catastrophic TPS degradation");});c.getDebugHud().toggleDebugHud();step=17;next=now+2000;}
+            case 17->{shot(c,"performance-runtime");c.getDebugHud().toggleDebugHud();run(c,p->{var sim=WorldSimulation.active();sim.save();try{Files.writeString(qa.resolve("expected-identity.json"),WorldStore.JSON.toJson(sim.state.npcs.keySet()));Files.writeString(qa.resolve("first-pass-complete.json"),"{\"generated\":true,\"manualNpcSetup\":false,\"runtimeInteractions\":true,\"abstractFullTransition\":true}");}catch(Exception e){throw new RuntimeException(e);}LOG.info("WCA_QA_FIRST_PASS_COMPLETE identities={}",sim.state.npcs.keySet());});step=18;next=now+2000;}
+            case 18->{c.scheduleStop();step=19;}
+            case 90->{shot(c,"persistence-after-reload");run(c,p->{var sim=WorldSimulation.active();try{Files.writeString(qa.resolve("persistence-runtime.json"),WorldStore.JSON.toJson(Map.of("actualServerRestart",true,"identitiesPreserved",sim.state.npcs.keySet().equals(expected),"households",settlement.households.size(),"npcs",sim.state.npcs.size(),"transactions",sim.state.transactions)));}catch(Exception e){throw new RuntimeException(e);}LOG.info("WCA_QA_COMPLETE build=remapped realScreenshots=true manualNpcSetup=false actualReload=true");});step=91;next=now+2500;}
+            case 91->{c.scheduleStop();step=92;}
+        }
+    }catch(Throwable error){LOG.error("WCA_QA_FAILED step="+step,error);if(c.player!=null)shot(c,"failure-step-"+step);c.scheduleStop();step=999;}}
+    private CitizenScreen screen(MinecraftClient c){check(c.currentScreen instanceof CitizenScreen,"No actual contextual dialogue UI");return (CitizenScreen)c.currentScreen;}
+    private void interact(MinecraftClient c){var entity=c.world.getEntities().iterator();while(entity.hasNext()){var e=entity.next();if(e.getUuid().equals(focus)){c.interactionManager.interactEntity(c.player,e,Hand.MAIN_HAND);return;}}throw new AssertionError("Generated NPC not present on real client: "+focus);}
+    private void command(MinecraftClient c,String command){c.getNetworkHandler().sendChatCommand(command);}
+    private void run(MinecraftClient c,java.util.function.Consumer<ServerPlayerEntity> task){work=new CompletableFuture<>();c.getServer().execute(()->{try{task.accept(c.getServer().getPlayerManager().getPlayer(c.player.getUuid()));work.complete(null);}catch(Throwable e){failure=e;work.completeExceptionally(e);}});}
+    private void camera(ServerPlayerEntity player,Pos target,double dx,double dy,double dz,float yaw,float pitch){player.teleport(player.getServerWorld(),target.x()+dx,target.y()+dy,target.z()+dz,yaw,pitch);player.getAbilities().flying=true;player.sendAbilitiesUpdate();}
+    private void shot(MinecraftClient c,String name){c.getToastManager().clear();ScreenshotRecorder.saveScreenshot(c.runDirectory,name+".png",c.getFramebuffer(),text->{try{Files.copy(c.runDirectory.toPath().resolve("screenshots/"+name+".png"),qa.resolve(name+".png"),StandardCopyOption.REPLACE_EXISTING);LOG.info("WCA_QA_CAPTURED name={} framebuffer={}x{}",name,c.getFramebuffer().textureWidth,c.getFramebuffer().textureHeight);}catch(Exception e){LOG.error("Capture copy failed",e);}});}
+    private static void check(boolean valid,String message){if(!valid)throw new AssertionError(message);}
+}

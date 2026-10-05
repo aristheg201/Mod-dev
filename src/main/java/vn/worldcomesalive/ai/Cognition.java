@@ -12,9 +12,9 @@ public final class Cognition {
         int time=(int)(clock%24000);var p=data.professions.getOrDefault(n.profession,data.professions.get("resident"));
         Map<String,Double> utility=new LinkedHashMap<>();
         utility.put("safe",n.interruptUntil>clock&&Set.of("fire","assault","family_danger","crime").contains(n.interrupt)?1000.0:0.0);
-        utility.put("rested",n.need("fatigue")*65+(time>13000?50:0));
+        utility.put("rested",n.need("fatigue")*65+(time>n.schedule.getOrDefault("sleep",13000)?50:0));
         utility.put("nourished",n.need("hunger")*100);
-        utility.put("worked",!n.workplace.isBlank()&&time>=p.start()&&time<p.end()?55+n.trait("ambition")*15:0.0);
+        utility.put("worked",!n.workplace.isBlank()&&time>=n.schedule.getOrDefault("work_start",p.start())&&time<n.schedule.getOrDefault("work_end",p.end())?55+n.trait("ambition")*15:0.0);
         utility.put("social",12+n.need("loneliness")*55+n.trait("sociability")*12+(time>=10000&&time<=13000?20:0));
         utility.put("trained",n.pokemon.isEmpty()?0.0:n.trait("curiosity")*16);
         String goal=utility.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();

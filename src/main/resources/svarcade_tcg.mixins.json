@@ -9,5 +9,5 @@
   "injectors": {
     "defaultRequire": 1
   },
-  "refmap": "SVArcade-TCG-refmap.json"
+  "refmap": "World-Comes-Alive-refmap.json"
 }

@@ -14,6 +14,18 @@ public final class SettlementStructures {
     public record Placement(BlockPos pos,BlockState state) {}
     private static void add(Queue<Placement> q,int x,int y,int z,BlockState b){q.add(new Placement(new BlockPos(x,y,z),b));}
     private static Block block(String id){return Registries.BLOCK.get(Identifier.of(id));}
+    public static void clearSite(Settlement s,ServerWorld world,Queue<Placement> q){
+        int minX=s.buildings.values().stream().mapToInt(b->(int)b.origin.x()-4).min().orElse(0),maxX=s.buildings.values().stream().mapToInt(b->(int)b.origin.x()+b.width+4).max().orElse(0);
+        int minZ=s.buildings.values().stream().mapToInt(b->(int)b.origin.z()-4).min().orElse(0),maxZ=s.buildings.values().stream().mapToInt(b->(int)b.origin.z()+b.depth+12).max().orElse(0);
+        int ground=(int)s.center.y();
+        for(int x=minX;x<=maxX;x++)for(int z=minZ;z<=maxZ;z++){
+            world.getChunk(x>>4,z>>4);
+            for(int y=ground+1;y<=ground+32;y++){
+                BlockPos pos=new BlockPos(x,y,z);BlockState state=world.getBlockState(pos);
+                if(state.isIn(net.minecraft.registry.tag.BlockTags.LOGS)||state.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)||state.isIn(net.minecraft.registry.tag.BlockTags.REPLACEABLE)||(!state.isAir()&&y<ground+4&&state.isIn(net.minecraft.registry.tag.BlockTags.DIRT)))q.add(new Placement(pos,Blocks.AIR.getDefaultState()));
+            }
+        }
+    }
     public static void roads(Settlement s,ServerWorld world,Queue<Placement> q){
         int y=(int)s.center.y(),z=(int)s.center.z();int min=s.buildings.values().stream().mapToInt(b->(int)b.origin.x()-3).min().orElse(0),max=s.buildings.values().stream().mapToInt(b->(int)b.origin.x()+b.width+3).max().orElse(0);
         for(int x=min;x<=max;x++)for(int dz=-2;dz<=2;dz++)ground(world,q,x,y,z+dz,Blocks.GRAVEL.getDefaultState());
@@ -29,7 +41,7 @@ public final class SettlementStructures {
         for(int x=min+4;x<max;x+=12){add(q,x,y+1,z-3,Blocks.COBBLESTONE_WALL.getDefaultState());add(q,x,y+2,z-3,Blocks.LANTERN.getDefaultState());}
     }
     private static void ground(ServerWorld w,Queue<Placement> q,int x,int y,int z,BlockState surface){
-        int top=w.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z)-1;
+        w.getChunk(x>>4,z>>4);int top=w.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z)-1;
         for(int yy=Math.max(y-16,Math.min(top,y-1));yy<y;yy++)add(q,x,yy,z,Blocks.COBBLESTONE.getDefaultState());
         add(q,x,y,z,surface);for(int yy=y+1;yy<=Math.min(top+2,y+12);yy++)add(q,x,yy,z,Blocks.AIR.getDefaultState());
     }

@@ -4,6 +4,8 @@ import vn.worldcomesalive.model.LivingWorld;
 import vn.worldcomesalive.model.LivingWorld.*;
 import vn.worldcomesalive.data.WorldContent;
 import vn.worldcomesalive.ai.Cognition;
+import vn.worldcomesalive.ai.CognitiveQueue;
+import vn.worldcomesalive.ai.CognitiveQueue.Wake;
 import vn.worldcomesalive.world.*;
 import vn.worldcomesalive.WorldComesAlive;
 import net.minecraft.server.*;
@@ -33,8 +35,7 @@ public final class WorldSimulation {
     private final RoadRoutes routes=new RoadRoutes();
     private final Map<UUID,CitizenEntity> entities=new HashMap<>();
     private final Map<UUID,com.cobblemon.mod.common.entity.pokemon.PokemonEntity> partners=new HashMap<>();
-    private record Wake(UUID npc,long due,long version,int priority) {}
-    private final PriorityQueue<Wake> wakes=new PriorityQueue<>(Comparator.comparingLong(Wake::due).thenComparingInt(Wake::priority));
+    private final CognitiveQueue wakes=new CognitiveQueue();
     private final ArrayDeque<SettlementStructures.Placement> placements=new ArrayDeque<>();
     private final ArrayDeque<ChunkPos> discoveries=new ArrayDeque<>();
     private String buildingSettlement="";
@@ -48,16 +49,16 @@ public final class WorldSimulation {
         for(Settlement s:state.settlements.values())if(!s.ready){queueBuild(s);break;}
         LOG.info("WCA_LOADED settlements={} npcs={} revision={} identities={}",state.settlements.size(),state.npcs.size(),state.revision,state.npcs.keySet());
     }
-    public void reload(WorldContent content){data=content;routes.invalidate();for(Npc n:state.npcs.values()){n.plan.clear();n.version++;enqueue(n,state.clock,3);}LOG.info("WCA_DATA_RELOADED professions={} dialogue={} archetypes={}",data.professions.size(),data.dialogue.size(),data.archetypes.size());}
+    public void reload(WorldContent content){data=content;routes.invalidate();for(Npc n:state.npcs.values()){n.plan.clear();var profession=data.professions.get(n.profession);if(profession!=null){n.schedule.put("work_start",profession.start());n.schedule.put("work_end",profession.end());}n.version++;enqueue(n,state.clock,3);}LOG.info("WCA_DATA_RELOADED professions={} dialogue={} archetypes={}",data.professions.size(),data.dialogue.size(),data.archetypes.size());}
     public static long siteSeed(long seed,int rx,int rz){return seed^(rx*341873128712L)^(rz*132897987541L)^0x51C0A113;}
     public static ChunkPos candidate(long seed,int rx,int rz,int cell){Random r=new Random(siteSeed(seed,rx,rz));return new ChunkPos(rx*cell+cell/2+r.nextInt(5)-2,rz*cell+cell/2+r.nextInt(5)-2);}
     public ChunkPos nearestCandidate(BlockPos pos){int rx=Math.floorDiv(pos.getX()>>4,data.regionChunks),rz=Math.floorDiv(pos.getZ()>>4,data.regionChunks);ChunkPos best=null;double distance=Double.MAX_VALUE;for(int x=rx-1;x<=rx+1;x++)for(int z=rz-1;z<=rz+1;z++){ChunkPos c=candidate(world.getSeed(),x,z,data.regionChunks);double d=c.getCenterAtY(0).getSquaredDistance(pos.getX(),0,pos.getZ());if(d<distance){distance=d;best=c;}}return best;}
     public void discover(ChunkPos pos){ChunkPos candidate=candidate(world.getSeed(),Math.floorDiv(pos.x,data.regionChunks),Math.floorDiv(pos.z,data.regionChunks),data.regionChunks);if(candidate.equals(pos)&&!state.surveyed.contains(pos.toString()))discoveries.add(pos);}
     private void generate(ChunkPos pos){
         String survey=pos.toString();if(!state.surveyed.add(survey))return;
-        int x=pos.getCenterX(),z=pos.getCenterZ();int y=world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z)-1;
+        int x=pos.getCenterX(),z=pos.getCenterZ();world.getChunk(x>>4,z>>4);int y=world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x,z)-1;
         if(y<=world.getSeaLevel()+1||y>180)return;
-        int variance=0;for(int dx:new int[]{-35,0,35})for(int dz:new int[]{-35,0,35})variance=Math.max(variance,Math.abs(world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x+dx,z+dz)-1-y));if(variance>18)return;
+        int variance=0;for(int dx:new int[]{-35,0,35})for(int dz:new int[]{-35,0,35}){world.getChunk((x+dx)>>4,(z+dz)>>4);variance=Math.max(variance,Math.abs(world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,x+dx,z+dz)-1-y));}if(variance>18)return;
         String biome=world.getBiome(new BlockPos(x,y,z)).getKey().map(k->k.getValue().toString()).orElse("plains");if(biome.contains("ocean")||biome.contains("river"))return;
         long seed=siteSeed(world.getSeed(),Math.floorDiv(pos.x,data.regionChunks),Math.floorDiv(pos.z,data.regionChunks));
         String archetype=data.archetypes.get((int)Math.floorMod(seed,Math.min(4,data.archetypes.size()))).id();
@@ -65,7 +66,7 @@ public final class WorldSimulation {
         for(Settlement other:state.settlements.values())if(!other.id.equals(s.id)&&other.center.distance(s.center)<1200){s.routes.add(other.id);other.routes.add(s.id);}
         queueBuild(s);LOG.info("WCA_GENERATED id={} name={} archetype={} region={} origin={} plots={} manualSetup=false",s.id,s.name,s.archetype,s.region,s.center,s.buildings.size());
     }
-    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.roads(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built)SettlementStructures.building(b,region,world,placements);}
+    private void queueBuild(Settlement s){buildingSettlement=s.id;SettlementStructures.clearSite(s,world,placements);SettlementStructures.roads(s,world,placements);var region=data.regions.stream().filter(r->r.id().equals(s.region)).findFirst().orElse(data.regions.getLast());for(Building b:s.buildings.values())if(!b.built)SettlementStructures.building(b,region,world,placements);}
     public void tick(){
         long start=System.nanoTime();state.clock=world.getTime();
         for(int i=0;i<512&&!placements.isEmpty();i++){var p=placements.remove();world.setBlockState(p.pos(),p.state(),2);}
@@ -74,9 +75,9 @@ public final class WorldSimulation {
         }
         if(placements.isEmpty()&&!discoveries.isEmpty())generate(discoveries.remove());
         int processed=0;long budget=System.nanoTime()+2_000_000;
-        while(!wakes.isEmpty()&&wakes.peek().due<=state.clock&&processed<64){
+        while(wakes.hasReady(state.clock)&&processed<64){
             if(System.nanoTime()>budget){deferred++;break;}
-            Wake wake=wakes.remove();Npc n=state.npcs.get(wake.npc);if(n==null||wake.version!=n.cognitionVersion)continue;
+            Wake wake=wakes.remove();Npc n=state.npcs.get(wake.npc());if(n==null||wake.version()!=n.cognitionVersion)continue;
             think(n);processed++;state.decisions++;
         }
         if(state.clock%10==0)moveVisible();
@@ -85,9 +86,11 @@ public final class WorldSimulation {
         if(state.clock>=nextCheckpoint){save();nextCheckpoint=state.clock+1200;}
         lastMicros=(System.nanoTime()-start)/1000;maxMicros=Math.max(maxMicros,lastMicros);
     }
-    private void enqueue(Npc n,long due,int priority){n.nextCognition=due;n.cognitionVersion++;wakes.add(new Wake(n.id,due,n.cognitionVersion,priority));}
+    private void enqueue(Npc n,long due,int priority){n.nextCognition=due;n.cognitionVersion++;wakes.add(new Wake(n.id,due,n.cognitionVersion,priority==3?(n.simulation.equals("full")?2:n.simulation.equals("reduced")?4:5):priority),state.clock);}
     private void think(Npc n){
         Settlement s=state.settlements.get(n.settlement);if(s==null||!s.ready)return;
+        if(n.lifeStage.equals("deceased"))return;
+        if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.interactionUntil,1);return;}
         if(n.travel!=null){if(!entities.containsKey(n.id)){n.location=n.travel.at(state.clock);if(n.travel.arrived(state.clock)){n.location=n.travel.route.getLast();n.travel=null;}}if(n.travel!=null){enqueue(n,state.clock+100,3);return;}}
         if(n.actionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.actionUntil,3);return;}
         if(n.plan.isEmpty()){
@@ -135,26 +138,35 @@ public final class WorldSimulation {
             state.remember(loser,new Memory("lost_card_duel",winner.id,loser.settlement,state.clock,.5,-.1,1,"witnessed"));if(winner.skills.get("cards")>.7)winner.cardArchetype="tournament";
         });}catch(RuntimeException failure){server.execute(()->{cardNights.remove(key);LOG.warn("Card night deferred: {}",failure.getMessage());});}});
     }
-    private void travel(Npc n,Settlement s,Building destination,String activity){if(destination==null)return;n.activity=activity;if(n.location.distance(destination.point(Marker.ENTRANCE))<2)return;Travel t=new Travel();t.route=routes.route(s,n.location,destination);t.departure=state.clock;t.destination=destination.id;n.travel=t;}
+    private void travel(Npc n,Settlement s,Building destination,String activity){
+        if(destination==null)return;n.activity=activity;
+        Pos target=activity.equals("going to work")?destination.point(Marker.WORKSTATION):activity.equals("returning home")?destination.point(Marker.DINING_POINT):destination.point(Marker.ENTRANCE);
+        if(n.location.distance(target)<1.5)return;Travel t=new Travel();t.route=destination.contains(n.location)?new ArrayList<>(List.of(n.location,target)):routes.route(s,n.location,destination);if(t.route.getLast().distance(target)>.1)t.route.add(target);t.departure=state.clock;t.destination=destination.id;n.travel=t;
+    }
     public void interrupt(Npc n,String event,UUID actor){if(n.interruptUntil>state.clock&&n.interrupt.equals(event))return;n.interrupt=event;n.interruptUntil=state.clock+400;n.plan.clear();n.travel=null;n.actionUntil=0;n.version++;state.remember(n,new Memory(event,actor,n.settlement,state.clock,event.equals("assault")?.95:.8,-.8,1,"witnessed"));n.relationship(actor==null?n.id:actor).fear+=8;enqueue(n,state.clock,0);urgentReactions++;}
     public void perceive(CitizenEntity entity){Npc n=state.npcs.get(entity.getUuid());if(n==null){entity.discard();return;}if(entity.isOnFire()){interrupt(n,"fire",null);return;}if(entity.age%20!=0)return;BlockPos p=entity.getBlockPos();if(world.getBlockState(p.down()).isOf(Blocks.FIRE)||world.getBlockState(p.east()).isOf(Blocks.FIRE))interrupt(n,"fire",null);}
     private void moveVisible(){
         for(var entry:new ArrayList<>(entities.entrySet())){
             Npc n=state.npcs.get(entry.getKey());CitizenEntity e=entry.getValue();if(e.isRemoved()){entities.remove(entry.getKey());continue;}
             n.location=new Pos(e.getX(),e.getY(),e.getZ());
+            if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){e.getNavigation().stop();if(n.travel!=null)n.travel.pausedTicks+=10;continue;}
             if(n.travel!=null){
                 var route=n.travel.route;while(route.size()>1&&n.location.distance(route.get(1))<1.5)route.removeFirst();Pos target=route.size()>1?route.get(1):route.getFirst();
                 if(route.size()==1&&n.location.distance(target)<2){n.travel=null;e.getNavigation().stop();enqueue(n,state.clock,2);}else if(e.getNavigation().isIdle())e.getNavigation().startMovingTo(target.x(),target.y(),target.z(),.65);
                 // Rebase remaining route to the actual position for a seamless later dematerialization.
-                if(route.size()>1){route.set(0,n.location);n.travel.departure=state.clock;}
+                if(route.size()>1){route.set(0,n.location);n.travel.departure=state.clock;n.travel.pausedTicks=0;}
             }
+            var companion=partners.get(n.id);if(companion!=null&&companion.distanceTo(e)>4&&companion.getNavigation().isIdle())companion.getNavigation().startMovingTo(e,1);
+            if(n.activity.equals("sleeping")&&!e.isSleeping()){Settlement homeSettlement=state.settlements.get(n.settlement);List<Pos> beds=homeSettlement.buildings.get(n.home).markers.get(Marker.BED);int bedIndex=homeSettlement.households.get(n.household).members.indexOf(n.id);Pos bed=beds.get(Math.floorMod(bedIndex,beds.size()));if(n.location.distance(bed)<5)e.sleep(BlockPos.ofFloored(bed.x(),bed.y(),bed.z()));}else if(!n.activity.equals("sleeping")&&e.isSleeping())e.wakeUp();
             String label=n.name+" · "+n.profession+" · "+n.activity;if(!e.getName().getString().equals(label))e.setCustomName(Text.literal(label));
+            e.presentation(n.gender,n.appearance.hashCode());
             e.setVillagerData(e.getVillagerData().withProfession(switch(n.profession){case "farmer"->VillagerProfession.FARMER;case "blacksmith"->VillagerProfession.TOOLSMITH;case "baker","innkeeper"->VillagerProfession.BUTCHER;case "healer"->VillagerProfession.CLERIC;case "guard"->VillagerProfession.ARMORER;default->VillagerProfession.NONE;}));
         }
     }
     private void relevance(){
         List<net.minecraft.server.network.ServerPlayerEntity> players=world.getPlayers();nearbyCount=0;
         for(Npc n:state.npcs.values()){
+            if(n.lifeStage.equals("deceased")){var dead=entities.remove(n.id);if(dead!=null)dead.discard();continue;}
             boolean relevant=players.stream().anyMatch(p->new Pos(p.getX(),p.getY(),p.getZ()).distance(n.location)<data.relevance)&&world.isChunkLoaded((int)n.location.x()>>4,(int)n.location.z()>>4);
             CitizenEntity e=entities.get(n.id);
             if(relevant){nearbyCount++;n.simulation="full";if(e==null){Entity old=world.getEntity(n.id);if(old instanceof CitizenEntity citizen)e=citizen;else{e=WorldComesAlive.CITIZEN.create(world);if(e==null)continue;if(n.travel!=null)n.location=n.travel.at(state.clock);e.setUuid(n.id);e.refreshPositionAndAngles(n.location.x(),n.location.y(),n.location.z(),0,0);e.setCustomName(Text.literal(n.name+" · "+n.profession));e.setCustomNameVisible(true);if(n.age<18)e.setBreedingAge(-24000);world.spawnEntity(e);state.materializations++;LOG.info("WCA_MATERIALIZE npc={} activity={} location={}",n.id,n.activity,n.location);}entities.put(n.id,e);}materializePartner(n,e);}
@@ -163,7 +175,7 @@ public final class WorldSimulation {
     }
     private void materializePartner(Npc n,CitizenEntity owner){
         if(n.pokemon.isEmpty()||partners.containsKey(n.id)||n.activity.equals("sleeping"))return;
-        Partner p=n.pokemon.getFirst();try{
+        Partner p=n.pokemon.getFirst();var existing=world.getEntity(p.id);if(existing instanceof com.cobblemon.mod.common.entity.pokemon.PokemonEntity saved){partners.put(n.id,saved);return;}try{
             var properties=com.cobblemon.mod.common.api.pokemon.PokemonProperties.Companion.parse(p.species+" level="+p.level);var pokemon=p.data.isBlank()?properties.create():new com.cobblemon.mod.common.pokemon.Pokemon();
             if(!p.data.isBlank())pokemon.loadFromJSON(world.getRegistryManager(),com.google.gson.JsonParser.parseString(p.data).getAsJsonObject());pokemon.setUuid(p.id);
             var e=new com.cobblemon.mod.common.entity.pokemon.PokemonEntity(world,pokemon,com.cobblemon.mod.common.CobblemonEntities.POKEMON);e.setUuid(p.id);e.refreshPositionAndAngles(owner.getX()+2,owner.getY(),owner.getZ(),0,0);e.setCustomName(Text.literal(n.name+"'s "+p.species+" · "+p.role));e.setCustomNameVisible(true);e.setPersistent();world.spawnEntity(e);partners.put(n.id,e);p.data=pokemon.saveToJSON(world.getRegistryManager(),new com.google.gson.JsonObject()).toString();LOG.info("WCA_POKEMON npc={} partner={} species={} role={}",n.id,p.id,p.species,p.role);

@@ -41,6 +41,13 @@ public final class WorldComesAlive implements ModInitializer {
             var sim=WorldSimulation.active();if(sim==null||world!=sim.world)return;var life=sim.state.players.computeIfAbsent(player.getUuid(),id->new vn.worldcomesalive.model.LivingWorld.PlayerLife());String block=Registries.BLOCK.getId(state.getBlock()).toString();life.skills.merge(block.contains("ore")?"mining":block.contains("wheat")?"farming":block.contains("log")?"foraging":"crafting",.001,Double::sum);
             if(player instanceof ServerPlayerEntity actor)for(var s:sim.state.settlements.values())for(var b:s.buildings.values())if(b.contains(new vn.worldcomesalive.model.LivingWorld.Pos(pos.getX(),pos.getY(),pos.getZ()))&&!life.property.contains(b.id)){var victim=s.residents.stream().map(sim.state.npcs::get).filter(n->n.home.equals(b.id)).findFirst().orElse(null);if(victim!=null)interactions.crime(actor,victim,"theft",10);}
         });
+        net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register((entity,source)->{
+            if(!(entity instanceof CitizenEntity)||WorldSimulation.active()==null)return;
+            var sim=WorldSimulation.active();var n=sim.npc(entity.getUuid());if(n==null)return;
+            n.lifeStage="deceased";n.activity="deceased";n.goal="dead";n.plan.clear();n.travel=null;
+            if(source.getAttacker() instanceof ServerPlayerEntity actor)interactions.crime(actor,n,"murder",100);
+            for(UUID family:sim.state.settlements.get(n.settlement).households.get(n.household).members)if(!family.equals(n.id)){var relative=sim.npc(family);relative.emotion="grieving";sim.state.remember(relative,new vn.worldcomesalive.model.LivingWorld.Memory("family_death",n.id,n.home,sim.state.clock,1,-1,1,"household"));}
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler,server)->{if(interactions!=null)interactions.disconnect(handler.player.getUuid());});
         CommandRegistrationCallback.EVENT.register((dispatcher,registry,environment)->dispatcher.register(literal("wca")
             .then(literal("status").executes(ctx->{ctx.getSource().sendFeedback(()->Text.literal(WorldSimulation.active().status()),false);return 1;}))

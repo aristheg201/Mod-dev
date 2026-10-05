@@ -8,6 +8,7 @@ import java.util.*;
 /** Validated reload snapshot. Candidate indexing happens at reload, never at interaction. */
 public final class WorldContent {
     public List<String> firstNames,lastNames,traits;
+    public Map<String,List<String>> genderNames=new LinkedHashMap<>();
     public List<Region> regions;
     public List<Archetype> archetypes;
     public Map<String,Profession> professions;
