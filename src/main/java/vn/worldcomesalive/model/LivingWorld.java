@@ -33,6 +33,7 @@ public final class LivingWorld {
         public boolean domesticInitialized;
         public Map<Marker,List<Pos>> markers=new EnumMap<>(Marker.class);
         public Map<Marker,List<Pos>> activityAccess=new EnumMap<>(Marker.class);
+        public List<Pos> walkable=new ArrayList<>();
         public Map<String,Integer> stock=new LinkedHashMap<>();
         public long money=100;
         public boolean built;

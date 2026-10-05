@@ -6,7 +6,7 @@ import java.util.*;
 public final class RoadRoutes {
     private final Map<String,List<Pos>> cache=new HashMap<>();
     public List<Pos> route(Settlement s,Pos start,Building destination){
-        if(s.generationVersion>=2&&s.generationPlan!=null){String v2Key=s.id+":v2:"+Math.round(start.x()/4)+":"+Math.round(start.z()/4)+":"+destination.id;List<Pos> tail=cache.computeIfAbsent(v2Key,k->{var planned=vn.worldcomesalive.generation.v2.GraphNavigation.route(s,start,destination);return List.copyOf(planned.subList(1,planned.size()));});List<Pos> result=new ArrayList<>();result.add(start);result.addAll(tail);return result;}
+        if(s.generationVersion>=2&&s.generationPlan!=null){String v2Key=s.id+":v2:"+Math.floor(start.x())+":"+Math.floor(start.y())+":"+Math.floor(start.z())+":"+destination.id;List<Pos> tail=cache.computeIfAbsent(v2Key,k->{var planned=vn.worldcomesalive.generation.v2.GraphNavigation.route(s,start,destination);return List.copyOf(planned.subList(1,planned.size()));});List<Pos> result=new ArrayList<>();result.add(start);result.addAll(tail);return result;}
         Pos entrance=destination.point(Marker.ENTRANCE);String key=s.id+":"+Math.round(start.x()/4)+":"+Math.round(start.z()/4)+":"+destination.id;
         List<Pos> tail=cache.computeIfAbsent(key,k->{
             List<Pos> points=new ArrayList<>();Building source=s.buildings.values().stream().filter(b->b.contains(start)).findFirst().orElse(null);
