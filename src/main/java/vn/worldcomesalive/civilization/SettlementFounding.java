@@ -28,15 +28,17 @@ public final class SettlementFounding {
     public static boolean toggle(ServerPlayerEntity player,PokemonEntity entity){
         WorldSimulation sim=WorldSimulation.active();if(sim==null)return false;
         var pokemon=entity.getPokemon();
-        if(!pokemon.belongsTo(player)){player.sendMessage(Text.literal("Only your own Pokemon can pull settlement equipment."),true);return false;}
         var existing=sim.state.civilization.plowAttachments.get(entity.getUuid());
+        ItemStack held=player.getMainHandStack();
+        if(existing==null&&!held.isOf(PLOW))return false;
+        if(!pokemon.belongsTo(player)){player.sendMessage(Text.literal("Only your own Pokemon can pull settlement equipment."),true);return false;}
         if(existing!=null){
             if(!existing.owner.equals(player.getUuid()))return false;
             sim.state.civilization.plowAttachments.remove(entity.getUuid());
             ItemStack stack=new ItemStack(PLOW);if(!player.getInventory().insertStack(stack))player.dropItem(stack,false);
             player.sendMessage(Text.literal("Plow detached from "+pokemon.getSpecies().getName()+"."),true);sim.save();return true;
         }
-        ItemStack held=player.getMainHandStack();if(!held.isOf(PLOW))return false;
+        if(!held.isOf(PLOW))return false;
         held.decrement(1);PlowAttachment a=new PlowAttachment();a.pokemon=entity.getUuid();a.owner=player.getUuid();a.species=pokemon.getSpecies().getName();a.attachedAt=sim.state.clock;
         sim.state.civilization.plowAttachments.put(entity.getUuid(),a);sim.save();player.sendMessage(Text.literal("Plow attached. Lead this Pokemon to suitable land and use the ground to found a settlement."),true);return true;
     }
