@@ -5,7 +5,7 @@ import static vn.worldcomesalive.generation.v2.Spatial.*;
 public final class SettlementPlan {
     public int generationVersion=2;
     public SettlementProgram program;
-    public Point center;
+    public Point center;public DungeonPlan dungeon;
     public List<District> districts=new ArrayList<>();
     public List<Road> roads=new ArrayList<>();
     public List<Lot> lots=new ArrayList<>();

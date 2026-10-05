@@ -35,6 +35,7 @@ public final class WorldSimulation {
     public final vn.worldcomesalive.domestic.DomesticManager domestic;
     public final vn.worldcomesalive.agriculture.AgriculturalRuntime agriculture;
     public final vn.worldcomesalive.civilization.LodgingManager lodging;
+    public final DungeonRuntime dungeons;
     public final vn.worldcomesalive.civilization.CivilizationManager civilization;
     private final WorldStore store;
     private final RoadRoutes routes=new RoadRoutes();
@@ -52,7 +53,7 @@ public final class WorldSimulation {
     private final java.util.concurrent.ExecutorService workers=java.util.concurrent.Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"wca-pure-planning");t.setDaemon(true);return t;});
     private final Set<String> cardNights=new HashSet<>();
     public WorldSimulation(MinecraftServer server,WorldContent data)throws IOException{
-        this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;domestic=new vn.worldcomesalive.domestic.DomesticManager(this);agriculture=new vn.worldcomesalive.agriculture.AgriculturalRuntime(this);lodging=new vn.worldcomesalive.civilization.LodgingManager(this);civilization=new vn.worldcomesalive.civilization.CivilizationManager(this);
+        this.server=server;this.world=server.getOverworld();this.data=data;store=new WorldStore(server.getSavePath(net.minecraft.util.WorldSavePath.ROOT).resolve("world-comes-alive"));state=store.load();state.clock=world.getTime();active=this;domestic=new vn.worldcomesalive.domestic.DomesticManager(this);agriculture=new vn.worldcomesalive.agriculture.AgriculturalRuntime(this);lodging=new vn.worldcomesalive.civilization.LodgingManager(this);civilization=new vn.worldcomesalive.civilization.CivilizationManager(this);dungeons=new DungeonRuntime(this);
         // Historical V1 settlements keep their state and geometry; no automatic spatial conversion.
         for(Settlement s:state.settlements.values())if(s.ready){lodging.initialize(s);domestic.initialize(s);}
         for(Npc n:state.npcs.values())enqueue(n,Math.max(state.clock,n.nextCognition),3);
@@ -105,7 +106,7 @@ public final class WorldSimulation {
             Wake wake=wakes.remove();Npc n=state.npcs.get(wake.npc());if(n==null||wake.version()!=n.cognitionVersion)continue;
             think(n);processed++;state.decisions++;
         }
-        domestic.tick();agriculture.tick();lodging.tick();civilization.tick();
+        domestic.tick();agriculture.tick();lodging.tick();civilization.tick();dungeons.tick();
         if(state.clock%10==0)moveVisible();
         if(state.clock%20==0)relevance();
         if(state.clock%600==0)events();

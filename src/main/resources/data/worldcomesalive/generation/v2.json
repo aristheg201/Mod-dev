@@ -4544,6 +4544,180 @@
           "markers": []
         }
       ]
+    },
+    "crypt_offerings": {
+      "id": "crypt_offerings",
+      "roomType": "CRYPT",
+      "atoms": [
+        {
+          "kind": "storage_chest",
+          "x": 1,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "storage_chest",
+          "x": 2,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "candle_holder",
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "candle_holder",
+          "x": 2,
+          "y": 1,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "flower_vase",
+          "x": 4,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "tapestry",
+          "x": 0,
+          "y": 1,
+          "z": 3,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "book_stack",
+          "x": 4,
+          "y": 0,
+          "z": 3,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "crate",
+          "x": 4,
+          "y": 0,
+          "z": 4,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "personal_belongings",
+          "x": 4,
+          "y": 1,
+          "z": 4,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
+    },
+    "crypt_ritual": {
+      "id": "crypt_ritual",
+      "roomType": "SANCTUM",
+      "atoms": [
+        {
+          "kind": "throne",
+          "x": 3,
+          "y": 0,
+          "z": 1,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "medieval_table",
+          "x": 3,
+          "y": 0,
+          "z": 3,
+          "facing": "north",
+          "layer": "primary",
+          "markers": []
+        },
+        {
+          "kind": "candle_holder",
+          "x": 3,
+          "y": 1,
+          "z": 3,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "book_stack",
+          "x": 2,
+          "y": 0,
+          "z": 3,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "tapestry",
+          "x": 1,
+          "y": 1,
+          "z": 0,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "wall_sconce",
+          "x": 0,
+          "y": 2,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "wall_sconce",
+          "x": 6,
+          "y": 2,
+          "z": 2,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        },
+        {
+          "kind": "storage_chest",
+          "x": 6,
+          "y": 0,
+          "z": 5,
+          "facing": "north",
+          "layer": "secondary",
+          "markers": []
+        },
+        {
+          "kind": "rug",
+          "x": 3,
+          "y": 0,
+          "z": 4,
+          "facing": "north",
+          "layer": "detail",
+          "markers": []
+        }
+      ]
     }
   },
   "residential": {
@@ -4914,6 +5088,145 @@
           "facing": "north",
           "layer": "detail",
           "markers": []
+        }
+      ]
+    }
+  },
+  "dungeons": {
+    "forgotten_crypt": {
+      "id": "forgotten_crypt",
+      "history": "A ruined roadside chapel protects the burial halls and archives of an older kingdom.",
+      "faction": "ANCIENT_GUARDIANS",
+      "width": 44,
+      "depth": 68,
+      "rooms": [
+        {
+          "id": "entrance",
+          "role": "ENTRANCE",
+          "zone": "SURFACE_RUIN",
+          "x": -4,
+          "z": 12,
+          "width": 9,
+          "depth": 9,
+          "level": 0,
+          "composition": "crypt_offerings",
+          "encounter": "",
+          "lootBudget": 0
+        },
+        {
+          "id": "guard",
+          "role": "GUARD",
+          "zone": "OUTER_DEFENSE",
+          "x": -4,
+          "z": 0,
+          "width": 9,
+          "depth": 9,
+          "level": 1,
+          "composition": "crypt_offerings",
+          "encounter": "minecraft:zombie",
+          "lootBudget": 4
+        },
+        {
+          "id": "hub",
+          "role": "HUB",
+          "zone": "BURIAL_HALL",
+          "x": -5,
+          "z": -15,
+          "width": 11,
+          "depth": 11,
+          "level": 1,
+          "composition": "crypt_ritual",
+          "encounter": "minecraft:skeleton",
+          "lootBudget": 6
+        },
+        {
+          "id": "library",
+          "role": "LIBRARY",
+          "zone": "ARCHIVES",
+          "x": -20,
+          "z": -15,
+          "width": 11,
+          "depth": 11,
+          "level": 1,
+          "composition": "study_window",
+          "encounter": "",
+          "lootBudget": 10
+        },
+        {
+          "id": "storage",
+          "role": "STORAGE",
+          "zone": "OFFERINGS",
+          "x": 10,
+          "z": -15,
+          "width": 9,
+          "depth": 9,
+          "level": 1,
+          "composition": "pantry_full",
+          "encounter": "minecraft:zombie",
+          "lootBudget": 8
+        },
+        {
+          "id": "tomb",
+          "role": "CRYPT",
+          "zone": "BURIAL_HALL",
+          "x": -20,
+          "z": -30,
+          "width": 11,
+          "depth": 10,
+          "level": 1,
+          "composition": "crypt_offerings",
+          "encounter": "minecraft:skeleton",
+          "lootBudget": 6
+        },
+        {
+          "id": "sanctum",
+          "role": "BOSS",
+          "zone": "INNER_SANCTUM",
+          "x": -5,
+          "z": -32,
+          "width": 11,
+          "depth": 12,
+          "level": 1,
+          "composition": "crypt_ritual",
+          "encounter": "minecraft:zombie",
+          "lootBudget": 20
+        }
+      ],
+      "links": [
+        {
+          "from": "entrance",
+          "to": "guard",
+          "mandatory": true
+        },
+        {
+          "from": "guard",
+          "to": "hub",
+          "mandatory": true
+        },
+        {
+          "from": "hub",
+          "to": "library",
+          "mandatory": false
+        },
+        {
+          "from": "hub",
+          "to": "storage",
+          "mandatory": false
+        },
+        {
+          "from": "library",
+          "to": "tomb",
+          "mandatory": false
+        },
+        {
+          "from": "hub",
+          "to": "sanctum",
+          "mandatory": true
+        },
+        {
+          "from": "tomb",
+          "to": "sanctum",
+          "mandatory": false
         }
       ]
     }

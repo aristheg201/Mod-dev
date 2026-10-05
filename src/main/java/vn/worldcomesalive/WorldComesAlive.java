@@ -47,7 +47,7 @@ public final class WorldComesAlive implements ModInitializer {
             if(player instanceof ServerPlayerEntity actor)for(var s:sim.state.settlements.values())for(var b:s.buildings.values())if(b.contains(new vn.worldcomesalive.model.LivingWorld.Pos(pos.getX(),pos.getY(),pos.getZ()))&&!life.property.contains(b.id)){var victim=s.residents.stream().map(sim.state.npcs::get).filter(n->n.home.equals(b.id)).findFirst().orElse(null);if(victim!=null)interactions.crime(actor,victim,"theft",10);}
         });
         net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register((entity,source)->{
-            if(WorldSimulation.active()==null)return;if(!(entity instanceof CitizenEntity)){for(var s:WorldSimulation.active().state.settlements.values()){var animal=s.livestock.get(entity.getUuid());if(animal!=null)animal.alive=false;}return;}
+            if(WorldSimulation.active()==null)return;WorldSimulation.active().dungeons.death(entity.getUuid());if(!(entity instanceof CitizenEntity)){for(var s:WorldSimulation.active().state.settlements.values()){var animal=s.livestock.get(entity.getUuid());if(animal!=null)animal.alive=false;}return;}
             var sim=WorldSimulation.active();var n=sim.npc(entity.getUuid());if(n==null)return;
             n.lifeStage="deceased";n.activity="deceased";n.goal="dead";n.plan.clear();n.travel=null;
             if(source.getAttacker() instanceof ServerPlayerEntity actor)interactions.crime(actor,n,"murder",100);
