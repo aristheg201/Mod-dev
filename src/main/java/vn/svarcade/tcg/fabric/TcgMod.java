@@ -26,6 +26,7 @@ import static net.minecraft.server.command.CommandManager.literal;
 /** Thin platform adapter. A future SVArcade host can call the same independent services. */
 public final class TcgMod implements ModInitializer {
     private static final Gson JSON=new Gson();
+    private static TcgMod livingInstance;
     private static final long RECONNECT_GRACE_MS=120_000L;
     private Catalog catalog;private CardStore store;
     private vn.svarcade.tcg.integration.EconomyRewards economyRewards;
@@ -45,6 +46,7 @@ public final class TcgMod implements ModInitializer {
     private record Challenge(UUID challenger,String deck,boolean ranked){}
     private static final class Match {
         String id=UUID.randomUUID().toString(); UUID a,b; Duel duel;boolean ranked,npc;String botDifficulty="NONE";DuelRealmService.Arena arena;final LinkedHashSet<UUID> spectators=new LinkedHashSet<>();long activity=System.currentTimeMillis();
+        String livingName=""; java.util.function.Consumer<Boolean> livingResult; java.util.Random aiRandom;
         long aDisconnectedAt=-1L,bDisconnectedAt=-1L;
         int seat(UUID id){return id.equals(a)?0:1;}
         UUID opponent(UUID id){return id.equals(a)?b:a;}
@@ -65,7 +67,9 @@ public final class TcgMod implements ModInitializer {
                            List<String> decks,List<CardStore.Listing> market,List<BannerView> banners,List<String> players,
                            String challenge,Duel.View duel,List<String> guides,List<TradeView> trades,List<BinderCard> tradeShelf,String tradePeer,Map<String,Catalog.Card> definitions,Map<String,List<String>> deckTemplates,List<CardStore.Owned> inventory,Map<String,Integer> counts,List<CardStore.Deck> savedDecks,Map<String,String> formats,List<CardStore.Pull> pulls,String playerName,String opponentName,boolean spectator,boolean open,Catalog.Rules rules,Map<String,String> sellers){}
     @Override public void onInitialize() {
+        livingInstance=this;
         vn.svarcade.tcg.integration.CardWorldsIntegrations.initialize();
+        vn.svarcade.tcg.physical.PhysicalCards.initialize(this);
         vn.svarcade.tcg.integration.EconomyRewards.verifyCapabilities();
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server,resources,success)->{if(success)vn.svarcade.tcg.integration.CardWorldsIntegrations.reload();});
         PayloadTypeRegistry.playC2S().register(TcgPackets.Input.ID,TcgPackets.Input.CODEC);
@@ -78,9 +82,9 @@ public final class TcgMod implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server->{try {
             Path config=FabricLoader.getInstance().getConfigDir().resolve("svarcade-tcg");Files.createDirectories(config);
             Path file=config.resolve("catalog.json");if(!Files.exists(file))try(var in=Catalog.class.getResourceAsStream("/data/svarcade_tcg/catalog.json")){Files.copy(Objects.requireNonNull(in),file);}
-            catalog=CobblemonCatalogHydrator.expand(Catalog.load(file));store=new CardStore(server.getSavePath(WorldSavePath.ROOT).resolve("svarcade-tcg/cards.db"),catalog,rng);duelRealm=new DuelRealmService(server);duelRealm.world();
+            catalog=CobblemonCatalogHydrator.expand(Catalog.load(file));vn.svarcade.tcg.physical.PhysicalCards.bind(catalog);store=new CardStore(server.getSavePath(WorldSavePath.ROOT).resolve("svarcade-tcg/cards.db"),catalog,rng);duelRealm=new DuelRealmService(server);duelRealm.world();
         }catch(Exception ex){throw new IllegalStateException("TCG could not start safely",ex);}});
-        ServerLifecycleEvents.SERVER_STOPPING.register(server->{try{if(store!=null)store.close();}catch(Exception ex){org.slf4j.LoggerFactory.getLogger("svarcade_tcg").error("Closing card store",ex);}placeholderCache.clear();selectedDecks.clear();matches.clear();spectating.clear();challenges.clear();rateLimit.clear();messages=null;duelRealm=null;});
+        ServerLifecycleEvents.SERVER_STOPPING.register(server->{vn.svarcade.tcg.physical.PhysicalCards.clear();try{if(store!=null)store.close();}catch(Exception ex){org.slf4j.LoggerFactory.getLogger("svarcade_tcg").error("Closing card store",ex);}placeholderCache.clear();selectedDecks.clear();matches.clear();spectating.clear();challenges.clear();rateLimit.clear();messages=null;duelRealm=null;});
         ServerPlayConnectionEvents.JOIN.register((handler,sender,server)->{
             UUID id=handler.player.getUuid();Match m=matches.get(id);
             if(m!=null&&m.duel.winner()<0){
@@ -91,6 +95,7 @@ public final class TcgMod implements ModInitializer {
             } else {
                 Match watch=spectating.get(id);if(watch!=null&&watch.duel.winner()<0&&duelRealm!=null&&watch.arena!=null){duelRealm.enterSpectator(handler.player,watch.arena,new ArrayList<>(watch.spectators).indexOf(id));openRequests.add(id);send(handler.player,"Spectator mode resumed.",0);}
             }
+            send(handler.player,"",0);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler,server)->{
             UUID id=handler.player.getUuid();Match m=matches.get(id);
@@ -178,14 +183,32 @@ public final class TcgMod implements ModInitializer {
         }catch(Exception ex){notice=message(ex);}
         send(p,notice,page);
     }
-    private void bot(Match m){
-        Duel.View v=m.duel.view(1);
-        List<Duel.Action> actions=new ArrayList<>();
-        List<Duel.VisibleCard> mine=v.cards().stream().filter(c->c.controller()==1).toList();
-        List<Duel.VisibleCard> field=mine.stream().filter(c->c.zone()==Duel.Zone.FIELD).toList();
-        List<Duel.VisibleCard> enemy=v.cards().stream().filter(c->c.controller()==0&&c.zone()==Duel.Zone.FIELD).toList();
+    /** World Comes Alive adapter: identities/decks remain owned by the living-world store. */
+    public static List<String> livingWorldDeck(){return livingInstance==null||livingInstance.catalog==null?List.of():List.copyOf(livingInstance.catalog.starters().get("crossroads"));}
+    public static void challengeLivingNpc(ServerPlayerEntity player,UUID npc,String name,List<String> deck,double skill,java.util.function.Consumer<Boolean> result){
+        TcgMod self=livingInstance;check(self!=null&&self.store!=null,"Card Worlds is not ready.");check(!self.matches.containsKey(player.getUuid()),"Finish your current duel first.");
+        check(deck!=null&&!deck.isEmpty(),"This citizen has no deck.");String owner=player.getUuidAsString();if(!self.store.hasProfile(owner))self.store.createProfile(owner,"crossroads");
+        String selected=self.selectedDecks.getOrDefault(player.getUuid(),self.store.deckNames(owner).getFirst());
+        Match m=new Match();m.a=player.getUuid();m.b=npc;m.npc=true;m.livingName=name;m.livingResult=result;m.botDifficulty=skill>.65?"HARD":skill<.25?"EASY":"NORMAL";
+        try{var main=self.lockDeck(owner,selected,false,m.id);m.duel=new Duel(self.catalog,main.get(0),main.get(1),List.copyOf(deck),List.of(),self.rng);}catch(Exception ex){self.store.unlockDuel(m.id);throw ex;}
+        self.matches.put(m.a,m);self.prepareRealm(player.getServer(),m);self.openRequests.add(m.a);self.broadcast(player.getServer(),m);
+    }
+    /** Pure engine evaluation. Caller owns worker scheduling and applies the result on the server thread. */
+    public static int simulateLivingDuel(List<String> a,List<String> b,long seed,double skillA,double skillB){
+        TcgMod self=livingInstance;if(self==null||self.catalog==null)return -1;Match m=new Match();m.aiRandom=new Random(seed);m.duel=new Duel(self.catalog,List.copyOf(a),List.of(),List.copyOf(b),List.of(),new Random(seed));
+        for(int i=0;i<1200&&m.duel.winner()<0;i++){int seat=m.duel.view(0).priority();double skill=seat==0?skillA:skillB;m.botDifficulty=skill>.65?"HARD":skill<.25?"EASY":"NORMAL";self.bot(m,seat);}return m.duel.winner();
+    }
 
-        if(v.open()&&v.turnPlayer()==1&&(v.phase().equals("MAIN1")||v.phase().equals("MAIN2"))){
+    private void bot(Match m){bot(m,1);}
+    private void bot(Match m,int seat){
+        java.util.Random random=m.aiRandom==null?rng:m.aiRandom;
+        Duel.View v=m.duel.view(seat);
+        List<Duel.Action> actions=new ArrayList<>();
+        List<Duel.VisibleCard> mine=v.cards().stream().filter(c->c.controller()==seat).toList();
+        List<Duel.VisibleCard> field=mine.stream().filter(c->c.zone()==Duel.Zone.FIELD).toList();
+        List<Duel.VisibleCard> enemy=v.cards().stream().filter(c->c.controller()!=seat&&c.zone()==Duel.Zone.FIELD).toList();
+
+        if(v.open()&&v.turnPlayer()==seat&&(v.phase().equals("MAIN1")||v.phase().equals("MAIN2"))){
             for(var c:mine)if((c.zone()==Duel.Zone.HAND||c.zone()==Duel.Zone.EXTRA)&&c.category().equals("pokemon")){
                 actions.add(new Duel.Action("play",c.token(),""));
                 for(var material:field)actions.add(new Duel.Action("play",c.token(),material.token()));
@@ -194,7 +217,7 @@ public final class TcgMod implements ModInitializer {
             }
         }
 
-        if(v.open()&&v.turnPlayer()==1&&v.phase().equals("BATTLE")){
+        if(v.open()&&v.turnPlayer()==seat&&v.phase().equals("BATTLE")){
             for(var attacker:field){
                 actions.add(new Duel.Action("attack",attacker.token(),""));
                 for(var target:enemy)actions.add(new Duel.Action("attack",attacker.token(),target.token()));
@@ -212,17 +235,17 @@ public final class TcgMod implements ModInitializer {
             else if(target.equals("grave"))for(var t:mine)if(t.zone()==Duel.Zone.DISCARD)actions.add(new Duel.Action("activate",c.token(),t.token()));
         }
 
-        if(v.open()&&v.turnPlayer()==1)actions.add(new Duel.Action("next","",""));
+        if(v.open()&&v.turnPlayer()==seat)actions.add(new Duel.Action("next","",""));
         actions.add(new Duel.Action("pass","",""));
 
-        if("EASY".equals(m.botDifficulty))Collections.shuffle(actions,rng);
+        if("EASY".equals(m.botDifficulty))Collections.shuffle(actions,random);
         else{
             boolean hard="HARD".equals(m.botDifficulty);
             actions.sort(Comparator.comparingInt((Duel.Action action)->botScore(v,action,hard)).reversed());
-            if(!hard&&actions.size()>2&&rng.nextInt(100)<22)Collections.swap(actions,0,1+rng.nextInt(Math.min(3,actions.size()-1)));
+            if(!hard&&actions.size()>2&&random.nextInt(100)<22)Collections.swap(actions,0,1+random.nextInt(Math.min(3,actions.size()-1)));
         }
 
-        for(var action:actions)try{m.duel.act(1,action,m.duel.revision());return;}catch(IllegalArgumentException ignored){}
+        for(var action:actions)try{m.duel.act(seat,action,m.duel.revision());return;}catch(IllegalArgumentException ignored){}
     }
 
     private Catalog.Card botDefinition(Duel.VisibleCard card){
@@ -277,6 +300,7 @@ public final class TcgMod implements ModInitializer {
     private void finish(MinecraftServer server,Match m){
         int winning=m.duel.winner();if(winning<0)return;
         store.unlockDuel(m.id);UUID winner=winning==0?m.a:m.b,loser=winning==0?m.b:m.a;
+        if(m.livingResult!=null)m.livingResult.accept(winning==0);
         store.recordDuelResult(m.a.toString(),m.id,winning==0);if(!m.npc)store.recordDuelResult(m.b.toString(),m.id,winning==1);
         if(m.ranked){store.rankedResult(winner.toString(),loser.toString(),m.id);placeholderCache.replaceAll((id,values)->{var update=new HashMap<>(values);update.put("rank",Integer.toString(1+store.playersAboveRating(Integer.parseInt(values.getOrDefault("rating","1000")))));return Map.copyOf(update);});}
         if(m.npc&&winning==0){
@@ -310,7 +334,7 @@ public final class TcgMod implements ModInitializer {
         Match m=spectating.get(p.getUuid());boolean spectatorView=m!=null;if(m==null)m=matches.get(p.getUuid());Challenge challenge=challenges.get(p.getUuid());
         ServerPlayerEntity duelA=m==null?null:p.getServer().getPlayerManager().getPlayer(m.a);ServerPlayerEntity duelB=m==null||m.npc?null:p.getServer().getPlayerManager().getPlayer(m.b);
         String leftName=spectatorView?(duelA==null?"Duelist A":duelA.getName().getString()):p.getName().getString();
-        String rightName=m==null?"":m.npc?"Pewter Challenger":spectatorView?(duelB==null?"Duelist B":duelB.getName().getString()):Optional.ofNullable(p.getServer().getPlayerManager().getPlayer(m.seat(p.getUuid())==0?m.b:m.a)).map(x->x.getName().getString()).orElse("Opponent");
+        String rightName=m==null?"":m.npc?(m.livingName.isBlank()?"Pewter Challenger":m.livingName):spectatorView?(duelB==null?"Duelist B":duelB.getName().getString()):Optional.ofNullable(p.getServer().getPlayerManager().getPlayer(m.seat(p.getUuid())==0?m.b:m.a)).map(x->x.getName().getString()).orElse("Opponent");
         var snap=new Snapshot(notice,store.profile(owner),binder,page,store.completion(owner).size(),catalog.cards().size(),store.deckNames(owner),store.market(page),banners,
             p.getServer().getPlayerManager().getPlayerList().stream().filter(x->!x.getUuid().equals(p.getUuid())).map(x->x.getName().getString()).toList(),challenge==null?"":"A collector is waiting. Select Accept challenge.",m==null?null:(spectatorView?m.duel.spectatorView():m.duel.view(m.seat(p.getUuid()))),
             List.of("Ancient Sands: inspect chiseled sandstone in a desert to discover an archaeology edition.","Pewter Challenger: win a practice duel to earn Onix.","Midnight Collector: in the Nether, 23:00–02:00, exchange three Gastly after one discovery.","Ranked bans Shadow Lugia. All finishes share the same gameplay.","Use Pass to offer a response; both players must pass before a chain resolves."),
@@ -324,6 +348,8 @@ public final class TcgMod implements ModInitializer {
         if(messages==null)messages=new MessageService(server);
         return messages;
     }
+    public CardStore physicalStore(){return store;}
+    public void physicalSync(ServerPlayerEntity player){send(player,"",0);}
     Catalog commandCatalog(){return catalog;}
     CardStore commandStore(){return store;}
     boolean commandHasActiveDuels(){return !matches.isEmpty();}
@@ -371,6 +397,7 @@ public final class TcgMod implements ModInitializer {
         vn.svarcade.tcg.integration.CardWorldsIntegrations.reload();placeholderCache.clear();
         commandMessages(server).reload();
         if(!matches.isEmpty())throw new IllegalStateException("ACTIVE_DUELS");
+        if(vn.svarcade.tcg.physical.BlankCapture.hasActiveAttempts())throw new IllegalStateException("ACTIVE_CAPTURES");
         Path config=FabricLoader.getInstance().getConfigDir().resolve("svarcade-tcg");
         Files.createDirectories(config);
         Path file=config.resolve("catalog.json");
@@ -381,7 +408,7 @@ public final class TcgMod implements ModInitializer {
         if(previousStore!=null)previousStore.close();
         try{
             store=new CardStore(db,next,rng);
-            catalog=next;
+            catalog=next;vn.svarcade.tcg.physical.PhysicalCards.bind(catalog);
         }catch(Exception ex){
             catalog=previousCatalog;
             store=previousCatalog==null?null:new CardStore(db,previousCatalog,rng);

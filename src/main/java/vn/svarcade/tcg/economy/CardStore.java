@@ -32,6 +32,7 @@ public final class CardStore implements AutoCloseable {
             s.execute("CREATE TABLE IF NOT EXISTS profiles(owner TEXT PRIMARY KEY, coins INTEGER NOT NULL CHECK(coins>=0), reputation INTEGER NOT NULL DEFAULT 0, rating INTEGER NOT NULL DEFAULT 1000)");
             s.execute("CREATE TABLE IF NOT EXISTS cards(serial TEXT PRIMARY KEY, card TEXT NOT NULL, finish TEXT NOT NULL, origin TEXT NOT NULL, finder TEXT NOT NULL, owner TEXT NOT NULL REFERENCES profiles(owner), lock TEXT NOT NULL DEFAULT '', acquired INTEGER NOT NULL)");
             s.execute("CREATE INDEX IF NOT EXISTS cards_owner ON cards(owner,lock,card)");
+            s.execute("CREATE TABLE IF NOT EXISTS physical_redemptions(token TEXT PRIMARY KEY,serial TEXT NOT NULL UNIQUE,owner TEXT NOT NULL,card TEXT NOT NULL,at INTEGER NOT NULL)");
             s.execute("CREATE TABLE IF NOT EXISTS provenance(id INTEGER PRIMARY KEY AUTOINCREMENT, serial TEXT NOT NULL, previous_owner TEXT, next_owner TEXT NOT NULL, reason TEXT NOT NULL, at INTEGER NOT NULL)");
             s.execute("CREATE INDEX IF NOT EXISTS provenance_serial ON provenance(serial,id)");
             s.execute("CREATE TABLE IF NOT EXISTS decks(owner TEXT NOT NULL, name TEXT NOT NULL, main TEXT NOT NULL, extra TEXT NOT NULL, PRIMARY KEY(owner,name))");
@@ -59,9 +60,40 @@ public final class CardStore implements AutoCloseable {
     private int update(String sql,Object...args)throws SQLException {try(var s=statement(sql,args)){return s.executeUpdate();}}
     private long scalar(String sql,Object...args)throws SQLException {try(var s=statement(sql,args);var r=s.executeQuery()){return r.next()?r.getLong(1):0;}}
     private String mint(String owner,String card,String finish,String origin)throws SQLException {
+        return mint(owner,card,finish,origin,owner);
+    }
+    private String mint(String owner,String card,String finish,String origin,String finder)throws SQLException {
         catalog.card(card);String id=UUID.randomUUID().toString();long now=Instant.now().getEpochSecond();
-        update("INSERT INTO cards VALUES(?,?,?,?,?,?,?,?)",id,card,finish,origin,owner,owner,"",now);
+        update("INSERT INTO cards VALUES(?,?,?,?,?,?,?,?)",id,card,finish,origin,finder,owner,"",now);
         update("INSERT INTO provenance(serial,next_owner,reason,at) VALUES(?,?,?,?)",id,owner,origin,now);return id;
+    }
+    public enum RedeemStatus { MINTED, RECOVERED, ALREADY_REDEEMED }
+    public record RedeemResult(RedeemStatus status,String serial) {
+        public boolean accepted(){return status!=RedeemStatus.ALREADY_REDEEMED;}
+    }
+    /** The token and mint commit together. Retried physical copies cannot create a second serial. */
+    public RedeemResult redeemPhysical(String owner,UUID token,String cardId,String finish,String origin,String finder) {
+        return tx(()->{
+            check(token!=null&&!token.equals(new UUID(0,0)),"PHYSICAL_TOKEN_MISSING");
+            catalog.card(cardId);
+            check(owner!=null&&!owner.isBlank(),"INVALID_OWNER");
+            check(vn.svarcade.tcg.physical.PhysicalCardData.FINISHES.contains(finish),"INVALID_FINISH");
+            check(Set.of("BLANK_CAPTURE","CHEST_LOOT","ADMIN_GRANT").contains(origin),"INVALID_ORIGIN");
+            check(finder!=null&&finder.length()<=128,"INVALID_FINDER");
+            try(var q=statement("SELECT serial,owner,card FROM physical_redemptions WHERE token=?",token.toString());var r=q.executeQuery()) {
+                if(r.next()) {
+                    String serial=r.getString("serial");
+                    boolean same=owner.equals(r.getString("owner"))&&cardId.equals(r.getString("card"));
+                    org.slf4j.LoggerFactory.getLogger("cardworlds-physical").warn("CARDWORLDS_PHYSICAL_DUPLICATE_TOKEN token={} player={} serial={} recovery={}",token,owner,serial,same);
+                    return new RedeemResult(same?RedeemStatus.RECOVERED:RedeemStatus.ALREADY_REDEEMED,serial);
+                }
+            }
+            // Acquisition can initialize a collection without minting a starter deck.
+            update("INSERT OR IGNORE INTO profiles(owner,coins) VALUES(?,2000)",owner);
+            String serial=mint(owner,cardId,finish,origin,finder);
+            update("INSERT INTO physical_redemptions VALUES(?,?,?,?,?)",token.toString(),serial,owner,cardId,Instant.now().getEpochSecond());
+            return new RedeemResult(RedeemStatus.MINTED,serial);
+        });
     }
     public void createProfile(String owner,String starter) {tx(()->{
         List<String> ids=catalog.starters().get(starter);check(ids!=null,"Choose an available starter.");

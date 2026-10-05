@@ -26,6 +26,7 @@ public final class TcgClient implements ClientModInitializer {
     @Override
     public void onInitializeClient(){
         PokemonModels.initialize();
+        vn.svarcade.tcg.client.render.PhysicalCardRenderer.initialize();
         net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.resource.ResourceType.CLIENT_RESOURCES).registerReloadListener(new net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener(){
             public net.minecraft.util.Identifier getFabricId(){return net.minecraft.util.Identifier.of("svarcade_tcg","presentation_caches");}
             public void reload(net.minecraft.resource.ResourceManager resources){
@@ -67,6 +68,7 @@ public final class TcgClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(TcgPackets.Snapshot.ID,(packet,ctx)->
             ctx.client().execute(()->{
                 TcgMod.Snapshot state=JSON.fromJson(packet.json(),TcgMod.Snapshot.class);
+                vn.svarcade.tcg.physical.PhysicalCards.presentation(state.definitions());
                 boolean realmFlow=state.duel()!=null||state.spectator();
                 if(realmFlow)pendingRealmSnapshot=state;
                 else pendingRealmSnapshot=null;

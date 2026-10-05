@@ -2,15 +2,17 @@
   "schemaVersion": 1,
   "id": "svarcade_tcg",
   "version": "${version}",
-  "name": "SVArcade: Card Worlds",
-  "description": "Card Worlds: duels, collections and card trading.",
+  "name": "World Comes Alive + Card Worlds",
+  "description": "Persistent medieval settlements, living households, utility/GOAP NPCs and integrated Card Worlds.",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "vn.svarcade.tcg.fabric.TcgMod"
+      "vn.svarcade.tcg.fabric.TcgMod",
+      "vn.worldcomesalive.WorldComesAlive"
     ],
     "client": [
-      "vn.svarcade.tcg.fabric.TcgClient"
+      "vn.svarcade.tcg.fabric.TcgClient",
+      "vn.worldcomesalive.client.WorldComesAliveClient"
     ]
   },
   "depends": {
@@ -25,5 +27,8 @@
     "beconomy": "*",
     "cobbledollars": "*",
     "impactor": "*"
-  }
+  },
+  "mixins": [
+    "svarcade_tcg.mixins.json"
+  ]
 }

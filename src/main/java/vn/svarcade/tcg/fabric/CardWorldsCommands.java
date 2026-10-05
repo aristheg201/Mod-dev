@@ -73,6 +73,17 @@ public final class CardWorldsCommands {
             .then(literal("qa_position")
                 .requires(source -> Boolean.getBoolean("cardworlds.qa") && source.hasPermissionLevel(3))
                 .executes(ctx -> qaPosition(ctx, mod)))
+            .then(literal("grantblank").requires(source->source.hasPermissionLevel(3))
+                .then(argument("player",EntityArgumentType.player())
+                    .executes(ctx->grantPhysicalItem(ctx,mod,true,1,"normal"))
+                    .then(argument("amount",IntegerArgumentType.integer(1,4096))
+                        .executes(ctx->grantPhysicalItem(ctx,mod,true,IntegerArgumentType.getInteger(ctx,"amount"),"normal")))))
+            .then(literal("grantphysical").requires(source->source.hasPermissionLevel(3))
+                .then(argument("player",EntityArgumentType.player())
+                    .then(argument("cardId",StringArgumentType.word()).suggests((ctx,builder)->suggestCards(mod,builder))
+                        .executes(ctx->grantPhysicalItem(ctx,mod,false,1,"normal"))
+                        .then(argument("finish",StringArgumentType.word()).suggests((ctx,builder)->suggestFinishes(builder))
+                            .executes(ctx->grantPhysicalItem(ctx,mod,false,1,StringArgumentType.getString(ctx,"finish")))))))
             .then(literal("grant")
                 .requires(source -> source.hasPermissionLevel(3))
                 .then(literal("card")
@@ -153,6 +164,21 @@ public final class CardWorldsCommands {
         }
     }
 
+    private static int grantPhysicalItem(CommandContext<ServerCommandSource> ctx,TcgMod mod,boolean blank,int amount,String finishId) {
+        var source=ctx.getSource();if(!ready(mod,source))return 0;
+        try {
+            var player=EntityArgumentType.getPlayer(ctx,"player");
+            if(blank){int remaining=amount;while(remaining>0){int count=Math.min(64,remaining);vn.svarcade.tcg.physical.PhysicalCards.giveOrDrop(player,new net.minecraft.item.ItemStack(vn.svarcade.tcg.physical.CardItems.BLANK_CARD,count));remaining-=count;}}
+            else {
+                String id=StringArgumentType.getString(ctx,"cardId");mod.commandCatalog().card(id);
+                String finish=FINISHES.get(finishId.toLowerCase(Locale.ROOT));
+                if(finish==null)throw new IllegalArgumentException("INVALID_FINISH");
+                vn.svarcade.tcg.physical.PhysicalCards.giveOrDrop(player,vn.svarcade.tcg.physical.PhysicalCards.create(id,finish,"ADMIN_GRANT",player));
+            }
+            messages(mod,source).send(source,blank?"command.grant.blank.success":"command.grant.physical.success",Map.of("target",player.getName().getString(),"amount",Integer.toString(amount)));
+            return 1;
+        }catch(Exception e){messages(mod,source).send(source,"command.failed",Map.of("error",safeError(e)));return 0;}
+    }
     private static int grantCard(CommandContext<ServerCommandSource> ctx, TcgMod mod, int amount, String finishId) {
         ServerCommandSource source = ctx.getSource();
         if (!ready(mod, source)) return 0;

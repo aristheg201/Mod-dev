@@ -8,3 +8,6 @@ libs/*.jar
 *.db
 *.db-wal
 *.db-shm
+
+run-wca/
+run-wca-server/

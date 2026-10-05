@@ -80,3 +80,5 @@ tasks.register('verifyCardWorlds') {
 }
 
 apply from: 'source-overrides/physical-card-worlds/physical.gradle'
+
+apply from: 'tools/wca/runtime.gradle'

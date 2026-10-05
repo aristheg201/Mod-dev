@@ -1,0 +1,41 @@
+def loomTypes=tasks.named('remapJar').get().getClass().classLoader
+sourceSets {
+    wcaQa {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+repositories { maven { url 'https://maven.fabricmc.net' } }
+configurations { wcaRuntimeMods }
+dependencies {
+    wcaRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    wcaRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
+    wcaRuntimeMods 'com.cobblemon:fabric:1.8.1+1.21.1'
+}
+tasks.register('wcaQaJar',Jar) {
+    dependsOn tasks.named('wcaQaClasses')
+    archiveClassifier='wca-qa-dev'
+    from sourceSets.wcaQa.output
+}
+tasks.register('remapWcaQaJar',loomTypes.loadClass('net.fabricmc.loom.task.RemapJarTask')) {
+    dependsOn tasks.named('wcaQaJar')
+    inputFile=tasks.named('wcaQaJar').flatMap {it.archiveFile}
+    archiveClassifier='wca-qa'
+}
+tasks.register('runWorldComesAliveClient',loomTypes.loadClass('net.fabricmc.loom.task.prod.ClientProductionRunTask')) {
+    dependsOn tasks.named('remapJar'),tasks.named('remapWcaQaJar')
+    mods.setFrom(configurations.wcaRuntimeMods,tasks.named('remapJar').flatMap {it.archiveFile},tasks.named('remapWcaQaJar').flatMap {it.archiveFile})
+    programArgs.addAll(['--width','1280','--height','720'])
+    jvmArgs.addAll(['-Xmx5G','-Dworldcomesalive.qa=true'])
+    runDir=file('run-wca')
+    useXVFB=false
+}
+tasks.register('runWorldComesAliveServer',loomTypes.loadClass('net.fabricmc.loom.task.prod.ServerProductionRunTask')) {
+    dependsOn tasks.named('remapJar')
+    mods.setFrom(configurations.wcaRuntimeMods,tasks.named('remapJar').flatMap {it.archiveFile})
+    runDir=file('run-wca-server')
+}
+tasks.register('verifyWorldComesAlive') {
+    group='verification'
+    dependsOn tasks.named('test'),tasks.named('remapJar'),tasks.named('remapWcaQaJar')
+}

@@ -1,0 +1,1539 @@
+{
+  "firstNames": [
+    "Alden",
+    "Brina",
+    "Cedric",
+    "Dara",
+    "Edric",
+    "Freya",
+    "Gareth",
+    "Hilda",
+    "Ivor",
+    "Jora",
+    "Kael",
+    "Lyra",
+    "Merrin",
+    "Nora",
+    "Oren",
+    "Petra",
+    "Quinn",
+    "Rhea",
+    "Soren",
+    "Talia",
+    "Ulric",
+    "Vera",
+    "Wren",
+    "Yara"
+  ],
+  "lastNames": [
+    "Ashford",
+    "Briar",
+    "Cooper",
+    "Dunholm",
+    "Ember",
+    "Fairbrook",
+    "Greymere",
+    "Hart",
+    "Ironwood",
+    "Kestrel",
+    "Miller",
+    "Oakheart",
+    "Reed",
+    "Stone",
+    "Thorn",
+    "Winter"
+  ],
+  "traits": [
+    "aggression",
+    "bravery",
+    "greed",
+    "kindness",
+    "sociability",
+    "honesty",
+    "loyalty",
+    "curiosity",
+    "ambition",
+    "patience",
+    "risk_tolerance"
+  ],
+  "regions": [
+    {
+      "id": "nordic",
+      "biome": "snow",
+      "wood": "spruce",
+      "stone": "stone_bricks",
+      "food": [
+        "salmon",
+        "potato"
+      ],
+      "culture": [
+        "sagas",
+        "midwinter"
+      ],
+      "faction": "winter_holds"
+    },
+    {
+      "id": "highland",
+      "biome": "windswept",
+      "wood": "spruce",
+      "stone": "cobblestone",
+      "food": [
+        "mutton"
+      ],
+      "culture": [
+        "clans"
+      ],
+      "faction": "highland_clans"
+    },
+    {
+      "id": "forest",
+      "biome": "forest",
+      "wood": "dark_oak",
+      "stone": "mossy_stone_bricks",
+      "food": [
+        "apple",
+        "mushroom_stew"
+      ],
+      "culture": [
+        "woodland_fair"
+      ],
+      "faction": "greenward"
+    },
+    {
+      "id": "coastal",
+      "biome": "beach",
+      "wood": "oak",
+      "stone": "stone_bricks",
+      "food": [
+        "cod"
+      ],
+      "culture": [
+        "harvest_tide"
+      ],
+      "faction": "crown"
+    },
+    {
+      "id": "mountain",
+      "biome": "peak",
+      "wood": "spruce",
+      "stone": "deepslate_bricks",
+      "food": [
+        "potato"
+      ],
+      "culture": [
+        "craft_guilds"
+      ],
+      "faction": "stone_council"
+    },
+    {
+      "id": "swamp",
+      "biome": "swamp",
+      "wood": "mangrove",
+      "stone": "mossy_cobblestone",
+      "food": [
+        "mushroom_stew"
+      ],
+      "culture": [
+        "lantern_night"
+      ],
+      "faction": "fenward"
+    },
+    {
+      "id": "desert",
+      "biome": "desert",
+      "wood": "acacia",
+      "stone": "cut_sandstone",
+      "food": [
+        "bread"
+      ],
+      "culture": [
+        "market_day"
+      ],
+      "faction": "sun_court"
+    },
+    {
+      "id": "temperate_kingdom",
+      "biome": "*",
+      "wood": "oak",
+      "stone": "stone_bricks",
+      "food": [
+        "bread",
+        "apple"
+      ],
+      "culture": [
+        "harvest_fair"
+      ],
+      "faction": "crown"
+    }
+  ],
+  "archetypes": [
+    {
+      "id": "village",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -30,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -14,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": 2,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": 18,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "farm",
+          "profession": "farmer",
+          "x": -30,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "FARM_FIELD",
+            "STABLE",
+            "HORSE_OR_MOUNT_POINT"
+          ]
+        },
+        {
+          "type": "bakery",
+          "profession": "baker",
+          "x": -14,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "forge",
+          "profession": "blacksmith",
+          "x": 2,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "tavern",
+          "profession": "innkeeper",
+          "x": 18,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "SOCIAL_POINT",
+            "TAVERN_SEAT",
+            "CARD_DUEL_TABLE",
+            "FESTIVAL_POINT"
+          ]
+        },
+        {
+          "type": "guardhouse",
+          "profession": "guard",
+          "x": -46,
+          "z": -8,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "GUARD_POST",
+            "PATROL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "guild_hall",
+          "profession": "healer",
+          "x": 34,
+          "z": -8,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SOCIAL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "farming_hamlet",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -30,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -14,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "farm",
+          "profession": "farmer",
+          "x": -30,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "FARM_FIELD",
+            "STABLE",
+            "HORSE_OR_MOUNT_POINT"
+          ]
+        },
+        {
+          "type": "tavern",
+          "profession": "innkeeper",
+          "x": 18,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "SOCIAL_POINT",
+            "TAVERN_SEAT",
+            "CARD_DUEL_TABLE",
+            "FESTIVAL_POINT"
+          ]
+        },
+        {
+          "type": "guardhouse",
+          "profession": "guard",
+          "x": -46,
+          "z": -8,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "GUARD_POST",
+            "PATROL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trading_post",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -30,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "bakery",
+          "profession": "baker",
+          "x": -14,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "forge",
+          "profession": "blacksmith",
+          "x": 2,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "tavern",
+          "profession": "innkeeper",
+          "x": 18,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "SOCIAL_POINT",
+            "TAVERN_SEAT",
+            "CARD_DUEL_TABLE",
+            "FESTIVAL_POINT"
+          ]
+        },
+        {
+          "type": "guardhouse",
+          "profession": "guard",
+          "x": -46,
+          "z": -8,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "GUARD_POST",
+            "PATROL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -30,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -14,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": 2,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": 18,
+          "z": -28,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "farm",
+          "profession": "farmer",
+          "x": -30,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "FARM_FIELD",
+            "STABLE",
+            "HORSE_OR_MOUNT_POINT"
+          ]
+        },
+        {
+          "type": "bakery",
+          "profession": "baker",
+          "x": -14,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "forge",
+          "profession": "blacksmith",
+          "x": 2,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "tavern",
+          "profession": "innkeeper",
+          "x": 18,
+          "z": 12,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "SOCIAL_POINT",
+            "TAVERN_SEAT",
+            "CARD_DUEL_TABLE",
+            "FESTIVAL_POINT"
+          ]
+        },
+        {
+          "type": "guardhouse",
+          "profession": "guard",
+          "x": -46,
+          "z": -8,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "GUARD_POST",
+            "PATROL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "guild_hall",
+          "profession": "healer",
+          "x": 34,
+          "z": -8,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SOCIAL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -30,
+          "z": -46,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        },
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -14,
+          "z": -46,
+          "width": 11,
+          "depth": 11,
+          "beds": 3,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ranch",
+      "plots": [
+        {
+          "type": "farm",
+          "profession": "farmer",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "FARM_FIELD",
+            "STABLE",
+            "HORSE_OR_MOUNT_POINT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "isolated_cottage",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "resident",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hunter_cabin",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "hunter",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fishing_settlement",
+      "plots": [
+        {
+          "type": "farm",
+          "profession": "fisher",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "FARM_FIELD",
+            "STABLE",
+            "HORSE_OR_MOUNT_POINT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "roadside_inn",
+      "plots": [
+        {
+          "type": "tavern",
+          "profession": "innkeeper",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SHOP_COUNTER",
+            "CUSTOMER_POINT",
+            "STORAGE",
+            "OWNER_SLOT",
+            "SOCIAL_POINT",
+            "TAVERN_SEAT",
+            "CARD_DUEL_TABLE",
+            "FESTIVAL_POINT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mining_settlement",
+      "plots": [
+        {
+          "type": "forge",
+          "profession": "miner",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "logging_camp",
+      "plots": [
+        {
+          "type": "guild_hall",
+          "profession": "logger",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SOCIAL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "military_outpost",
+      "plots": [
+        {
+          "type": "guardhouse",
+          "profession": "guard",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "GUARD_POST",
+            "PATROL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "guild_hall",
+      "plots": [
+        {
+          "type": "guild_hall",
+          "profession": "blacksmith",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SOCIAL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "monastery",
+      "plots": [
+        {
+          "type": "guild_hall",
+          "profession": "healer",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "SOCIAL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "keep",
+      "plots": [
+        {
+          "type": "guardhouse",
+          "profession": "guard",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 4,
+          "markers": [
+            "HOME",
+            "BED",
+            "WORKSTATION",
+            "GUARD_POST",
+            "PATROL_POINT",
+            "STORAGE",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wilderness_camp",
+      "plots": [
+        {
+          "type": "cottage",
+          "profession": "hunter",
+          "x": -5,
+          "z": 10,
+          "width": 11,
+          "depth": 11,
+          "beds": 2,
+          "markers": [
+            "HOME",
+            "BED",
+            "STORAGE",
+            "DINING_POINT",
+            "OWNER_SLOT"
+          ]
+        }
+      ]
+    }
+  ],
+  "professions": {
+    "resident": {
+      "pokemon": "",
+      "pokemonRole": "",
+      "start": 2000,
+      "end": 9000,
+      "skill": "crafting"
+    },
+    "farmer": {
+      "pokemon": "wooloo",
+      "pokemonRole": "animal care",
+      "start": 1000,
+      "end": 9000,
+      "skill": "farming"
+    },
+    "baker": {
+      "pokemon": "fidough",
+      "pokemonRole": "baking",
+      "start": 500,
+      "end": 8000,
+      "skill": "cooking"
+    },
+    "blacksmith": {
+      "pokemon": "vulpix",
+      "pokemonRole": "forge heating",
+      "start": 1500,
+      "end": 9000,
+      "skill": "smithing"
+    },
+    "innkeeper": {
+      "pokemon": "eevee",
+      "pokemonRole": "companionship",
+      "start": 5000,
+      "end": 14000,
+      "skill": "trading"
+    },
+    "guard": {
+      "pokemon": "growlithe",
+      "pokemonRole": "patrol and tracking",
+      "start": 0,
+      "end": 12000,
+      "skill": "combat"
+    },
+    "healer": {
+      "pokemon": "chansey",
+      "pokemonRole": "medical care",
+      "start": 2000,
+      "end": 10000,
+      "skill": "alchemy"
+    },
+    "hunter": {
+      "pokemon": "rockruff",
+      "pokemonRole": "tracking",
+      "start": 1000,
+      "end": 9000,
+      "skill": "hunting"
+    },
+    "fisher": {
+      "pokemon": "buizel",
+      "pokemonRole": "fishing",
+      "start": 500,
+      "end": 8000,
+      "skill": "fishing"
+    },
+    "logger": {
+      "pokemon": "timburr",
+      "pokemonRole": "carrying timber",
+      "start": 1000,
+      "end": 9000,
+      "skill": "crafting"
+    },
+    "miner": {
+      "pokemon": "drilbur",
+      "pokemonRole": "mining",
+      "start": 1000,
+      "end": 9000,
+      "skill": "mining"
+    }
+  },
+  "actions": [
+    {
+      "id": "flee",
+      "requires": [
+        "alive"
+      ],
+      "adds": [
+        "safe"
+      ],
+      "cost": 1,
+      "execution": "guard"
+    },
+    {
+      "id": "go_home",
+      "requires": [
+        "alive"
+      ],
+      "adds": [
+        "home"
+      ],
+      "cost": 2,
+      "execution": "home"
+    },
+    {
+      "id": "sleep",
+      "requires": [
+        "home"
+      ],
+      "adds": [
+        "rested"
+      ],
+      "cost": 1,
+      "execution": "sleep"
+    },
+    {
+      "id": "visit_market",
+      "requires": [
+        "shop_open"
+      ],
+      "adds": [
+        "market"
+      ],
+      "cost": 2,
+      "execution": "market"
+    },
+    {
+      "id": "buy_food",
+      "requires": [
+        "market"
+      ],
+      "adds": [
+        "food"
+      ],
+      "cost": 2,
+      "execution": "buy"
+    },
+    {
+      "id": "gather_food",
+      "requires": [
+        "can_gather"
+      ],
+      "adds": [
+        "food"
+      ],
+      "cost": 5,
+      "execution": "gather"
+    },
+    {
+      "id": "eat",
+      "requires": [
+        "food"
+      ],
+      "adds": [
+        "nourished"
+      ],
+      "cost": 1,
+      "execution": "eat"
+    },
+    {
+      "id": "go_work",
+      "requires": [
+        "alive"
+      ],
+      "adds": [
+        "workplace"
+      ],
+      "cost": 2,
+      "execution": "work"
+    },
+    {
+      "id": "produce",
+      "requires": [
+        "workplace"
+      ],
+      "adds": [
+        "worked"
+      ],
+      "cost": 2,
+      "execution": "produce"
+    },
+    {
+      "id": "visit_tavern",
+      "requires": [
+        "alive"
+      ],
+      "adds": [
+        "tavern"
+      ],
+      "cost": 2,
+      "execution": "tavern"
+    },
+    {
+      "id": "converse",
+      "requires": [
+        "tavern"
+      ],
+      "adds": [
+        "social"
+      ],
+      "cost": 2,
+      "execution": "social"
+    },
+    {
+      "id": "train_partner",
+      "requires": [
+        "alive"
+      ],
+      "adds": [
+        "trained"
+      ],
+      "cost": 3,
+      "execution": "train"
+    }
+  ],
+  "dialogue": [
+    {
+      "id": "welcome",
+      "topic": "talk",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Welcome to {settlement}. The {faction} keeps these roads safe. I am {name}, the {profession}."
+    },
+    {
+      "id": "work",
+      "topic": "talk",
+      "profession": "*",
+      "activity": "working",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "I am {activity}. Our household lives in {home}; come by after my shift."
+    },
+    {
+      "id": "social",
+      "topic": "talk",
+      "profession": "*",
+      "activity": "socializing",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "A warm hearth, good company and a game of cards. That is what keeps {settlement} alive."
+    },
+    {
+      "id": "guard",
+      "topic": "talk",
+      "profession": "guard",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "My Growlithe helps me patrol the roads. Report trouble to the watch."
+    },
+    {
+      "id": "farmer",
+      "topic": "talk",
+      "profession": "farmer",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "My Wooloo and I tend the fields. The bakery depends on our wheat."
+    },
+    {
+      "id": "baker",
+      "topic": "talk",
+      "profession": "baker",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Fresh bread for the village. If the roads close, flour gets scarce."
+    },
+    {
+      "id": "smith",
+      "topic": "talk",
+      "profession": "blacksmith",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Vulpix keeps the forge hot. Tools, repairs and honest work."
+    },
+    {
+      "id": "inn",
+      "topic": "talk",
+      "profession": "innkeeper",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Our card night begins after the work bell. Bring a deck and a friendly spirit."
+    },
+    {
+      "id": "saved",
+      "topic": "talk",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": 15,
+      "memory": "helped",
+      "season": "*",
+      "weather": "*",
+      "text": "I remember the help you gave our household. You have earned my trust."
+    },
+    {
+      "id": "assault",
+      "topic": "talk",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "assault",
+      "season": "*",
+      "weather": "*",
+      "text": "Keep your distance. I remember what you did."
+    },
+    {
+      "id": "rain",
+      "topic": "talk",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "rain",
+      "text": "This rain makes the road heavy. Travellers will be late."
+    },
+    {
+      "id": "greet",
+      "topic": "greet",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Good day, {player}. May the road treat you kindly."
+    },
+    {
+      "id": "ask",
+      "topic": "ask",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "We have a bakery, a forge, a watch and a tavern. Our roads connect homes to work. Ask the innkeeper about cards."
+    },
+    {
+      "id": "gift",
+      "topic": "gift",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "You thought of me. Thank you, {player}."
+    },
+    {
+      "id": "flirt",
+      "topic": "flirt",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Trust takes time. Let us get to know one another first."
+    },
+    {
+      "id": "invite",
+      "topic": "invite",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Find me at the tavern when the workday ends."
+    },
+    {
+      "id": "help",
+      "topic": "help",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "The village always needs willing hands. Thank you for helping."
+    },
+    {
+      "id": "cards",
+      "topic": "cards",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "I keep my own deck. A friendly game sounds good."
+    },
+    {
+      "id": "rob",
+      "topic": "rob",
+      "profession": "*",
+      "activity": "*",
+      "minTrust": -100,
+      "memory": "",
+      "season": "*",
+      "weather": "*",
+      "text": "Guards! Someone is threatening me!"
+    }
+  ],
+  "recipes": [
+    {
+      "profession": "farmer",
+      "input": "",
+      "consumed": 0,
+      "output": "minecraft:wheat",
+      "produced": 6,
+      "wage": 2
+    },
+    {
+      "profession": "baker",
+      "input": "minecraft:wheat",
+      "consumed": 3,
+      "output": "minecraft:bread",
+      "produced": 2,
+      "wage": 3
+    },
+    {
+      "profession": "blacksmith",
+      "input": "minecraft:iron_ingot",
+      "consumed": 1,
+      "output": "minecraft:iron_nugget",
+      "produced": 9,
+      "wage": 3
+    }
+  ],
+  "events": [
+    {
+      "type": "festival",
+      "duration": 6000,
+      "chance": 0.2
+    },
+    {
+      "type": "route_damage",
+      "duration": 18000,
+      "chance": 0.1
+    },
+    {
+      "type": "shortage",
+      "duration": 12000,
+      "chance": 0.12
+    },
+    {
+      "type": "pokemon_outbreak",
+      "duration": 9000,
+      "chance": 0.08
+    }
+  ],
+  "gifts": [
+    {
+      "tag": "food",
+      "profession": "*",
+      "value": 3,
+      "need": "hunger"
+    },
+    {
+      "tag": "tool",
+      "profession": "blacksmith",
+      "value": 4,
+      "need": ""
+    },
+    {
+      "tag": "flower",
+      "profession": "*",
+      "value": 2,
+      "need": "loneliness"
+    },
+    {
+      "tag": "pokemon",
+      "profession": "farmer",
+      "value": 4,
+      "need": ""
+    }
+  ],
+  "regionChunks": 24,
+  "relevance": 80
+}

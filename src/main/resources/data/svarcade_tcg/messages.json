@@ -25,5 +25,7 @@
   "command.spectate.left": "<green>Left spectator mode and restored your previous location.</green>",
   "command.realm.status": "<gray>Duel Realm:</gray> <white><status></white>",
   "command.realm.returned": "<green>Restored your saved pre-Duel-Realm position.</green>",
-  "command.qa.success": "<green>QA scenario:</green> <white><action></white>"
+  "command.qa.success": "<green>QA scenario:</green> <white><action></white>",
+  "command.grant.blank.success": "<green>Gave <amount> Blank Card(s) to <target>.</green>",
+  "command.grant.physical.success": "<green>Gave a physical card to <target>. Redeem it to enter the collection.</green>"
 }

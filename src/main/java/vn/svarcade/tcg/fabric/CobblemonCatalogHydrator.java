@@ -178,8 +178,8 @@ public final class CobblemonCatalogHydrator {
     private static int level(int bst){if(bst<=0)return 4;if(bst<330)return 3;if(bst<430)return 4;if(bst<500)return 5;if(bst<560)return 6;if(bst<620)return 7;return 8;}
     private static int power(int bst,int level){return Math.clamp(bst>0?650+bst*3:900+level*220,900,3200);}
     private static String rarity(int level){return level>=8?"Secret":level>=7?"Ultra Rare":level>=6?"Super Rare":level>=5?"Rare":"Common";}
-    private static String cardId(SpeciesDescriptor d){String base=d.namespace().equals("cobblemon")?safe(d.path()):"fakemon__"+safe(d.namespace())+"__"+safe(d.path());return d.aspects().isEmpty()?base:base+"__form__"+safe(String.join("_",new TreeSet<>(d.aspects())));}
-    private static String registryCardId(String identifier){String[] parts=identifier.split(":",2);return parts.length<2||parts[0].equals("cobblemon")?safe(parts.length<2?parts[0]:parts[1]):"fakemon__"+safe(parts[0])+"__"+safe(parts[1]);}
+    private static String cardId(SpeciesDescriptor d){return vn.svarcade.tcg.data.CardIdentityResolver.registryCardId(d.namespace()+":"+d.path(),d.aspects());}
+    private static String registryCardId(String identifier){return vn.svarcade.tcg.data.CardIdentityResolver.registryCardId(identifier,List.of());}
     private static String safe(String raw){return raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]+","_").replaceAll("_+","_").replaceAll("^_|_$","");}
     private static String title(String raw){String[] parts=raw.split("_");StringBuilder b=new StringBuilder();for(String p:parts){if(p.isBlank())continue;if(b.length()>0)b.append(' ');b.append(Character.toUpperCase(p.charAt(0))).append(p.substring(1));}return b.toString();}
     private static String normalizeType(String type){String v=type==null?"normal":type.toLowerCase(Locale.ROOT);int dot=v.lastIndexOf('.');if(dot>=0)v=v.substring(dot+1);return safe(v.isBlank()?"normal":v);}

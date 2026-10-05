@@ -54,10 +54,13 @@ public final class PokemonModels {
         float maxX = Math.max(Math.max(p1.x, p2.x), Math.max(p3.x, p4.x));
         float minY = Math.min(Math.min(p1.y, p2.y), Math.min(p3.y, p4.y));
         float maxY = Math.max(Math.max(p1.y, p2.y), Math.max(p3.y, p4.y));
+        if(PhysicalCardRenderer.isBaking())com.mojang.blaze3d.systems.RenderSystem.enableScissor((int)Math.floor(minX),PhysicalCardRenderer.HEIGHT-(int)Math.ceil(maxY),(int)Math.ceil(maxX-minX),(int)Math.ceil(maxY-minY));
+        else {
         ui.c.enableScissor(
             (int)Math.floor(minX), (int)Math.floor(minY),
             (int)Math.ceil(maxX), (int)Math.ceil(maxY)
         );
+        }
         ui.c.getMatrices().push();
         try {
             Actor actor = CACHE.get(key);
@@ -103,7 +106,7 @@ public final class PokemonModels {
             fallback(ui, viewport, species.toUpperCase(Locale.ROOT));
         } finally {
             ui.c.getMatrices().pop();
-            ui.c.disableScissor();
+            if(PhysicalCardRenderer.isBaking())com.mojang.blaze3d.systems.RenderSystem.disableScissor();else ui.c.disableScissor();
         }
     }
 
