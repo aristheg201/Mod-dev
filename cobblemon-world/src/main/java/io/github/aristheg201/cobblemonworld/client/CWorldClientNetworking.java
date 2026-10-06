@@ -28,6 +28,10 @@ public final class CWorldClientNetworking {
 
     private static void showToast(ToastPayload payload) {
         Minecraft mc = Minecraft.getInstance();
+        if (Boolean.getBoolean("cworld.qa.client")) {
+            // First-join vanilla tutorial/chat notices otherwise stack over the toast under test.
+            mc.getToasts().clear();
+        }
         TutorialToast.Icons icon = switch (payload.category()) {
             case "message", "contact" -> TutorialToast.Icons.SOCIAL_INTERACTIONS;
             case "objective", "story" -> TutorialToast.Icons.RECIPE_BOOK;
