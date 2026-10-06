@@ -4,6 +4,7 @@ import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
 import io.github.aristheg201.cobblemonworld.boss.MysteriousFigureEntity;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 
 public final class MysteriousFigureRenderer extends MobRenderer<MysteriousFigureEntity, MysteriousFigureModel> {
@@ -12,6 +13,11 @@ public final class MysteriousFigureRenderer extends MobRenderer<MysteriousFigure
 
     public MysteriousFigureRenderer(EntityRendererProvider.Context context) {
         super(context, new MysteriousFigureModel(context.bakeLayer(MysteriousFigureModel.LAYER)), 0.55F);
+    }
+
+    @Override
+    protected int getBlockLightLevel(MysteriousFigureEntity entity, BlockPos pos) {
+        return Math.max(11, super.getBlockLightLevel(entity, pos));
     }
 
     @Override
