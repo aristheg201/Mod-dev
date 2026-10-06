@@ -217,6 +217,26 @@ public final class WorldSimulation {
                 if(venue!=null){Pos point=seatPoint(n,venue,Marker.DINING_POINT);if(new Pos(e.getX(),e.getY(),e.getZ()).distance(point)<2.5&&vn.worldcomesalive.furniture.FurnitureRegistry.sit(e,world,BlockPos.ofFloored(point.x(),point.y(),point.z())))e.getNavigation().stop();}
             }
             n.location=new Pos(e.getX(),e.getY(),e.getZ());
+            if(n.travel!=null){
+                Pos nearest=n.travel.route.stream().min(Comparator.comparingDouble(p->Math.hypot(p.x()-e.getX(),p.z()-e.getZ()))).orElse(null);
+                boolean fluid=!world.getFluidState(e.getBlockPos()).isEmpty();
+                boolean dropped=nearest!=null&&e.getY()<nearest.y()-4;
+                if(fluid||dropped){
+                    Pos recovery=n.travel.route.stream()
+                        .sorted(Comparator.comparingDouble(p->Math.hypot(p.x()-e.getX(),p.z()-e.getZ())))
+                        .filter(p->safeFor(e,p))
+                        .findFirst().orElse(null);
+                    if(recovery!=null){
+                        e.getNavigation().stop();
+                        e.refreshPositionAndAngles(recovery.x(),recovery.y(),recovery.z(),e.getYaw(),e.getPitch());
+                        n.location=recovery;
+                        if(!n.travel.route.isEmpty())n.travel.route.set(0,recovery);
+                        n.travel.departure=state.clock;
+                        n.travel.pausedTicks=0;
+                        LOG.warn("WCA_NAV_RECOVER npc={} activity={} fluid={} dropped={} recovery={}",n.id,n.activity,fluid,dropped,recovery);
+                    }
+                }
+            }
             if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){e.getNavigation().stop();if(n.travel!=null)n.travel.pausedTicks+=10;continue;}
             if(n.travel!=null){
                 var route=n.travel.route;while(route.size()>1&&n.location.distance(route.get(1))<1.5)route.removeFirst();Pos target=route.size()>1?route.get(1):route.getFirst();
@@ -264,8 +284,26 @@ public final class WorldSimulation {
         Partner p=n.pokemon.getFirst();var existing=world.getEntity(p.id);if(existing instanceof com.cobblemon.mod.common.entity.pokemon.PokemonEntity saved){partners.put(n.id,saved);return;}try{
             var properties=com.cobblemon.mod.common.api.pokemon.PokemonProperties.Companion.parse(p.species+" level="+p.level);var pokemon=p.data.isBlank()?properties.create():new com.cobblemon.mod.common.pokemon.Pokemon();
             if(!p.data.isBlank())pokemon.loadFromJSON(world.getRegistryManager(),com.google.gson.JsonParser.parseString(p.data).getAsJsonObject());pokemon.setUuid(p.id);
-            var e=new com.cobblemon.mod.common.entity.pokemon.PokemonEntity(world,pokemon,com.cobblemon.mod.common.CobblemonEntities.POKEMON);e.setUuid(p.id);e.refreshPositionAndAngles(owner.getX()+2,owner.getY(),owner.getZ(),0,0);e.setCustomName(Text.literal(n.name+"'s "+p.species+" · "+p.role));e.setCustomNameVisible(false);e.setPersistent();world.spawnEntity(e);partners.put(n.id,e);p.data=pokemon.saveToJSON(world.getRegistryManager(),new com.google.gson.JsonObject()).toString();LOG.info("WCA_POKEMON npc={} partner={} species={} role={}",n.id,p.id,p.species,p.role);
+            var e=new com.cobblemon.mod.common.entity.pokemon.PokemonEntity(world,pokemon,com.cobblemon.mod.common.CobblemonEntities.POKEMON);e.setUuid(p.id);
+            Pos spawn=null;
+            for(int radius=1;radius<=4&&spawn==null;radius++)for(int dx=-radius;dx<=radius&&spawn==null;dx++)for(int dz=-radius;dz<=radius;dz++){
+                if(Math.max(Math.abs(dx),Math.abs(dz))!=radius)continue;
+                for(int dy:new int[]{0,1,-1,2}){
+                    Pos candidate=new Pos(owner.getX()+dx+.5,owner.getY()+dy,owner.getZ()+dz+.5);
+                    if(safeFor(e,candidate)){spawn=candidate;break;}
+                }
+                if(spawn!=null)break;
+            }
+            if(spawn==null){LOG.warn("WCA_PARTNER_DEFERRED npc={} partner={} species={} cause=no_safe_spawn",n.id,p.id,p.species);return;}
+            e.refreshPositionAndAngles(spawn.x(),spawn.y(),spawn.z(),0,0);e.setCustomName(Text.literal(n.name+"'s "+p.species+" · "+p.role));e.setCustomNameVisible(false);e.setPersistent();world.spawnEntity(e);partners.put(n.id,e);p.data=pokemon.saveToJSON(world.getRegistryManager(),new com.google.gson.JsonObject()).toString();LOG.info("WCA_POKEMON npc={} partner={} species={} role={} spawn={}",n.id,p.id,p.species,p.role,spawn);
         }catch(Exception failure){LOG.warn("WCA_PARTNER_UNAVAILABLE species={} cause={}",p.species,failure.toString());}
+    }
+    private boolean safeFor(Entity entity,Pos pos){
+        double ox=entity.getX(),oy=entity.getY(),oz=entity.getZ();float yaw=entity.getYaw(),pitch=entity.getPitch();
+        entity.refreshPositionAndAngles(pos.x(),pos.y(),pos.z(),yaw,pitch);
+        boolean safe=world.isSpaceEmpty(entity)&&world.getFluidState(entity.getBlockPos()).isEmpty()&&world.getFluidState(entity.getBlockPos().down()).isEmpty();
+        entity.refreshPositionAndAngles(ox,oy,oz,yaw,pitch);
+        return safe;
     }
     private boolean routeBlocked(String settlement){return state.events.stream().anyMatch(e->e.settlement.equals(settlement)&&e.state.equals("active")&&e.type.equals("route_damage"));}
     private void events(){
