@@ -311,9 +311,6 @@ public final class CWorldQaServerHarness {
         System.out.println("CWORLD_QA_FACTION_SPAWN_PASS count=" + pokemon.size()
                 + " affinity=" + IslandWarStore.INSTANCE.state().affinity);
 
-        ServerLevel overworld = player.getServer().overworld();
-        int y = overworld.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0) + 1;
-        teleport(player, overworld, 0.5, y, 0.5, 0.0F, 0.0F);
         stage++;
         stageStarted = ticks;
     }
@@ -321,6 +318,28 @@ public final class CWorldQaServerHarness {
     private static void npcRecovery(ServerPlayer player) {
         NpcPlacement placement = NpcPlacementStore.INSTANCE.get("mara_voss");
         require(placement != null, "Mara placement missing before recovery");
+
+        ServerLevel placementLevel = null;
+        for (ServerLevel level : player.getServer().getAllLevels()) {
+            if (level.dimension().location().toString().equals(placement.dimension())) {
+                placementLevel = level;
+                break;
+            }
+        }
+        require(placementLevel != null, "Mara placement dimension is not loaded: " + placement.dimension());
+
+        double dx = player.getX() - placement.x();
+        double dz = player.getZ() - placement.z();
+        boolean wrongDimension = player.serverLevel() != placementLevel;
+        boolean tooFar = dx * dx + dz * dz > 64.0 * 64.0;
+        if (wrongDimension || tooFar) {
+            teleport(player, placementLevel,
+                    placement.x(), placement.y(), placement.z() - 4.0,
+                    placement.yaw(), placement.pitch());
+            stageStarted = ticks;
+            return;
+        }
+
         if (qaNpc != null && !qaNpc.isRemoved()) {
             qaNpc.discard();
             qaNpc = null;
@@ -332,7 +351,7 @@ public final class CWorldQaServerHarness {
         if (recovered.entityUuid() == null || recovered.entityUuid().isBlank()) return;
         try {
             UUID uuid = UUID.fromString(recovered.entityUuid());
-            if (!(player.serverLevel().getEntity(uuid) instanceof NPCEntity npc)) return;
+            if (!(placementLevel.getEntity(uuid) instanceof NPCEntity npc)) return;
             qaNpc = npc;
             face(player, npc.getX(), npc.getY() + 1.3, npc.getZ());
             System.out.println("CWORLD_QA_NPC_RECOVERY_PASS uuid=" + uuid);
