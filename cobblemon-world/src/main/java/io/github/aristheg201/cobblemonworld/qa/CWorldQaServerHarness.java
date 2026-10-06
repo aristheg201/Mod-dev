@@ -406,7 +406,7 @@ public final class CWorldQaServerHarness {
     }
 
     private static void finish(MinecraftServer server) {
-        System.out.println("CWORLD_QA_COMPLETE screenshots=19 runtime=dedicated_server");
+        System.out.println("CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server");
         shutdownRequested = true;
         server.halt(false);
     }
