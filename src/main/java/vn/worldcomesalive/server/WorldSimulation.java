@@ -222,6 +222,9 @@ public final class WorldSimulation {
         }
     }
     private Building neighborHome(Npc n,Settlement s){
+        if(n.spouse!=null){Npc spouse=state.npcs.get(n.spouse);if(spouse!=null&&!spouse.household.equals(n.household)){Building home=s.buildings.get(spouse.home);if(home!=null)return home;}}
+        Npc partner=n.relationships.entrySet().stream().filter(e->Set.of("dating","engaged").contains(e.getValue().stage)).sorted(Comparator.comparingDouble((Map.Entry<UUID,Relationship> e)->e.getValue().attraction).reversed()).map(e->state.npcs.get(e.getKey())).filter(Objects::nonNull).findFirst().orElse(null);
+        if(partner!=null&&!partner.household.equals(n.household)){Building home=s.buildings.get(partner.home);if(home!=null)return home;}
         return s.households.values().stream().filter(h->!h.id.equals(n.household)).map(h->s.buildings.get(h.home)).filter(Objects::nonNull)
             .min(Comparator.comparingDouble(b->b.point(Marker.ENTRANCE).distance(n.location)+Math.floorMod((b.id+n.id).hashCode(),9))).orElse(null);
     }
