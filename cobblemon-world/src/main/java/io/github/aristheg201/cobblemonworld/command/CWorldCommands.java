@@ -18,6 +18,7 @@ public final class CWorldCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
                 Commands.literal("cworld")
                         .then(io.github.aristheg201.cobblemonworld.npc.NpcCommands.node())
+                        .then(io.github.aristheg201.cobblemonworld.command.StoryCommands.node())
                         .then(Commands.literal("cap")
                                 .then(Commands.literal("get")
                                         .executes(ctx -> showCap(ctx.getSource().getPlayerOrException(), ctx.getSource().getPlayerOrException()))

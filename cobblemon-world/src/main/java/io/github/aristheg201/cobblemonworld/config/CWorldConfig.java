@@ -28,6 +28,8 @@ public final class CWorldConfig {
     public boolean blockExperiencePastCap = true;
 
     public String overCapSpawnPolicy = "CANCEL";
+    /** When Cobblemon's spawn cause is not a player, resolve the lowest cap of nearby players. */
+    public double naturalSpawnCapFallbackRadius = 128.0;
 
     // Final encounter is intentionally disabled until configured by the server owner.
     public boolean finalEncounterEnabled = false;
@@ -72,6 +74,7 @@ public final class CWorldConfig {
     private void normalize() {
         if (defaultLevelCap < 1) defaultLevelCap = 1;
         if (maxLevelCap < defaultLevelCap) maxLevelCap = defaultLevelCap;
+        if (naturalSpawnCapFallbackRadius < 16.0) naturalSpawnCapFallbackRadius = 16.0;
         if (!"CANCEL".equalsIgnoreCase(overCapSpawnPolicy)) {
             CobblemonWorldMod.LOGGER.warn("Unknown overCapSpawnPolicy '{}'; using CANCEL.", overCapSpawnPolicy);
             overCapSpawnPolicy = "CANCEL";

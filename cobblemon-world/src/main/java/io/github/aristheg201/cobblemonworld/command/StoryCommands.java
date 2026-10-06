@@ -1,0 +1,68 @@
+package io.github.aristheg201.cobblemonworld.command;
+
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import io.github.aristheg201.cobblemonworld.league.LeagueService;
+import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
+import io.github.aristheg201.cobblemonworld.story.CampaignService;
+import io.github.aristheg201.cobblemonworld.story.ObjectiveBridge;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+
+public final class StoryCommands {
+    private StoryCommands() {}
+
+    public static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> node() {
+        return Commands.literal("story")
+                .then(Commands.literal("phone")
+                        .executes(ctx -> {
+                            CWorldNetworking.openPhone(ctx.getSource().getPlayerOrException());
+                            return 1;
+                        }))
+                .then(Commands.literal("objective")
+                        .then(Commands.literal("record")
+                                .requires(s -> s.hasPermission(2))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .then(Commands.argument("type", StringArgumentType.word())
+                                                .then(Commands.argument("target", StringArgumentType.word())
+                                                        .executes(ctx -> record(ctx, 1))
+                                                        .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                                                .executes(ctx -> record(ctx, IntegerArgumentType.getInteger(ctx, "amount")))))))))
+                .then(Commands.literal("flag")
+                        .requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.argument("flag", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+                                            String flag = StringArgumentType.getString(ctx, "flag");
+                                            boolean changed = CampaignService.setFlag(player, flag);
+                                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                                    changed ? "Set story flag " + flag : "Story flag already set: " + flag), true);
+                                            return changed ? 1 : 0;
+                                        }))))
+                .then(Commands.literal("league")
+                        .requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.argument("points", IntegerArgumentType.integer(-100000, 100000))
+                                        .executes(ctx -> {
+                                            ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+                                            int points = IntegerArgumentType.getInteger(ctx, "points");
+                                            LeagueService.addPoints(player, points);
+                                            return 1;
+                                        }))));
+    }
+
+    private static int record(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, int amount)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+        String type = StringArgumentType.getString(ctx, "type");
+        String target = StringArgumentType.getString(ctx, "target");
+        int changed = ObjectiveBridge.record(player, type, target, amount);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "Recorded " + changed + " quest progress for " + player.getGameProfile().getName()), true);
+        return changed;
+    }
+}

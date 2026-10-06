@@ -3,6 +3,7 @@ package io.github.aristheg201.cobblemonworld.story;
 import io.github.aristheg201.cobblemonworld.notification.NotificationService;
 import io.github.aristheg201.cobblemonworld.npc.NpcDefinitionRegistry;
 import io.github.aristheg201.cobblemonworld.progression.LevelCapService;
+import io.github.aristheg201.cobblemonworld.league.LeagueService;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import net.minecraft.server.level.ServerPlayer;
@@ -202,6 +203,7 @@ public final class CampaignService {
             }
         }
         p.storyFlags.add("chapter_complete:" + chapterId);
+        LeagueService.awardChapter(player, chapterId);
 
         if (chapter.badge() != null && !chapter.badge().isBlank() && p.badges.add(chapter.badge())) {
             NotificationService.badge(player, chapter.badge());

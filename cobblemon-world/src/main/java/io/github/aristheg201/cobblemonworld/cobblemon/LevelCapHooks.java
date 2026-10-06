@@ -12,6 +12,8 @@ import io.github.aristheg201.cobblemonworld.progression.LevelCapService;
 import kotlin.Unit;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class LevelCapHooks {
@@ -35,14 +37,36 @@ public final class LevelCapHooks {
             Pokemon pokemon = entity.getPokemon();
             if (pokemon.isPlayerOwned()) return Unit.INSTANCE;
 
-            if (event.getSpawnablePosition().getCause().getEntity() instanceof ServerPlayer player) {
-                int cap = LevelCapService.getCap(player);
-                if (pokemon.getLevel() > cap) {
-                    event.cancel();
-                }
+            Integer resolvedCap = resolveNaturalSpawnCap(event.getSpawnablePosition().getWorld(),
+                    event.getSpawnablePosition().getPosition(),
+                    event.getSpawnablePosition().getCause().getEntity());
+            if (resolvedCap != null && pokemon.getLevel() > resolvedCap) {
+                event.cancel();
             }
             return Unit.INSTANCE;
         });
+    }
+
+    private static Integer resolveNaturalSpawnCap(ServerLevel world, BlockPos spawnPos, net.minecraft.world.entity.Entity cause) {
+        if (cause instanceof ServerPlayer player && !player.isSpectator()) {
+            return LevelCapService.getCap(player);
+        }
+
+        double radius = CWorldConfig.INSTANCE.naturalSpawnCapFallbackRadius;
+        double radiusSqr = radius * radius;
+        Integer lowest = null;
+
+        for (ServerPlayer player : world.players()) {
+            if (player.isSpectator()) continue;
+            double dx = player.getX() - (spawnPos.getX() + 0.5);
+            double dy = player.getY() - (spawnPos.getY() + 0.5);
+            double dz = player.getZ() - (spawnPos.getZ() + 0.5);
+            if (dx * dx + dy * dy + dz * dz > radiusSqr) continue;
+
+            int cap = LevelCapService.getCap(player);
+            lowest = lowest == null ? cap : Math.min(lowest, cap);
+        }
+        return lowest;
     }
 
     private static void registerCaptureGate() {
