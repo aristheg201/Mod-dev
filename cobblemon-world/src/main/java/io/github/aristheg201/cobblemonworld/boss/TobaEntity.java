@@ -251,14 +251,14 @@ public final class TobaEntity extends Monster {
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
+    public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (ownerUuid != null) tag.putUUID("CWorldOwner", ownerUuid);
         tag.putInt("CWorldAttackState", getAttackState());
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
+    public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         ownerUuid = tag.hasUUID("CWorldOwner") ? tag.getUUID("CWorldOwner") : null;
         entityData.set(ATTACK_STATE, tag.getInt("CWorldAttackState"));

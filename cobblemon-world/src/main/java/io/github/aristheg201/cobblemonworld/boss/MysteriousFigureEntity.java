@@ -55,13 +55,13 @@ public final class MysteriousFigureEntity extends PathfinderMob {
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
+    public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (ownerUuid != null) tag.putUUID("CWorldOwner", ownerUuid);
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
+    public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         ownerUuid = tag.hasUUID("CWorldOwner") ? tag.getUUID("CWorldOwner") : null;
     }
