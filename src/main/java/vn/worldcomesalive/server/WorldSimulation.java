@@ -139,7 +139,7 @@ public final class WorldSimulation {
         if(n.lifeStage.equals("deceased"))return;
         if(vn.svarcade.tcg.fabric.TcgMod.livingNpcBusy(n.id)){enqueue(n,state.clock+100,1);return;}
         if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.interactionUntil,1);return;}
-        if(n.travel!=null){if(!entities.containsKey(n.id)){n.location=n.travel.at(state.clock);if(n.travel.arrived(state.clock)){n.location=n.travel.route.getLast();n.travel=null;}}if(n.travel!=null){enqueue(n,state.clock+100,3);return;}}
+        if(n.travel!=null){if(!entities.containsKey(n.id)){n.location=n.travel.at(state.clock);if(n.travel.arrived(state.clock)){n.location=n.travel.route.getLast();n.travel=null;onArrival(n,s);}}if(n.travel!=null){enqueue(n,state.clock+100,3);return;}}
         if(n.actionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.actionUntil,3);return;}
         if(n.plan.isEmpty()){
             Building market=s.service("bakery");Household h=s.households.get(n.household);if(h!=null&&h.supplies.values().stream().anyMatch(v->v>0))n.inventory.put("pantry_available",1);else n.inventory.remove("pantry_available");
@@ -201,6 +201,25 @@ public final class WorldSimulation {
             Npc winner=result==0?a:b,loser=result==0?b:a;winner.skills.merge("cards",.005,Double::sum);loser.skills.merge("cards",.003,Double::sum);loser.relationship(winner.id).respect+=1;
             state.remember(loser,new Memory("lost_card_duel",winner.id,loser.settlement,state.clock,.5,-.1,1,"witnessed"));if(winner.skills.get("cards")>.7)winner.cardArchetype="tournament";
         });}catch(RuntimeException failure){server.execute(()->{cardNights.remove(key);LOG.warn("Card night deferred: {}",failure.getMessage());});}});
+    }
+    private void onArrival(Npc n,Settlement s){
+        if(s==null)return;
+        if(n.activity.equals("visiting neighbors")||n.activity.equals("community activity")){
+            List<Npc> nearby=s.residents.stream().map(state.npcs::get).filter(Objects::nonNull)
+                .filter(other->!other.id.equals(n.id)&&other.location!=null&&other.location.distance(n.location)<18)
+                .sorted(Comparator.comparingDouble(other->other.location.distance(n.location))).limit(3).toList();
+            for(Npc other:nearby)SocialRules.socialize(state,n,other);
+            n.needs.put("loneliness",Math.max(0,n.need("loneliness")-.28));
+            n.activity=n.activity.equals("visiting neighbors")?"talking with neighbors":"participating in community life";
+            n.actionUntil=state.clock+420;
+        }else if(n.activity.equals("patrolling")){
+            n.activity="on patrol";
+            n.actionUntil=state.clock+300;
+            for(var event:state.events)if(event.state.equals("active")&&event.settlement.equals(s.id))n.activeEvents.add(event.id);
+        }else if(n.activity.equals("shopping")){
+            n.activity="running household errands";
+            n.actionUntil=state.clock+240;
+        }
     }
     private Building neighborHome(Npc n,Settlement s){
         return s.households.values().stream().filter(h->!h.id.equals(n.household)).map(h->s.buildings.get(h.home)).filter(Objects::nonNull)
@@ -266,7 +285,7 @@ public final class WorldSimulation {
             if(n.interactionUntil>state.clock&&n.interruptUntil<=state.clock){e.getNavigation().stop();if(n.travel!=null)n.travel.pausedTicks+=10;continue;}
             if(n.travel!=null){
                 var route=n.travel.route;while(route.size()>1&&n.location.distance(route.get(1))<1.5)route.removeFirst();Pos target=route.size()>1?route.get(1):route.getFirst();
-                if(route.size()==1&&n.location.distance(target)<2){n.travel=null;e.getNavigation().stop();enqueue(n,state.clock,2);}else if(e.getNavigation().isIdle())e.getNavigation().startMovingTo(target.x(),target.y(),target.z(),.65);
+                if(route.size()==1&&n.location.distance(target)<2){n.travel=null;e.getNavigation().stop();onArrival(n,state.settlements.get(n.settlement));enqueue(n,state.clock,2);}else if(e.getNavigation().isIdle())e.getNavigation().startMovingTo(target.x(),target.y(),target.z(),.65);
                 // Rebase remaining route to the actual position for a seamless later dematerialization.
                 if(route.size()>1){route.set(0,n.location);n.travel.departure=state.clock;n.travel.pausedTicks=0;}
             }
