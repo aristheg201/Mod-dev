@@ -49,9 +49,9 @@ jobs:
             cd /tmp/cworld-svframe/SVFrameMMO
             gradle --no-daemon --stacktrace clean build
           )
-          mkdir -p cobblemon-world/qa-runtime/server-mods
-          cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/server-mods/
-          cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/server-mods/
+          mkdir -p cobblemon-world/qa-runtime/server/mods
+          cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
+          cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
 
       - name: Download Factions 2.8.0 for Minecraft 1.21.1
         shell: bash
@@ -63,7 +63,7 @@ jobs:
           meta = json.load(urllib.request.urlopen(f"https://api.modrinth.com/v2/version/{version}"))
           files = [f for f in meta["files"] if f.get("primary")] or meta["files"]
           f = files[0]
-          out = pathlib.Path("cobblemon-world/qa-runtime/server-mods/factions-mc1.21-2.8.0.jar")
+          out = pathlib.Path("cobblemon-world/qa-runtime/server/mods/factions-mc1.21-2.8.0.jar")
           out.parent.mkdir(parents=True, exist_ok=True)
           urllib.request.urlretrieve(f["url"], out)
           print("downloaded", out, out.stat().st_size)
@@ -100,7 +100,7 @@ jobs:
           cd cobblemon-world
           mkdir -p build qa-runtime/server/logs
           (
-            gradle --no-daemon --stacktrace --init-script ../.github/scripts/cworld-runtime-qa.init.gradle runCWorldQaServer > build/runtime-qa-server-console.log 2>&1
+            gradle --no-daemon --stacktrace runQaServer > build/runtime-qa-server-console.log 2>&1
           ) &
           echo $! > build/runtime-qa-server.pid
 
@@ -130,7 +130,7 @@ jobs:
           cd cobblemon-world
           rm -rf qa-runtime/client
           mkdir -p qa-runtime/client/screenshots
-          timeout --signal=INT --kill-after=20s 900s gradle --no-daemon --stacktrace --init-script ../.github/scripts/cworld-runtime-qa.init.gradle runCWorldQaClient > build/runtime-qa-client-console.log 2>&1 || {
+          timeout --signal=INT --kill-after=20s 900s xvfb-run -a gradle --no-daemon --stacktrace runQaClient > build/runtime-qa-client-console.log 2>&1 || {
             cat build/runtime-qa-client-console.log
             cat qa-runtime/client/logs/latest.log || true
             cat qa-runtime/server/logs/latest.log || true
