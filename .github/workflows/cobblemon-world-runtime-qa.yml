@@ -60,7 +60,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
           cd cobblemon-world
-          gradle --no-daemon downloadAssets
+          gradle --no-daemon --init-script qa-runtime.init.gradle downloadAssets
 
       - name: Prepare dedicated server
         shell: bash
@@ -84,7 +84,7 @@ jobs:
           cd cobblemon-world
           mkdir -p build qa-runtime/server/logs
           (
-            gradle --no-daemon --stacktrace runQaServer > build/runtime-qa-server-console.log 2>&1
+            gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldServer > build/runtime-qa-server-console.log 2>&1
           ) &
           echo $! > build/runtime-qa-server.pid
           SERVER_PID="$(cat build/runtime-qa-server.pid)"
@@ -121,7 +121,7 @@ jobs:
           cd cobblemon-world
           rm -rf qa-runtime/client
           mkdir -p qa-runtime/client/screenshots
-          timeout --signal=INT --kill-after=20s 900s xvfb-run -a gradle --no-daemon --stacktrace runQaClient > build/runtime-qa-client-console.log 2>&1 || {
+          timeout --signal=INT --kill-after=20s 900s xvfb-run -a gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldClient > build/runtime-qa-client-console.log 2>&1 || {
             cat build/runtime-qa-client-console.log
             cat qa-runtime/client/logs/latest.log || true
             cat qa-runtime/server/logs/latest.log || true
@@ -210,7 +210,7 @@ jobs:
           - Result: **$RESULT**
           - Commit: `${{ github.sha }}`
           - Run: `${{ github.run_id }}`
-          - Runtime: production-remapped Fabric 1.21.1 dedicated server + real client/Xvfb
+          - Runtime: Fabric Loom production-remapped dedicated server + real client/Xvfb
           - Cobblemon: 1.8.1
           - Factions: native Cobblemon World subsystem
           - SVFrameLib: 1.7.1
