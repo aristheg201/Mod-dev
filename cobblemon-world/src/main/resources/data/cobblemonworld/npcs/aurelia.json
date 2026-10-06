@@ -1,0 +1,21 @@
+{
+  "id":"aurelia",
+  "displayName":"Champion Aurelia",
+  "npcClass":"standard",
+  "visualLevel":58,
+  "skill":5,
+  "preBattleText":"If I lose, the League's last excuse disappears. So come prepared.",
+  "postBattleText":"You earned the truth. That doesn't mean you'll like it.",
+  "team":[
+    "milotic level=54 moves=scald,icebeam,recover,dragontail",
+    "gardevoir level=55 moves=psychic,moonblast,calmmind,wish",
+    "dragonite level=56 moves=dragonclaw,firepunch,roost,dragondance",
+    "lucario level=58 moves=aurasphere,flashcannon,extremespeed,swordsdance"
+  ],
+  "defeatFlag":"aurelia_defeated",
+  "contactUnlock":"aurelia",
+  "chapterOnDefeat":"chapter_05_league_fault",
+  "badge":"league_fault_badge",
+  "rematchable":false,
+  "specialActor":false
+}

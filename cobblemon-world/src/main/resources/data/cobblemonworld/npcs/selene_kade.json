@@ -1,0 +1,20 @@
+{
+  "id":"selene_kade",
+  "displayName":"Selene Kade",
+  "npcClass":"standard",
+  "visualLevel":47,
+  "skill":4,
+  "preBattleText":"You think you're advancing. I think someone is clearing pieces from a board.",
+  "postBattleText":"Don't celebrate. Solve the board first.",
+  "team":[
+    "slowking level=44 moves=psychic,scald,yawn,slackoff",
+    "gallade level=46 moves=psychocut,leafblade,swordsdance,detect",
+    "metagross level=47 moves=meteorMash,zenheadbutt,bulletpunch,agility"
+  ],
+  "defeatFlag":"selene_kade_defeated",
+  "contactUnlock":"selene_kade",
+  "chapterOnDefeat":"chapter_04_kings_gambit",
+  "badge":"gambit_badge",
+  "rematchable":false,
+  "specialActor":false
+}

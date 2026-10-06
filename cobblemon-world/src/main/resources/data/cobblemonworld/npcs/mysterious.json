@@ -1,0 +1,23 @@
+{
+  "id":"mysterious",
+  "displayName":"???",
+  "npcClass":"standard",
+  "visualLevel":100,
+  "skill":5,
+  "preBattleText":"Good. I needed to know you could survive what comes next.",
+  "postBattleText":"",
+  "team":[
+    "darkrai level=100 moves=darkpulse,darkvoid,dreameater,nastyplot",
+    "giratina level=100 moves=shadowforce,dragonclaw,aurasphere,rest",
+    "necrozma level=100 moves=photongeyser,psychic,stealthrock,moonlight",
+    "eternatus level=100 moves=dynamaxcannon,sludgebomb,flamethrower,recover",
+    "mewtwo level=100 moves=psystrike,aurasphere,icebeam,recover",
+    "arceus level=100 moves=judgment,earthpower,icebeam,recover"
+  ],
+  "defeatFlag":"mysterious_phase_one_defeated",
+  "contactUnlock":"",
+  "chapterOnDefeat":"",
+  "badge":"",
+  "rematchable":false,
+  "specialActor":true
+}

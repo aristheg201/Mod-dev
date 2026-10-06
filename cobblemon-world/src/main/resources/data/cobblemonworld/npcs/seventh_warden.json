@@ -1,0 +1,21 @@
+{
+  "id":"seventh_warden",
+  "displayName":"Seventh Warden",
+  "npcClass":"standard",
+  "visualLevel":70,
+  "skill":5,
+  "preBattleText":"Your victories are the key. Stop before the last turn.",
+  "postBattleText":"There is nothing left between your contact and this world.",
+  "team":[
+    "dragapult level=66 moves=dragondarts,phantomforce,uturn,thunderwave",
+    "metagross level=68 moves=meteormash,zenheadbutt,earthquake,bulletpunch",
+    "salamence level=69 moves=dragonclaw,flamethrower,roost,dragondance",
+    "garchomp level=70 moves=earthquake,dragonclaw,stoneedge,swordsdance"
+  ],
+  "defeatFlag":"seventh_warden_defeated",
+  "contactUnlock":"",
+  "chapterOnDefeat":"chapter_06_seventh_lock",
+  "badge":"seventh_lock_badge",
+  "rematchable":false,
+  "specialActor":false
+}

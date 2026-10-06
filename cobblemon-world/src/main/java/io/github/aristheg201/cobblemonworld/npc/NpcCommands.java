@@ -1,5 +1,6 @@
 package io.github.aristheg201.cobblemonworld.npc;
 
+import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,9 +19,17 @@ public final class NpcCommands {
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("place")
                         .then(Commands.argument("id", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    NpcDefinitionRegistry.INSTANCE.all().forEach(d -> builder.suggest(d.id()));
+                                    return builder.buildFuture();
+                                })
                                 .executes(ctx -> place(ctx.getSource().getPlayerOrException(), StringArgumentType.getString(ctx, "id")))))
                 .then(Commands.literal("move")
                         .then(Commands.argument("id", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    NpcDefinitionRegistry.INSTANCE.all().forEach(d -> builder.suggest(d.id()));
+                                    return builder.buildFuture();
+                                })
                                 .executes(ctx -> place(ctx.getSource().getPlayerOrException(), StringArgumentType.getString(ctx, "id")))))
                 .then(Commands.literal("rotate")
                         .then(Commands.argument("id", StringArgumentType.word())
@@ -33,30 +42,39 @@ public final class NpcCommands {
     }
 
     private static int place(ServerPlayer player, String id) {
-        removeLoadedEntity(player, NpcPlacementStore.INSTANCE.get(id));
+        NpcDefinitionRegistry.Definition definition = NpcDefinitionRegistry.INSTANCE.get(id);
+        if (definition == null) {
+            player.sendSystemMessage(Component.literal("Unknown NPC definition '" + id + "'.")
+                    .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (definition.specialActor()) {
+            player.sendSystemMessage(Component.literal(
+                    "'" + id + "' is a special actor and is spawned by its encounter, not /cworld npc place.")
+                    .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
 
-        CWorldNpcEntity npc = new CWorldNpcEntity(ModEntities.NPC, player.serverLevel());
-        npc.setNpcId(id);
+        removeLoadedEntity(player.getServer(), NpcPlacementStore.INSTANCE.get(id));
+
+        NPCEntity npc = TrainerBattleService.createNpc(player, definition);
         npc.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
         if (!player.serverLevel().addFreshEntity(npc)) {
-            player.sendSystemMessage(Component.literal("Failed to spawn NPC '" + id + "'.").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Component.literal("Failed to spawn NPC '" + id + "'.")
+                    .withStyle(ChatFormatting.RED));
             return 0;
         }
 
         String dimension = player.level().dimension().location().toString();
         NpcPlacement placement = new NpcPlacement(
-                id,
-                dimension,
-                player.getX(),
-                player.getY(),
-                player.getZ(),
-                player.getYRot(),
-                player.getXRot(),
+                id, dimension,
+                player.getX(), player.getY(), player.getZ(),
+                player.getYRot(), player.getXRot(),
                 npc.getUUID().toString()
         );
         NpcPlacementStore.INSTANCE.put(placement);
 
-        player.sendSystemMessage(Component.literal("NPC '" + id + "' placed at " +
+        player.sendSystemMessage(Component.literal("Placed '" + definition.displayName() + "' at " +
                 dimension + " [" + round(player.getX()) + ", " + round(player.getY()) + ", " + round(player.getZ()) + "]")
                 .withStyle(ChatFormatting.GREEN));
         return 1;
@@ -68,14 +86,12 @@ public final class NpcCommands {
             player.sendSystemMessage(Component.literal("Unknown NPC placement: " + id).withStyle(ChatFormatting.RED));
             return 0;
         }
-
-        CWorldNpcEntity npc = getLoadedEntity(player, old);
+        NPCEntity npc = getLoadedEntity(player.getServer(), old);
         if (npc != null) {
             npc.setYRot(player.getYRot());
             npc.setYHeadRot(player.getYRot());
             npc.setXRot(player.getXRot());
         }
-
         NpcPlacement updated = new NpcPlacement(
                 old.id(), old.dimension(), old.x(), old.y(), old.z(),
                 player.getYRot(), player.getXRot(), old.entityUuid());
@@ -91,13 +107,7 @@ public final class NpcCommands {
             source.sendFailure(Component.literal("Unknown NPC placement: " + id));
             return 0;
         }
-
-        if (source.getEntity() instanceof ServerPlayer player) {
-            removeLoadedEntity(player, old);
-        } else {
-            removeLoadedEntity(source.getServer(), old);
-        }
-
+        removeLoadedEntity(source.getServer(), old);
         NpcPlacementStore.INSTANCE.remove(id);
         source.sendSuccess(() -> Component.literal("Removed NPC '" + id + "'.")
                 .withStyle(ChatFormatting.GREEN), true);
@@ -114,35 +124,20 @@ public final class NpcCommands {
         return placements.size();
     }
 
-    private static CWorldNpcEntity getLoadedEntity(ServerPlayer player, NpcPlacement placement) {
+    private static NPCEntity getLoadedEntity(net.minecraft.server.MinecraftServer server, NpcPlacement placement) {
         if (placement == null || placement.entityUuid() == null || placement.entityUuid().isBlank()) return null;
         try {
             UUID uuid = UUID.fromString(placement.entityUuid());
-            for (ServerLevel level : player.getServer().getAllLevels()) {
-                if (level.getEntity(uuid) instanceof CWorldNpcEntity npc) return npc;
+            for (ServerLevel level : server.getAllLevels()) {
+                if (level.getEntity(uuid) instanceof NPCEntity npc) return npc;
             }
-        } catch (IllegalArgumentException ignored) {
-        }
+        } catch (IllegalArgumentException ignored) {}
         return null;
     }
 
-    private static void removeLoadedEntity(ServerPlayer player, NpcPlacement placement) {
-        CWorldNpcEntity npc = getLoadedEntity(player, placement);
-        if (npc != null) npc.discard();
-    }
-
     private static void removeLoadedEntity(net.minecraft.server.MinecraftServer server, NpcPlacement placement) {
-        if (placement == null || placement.entityUuid() == null || placement.entityUuid().isBlank()) return;
-        try {
-            UUID uuid = UUID.fromString(placement.entityUuid());
-            for (ServerLevel level : server.getAllLevels()) {
-                if (level.getEntity(uuid) instanceof CWorldNpcEntity npc) {
-                    npc.discard();
-                    return;
-                }
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
+        NPCEntity npc = getLoadedEntity(server, placement);
+        if (npc != null) npc.discard();
     }
 
     private static String round(double value) {
