@@ -692,7 +692,9 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     private static ResourceLocation tex(String path) {
-        return ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, path);
+        // These assets are vendored unchanged from Cobblemon Smartphone and retain
+        // their upstream namespace so their pixel layout is used exactly as authored.
+        return ResourceLocation.fromNamespaceAndPath("cobblemon_smartphone", path);
     }
 
     private static ResourceLocation buttonTexture(String icon, boolean hovered) {
