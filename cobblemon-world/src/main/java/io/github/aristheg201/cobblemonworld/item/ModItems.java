@@ -7,10 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 
-import static net.minecraft.core.Registry.register;
 
 public final class ModItems {
-    public static final Item TRAINER_PHONE = register(
+    public static final Item TRAINER_PHONE = net.minecraft.core.Registry.register(
             BuiltInRegistries.ITEM,
             ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, "trainer_phone"),
             new TrainerPhoneItem(new Item.Properties().stacksTo(1))
