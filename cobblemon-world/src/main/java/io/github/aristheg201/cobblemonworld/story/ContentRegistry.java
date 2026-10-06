@@ -1,0 +1,50 @@
+package io.github.aristheg201.cobblemonworld.story;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
+
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public final class ContentRegistry {
+    private static final Gson GSON = new GsonBuilder().create();
+    public static final ContentRegistry INSTANCE = new ContentRegistry();
+
+    private final Map<String, ContactDefinition> contacts = new LinkedHashMap<>();
+    private final Map<String, QuestDefinition> quests = new LinkedHashMap<>();
+    private final Map<String, StoryChapterDefinition> chapters = new LinkedHashMap<>();
+
+    private ContentRegistry() {}
+
+    public void loadBuiltIns() {
+        contacts.clear();
+        quests.clear();
+        chapters.clear();
+        load("data/cobblemonworld/contacts/mysterious.json", ContactDefinition.class, d -> contacts.put(d.id(), d));
+        load("data/cobblemonworld/quests/first_signal.json", QuestDefinition.class, d -> quests.put(d.id(), d));
+        load("data/cobblemonworld/story/prologue.json", StoryChapterDefinition.class, d -> chapters.put(d.id(), d));
+        CobblemonWorldMod.LOGGER.info("Loaded {} contacts, {} quests and {} story chapters.", contacts.size(), quests.size(), chapters.size());
+    }
+
+    private <T> void load(String path, Class<T> type, java.util.function.Consumer<T> sink) {
+        try (var stream = ContentRegistry.class.getClassLoader().getResourceAsStream(path)) {
+            if (stream == null) throw new IllegalStateException("Missing built-in content: " + path);
+            sink.accept(GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), type));
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to load " + path, e);
+        }
+    }
+
+    public ContactDefinition contact(String id) { return contacts.get(id); }
+    public QuestDefinition quest(String id) { return quests.get(id); }
+    public StoryChapterDefinition chapter(String id) { return chapters.get(id); }
+
+    public record ContactDefinition(String id, String displayName, String icon, MessageNode[] messages) {}
+    public record MessageNode(String id, String triggerFlag, String text, String[] responses, String questUnlock, String setFlag) {}
+    public record QuestDefinition(String id, String title, String giver, String description, Objective[] objectives, String completionFlag) {}
+    public record Objective(String id, String type, String target, int amount) {}
+    public record StoryChapterDefinition(String id, String title, String objective, String[] requiredFlags, String[] completionFlags, int levelCapOnComplete) {}
+}
