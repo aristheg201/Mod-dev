@@ -32,11 +32,27 @@ jobs:
           WCA_QA_SEED: '414212'
           WCA_QA_SURVEY_ONLY: 'false'
         run: timeout 1500s xvfb-run -a ./gradlew runWorldComesAliveClient --console=plain
-      - uses: actions/upload-artifact@v4
+      - name: Upload WCA build jars
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: World-Comes-Alive
+          name: WCA-Build-JARs
+          path: build/libs/World-Comes-Alive*.jar
+          if-no-files-found: warn
+      - name: Upload WCA QA screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WCA-QA-Screenshots
+          path: qa/**/*.png
+          if-no-files-found: warn
+      - name: Upload WCA QA reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WCA-QA-Reports
           path: |
-            build/libs/*.jar
+            qa/**/*.json
+            qa/**/*.md
             build/reports/tests/test/**
-            qa/**
+          if-no-files-found: warn
