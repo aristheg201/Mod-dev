@@ -18,7 +18,12 @@ repositories {
     maven { url 'https://api.modrinth.com/maven' }
 }
 
+def smartphoneVisualAssets = configurations.create('smartphoneVisualAssets')
+
 dependencies {
+    smartphoneVisualAssets("maven.modrinth:n2f1HbK8:KkQzzHhm") {
+        transitive = false
+    }
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
 
@@ -36,6 +41,50 @@ processResources {
     filesMatching('fabric.mod.json') {
         expand version: project.version
     }
+
+    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
+        include '**/textures/gui/**'
+        eachFile { details ->
+            def marker = 'textures/gui/'
+            def markerIndex = details.path.indexOf(marker)
+            if (markerIndex >= 0) {
+                details.path = 'assets/cobblemon_smartphone/textures/gui/' +
+                        details.path.substring(markerIndex + marker.length())
+            }
+        }
+        includeEmptyDirs = false
+    }
+
+    doLast {
+        [
+            'assets/cobblemon_smartphone/textures/gui/smartphone_red.png',
+            'assets/cobblemon_smartphone/textures/gui/home_screen.png',
+            'assets/cobblemon_smartphone/textures/gui/large_smartphone_red.png',
+            'assets/cobblemon_smartphone/textures/gui/large_screen.png',
+            'assets/cobblemon_smartphone/textures/gui/buttons/trainer.png',
+            'assets/cobblemon_smartphone/textures/gui/elements/home_button.png'
+        ].each { relative ->
+            if (!destinationDir.toPath().resolve(relative).toFile().isFile()) {
+                throw new GradleException("Cobblemon Smartphone GUI asset was not vendored: " + relative)
+            }
+        }
+    }
+}
+
+jar {
+    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
+        include '**/textures/gui/**'
+        eachFile { details ->
+            def marker = 'textures/gui/'
+            def markerIndex = details.path.indexOf(marker)
+            if (markerIndex >= 0) {
+                details.path = 'assets/cobblemon_smartphone/textures/gui/' +
+                        details.path.substring(markerIndex + marker.length())
+            }
+        }
+        includeEmptyDirs = false
+    }
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
 }
 
 tasks.withType(JavaCompile).configureEach {
