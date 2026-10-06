@@ -1,0 +1,23 @@
+{
+  "id": "mysterious",
+  "displayName": "???",
+  "icon": "cobblemonworld:icons/contact_unknown",
+  "messages": [
+    {
+      "id": "first_contact",
+      "triggerFlag": "phone_obtained",
+      "text": "You've probably noticed the Pokemon behaving strangely. You're not imagining it. I can point you toward the first place you need to see.",
+      "responses": ["Who are you?", "Where do I go?"],
+      "questUnlock": "first_signal",
+      "setFlag": "mysterious_first_contact"
+    },
+    {
+      "id": "after_main_story",
+      "triggerFlag": "main_story_complete",
+      "text": "It's done. There is one person left.",
+      "responses": ["Who?"],
+      "questUnlock": "",
+      "setFlag": "toba_meeting_revealed"
+    }
+  ]
+}
