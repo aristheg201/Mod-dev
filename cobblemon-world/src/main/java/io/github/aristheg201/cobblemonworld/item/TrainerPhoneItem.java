@@ -1,6 +1,7 @@
 package io.github.aristheg201.cobblemonworld.item;
 
 import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
+import io.github.aristheg201.cobblemonworld.story.CampaignService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -18,6 +19,7 @@ public final class TrainerPhoneItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+            CampaignService.initializePhone(serverPlayer);
             CWorldNetworking.openPhone(serverPlayer);
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);

@@ -6,6 +6,7 @@ import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -62,6 +63,16 @@ public final class ContentRegistry {
     public ContactDefinition contact(String id) { return contacts.get(id); }
     public QuestDefinition quest(String id) { return quests.get(id); }
     public StoryChapterDefinition chapter(String id) { return chapters.get(id); }
+    public Collection<ContactDefinition> contacts() { return contacts.values(); }
+
+    public MessageNode message(String contactId, String messageId) {
+        ContactDefinition contact = contact(contactId);
+        if (contact == null || contact.messages() == null) return null;
+        for (MessageNode node : contact.messages()) {
+            if (messageId.equals(node.id())) return node;
+        }
+        return null;
+    }
 
     public record ContactDefinition(String id, String displayName, String icon, MessageNode[] messages) {}
     public record MessageNode(String id, String triggerFlag, String text, String[] responses, String questUnlock, String setFlag) {}

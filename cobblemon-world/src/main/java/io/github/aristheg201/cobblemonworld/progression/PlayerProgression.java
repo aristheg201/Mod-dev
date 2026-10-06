@@ -2,7 +2,9 @@ package io.github.aristheg201.cobblemonworld.progression;
 
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 public final class PlayerProgression {
@@ -17,8 +19,10 @@ public final class PlayerProgression {
     public Set<String> badges = new LinkedHashSet<>();
     public Set<String> contacts = new LinkedHashSet<>();
     public Set<String> unreadMessages = new LinkedHashSet<>();
+    public Set<String> readMessages = new LinkedHashSet<>();
     public Set<String> activeSideQuests = new LinkedHashSet<>();
     public Set<String> completedSideQuests = new LinkedHashSet<>();
+    public Map<String, Integer> questProgress = new LinkedHashMap<>();
 
     public void normalize() {
         int max = CWorldConfig.INSTANCE.maxLevelCap;
@@ -32,7 +36,9 @@ public final class PlayerProgression {
         if (badges == null) badges = new LinkedHashSet<>();
         if (contacts == null) contacts = new LinkedHashSet<>();
         if (unreadMessages == null) unreadMessages = new LinkedHashSet<>();
+        if (readMessages == null) readMessages = new LinkedHashSet<>();
         if (activeSideQuests == null) activeSideQuests = new LinkedHashSet<>();
         if (completedSideQuests == null) completedSideQuests = new LinkedHashSet<>();
+        if (questProgress == null) questProgress = new LinkedHashMap<>();
     }
 }
