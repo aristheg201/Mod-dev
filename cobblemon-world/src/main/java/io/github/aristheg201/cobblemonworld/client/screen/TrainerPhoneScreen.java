@@ -546,6 +546,12 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Phone is an in-world handheld overlay. Vanilla Screen#renderBackground applies
+        // the 1.21 menu blur, which is explicitly wrong for Cobblemon Smartphone-style UX.
+    }
+
+    @Override
     public boolean isPauseScreen() {
         return false;
     }
