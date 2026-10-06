@@ -13,5 +13,12 @@
   "toast.cobblemonworld.contact": "New Contact — %s",
   "toast.cobblemonworld.objective": "Objective Updated — %s",
   "toast.cobblemonworld.level_cap": "Level Cap Increased — Lv.%s",
-  "toast.cobblemonworld.faction": "Faction Event — %s"
+  "toast.cobblemonworld.faction": "Faction Event — %s",
+  "key.categories.cobblemonworld": "Cobblemon World",
+  "key.cobblemonworld.dash": "TOBA Skill: Dash",
+  "key.cobblemonworld.guard": "TOBA Skill: Guard",
+  "key.cobblemonworld.break": "TOBA Skill: Break",
+  "key.cobblemonworld.purge": "TOBA Skill: Purge",
+  "key.cobblemonworld.anchor": "TOBA Skill: Anchor",
+  "key.cobblemonworld.partner": "TOBA Skill: Partner"
 }

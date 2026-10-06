@@ -13,5 +13,12 @@
   "toast.cobblemonworld.contact": "Liên hệ mới — %s",
   "toast.cobblemonworld.objective": "Mục tiêu cập nhật — %s",
   "toast.cobblemonworld.level_cap": "Giới hạn cấp tăng — Lv.%s",
-  "toast.cobblemonworld.faction": "Sự kiện Faction — %s"
+  "toast.cobblemonworld.faction": "Sự kiện Faction — %s",
+  "key.categories.cobblemonworld": "Cobblemon World",
+  "key.cobblemonworld.dash": "Kỹ năng TOBA: Lướt",
+  "key.cobblemonworld.guard": "Kỹ năng TOBA: Đỡ",
+  "key.cobblemonworld.break": "Kỹ năng TOBA: Phá",
+  "key.cobblemonworld.purge": "Kỹ năng TOBA: Thanh tẩy",
+  "key.cobblemonworld.anchor": "Kỹ năng TOBA: Neo",
+  "key.cobblemonworld.partner": "Kỹ năng TOBA: Đồng đội Pokémon"
 }
