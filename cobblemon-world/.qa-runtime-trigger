@@ -1,2 +1,2 @@
-runtime-qa-2026-10-06-loader-0.18.4
-scope=phone+toast+level-cap+story+npc+faction+svframe+toba+persistence
+runtime-qa-2026-10-06-native-faction-phone
+scope=native-phone+native-faction+island+level-cap+story+npc+svframe+toba+persistence
