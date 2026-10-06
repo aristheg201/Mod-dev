@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemonworld",
+  "version": "${version}",
+  "name": "Cobblemon World",
+  "description": "Server-authoritative Cobblemon RPG progression, trainer phone, story, NPC and faction systems.",
+  "authors": ["Aris"],
+  "license": "All Rights Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.aristheg201.cobblemonworld.CobblemonWorldMod"
+    ],
+    "client": [
+      "io.github.aristheg201.cobblemonworld.client.CobblemonWorldClient"
+    ]
+  },
+  "depends": {
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabricloader": ">=0.16.5",
+    "fabric-api": "*",
+    "cobblemon": ">=1.8.1"
+  },
+  "suggests": {
+    "factions": ">=2.8.0"
+  }
+}
