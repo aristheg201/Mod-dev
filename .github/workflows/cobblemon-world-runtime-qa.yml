@@ -29,7 +29,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: '8.12'
 
 
       - name: Build SVFrameLib and SVFrameMMO
@@ -206,8 +206,8 @@ jobs:
           # Cobblemon World Runtime QA
 
           - Result: **$RESULT**
-          - Commit: `${{ github.sha }}`
-          - Run: `${{ github.run_id }}`
+          - Commit: ${{ github.sha }}
+          - Run: ${{ github.run_id }}
           - Runtime: Fabric Loom production-remapped dedicated server + real client/Xvfb
           - Cobblemon: 1.8.1
           - Factions: native Cobblemon World subsystem
@@ -222,7 +222,7 @@ jobs:
           - Legal party starts a real Cobblemon battle in BattleRegistry.
           - Main story reaches Lv.100 and completes scripted side-quest chain.
           - Progression and NPC placement survive disk reload.
-          - Factions API creates the QA faction; Gate War, Conquest and Occupation render.
+          - Native Cobblemon World faction core creates the QA faction; Gate War, Conquest and Occupation render.
           - Occupation affinity bonus spawns are present and obey the player's cap.
           - Persisted story NPC is recovered after entity removal.
           - ??? appears at the configured final location.
