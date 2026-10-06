@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.battles.BattleBuilder;
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor;
 import com.cobblemon.mod.common.entity.npc.NPCBattleActor;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
+import com.cobblemon.mod.common.entity.npc.NPCPlayerModelType;
 import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
@@ -59,6 +60,8 @@ public final class TrainerBattleService {
         npc.setSkill(Math.max(0, Math.min(5, definition.skill())));
         npc.setInteraction(new CWorldNpcInteraction(definition.id()));
 
+        applyAuthoredSkin(npc, definition);
+
         NPCPartyStore party = new NPCPartyStore(npc);
         String[] team = definition.team();
         if (team != null) {
@@ -70,6 +73,23 @@ public final class TrainerBattleService {
         }
         npc.setParty(party);
         return npc;
+    }
+
+    private static void applyAuthoredSkin(NPCEntity npc, NpcDefinitionRegistry.Definition definition) {
+        String skin = definition.skin();
+        if (skin == null || skin.isBlank()) return;
+
+        String path = "assets/cobblemonworld/textures/entity/npc/" + skin + ".png";
+        try {
+            var resource = TrainerBattleService.class.getClassLoader().getResource(path);
+            if (resource == null) {
+                CobblemonWorldMod.LOGGER.error("Missing authored NPC skin {} for {}", path, definition.id());
+                return;
+            }
+            npc.loadTexture(resource.toURI(), NPCPlayerModelType.DEFAULT);
+        } catch (Exception e) {
+            CobblemonWorldMod.LOGGER.error("Failed to apply authored NPC skin {} to {}", path, definition.id(), e);
+        }
     }
 
     public static boolean interact(NPCEntity npc, ServerPlayer player, String definitionId) {
