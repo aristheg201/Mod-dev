@@ -60,6 +60,7 @@ public final class NpcDefinitionRegistry {
             String requiredChapter,
             String[] requiredFlags,
             String badge,
+            String skin,
             boolean rematchable,
             boolean specialActor
     ) {}
