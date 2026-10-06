@@ -1,5 +1,6 @@
 package io.github.aristheg201.cobblemonworld.boss;
 
+import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,8 +18,21 @@ public final class TobaEncounterService {
     }
 
     public static boolean eligible(ServerPlayer player) {
+        if (!CWorldConfig.INSTANCE.finalEncounterEnabled) return false;
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         return p.storyFlags.contains("main_story_complete") && !p.storyFlags.contains("toba_defeated");
+    }
+
+    public static boolean isAtConfiguredLocation(ServerPlayer player) {
+        if (!CWorldConfig.INSTANCE.finalEncounterEnabled) return false;
+        String dimension = player.level().dimension().location().toString();
+        if (!dimension.equals(CWorldConfig.INSTANCE.finalEncounterDimension)) return false;
+
+        double dx = player.getX() - CWorldConfig.INSTANCE.finalEncounterX;
+        double dy = player.getY() - CWorldConfig.INSTANCE.finalEncounterY;
+        double dz = player.getZ() - CWorldConfig.INSTANCE.finalEncounterZ;
+        double radius = Math.max(1.0, CWorldConfig.INSTANCE.finalEncounterActivationRadius);
+        return dx * dx + dy * dy + dz * dz <= radius * radius;
     }
 
     public static void beginPhaseOne(ServerPlayer player) {

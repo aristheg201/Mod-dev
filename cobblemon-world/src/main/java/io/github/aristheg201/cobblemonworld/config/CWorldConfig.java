@@ -29,6 +29,15 @@ public final class CWorldConfig {
 
     public String overCapSpawnPolicy = "CANCEL";
 
+    // Final encounter is intentionally disabled until configured by the server owner.
+    public boolean finalEncounterEnabled = false;
+    public String finalEncounterDimension = "minecraft:overworld";
+    public double finalEncounterX = 0.0;
+    public double finalEncounterY = 64.0;
+    public double finalEncounterZ = 0.0;
+    public float finalEncounterYaw = 0.0F;
+    public double finalEncounterActivationRadius = 8.0;
+
     public static void load() {
         try {
             Files.createDirectories(PATH.getParent());
