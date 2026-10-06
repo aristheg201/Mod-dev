@@ -1,3 +1,2 @@
-runtime-qa-2026-10-06-retry-4
-reason=fix-screenshot-callback-effectively-final
+runtime-qa-2026-10-06-classloader-fix
 scope=phone+toast+level-cap+story+npc+faction+svframe+toba+persistence

@@ -10,8 +10,12 @@ allprojects { p ->
         p.dependencies.add('qaServerRuntimeMods', "net.fabricmc.fabric-api:fabric-api:${p.property('fabric_api_version')}")
         p.dependencies.add('qaServerRuntimeMods', "com.cobblemon:fabric:${p.property('cobblemon_version')}")
 
+        def loomLoader = p.tasks.named('remapJar').get().getClass().classLoader
+        def serverRunTask = loomLoader.loadClass('net.fabricmc.loom.task.prod.ServerProductionRunTask')
+        def clientRunTask = loomLoader.loadClass('net.fabricmc.loom.task.prod.ClientProductionRunTask')
+
         if (p.tasks.findByName('runCWorldQaServer') == null) {
-            p.tasks.register('runCWorldQaServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+            p.tasks.register('runCWorldQaServer', serverRunTask) {
                 dependsOn p.tasks.named('remapJar')
                 mods.from qaServer
                 mods.from p.fileTree('qa-runtime/server-mods') { include '*.jar' }
@@ -24,7 +28,7 @@ allprojects { p ->
         }
 
         if (p.tasks.findByName('runCWorldQaClient') == null) {
-            p.tasks.register('runCWorldQaClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+            p.tasks.register('runCWorldQaClient', clientRunTask) {
                 dependsOn p.tasks.named('remapJar')
                 mods.from qaClient
                 mods.from p.tasks.named('remapJar').flatMap { it.archiveFile }
