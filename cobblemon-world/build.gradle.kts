@@ -27,7 +27,10 @@ repositories {
     maven("https://maven.wispforest.io/releases")
     maven("https://maven.impactdev.net/repository/development/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
+    maven("https://api.modrinth.com/maven")
 }
+
+val smartphoneVisualAssets by configurations.creating
 
 dependencies {
     minecraft("net.minecraft:minecraft:${property("minecraft_version")}")
@@ -37,6 +40,11 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("com.cobblemon:fabric:${property("cobblemon_version")}")
 
+    // Build-time only: vendor the original Cobblemon Smartphone GUI artwork (MIT).
+    smartphoneVisualAssets("maven.modrinth:n2f1HbK8:KkQzzHhm") {
+        isTransitive = false
+    }
+
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
 }
@@ -45,6 +53,16 @@ tasks.processResources {
     inputs.property("version", project.version)
     filesMatching("fabric.mod.json") {
         expand("version" to project.version)
+    }
+
+    // Preserve the original Cobblemon Smartphone visual language exactly.
+    // Assets are copied into our namespace so the runtime has no dependency on that mod.
+    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
+        include("assets/cobblemon_smartphone/textures/gui/**")
+        eachFile {
+            path = path.replace("assets/cobblemon_smartphone/", "assets/cobblemonworld/")
+        }
+        includeEmptyDirs = false
     }
 }
 
