@@ -11,5 +11,6 @@
   "defeatFlag":"aurelia_defeated","flagsOnDefeat":["seal_05_broken"],
   "contactUnlock":"aurelia","chapterOnDefeat":"chapter_05_league_fault",
   "requiredChapter":"chapter_05_league_fault","requiredFlags":["seal_04_broken"],
+  "skin":"aurelia",
   "badge":"league_fault_badge","rematchable":false,"specialActor":false
 }
