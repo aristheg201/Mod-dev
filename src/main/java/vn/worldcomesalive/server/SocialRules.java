@@ -27,7 +27,19 @@ public final class SocialRules {
         Relationship ar=a.relationship(b.id),br=b.relationship(a.id);if(w.clock-ar.lastInteraction<1200)return;
         double harmony=1-Math.abs(a.trait("honesty")-b.trait("honesty"));double change=harmony*2-(a.trait("aggression")+b.trait("aggression"))*.7;
         ar.friendship+=change;ar.trust+=change*.25;ar.familiarity++;ar.lastInteraction=w.clock;br.friendship+=change*.8;br.familiarity++;br.lastInteraction=w.clock;ar.clamp();br.clamp();
-        if(a.age>=18&&b.age>=18&&!a.household.equals(b.household)&&ar.friendship>45&&br.friendship>40&&ar.trust>15){ar.attraction+=a.trait("sociability");br.attraction+=b.trait("sociability");ar.stage=ar.attraction>30?"dating":"friend";br.stage=br.attraction>30?"dating":"friend";}
+        if(a.age>=18&&b.age>=18&&!a.household.equals(b.household)){
+            if(ar.friendship>45&&br.friendship>40&&ar.trust>15&&br.trust>10){
+                ar.attraction+=a.trait("sociability")*(.6+a.trait("kindness")*.4);
+                br.attraction+=b.trait("sociability")*(.6+b.trait("kindness")*.4);
+            }
+            if(ar.attraction>30&&br.attraction>30){ar.stage="dating";br.stage="dating";}
+            if(ar.stage.equals("dating")&&br.stage.equals("dating")&&ar.attraction>58&&br.attraction>58&&ar.trust>35&&br.trust>35&&ar.familiarity>45&&br.familiarity>45){ar.stage="engaged";br.stage="engaged";}
+            if(a.spouse==null&&b.spouse==null&&ar.stage.equals("engaged")&&br.stage.equals("engaged")&&ar.attraction>72&&br.attraction>72&&ar.trust>50&&br.trust>50&&ar.familiarity>65&&br.familiarity>65){
+                a.spouse=b.id;b.spouse=a.id;ar.stage="married";br.stage="married";ar.loyalty+=25;br.loyalty+=25;
+                w.remember(a,new Memory("married",b.id,a.settlement,w.clock,1,.8,1,"experienced"));
+                w.remember(b,new Memory("married",a.id,b.settlement,w.clock,1,.8,1,"experienced"));
+            }
+        }
         gossip(a,b,w.clock);gossip(b,a,w.clock);a.version++;b.version++;
     }
     private static void gossip(Npc source,Npc receiver,long clock){source.knowledge.values().stream().filter(k->k.confidence()>.6).sorted(Comparator.comparingDouble(Belief::confidence).reversed()).limit(1).forEach(k->{String key=k.fact()+":"+k.actor();if(!receiver.knowledge.containsKey(key))receiver.knowledge.put(key,new Belief(k.fact(),k.actor(),k.confidence()*(.6+receiver.trait("loyalty")*.25),"heard from "+source.id,clock,1));});}
