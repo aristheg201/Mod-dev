@@ -29,7 +29,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.12'
+          gradle-version: '8.10.2'
 
 
       - name: Build SVFrameLib and SVFrameMMO
@@ -49,6 +49,15 @@ jobs:
           mkdir -p cobblemon-world/qa-runtime/server/mods
           cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
           cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
+
+      - name: Install Gradle 8.12 for production QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.12-bin.zip -o /tmp/gradle-8.12-bin.zip
+          rm -rf /tmp/gradle-8.12
+          unzip -q /tmp/gradle-8.12-bin.zip -d /tmp
+          echo "/tmp/gradle-8.12/bin" >> "$GITHUB_PATH"
 
       - name: Install headless graphics runtime
         shell: bash
