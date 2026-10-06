@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cobblemon-world-runtime-qa-${{ github.ref }}
+  group: cobblemon-world-runtime-qa-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
