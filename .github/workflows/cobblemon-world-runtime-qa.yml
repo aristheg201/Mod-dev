@@ -31,9 +31,6 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build Cobblemon World production jar
-        working-directory: cobblemon-world
-        run: gradle --no-daemon --stacktrace clean remapJar
 
       - name: Build SVFrameLib and SVFrameMMO
         shell: bash
@@ -152,6 +149,7 @@ jobs:
         run: |
           set -euo pipefail
           cd cobblemon-world
+          ! grep -R -E 'FactionBridge|io\.icker\.factions|isModLoaded\("factions"\)|Factions 2\.8\.0|integrationAvailable' src/main docs README.md
           SERVER=qa-runtime/server/logs/latest.log
           CLIENT=qa-runtime/client/logs/latest.log
           grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$SERVER"
