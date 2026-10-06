@@ -18,7 +18,7 @@ public final class IslandSpawnDirector {
         if (state.phase != IslandWarPhase.OCCUPATION || state.ownerFaction.isBlank()) return;
 
         for (ServerPlayer player : level.players()) {
-            String faction = FactionBridge.factionName(player).orElse("");
+            String faction = NativeFactionService.factionName(player).orElse("");
             if (!state.ownerFaction.equals(faction)) continue;
             spawnBonus(level, player, state.affinity);
         }
