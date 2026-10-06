@@ -6,7 +6,7 @@ import io.github.aristheg201.cobblemonworld.network.QaControlPayload;
 import io.github.aristheg201.cobblemonworld.network.ToastPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.components.toasts.TutorialToast;
 import net.minecraft.network.chat.Component;
 
 public final class CWorldClientNetworking {
@@ -28,11 +28,19 @@ public final class CWorldClientNetworking {
 
     private static void showToast(ToastPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        SystemToast.add(
-                mc.getToasts(),
-                SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+        TutorialToast.Icons icon = switch (payload.category()) {
+            case "message", "contact" -> TutorialToast.Icons.SOCIAL_INTERACTIONS;
+            case "objective", "story" -> TutorialToast.Icons.RECIPE_BOOK;
+            case "level_cap" -> TutorialToast.Icons.TREE;
+            case "badge", "faction" -> TutorialToast.Icons.WOODEN_PLANKS;
+            default -> TutorialToast.Icons.MOUSE;
+        };
+        TutorialToast toast = new TutorialToast(
+                icon,
                 Component.literal(payload.title()),
-                Component.literal(payload.body())
+                Component.literal(payload.body()),
+                false
         );
+        mc.getTutorial().addTimedToast(toast, 100);
     }
 }
