@@ -2,7 +2,7 @@ package io.github.aristheg201.cobblemonworld.network;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.aristheg201.cobblemonworld.faction.FactionBridge;
+import io.github.aristheg201.cobblemonworld.faction.NativeFactionService;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarService;
 import io.github.aristheg201.cobblemonworld.integration.SvFrameRpgBridge;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
@@ -65,8 +65,27 @@ public final class CWorldNetworking {
                 }
             }
             case "faction_create" -> {
-                var result = FactionBridge.create(player, payload.primary());
+                var result = NativeFactionService.create(player, payload.primary());
                 toast(player, "faction", result.success() ? "Faction Created" : "Faction Error", result.message());
+            }
+            case "faction_invite" -> {
+                ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(payload.primary());
+                var result = target == null
+                        ? new NativeFactionService.Result(false, "Player is not online.")
+                        : NativeFactionService.invite(player, target);
+                toast(player, "faction", result.success() ? "Faction Invite" : "Faction Error", result.message());
+            }
+            case "faction_accept" -> {
+                var result = NativeFactionService.accept(player, payload.primary());
+                toast(player, "faction", result.success() ? "Faction Joined" : "Faction Error", result.message());
+            }
+            case "faction_leave" -> {
+                var result = NativeFactionService.leave(player);
+                toast(player, "faction", result.success() ? "Faction Left" : "Faction Error", result.message());
+            }
+            case "faction_disband" -> {
+                var result = NativeFactionService.disband(player);
+                toast(player, "faction", result.success() ? "Faction Disbanded" : "Faction Error", result.message());
             }
             case "faction_island_join" -> IslandWarService.join(player);
             default -> {}
@@ -124,10 +143,14 @@ public final class CWorldNetworking {
 
         var island = IslandWarService.statusView(player);
         var rpg = SvFrameRpgBridge.snapshot(player);
+        var nativeFaction = NativeFactionService.faction(player).orElse(null);
+        var nativeRole = NativeFactionService.role(player);
         FactionView faction = new FactionView(
                 island.factionName(), island.phase(), island.affinity(), island.ownerFaction(),
                 island.gateScore(), island.qualified(), island.ownedControlPoints(), island.islandBuilt(),
-                FactionBridge.available()
+                nativeRole == null ? "" : nativeRole.name(),
+                nativeFaction == null ? 0 : nativeFaction.memberCount(),
+                NativeFactionService.pendingInvites(player)
         );
 
         PhoneSnapshot snapshot = new PhoneSnapshot(
@@ -180,7 +203,7 @@ public final class CWorldNetworking {
     public record FactionView(
             String name, String phase, String affinity, String owner,
             int gateScore, boolean qualified, int controlPoints,
-            boolean islandBuilt, boolean integrationAvailable
+            boolean islandBuilt, String role, int memberCount, List<String> pendingInvites
     ) {}
 
     public record PhoneSnapshot(

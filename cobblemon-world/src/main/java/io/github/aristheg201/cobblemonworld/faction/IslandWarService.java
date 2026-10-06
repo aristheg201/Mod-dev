@@ -181,7 +181,7 @@ public final class IslandWarService {
             Map<String, Integer> present = new HashMap<>();
 
             for (ServerPlayer player : island.players()) {
-                String faction = FactionBridge.factionName(player).orElse("");
+                String faction = NativeFactionService.factionName(player).orElse("");
                 if (faction.isBlank() || !state.qualifiedFactions.contains(faction)) continue;
                 double dx = player.getX() - (px + 0.5);
                 double dy = player.getY() - centerY;
@@ -277,8 +277,8 @@ public final class IslandWarService {
         if (state.phase != IslandWarPhase.GATE_WAR) return;
         if (!killer.level().dimension().equals(DIMENSION) || !victim.level().dimension().equals(DIMENSION)) return;
 
-        String killerFaction = FactionBridge.factionName(killer).orElse("");
-        String victimFaction = FactionBridge.factionName(victim).orElse("");
+        String killerFaction = NativeFactionService.factionName(killer).orElse("");
+        String victimFaction = NativeFactionService.factionName(victim).orElse("");
         if (killerFaction.isBlank() || victimFaction.isBlank() || killerFaction.equals(victimFaction)) return;
 
         int score = state.gateScores.merge(killerFaction, 1, Integer::sum);
@@ -291,11 +291,7 @@ public final class IslandWarService {
     }
 
     public static boolean join(ServerPlayer player) {
-        if (!FactionBridge.available()) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Factions mod is not installed."));
-            return false;
-        }
-        String faction = FactionBridge.factionName(player).orElse("");
+        String faction = NativeFactionService.factionName(player).orElse("");
         if (faction.isBlank()) {
             player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Join or create a faction first."));
             return false;
@@ -349,7 +345,7 @@ public final class IslandWarService {
 
     public static String statusFor(ServerPlayer player) {
         IslandWarState state = IslandWarStore.INSTANCE.state();
-        String faction = FactionBridge.factionName(player).orElse("No Faction");
+        String faction = NativeFactionService.factionName(player).orElse("No Faction");
         int score = state.gateScores.getOrDefault(faction, 0);
         int owned = 0;
         for (var point : state.capturePoints) {
@@ -365,7 +361,7 @@ public final class IslandWarService {
 
     public static StatusView statusView(ServerPlayer player) {
         IslandWarState state = IslandWarStore.INSTANCE.state();
-        String faction = FactionBridge.factionName(player).orElse("No Faction");
+        String faction = NativeFactionService.factionName(player).orElse("No Faction");
         int owned = 0;
         for (var point : state.capturePoints) if (faction.equals(point.ownerFaction)) owned++;
         return new StatusView(

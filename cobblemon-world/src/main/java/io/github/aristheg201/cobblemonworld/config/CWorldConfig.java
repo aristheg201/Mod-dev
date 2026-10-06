@@ -42,6 +42,8 @@ public final class CWorldConfig {
     public double finalEncounterActivationRadius = 8.0;
 
     // Weekly faction island.
+    public int factionMaxMembers = 50;
+    public boolean factionFriendlyFire = false;
     public String factionTimezone = "Asia/Bangkok";
     public int factionIslandRadius = 96;
     public int factionIslandY = 120;
@@ -91,6 +93,7 @@ public final class CWorldConfig {
         if (defaultLevelCap < 1) defaultLevelCap = 1;
         if (maxLevelCap < defaultLevelCap) maxLevelCap = defaultLevelCap;
         if (naturalSpawnCapFallbackRadius < 16.0) naturalSpawnCapFallbackRadius = 16.0;
+        if (factionMaxMembers < 2) factionMaxMembers = 2;
         if (factionIslandRadius < 48) factionIslandRadius = 48;
         if (factionIslandY < 64) factionIslandY = 64;
         if (factionGateWarMinutes < 1) factionGateWarMinutes = 1;
