@@ -5,6 +5,7 @@ import io.github.aristheg201.cobblemonworld.command.CWorldCommands;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 import io.github.aristheg201.cobblemonworld.item.ModItems;
 import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
+import io.github.aristheg201.cobblemonworld.npc.ModEntities;
 import io.github.aristheg201.cobblemonworld.npc.NpcPlacementStore;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import io.github.aristheg201.cobblemonworld.story.ContentRegistry;
@@ -22,6 +23,7 @@ public final class CobblemonWorldMod implements ModInitializer {
     public void onInitialize() {
         CWorldConfig.load();
         ModItems.register();
+        ModEntities.register();
         CWorldNetworking.register();
         CWorldCommands.register();
         LevelCapHooks.register();
