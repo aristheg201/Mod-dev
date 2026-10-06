@@ -39,7 +39,7 @@ public final class CWorldQaClientHarness {
     private static void tick(Minecraft client) {
         if (client.player == null) {
             if (!connectRequested) {
-                if (!(client.screen instanceof TitleScreen)) {
+                if (client.getOverlay() != null) {
                     bootTicks = 0;
                     return;
                 }
@@ -50,8 +50,11 @@ public final class CWorldQaClientHarness {
                 ServerAddress address = new ServerAddress("127.0.0.1", 25579);
                 ServerData serverData = new ServerData(
                         "Cobblemon World QA", address.toString(), ServerData.Type.OTHER);
+                System.out.println("CWORLD_QA_CLIENT_RESOURCES_READY");
                 System.out.println("CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579");
-                ConnectScreen.startConnecting(client.screen, client, address, serverData, true, null);
+                ConnectScreen.startConnecting(
+                        client.screen != null ? client.screen : new TitleScreen(),
+                        client, address, serverData, true, null);
                 return;
             }
 
