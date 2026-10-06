@@ -84,7 +84,15 @@ public final class TrainerPhoneScreen extends Screen {
         renderFrame(g);
         if ("home".equals(selected)) renderHome(g, mouseX, mouseY);
         else renderApp(g, mouseX, mouseY);
-        super.render(g, mouseX, mouseY, partialTick);
+        // Screen.render() calls renderBackground() in 1.21.1, which applies the vanilla
+        // full-screen blur. Render our only widgets directly so the in-world background stays crisp.
+        if (factionName != null) factionName.render(g, mouseX, mouseY, partialTick);
+        if (factionMember != null) factionMember.render(g, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // Intentionally empty: Cobblemon Smartphone-style overlay, not a menu screen.
     }
 
     private void renderFrame(GuiGraphics g) {
