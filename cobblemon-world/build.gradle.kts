@@ -125,3 +125,22 @@ tasks.processResources {
         }
     }
 }
+
+
+tasks.withType<Jar>().configureEach {
+    // Remapped production JAR must carry the Smartphone artwork itself.
+    // Use a namespace-agnostic matcher because published Modrinth artifacts have
+    // changed their root layout across versions.
+    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
+        include("**/textures/gui/**")
+        eachFile {
+            val marker = "textures/gui/"
+            val markerIndex = path.indexOf(marker)
+            if (markerIndex >= 0) {
+                path = "assets/cobblemonworld/textures/gui/" + path.substring(markerIndex + marker.length)
+            }
+        }
+        includeEmptyDirs = false
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
