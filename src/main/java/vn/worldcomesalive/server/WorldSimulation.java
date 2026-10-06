@@ -5,6 +5,7 @@ import vn.worldcomesalive.model.LivingWorld.*;
 import vn.worldcomesalive.data.WorldContent;
 import vn.worldcomesalive.ai.Cognition;
 import vn.worldcomesalive.ai.CognitiveQueue;
+import vn.worldcomesalive.ai.NpcRoutineEngine;
 import vn.worldcomesalive.ai.CognitiveQueue.Wake;
 import vn.worldcomesalive.world.*;
 import vn.worldcomesalive.WorldComesAlive;
@@ -141,7 +142,13 @@ public final class WorldSimulation {
         if(n.travel!=null){if(!entities.containsKey(n.id)){n.location=n.travel.at(state.clock);if(n.travel.arrived(state.clock)){n.location=n.travel.route.getLast();n.travel=null;}}if(n.travel!=null){enqueue(n,state.clock+100,3);return;}}
         if(n.actionUntil>state.clock&&n.interruptUntil<=state.clock){enqueue(n,n.actionUntil,3);return;}
         if(n.plan.isEmpty()){
-            Building market=s.service("bakery");Household h=s.households.get(n.household);if(h!=null&&h.supplies.values().stream().anyMatch(v->v>0))n.inventory.put("pantry_available",1);else n.inventory.remove("pantry_available");var d=Cognition.decide(n,state.clock,data,market!=null&&market.stock.getOrDefault("minecraft:bread",0)>0);n.goal=d.goal();n.plan=new ArrayList<>(d.plan());
+            Building market=s.service("bakery");Household h=s.households.get(n.household);if(h!=null&&h.supplies.values().stream().anyMatch(v->v>0))n.inventory.put("pantry_available",1);else n.inventory.remove("pantry_available");
+            var routine=NpcRoutineEngine.choose(n,s,state.clock);
+            if(routine.isPresent()){
+                var choice=routine.get();n.goal=choice.reason();execute(n,s,choice.execution());if(n.actionUntil<=state.clock&&n.travel==null)n.actionUntil=state.clock+choice.duration();
+            }else{
+                var d=Cognition.decide(n,state.clock,data,market!=null&&market.stock.getOrDefault("minecraft:bread",0)>0);n.goal=d.goal();n.plan=new ArrayList<>(d.plan());
+            }
         }
         if(!n.plan.isEmpty()){
             String next=n.plan.removeFirst();var action=data.actions.stream().filter(a->a.id().equals(next)).findFirst().orElse(null);if(action!=null)execute(n,s,action.execution());
@@ -167,6 +174,11 @@ public final class WorldSimulation {
             case "produce"->{n.activity="working";produce(n,work);n.actionUntil=state.clock+1200;}
             case "social"->{n.activity="socializing";domestic.tavernVisit(n,s,tavern);n.needs.put("loneliness",Math.max(0,n.need("loneliness")-.3));List<Npc> company=s.residents.stream().map(state.npcs::get).filter(b->!b.id.equals(n.id)&&b.location.distance(n.location)<20).limit(4).toList();for(Npc friend:company){SocialRules.socialize(state,n,friend);if(SocialRules.acceptsCards(n,friend.id,state.clock,0)&&SocialRules.acceptsCards(friend,n.id,state.clock,0))abstractDuel(n,friend);}n.actionUntil=state.clock+800;}
             case "train"->{n.activity="training Pokémon";n.skills.merge("pokemon_training",.002,Double::sum);for(Partner p:n.pokemon)p.level=Math.min(100,12+(int)(n.skills.get("pokemon_training")*30));n.actionUntil=state.clock+600;}
+            case "home_meal"->{if(n.location.distance(seatPoint(n,home,Marker.DINING_POINT))>2){travel(n,s,home,"going to meal");break;}if(domestic.homeMeal(n,home)){n.activity="dining at home";n.needs.put("hunger",Math.max(0,n.need("hunger")-.55));n.actionUntil=state.clock+420;}else{n.activity="looking for food";travel(n,s,market==null?home:market,"shopping");}}
+            case "home_leisure"->{if(!home.contains(n.location)){travel(n,s,home,"returning home");break;}n.activity=n.interests.contains("pokemon")&&!n.pokemon.isEmpty()?"caring for Pokémon":"at home";n.needs.put("loneliness",Math.max(0,n.need("loneliness")-.05));n.actionUntil=state.clock+420;}
+            case "visit_neighbor"->{Building target=neighborHome(n,s);if(target==null){travel(n,s,home,"returning home");break;}travel(n,s,target,"visiting neighbors");}
+            case "community"->{Building target=communityPlace(s,n);travel(n,s,target==null?home:target,"community activity");}
+            case "patrol"->{Building next=patrolTarget(n,s);travel(n,s,next==null?home:next,"patrolling");n.skills.merge("combat",.001,Double::sum);}
         }
     }
     private void produce(Npc n,Building business){
@@ -189,6 +201,20 @@ public final class WorldSimulation {
             Npc winner=result==0?a:b,loser=result==0?b:a;winner.skills.merge("cards",.005,Double::sum);loser.skills.merge("cards",.003,Double::sum);loser.relationship(winner.id).respect+=1;
             state.remember(loser,new Memory("lost_card_duel",winner.id,loser.settlement,state.clock,.5,-.1,1,"witnessed"));if(winner.skills.get("cards")>.7)winner.cardArchetype="tournament";
         });}catch(RuntimeException failure){server.execute(()->{cardNights.remove(key);LOG.warn("Card night deferred: {}",failure.getMessage());});}});
+    }
+    private Building neighborHome(Npc n,Settlement s){
+        return s.households.values().stream().filter(h->!h.id.equals(n.household)).map(h->s.buildings.get(h.home)).filter(Objects::nonNull)
+            .min(Comparator.comparingDouble(b->b.point(Marker.ENTRANCE).distance(n.location)+Math.floorMod((b.id+n.id).hashCode(),9))).orElse(null);
+    }
+    private Building communityPlace(Settlement s,Npc n){
+        List<String> preferred=n.roles.contains("Leader")?List.of("civic","market","tavern"):List.of("market","civic","tavern");
+        for(String type:preferred){Building b=s.service(type);if(b!=null)return b;}
+        return s.buildings.values().stream().filter(b->b.type.equals("public_space")).findFirst().orElse(null);
+    }
+    private Building patrolTarget(Npc n,Settlement s){
+        List<Building> points=s.buildings.values().stream().filter(b->Set.of("guardhouse","trading_post","market","public_space","civic").contains(b.type)).toList();
+        if(points.isEmpty())return s.buildings.get(n.workplace);
+        return points.get(Math.floorMod((int)(state.clock/600)+n.id.hashCode(),points.size()));
     }
     private void repeat(Npc n,String execution){data.actions.stream().filter(a->a.execution().equals(execution)).findFirst().ifPresent(a->n.plan.addFirst(a.id()));}
     private Pos seatPoint(Npc n,Building b,Marker marker){
