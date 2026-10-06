@@ -1,0 +1,7 @@
+{
+  "id":"chapter_07_false_victory","title":"A Perfect Victory",
+  "objective":"End the resonance crisis and report back to ???.",
+  "requiredFlags":["seal_07_broken"],
+  "completionFlags":["resonance_crisis_ended","false_victory_complete"],
+  "levelCapOnComplete":85
+}

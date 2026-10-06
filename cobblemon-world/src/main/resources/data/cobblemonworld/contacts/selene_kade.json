@@ -1,0 +1,7 @@
+{
+  "id":"selene_kade","displayName":"Selene Kade","icon":"cobblemonworld:icons/contact_selene_kade",
+  "messages":[
+    {"id":"after_defeat","triggerFlag":"selene_kade_defeated","text":"You keep treating these encounters like battles. The old architects treated them like moves. Your victories form a sequence.","responses":["A sequence to what?","Show me."] ,"questUnlock":"selene_stalemate","setFlag":"selene_sequence_noticed"},
+    {"id":"after_stalemate","triggerFlag":"selene_stalemate_complete","text":"Checkmate was never the solution. The lock opens when every defending piece is gone. Someone has been teaching you to clear the board.","responses":["???","Can we stop it?"] ,"questUnlock":"","setFlag":"board_clear_revealed"}
+  ]
+}

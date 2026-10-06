@@ -1,0 +1,7 @@
+{
+  "id":"dr_orin","displayName":"Dr. Cael Orin","icon":"cobblemonworld:icons/contact_dr_orin",
+  "messages":[
+    {"id":"after_defeat","triggerFlag":"dr_orin_defeated","text":"The resonance chamber was not a generator. It was a restraint. I called it an anchor because that is what the old notes called it. I may have translated the word backward.","responses":["Backward?","Show me the notes."] ,"questUnlock":"orin_archive","setFlag":"orin_doubts_anchor"},
+    {"id":"after_archive","triggerFlag":"orin_archive_complete","text":"I recovered the original glyph. It does not mean anchor. It means seal. Whatever you are breaking was designed to keep something on the other side.","responses":["What thing?","Does ??? know?"] ,"questUnlock":"","setFlag":"seal_term_revealed"}
+  ]
+}

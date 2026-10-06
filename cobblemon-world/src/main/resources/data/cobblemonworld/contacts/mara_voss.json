@@ -1,0 +1,7 @@
+{
+  "id":"mara_voss","displayName":"Mara Voss","icon":"cobblemonworld:icons/contact_mara_voss",
+  "messages":[
+    {"id":"after_defeat","triggerFlag":"mara_voss_defeated","text":"You won. Fine. But answer me this: who told you where to find the relay? Nobody outside my unit knew it existed.","responses":["A contact.","Why?"] ,"questUnlock":"voss_echo","setFlag":"voss_suspicious"},
+    {"id":"after_echo","triggerFlag":"voss_echo_complete","text":"I found the same routing signature in sealed League traffic from twelve years ago. Your contact did not discover this crisis. He was here before it.","responses":["How long?","What was the traffic about?"] ,"questUnlock":"","setFlag":"voss_found_old_signal"}
+  ]
+}

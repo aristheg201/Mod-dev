@@ -13,6 +13,18 @@ public final class ContentRegistry {
     private static final Gson GSON = new GsonBuilder().create();
     public static final ContentRegistry INSTANCE = new ContentRegistry();
 
+    private static final String[] CONTACTS = {
+            "mysterious", "mara_voss", "dr_orin", "rook", "selene_kade", "aurelia"
+    };
+    private static final String[] QUESTS = {
+            "first_signal", "voss_echo", "orin_archive", "rook_black_card", "selene_stalemate", "aurelia_below"
+    };
+    private static final String[] CHAPTERS = {
+            "prologue", "chapter_01_signal", "chapter_02_under_mountain", "chapter_03_house_of_cards",
+            "chapter_04_kings_gambit", "chapter_05_league_fault", "chapter_06_seventh_lock",
+            "chapter_07_false_victory", "chapter_08_last_person"
+    };
+
     private final Map<String, ContactDefinition> contacts = new LinkedHashMap<>();
     private final Map<String, QuestDefinition> quests = new LinkedHashMap<>();
     private final Map<String, StoryChapterDefinition> chapters = new LinkedHashMap<>();
@@ -23,10 +35,19 @@ public final class ContentRegistry {
         contacts.clear();
         quests.clear();
         chapters.clear();
-        load("data/cobblemonworld/contacts/mysterious.json", ContactDefinition.class, d -> contacts.put(d.id(), d));
-        load("data/cobblemonworld/quests/first_signal.json", QuestDefinition.class, d -> quests.put(d.id(), d));
-        load("data/cobblemonworld/story/prologue.json", StoryChapterDefinition.class, d -> chapters.put(d.id(), d));
-        CobblemonWorldMod.LOGGER.info("Loaded {} contacts, {} quests and {} story chapters.", contacts.size(), quests.size(), chapters.size());
+
+        for (String id : CONTACTS) {
+            load("data/cobblemonworld/contacts/" + id + ".json", ContactDefinition.class, d -> contacts.put(d.id(), d));
+        }
+        for (String id : QUESTS) {
+            load("data/cobblemonworld/quests/" + id + ".json", QuestDefinition.class, d -> quests.put(d.id(), d));
+        }
+        for (String id : CHAPTERS) {
+            load("data/cobblemonworld/story/" + id + ".json", StoryChapterDefinition.class, d -> chapters.put(d.id(), d));
+        }
+
+        CobblemonWorldMod.LOGGER.info("Loaded {} contacts, {} quests and {} story chapters.",
+                contacts.size(), quests.size(), chapters.size());
     }
 
     private <T> void load(String path, Class<T> type, java.util.function.Consumer<T> sink) {

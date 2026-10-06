@@ -1,0 +1,7 @@
+{
+  "id":"chapter_03_house_of_cards","title":"House of Cards",
+  "objective":"Enter Card World, defeat Rook, and recover the third resonance fragment.",
+  "requiredFlags":["seal_02_broken"],
+  "completionFlags":["rook_defeated","seal_03_broken"],
+  "levelCapOnComplete":38
+}

@@ -1,0 +1,9 @@
+{
+  "id":"voss_echo","title":"Echo on a Dead Channel","giver":"mara_voss",
+  "description":"Help Mara trace a routing signature used by ??? before the current crisis began.",
+  "objectives":[
+    {"id":"recover_relay_log","type":"interact","target":"league_relay_archive","amount":1},
+    {"id":"defeat_cleaner","type":"cobblemon_battle","target":"relay_cleaner","amount":1}
+  ],
+  "completionFlag":"voss_echo_complete"
+}

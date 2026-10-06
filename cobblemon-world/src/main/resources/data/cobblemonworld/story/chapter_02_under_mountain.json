@@ -1,0 +1,7 @@
+{
+  "id":"chapter_02_under_mountain","title":"Power Beneath the Mountain",
+  "objective":"Investigate the resonance chamber and defeat Dr. Cael Orin.",
+  "requiredFlags":["seal_01_broken"],
+  "completionFlags":["dr_orin_defeated","seal_02_broken"],
+  "levelCapOnComplete":30
+}
