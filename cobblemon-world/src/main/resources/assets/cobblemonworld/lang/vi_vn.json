@@ -1,0 +1,17 @@
+{
+  "item.cobblemonworld.trainer_phone": "Điện thoại Huấn luyện viên",
+  "message.cobblemonworld.phone.bootstrap": "Điện thoại đã hoạt động — Giới hạn cấp: Lv.%s | Cốt truyện: %s",
+  "message.cobblemonworld.cap.capture_blocked": "%s đang ở Lv.%s. Giới hạn hiện tại của bạn là Lv.%s nên chưa thể bắt Pokémon này.",
+  "message.cobblemonworld.cap.use_blocked": "%s đang ở Lv.%s. Giới hạn hiện tại của bạn là Lv.%s nên chưa thể sử dụng Pokémon này.",
+  "message.cobblemonworld.cap.battle_blocked": "%s đang ở Lv.%s trong khi giới hạn của bạn là Lv.%s. Hãy chuyển Pokémon vượt cấp ra khỏi đội trước khi chiến đấu.",
+  "message.cobblemonworld.cap.changed": "Giới hạn cấp của bạn hiện là Lv.%s.",
+  "command.cobblemonworld.cap.get": "Giới hạn cấp hiện tại của %s là Lv.%s.",
+  "command.cobblemonworld.cap.set": "Đã đặt giới hạn cấp của %s thành Lv.%s.",
+  "command.cobblemonworld.cap.party_ok": "Đội hình hợp lệ với giới hạn Lv.%s hiện tại.",
+  "command.cobblemonworld.cap.party_blocked": "%s đang ở Lv.%s và vượt giới hạn Lv.%s của bạn.",
+  "toast.cobblemonworld.message": "Tin nhắn mới — %s",
+  "toast.cobblemonworld.contact": "Liên hệ mới — %s",
+  "toast.cobblemonworld.objective": "Mục tiêu cập nhật — %s",
+  "toast.cobblemonworld.level_cap": "Giới hạn cấp tăng — Lv.%s",
+  "toast.cobblemonworld.faction": "Sự kiện Faction — %s"
+}
