@@ -31,10 +31,12 @@ import io.github.aristheg201.cobblemonworld.story.CampaignService;
 import io.github.aristheg201.cobblemonworld.story.ObjectiveBridge;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.lang.reflect.Method;
@@ -364,6 +366,7 @@ public final class CWorldQaServerHarness {
         if (!finalConfigured) {
             ServerLevel level = player.getServer().overworld();
             int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 12, 0) + 1;
+            clearFinalEncounterStage(level, ground);
             CWorldConfig.INSTANCE.finalEncounterEnabled = true;
             CWorldConfig.INSTANCE.finalEncounterDimension = level.dimension().location().toString();
             CWorldConfig.INSTANCE.finalEncounterX = 12.5;
@@ -491,6 +494,19 @@ public final class CWorldQaServerHarness {
                 .filter(actor -> actor.getOwnerUuid() == null || actor.getOwnerUuid().equals(player.getUUID()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private static void clearFinalEncounterStage(ServerLevel level, int ground) {
+        // Runtime visual QA must prove the actors themselves are visible, not photograph a hillside.
+        // This only affects the disposable QA world.
+        for (int x = 3; x <= 17; x++) {
+            for (int z = -5; z <= 5; z++) {
+                level.setBlockAndUpdate(new BlockPos(x, ground - 1, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                for (int y = ground; y <= ground + 6; y++) {
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
     }
 
     private static void face(ServerPlayer player, double x, double y, double z) {
