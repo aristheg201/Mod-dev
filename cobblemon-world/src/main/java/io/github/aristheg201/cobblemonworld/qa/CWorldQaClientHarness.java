@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
@@ -38,7 +39,11 @@ public final class CWorldQaClientHarness {
     private static void tick(Minecraft client) {
         if (client.player == null) {
             if (!connectRequested) {
-                if (++bootTicks < 40 || client.screen == null) return;
+                if (!(client.screen instanceof TitleScreen)) {
+                    bootTicks = 0;
+                    return;
+                }
+                if (++bootTicks < 40) return;
 
                 connectRequested = true;
                 connectWaitTicks = 0;
