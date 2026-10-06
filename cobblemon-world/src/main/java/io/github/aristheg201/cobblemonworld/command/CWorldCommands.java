@@ -65,7 +65,7 @@ public final class CWorldCommands {
                                             }
                                             ctx.getSource().sendFailure(Component.translatable(
                                                     "command.cobblemonworld.cap.party_blocked",
-                                                    blocked.getDisplayName(), blocked.getLevel(), LevelCapService.getCap(player)));
+                                                    blocked.getDisplayName(false), blocked.getLevel(), LevelCapService.getCap(player)));
                                             return 0;
                                         })))
         ));
