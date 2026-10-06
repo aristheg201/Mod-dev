@@ -13,6 +13,7 @@ import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
 import io.github.aristheg201.cobblemonworld.npc.CWorldNpcInteraction;
 import io.github.aristheg201.cobblemonworld.npc.NpcDefinitionRegistry;
 import io.github.aristheg201.cobblemonworld.npc.NpcPlacementStore;
+import io.github.aristheg201.cobblemonworld.npc.NpcPlacementRecoveryService;
 import io.github.aristheg201.cobblemonworld.npc.TrainerBattleService;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import io.github.aristheg201.cobblemonworld.story.ContentRegistry;
@@ -49,6 +50,7 @@ public final class CobblemonWorldMod implements ModInitializer {
         PhoneBootstrapService.register();
         LevelCapHooks.register();
         TrainerBattleService.register();
+        NpcPlacementRecoveryService.register();
         IslandWarService.register();
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
