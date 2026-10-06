@@ -56,7 +56,7 @@ public final class LevelCapHooks {
                 event.cancel();
                 tellBlocked(player, Component.translatable(
                         "message.cobblemonworld.cap.capture_blocked",
-                        pokemon.getDisplayName(), pokemon.getLevel(), cap));
+                        pokemon.getDisplayName(false), pokemon.getLevel(), cap));
             }
             return Unit.INSTANCE;
         });
@@ -75,7 +75,7 @@ public final class LevelCapHooks {
                 event.cancel();
                 tellBlocked(player, Component.translatable(
                         "message.cobblemonworld.cap.use_blocked",
-                        pokemon.getDisplayName(), pokemon.getLevel(), cap));
+                        pokemon.getDisplayName(false), pokemon.getLevel(), cap));
             }
             return Unit.INSTANCE;
         });
@@ -96,9 +96,9 @@ public final class LevelCapHooks {
                 if (blocked == null) continue;
 
                 int cap = LevelCapService.getCap(player);
-                Component reason = Component.translatable(
+                var reason = Component.translatable(
                                 "message.cobblemonworld.cap.battle_blocked",
-                                blocked.getDisplayName(), blocked.getLevel(), cap)
+                                blocked.getDisplayName(false), blocked.getLevel(), cap)
                         .withStyle(ChatFormatting.RED);
                 player.sendSystemMessage(reason, true);
                 event.setReason(reason);
