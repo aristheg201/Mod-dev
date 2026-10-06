@@ -75,7 +75,7 @@ public final class CWorldQaClientHarness {
         String safeName = (fileName == null || fileName.isBlank() ? token : fileName);
         if (!safeName.endsWith(".png")) safeName += ".png";
 
-        Screenshot.grab(client.gameDirectory, safeName, client.mainRenderTarget, message -> {
+        Screenshot.grab(client.gameDirectory, safeName, client.getMainRenderTarget(), message -> {
             System.out.println("CWORLD_QA_CAPTURE " + safeName + " :: " + message.getString());
             ack(client, token, true, safeName);
             current = null;
