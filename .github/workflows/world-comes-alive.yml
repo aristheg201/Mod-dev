@@ -53,7 +53,28 @@ jobs:
         env:
           WCA_QA_SEED: '414212'
           WCA_QA_SURVEY_ONLY: 'false'
-        run: timeout 1500s xvfb-run -a ./gradlew runWorldComesAliveClient --offline --console=plain
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            log="runtime-qa-attempt-$attempt.log"
+            set +e
+            timeout 1500s xvfb-run -a ./gradlew runWorldComesAliveClient --console=plain 2>&1 | tee "$log"
+            code=${PIPESTATUS[0]}
+            set -e
+            if [ "$code" -eq 0 ]; then
+              exit 0
+            fi
+            if grep -Eqi 'Could not download|Failed download|No cached version available|Connection reset|Read timed out|Connection timed out|resources\.download\.minecraft\.net|maven\.fabricmc\.net' "$log"; then
+              echo "Transient dependency/network failure during runtime startup; retrying ($attempt/3)."
+              sleep $((attempt * 15))
+              continue
+            fi
+            echo "Runtime QA failed for a non-network reason; not retrying."
+            exit "$code"
+          done
+          echo "Runtime QA exhausted dependency/network retries."
+          exit 1
       - name: Upload WCA build jars
         uses: actions/upload-artifact@v4
         if: always()
