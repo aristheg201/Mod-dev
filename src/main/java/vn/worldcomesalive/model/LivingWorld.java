@@ -37,7 +37,7 @@ public final class LivingWorld {
         public Map<String,Integer> stock=new LinkedHashMap<>();
         public long money=100;
         public boolean built;
-        public Pos point(Marker marker){return markers.getOrDefault(marker,List.of(origin)).getFirst();}
+        public Pos point(Marker marker){var points=markers.get(marker);if(points!=null&&!points.isEmpty())return points.getFirst();if(origin!=null)return origin;if(sign!=null)return sign;throw new IllegalStateException("Building "+String.valueOf(id)+" has no point for "+marker); }
         public void mark(Marker marker,Pos pos){markers.computeIfAbsent(marker,k->new ArrayList<>()).add(pos);}
         public boolean contains(Pos p){return p.x>=origin.x&&p.x<origin.x+width&&p.z>=origin.z&&p.z<origin.z+depth&&Math.abs(p.y-origin.y)<height+3;}
     }
