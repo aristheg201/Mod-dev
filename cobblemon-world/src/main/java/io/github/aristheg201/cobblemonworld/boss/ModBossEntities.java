@@ -4,8 +4,6 @@ import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -33,8 +31,8 @@ public final class ModBossEntities {
     private static <T extends net.minecraft.world.entity.Entity> EntityType<T> register(
             String id, EntityType.Builder<T> builder) {
         ResourceLocation location = ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, id);
-        ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, location);
-        return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
+        EntityType<T> entityType = builder.build(location.toString());
+        return Registry.register(BuiltInRegistries.ENTITY_TYPE, location, entityType);
     }
 
     public static void register() {
