@@ -10,6 +10,7 @@ public final class SettlementPlanner {
         for(var d:archetype.districts()){Point relative=rotate(new Point(d.x(),d.z()),turn),wanted=center.plus(relative.x(),relative.z());Point chosen=wanted;double score=-Double.MAX_VALUE;for(int x=-9;x<=9;x+=3)for(int z=-9;z<=9;z+=3){Point candidate=wanted.plus(x,z);double s=terrain.suitability(centered(candidate,9,9))-Math.hypot(x,z)*.25;if(s>score&&terrain.contains(candidate,35)){score=s;chosen=candidate;}}if(score<-100)throw new PlanningRejectedException("Unbuildable district "+d.id());p.districts.add(new SettlementPlan.District(d.id(),d.kind(),chosen,d.radius(),d.density()));}
         p.publicSpaces.add(new SettlementPlan.PublicSpace("village_green","CIVIC",centered(p.district("core").center(),19,19)));p.publicSpaces.add(new SettlementPlan.PublicSpace("market_square","MARKET",centered(p.district("market").center(),19,15)));
         for(var edge:archetype.links()){Point a=p.district(edge.from()).center(),b=p.district(edge.to()).center();var path=TerrainRouter.tryRoute(a,b,terrain,data.roads.get(edge.road())).orElse(null);if(path==null)throw new PlanningRejectedException("Unbuildable district connection "+edge.from()+"->"+edge.to());p.roads.add(new SettlementPlan.Road("route_"+p.roads.size(),edge.from(),edge.to(),edge.road(),path));}
+        addNeighborhoodStreets(p,attempt);
         List<String> services=new ArrayList<>(program.services().keySet());Collections.sort(services);for(String id:services)for(int i=0;i<program.services().get(id);i++)lot(p,id,districtFor(id),attempt);
         for(int i=0;i<program.homes().size();i++)lot(p,program.homes().get(i),i%2==0?"west":"east",attempt);
         // Agricultural capacity is allocated by the economic program, before any blocks or population exist.
@@ -18,8 +19,33 @@ public final class SettlementPlanner {
         var owner=farms.getFirst();p.fields.add(new SettlementPlan.Field("pasture_0","PASTURE",findLand(p,p.district("pasture").center(),25,22,7),"",0,owner.id(),owner.building()));p.fields.add(new SettlementPlan.Field("orchard_0","ORCHARD",findLand(p,p.district("farm").center(),22,19,9),"minecraft:apple",16,owner.id(),owner.building()));
         for(var field:p.fields){var r=field.boundary();Point entrance=new Point(r.x(),r.z()+r.depth()/2);var access=TerrainRouter.nearest(entrance,p.roads.stream().filter(road->!road.id().startsWith("access_")).toList());var obstacles=p.buildings.stream().map(b->b.bounds().expand(2)).toList();p.roads.add(new SettlementPlan.Road("access_"+field.id(),field.id(),"farm","FARM_TRACK",TerrainRouter.route(access,entrance,terrain,data.roads.get("FARM_TRACK"),obstacles)));}
         p.dungeon=DungeonPlanner.plan(p,terrain,data);
-        GenerationValidation.validate(p,data);if(!p.failures.isEmpty())throw new IllegalArgumentException(String.join("; ",p.failures));return p;
+        GenerationValidation.validate(p,data);if(!p.failures.isEmpty())throw new PlanningRejectedException(String.join("; ",p.failures));return p;
     }
+    private void addNeighborhoodStreets(SettlementPlan p,int attempt){
+        for(String id:List.of("west","east")){
+            SettlementPlan.District district=p.districts.stream().filter(d->d.id().equals(id)).findFirst().orElse(null);
+            if(district==null)continue;
+            Point core=p.district("core").center(),c=district.center();
+            double rx=c.x()-core.x(),rz=c.z()-core.z(),len=Math.max(.001,Math.hypot(rx,rz));
+            rx/=len;rz/=len;double px=-rz,pz=rx;
+            double reach=Math.max(16,district.radius()*.68);
+            double bend=(Math.floorMod((int)program.seed()+id.hashCode()+attempt,5)-2)*1.4;
+            List<Point> ends=List.of(
+                c.plus(px*reach+rx*bend,pz*reach+rz*bend),
+                c.plus(-px*reach+rx*bend,-pz*reach+rz*bend),
+                c.plus(rx*reach*.82+px*bend,rz*reach*.82+pz*bend)
+            );
+            int branch=0;
+            for(Point end:ends){
+                if(!terrain.contains(end,18))continue;
+                var path=TerrainRouter.tryRoute(c,end,terrain,data.roads.get("SECONDARY_STREET")).orElse(null);
+                if(path==null||path.size()<2)continue;
+                p.roads.add(new SettlementPlan.Road("neighborhood_"+id+"_"+branch++,id,id,"SECONDARY_STREET",path));
+            }
+            if(branch<2)throw new PlanningRejectedException("Unbuildable neighborhood street network "+id);
+        }
+    }
+
     private String districtFor(String building){return switch(building){case "farmstead","barn"->"farm";case "smithy","bakery"->"craft";case "trading_hall"->"trade";case "market_hall"->"market";case "crowned_inn"->"market";default->"core";};}
     private void lot(SettlementPlan p,String definition,String district,int attempt){var spec=data.buildings.get(definition);Point anchor=p.district(district).center();double best=-Double.MAX_VALUE;Rect selected=null;int facing=0;Point frontage=null;
         List<SettlementPlan.Road> districtRoads=p.roads.stream().filter(r->!r.kind().equals("FOOTPATH")&&(r.from().equals(district)||r.to().equals(district))).toList();
