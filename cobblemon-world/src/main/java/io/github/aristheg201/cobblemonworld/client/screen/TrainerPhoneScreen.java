@@ -44,8 +44,13 @@ public final class TrainerPhoneScreen extends Screen {
     private Button responseTwo;
     private Button trackQuestButton;
     private Button createFactionButton;
+    private Button inviteFactionButton;
+    private Button acceptFactionButton;
+    private Button leaveFactionButton;
+    private Button disbandFactionButton;
     private Button joinIslandButton;
     private EditBox factionName;
+    private EditBox factionMemberName;
 
     public TrainerPhoneScreen(String json) {
         super(Component.literal("Trainer Phone"));
@@ -103,9 +108,33 @@ public final class TrainerPhoneScreen extends Screen {
                         ClientPlayNetworking.send(new PhoneActionPayload("faction_create", factionName.getValue(), "")))
                 .bounds(detailLeft + Math.min(154, detailWidth - 54), controlsY - 24, 52, 20).build());
 
+        factionMemberName = new EditBox(font, detailLeft, controlsY - 24, Math.min(150, detailWidth), 20,
+                Component.literal("Player name"));
+        factionMemberName.setHint(Component.literal("Player name"));
+        addRenderableWidget(factionMemberName);
+
+        inviteFactionButton = addRenderableWidget(Button.builder(Component.literal("Invite"), b ->
+                        ClientPlayNetworking.send(new PhoneActionPayload("faction_invite", factionMemberName.getValue(), "")))
+                .bounds(detailLeft + Math.min(154, detailWidth - 54), controlsY - 24, 52, 20).build());
+
+        acceptFactionButton = addRenderableWidget(Button.builder(Component.literal("Accept Invite"), b -> {
+                    if (snapshot.faction().pendingInvites() != null && !snapshot.faction().pendingInvites().isEmpty()) {
+                        ClientPlayNetworking.send(new PhoneActionPayload(
+                                "faction_accept", snapshot.faction().pendingInvites().get(0), ""));
+                    }
+                }).bounds(detailLeft + 58, controlsY, Math.min(110, detailWidth - 62), 20).build());
+
+        leaveFactionButton = addRenderableWidget(Button.builder(Component.literal("Leave"), b ->
+                        ClientPlayNetworking.send(new PhoneActionPayload("faction_leave", "", "")))
+                .bounds(detailLeft + 58, controlsY, 56, 20).build());
+
+        disbandFactionButton = addRenderableWidget(Button.builder(Component.literal("Disband"), b ->
+                        ClientPlayNetworking.send(new PhoneActionPayload("faction_disband", "", "")))
+                .bounds(detailLeft + 118, controlsY, 68, 20).build());
+
         joinIslandButton = addRenderableWidget(Button.builder(Component.literal("Join Island"), b ->
                         ClientPlayNetworking.send(new PhoneActionPayload("faction_island_join", "", "")))
-                .bounds(detailLeft + 58, controlsY, Math.min(110, detailWidth - 62), 20).build());
+                .bounds(detailLeft + 190, controlsY, Math.min(90, Math.max(70, detailWidth - 194)), 20).build());
 
         updateControls();
     }
@@ -165,10 +194,21 @@ public final class TrainerPhoneScreen extends Screen {
         trackQuestButton.visible = "side_quests".equals(selected) && quest != null && !quest.completed();
 
         boolean faction = "faction".equals(selected);
-        factionName.setVisible(faction && "No Faction".equals(snapshot.faction().name()));
-        createFactionButton.visible = faction && "No Faction".equals(snapshot.faction().name());
-        joinIslandButton.visible = faction && !"No Faction".equals(snapshot.faction().name())
-                && !"DORMANT".equals(snapshot.faction().phase());
+        boolean noFaction = "No Faction".equals(snapshot.faction().name());
+        boolean owner = "OWNER".equals(snapshot.faction().role());
+        boolean officer = "OFFICER".equals(snapshot.faction().role());
+        boolean hasInvite = snapshot.faction().pendingInvites() != null && !snapshot.faction().pendingInvites().isEmpty();
+
+        factionName.setVisible(faction && noFaction);
+        createFactionButton.visible = faction && noFaction;
+
+        factionMemberName.setVisible(faction && !noFaction && (owner || officer));
+        inviteFactionButton.visible = faction && !noFaction && (owner || officer);
+
+        acceptFactionButton.visible = faction && noFaction && hasInvite;
+        leaveFactionButton.visible = faction && !noFaction && !owner;
+        disbandFactionButton.visible = faction && !noFaction && owner;
+        joinIslandButton.visible = faction && !noFaction && !"DORMANT".equals(snapshot.faction().phase());
     }
 
     @Override
