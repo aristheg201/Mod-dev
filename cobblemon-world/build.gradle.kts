@@ -137,7 +137,7 @@ tasks.withType<Jar>().configureEach {
             val marker = "textures/gui/"
             val markerIndex = path.indexOf(marker)
             if (markerIndex >= 0) {
-                path = "assets/cobblemonworld/textures/gui/" + path.substring(markerIndex + marker.length)
+                path = "assets/cobblemon_smartphone/textures/gui/" + path.substring(markerIndex + marker.length)
             }
         }
         includeEmptyDirs = false
