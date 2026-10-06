@@ -19,32 +19,6 @@ architectury {
 loom {
     silentMojangMappingsLicense()
 
-    runs {
-        create("qaServer") {
-            server()
-            configName = "Cobblemon World Runtime QA Server"
-            runDir = "qa-runtime/server"
-            vmArg("-Dcworld.qa.server=true")
-            vmArg("-Xmx4G")
-            isIdeConfigGenerated = false
-        }
-
-        create("qaClient") {
-            client()
-            configName = "Cobblemon World Runtime QA Client"
-            runDir = "qa-runtime/client"
-            vmArg("-Dcworld.qa.client=true")
-            vmArg("-Xmx4G")
-            programArgs(
-                "--server", "127.0.0.1",
-                "--port", "25579",
-                "--width", "1280",
-                "--height", "720",
-                "--username", "CWorldQA"
-            )
-            isIdeConfigGenerated = false
-        }
-    }
 }
 
 repositories {
