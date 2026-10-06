@@ -3,3 +3,5 @@ Branch: feature/world-comes-alive
 Purpose: compile, tests, remapped JAR, and real client V2 runtime visual QA.
 
 Retry after compile fix: DungeonRuntime structural repair.
+
+Retry after headless QA boot-screen fix.
