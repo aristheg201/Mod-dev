@@ -11,5 +11,6 @@
   "defeatFlag":"seventh_warden_defeated","flagsOnDefeat":["seal_07_broken"],
   "contactUnlock":"","chapterOnDefeat":"chapter_06_seventh_lock",
   "requiredChapter":"chapter_06_seventh_lock","requiredFlags":["seal_06_broken"],
+  "skin":"seventh_warden",
   "badge":"","rematchable":false,"specialActor":false
 }
