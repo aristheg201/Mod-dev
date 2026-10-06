@@ -25,6 +25,7 @@ public final class CWorldQaClientHarness {
     private static boolean connectRequested;
     private static int bootTicks;
     private static int connectWaitTicks;
+    private static int worldReadyTicks;
 
     private CWorldQaClientHarness() {}
 
@@ -68,7 +69,12 @@ public final class CWorldQaClientHarness {
         if (connectRequested && connectWaitTicks >= 0) {
             System.out.println("CWORLD_QA_CLIENT_CONNECTED " + client.player.getGameProfile().getName());
             connectWaitTicks = -1;
+            worldReadyTicks = 0;
         }
+
+        // The player object becomes available before the terrain transition has necessarily
+        // produced a real world frame. Never let visual QA photograph "Loading terrain...".
+        if (client.level == null || ++worldReadyTicks < 60) return;
 
         if (capturing) return;
 
