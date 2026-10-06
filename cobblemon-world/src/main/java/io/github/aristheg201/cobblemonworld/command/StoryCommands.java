@@ -2,6 +2,7 @@ package io.github.aristheg201.cobblemonworld.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import io.github.aristheg201.cobblemonworld.integration.SvFrameRpgBridge;
 import io.github.aristheg201.cobblemonworld.league.LeagueService;
 import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
 import io.github.aristheg201.cobblemonworld.story.CampaignService;
@@ -17,6 +18,25 @@ public final class StoryCommands {
 
     public static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal("story")
+                .then(Commands.literal("rpg")
+                        .then(Commands.literal("status")
+                                .executes(ctx -> {
+                                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                                    var rpg = SvFrameRpgBridge.snapshot(player);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            rpg.available()
+                                                    ? "SVFrame: " + rpg.classId() + " Lv." + rpg.level()
+                                                        + " | STR " + rpg.strength()
+                                                        + " DEX " + rpg.dexterity()
+                                                        + " INT " + rpg.intelligence()
+                                                        + " | STA " + (int)Math.round(rpg.stamina()) + "/" + (int)Math.round(rpg.maxStamina())
+                                                        + " | MANA " + (int)Math.round(rpg.mana()) + "/" + (int)Math.round(rpg.maxMana())
+                                                        + " | CDR " + String.format(java.util.Locale.ROOT, "%.1f%%", rpg.cooldownReduction())
+                                                        + " | SVFrameLib damage=" + rpg.libAvailable()
+                                                    : "SVFrameMMO not available; TOBA uses fallback resources/damage."
+                                    ), false);
+                                    return rpg.available() ? 1 : 0;
+                                })))
                 .then(Commands.literal("phone")
                         .executes(ctx -> {
                             CWorldNetworking.openPhone(ctx.getSource().getPlayerOrException());
