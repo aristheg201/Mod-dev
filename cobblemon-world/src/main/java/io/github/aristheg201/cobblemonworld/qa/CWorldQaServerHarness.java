@@ -80,12 +80,12 @@ public final class CWorldQaServerHarness {
         if (clientFailure != null) fail("Client QA failure: " + clientFailure);
         if (ticks % 5L != 0L) return;
 
-        ServerPlayer player = server.getPlayerList().getPlayers().stream().findFirst().orElse(null);
-        if (player == null) return;
-
         if (stageStarted == 0L) stageStarted = ticks;
         if (ticks - stageStarted > 2400L) fail("Stage timed out: " + stage);
 
+        // Consume client acknowledgements before requiring a connected player.
+        // The final QA command intentionally stops/disconnects the client immediately after
+        // acknowledging qa-client-stop; otherwise stage 23 can never advance to finish().
         if (awaiting != null) {
             if (!ACKS.remove(awaiting)) return;
             System.out.println("CWORLD_QA_VISUAL_PASS " + awaiting);
@@ -93,6 +93,13 @@ public final class CWorldQaServerHarness {
             stage++;
             stageStarted = ticks;
         }
+        if (stage == 24) {
+            finish(server);
+            return;
+        }
+
+        ServerPlayer player = server.getPlayerList().getPlayers().stream().findFirst().orElse(null);
+        if (player == null) return;
 
         try {
             switch (stage) {
