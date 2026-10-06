@@ -127,7 +127,7 @@ jobs:
           cd cobblemon-world
           rm -rf qa-runtime/client
           mkdir -p qa-runtime/client/screenshots
-          timeout --signal=INT --kill-after=20s 900s xvfb-run -a gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldClient > build/runtime-qa-client-console.log 2>&1 || {
+          timeout --signal=INT --kill-after=20s 300s xvfb-run -a gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldClient > build/runtime-qa-client-console.log 2>&1 || {
             cat build/runtime-qa-client-console.log
             cat qa-runtime/client/logs/latest.log || true
             cat qa-runtime/server/logs/latest.log || true
