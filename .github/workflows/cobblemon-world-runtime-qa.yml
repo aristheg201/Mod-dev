@@ -103,15 +103,22 @@ jobs:
             gradle --no-daemon --stacktrace runQaServer > build/runtime-qa-server-console.log 2>&1
           ) &
           echo $! > build/runtime-qa-server.pid
+          SERVER_PID="$(cat build/runtime-qa-server.pid)"
 
           for i in $(seq 1 180); do
             if grep -Fq 'Done (' qa-runtime/server/logs/latest.log 2>/dev/null; then
               echo "CWORLD_QA_SERVER_READY"
               exit 0
             fi
-            if grep -Eq 'CWORLD_QA_FAILED|Exception in server tick loop|Could not execute entrypoint|NoClassDefFoundError|Mixin apply failed' qa-runtime/server/logs/latest.log build/runtime-qa-server-console.log 2>/dev/null; then
+            if grep -Eq 'CWORLD_QA_FAILED|Exception in server tick loop|Could not execute entrypoint|NoClassDefFoundError|Mixin apply failed|Mod resolution failed|Incompatible mods found|Task .* not found|BUILD FAILED' qa-runtime/server/logs/latest.log build/runtime-qa-server-console.log 2>/dev/null; then
               cat build/runtime-qa-server-console.log
               cat qa-runtime/server/logs/latest.log || true
+              exit 1
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              cat build/runtime-qa-server-console.log
+              cat qa-runtime/server/logs/latest.log || true
+              echo "Dedicated QA server process exited before readiness" >&2
               exit 1
             fi
             sleep 1
