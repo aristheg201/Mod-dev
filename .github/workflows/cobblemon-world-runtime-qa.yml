@@ -163,6 +163,8 @@ jobs:
           CLIENT=qa-runtime/client/logs/latest.log
           grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$SERVER"
           grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$CLIENT"
+          grep -Fq 'CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579' "$CLIENT"
+          grep -Fq 'CWORLD_QA_CLIENT_CONNECTED CWorldQA' "$CLIENT"
           grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true' "$SERVER"
           grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$SERVER"
           grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$SERVER"

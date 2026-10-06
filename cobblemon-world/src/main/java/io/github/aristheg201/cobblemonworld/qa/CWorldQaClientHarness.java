@@ -7,6 +7,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -17,6 +20,9 @@ public final class CWorldQaClientHarness {
     private static int settleTicks;
     private static int waitTicks;
     private static boolean capturing;
+    private static boolean connectRequested;
+    private static int bootTicks;
+    private static int connectWaitTicks;
 
     private CWorldQaClientHarness() {}
 
@@ -30,7 +36,33 @@ public final class CWorldQaClientHarness {
     }
 
     private static void tick(Minecraft client) {
-        if (client.player == null) return;
+        if (client.player == null) {
+            if (!connectRequested) {
+                if (++bootTicks < 40 || client.screen == null) return;
+
+                connectRequested = true;
+                connectWaitTicks = 0;
+                ServerAddress address = new ServerAddress("127.0.0.1", 25579);
+                ServerData serverData = new ServerData(
+                        "Cobblemon World QA", address.toString(), ServerData.Type.OTHER);
+                System.out.println("CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579");
+                ConnectScreen.startConnecting(client.screen, client, address, serverData, true, null);
+                return;
+            }
+
+            if (++connectWaitTicks > 600) {
+                String detail = "Client could not join QA server within 30 seconds.";
+                System.err.println("CWORLD_QA_CLIENT_FAILED " + detail);
+                throw new IllegalStateException(detail);
+            }
+            return;
+        }
+
+        if (connectRequested && connectWaitTicks >= 0) {
+            System.out.println("CWORLD_QA_CLIENT_CONNECTED " + client.player.getGameProfile().getName());
+            connectWaitTicks = -1;
+        }
+
         if (capturing) return;
 
         if (current == null) {

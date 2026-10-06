@@ -77,7 +77,6 @@ tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientPr
     mods.from tasks.named('remapJar').flatMap { it.archiveFile }
     jvmArgs.addAll(['-Dcworld.qa.client=true', '-Xmx4G'])
     programArgs.addAll([
-        '--quickPlayMultiplayer', '127.0.0.1:25579',
         '--width', '1280',
         '--height', '720',
         '--username', 'CWorldQA'
