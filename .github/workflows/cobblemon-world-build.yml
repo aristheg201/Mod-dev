@@ -2,6 +2,11 @@ name: Cobblemon World Build
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/cobblemon-world-rpg-20261006
+    paths:
+      - cobblemon-world/.final-build-trigger
 
 concurrency:
   group: cobblemon-world-${{ github.ref }}
