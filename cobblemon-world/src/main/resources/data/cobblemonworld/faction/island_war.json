@@ -1,0 +1,9 @@
+{
+  "schedule": {"day":"SATURDAY","timezone":"Asia/Bangkok"},
+  "dimension": "cobblemonworld:faction_islands",
+  "stages": ["gate_war","island_conquest","occupation"],
+  "controlPoints": 5,
+  "ownershipUntilNextWar": true,
+  "affinities": ["fire","water","grass","electric","ice","dragon","ghost","steel","fairy","ancient","ultra","legendary"],
+  "boosts": {"typedSpawnMultiplier":1.60,"rareMultiplier":1.25,"pseudoLegendaryMultiplier":1.15}
+}
