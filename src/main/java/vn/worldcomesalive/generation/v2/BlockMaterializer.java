@@ -36,17 +36,114 @@ public final class BlockMaterializer {
         case "HAY"->local(b,element.x(),base+1,element.z(),Blocks.HAY_BLOCK.getDefaultState());
         default->throw new IllegalArgumentException("Unknown site composition element "+element.kind());
     }}}
-    private void shell(SettlementPlan.Building b){var def=data.buildings.get(b.program());int w=def.width(),d=def.depth(),height=def.floors()*def.storey();
-        // Foundations adapt per column; only the building footprint is excavated, preserving surrounding slopes.
-        for(int x=-1;x<=w;x++)for(int z=-1;z<=d;z++){var p=b.local(x,z);int top=terrain.heightAt(p.x(),p.z());for(int y=Math.min(top-b.foundation(),0);y<=0;y++)local(b,x,y,z,stone);for(int y=1;y<=Math.max(height+Math.max(w,d)/2+2,top-b.foundation()+12);y++)local(b,x,y,z,Blocks.AIR.getDefaultState());if(x>=0&&x<w&&z>=0&&z<d){local(b,x,0,z,wood);for(int floor=0;floor<def.floors();floor++){int base=floor*def.storey();if(floor>0)local(b,x,base,z,wood);for(int h=1;h<def.storey();h++)if(x==0||z==0||x==w-1||z==d-1){boolean beam=(x==0||x==w-1?z%4==0:x%4==0)||h==def.storey()-1;boolean window=h==2&&!beam&&(x%4==2||z%4==2);BlockState wall=window?Blocks.GLASS_PANE.getDefaultState():beam?log:block(data.facades.get(def.facade()).wall()).getDefaultState();if(def.roof().equals("open_gable")&&h<3&&!beam)wall=Blocks.AIR.getDefaultState();local(b,x,base+h,z,wall);}}}}
-        boolean rotated=def.roof().equals("gable_rotated");int span=rotated?d:w;for(int x=-1;x<=w;x++)for(int z=-1;z<=d;z++){int cross=rotated?z:x;int rise=Math.max(0,Math.min(cross+1,span-cross));if(def.roof().equals("hip"))rise=Math.max(0,Math.min(Math.min(x+1,w-x),Math.min(z+1,d-z)));int roofY=height+rise;Direction direction=rotated?(z<d/2?Direction.SOUTH:Direction.NORTH):(x<w/2?Direction.EAST:Direction.WEST);local(b,x,roofY,z,facadeBlock(data.facades.get(def.facade()).roof(),data.facades.get(def.facade())).with(StairsBlock.FACING,direction));if(x>=0&&x<w&&z>=0&&z<d&&(rotated?(x==0||x==w-1):(z==0||z==d-1)))for(int yy=height;yy<roofY;yy++)local(b,x,yy,z,(x%4==0||z%4==0)?log:wood);}
-        // A cross-gable porch adds a second roof axis without cutting holes into the main roof.
-        if(def.roof().equals("cross_gable")){int middle=w/2;for(int x=middle-3;x<=middle+3;x++)for(int z=d-3;z<=d+2;z++){int rise=3-Math.abs(x-middle);local(b,x,height+Math.max(0,rise),z,roof.with(StairsBlock.FACING,x<middle?Direction.EAST:Direction.WEST));}for(int x:new int[]{middle-3,middle+3})for(int y=1;y<height;y++)local(b,x,y,d+1,log);}
-        door(b,w/2,1,d-1,Direction.SOUTH);for(int x=w/2-1;x<=w/2+1;x++)local(b,x,0,d,stone);
-        for(int floor=0;floor<def.floors();floor++){int base=floor*def.storey();for(int x=1;x<w-1;x++)for(int z=4;z<d-1;z+=5)local(b,x,base+def.storey()-1,z,log.with(PillarBlock.AXIS,Direction.Axis.X));for(int z=3;z<d-1;z+=7)local(b,w/2,base+def.storey()-2,z,Blocks.LANTERN.getDefaultState().with(LanternBlock.HANGING,true));}
-        if(!def.roof().equals("open_gable")){for(int y=height-1;y<=height+5;y++)for(int x=1;x<=2;x++)local(b,x,y,d-3,Blocks.STONE_BRICKS.getDefaultState());local(b,1,height+6,d-3,Blocks.CAMPFIRE.getDefaultState().with(CampfireBlock.LIT,true));}
-        if(def.floors()>1){int sx=def.type().equals("tavern")?13:def.type().equals("civic")?8:6,sz=def.type().equals("tavern")?d-5:d-2;for(int step=0;step<def.storey();step++){for(int clear=step+1;clear<=def.storey()+3;clear++)local(b,sx,clear,sz-step,Blocks.AIR.getDefaultState());local(b,sx,step+1,sz-step,block(timber+"_stairs").getDefaultState().with(StairsBlock.FACING,Direction.NORTH));}}
+    private void shell(SettlementPlan.Building b){
+        var def=data.buildings.get(b.program());
+        var mass=MassingComposition.profile(def);
+        int w=def.width(),d=def.depth(),height=def.floors()*def.storey();
+
+        // Foundations adapt per column; only the authored property footprint is excavated.
+        for(int x=-1;x<=w;x++)for(int z=-1;z<=d;z++){
+            var p=b.local(x,z);int top=terrain.heightAt(p.x(),p.z());
+            for(int y=Math.min(top-b.foundation(),0);y<=0;y++)local(b,x,y,z,stone);
+            for(int y=1;y<=Math.max(height+mass.maxRoofRise()+8,top-b.foundation()+12);y++)local(b,x,y,z,Blocks.AIR.getDefaultState());
+            if(x<0||x>=w||z<0||z>=d)continue;
+            local(b,x,0,z,wood);
+            for(int floor=0;floor<def.floors();floor++){
+                int base=floor*def.storey();if(floor>0)local(b,x,base,z,wood);
+                for(int h=1;h<def.storey();h++)if(x==0||z==0||x==w-1||z==d-1){
+                    int rhythm=Math.floorMod(b.program().hashCode()+floor,3);
+                    boolean beam=(x==0||x==w-1?Math.floorMod(z+rhythm,4)==0:Math.floorMod(x+rhythm,4)==0)||h==def.storey()-1;
+                    boolean window=h==2&&!beam&&((x==0||x==w-1)?Math.floorMod(z+rhythm,4)==2:Math.floorMod(x+rhythm,4)==2);
+                    BlockState wall=window?Blocks.GLASS_PANE.getDefaultState():beam?log:block(data.facades.get(def.facade()).wall()).getDefaultState();
+                    if(def.roof().equals("open_gable")&&h<3&&!beam)wall=Blocks.AIR.getDefaultState();
+                    local(b,x,base+h,z,wall);
+                }
+            }
+        }
+
+        // Roof height is architectural, not "half the block-box width". This removes the giant
+        // stair pyramids that made the inn/farm/manor share the same procedural fingerprint.
+        boolean rotated=def.roof().equals("gable_rotated");
+        int span=rotated?d:w;
+        for(int x=-1;x<=w;x++)for(int z=-1;z<=d;z++){
+            int cross=rotated?z:x;
+            int raw=Math.max(0,Math.min(cross+1,span-cross));
+            if(def.roof().equals("hip"))raw=Math.max(0,Math.min(Math.min(x+1,w-x),Math.min(z+1,d-z)));
+            int rise=MassingComposition.compressedRise(raw,span,mass.maxRoofRise());
+            int roofY=height+rise;
+            Direction direction=rotated?(z<d/2?Direction.SOUTH:Direction.NORTH):(x<w/2?Direction.EAST:Direction.WEST);
+            local(b,x,roofY,z,facadeBlock(data.facades.get(def.facade()).roof(),data.facades.get(def.facade())).with(StairsBlock.FACING,direction));
+            if(x>=0&&x<w&&z>=0&&z<d&&(rotated?(x==0||x==w-1):(z==0||z==d-1)))
+                for(int yy=height;yy<roofY;yy++)local(b,x,yy,z,(Math.floorMod(x+z,4)==0)?log:wood);
+        }
+
+        architecturalExtensions(b,def,mass,height);
+
+        door(b,w/2,1,d-1,Direction.SOUTH);
+        for(int x=w/2-1;x<=w/2+1;x++)local(b,x,0,d,stone);
+
+        for(int floor=0;floor<def.floors();floor++){
+            int base=floor*def.storey();
+            for(int x=1;x<w-1;x++)for(int z=4;z<d-1;z+=5)local(b,x,base+def.storey()-1,z,log.with(PillarBlock.AXIS,Direction.Axis.X));
+            for(int z=3;z<d-1;z+=7)local(b,w/2,base+def.storey()-2,z,Blocks.LANTERN.getDefaultState().with(LanternBlock.HANGING,true));
+        }
+
+        for(int i=0;i<mass.chimneyCount();i++){
+            int cx=i==0?2:Math.max(2,w-3),cz=Math.max(2,d/3+i*3);
+            for(int y=height-1;y<=height+mass.maxRoofRise()+2;y++)local(b,cx,y,cz,Blocks.STONE_BRICKS.getDefaultState());
+            local(b,cx,height+mass.maxRoofRise()+3,cz,Blocks.CAMPFIRE.getDefaultState().with(CampfireBlock.LIT,true));
+        }
+
+        if(def.floors()>1){
+            int sx=def.type().equals("tavern")?Math.min(w-4,13):def.type().equals("civic")?Math.min(w-4,8):Math.min(w-4,6);
+            int sz=def.type().equals("tavern")?d-5:d-2;
+            for(int step=0;step<def.storey();step++){
+                for(int clear=step+1;clear<=def.storey()+3;clear++)local(b,sx,clear,sz-step,Blocks.AIR.getDefaultState());
+                local(b,sx,step+1,sz-step,block(timber+"_stairs").getDefaultState().with(StairsBlock.FACING,Direction.NORTH));
+            }
+        }
     }
+
+    private void architecturalExtensions(SettlementPlan.Building b,GenerationCatalog.BuildingDef def,MassingComposition.Profile mass,int height){
+        int w=def.width(),d=def.depth(),mid=w/2;
+        if(mass.frontGableHalfWidth()>0){
+            int half=mass.frontGableHalfWidth();
+            for(int x=mid-half;x<=mid+half;x++)for(int z=d-3;z<=d+2;z++){
+                int raw=Math.max(0,half-Math.abs(x-mid)+1);
+                int rise=Math.min(4,raw);
+                local(b,x,height+rise,z,roof.with(StairsBlock.FACING,x<mid?Direction.EAST:Direction.WEST));
+            }
+            for(int x:new int[]{mid-half,mid+half})for(int y=1;y<Math.min(height,def.storey()+2);y++)local(b,x,y,d+1,log);
+        }
+        if(mass.rearLeanTo())serviceWing(b,2,Math.max(3,w-3),-4,0,false);
+        if(mass.sideLeanTo())serviceWing(b,-4,0,2,Math.max(3,d-3),true);
+        if(mass.civicTower()){
+            int z=d/2;
+            for(int x=mid-2;x<=mid+2;x++)for(int zz=z-2;zz<=z+2;zz++){
+                for(int y=height;y<=height+5;y++){
+                    boolean edge=x==mid-2||x==mid+2||zz==z-2||zz==z+2;
+                    local(b,x,y,zz,edge?(y%3==0?log:block(data.facades.get(def.facade()).wall()).getDefaultState()):Blocks.AIR.getDefaultState());
+                }
+                if(x==mid-2||x==mid+2||zz==z-2||zz==z+2)local(b,x,height+6,zz,roof.with(StairsBlock.FACING,x<mid?Direction.EAST:Direction.WEST));
+            }
+            local(b,mid,height+6,z,Blocks.BELL.getDefaultState());
+        }
+    }
+
+    private void serviceWing(SettlementPlan.Building b,int minX,int maxX,int minZ,int maxZ,boolean side){
+        int roofY=4;
+        for(int x=minX;x<=maxX;x++)for(int z=minZ;z<=maxZ;z++){
+            var p=b.local(x,z);int terrainY=terrain.heightAt(p.x(),p.z())-b.foundation();
+            for(int y=Math.min(terrainY,0);y<=0;y++)local(b,x,y,z,stone);
+            local(b,x,0,z,wood);
+            boolean edge=x==minX||x==maxX||z==minZ||z==maxZ;
+            if(edge)for(int y=1;y<roofY;y++)if(Math.floorMod(x+z,3)==0||y==roofY-1)local(b,x,y,z,log);
+            int slope=side?Math.max(0,maxX-x):Math.max(0,maxZ-z);
+            int y=roofY+Math.min(2,slope/2);
+            local(b,x,y,z,roof.with(StairsBlock.FACING,side?Direction.WEST:Direction.NORTH));
+        }
+    }
+
     private void door(SettlementPlan.Building b,int x,int y,int z,Direction direction){var ds=block(timber+"_door").getDefaultState().with(DoorBlock.FACING,direction).with(DoorBlock.OPEN,true);local(b,x,y,z,ds.with(DoorBlock.HALF,DoubleBlockHalf.LOWER));local(b,x,y+1,z,ds.with(DoorBlock.HALF,DoubleBlockHalf.UPPER));}
     private static boolean privateRoom(String type){return type.contains("BEDROOM")||type.equals("BARRACKS")||type.startsWith("INN_")||type.equals("PANTRY")||type.equals("LEADER_OFFICE");}
     private void rooms(SettlementPlan.Building b){var def=data.buildings.get(b.program());var record=settlement.buildings.get(SemanticRegistration.global(settlement,b.id()));
