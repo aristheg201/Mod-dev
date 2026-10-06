@@ -399,6 +399,9 @@ public final class CWorldQaServerHarness {
         TobaEncounterService.cobblemonPhaseWon(player);
         TobaEntity boss = TobaEncounterService.activeBoss(player);
         require(boss != null && boss.isAlive(), "TOBA phase-two entity was not spawned");
+        // Back the QA camera away after transformation so the artifact proves the whole
+        // boss model exists and renders, instead of showing only a cropped torso.
+        teleport(player, player.serverLevel(), boss.getX() - 12.0, boss.getY(), boss.getZ(), -90.0F, 0.0F);
         face(player, boss.getX(), boss.getY() + 2.0, boss.getZ());
         System.out.println("CWORLD_QA_TOBA_TRANSFORM_PASS health=" + boss.getHealth());
         control(player, "capture_world", "", "18-toba-phase2");
@@ -499,7 +502,7 @@ public final class CWorldQaServerHarness {
     private static void clearFinalEncounterStage(ServerLevel level, int ground) {
         // Runtime visual QA must prove the actors themselves are visible, not photograph a hillside.
         // This only affects the disposable QA world.
-        for (int x = 3; x <= 17; x++) {
+        for (int x = -2; x <= 18; x++) {
             for (int z = -5; z <= 5; z++) {
                 level.setBlockAndUpdate(new BlockPos(x, ground - 1, z), Blocks.SMOOTH_STONE.defaultBlockState());
                 for (int y = ground; y <= ground + 6; y++) {
