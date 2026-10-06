@@ -10,5 +10,6 @@
   "defeatFlag":"mara_voss_defeated","flagsOnDefeat":["seal_01_broken"],
   "contactUnlock":"mara_voss","chapterOnDefeat":"chapter_01_signal",
   "requiredChapter":"chapter_01_signal","requiredFlags":["prologue_complete"],
+  "skin":"mara_voss",
   "badge":"relay_badge","rematchable":false,"specialActor":false
 }
