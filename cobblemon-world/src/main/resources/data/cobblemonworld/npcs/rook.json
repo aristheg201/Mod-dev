@@ -10,5 +10,6 @@
   "defeatFlag":"rook_defeated","flagsOnDefeat":["seal_03_broken"],
   "contactUnlock":"rook","chapterOnDefeat":"chapter_03_house_of_cards",
   "requiredChapter":"chapter_03_house_of_cards","requiredFlags":["seal_02_broken"],
+  "skin":"rook",
   "badge":"black_card_badge","rematchable":false,"specialActor":false
 }
