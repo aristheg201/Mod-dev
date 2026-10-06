@@ -1,0 +1,13 @@
+{
+  "id": "toba",
+  "phaseOne": {
+    "mode": "cobblemon",
+    "trainerDefinition": "cobblemonworld:toba_phase_one"
+  },
+  "phaseTwo": {
+    "mode": "rpg",
+    "requiredSkills": ["dash","guard","break","purge","anchor","partner"],
+    "model": "cobblemonworld:toba_phase2",
+    "animations": ["idle","walk","spawn","transform","basic_attack","sweep","slam","corruption_wave","grab","channel","stagger","death"]
+  }
+}
