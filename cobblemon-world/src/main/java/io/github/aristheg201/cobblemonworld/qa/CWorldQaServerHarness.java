@@ -9,7 +9,8 @@ import io.github.aristheg201.cobblemonworld.boss.TobaCombatService;
 import io.github.aristheg201.cobblemonworld.boss.TobaEncounterService;
 import io.github.aristheg201.cobblemonworld.boss.TobaEntity;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
-import io.github.aristheg201.cobblemonworld.faction.FactionBridge;
+import io.github.aristheg201.cobblemonworld.faction.FactionStore;
+import io.github.aristheg201.cobblemonworld.faction.NativeFactionService;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarPhase;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarService;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarStore;
@@ -134,11 +135,10 @@ public final class CWorldQaServerHarness {
         require(p.contacts.contains("mysterious"), "??? first contact missing");
         require(p.unreadMessages.contains("mysterious:first_contact"), "first ??? message is not unread");
 
-        require(FactionBridge.available(), "Factions 2.8.0 runtime is not loaded");
         var rpg = SvFrameRpgBridge.snapshot(player);
         require(rpg.available(), "SVFrameMMO runtime bridge is unavailable");
         require(rpg.libAvailable(), "SVFrameLib damage bridge is unavailable");
-        System.out.println("CWORLD_QA_INTEGRATIONS_PASS factions=true svframemmo=true svframelib=true profile="
+        System.out.println("CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true profile="
                 + rpg.classId() + ":" + rpg.level());
 
         CWorldNetworking.openPhone(player);
@@ -256,16 +256,17 @@ public final class CWorldQaServerHarness {
 
     private static void factionGate(ServerPlayer player) throws Exception {
         if (!islandStarted) {
-            var result = FactionBridge.create(player, "CWorldQA");
-            require(result.success(), "Faction creation failed: " + result.message());
-            require("CWorldQA".equals(FactionBridge.factionName(player).orElse("")), "Faction API did not return created faction");
+            var result = NativeFactionService.create(player, "CWorldQA");
+            require(result.success(), "Native faction creation failed: " + result.message());
+            require("CWorldQA".equals(NativeFactionService.factionName(player).orElse("")), "Native faction store did not return created faction");
+            require(NativeFactionService.role(player) == FactionStore.Role.OWNER, "Creator is not native faction OWNER");
 
             Method start = IslandWarService.class.getDeclaredMethod("startNewWar", String.class);
             start.setAccessible(true);
             start.invoke(null, "qa-runtime");
             islandStarted = true;
             stageStarted = ticks;
-            System.out.println("CWORLD_QA_FACTION_CREATE_PASS name=CWorldQA");
+            System.out.println("CWORLD_QA_NATIVE_FACTION_CREATE_PASS name=CWorldQA role=OWNER");
             return;
         }
 

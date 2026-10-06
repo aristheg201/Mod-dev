@@ -23,7 +23,6 @@
     "cobblemon": ">=1.8.1"
   },
   "suggests": {
-    "factions": ">=2.8.0",
     "svframelib": ">=1.7.1",
     "svframemmo": ">=1.13.1",
     "svframemmo_cobblemon": ">=0.1.16"

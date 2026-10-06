@@ -166,8 +166,7 @@ public final class TrainerPhoneScreen extends Screen {
 
         boolean faction = "faction".equals(selected);
         factionName.setVisible(faction && "No Faction".equals(snapshot.faction().name()));
-        createFactionButton.visible = faction && "No Faction".equals(snapshot.faction().name())
-                && snapshot.faction().integrationAvailable();
+        createFactionButton.visible = faction && "No Faction".equals(snapshot.faction().name());
         joinIslandButton.visible = faction && !"No Faction".equals(snapshot.faction().name())
                 && !"DORMANT".equals(snapshot.faction().phase());
     }
@@ -297,16 +296,23 @@ public final class TrainerPhoneScreen extends Screen {
     private void renderFaction(GuiGraphics g, int x, int y, int wrapWidth) {
         var f = snapshot.faction();
         title(g, "Faction", x, y);
-        if (!f.integrationAvailable()) {
-            wrap(g, "Factions 2.8.0 is not installed. The rest of Cobblemon World remains functional.",
-                    x, y + 18, wrapWidth, 6);
+        if ("No Faction".equals(f.name())) {
+            line(g, "No faction yet.", x, y + 18);
+            if (f.pendingInvites() != null && !f.pendingInvites().isEmpty()) {
+                wrap(g, "Pending invites: " + String.join(", ", f.pendingInvites()),
+                        x, y + 36, wrapWidth, 4);
+            } else {
+                wrap(g, "Create one here or accept an invite with /cworld faction accept <name>.",
+                        x, y + 36, wrapWidth, 5);
+            }
             return;
         }
-        line(g, "Faction: " + f.name(), x, y + 18);
-        line(g, "Island: " + f.phase() + " • " + f.affinity().toUpperCase(java.util.Locale.ROOT), x, y + 31);
-        line(g, "Owner: " + (f.owner().isBlank() ? "None" : f.owner()), x, y + 44);
-        line(g, "Gate: " + f.gateScore() + (f.qualified() ? " • QUALIFIED" : ""), x, y + 57);
-        line(g, "Control: " + f.controlPoints() + "/5 • Built: " + (f.islandBuilt() ? "Yes" : "No"), x, y + 70);
+        line(g, "Faction: " + f.name() + " • " + f.role(), x, y + 18);
+        line(g, "Members: " + f.memberCount(), x, y + 31);
+        line(g, "Island: " + f.phase() + " • " + f.affinity().toUpperCase(java.util.Locale.ROOT), x, y + 44);
+        line(g, "Owner: " + (f.owner().isBlank() ? "None" : f.owner()), x, y + 57);
+        line(g, "Gate: " + f.gateScore() + (f.qualified() ? " • QUALIFIED" : ""), x, y + 70);
+        line(g, "Control: " + f.controlPoints() + "/5 • Built: " + (f.islandBuilt() ? "Yes" : "No"), x, y + 83);
     }
 
     private CWorldNetworking.MessageView currentMessage() {

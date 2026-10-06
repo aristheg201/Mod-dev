@@ -53,22 +53,6 @@ jobs:
           cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
           cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
 
-      - name: Download Factions 2.8.0 for Minecraft 1.21.1
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json, pathlib, urllib.request
-          version = "JSZER60J"
-          meta = json.load(urllib.request.urlopen(f"https://api.modrinth.com/v2/version/{version}"))
-          files = [f for f in meta["files"] if f.get("primary")] or meta["files"]
-          f = files[0]
-          out = pathlib.Path("cobblemon-world/qa-runtime/server/mods/factions-mc1.21-2.8.0.jar")
-          out.parent.mkdir(parents=True, exist_ok=True)
-          urllib.request.urlretrieve(f["url"], out)
-          print("downloaded", out, out.stat().st_size)
-          PY
-
       - name: Install headless graphics runtime
         shell: bash
         run: |
@@ -172,12 +156,12 @@ jobs:
           CLIENT=qa-runtime/client/logs/latest.log
           grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$SERVER"
           grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$CLIENT"
-          grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS factions=true svframemmo=true svframelib=true' "$SERVER"
+          grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true' "$SERVER"
           grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$SERVER"
           grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$SERVER"
           grep -Fq 'CWORLD_QA_STORY_PASS cap=100' "$SERVER"
           grep -Fq 'CWORLD_QA_PERSISTENCE_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_FACTION_CREATE_PASS name=CWorldQA' "$SERVER"
+          grep -Fq 'CWORLD_QA_NATIVE_FACTION_CREATE_PASS name=CWorldQA' "$SERVER"
           grep -Fq 'CWORLD_QA_FACTION_SPAWN_PASS' "$SERVER"
           grep -Fq 'CWORLD_QA_NPC_RECOVERY_PASS' "$SERVER"
           grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$SERVER"
@@ -228,7 +212,7 @@ jobs:
           - Run: `${{ github.run_id }}`
           - Runtime: production-remapped Fabric 1.21.1 dedicated server + real client/Xvfb
           - Cobblemon: 1.8.1
-          - Factions: 2.8.0 for Minecraft 1.21/1.21.1
+          - Factions: native Cobblemon World subsystem
           - SVFrameLib: 1.7.1
           - SVFrameMMO: 1.13.1
           - Screenshots expected: 20
@@ -247,7 +231,7 @@ jobs:
           - ??? starts a real Phase-I Cobblemon battle.
           - Phase-I transition spawns TOBA Phase II.
           - Vanilla damage cannot bypass TOBA; SVFrameLib RPG damage bridge can.
-          - SVFrameMMO + SVFrameLib and Factions are mandatory in this audit, not fallback paths.
+          - Native Faction core is mandatory in this audit; SVFrameMMO + SVFrameLib remain external RPG hooks.
           EOF
 
       - name: Upload Cobblemon World runtime QA artifact
