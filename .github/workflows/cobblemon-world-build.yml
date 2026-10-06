@@ -1,0 +1,37 @@
+name: Cobblemon World Build
+
+on:
+  push:
+    branches:
+      - feature/cobblemon-world-rpg-20261006
+    paths:
+      - 'cobblemon-world/**'
+      - '.github/workflows/cobblemon-world-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cobblemon-world
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build and test
+        run: gradle --stacktrace clean build
+      - name: Upload development artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobblemon-world-build
+          path: |
+            cobblemon-world/build/libs/*.jar
+            cobblemon-world/build/reports/**
+          if-no-files-found: ignore
