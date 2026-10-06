@@ -1,23 +1,39 @@
 {
-  "id": "mysterious",
-  "displayName": "???",
-  "icon": "cobblemonworld:icons/contact_unknown",
-  "messages": [
+  "id":"mysterious",
+  "displayName":"???",
+  "icon":"cobblemonworld:icons/contact_unknown",
+  "messages":[
     {
-      "id": "first_contact",
-      "triggerFlag": "phone_obtained",
-      "text": "You've probably noticed the Pokemon behaving strangely. You're not imagining it. I can point you toward the first place you need to see.",
-      "responses": ["Who are you?", "Where do I go?"],
-      "questUnlock": "first_signal",
-      "setFlag": "mysterious_first_contact"
+      "id":"first_contact",
+      "triggerFlag":"phone_obtained",
+      "text":"You've probably noticed the Pokemon behaving strangely. You're not imagining it. There are people making it worse. I can point you toward the first one.",
+      "responses":["Who are you?","Where do I go?"],
+      "questUnlock":"first_signal",
+      "setFlag":"prologue_complete"
     },
     {
-      "id": "after_main_story",
-      "triggerFlag": "main_story_complete",
-      "text": "It's done. There is one person left.",
-      "responses": ["Who?"],
-      "questUnlock": "",
-      "setFlag": "toba_meeting_revealed"
+      "id":"you_are_asking",
+      "triggerFlag":"seal_term_revealed",
+      "text":"You've been talking to them. Good. You should question people who tell you where to go and who to fight. Especially me.",
+      "responses":["Does that bother you?","Then tell me the truth."],
+      "questUnlock":"",
+      "setFlag":"mysterious_acknowledged_investigation"
+    },
+    {
+      "id":"last_person",
+      "triggerFlag":"false_victory_complete",
+      "text":"It's done. There is one person left.",
+      "responses":["Who?"],
+      "questUnlock":"",
+      "setFlag":"main_story_complete"
+    },
+    {
+      "id":"meet_me",
+      "triggerFlag":"main_story_complete",
+      "text":"Me. Come alone. I'll send the location when it is configured.",
+      "responses":["I'm coming."],
+      "questUnlock":"",
+      "setFlag":"toba_meeting_revealed"
     }
   ]
 }

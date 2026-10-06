@@ -1,7 +1,9 @@
 {
   "id":"chapter_08_last_person","title":"The Last Person",
-  "objective":"Go to the location sent by ??? and meet the final opponent.",
+  "objective":"Read the final message from ??? and go to the configured meeting point.",
   "requiredFlags":["false_victory_complete"],
   "completionFlags":["main_story_complete"],
-  "levelCapOnComplete":100
+  "levelCapOnComplete":100,
+  "nextChapter":"",
+  "badge":"champion_badge"
 }

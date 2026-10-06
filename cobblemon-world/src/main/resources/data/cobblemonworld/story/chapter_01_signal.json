@@ -3,5 +3,7 @@
   "objective":"Follow ??? to the first anomaly and defeat Mara Voss.",
   "requiredFlags":["prologue_complete"],
   "completionFlags":["mara_voss_defeated","seal_01_broken"],
-  "levelCapOnComplete":22
+  "levelCapOnComplete":22,
+  "nextChapter":"chapter_02_under_mountain",
+  "badge":"relay_badge"
 }

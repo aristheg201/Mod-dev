@@ -1,9 +1,5 @@
 {
-  "id":"sixth_warden",
-  "displayName":"Sixth Warden",
-  "npcClass":"standard",
-  "visualLevel":66,
-  "skill":5,
+  "id":"sixth_warden","displayName":"Sixth Warden","npcClass":"standard","visualLevel":66,"skill":5,
   "preBattleText":"Five seals are gone. I will not let you make it six.",
   "postBattleText":"The sixth lock is broken. Find the last warden.",
   "team":[
@@ -12,9 +8,6 @@
     "aegislash level=66 moves=kingsshield,shadowball,flashcannon,sacredsword"
   ],
   "defeatFlag":"sixth_warden_defeated",
-  "contactUnlock":"",
-  "chapterOnDefeat":"",
-  "badge":"",
-  "rematchable":false,
-  "specialActor":false
+  "flagsOnDefeat":["seal_06_broken"],
+  "contactUnlock":"","chapterOnDefeat":"","badge":"","rematchable":false,"specialActor":false
 }

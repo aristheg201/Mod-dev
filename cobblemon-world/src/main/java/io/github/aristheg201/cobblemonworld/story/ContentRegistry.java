@@ -78,5 +78,14 @@ public final class ContentRegistry {
     public record MessageNode(String id, String triggerFlag, String text, String[] responses, String questUnlock, String setFlag) {}
     public record QuestDefinition(String id, String title, String giver, String description, Objective[] objectives, String completionFlag) {}
     public record Objective(String id, String type, String target, int amount) {}
-    public record StoryChapterDefinition(String id, String title, String objective, String[] requiredFlags, String[] completionFlags, int levelCapOnComplete) {}
+    public record StoryChapterDefinition(
+            String id,
+            String title,
+            String objective,
+            String[] requiredFlags,
+            String[] completionFlags,
+            int levelCapOnComplete,
+            String nextChapter,
+            String badge
+    ) {}
 }

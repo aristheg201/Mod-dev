@@ -1,0 +1,16 @@
+{
+  "id":"resonance_heart","displayName":"Resonance Heart","npcClass":"standard","visualLevel":85,"skill":5,
+  "preBattleText":"The final anomaly answers every command you were given. Destroy it, and the world goes quiet.",
+  "postBattleText":"The world is quiet. Too quiet.",
+  "team":[
+    "hydreigon level=78 moves=darkpulse,dragonpulse,flamethrower,nastyplot",
+    "volcarona level=80 moves=fierydance,bugbuzz,gigadrain,quiverdance",
+    "metagross level=81 moves=meteormash,zenheadbutt,earthquake,bulletpunch",
+    "dragapult level=82 moves=dragondarts,phantomforce,flamethrower,uturn",
+    "garchomp level=83 moves=earthquake,dragonclaw,stoneedge,swordsdance",
+    "eternatus level=85 moves=dynamaxcannon,sludgebomb,flamethrower,recover"
+  ],
+  "defeatFlag":"resonance_heart_defeated",
+  "flagsOnDefeat":[],
+  "contactUnlock":"","chapterOnDefeat":"chapter_07_false_victory","badge":"","rematchable":false,"specialActor":false
+}

@@ -1,8 +1,9 @@
 {
-  "id": "prologue",
-  "title": "Unknown Number",
-  "objective": "Read the first message on your Trainer Phone.",
-  "requiredFlags": ["phone_obtained"],
-  "completionFlags": ["prologue_complete"],
-  "levelCapOnComplete": 15
+  "id":"prologue","title":"Unknown Number",
+  "objective":"Read and answer the first message from ??? on your Trainer Phone.",
+  "requiredFlags":["phone_obtained"],
+  "completionFlags":["prologue_complete"],
+  "levelCapOnComplete":15,
+  "nextChapter":"chapter_01_signal",
+  "badge":""
 }

@@ -1,6 +1,7 @@
 package io.github.aristheg201.cobblemonworld.story;
 
 import io.github.aristheg201.cobblemonworld.notification.NotificationService;
+import io.github.aristheg201.cobblemonworld.npc.NpcDefinitionRegistry;
 import io.github.aristheg201.cobblemonworld.progression.LevelCapService;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
@@ -14,10 +15,14 @@ public final class CampaignService {
     public static void initializePhone(ServerPlayer player) {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         if (p.storyFlags.contains("phone_obtained")) return;
+
         p.currentStory = "prologue";
-        p.currentObjective = "Read the first message on your Trainer Phone.";
+        ContentRegistry.StoryChapterDefinition prologue = ContentRegistry.INSTANCE.chapter("prologue");
+        p.currentObjective = prologue == null ? "Read the first message on your Trainer Phone." : prologue.objective();
+        p.storyFlags.add("phone_obtained");
         ProgressionStore.INSTANCE.save();
-        setFlag(player, "phone_obtained");
+
+        evaluateMessageTriggers(player, "phone_obtained");
     }
 
     public static boolean setFlag(ServerPlayer player, String flag) {
@@ -25,7 +30,9 @@ public final class CampaignService {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         if (!p.storyFlags.add(flag)) return false;
         ProgressionStore.INSTANCE.save();
+
         evaluateMessageTriggers(player, flag);
+        autoCompleteCurrentChapter(player);
         return true;
     }
 
@@ -42,6 +49,7 @@ public final class CampaignService {
     }
 
     public static void unlockContact(ServerPlayer player, String contactId) {
+        if (contactId == null || contactId.isBlank()) return;
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         if (p.contacts.add(contactId)) {
             var definition = ContentRegistry.INSTANCE.contact(contactId);
@@ -158,19 +166,75 @@ public final class CampaignService {
         }
     }
 
+    public static void onTrainerDefeated(ServerPlayer player, String npcId) {
+        NpcDefinitionRegistry.Definition definition = NpcDefinitionRegistry.INSTANCE.get(npcId);
+        if (definition == null) return;
+
+        if (definition.defeatFlag() != null && !definition.defeatFlag().isBlank()) {
+            setFlag(player, definition.defeatFlag());
+        }
+        if (definition.flagsOnDefeat() != null) {
+            for (String flag : definition.flagsOnDefeat()) setFlag(player, flag);
+        }
+        if (definition.contactUnlock() != null && !definition.contactUnlock().isBlank()) {
+            unlockContact(player, definition.contactUnlock());
+        }
+        recordObjective(player, "cobblemon_battle", npcId, 1);
+
+        if (definition.chapterOnDefeat() != null && !definition.chapterOnDefeat().isBlank()) {
+            completeChapter(player, definition.chapterOnDefeat());
+        }
+    }
+
     public static void completeChapter(ServerPlayer player, String chapterId) {
         var chapter = ContentRegistry.INSTANCE.chapter(chapterId);
         if (chapter == null) throw new IllegalArgumentException("Unknown chapter: " + chapterId);
+
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
+        if (p.storyFlags.contains("chapter_complete:" + chapterId)) return;
 
         if (chapter.completionFlags() != null) {
-            for (String flag : chapter.completionFlags()) setFlag(player, flag);
+            for (String flag : chapter.completionFlags()) {
+                if (flag != null && !flag.isBlank()) {
+                    p.storyFlags.add(flag);
+                    evaluateMessageTriggers(player, flag);
+                }
+            }
         }
+        p.storyFlags.add("chapter_complete:" + chapterId);
+
+        if (chapter.badge() != null && !chapter.badge().isBlank() && p.badges.add(chapter.badge())) {
+            NotificationService.badge(player, chapter.badge());
+        }
+
         if (chapter.levelCapOnComplete() > p.levelCap) {
             LevelCapService.setCap(player, chapter.levelCapOnComplete());
             NotificationService.levelCap(player, chapter.levelCapOnComplete());
+            p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         }
+
+        if (chapter.nextChapter() != null && !chapter.nextChapter().isBlank()) {
+            ContentRegistry.StoryChapterDefinition next = ContentRegistry.INSTANCE.chapter(chapter.nextChapter());
+            p.currentStory = chapter.nextChapter();
+            p.currentObjective = next == null ? "" : next.objective();
+            NotificationService.story(player, next == null ? chapter.nextChapter() : next.title());
+        } else {
+            p.currentStory = "complete";
+            p.currentObjective = "";
+        }
+
         ProgressionStore.INSTANCE.save();
+    }
+
+    private static void autoCompleteCurrentChapter(ServerPlayer player) {
+        PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
+        ContentRegistry.StoryChapterDefinition chapter = ContentRegistry.INSTANCE.chapter(p.currentStory);
+        if (chapter == null || chapter.completionFlags() == null || chapter.completionFlags().length == 0) return;
+
+        for (String flag : chapter.completionFlags()) {
+            if (!p.storyFlags.contains(flag)) return;
+        }
+        completeChapter(player, chapter.id());
     }
 
     public static String messageKey(String contactId, String messageId) {

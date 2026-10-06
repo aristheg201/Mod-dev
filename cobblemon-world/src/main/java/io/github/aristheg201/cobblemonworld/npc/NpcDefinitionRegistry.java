@@ -16,7 +16,7 @@ public final class NpcDefinitionRegistry {
 
     private static final String[] BUILT_INS = {
             "mara_voss", "dr_orin", "rook", "selene_kade", "aurelia",
-            "sixth_warden", "seventh_warden", "mysterious"
+            "sixth_warden", "seventh_warden", "resonance_heart", "mysterious"
     };
 
     private final Map<String, Definition> definitions = new LinkedHashMap<>();
@@ -29,10 +29,7 @@ public final class NpcDefinitionRegistry {
             String path = "data/cobblemonworld/npcs/" + id + ".json";
             try (var stream = NpcDefinitionRegistry.class.getClassLoader().getResourceAsStream(path)) {
                 if (stream == null) throw new IllegalStateException("Missing NPC definition: " + path);
-                Definition definition = GSON.fromJson(
-                        new InputStreamReader(stream, StandardCharsets.UTF_8),
-                        Definition.class
-                );
+                Definition definition = GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Definition.class);
                 if (definition == null || definition.id() == null || definition.id().isBlank()) {
                     throw new IllegalStateException("Invalid NPC definition: " + path);
                 }
@@ -44,13 +41,8 @@ public final class NpcDefinitionRegistry {
         CobblemonWorldMod.LOGGER.info("Loaded {} Cobblemon World NPC definitions.", definitions.size());
     }
 
-    public Definition get(String id) {
-        return definitions.get(id);
-    }
-
-    public Collection<Definition> all() {
-        return definitions.values();
-    }
+    public Definition get(String id) { return definitions.get(id); }
+    public Collection<Definition> all() { return definitions.values(); }
 
     public record Definition(
             String id,
@@ -62,6 +54,7 @@ public final class NpcDefinitionRegistry {
             String postBattleText,
             String[] team,
             String defeatFlag,
+            String[] flagsOnDefeat,
             String contactUnlock,
             String chapterOnDefeat,
             String badge,

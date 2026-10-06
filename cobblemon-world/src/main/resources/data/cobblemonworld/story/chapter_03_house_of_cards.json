@@ -3,5 +3,7 @@
   "objective":"Enter Card World, defeat Rook, and recover the third resonance fragment.",
   "requiredFlags":["seal_02_broken"],
   "completionFlags":["rook_defeated","seal_03_broken"],
-  "levelCapOnComplete":38
+  "levelCapOnComplete":38,
+  "nextChapter":"chapter_04_kings_gambit",
+  "badge":"black_card_badge"
 }

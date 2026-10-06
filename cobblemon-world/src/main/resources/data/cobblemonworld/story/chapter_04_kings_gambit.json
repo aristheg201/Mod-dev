@@ -3,5 +3,7 @@
   "objective":"Reach Selene Kade and survive the strategy trial guarding the fourth seal.",
   "requiredFlags":["seal_03_broken"],
   "completionFlags":["selene_kade_defeated","seal_04_broken"],
-  "levelCapOnComplete":47
+  "levelCapOnComplete":47,
+  "nextChapter":"chapter_05_league_fault",
+  "badge":"gambit_badge"
 }
