@@ -10,6 +10,8 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -38,13 +40,18 @@ public final class CWorldQaClientHarness {
     private static void tick(Minecraft client) {
         if (client.player == null) {
             if (!connectRequested) {
-                if (++bootTicks < 40 || client.screen == null) return;
+                if (!atlasReady(client)) {
+                    bootTicks = 0;
+                    return;
+                }
+                if (++bootTicks < 20 || client.screen == null) return;
 
                 connectRequested = true;
                 connectWaitTicks = 0;
                 ServerAddress address = new ServerAddress("127.0.0.1", 25579);
                 ServerData serverData = new ServerData(
                         "Cobblemon World QA", address.toString(), ServerData.Type.OTHER);
+                System.out.println("CWORLD_QA_CLIENT_ATLAS_READY");
                 System.out.println("CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579");
                 ConnectScreen.startConnecting(client.screen, client, address, serverData, true, null);
                 return;
@@ -99,6 +106,16 @@ public final class CWorldQaClientHarness {
 
         if (settleTicks-- > 0) return;
         capture(client, current.secondary());
+    }
+
+    private static boolean atlasReady(Minecraft client) {
+        try {
+            client.getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                    .apply(ResourceLocation.fromNamespaceAndPath("minecraft", "block/stone"));
+            return true;
+        } catch (IllegalStateException ignored) {
+            return false;
+        }
     }
 
     private static void capture(Minecraft client, String fileName) {
