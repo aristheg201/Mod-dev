@@ -87,6 +87,7 @@ public final class TrainerBattleService {
                 return;
             }
             npc.loadTexture(resource.toURI(), NPCPlayerModelType.DEFAULT);
+            System.out.println("CWORLD_NPC_SKIN_APPLIED id=" + definition.id() + " skin=" + skin);
         } catch (Exception e) {
             CobblemonWorldMod.LOGGER.error("Failed to apply authored NPC skin {} to {}", path, definition.id(), e);
         }
