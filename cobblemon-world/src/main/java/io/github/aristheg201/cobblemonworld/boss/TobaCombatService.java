@@ -2,6 +2,7 @@ package io.github.aristheg201.cobblemonworld.boss;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import io.github.aristheg201.cobblemonworld.integration.SvFrameRpgBridge;
 import io.github.aristheg201.cobblemonworld.network.RpgSkillPayload;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -20,6 +21,8 @@ public final class TobaCombatService {
     private TobaCombatService() {}
 
     public static void register() {
+        TobaSkillRegistry.INSTANCE.load();
+
         PayloadTypeRegistry.playC2S().register(RpgSkillPayload.TYPE, RpgSkillPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(RpgSkillPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> useSkill(context.player(), payload.skill())));
@@ -41,8 +44,10 @@ public final class TobaCombatService {
 
     public static void begin(ServerPlayer player) {
         STATES.computeIfAbsent(player.getUUID(), ignored -> new RpgCombatState()).reset();
+        SvFrameRpgBridge.markCombat(player);
         player.sendSystemMessage(Component.literal(
-                "TOBA PHASE II — Dash [Z] • Guard [X] • Break [C] • Purge [V] • Anchor [G] • Partner [H]"));
+                "TOBA PHASE II — " + SvFrameRpgBridge.describe(player)
+                        + " — Dash [Z] • Guard [X] • Break [C] • Purge [V] • Anchor [G] • Partner [H]"));
     }
 
     public static void reset(ServerPlayer player) {
@@ -81,6 +86,8 @@ public final class TobaCombatService {
 
         long tick = player.serverLevel().getGameTime();
         RpgCombatState state = STATES.computeIfAbsent(player.getUUID(), ignored -> new RpgCombatState());
+        var definition = TobaSkillRegistry.INSTANCE.get(skill);
+
         if (!state.ready(skill, tick)) {
             long remaining = state.remaining(skill, tick);
             player.sendSystemMessage(Component.literal(skill.name() + " cooldown: "
@@ -88,73 +95,95 @@ public final class TobaCombatService {
             return;
         }
 
+        boolean valid = switch (skill) {
+            case DASH, GUARD, ANCHOR -> true;
+            case BREAK -> player.distanceToSqr(boss) <= 10.0 * 10.0 && boss.isBreakableState();
+            case PURGE -> state.corruption() > 0;
+            case PARTNER -> leadPokemon(player) != null;
+        };
+        if (!valid) {
+            player.sendSystemMessage(Component.literal(switch (skill) {
+                case BREAK -> "BREAK — no interrupt window";
+                case PURGE -> "PURGE — no corruption to remove";
+                case PARTNER -> "PARTNER — no lead Pokemon";
+                default -> skill.name() + " — unavailable";
+            }), true);
+            return;
+        }
+
+        if (!SvFrameRpgBridge.consume(player, definition.resourceType(), definition.cost)) {
+            var profile = SvFrameRpgBridge.snapshot(player);
+            double current = definition.resourceType() == SvFrameRpgBridge.Resource.MANA ? profile.mana() : profile.stamina();
+            player.sendSystemMessage(Component.literal(skill.name() + " — not enough "
+                    + definition.resourceType().name().toLowerCase(java.util.Locale.ROOT)
+                    + " (" + (int) Math.floor(current) + "/" + (int) Math.ceil(definition.cost) + ")"), true);
+            return;
+        }
+
+        long cooldown = SvFrameRpgBridge.cooldownTicks(player, definition.cooldownTicks);
         switch (skill) {
-            case DASH -> dash(player, state, tick);
-            case GUARD -> guard(player, state, tick);
-            case BREAK -> breakBoss(player, boss, state, tick);
-            case PURGE -> purge(player, boss, state, tick);
-            case ANCHOR -> anchor(player, state, tick);
-            case PARTNER -> partner(player, boss, state, tick);
+            case DASH -> dash(player, state, tick, cooldown, definition);
+            case GUARD -> guard(player, state, tick, cooldown, definition);
+            case BREAK -> breakBoss(player, boss, state, tick, cooldown, definition);
+            case PURGE -> purge(player, boss, state, tick, cooldown, definition);
+            case ANCHOR -> anchor(player, state, tick, cooldown, definition);
+            case PARTNER -> partner(player, boss, state, tick, cooldown, definition);
         }
     }
 
-    private static void dash(ServerPlayer player, RpgCombatState state, long tick) {
+    private static void dash(ServerPlayer player, RpgCombatState state, long tick, long cooldown, TobaSkillRegistry.Definition definition) {
         Vec3 look = player.getLookAngle();
         Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
         if (horizontal.lengthSqr() < 0.001) horizontal = new Vec3(0.0, 0.0, 1.0);
-        horizontal = horizontal.normalize().scale(1.65);
+        horizontal = horizontal.normalize().scale(definition.magnitude);
         player.setDeltaMovement(player.getDeltaMovement().add(horizontal.x, 0.15, horizontal.z));
-        state.setInvulnerableUntil(tick + 12);
-        state.consume(RpgSkill.DASH, tick, 60);
+        state.setInvulnerableUntil(tick + definition.durationTicks);
+        state.consume(RpgSkill.DASH, tick, cooldown);
         player.sendSystemMessage(Component.literal("DASH"), true);
     }
 
-    private static void guard(ServerPlayer player, RpgCombatState state, long tick) {
-        state.setGuardUntil(tick + 30);
-        state.consume(RpgSkill.GUARD, tick, 100);
+    private static void guard(ServerPlayer player, RpgCombatState state, long tick, long cooldown, TobaSkillRegistry.Definition definition) {
+        state.setGuardUntil(tick + definition.durationTicks);
+        state.consume(RpgSkill.GUARD, tick, cooldown);
         player.sendSystemMessage(Component.literal("GUARD — damage window protected"), true);
     }
 
-    private static void breakBoss(ServerPlayer player, TobaEntity boss, RpgCombatState state, long tick) {
-        if (player.distanceToSqr(boss) > 10.0 * 10.0 || !boss.isBreakableState()) {
-            player.sendSystemMessage(Component.literal("BREAK — no interrupt window"), true);
-            return;
-        }
-        boss.stagger(50);
-        boss.applyRpgDamage(player, 28.0F);
-        state.consume(RpgSkill.BREAK, tick, 160);
+    private static void breakBoss(ServerPlayer player, TobaEntity boss, RpgCombatState state, long tick, long cooldown, TobaSkillRegistry.Definition definition) {
+        boss.stagger(definition.durationTicks);
+        boss.applyRpgDamage(player, (float) definition.magnitude, SvFrameRpgBridge.DamageFlavor.PHYSICAL_SKILL);
+        state.consume(RpgSkill.BREAK, tick, cooldown);
         player.sendSystemMessage(Component.literal("BREAK — TOBA staggered"), true);
     }
 
-    private static void purge(ServerPlayer player, TobaEntity boss, RpgCombatState state, long tick) {
-        if (state.corruption() <= 0) {
-            player.sendSystemMessage(Component.literal("PURGE — no corruption to remove"), true);
-            return;
-        }
+    private static void purge(ServerPlayer player, TobaEntity boss, RpgCombatState state, long tick, long cooldown, TobaSkillRegistry.Definition definition) {
         int stacks = state.corruption();
         state.purge();
-        boss.applyRpgDamage(player, 8.0F + stacks * 2.0F);
-        state.consume(RpgSkill.PURGE, tick, 220);
+        boss.applyRpgDamage(player,
+                (float) (definition.magnitude + stacks * definition.secondaryMagnitude),
+                SvFrameRpgBridge.DamageFlavor.MAGIC_SKILL);
+        state.consume(RpgSkill.PURGE, tick, cooldown);
         player.sendSystemMessage(Component.literal("PURGE — corruption removed"), true);
     }
 
-    private static void anchor(ServerPlayer player, RpgCombatState state, long tick) {
-        state.setAnchorUntil(tick + 80);
-        state.consume(RpgSkill.ANCHOR, tick, 180);
+    private static void anchor(ServerPlayer player, RpgCombatState state, long tick, long cooldown, TobaSkillRegistry.Definition definition) {
+        state.setAnchorUntil(tick + definition.durationTicks);
+        state.consume(RpgSkill.ANCHOR, tick, cooldown);
         player.sendSystemMessage(Component.literal("ANCHOR — pull/knockback immunity"), true);
     }
 
-    private static void partner(ServerPlayer player, TobaEntity boss, RpgCombatState state, long tick) {
-        Pokemon pokemon = Cobblemon.INSTANCE.getStorage().getParty(player).get(0);
-        if (pokemon == null) {
-            player.sendSystemMessage(Component.literal("PARTNER — no lead Pokemon"), true);
-            return;
-        }
-        float damage = 18.0F + Math.min(30.0F, pokemon.getLevel() * 0.3F);
-        boss.applyRpgDamage(player, damage);
+    private static void partner(ServerPlayer player, TobaEntity boss, RpgCombatState state, long tick, long cooldown, TobaSkillRegistry.Definition definition) {
+        Pokemon pokemon = leadPokemon(player);
+        if (pokemon == null) return;
+        float damage = (float) (definition.magnitude
+                + Math.min(definition.maxBonus, pokemon.getLevel() * definition.secondaryMagnitude));
+        boss.applyRpgDamage(player, damage, SvFrameRpgBridge.DamageFlavor.PARTNER_SKILL);
         player.heal(4.0F);
-        state.consume(RpgSkill.PARTNER, tick, 300);
+        state.consume(RpgSkill.PARTNER, tick, cooldown);
         player.sendSystemMessage(Component.literal(
                 "PARTNER — " + pokemon.getDisplayName(false).getString() + " strikes TOBA"), true);
+    }
+
+    private static Pokemon leadPokemon(ServerPlayer player) {
+        return Cobblemon.INSTANCE.getStorage().getParty(player).get(0);
     }
 }

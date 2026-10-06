@@ -1,5 +1,6 @@
 package io.github.aristheg201.cobblemonworld.boss;
 
+import io.github.aristheg201.cobblemonworld.integration.SvFrameRpgBridge;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -83,9 +84,10 @@ public final class TobaEntity extends Monster {
         playSound(SoundEvents.WARDEN_HURT, 1.5F, 0.65F);
     }
 
-    public boolean applyRpgDamage(ServerPlayer source, float amount) {
+    public boolean applyRpgDamage(ServerPlayer source, float amount, SvFrameRpgBridge.DamageFlavor flavor) {
         acceptingRpgDamage = true;
         try {
+            if (SvFrameRpgBridge.attack(source, this, amount, flavor)) return true;
             return super.hurt(level().damageSources().playerAttack(source), amount);
         } finally {
             acceptingRpgDamage = false;

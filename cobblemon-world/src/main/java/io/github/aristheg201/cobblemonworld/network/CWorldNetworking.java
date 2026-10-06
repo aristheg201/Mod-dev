@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.aristheg201.cobblemonworld.faction.FactionBridge;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarService;
+import io.github.aristheg201.cobblemonworld.integration.SvFrameRpgBridge;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import io.github.aristheg201.cobblemonworld.story.CampaignService;
@@ -113,6 +114,7 @@ public final class CWorldNetworking {
         );
 
         var island = IslandWarService.statusView(player);
+        var rpg = SvFrameRpgBridge.snapshot(player);
         FactionView faction = new FactionView(
                 island.factionName(), island.phase(), island.affinity(), island.ownerFaction(),
                 island.gateScore(), island.qualified(), island.ownedControlPoints(), island.islandBuilt(),
@@ -128,6 +130,8 @@ public final class CWorldNetworking {
                 List.copyOf(quests),
                 p.leagueTier,
                 p.leaguePoints,
+                new RpgView(rpg.available(), rpg.classId(), rpg.level(), rpg.mana(), rpg.maxMana(), rpg.stamina(), rpg.maxStamina(),
+                        rpg.strength(), rpg.dexterity(), rpg.intelligence(), rpg.cooldownReduction()),
                 faction,
                 List.copyOf(messages)
         );
@@ -158,6 +162,12 @@ public final class CWorldNetworking {
     public record ContactView(String id, String displayName, String icon, int unread) {}
     public record QuestView(String id, String title, String giver, String description, int progress, int required, boolean completed) {}
     public record MessageView(String key, String contactId, String sender, String text, List<String> responses, boolean unread) {}
+    public record RpgView(
+            boolean available, String classId, int level,
+            double mana, double maxMana, double stamina, double maxStamina,
+            int strength, int dexterity, int intelligence, double cooldownReduction
+    ) {}
+
     public record FactionView(
             String name, String phase, String affinity, String owner,
             int gateScore, boolean qualified, int controlPoints,
@@ -173,6 +183,7 @@ public final class CWorldNetworking {
             List<QuestView> quests,
             String leagueTier,
             int leaguePoints,
+            RpgView rpg,
             FactionView faction,
             List<MessageView> messages
     ) {}

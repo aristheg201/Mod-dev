@@ -1,0 +1,46 @@
+{
+  "skills": {
+    "DASH": {
+      "resource": "STAMINA",
+      "cost": 12,
+      "cooldownTicks": 60,
+      "durationTicks": 12,
+      "magnitude": 1.65
+    },
+    "GUARD": {
+      "resource": "STAMINA",
+      "cost": 18,
+      "cooldownTicks": 100,
+      "durationTicks": 30
+    },
+    "BREAK": {
+      "resource": "STAMINA",
+      "cost": 20,
+      "cooldownTicks": 160,
+      "durationTicks": 50,
+      "magnitude": 28
+    },
+    "PURGE": {
+      "resource": "MANA",
+      "cost": 25,
+      "cooldownTicks": 220,
+      "magnitude": 8,
+      "secondaryMagnitude": 2
+    },
+    "ANCHOR": {
+      "resource": "STAMINA",
+      "cost": 25,
+      "cooldownTicks": 180,
+      "durationTicks": 80
+    },
+    "PARTNER": {
+      "resource": "MANA",
+      "cost": 30,
+      "cooldownTicks": 300,
+      "magnitude": 18,
+      "secondaryMagnitude": 0.3,
+      "maxBonus": 30,
+      "durationTicks": 0
+    }
+  }
+}

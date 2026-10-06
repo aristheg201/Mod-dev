@@ -213,7 +213,13 @@ public final class TrainerPhoneScreen extends Screen {
                 line(g, "Level Cap: " + snapshot.levelCap(), x, y + 31);
                 line(g, "Badges: " + snapshot.badges().size(), x, y + 44);
                 line(g, "League: " + snapshot.leagueTier(), x, y + 57);
-                line(g, "Faction: " + snapshot.faction().name(), x, y + 70);
+                if (snapshot.rpg() != null && snapshot.rpg().available()) {
+                    line(g, "RPG: " + snapshot.rpg().classId() + " Lv." + snapshot.rpg().level(), x, y + 70);
+                    line(g, "STA " + whole(snapshot.rpg().stamina()) + "/" + whole(snapshot.rpg().maxStamina())
+                            + " • MANA " + whole(snapshot.rpg().mana()) + "/" + whole(snapshot.rpg().maxMana()), x, y + 83);
+                } else {
+                    line(g, "Faction: " + snapshot.faction().name(), x, y + 70);
+                }
             }
             case "objective" -> {
                 title(g, "Current Objective", x, y);
@@ -348,6 +354,10 @@ public final class TrainerPhoneScreen extends Screen {
         List<String> out = new ArrayList<>();
         for (String value : values) out.add(value.replace('_', ' '));
         return String.join(", ", out);
+    }
+
+    private static int whole(double value) {
+        return (int) Math.round(value);
     }
 
     private static String safe(String value, String fallback) {
