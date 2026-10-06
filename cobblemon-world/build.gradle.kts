@@ -49,20 +49,42 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
 }
 
+val generatedSmartphoneAssets = layout.buildDirectory.dir("generated/cobblemon-smartphone-gui")
+
+val unpackSmartphoneAssets by tasks.registering(Sync::class) {
+    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
+        include("assets/cobblemon_smartphone/textures/gui/**")
+    }
+    into(generatedSmartphoneAssets)
+}
+
 tasks.processResources {
     inputs.property("version", project.version)
+    dependsOn(unpackSmartphoneAssets)
+    from(generatedSmartphoneAssets)
+
     filesMatching("fabric.mod.json") {
         expand("version" to project.version)
     }
 
-    // Preserve the original Cobblemon Smartphone visual language exactly.
-    // Assets are copied into our namespace so the runtime has no dependency on that mod.
-    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
-        include("assets/cobblemon_smartphone/textures/gui/**")
-        eachFile {
-            path = path.replace("assets/cobblemon_smartphone/", "assets/cobblemonworld/")
+    doLast {
+        val required = listOf(
+            "assets/cobblemon_smartphone/textures/gui/smartphone_red.png",
+            "assets/cobblemon_smartphone/textures/gui/home_screen.png",
+            "assets/cobblemon_smartphone/textures/gui/large_smartphone_red.png",
+            "assets/cobblemon_smartphone/textures/gui/large_screen.png",
+            "assets/cobblemon_smartphone/textures/gui/buttons/trainer.png",
+            "assets/cobblemon_smartphone/textures/gui/buttons/social.png",
+            "assets/cobblemon_smartphone/textures/gui/elements/page_dot_on.png",
+            "assets/cobblemon_smartphone/textures/gui/elements/prev_button.png"
+        )
+        required.forEach { relative ->
+            val file = destinationDir.resolve(relative)
+            check(file.isFile && file.length() > 100L) {
+                "Cobblemon Smartphone visual asset missing from processed resources: $relative"
+            }
         }
-        includeEmptyDirs = false
+        println("CWORLD_SMARTPHONE_ASSETS_PASS count=" + required.size)
     }
 }
 
