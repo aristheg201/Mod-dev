@@ -72,8 +72,8 @@ public final class CWorldQaClientHarness {
     private static void capture(Minecraft client, String fileName) {
         capturing = true;
         String token = token(current);
-        String safeName = (fileName == null || fileName.isBlank() ? token : fileName);
-        if (!safeName.endsWith(".png")) safeName += ".png";
+        String requestedName = (fileName == null || fileName.isBlank() ? token : fileName);
+        final String safeName = requestedName.endsWith(".png") ? requestedName : requestedName + ".png";
 
         Screenshot.grab(client.gameDirectory, safeName, client.getMainRenderTarget(), message -> {
             System.out.println("CWORLD_QA_CAPTURE " + safeName + " :: " + message.getString());
