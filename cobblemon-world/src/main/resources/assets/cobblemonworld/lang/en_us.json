@@ -1,0 +1,17 @@
+{
+  "item.cobblemonworld.trainer_phone": "Trainer Phone",
+  "message.cobblemonworld.phone.bootstrap": "Trainer Phone online — Level Cap: Lv.%s | Story: %s",
+  "message.cobblemonworld.cap.capture_blocked": "%s is Lv.%s. Your current level cap is Lv.%s, so it cannot be captured yet.",
+  "message.cobblemonworld.cap.use_blocked": "%s is Lv.%s. Your current level cap is Lv.%s, so it cannot be used yet.",
+  "message.cobblemonworld.cap.battle_blocked": "%s is Lv.%s while your cap is Lv.%s. Move over-cap Pokémon out of the party before battling.",
+  "message.cobblemonworld.cap.changed": "Your level cap is now Lv.%s.",
+  "command.cobblemonworld.cap.get": "%s's current level cap is Lv.%s.",
+  "command.cobblemonworld.cap.set": "Set %s's level cap to Lv.%s.",
+  "command.cobblemonworld.cap.party_ok": "Party is valid for the current Lv.%s cap.",
+  "command.cobblemonworld.cap.party_blocked": "%s is Lv.%s and exceeds your Lv.%s cap.",
+  "toast.cobblemonworld.message": "New Message — %s",
+  "toast.cobblemonworld.contact": "New Contact — %s",
+  "toast.cobblemonworld.objective": "Objective Updated — %s",
+  "toast.cobblemonworld.level_cap": "Level Cap Increased — Lv.%s",
+  "toast.cobblemonworld.faction": "Faction Event — %s"
+}
