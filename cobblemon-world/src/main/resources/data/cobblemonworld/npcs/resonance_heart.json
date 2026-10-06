@@ -13,5 +13,6 @@
   "defeatFlag":"resonance_heart_defeated","flagsOnDefeat":["false_victory_complete"],
   "contactUnlock":"","chapterOnDefeat":"chapter_07_false_victory",
   "requiredChapter":"chapter_07_false_victory","requiredFlags":["seal_07_broken"],
+  "skin":"resonance_heart",
   "badge":"","rematchable":false,"specialActor":false
 }
