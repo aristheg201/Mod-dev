@@ -23,13 +23,22 @@ public final class CWorldNetworking {
     public static void register() {
         PayloadTypeRegistry.playS2C().register(PhoneSnapshotPayload.TYPE, PhoneSnapshotPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(ToastPayload.TYPE, ToastPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(QaControlPayload.TYPE, QaControlPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PhoneActionPayload.TYPE, PhoneActionPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(QaAckPayload.TYPE, QaAckPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(PhoneActionPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> {
                     ServerPlayer player = context.player();
                     handleAction(player, payload);
                     openPhone(player);
+                }));
+
+        ServerPlayNetworking.registerGlobalReceiver(QaAckPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> {
+                    if (Boolean.getBoolean("cworld.qa.server")) {
+                        io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.onAck(context.player(), payload);
+                    }
                 }));
     }
 

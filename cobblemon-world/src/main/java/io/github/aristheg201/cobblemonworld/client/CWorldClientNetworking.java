@@ -2,6 +2,7 @@ package io.github.aristheg201.cobblemonworld.client;
 
 import io.github.aristheg201.cobblemonworld.client.screen.TrainerPhoneScreen;
 import io.github.aristheg201.cobblemonworld.network.PhoneSnapshotPayload;
+import io.github.aristheg201.cobblemonworld.network.QaControlPayload;
 import io.github.aristheg201.cobblemonworld.network.ToastPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
@@ -17,6 +18,12 @@ public final class CWorldClientNetworking {
 
         ClientPlayNetworking.registerGlobalReceiver(ToastPayload.TYPE, (payload, context) ->
                 context.client().execute(() -> showToast(payload)));
+
+        if (Boolean.getBoolean("cworld.qa.client")) {
+            ClientPlayNetworking.registerGlobalReceiver(QaControlPayload.TYPE, (payload, context) ->
+                    context.client().execute(() ->
+                            io.github.aristheg201.cobblemonworld.qa.CWorldQaClientHarness.enqueue(payload)));
+        }
     }
 
     private static void showToast(ToastPayload payload) {

@@ -364,6 +364,14 @@ public final class TrainerPhoneScreen extends Screen {
         return value == null || value.isBlank() ? fallback : value;
     }
 
+    public void qaSelectApp(String id) {
+        selectApp(id == null || id.isBlank() ? "home" : id);
+    }
+
+    public String qaSelectedApp() {
+        return selected;
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;

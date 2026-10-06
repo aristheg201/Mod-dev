@@ -62,6 +62,10 @@ public final class CobblemonWorldMod implements ModInitializer {
             NpcPlacementStore.INSTANCE.save(server);
         });
 
+        if (Boolean.getBoolean("cworld.qa.server")) {
+            io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.register();
+        }
+
         LOGGER.info("Cobblemon World initialized. Default level cap: {}", CWorldConfig.INSTANCE.defaultLevelCap);
     }
 }
