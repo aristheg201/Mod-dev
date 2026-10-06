@@ -10,5 +10,6 @@
   "defeatFlag":"dr_orin_defeated","flagsOnDefeat":["seal_02_broken"],
   "contactUnlock":"dr_orin","chapterOnDefeat":"chapter_02_under_mountain",
   "requiredChapter":"chapter_02_under_mountain","requiredFlags":["seal_01_broken"],
+  "skin":"dr_orin",
   "badge":"resonance_badge","rematchable":false,"specialActor":false
 }
