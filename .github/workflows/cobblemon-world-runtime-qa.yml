@@ -224,6 +224,7 @@ jobs:
           - Factions: native Cobblemon World subsystem
           - SVFrameLib: 1.7.1
           - SVFrameMMO: 1.13.1
+          - LuckPerms: 5.4.139 Fabric (server-only runtime required by current SVFrameLib PermissionMap)
           - Screenshots expected: 20
 
           ## Acceptance gates
