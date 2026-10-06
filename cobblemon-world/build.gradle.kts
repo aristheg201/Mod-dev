@@ -61,36 +61,3 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
     withSourcesJar()
 }
-
-
-configurations {
-    create("qaClientRuntimeMods")
-    create("qaServerRuntimeMods")
-}
-
-dependencies {
-    "qaClientRuntimeMods"("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
-    "qaClientRuntimeMods"("com.cobblemon:fabric:${property("cobblemon_version")}")
-    "qaServerRuntimeMods"("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
-    "qaServerRuntimeMods"("com.cobblemon:fabric:${property("cobblemon_version")}")
-}
-
-tasks.register<net.fabricmc.loom.task.prod.ServerProductionRunTask>("runCWorldQaServer") {
-    dependsOn(tasks.remapJar)
-    mods.from(configurations["qaServerRuntimeMods"])
-    mods.from(fileTree("qa-runtime/server-mods") { include("*.jar") })
-    mods.from(tasks.remapJar.flatMap { it.archiveFile })
-    jvmArgs.addAll("-Dcworld.qa.server=true", "-Xmx4G")
-    programArgs.addAll("nogui")
-    runDir = file("qa-runtime/server")
-}
-
-tasks.register<net.fabricmc.loom.task.prod.ClientProductionRunTask>("runCWorldQaClient") {
-    dependsOn(tasks.remapJar)
-    mods.from(configurations["qaClientRuntimeMods"])
-    mods.from(tasks.remapJar.flatMap { it.archiveFile })
-    jvmArgs.addAll("-Dcworld.qa.client=true", "-Xmx4G")
-    programArgs.addAll("--server", "127.0.0.1", "--port", "25579", "--width", "1280", "--height", "720")
-    runDir = file("qa-runtime/client")
-    useXVFB = true
-}
