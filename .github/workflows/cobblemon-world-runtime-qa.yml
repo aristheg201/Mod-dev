@@ -1,0 +1,260 @@
+name: Cobblemon World Runtime QA
+
+on:
+  push:
+    branches:
+      - feature/cobblemon-world-rpg-20261006
+    paths:
+      - cobblemon-world/.qa-runtime-trigger
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cobblemon-world-runtime-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build Cobblemon World production jar
+        working-directory: cobblemon-world
+        run: gradle --no-daemon --stacktrace clean remapJar
+
+      - name: Build SVFrameLib and SVFrameMMO
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/cworld-svframe
+          git clone --depth 1 --branch svframemmo-cobblemon-integration-1.21.1 https://github.com/aristheg201/Cobblemon-MMO.git /tmp/cworld-svframe
+          (
+            cd /tmp/cworld-svframe/SVFrameLib
+            gradle --no-daemon --stacktrace clean build
+          )
+          (
+            cd /tmp/cworld-svframe/SVFrameMMO
+            gradle --no-daemon --stacktrace clean build
+          )
+          mkdir -p cobblemon-world/qa-runtime/server-mods
+          cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/server-mods/
+          cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/server-mods/
+
+      - name: Download Factions 2.8.0 for Minecraft 1.21.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, urllib.request
+          version = "JSZER60J"
+          meta = json.load(urllib.request.urlopen(f"https://api.modrinth.com/v2/version/{version}"))
+          files = [f for f in meta["files"] if f.get("primary")] or meta["files"]
+          f = files[0]
+          out = pathlib.Path("cobblemon-world/qa-runtime/server-mods/factions-mc1.21-2.8.0.jar")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          urllib.request.urlretrieve(f["url"], out)
+          print("downloaded", out, out.stat().st_size)
+          PY
+
+      - name: Install headless graphics runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libgl1 libasound2t64
+          cd cobblemon-world
+          gradle --no-daemon downloadAssets
+
+      - name: Prepare dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p cobblemon-world/qa-runtime/server
+          cat > cobblemon-world/qa-runtime/server/server.properties <<'EOF'
+          online-mode=false
+          server-port=25579
+          view-distance=5
+          simulation-distance=5
+          spawn-protection=0
+          enable-command-block=false
+          EOF
+          echo 'eula=true' > cobblemon-world/qa-runtime/server/eula.txt
+
+      - name: Start dedicated QA server
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cobblemon-world
+          mkdir -p build qa-runtime/server/logs
+          (
+            gradle --no-daemon --stacktrace runCWorldQaServer > build/runtime-qa-server-console.log 2>&1
+          ) &
+          echo $! > build/runtime-qa-server.pid
+
+          for i in $(seq 1 180); do
+            if grep -Fq 'Done (' qa-runtime/server/logs/latest.log 2>/dev/null; then
+              echo "CWORLD_QA_SERVER_READY"
+              exit 0
+            fi
+            if grep -Eq 'CWORLD_QA_FAILED|Exception in server tick loop|Could not execute entrypoint|NoClassDefFoundError|Mixin apply failed' qa-runtime/server/logs/latest.log build/runtime-qa-server-console.log 2>/dev/null; then
+              cat build/runtime-qa-server-console.log
+              cat qa-runtime/server/logs/latest.log || true
+              exit 1
+            fi
+            sleep 1
+          done
+          cat build/runtime-qa-server-console.log
+          cat qa-runtime/server/logs/latest.log || true
+          echo "Dedicated QA server did not become ready" >&2
+          exit 1
+
+      - name: Run real client visual/runtime QA
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cobblemon-world
+          rm -rf qa-runtime/client
+          mkdir -p qa-runtime/client/screenshots
+          timeout --signal=INT --kill-after=20s 900s gradle --no-daemon --stacktrace runCWorldQaClient > build/runtime-qa-client-console.log 2>&1 || {
+            cat build/runtime-qa-client-console.log
+            cat qa-runtime/client/logs/latest.log || true
+            cat qa-runtime/server/logs/latest.log || true
+            exit 1
+          }
+
+      - name: Wait for server QA completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cobblemon-world
+          SERVER_PID="$(cat build/runtime-qa-server.pid)"
+          for i in $(seq 1 120); do
+            if grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' qa-runtime/server/logs/latest.log; then
+              break
+            fi
+            if grep -Eq 'CWORLD_QA_FAILED|Exception in server tick loop|NoClassDefFoundError|Mixin apply failed' qa-runtime/server/logs/latest.log; then
+              cat qa-runtime/server/logs/latest.log
+              exit 1
+            fi
+            sleep 1
+          done
+          grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' qa-runtime/server/logs/latest.log
+          wait "$SERVER_PID" || true
+
+      - name: Verify runtime evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cobblemon-world
+          SERVER=qa-runtime/server/logs/latest.log
+          CLIENT=qa-runtime/client/logs/latest.log
+          grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$SERVER"
+          grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$CLIENT"
+          grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS factions=true svframemmo=true svframelib=true' "$SERVER"
+          grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$SERVER"
+          grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$SERVER"
+          grep -Fq 'CWORLD_QA_STORY_PASS cap=100' "$SERVER"
+          grep -Fq 'CWORLD_QA_PERSISTENCE_PASS' "$SERVER"
+          grep -Fq 'CWORLD_QA_FACTION_CREATE_PASS name=CWorldQA' "$SERVER"
+          grep -Fq 'CWORLD_QA_FACTION_SPAWN_PASS' "$SERVER"
+          grep -Fq 'CWORLD_QA_NPC_RECOVERY_PASS' "$SERVER"
+          grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$SERVER"
+          grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$SERVER"
+          grep -Fq 'CWORLD_QA_TOBA_TRANSFORM_PASS' "$SERVER"
+          grep -Fq 'CWORLD_QA_TOBA_RPG_PASS vanillaBlocked=true svframeDamage=true' "$SERVER"
+          grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' "$SERVER"
+          ! grep -Eq 'CWORLD_QA_FAILED|CWORLD_QA_CLIENT_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' "$SERVER" "$CLIENT"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          shots = sorted(Path("qa-runtime/client/screenshots").glob("*.png"))
+          expected = {
+            "00-phone-home.png","01-phone-trainer-card.png","02-phone-objective.png",
+            "03-phone-story.png","04-phone-side-quests.png","05-phone-level-cap.png",
+            "06-phone-badges.png","07-phone-contacts.png","08-phone-messages.png",
+            "09-phone-league.png","10-phone-faction.png","11-toast-overlay.png",
+            "12-story-npc.png","13-faction-gate-war.png","14-faction-conquest.png",
+            "15-faction-occupation.png","16-npc-recovered.png","17-mysterious-figure.png",
+            "18-toba-phase2.png","18-phone-rpg-final.png",
+          }
+          actual = {p.name for p in shots}
+          assert actual == expected, (sorted(expected-actual), sorted(actual-expected))
+          for p in shots:
+              data=p.read_bytes()
+              assert data[:8] == b"\x89PNG\r\n\x1a\n", p.name
+              w,h = struct.unpack(">II",data[16:24])
+              assert w >= 1280 and h >= 720, (p.name,w,h)
+              assert len(data) > 15000, (p.name,len(data))
+              print("QA_IMAGE",p.name,w,h,len(data))
+          PY
+
+      - name: Write QA report
+        if: always()
+        shell: bash
+        run: |
+          cd cobblemon-world
+          RESULT="FAIL"
+          if [ -f qa-runtime/server/logs/latest.log ] && grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' qa-runtime/server/logs/latest.log; then
+            RESULT="PASS"
+          fi
+          cat > QA_RUNTIME_REPORT.md <<EOF
+          # Cobblemon World Runtime QA
+
+          - Result: **$RESULT**
+          - Commit: `${{ github.sha }}`
+          - Run: `${{ github.run_id }}`
+          - Runtime: production-remapped Fabric 1.21.1 dedicated server + real client/Xvfb
+          - Cobblemon: 1.8.1
+          - Factions: 2.8.0 for Minecraft 1.21/1.21.1
+          - SVFrameLib: 1.7.1
+          - SVFrameMMO: 1.13.1
+          - Screenshots expected: 20
+
+          ## Acceptance gates
+          - Trainer Phone home + all 10 apps render in real client.
+          - Top-right Minecraft SystemToast renders outside the Phone.
+          - Over-cap party blocks a real Cobblemon trainer battle.
+          - Legal party starts a real Cobblemon battle in BattleRegistry.
+          - Main story reaches Lv.100 and completes scripted side-quest chain.
+          - Progression and NPC placement survive disk reload.
+          - Factions API creates the QA faction; Gate War, Conquest and Occupation render.
+          - Occupation affinity bonus spawns are present and obey the player's cap.
+          - Persisted story NPC is recovered after entity removal.
+          - ??? appears at the configured final location.
+          - ??? starts a real Phase-I Cobblemon battle.
+          - Phase-I transition spawns TOBA Phase II.
+          - Vanilla damage cannot bypass TOBA; SVFrameLib RPG damage bridge can.
+          - SVFrameMMO + SVFrameLib and Factions are mandatory in this audit, not fallback paths.
+          EOF
+
+      - name: Upload Cobblemon World runtime QA artifact
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: cobblemon-world-runtime-qa-${{ github.sha }}
+          path: |
+            cobblemon-world/build/libs/*.jar
+            cobblemon-world/QA_RUNTIME_REPORT.md
+            cobblemon-world/build/runtime-qa-server-console.log
+            cobblemon-world/build/runtime-qa-client-console.log
+            cobblemon-world/qa-runtime/server/logs/latest.log
+            cobblemon-world/qa-runtime/client/logs/latest.log
+            cobblemon-world/qa-runtime/client/screenshots/*.png
+            cobblemon-world/qa-runtime/server/world/cobblemonworld/*.json
+          if-no-files-found: warn
