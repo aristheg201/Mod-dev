@@ -9,3 +9,5 @@ Retry after headless QA boot-screen fix.
 Retry after removing title-screen dependency from V2 QA bootstrap.
 
 Retry after semantic building-point null safety fix.
+
+Retry after planner rejection/performance cleanup and contract null-safety hardening.
