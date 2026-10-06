@@ -42,5 +42,7 @@ public final class CWorldClientNetworking {
                 false
         );
         mc.getTutorial().addTimedToast(toast, 100);
+        System.out.println("CWORLD_TUTORIAL_TOAST category=" + payload.category()
+                + " title=" + payload.title());
     }
 }
