@@ -5,6 +5,7 @@ import io.github.aristheg201.cobblemonworld.command.CWorldCommands;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 import io.github.aristheg201.cobblemonworld.item.ModItems;
 import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
+import io.github.aristheg201.cobblemonworld.npc.NpcPlacementStore;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import io.github.aristheg201.cobblemonworld.story.ContentRegistry;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarService;
@@ -27,8 +28,14 @@ public final class CobblemonWorldMod implements ModInitializer {
         ContentRegistry.INSTANCE.loadBuiltIns();
         IslandWarService.register();
 
-        ServerLifecycleEvents.SERVER_STARTED.register(ProgressionStore.INSTANCE::load);
-        ServerLifecycleEvents.SERVER_STOPPING.register(ProgressionStore.INSTANCE::save);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            ProgressionStore.INSTANCE.load(server);
+            NpcPlacementStore.INSTANCE.load(server);
+        });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            ProgressionStore.INSTANCE.save(server);
+            NpcPlacementStore.INSTANCE.save(server);
+        });
 
         LOGGER.info("Cobblemon World initialized. Default level cap: {}", CWorldConfig.INSTANCE.defaultLevelCap);
     }
