@@ -21,7 +21,7 @@ repositories {
 def smartphoneVisualAssets = configurations.create('smartphoneVisualAssets')
 
 dependencies {
-    smartphoneVisualAssets("maven.modrinth:n2f1HbK8:KkQzzHhm") {
+    add(smartphoneVisualAssets.name, "maven.modrinth:n2f1HbK8:KkQzzHhm") {
         transitive = false
     }
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
