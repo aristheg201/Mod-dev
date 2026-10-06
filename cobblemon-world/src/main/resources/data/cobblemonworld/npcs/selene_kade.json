@@ -10,5 +10,6 @@
   "defeatFlag":"selene_kade_defeated","flagsOnDefeat":["seal_04_broken"],
   "contactUnlock":"selene_kade","chapterOnDefeat":"chapter_04_kings_gambit",
   "requiredChapter":"chapter_04_kings_gambit","requiredFlags":["seal_03_broken"],
+  "skin":"selene_kade",
   "badge":"gambit_badge","rematchable":false,"specialActor":false
 }
