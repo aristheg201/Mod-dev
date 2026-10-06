@@ -161,6 +161,21 @@ jobs:
           ! grep -R -E 'FactionBridge|io\.icker\.factions|isModLoaded\("factions"\)|Factions 2\.8\.0|integrationAvailable' src/main docs README.md
           SERVER=qa-runtime/server/logs/latest.log
           CLIENT=qa-runtime/client/logs/latest.log
+          JAR="$(find build/libs -maxdepth 1 -name 'CobblemonWorld-*.jar' ! -name '*sources*' | head -n 1)"
+          test -n "$JAR"
+          for ASSET in \
+            assets/cobblemon_smartphone/textures/gui/smartphone_red.png \
+            assets/cobblemon_smartphone/textures/gui/home_screen.png \
+            assets/cobblemon_smartphone/textures/gui/large_smartphone_red.png \
+            assets/cobblemon_smartphone/textures/gui/large_screen.png \
+            assets/cobblemon_smartphone/textures/gui/buttons/trainer.png \
+            assets/cobblemon_smartphone/textures/gui/buttons/social.png \
+            assets/cobblemon_smartphone/textures/gui/elements/page_dot_on.png \
+            assets/cobblemon_smartphone/textures/gui/elements/prev_button.png
+          do
+            jar tf "$JAR" | grep -Fxq "$ASSET"
+          done
+          ! grep -Fq 'Failed to load texture: cobblemon_smartphone:' "$CLIENT"
           grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$SERVER"
           grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$CLIENT"
           grep -Fq 'CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579' "$CLIENT"
