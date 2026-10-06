@@ -64,7 +64,7 @@ public final class LivingWorld {
         public double wealth=.6;
     }
     public static final class Npc {
-        public UUID id,household;
+        public UUID id,household,spouse;
         public String name,lifeStage="adult",appearance="",gender="male",profession="resident",home,workplace="",settlement,faction;
         public int age,birthday;
         public double intoxication,alcoholTolerance=1;
