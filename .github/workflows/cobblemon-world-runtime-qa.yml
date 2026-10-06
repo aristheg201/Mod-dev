@@ -100,7 +100,7 @@ jobs:
           cd cobblemon-world
           mkdir -p build qa-runtime/server/logs
           (
-            gradle --no-daemon --stacktrace runCWorldQaServer > build/runtime-qa-server-console.log 2>&1
+            gradle --no-daemon --stacktrace --init-script ../.github/scripts/cworld-runtime-qa.init.gradle runCWorldQaServer > build/runtime-qa-server-console.log 2>&1
           ) &
           echo $! > build/runtime-qa-server.pid
 
@@ -130,7 +130,7 @@ jobs:
           cd cobblemon-world
           rm -rf qa-runtime/client
           mkdir -p qa-runtime/client/screenshots
-          timeout --signal=INT --kill-after=20s 900s gradle --no-daemon --stacktrace runCWorldQaClient > build/runtime-qa-client-console.log 2>&1 || {
+          timeout --signal=INT --kill-after=20s 900s gradle --no-daemon --stacktrace --init-script ../.github/scripts/cworld-runtime-qa.init.gradle runCWorldQaClient > build/runtime-qa-client-console.log 2>&1 || {
             cat build/runtime-qa-client-console.log
             cat qa-runtime/client/logs/latest.log || true
             cat qa-runtime/server/logs/latest.log || true
