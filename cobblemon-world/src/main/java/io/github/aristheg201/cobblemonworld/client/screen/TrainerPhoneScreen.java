@@ -5,6 +5,7 @@ import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
 import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
 import io.github.aristheg201.cobblemonworld.network.PhoneActionPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,29 +17,67 @@ import java.util.Locale;
 
 public final class TrainerPhoneScreen extends Screen {
     private static final Gson GSON = new Gson();
-    private static final int W = 131;
+
+    // Original Cobblemon Smartphone geometry.
+    private static final int SMALL_W = 131;
+    private static final int LARGE_W = 211;
     private static final int H = 207;
-    private static final int PER_PAGE = 6;
-    private static final int TILE = 36;
-    private static final int INK = 0xFF17313A;
-    private static final int MUTED = 0xFF526A70;
-    private static final int ACCENT = 0xFF1D7E8A;
-    private static final int BG = 0xFFE4F8F7;
-    private static final int HEADER = 0xFFB9E9EA;
-    private static final int CHIP = 0xFFD3EFF0;
-    private static final int CHIP_HOVER = 0xFFAADFE2;
+    private static final int GRID_COLUMNS = 2;
+    private static final int GRID_ROWS = 3;
+    private static final int PER_PAGE = GRID_COLUMNS * GRID_ROWS;
+    private static final int GRID_START_X = 26;
+    private static final int GRID_START_Y = 37;
+    private static final int BUTTON_SPACING = 43;
+    private static final int BUTTON_SIZE = 36;
+    private static final int FOOTER_PREV_X = 36;
+    private static final int FOOTER_HOME_X = 62;
+    private static final int FOOTER_NEXT_X = 88;
+    private static final int FOOTER_Y = 187;
+    private static final int FOOTER_SIZE = 7;
+    private static final int DOT_CENTER_X = SMALL_W / 2;
+    private static final int DOT_Y = 169;
+    private static final int DOT_SIZE = 9;
+    private static final int DOT_SPACING = 2;
+
+    // Original large-screen content geometry/palette.
+    private static final int BACK_X = 20;
+    private static final int BACK_Y = 14;
+    private static final int CONTENT_X = 20;
+    private static final int CONTENT_Y = 31;
+    private static final int CONTENT_W = 171;
+    private static final int CONTENT_BOTTOM = 194;
+    private static final int SECTION_TITLE_BG = 0xFF3A96B6;
+    private static final int SECTION_CONTENT_BG = 0xFFEFFDFF;
+    private static final int SECTION_CONTENT_ALT = 0xFFDCEFF2;
+    private static final int CONTENT_TEXT = 0xFF1A1A2E;
+    private static final int CONTENT_DIM = 0xFF555555;
+    private static final int CONTENT_GOLD = 0xFFB8860B;
+    private static final int HOVER_CYAN = 0xFF4FB4D6;
+    private static final int WHITE = 0xFFFFFFFF;
+    private static final int GOLD = 0xFFFFD700;
+    private static final int DANGER = 0xFFD03030;
+
+    private static final ResourceLocation SMALL_FRAME = tex("textures/gui/smartphone_red.png");
+    private static final ResourceLocation HOME_SCREEN = tex("textures/gui/home_screen.png");
+    private static final ResourceLocation LARGE_FRAME = tex("textures/gui/large_smartphone_red.png");
+    private static final ResourceLocation LARGE_SCREEN = tex("textures/gui/large_screen.png");
+    private static final ResourceLocation PREV_BUTTON = tex("textures/gui/elements/prev_button.png");
+    private static final ResourceLocation HOME_BUTTON = tex("textures/gui/elements/home_button.png");
+    private static final ResourceLocation NEXT_BUTTON = tex("textures/gui/elements/next_button.png");
+    private static final ResourceLocation DOT_ON = tex("textures/gui/elements/page_dot_on.png");
+    private static final ResourceLocation DOT_OFF = tex("textures/gui/elements/page_dot_off.png");
 
     private static final List<App> APPS = List.of(
-            new App("Trainer Card", "trainer_card"),
-            new App("Objective", "objective"),
-            new App("Story", "story"),
-            new App("Side Quests", "side_quests"),
-            new App("Level Cap", "level_cap"),
-            new App("Badges", "badges"),
-            new App("Contacts", "contacts"),
-            new App("Messages", "messages"),
-            new App("League", "league"),
-            new App("Faction", "faction")
+            new App("Trainer Card", "trainer_card", "trainer"),
+            new App("Objective", "objective", "gps"),
+            new App("Current Story", "story", "patchouli"),
+            new App("Side Quests", "side_quests", "structure_compass"),
+            new App("Level Cap", "level_cap", "pokeinfo"),
+            new App("Badges", "badges", "pokedex"),
+            new App("Contacts", "contacts", "social"),
+            new App("Messages", "messages", "cloud"),
+            new App("League", "league", "cobbledollars"),
+            new App("Faction", "faction", "waystone")
     );
 
     private final CWorldNetworking.PhoneSnapshot snapshot;
@@ -47,7 +86,8 @@ public final class TrainerPhoneScreen extends Screen {
     private int messageIndex;
     private int contactIndex;
     private int questIndex;
-    private int left;
+    private int smallX;
+    private int largeX;
     private int top;
     private EditBox factionName;
     private EditBox factionMember;
@@ -61,17 +101,18 @@ public final class TrainerPhoneScreen extends Screen {
     @Override
     protected void init() {
         clearWidgets();
-        left = (width - W) / 2;
+        smallX = (width - SMALL_W) / 2;
+        largeX = (width - LARGE_W) / 2;
         top = (height - H) / 2;
 
-        factionName = new EditBox(font, left + 21, top + 119, 66, 14, Component.literal("Faction name"));
-        factionName.setHint(Component.literal("name"));
+        factionName = new EditBox(font, largeX + 35, top + 108, 111, 14, Component.literal("Faction name"));
+        factionName.setHint(Component.literal("Faction name"));
         factionName.setBordered(false);
         factionName.setMaxLength(24);
         addRenderableWidget(factionName);
 
-        factionMember = new EditBox(font, left + 21, top + 119, 66, 14, Component.literal("Player name"));
-        factionMember.setHint(Component.literal("player"));
+        factionMember = new EditBox(font, largeX + 35, top + 108, 111, 14, Component.literal("Player name"));
+        factionMember.setHint(Component.literal("Player name"));
         factionMember.setBordered(false);
         factionMember.setMaxLength(24);
         addRenderableWidget(factionMember);
@@ -80,221 +121,355 @@ public final class TrainerPhoneScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Do not call renderBackground: phone should sit cleanly over the world, not blur/darken it.
-        renderFrame(g);
-        if ("home".equals(selected)) renderHome(g, mouseX, mouseY);
-        else renderApp(g, mouseX, mouseY);
-        // Screen.render() calls renderBackground() in 1.21.1, which applies the vanilla
-        // full-screen blur. Render our only widgets directly so the in-world background stays crisp.
-        if (factionName != null) factionName.render(g, mouseX, mouseY, partialTick);
-        if (factionMember != null) factionMember.render(g, mouseX, mouseY, partialTick);
+        if ("home".equals(selected)) {
+            renderHome(g, mouseX, mouseY);
+        } else {
+            renderApp(g, mouseX, mouseY);
+        }
+
+        // Do not call Screen.render(): in 1.21.1 that path applies the vanilla menu blur.
+        if (factionName != null && factionName.visible) factionName.render(g, mouseX, mouseY, partialTick);
+        if (factionMember != null && factionMember.visible) factionMember.render(g, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Intentionally empty: Cobblemon Smartphone-style overlay, not a menu screen.
-    }
-
-    private void renderFrame(GuiGraphics g) {
-        g.fill(left + 5, top, left + W - 5, top + H, 0xFF17191E);
-        g.fill(left + 2, top + 7, left + W - 2, top + H - 7, 0xFF17191E);
-        g.fill(left + 5, top + 3, left + W - 5, top + H - 3, 0xFF6F1723);
-        g.fill(left + 3, top + 10, left + W - 3, top + H - 10, 0xFF6F1723);
-        g.fill(left + 7, top + 5, left + W - 7, top + H - 5, 0xFFB82F3A);
-        g.fill(left + 6, top + 11, left + 9, top + H - 13, 0xFFE65A5E);
-        g.fill(left + W - 10, top + 11, left + W - 7, top + H - 13, 0xFF6F1723);
-        g.fill(left + 13, top + 17, left + 118, top + 185, 0xFF0C2027);
-        g.fill(left + 15, top + 19, left + 116, top + 183, BG);
-        g.fill(left + 51, top + 9, left + 80, top + 11, 0xFF3B1017);
-        g.fill(left + 57, top + 194, left + 74, top + 197, 0xFF57131E);
-        g.fill(left - 1, top + 46, left + 3, top + 68, 0xFF17191E);
-        g.fill(left + W - 3, top + 62, left + W + 1, top + 86, 0xFF17191E);
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Deliberately empty. Cobblemon Smartphone is an in-world handheld overlay.
     }
 
     private void renderHome(GuiGraphics g, int mouseX, int mouseY) {
-        g.fill(left + 15, top + 19, left + 116, top + 36, HEADER);
-        text(g, "TRAINER", left + 20, top + 24, 0.72F, INK);
-        textRight(g, "Lv." + snapshot.levelCap(), left + 111, top + 24, 0.72F, ACCENT);
+        blit(g, SMALL_FRAME, smallX, top, SMALL_W, H);
+        blit(g, HOME_SCREEN, smallX, top, SMALL_W, H);
+        renderWorldTime(g, smallX);
 
         int from = homePage * PER_PAGE;
         int to = Math.min(APPS.size(), from + PER_PAGE);
         for (int i = from; i < to; i++) {
             int local = i - from;
-            int x = left + 22 + (local % 2) * 51;
-            int y = top + 43 + (local / 2) * 44;
+            int bx = smallX + GRID_START_X + (local % GRID_COLUMNS) * BUTTON_SPACING;
+            int by = top + GRID_START_Y + (local / GRID_COLUMNS) * BUTTON_SPACING;
             App app = APPS.get(i);
-            boolean hover = inside(mouseX, mouseY, x - 2, y - 2, 40, 40);
-            g.fill(x - 2, y - 2, x + 38, y + 38, hover ? CHIP_HOVER : CHIP);
-            g.fill(x, y, x + TILE, y + TILE, 0xFFF4FFFF);
-            ResourceLocation icon = ResourceLocation.fromNamespaceAndPath(
-                    CobblemonWorldMod.MOD_ID, "textures/gui/icons/" + app.id + ".png");
-            g.blit(icon, x + 10, y + 4, 0, 0.0F, 0.0F, 16, 16, 16, 16);
-            center(g, shortLabel(app.label), x + 18, y + 25, 0.53F, INK);
-            if ("messages".equals(app.id)) {
-                int unread = unread();
-                if (unread > 0) {
-                    g.fill(x + 26, y + 1, x + 35, y + 10, 0xFFD33142);
-                    center(g, unread > 9 ? "9+" : Integer.toString(unread), x + 30, y + 2, 0.46F, 0xFFFFFFFF);
-                }
+            boolean hovered = inside(mouseX, mouseY, bx, by, BUTTON_SIZE, BUTTON_SIZE);
+            ResourceLocation icon = buttonTexture(app.icon(), hovered);
+            blit(g, icon, bx, by, BUTTON_SIZE, BUTTON_SIZE);
+
+            if ("messages".equals(app.id()) && unread() > 0) {
+                renderBadge(g, unread(), bx, by);
             }
         }
 
+        renderPageDots(g);
+        renderFooterButtons(g, mouseX, mouseY);
+        renderHomeTooltip(g, mouseX, mouseY);
+    }
+
+    private void renderWorldTime(GuiGraphics g, int x) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        long ticksToday = Math.floorMod(mc.level.getDayTime(), 24_000L);
+        long totalMinutes = ((ticksToday * 1_440L / 24_000L) + 360L) % 1_440L;
+        String value = "%02d:%02d".formatted(totalMinutes / 60L, totalMinutes % 60L);
+
+        g.pose().pushPose();
+        g.pose().translate(x + 20.0, top + 20.0, 0.0);
+        g.pose().scale(0.6F, 0.6F, 1.0F);
+        g.drawString(font, value, 0, 0, 0xFFE6FFFF, false);
+        g.pose().popPose();
+    }
+
+    private void renderPageDots(GuiGraphics g) {
         int pages = Math.max(1, (APPS.size() + PER_PAGE - 1) / PER_PAGE);
-        int start = left + W / 2 - (pages * 5 - 2) / 2;
-        for (int i = 0; i < pages; i++) {
-            g.fill(start + i * 5, top + 174, start + i * 5 + 3, top + 177,
-                    i == homePage ? ACCENT : 0xFF8AA8AC);
+        if (pages <= 1) return;
+
+        int dotCount = Math.min(3, pages);
+        int active = pages <= 3 ? homePage : (homePage == 0 ? 0 : homePage == pages - 1 ? dotCount - 1 : 1);
+        int startX = DOT_CENTER_X - ((dotCount * DOT_SIZE + (dotCount - 1) * DOT_SPACING) / 2);
+        for (int i = 0; i < dotCount; i++) {
+            ResourceLocation dot = i == active ? DOT_ON : DOT_OFF;
+            int yOffset = i == active ? 0 : 1;
+            blit(g, dot, smallX + startX + i * (DOT_SIZE + DOT_SPACING), top + DOT_Y + yOffset, DOT_SIZE, DOT_SIZE);
         }
-        text(g, "‹", left + 24, top + 169, 0.9F, homePage > 0 ? INK : 0xFF9DB0B2);
-        textRight(g, "›", left + 108, top + 169, 0.9F, homePage + 1 < pages ? INK : 0xFF9DB0B2);
+    }
+
+    private void renderFooterButtons(GuiGraphics g, int mouseX, int mouseY) {
+        renderFooterButton(g, PREV_BUTTON, FOOTER_PREV_X, mouseX, mouseY);
+        renderFooterButton(g, HOME_BUTTON, FOOTER_HOME_X, mouseX, mouseY);
+        renderFooterButton(g, NEXT_BUTTON, FOOTER_NEXT_X, mouseX, mouseY);
+    }
+
+    private void renderFooterButton(GuiGraphics g, ResourceLocation texture, int relativeX, int mouseX, int mouseY) {
+        int x = smallX + relativeX;
+        int y = top + FOOTER_Y;
+        boolean hovered = inside(mouseX, mouseY, x, y, FOOTER_SIZE, FOOTER_SIZE);
+        float v = hovered ? FOOTER_SIZE : 0.0F;
+        g.blit(texture, x, y, 0, 0.0F, v, FOOTER_SIZE, FOOTER_SIZE, FOOTER_SIZE, FOOTER_SIZE * 2);
+    }
+
+    private void renderBadge(GuiGraphics g, int count, int bx, int by) {
+        String label = count > 99 ? "99+" : Integer.toString(count);
+        int badgeW = Math.max(10, font.width(label) / 2 + 4);
+        int badgeX = bx + BUTTON_SIZE - badgeW;
+        g.fill(badgeX, by, bx + BUTTON_SIZE, by + 10, DANGER);
+        scaledText(g, label, badgeX + 2, by + 2, 0.5F, WHITE);
+    }
+
+    private void renderHomeTooltip(GuiGraphics g, int mouseX, int mouseY) {
+        int from = homePage * PER_PAGE;
+        int to = Math.min(APPS.size(), from + PER_PAGE);
+        for (int i = from; i < to; i++) {
+            int local = i - from;
+            int bx = smallX + GRID_START_X + (local % GRID_COLUMNS) * BUTTON_SPACING;
+            int by = top + GRID_START_Y + (local / GRID_COLUMNS) * BUTTON_SPACING;
+            if (inside(mouseX, mouseY, bx, by, BUTTON_SIZE, BUTTON_SIZE)) {
+                g.renderTooltip(font, Component.literal(APPS.get(i).label()), mouseX, mouseY);
+                return;
+            }
+        }
     }
 
     private void renderApp(GuiGraphics g, int mouseX, int mouseY) {
-        g.fill(left + 15, top + 19, left + 116, top + 39, HEADER);
-        text(g, "‹", left + 19, top + 23, 0.9F, ACCENT);
-        text(g, label(selected), left + 31, top + 25, 0.62F, INK);
-        g.fill(left + 19, top + 42, left + 112, top + 43, 0xFFADD9DA);
+        blit(g, LARGE_FRAME, largeX, top, LARGE_W, H);
+        blit(g, LARGE_SCREEN, largeX, top, LARGE_W, H);
 
-        int x = left + 20;
-        int y = top + 48;
-        int w = 91;
+        boolean backHover = inside(mouseX, mouseY, largeX + BACK_X - 2, top + BACK_Y - 2, 34, 12);
+        g.drawString(font, "Back", largeX + BACK_X, top + BACK_Y, backHover ? GOLD : WHITE, false);
+
+        String appTitle = appLabel(selected);
+        g.drawString(font, appTitle, largeX + (LARGE_W - font.width(appTitle)) / 2, top + BACK_Y, WHITE, false);
+
+        int x = largeX + CONTENT_X;
+        int y = top + CONTENT_Y;
 
         switch (selected) {
-            case "trainer_card" -> {
-                text(g, snapshot.trainerName(), x, y, 0.76F, ACCENT);
-                kv(g, "Level Cap", "Lv." + snapshot.levelCap(), x, y + 19, w);
-                kv(g, "Badges", Integer.toString(snapshot.badges().size()), x, y + 34, w);
-                kv(g, "League", snapshot.leagueTier(), x, y + 49, w);
-                kv(g, "Faction", snapshot.faction().name(), x, y + 64, w);
-                if (snapshot.rpg() != null && snapshot.rpg().available()) {
-                    kv(g, "RPG", snapshot.rpg().classId() + " Lv." + snapshot.rpg().level(), x, y + 79, w);
-                    text(g, "STA " + whole(snapshot.rpg().stamina()) + "/" + whole(snapshot.rpg().maxStamina()),
-                            x, y + 97, 0.5F, MUTED);
-                    text(g, "MANA " + whole(snapshot.rpg().mana()) + "/" + whole(snapshot.rpg().maxMana()),
-                            x, y + 110, 0.5F, MUTED);
-                }
-            }
-            case "objective" -> {
-                text(g, "CURRENT OBJECTIVE", x, y, 0.53F, ACCENT);
-                g.fill(x, y + 13, x + w, y + 15, ACCENT);
-                wrap(g, safe(snapshot.story().objective(), "No tracked objective"), x, y + 24, w, 0.62F, 10, INK);
-            }
-            case "story" -> {
-                text(g, snapshot.story().title(), x, y, 0.65F, ACCENT);
-                text(g, human(snapshot.story().id()), x, y + 16, 0.48F, MUTED);
-                g.fill(x, y + 28, x + w, y + 29, 0xFFB4DCDD);
-                wrap(g, safe(snapshot.story().objective(), "Story complete."), x, y + 38, w, 0.58F, 9, INK);
-            }
-            case "side_quests" -> renderQuest(g, x, y, w, mouseX, mouseY);
-            case "level_cap" -> {
-                center(g, "Lv." + snapshot.levelCap(), x + w / 2, y + 2, 1.15F, ACCENT);
-                g.fill(x + 12, y + 25, x + w - 12, y + 27, ACCENT);
-                wrap(g, "Pokémon above your cap keep their real level, but cannot spawn naturally, be caught, sent out, gain XP, or enter battle until the cap catches up.",
-                        x, y + 37, w, 0.52F, 12, INK);
-            }
-            case "badges" -> {
-                text(g, snapshot.badges().size() + " BADGES", x, y, 0.66F, ACCENT);
-                if (snapshot.badges().isEmpty()) text(g, "No badges yet.", x, y + 20, 0.56F, MUTED);
-                else {
-                    int yy = y + 19;
-                    for (String badge : snapshot.badges()) {
-                        if (yy > top + 161) break;
-                        g.fill(x, yy, x + 8, yy + 8, 0xFFE8B83B);
-                        text(g, human(badge), x + 13, yy, 0.48F, INK);
-                        yy += 13;
-                    }
-                }
-            }
-            case "contacts" -> renderContact(g, x, y, w, mouseX, mouseY);
-            case "messages" -> renderMessage(g, x, y, w, mouseX, mouseY);
-            case "league" -> {
-                center(g, snapshot.leagueTier(), x + w / 2, y + 4, 0.82F, ACCENT);
-                center(g, snapshot.leaguePoints() + " LP", x + w / 2, y + 24, 0.62F, INK);
-                g.fill(x + 12, y + 42, x + w - 12, y + 44, 0xFFB4DCDD);
-                wrap(g, "Main-story milestones award League Points. Eight major badges or 800 LP reaches Champion tier.",
-                        x, y + 54, w, 0.54F, 8, INK);
-            }
-            case "faction" -> renderFaction(g, x, y, w, mouseX, mouseY);
+            case "trainer_card" -> renderTrainerCard(g, x, y);
+            case "objective" -> renderObjective(g, x, y);
+            case "story" -> renderStory(g, x, y);
+            case "side_quests" -> renderQuest(g, x, y, mouseX, mouseY);
+            case "level_cap" -> renderLevelCap(g, x, y);
+            case "badges" -> renderBadges(g, x, y);
+            case "contacts" -> renderContact(g, x, y, mouseX, mouseY);
+            case "messages" -> renderMessage(g, x, y, mouseX, mouseY);
+            case "league" -> renderLeague(g, x, y);
+            case "faction" -> renderFaction(g, x, y, mouseX, mouseY);
             default -> select("home");
         }
     }
 
-    private void renderQuest(GuiGraphics g, int x, int y, int w, int mouseX, int mouseY) {
+    private void renderTrainerCard(GuiGraphics g, int x, int y) {
+        section(g, x, y, CONTENT_W, 18, "TRAINER");
+        int cy = y + 18;
+        surface(g, x, cy, CONTENT_W, 118);
+        g.drawString(font, snapshot.trainerName(), x + 8, cy + 8, CONTENT_TEXT, false);
+        field(g, "Level Cap", "Lv." + snapshot.levelCap(), x + 8, cy + 27, CONTENT_W - 16);
+        field(g, "Badges", Integer.toString(snapshot.badges().size()), x + 8, cy + 43, CONTENT_W - 16);
+        field(g, "League", snapshot.leagueTier(), x + 8, cy + 59, CONTENT_W - 16);
+        field(g, "Faction", snapshot.faction().name(), x + 8, cy + 75, CONTENT_W - 16);
+        if (snapshot.rpg() != null && snapshot.rpg().available()) {
+            field(g, "RPG", snapshot.rpg().classId() + " Lv." + snapshot.rpg().level(), x + 8, cy + 91, CONTENT_W - 16);
+            String meters = "STA " + whole(snapshot.rpg().stamina()) + "/" + whole(snapshot.rpg().maxStamina())
+                    + "   MANA " + whole(snapshot.rpg().mana()) + "/" + whole(snapshot.rpg().maxMana());
+            g.drawString(font, meters, x + 8, cy + 107, CONTENT_DIM, false);
+        }
+    }
+
+    private void renderObjective(GuiGraphics g, int x, int y) {
+        section(g, x, y, CONTENT_W, 18, "CURRENT OBJECTIVE");
+        surface(g, x, y + 18, CONTENT_W, 126);
+        wrapped(g, safe(snapshot.story().objective(), "No tracked objective"), x + 8, y + 30, CONTENT_W - 16, 12, CONTENT_TEXT);
+    }
+
+    private void renderStory(GuiGraphics g, int x, int y) {
+        section(g, x, y, CONTENT_W, 18, snapshot.story().title());
+        surface(g, x, y + 18, CONTENT_W, 126);
+        g.drawString(font, human(snapshot.story().id()), x + 8, y + 28, CONTENT_GOLD, false);
+        g.fill(x + 8, y + 42, x + CONTENT_W - 8, y + 43, 0xFFB4DCDD);
+        wrapped(g, safe(snapshot.story().objective(), "Story complete."), x + 8, y + 51, CONTENT_W - 16, 10, CONTENT_TEXT);
+    }
+
+    private void renderQuest(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var q = quest();
+        section(g, x, y, CONTENT_W, 18, "SIDE QUESTS");
+        surface(g, x, y + 18, CONTENT_W, 126);
         if (q == null) {
-            text(g, "No side quests yet.", x, y, 0.58F, MUTED);
+            g.drawString(font, "No side quests yet.", x + 8, y + 31, CONTENT_DIM, false);
             return;
         }
-        text(g, (q.completed() ? "✓ " : "") + q.title(), x, y, 0.6F, q.completed() ? 0xFF397A4A : ACCENT);
-        text(g, q.giver() + "  " + q.progress() + "/" + q.required(), x, y + 16, 0.49F, MUTED);
-        wrap(g, q.description(), x, y + 31, w, 0.53F, 7, INK);
-        pager(g, questIndex, snapshot.quests().size(), mouseX, mouseY);
-        if (!q.completed()) chip(g, x + 17, top + 149, 57, 15, "Track Quest", mouseX, mouseY);
+        g.drawString(font, (q.completed() ? "Complete - " : "") + q.title(), x + 8, y + 29,
+                q.completed() ? 0xFF397A4A : CONTENT_TEXT, false);
+        g.drawString(font, q.giver() + "   " + q.progress() + "/" + q.required(), x + 8, y + 43, CONTENT_DIM, false);
+        wrapped(g, q.description(), x + 8, y + 58, CONTENT_W - 16, 7, CONTENT_TEXT);
+        renderPager(g, questIndex, snapshot.quests().size(), mouseX, mouseY);
+        if (!q.completed()) button(g, x + 52, top + 161, 68, 16, "Track Quest", mouseX, mouseY);
     }
 
-    private void renderContact(GuiGraphics g, int x, int y, int w, int mouseX, int mouseY) {
+    private void renderLevelCap(GuiGraphics g, int x, int y) {
+        section(g, x, y, CONTENT_W, 18, "LEVEL CAP");
+        surface(g, x, y + 18, CONTENT_W, 126);
+        String cap = "Lv." + snapshot.levelCap();
+        g.drawString(font, cap, x + (CONTENT_W - font.width(cap)) / 2, y + 30, CONTENT_GOLD, false);
+        g.fill(x + 28, y + 46, x + CONTENT_W - 28, y + 48, SECTION_TITLE_BG);
+        wrapped(g,
+                "Pokemon above your cap keep their real level, but cannot spawn naturally, be caught, sent out, gain XP, or enter battle until the cap catches up.",
+                x + 8, y + 58, CONTENT_W - 16, 9, CONTENT_TEXT);
+    }
+
+    private void renderBadges(GuiGraphics g, int x, int y) {
+        section(g, x, y, CONTENT_W, 18, "BADGES");
+        surface(g, x, y + 18, CONTENT_W, 126);
+        if (snapshot.badges().isEmpty()) {
+            g.drawString(font, "No badges yet.", x + 8, y + 31, CONTENT_DIM, false);
+            return;
+        }
+        int cy = y + 29;
+        for (String badge : snapshot.badges()) {
+            if (cy > top + CONTENT_BOTTOM - 13) break;
+            g.fill(x + 8, cy + 1, x + 16, cy + 9, CONTENT_GOLD);
+            g.drawString(font, human(badge), x + 22, cy, CONTENT_TEXT, false);
+            cy += 14;
+        }
+    }
+
+    private void renderContact(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var c = contact();
+        section(g, x, y, CONTENT_W, 18, "CONTACTS");
+        surface(g, x, y + 18, CONTENT_W, 126);
         if (c == null) {
-            text(g, "No contacts yet.", x, y, 0.58F, MUTED);
+            g.drawString(font, "No contacts yet.", x + 8, y + 31, CONTENT_DIM, false);
             return;
         }
-        g.fill(x, y, x + 24, y + 24, 0xFFB7DDE0);
-        center(g, initials(c.displayName()), x + 12, y + 7, 0.64F, ACCENT);
-        text(g, c.displayName(), x + 30, y + 1, 0.58F, INK);
-        text(g, c.unread() > 0 ? c.unread() + " unread" : "Up to date", x + 30, y + 14, 0.46F,
-                c.unread() > 0 ? 0xFFD33142 : MUTED);
-        g.fill(x, y + 34, x + w, y + 35, 0xFFB4DCDD);
-        wrap(g, "Story contacts unlock after major battles and investigations.", x, y + 44, w, 0.53F, 7, INK);
-        pager(g, contactIndex, snapshot.contacts().size(), mouseX, mouseY);
+        g.fill(x + 8, y + 28, x + 34, y + 54, SECTION_CONTENT_ALT);
+        String initials = initials(c.displayName());
+        g.drawString(font, initials, x + 21 - font.width(initials) / 2, y + 37, SECTION_TITLE_BG, false);
+        g.drawString(font, c.displayName(), x + 42, y + 30, CONTENT_TEXT, false);
+        g.drawString(font, c.unread() > 0 ? c.unread() + " unread" : "Up to date", x + 42, y + 43,
+                c.unread() > 0 ? DANGER : CONTENT_DIM, false);
+        g.fill(x + 8, y + 62, x + CONTENT_W - 8, y + 63, 0xFFB4DCDD);
+        wrapped(g, "Story contacts unlock after major battles and investigations.",
+                x + 8, y + 72, CONTENT_W - 16, 6, CONTENT_TEXT);
+        renderPager(g, contactIndex, snapshot.contacts().size(), mouseX, mouseY);
     }
 
-    private void renderMessage(GuiGraphics g, int x, int y, int w, int mouseX, int mouseY) {
+    private void renderMessage(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var m = message();
+        section(g, x, y, CONTENT_W, 18, "MESSAGES");
         if (m == null) {
-            text(g, "No messages yet.", x, y, 0.58F, MUTED);
+            surface(g, x, y + 18, CONTENT_W, 126);
+            g.drawString(font, "No messages yet.", x + 8, y + 31, CONTENT_DIM, false);
             return;
         }
-        text(g, m.sender(), x + 2, y, 0.62F, ACCENT);
-        if (m.unread()) g.fill(x + w - 6, y + 2, x + w, y + 8, 0xFFD33142);
 
-        int bubbleY = y + 17;
-        int bubbleH = m.responses().isEmpty() ? 82 : 58;
-        g.fill(x, bubbleY, x + w, bubbleY + bubbleH, 0xFFF5FFFF);
-        g.fill(x, bubbleY, x + 2, bubbleY + bubbleH, ACCENT);
-        wrap(g, m.text(), x + 6, bubbleY + 7, w - 11, 0.53F, m.responses().isEmpty() ? 11 : 7, INK);
+        int headerY = y + 18;
+        g.fill(x, headerY, x + CONTENT_W, headerY + 22, 0xFF243D49);
+        g.drawString(font, m.sender(), x + 8, headerY + 7, WHITE, false);
+        if (m.unread()) g.fill(x + CONTENT_W - 15, headerY + 6, x + CONTENT_W - 7, headerY + 14, DANGER);
 
-        if (m.unread() && !m.responses().isEmpty()) {
-            for (int i = 0; i < Math.min(2, m.responses().size()); i++) {
-                chip(g, x, top + 132 + i * 20, w, 16, m.responses().get(i), mouseX, mouseY);
+        int bodyY = headerY + 22;
+        int responseCount = m.unread() ? Math.min(2, m.responses().size()) : 0;
+        int bodyH = responseCount > 0 ? 75 : 105;
+        surface(g, x, bodyY, CONTENT_W, bodyH);
+        wrapped(g, m.text(), x + 8, bodyY + 8, CONTENT_W - 16, responseCount > 0 ? 7 : 10, CONTENT_TEXT);
+
+        if (responseCount > 0) {
+            for (int i = 0; i < responseCount; i++) {
+                button(g, x + 8, top + 154 + i * 19, CONTENT_W - 16, 16, m.responses().get(i), mouseX, mouseY);
             }
         }
-        pager(g, messageIndex, snapshot.messages().size(), mouseX, mouseY);
+        renderPager(g, messageIndex, snapshot.messages().size(), mouseX, mouseY);
     }
 
-    private void renderFaction(GuiGraphics g, int x, int y, int w, int mouseX, int mouseY) {
+    private void renderLeague(GuiGraphics g, int x, int y) {
+        section(g, x, y, CONTENT_W, 18, "LEAGUE");
+        surface(g, x, y + 18, CONTENT_W, 126);
+        String tier = snapshot.leagueTier();
+        g.drawString(font, tier, x + (CONTENT_W - font.width(tier)) / 2, y + 31, CONTENT_GOLD, false);
+        String points = snapshot.leaguePoints() + " League Points";
+        g.drawString(font, points, x + (CONTENT_W - font.width(points)) / 2, y + 48, CONTENT_TEXT, false);
+        g.fill(x + 28, y + 66, x + CONTENT_W - 28, y + 68, SECTION_TITLE_BG);
+        wrapped(g, "Main-story milestones award League Points. Eight major badges or 800 points reaches Champion tier.",
+                x + 8, y + 78, CONTENT_W - 16, 6, CONTENT_TEXT);
+    }
+
+    private void renderFaction(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var f = snapshot.faction();
+        section(g, x, y, CONTENT_W, 18, "FACTION");
+        surface(g, x, y + 18, CONTENT_W, 126);
+
         boolean none = "No Faction".equals(f.name());
         if (none) {
-            text(g, "NO FACTION", x, y, 0.62F, MUTED);
-            wrap(g, "Create a faction or accept an invitation.", x, y + 17, w, 0.52F, 4, INK);
-            chip(g, left + 91, top + 118, 20, 15, "Create", mouseX, mouseY);
+            g.drawString(font, "No faction yet.", x + 8, y + 30, CONTENT_TEXT, false);
+            g.drawString(font, "Create one or accept an invitation.", x + 8, y + 44, CONTENT_DIM, false);
+            fieldBox(g, largeX + 31, top + 104, 119, 20);
+            button(g, largeX + 155, top + 105, 35, 18, "Create", mouseX, mouseY);
             if (f.pendingInvites() != null && !f.pendingInvites().isEmpty()) {
-                text(g, "Invite: " + f.pendingInvites().get(0), x, top + 141, 0.48F, MUTED);
-                chip(g, x, top + 153, w, 15, "Accept Invite", mouseX, mouseY);
+                g.drawString(font, "Invite: " + f.pendingInvites().get(0), x + 8, top + 135, CONTENT_GOLD, false);
+                button(g, x + 8, top + 150, CONTENT_W - 16, 18, "Accept Invite", mouseX, mouseY);
             }
             return;
         }
 
-        text(g, f.name(), x, y, 0.65F, ACCENT);
-        text(g, f.role() + "  •  " + f.memberCount() + " members", x, y + 15, 0.48F, MUTED);
-        kv(g, "Island", f.phase(), x, y + 33, w);
-        kv(g, "Affinity", f.affinity().toUpperCase(Locale.ROOT), x, y + 47, w);
-        kv(g, "Gate", f.gateScore() + (f.qualified() ? " ✓" : ""), x, y + 61, w);
-        kv(g, "Control", f.controlPoints() + "/5", x, y + 75, w);
+        g.drawString(font, f.name(), x + 8, y + 29, CONTENT_TEXT, false);
+        g.drawString(font, f.role() + " - " + f.memberCount() + " members", x + 8, y + 43, CONTENT_DIM, false);
+        field(g, "Island", f.phase(), x + 8, y + 59, CONTENT_W - 16);
+        field(g, "Affinity", f.affinity().toUpperCase(Locale.ROOT), x + 8, y + 75, CONTENT_W - 16);
+        field(g, "Gate", f.gateScore() + (f.qualified() ? " - QUALIFIED" : ""), x + 8, y + 91, CONTENT_W - 16);
+        field(g, "Control", f.controlPoints() + "/5", x + 8, y + 107, CONTENT_W - 16);
+
         boolean staff = "OWNER".equals(f.role()) || "OFFICER".equals(f.role());
-        if (staff) chip(g, left + 91, top + 118, 20, 15, "Invite", mouseX, mouseY);
-        chip(g, x, top + 144, 43, 15, "Join Island", mouseX, mouseY);
-        chip(g, x + 48, top + 144, 43, 15, "OWNER".equals(f.role()) ? "Disband" : "Leave", mouseX, mouseY);
+        if (staff) {
+            fieldBox(g, largeX + 31, top + 137, 119, 20);
+            button(g, largeX + 155, top + 138, 35, 18, "Invite", mouseX, mouseY);
+        }
+        button(g, x + 8, top + 166, 72, 18, "Join Island", mouseX, mouseY);
+        button(g, x + 91, top + 166, 72, 18, "OWNER".equals(f.role()) ? "Disband" : "Leave", mouseX, mouseY);
+    }
+
+    private void section(GuiGraphics g, int x, int y, int w, int h, String title) {
+        g.fill(x, y, x + w, y + h, SECTION_TITLE_BG);
+        String shown = font.plainSubstrByWidth(safe(title, ""), w - 12);
+        g.drawString(font, shown, x + 6, y + 5, WHITE, false);
+    }
+
+    private void surface(GuiGraphics g, int x, int y, int w, int h) {
+        g.fill(x, y, x + w, y + h, SECTION_CONTENT_BG);
+    }
+
+    private void field(GuiGraphics g, String label, String value, int x, int y, int w) {
+        g.drawString(font, label, x, y, CONTENT_DIM, false);
+        String shown = font.plainSubstrByWidth(safe(value, "-"), Math.max(20, w - font.width(label) - 12));
+        g.drawString(font, shown, x + w - font.width(shown), y, CONTENT_TEXT, false);
+        g.fill(x, y + 11, x + w, y + 12, 0xFFD0E9EA);
+    }
+
+    private void fieldBox(GuiGraphics g, int x, int y, int w, int h) {
+        g.fill(x, y, x + w, y + h, SECTION_CONTENT_ALT);
+        g.fill(x, y, x + w, y + 1, SECTION_TITLE_BG);
+        g.fill(x, y + h - 1, x + w, y + h, SECTION_TITLE_BG);
+        g.fill(x, y, x + 1, y + h, SECTION_TITLE_BG);
+        g.fill(x + w - 1, y, x + w, y + h, SECTION_TITLE_BG);
+    }
+
+    private void wrapped(GuiGraphics g, String text, int x, int y, int width, int maxLines, int color) {
+        int line = 0;
+        for (var seq : font.split(Component.literal(safe(text, "")), width)) {
+            g.drawString(font, seq, x, y + line * 11, color, false);
+            if (++line >= maxLines) break;
+        }
+    }
+
+    private void renderPager(GuiGraphics g, int index, int size, int mouseX, int mouseY) {
+        if (size <= 1) return;
+        button(g, largeX + 24, top + 177, 28, 14, "<", mouseX, mouseY);
+        String page = (index + 1) + "/" + size;
+        g.drawString(font, page, largeX + (LARGE_W - font.width(page)) / 2, top + 180, CONTENT_DIM, false);
+        button(g, largeX + 159, top + 177, 28, 14, ">", mouseX, mouseY);
+    }
+
+    private void button(GuiGraphics g, int x, int y, int w, int h, String label, int mouseX, int mouseY) {
+        boolean hover = inside(mouseX, mouseY, x, y, w, h);
+        int bg = hover ? HOVER_CYAN : SECTION_TITLE_BG;
+        g.fill(x, y, x + w, y + h, bg);
+        String shown = font.plainSubstrByWidth(label, w - 8);
+        g.drawString(font, shown, x + (w - font.width(shown)) / 2, y + (h - font.lineHeight) / 2, WHITE, false);
     }
 
     @Override
@@ -302,27 +477,37 @@ public final class TrainerPhoneScreen extends Screen {
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
         int mx = (int) mouseX;
         int my = (int) mouseY;
-        if (!inside(mx, my, left, top, W, H)) return false;
 
         if ("home".equals(selected)) {
             int from = homePage * PER_PAGE;
             int to = Math.min(APPS.size(), from + PER_PAGE);
             for (int i = from; i < to; i++) {
                 int local = i - from;
-                int x = left + 22 + (local % 2) * 51;
-                int y = top + 43 + (local / 2) * 44;
-                if (inside(mx, my, x - 2, y - 2, 40, 40)) {
-                    select(APPS.get(i).id);
+                int bx = smallX + GRID_START_X + (local % GRID_COLUMNS) * BUTTON_SPACING;
+                int by = top + GRID_START_Y + (local / GRID_COLUMNS) * BUTTON_SPACING;
+                if (inside(mx, my, bx, by, BUTTON_SIZE, BUTTON_SIZE)) {
+                    select(APPS.get(i).id());
                     return true;
                 }
             }
+
             int pages = Math.max(1, (APPS.size() + PER_PAGE - 1) / PER_PAGE);
-            if (inside(mx, my, left + 16, top + 164, 30, 22) && homePage > 0) homePage--;
-            else if (inside(mx, my, left + 85, top + 164, 30, 22) && homePage + 1 < pages) homePage++;
-            return true;
+            if (footerHit(mx, my, FOOTER_PREV_X)) {
+                homePage = Math.max(0, homePage - 1);
+                return true;
+            }
+            if (footerHit(mx, my, FOOTER_HOME_X)) {
+                homePage = 0;
+                return true;
+            }
+            if (footerHit(mx, my, FOOTER_NEXT_X)) {
+                homePage = Math.min(pages - 1, homePage + 1);
+                return true;
+            }
+            return inside(mx, my, smallX, top, SMALL_W, H);
         }
 
-        if (inside(mx, my, left + 16, top + 19, 20, 20)) {
+        if (inside(mx, my, largeX + BACK_X - 2, top + BACK_Y - 2, 34, 12)) {
             select("home");
             return true;
         }
@@ -330,32 +515,39 @@ public final class TrainerPhoneScreen extends Screen {
         if ("messages".equals(selected)) {
             var m = message();
             if (m != null && m.unread()) {
-                for (int i = 0; i < Math.min(2, m.responses().size()); i++) {
-                    if (inside(mx, my, left + 20, top + 132 + i * 20, 91, 16)) {
+                int responseCount = Math.min(2, m.responses().size());
+                for (int i = 0; i < responseCount; i++) {
+                    if (inside(mx, my, largeX + CONTENT_X + 8, top + 154 + i * 19, CONTENT_W - 16, 16)) {
                         ClientPlayNetworking.send(new PhoneActionPayload("respond", m.key(), Integer.toString(i)));
                         return true;
                     }
                 }
             }
-            if (pagerClick(mx, my, snapshot.messages().size())) {
-                messageIndex = Math.floorMod(messageIndex + (mx < left + W / 2 ? -1 : 1), snapshot.messages().size());
+            int delta = pagerDelta(mx, my, snapshot.messages().size());
+            if (delta != 0) {
+                messageIndex = Math.floorMod(messageIndex + delta, snapshot.messages().size());
                 return true;
             }
         }
 
-        if ("contacts".equals(selected) && pagerClick(mx, my, snapshot.contacts().size())) {
-            contactIndex = Math.floorMod(contactIndex + (mx < left + W / 2 ? -1 : 1), snapshot.contacts().size());
-            return true;
+        if ("contacts".equals(selected)) {
+            int delta = pagerDelta(mx, my, snapshot.contacts().size());
+            if (delta != 0) {
+                contactIndex = Math.floorMod(contactIndex + delta, snapshot.contacts().size());
+                return true;
+            }
         }
 
         if ("side_quests".equals(selected)) {
             var q = quest();
-            if (q != null && !q.completed() && inside(mx, my, left + 37, top + 149, 57, 15)) {
+            if (q != null && !q.completed()
+                    && inside(mx, my, largeX + CONTENT_X + 52, top + 161, 68, 16)) {
                 ClientPlayNetworking.send(new PhoneActionPayload("track_quest", q.id(), ""));
                 return true;
             }
-            if (pagerClick(mx, my, snapshot.quests().size())) {
-                questIndex = Math.floorMod(questIndex + (mx < left + W / 2 ? -1 : 1), snapshot.quests().size());
+            int delta = pagerDelta(mx, my, snapshot.quests().size());
+            if (delta != 0) {
+                questIndex = Math.floorMod(questIndex + delta, snapshot.quests().size());
                 return true;
             }
         }
@@ -364,26 +556,26 @@ public final class TrainerPhoneScreen extends Screen {
             var f = snapshot.faction();
             boolean none = "No Faction".equals(f.name());
             if (none) {
-                if (inside(mx, my, left + 91, top + 118, 20, 15)) {
+                if (inside(mx, my, largeX + 155, top + 105, 35, 18)) {
                     ClientPlayNetworking.send(new PhoneActionPayload("faction_create", factionName.getValue(), ""));
                     return true;
                 }
                 if (f.pendingInvites() != null && !f.pendingInvites().isEmpty()
-                        && inside(mx, my, left + 20, top + 153, 91, 15)) {
+                        && inside(mx, my, largeX + CONTENT_X + 8, top + 150, CONTENT_W - 16, 18)) {
                     ClientPlayNetworking.send(new PhoneActionPayload("faction_accept", f.pendingInvites().get(0), ""));
                     return true;
                 }
             } else {
                 boolean staff = "OWNER".equals(f.role()) || "OFFICER".equals(f.role());
-                if (staff && inside(mx, my, left + 91, top + 118, 20, 15)) {
+                if (staff && inside(mx, my, largeX + 155, top + 138, 35, 18)) {
                     ClientPlayNetworking.send(new PhoneActionPayload("faction_invite", factionMember.getValue(), ""));
                     return true;
                 }
-                if (inside(mx, my, left + 20, top + 144, 43, 15)) {
+                if (inside(mx, my, largeX + CONTENT_X + 8, top + 166, 72, 18)) {
                     ClientPlayNetworking.send(new PhoneActionPayload("faction_island_join", "", ""));
                     return true;
                 }
-                if (inside(mx, my, left + 68, top + 144, 43, 15)) {
+                if (inside(mx, my, largeX + CONTENT_X + 91, top + 166, 72, 18)) {
                     ClientPlayNetworking.send(new PhoneActionPayload(
                             "OWNER".equals(f.role()) ? "faction_disband" : "faction_leave", "", ""));
                     return true;
@@ -391,7 +583,31 @@ public final class TrainerPhoneScreen extends Screen {
             }
         }
 
+        return inside(mx, my, largeX, top, LARGE_W, H);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (!"home".equals(selected) || verticalAmount == 0.0) {
+            return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+        }
+        int pages = Math.max(1, (APPS.size() + PER_PAGE - 1) / PER_PAGE);
+        int next = homePage + (verticalAmount < 0.0 ? 1 : -1);
+        int clamped = Math.max(0, Math.min(pages - 1, next));
+        if (clamped == homePage) return false;
+        homePage = clamped;
         return true;
+    }
+
+    private boolean footerHit(int x, int y, int relativeX) {
+        return inside(x, y, smallX + relativeX, top + FOOTER_Y, FOOTER_SIZE, FOOTER_SIZE);
+    }
+
+    private int pagerDelta(int x, int y, int size) {
+        if (size <= 1) return 0;
+        if (inside(x, y, largeX + 24, top + 177, 28, 14)) return -1;
+        if (inside(x, y, largeX + 159, top + 177, 28, 14)) return 1;
+        return 0;
     }
 
     private void select(String id) {
@@ -406,61 +622,6 @@ public final class TrainerPhoneScreen extends Screen {
         boolean staff = "OWNER".equals(snapshot.faction().role()) || "OFFICER".equals(snapshot.faction().role());
         factionName.setVisible(faction && none);
         factionMember.setVisible(faction && !none && staff);
-    }
-
-    private boolean pagerClick(int x, int y, int size) {
-        return size > 1 && (inside(x, y, left + 22, top + 168, 18, 12)
-                || inside(x, y, left + 91, top + 168, 18, 12));
-    }
-
-    private void pager(GuiGraphics g, int index, int size, int mouseX, int mouseY) {
-        if (size <= 1) return;
-        chip(g, left + 22, top + 168, 18, 12, "‹", mouseX, mouseY);
-        center(g, (index + 1) + "/" + size, left + W / 2, top + 170, 0.46F, MUTED);
-        chip(g, left + 91, top + 168, 18, 12, "›", mouseX, mouseY);
-    }
-
-    private void chip(GuiGraphics g, int x, int y, int w, int h, String label, int mouseX, int mouseY) {
-        g.fill(x, y, x + w, y + h, inside(mouseX, mouseY, x, y, w, h) ? CHIP_HOVER : CHIP);
-        g.fill(x, y + h - 1, x + w, y + h, 0xFF95C8CB);
-        center(g, label, x + w / 2, y + 4, 0.46F, INK);
-    }
-
-    private void kv(GuiGraphics g, String key, String value, int x, int y, int w) {
-        text(g, key, x, y, 0.5F, MUTED);
-        textRight(g, safe(value, "—"), x + w, y, 0.5F, INK);
-        g.fill(x, y + 11, x + w, y + 12, 0xFFD0E9EA);
-    }
-
-    private void wrap(GuiGraphics g, String value, int x, int y, int width, float scale, int max, int color) {
-        int virtual = Math.max(1, (int) (width / scale));
-        var lines = font.split(Component.literal(safe(value, "")), virtual);
-        int count = Math.min(max, lines.size());
-        for (int i = 0; i < count; i++) {
-            g.pose().pushPose();
-            g.pose().translate(x, y + i * (font.lineHeight * scale + 1.0F), 0.0F);
-            g.pose().scale(scale, scale, 1.0F);
-            g.drawString(font, lines.get(i), 0, 0, color, false);
-            g.pose().popPose();
-        }
-    }
-
-    private void text(GuiGraphics g, String value, int x, int y, float scale, int color) {
-        g.pose().pushPose();
-        g.pose().translate(x, y, 0.0F);
-        g.pose().scale(scale, scale, 1.0F);
-        g.drawString(font, safe(value, ""), 0, 0, color, false);
-        g.pose().popPose();
-    }
-
-    private void textRight(GuiGraphics g, String value, int x, int y, float scale, int color) {
-        String v = safe(value, "");
-        text(g, v, x - Math.round(font.width(v) * scale), y, scale, color);
-    }
-
-    private void center(GuiGraphics g, String value, int x, int y, float scale, int color) {
-        String v = safe(value, "");
-        text(g, v, x - Math.round(font.width(v) * scale / 2.0F), y, scale, color);
     }
 
     private CWorldNetworking.MessageView message() {
@@ -483,7 +644,9 @@ public final class TrainerPhoneScreen extends Screen {
 
     private int unread() {
         int count = 0;
-        if (snapshot.messages() != null) for (var m : snapshot.messages()) if (m.unread()) count++;
+        if (snapshot.messages() != null) {
+            for (var m : snapshot.messages()) if (m.unread()) count++;
+        }
         return count;
     }
 
@@ -493,25 +656,16 @@ public final class TrainerPhoneScreen extends Screen {
         return messages.size() - 1;
     }
 
-    private static String shortLabel(String value) {
-        return switch (value) {
-            case "Trainer Card" -> "Trainer";
-            case "Side Quests" -> "Quests";
-            case "Level Cap" -> "Cap";
-            default -> value;
-        };
-    }
-
-    private static String label(String id) {
-        for (App app : APPS) if (app.id.equals(id)) return app.label;
+    private static String appLabel(String id) {
+        for (App app : APPS) if (app.id().equals(id)) return app.label();
         return "Trainer Phone";
     }
 
     private static String initials(String value) {
         if (value == null || value.isBlank()) return "?";
-        String[] p = value.trim().split("\\s+");
-        if (p.length == 1) return p[0].substring(0, Math.min(2, p[0].length())).toUpperCase(Locale.ROOT);
-        return (p[0].substring(0, 1) + p[p.length - 1].substring(0, 1)).toUpperCase(Locale.ROOT);
+        String[] parts = value.trim().split("\\s+");
+        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase(Locale.ROOT);
+        return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase(Locale.ROOT);
     }
 
     private static String human(String value) {
@@ -525,16 +679,36 @@ public final class TrainerPhoneScreen extends Screen {
         return out.toString();
     }
 
-    private static boolean inside(int px, int py, int x, int y, int w, int h) {
-        return px >= x && px < x + w && py >= y && py < y + h;
+    private static int whole(double value) {
+        return (int) Math.round(value);
     }
 
     private static String safe(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    private static int whole(double value) {
-        return (int) Math.round(value);
+    private static boolean inside(int px, int py, int x, int y, int w, int h) {
+        return px >= x && px < x + w && py >= y && py < y + h;
+    }
+
+    private static ResourceLocation tex(String path) {
+        return ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, path);
+    }
+
+    private static ResourceLocation buttonTexture(String icon, boolean hovered) {
+        return tex("textures/gui/buttons/" + icon + (hovered ? "_hover" : "") + ".png");
+    }
+
+    private static void blit(GuiGraphics g, ResourceLocation texture, int x, int y, int w, int h) {
+        g.blit(texture, x, y, 0, 0.0F, 0.0F, w, h, w, h);
+    }
+
+    private void scaledText(GuiGraphics g, String value, int x, int y, float scale, int color) {
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0.0F);
+        g.pose().scale(scale, scale, 1.0F);
+        g.drawString(font, value, 0, 0, color, false);
+        g.pose().popPose();
     }
 
     public void qaSelectApp(String id) {
@@ -546,15 +720,9 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Phone is an in-world handheld overlay. Vanilla Screen#renderBackground applies
-        // the 1.21 menu blur, which is explicitly wrong for Cobblemon Smartphone-style UX.
-    }
-
-    @Override
     public boolean isPauseScreen() {
         return false;
     }
 
-    private record App(String label, String id) {}
+    private record App(String label, String id, String icon) {}
 }
