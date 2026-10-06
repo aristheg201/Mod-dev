@@ -33,6 +33,7 @@ public final class TrainerBattleService {
                     ServerPlayer player = playerActor.getEntity();
                     if (player == null) continue;
                     CampaignService.onTrainerDefeated(player, interaction.definitionId());
+                    if ("mysterious".equals(interaction.definitionId())) npc.discard();
                 }
             }
             return Unit.INSTANCE;

@@ -1,5 +1,6 @@
 package io.github.aristheg201.cobblemonworld.story;
 
+import io.github.aristheg201.cobblemonworld.boss.TobaEncounterService;
 import io.github.aristheg201.cobblemonworld.notification.NotificationService;
 import io.github.aristheg201.cobblemonworld.npc.NpcDefinitionRegistry;
 import io.github.aristheg201.cobblemonworld.progression.LevelCapService;
@@ -181,6 +182,11 @@ public final class CampaignService {
             unlockContact(player, definition.contactUnlock());
         }
         recordObjective(player, "cobblemon_battle", npcId, 1);
+
+        if ("mysterious".equals(npcId)) {
+            TobaEncounterService.cobblemonPhaseWon(player);
+            return;
+        }
 
         if (definition.chapterOnDefeat() != null && !definition.chapterOnDefeat().isBlank()) {
             completeChapter(player, definition.chapterOnDefeat());

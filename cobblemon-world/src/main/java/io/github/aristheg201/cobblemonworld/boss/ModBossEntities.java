@@ -1,0 +1,44 @@
+package io.github.aristheg201.cobblemonworld.boss;
+
+import io.github.aristheg201.cobblemonworld.CobblemonWorldMod;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+
+public final class ModBossEntities {
+    private ModBossEntities() {}
+
+    public static final EntityType<MysteriousFigureEntity> MYSTERIOUS_FIGURE = register(
+            "mysterious_figure",
+            EntityType.Builder.<MysteriousFigureEntity>of(MysteriousFigureEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 1.9F)
+                    .eyeHeight(1.68F)
+                    .clientTrackingRange(12)
+    );
+
+    public static final EntityType<TobaEntity> TOBA = register(
+            "toba",
+            EntityType.Builder.<TobaEntity>of(TobaEntity::new, MobCategory.MONSTER)
+                    .sized(1.8F, 4.4F)
+                    .eyeHeight(3.7F)
+                    .clientTrackingRange(16)
+                    .updateInterval(2)
+    );
+
+    private static <T extends net.minecraft.world.entity.Entity> EntityType<T> register(
+            String id, EntityType.Builder<T> builder) {
+        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, id);
+        ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, location);
+        return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
+    }
+
+    public static void register() {
+        FabricDefaultAttributeRegistry.register(MYSTERIOUS_FIGURE, MysteriousFigureEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(TOBA, TobaEntity.createAttributes());
+    }
+}

@@ -1,6 +1,9 @@
 package io.github.aristheg201.cobblemonworld;
 
 import com.cobblemon.mod.common.api.npc.configuration.NPCInteractConfiguration;
+import io.github.aristheg201.cobblemonworld.boss.ModBossEntities;
+import io.github.aristheg201.cobblemonworld.boss.TobaCombatService;
+import io.github.aristheg201.cobblemonworld.boss.TobaEncounterService;
 import io.github.aristheg201.cobblemonworld.cobblemon.LevelCapHooks;
 import io.github.aristheg201.cobblemonworld.command.CWorldCommands;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
@@ -27,7 +30,10 @@ public final class CobblemonWorldMod implements ModInitializer {
     public void onInitialize() {
         CWorldConfig.load();
         ModItems.register();
+        ModBossEntities.register();
         CWorldNetworking.register();
+        TobaCombatService.register();
+        TobaEncounterService.register();
 
         NPCInteractConfiguration.Companion.register(
                 CWorldNpcInteraction.TYPE,
