@@ -57,6 +57,8 @@ public final class NpcDefinitionRegistry {
             String[] flagsOnDefeat,
             String contactUnlock,
             String chapterOnDefeat,
+            String requiredChapter,
+            String[] requiredFlags,
             String badge,
             boolean rematchable,
             boolean specialActor

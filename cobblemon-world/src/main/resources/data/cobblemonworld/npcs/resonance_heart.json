@@ -10,7 +10,8 @@
     "garchomp level=83 moves=earthquake,dragonclaw,stoneedge,swordsdance",
     "eternatus level=85 moves=dynamaxcannon,sludgebomb,flamethrower,recover"
   ],
-  "defeatFlag":"resonance_heart_defeated",
-  "flagsOnDefeat":[],
-  "contactUnlock":"","chapterOnDefeat":"chapter_07_false_victory","badge":"","rematchable":false,"specialActor":false
+  "defeatFlag":"resonance_heart_defeated","flagsOnDefeat":["false_victory_complete"],
+  "contactUnlock":"","chapterOnDefeat":"chapter_07_false_victory",
+  "requiredChapter":"chapter_07_false_victory","requiredFlags":["seal_07_broken"],
+  "badge":"","rematchable":false,"specialActor":false
 }

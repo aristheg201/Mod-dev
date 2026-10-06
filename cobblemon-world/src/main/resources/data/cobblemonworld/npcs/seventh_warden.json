@@ -8,7 +8,8 @@
     "salamence level=69 moves=dragonclaw,flamethrower,roost,dragondance",
     "garchomp level=70 moves=earthquake,dragonclaw,stoneedge,swordsdance"
   ],
-  "defeatFlag":"seventh_warden_defeated",
-  "flagsOnDefeat":["seal_07_broken"],
-  "contactUnlock":"","chapterOnDefeat":"chapter_06_seventh_lock","badge":"","rematchable":false,"specialActor":false
+  "defeatFlag":"seventh_warden_defeated","flagsOnDefeat":["seal_07_broken"],
+  "contactUnlock":"","chapterOnDefeat":"chapter_06_seventh_lock",
+  "requiredChapter":"chapter_06_seventh_lock","requiredFlags":["seal_06_broken"],
+  "badge":"","rematchable":false,"specialActor":false
 }

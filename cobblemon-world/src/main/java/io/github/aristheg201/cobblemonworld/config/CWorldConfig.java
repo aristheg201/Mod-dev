@@ -20,6 +20,7 @@ public final class CWorldConfig {
 
     public int defaultLevelCap = 15;
     public int maxLevelCap = 100;
+    public boolean grantTrainerPhoneOnFirstJoin = true;
 
     public boolean blockOverCapSendOut = true;
     public boolean blockOverCapBattles = true;

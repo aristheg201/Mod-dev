@@ -168,6 +168,22 @@ public final class CampaignService {
         }
     }
 
+    public static ChallengeGate canChallengeTrainer(ServerPlayer player, NpcDefinitionRegistry.Definition definition) {
+        if (definition == null) return new ChallengeGate(false, "Unknown trainer.");
+        PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
+
+        String requiredChapter = definition.requiredChapter();
+        if (requiredChapter != null && !requiredChapter.isBlank() && !requiredChapter.equals(p.currentStory)) {
+            ContentRegistry.StoryChapterDefinition expected = ContentRegistry.INSTANCE.chapter(requiredChapter);
+            String name = expected == null ? requiredChapter : expected.title();
+            return new ChallengeGate(false, "This encounter unlocks during: " + name + ".");
+        }
+        if (!hasAllFlags(p, definition.requiredFlags())) {
+            return new ChallengeGate(false, "You have not reached the required story state for this encounter.");
+        }
+        return new ChallengeGate(true, "");
+    }
+
     public static void onTrainerDefeated(ServerPlayer player, String npcId) {
         NpcDefinitionRegistry.Definition definition = NpcDefinitionRegistry.INSTANCE.get(npcId);
         if (definition == null) return;
@@ -199,15 +215,9 @@ public final class CampaignService {
 
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         if (p.storyFlags.contains("chapter_complete:" + chapterId)) return;
+        if (!chapterId.equals(p.currentStory)) return;
+        if (!hasAllFlags(p, chapter.requiredFlags()) || !hasAllFlags(p, chapter.completionFlags())) return;
 
-        if (chapter.completionFlags() != null) {
-            for (String flag : chapter.completionFlags()) {
-                if (flag != null && !flag.isBlank()) {
-                    p.storyFlags.add(flag);
-                    evaluateMessageTriggers(player, flag);
-                }
-            }
-        }
         p.storyFlags.add("chapter_complete:" + chapterId);
         LeagueService.awardChapter(player, chapterId);
 
@@ -238,12 +248,20 @@ public final class CampaignService {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         ContentRegistry.StoryChapterDefinition chapter = ContentRegistry.INSTANCE.chapter(p.currentStory);
         if (chapter == null || chapter.completionFlags() == null || chapter.completionFlags().length == 0) return;
-
-        for (String flag : chapter.completionFlags()) {
-            if (!p.storyFlags.contains(flag)) return;
-        }
+        if (!hasAllFlags(p, chapter.requiredFlags()) || !hasAllFlags(p, chapter.completionFlags())) return;
         completeChapter(player, chapter.id());
     }
+
+    private static boolean hasAllFlags(PlayerProgression p, String[] flags) {
+        if (flags == null || flags.length == 0) return true;
+        for (String flag : flags) {
+            if (flag == null || flag.isBlank()) continue;
+            if (!p.storyFlags.contains(flag)) return false;
+        }
+        return true;
+    }
+
+    public record ChallengeGate(boolean allowed, String reason) {}
 
     public static String messageKey(String contactId, String messageId) {
         return contactId + ":" + messageId;

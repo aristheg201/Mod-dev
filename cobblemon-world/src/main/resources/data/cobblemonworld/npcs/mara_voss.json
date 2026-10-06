@@ -1,9 +1,5 @@
 {
-  "id":"mara_voss",
-  "displayName":"Mara Voss",
-  "npcClass":"standard",
-  "visualLevel":22,
-  "skill":3,
+  "id":"mara_voss","displayName":"Mara Voss","npcClass":"standard","visualLevel":22,"skill":3,
   "preBattleText":"You came because that voice told you to. Then prove you can survive the relay.",
   "postBattleText":"We already settled this. Check your phone; I found something worse.",
   "team":[
@@ -11,10 +7,8 @@
     "houndour level=20 moves=ember,bite,roar,smog",
     "luxio level=22 moves=spark,bite,thunderwave,quickattack"
   ],
-  "defeatFlag":"mara_voss_defeated",
-  "contactUnlock":"mara_voss",
-  "chapterOnDefeat":"chapter_01_signal",
-  "badge":"relay_badge",
-  "rematchable":false,
-  "specialActor":false
+  "defeatFlag":"mara_voss_defeated","flagsOnDefeat":["seal_01_broken"],
+  "contactUnlock":"mara_voss","chapterOnDefeat":"chapter_01_signal",
+  "requiredChapter":"chapter_01_signal","requiredFlags":["prologue_complete"],
+  "badge":"relay_badge","rematchable":false,"specialActor":false
 }

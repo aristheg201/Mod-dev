@@ -1,5 +1,6 @@
 package io.github.aristheg201.cobblemonworld.boss;
 
+import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.battles.BattleBuilder;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
@@ -29,6 +30,11 @@ public final class TobaEncounterService {
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTED.register(s -> server = s);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> {
+            for (UUID owner : ACTIVE_ACTORS.keySet()) clearTransientEncounterState(owner);
+            for (UUID owner : ACTIVE_BOSSES.keySet()) clearTransientEncounterState(owner);
+            for (UUID entity : ACTIVE_ACTORS.values()) discardEntity(entity);
+            for (UUID entity : ACTIVE_BOSSES.values()) discardEntity(entity);
+            ProgressionStore.INSTANCE.save();
             ACTIVE_ACTORS.clear();
             ACTIVE_BOSSES.clear();
             server = null;
@@ -68,9 +74,25 @@ public final class TobaEncounterService {
         if (++ticks % 20L != 0L) return;
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (state(player) == TobaBossState.READY && isAtConfiguredLocation(player)) {
+            TobaBossState current = state(player);
+
+            if (current == TobaBossState.PHASE_ONE_COBBLEMON) {
+                if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) == null) {
+                    resetAfterFailure(player);
+                }
+                continue;
+            }
+
+            if (current == TobaBossState.PHASE_TWO_RPG) {
+                if (activeBoss(player) == null) {
+                    resetAfterFailure(player);
+                }
+                continue;
+            }
+
+            if (current == TobaBossState.READY && isAtConfiguredLocation(player)) {
                 ensureMysteriousActor(player);
-            } else if (state(player) == TobaBossState.READY && !isAtConfiguredLocation(player)) {
+            } else if (current == TobaBossState.READY) {
                 discardEntity(ACTIVE_ACTORS.remove(player.getUUID()));
             }
         }
@@ -184,6 +206,13 @@ public final class TobaEncounterService {
         discardEntity(ACTIVE_BOSSES.remove(player.getUUID()));
         TobaCombatService.reset(player);
         CWorldNetworking.toast(player, "story", "Final Encounter", "Reset. Return to the meeting point when ready.");
+    }
+
+    private static void clearTransientEncounterState(UUID ownerId) {
+        if (ownerId == null) return;
+        PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(ownerId);
+        p.storyFlags.remove("mysterious_phase_one_active");
+        p.storyFlags.remove("toba_phase2_active");
     }
 
     private static net.minecraft.world.entity.Entity findEntity(UUID uuid) {

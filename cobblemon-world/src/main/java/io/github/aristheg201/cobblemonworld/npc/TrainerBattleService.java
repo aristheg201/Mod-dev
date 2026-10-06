@@ -93,6 +93,12 @@ public final class TrainerBattleService {
             return true;
         }
 
+        CampaignService.ChallengeGate gate = CampaignService.canChallengeTrainer(player, definition);
+        if (!gate.allowed()) {
+            player.sendSystemMessage(Component.literal(gate.reason()).withStyle(ChatFormatting.YELLOW));
+            return true;
+        }
+
         String pre = definition.preBattleText();
         if (pre != null && !pre.isBlank()) {
             player.sendSystemMessage(Component.literal(definition.displayName() + ": " + pre));

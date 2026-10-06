@@ -1,9 +1,5 @@
 {
-  "id":"rook",
-  "displayName":"Rook",
-  "npcClass":"standard",
-  "visualLevel":38,
-  "skill":4,
+  "id":"rook","displayName":"Rook","npcClass":"standard","visualLevel":38,"skill":4,
   "preBattleText":"Cards, monsters, trainers. Same rule: whoever controls the board controls the ending.",
   "postBattleText":"The black card is yours. I wish it wasn't.",
   "team":[
@@ -11,10 +7,8 @@
     "gengar level=37 moves=shadowball,hypnosis,confuseray,hex",
     "bisharp level=38 moves=ironhead,nightslash,metalclaw,scaryface"
   ],
-  "defeatFlag":"rook_defeated",
-  "contactUnlock":"rook",
-  "chapterOnDefeat":"chapter_03_house_of_cards",
-  "badge":"black_card_badge",
-  "rematchable":false,
-  "specialActor":false
+  "defeatFlag":"rook_defeated","flagsOnDefeat":["seal_03_broken"],
+  "contactUnlock":"rook","chapterOnDefeat":"chapter_03_house_of_cards",
+  "requiredChapter":"chapter_03_house_of_cards","requiredFlags":["seal_02_broken"],
+  "badge":"black_card_badge","rematchable":false,"specialActor":false
 }

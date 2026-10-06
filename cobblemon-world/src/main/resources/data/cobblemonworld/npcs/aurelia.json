@@ -1,9 +1,5 @@
 {
-  "id":"aurelia",
-  "displayName":"Champion Aurelia",
-  "npcClass":"standard",
-  "visualLevel":58,
-  "skill":5,
+  "id":"aurelia","displayName":"Champion Aurelia","npcClass":"standard","visualLevel":58,"skill":5,
   "preBattleText":"If I lose, the League's last excuse disappears. So come prepared.",
   "postBattleText":"You earned the truth. That doesn't mean you'll like it.",
   "team":[
@@ -12,10 +8,8 @@
     "dragonite level=56 moves=dragonclaw,firepunch,roost,dragondance",
     "lucario level=58 moves=aurasphere,flashcannon,extremespeed,swordsdance"
   ],
-  "defeatFlag":"aurelia_defeated",
-  "contactUnlock":"aurelia",
-  "chapterOnDefeat":"chapter_05_league_fault",
-  "badge":"league_fault_badge",
-  "rematchable":false,
-  "specialActor":false
+  "defeatFlag":"aurelia_defeated","flagsOnDefeat":["seal_05_broken"],
+  "contactUnlock":"aurelia","chapterOnDefeat":"chapter_05_league_fault",
+  "requiredChapter":"chapter_05_league_fault","requiredFlags":["seal_04_broken"],
+  "badge":"league_fault_badge","rematchable":false,"specialActor":false
 }

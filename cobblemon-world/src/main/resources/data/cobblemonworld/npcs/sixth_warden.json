@@ -7,7 +7,8 @@
     "volcarona level=64 moves=fierydance,bugbuzz,quiverdance,gigadrain",
     "aegislash level=66 moves=kingsshield,shadowball,flashcannon,sacredsword"
   ],
-  "defeatFlag":"sixth_warden_defeated",
-  "flagsOnDefeat":["seal_06_broken"],
-  "contactUnlock":"","chapterOnDefeat":"","badge":"","rematchable":false,"specialActor":false
+  "defeatFlag":"sixth_warden_defeated","flagsOnDefeat":["seal_06_broken"],
+  "contactUnlock":"","chapterOnDefeat":"",
+  "requiredChapter":"chapter_06_seventh_lock","requiredFlags":["seal_05_broken"],
+  "badge":"","rematchable":false,"specialActor":false
 }

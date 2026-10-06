@@ -1,9 +1,5 @@
 {
-  "id":"dr_orin",
-  "displayName":"Dr. Cael Orin",
-  "npcClass":"standard",
-  "visualLevel":30,
-  "skill":3,
+  "id":"dr_orin","displayName":"Dr. Cael Orin","npcClass":"standard","visualLevel":30,"skill":3,
   "preBattleText":"If you break this chamber, you had better understand what it was holding.",
   "postBattleText":"The old glyph still bothers me. Read the archive when I send it.",
   "team":[
@@ -11,10 +7,8 @@
     "claydol level=29 moves=psybeam,mudslap,ancientpower,rapidspin",
     "porygon2 level=30 moves=psybeam,recover,agility,discharge"
   ],
-  "defeatFlag":"dr_orin_defeated",
-  "contactUnlock":"dr_orin",
-  "chapterOnDefeat":"chapter_02_under_mountain",
-  "badge":"resonance_badge",
-  "rematchable":false,
-  "specialActor":false
+  "defeatFlag":"dr_orin_defeated","flagsOnDefeat":["seal_02_broken"],
+  "contactUnlock":"dr_orin","chapterOnDefeat":"chapter_02_under_mountain",
+  "requiredChapter":"chapter_02_under_mountain","requiredFlags":["seal_01_broken"],
+  "badge":"resonance_badge","rematchable":false,"specialActor":false
 }

@@ -2,6 +2,7 @@ package io.github.aristheg201.cobblemonworld.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 import io.github.aristheg201.cobblemonworld.integration.SvFrameRpgBridge;
 import io.github.aristheg201.cobblemonworld.league.LeagueService;
 import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
@@ -36,6 +37,50 @@ public final class StoryCommands {
                                                     : "SVFrameMMO not available; TOBA uses fallback resources/damage."
                                     ), false);
                                     return rpg.available() ? 1 : 0;
+                                })))
+                .then(Commands.literal("final")
+                        .then(Commands.literal("status")
+                                .executes(ctx -> {
+                                    var cfg = CWorldConfig.INSTANCE;
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "Final encounter: " + (cfg.finalEncounterEnabled ? "ENABLED" : "DISABLED")
+                                                    + " @ " + cfg.finalEncounterDimension
+                                                    + " [" + String.format(java.util.Locale.ROOT, "%.1f, %.1f, %.1f",
+                                                    cfg.finalEncounterX, cfg.finalEncounterY, cfg.finalEncounterZ) + "]"
+                                    ), false);
+                                    return cfg.finalEncounterEnabled ? 1 : 0;
+                                }))
+                        .then(Commands.literal("sethere")
+                                .requires(s -> s.hasPermission(2))
+                                .executes(ctx -> {
+                                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                                    var cfg = CWorldConfig.INSTANCE;
+                                    cfg.finalEncounterDimension = player.level().dimension().location().toString();
+                                    cfg.finalEncounterX = player.getX();
+                                    cfg.finalEncounterY = player.getY();
+                                    cfg.finalEncounterZ = player.getZ();
+                                    cfg.finalEncounterYaw = player.getYRot();
+                                    cfg.finalEncounterEnabled = true;
+                                    CWorldConfig.save();
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "Final encounter meeting point saved and enabled."), true);
+                                    return 1;
+                                }))
+                        .then(Commands.literal("enable")
+                                .requires(s -> s.hasPermission(2))
+                                .executes(ctx -> {
+                                    CWorldConfig.INSTANCE.finalEncounterEnabled = true;
+                                    CWorldConfig.save();
+                                    ctx.getSource().sendSuccess(() -> Component.literal("Final encounter enabled."), true);
+                                    return 1;
+                                }))
+                        .then(Commands.literal("disable")
+                                .requires(s -> s.hasPermission(2))
+                                .executes(ctx -> {
+                                    CWorldConfig.INSTANCE.finalEncounterEnabled = false;
+                                    CWorldConfig.save();
+                                    ctx.getSource().sendSuccess(() -> Component.literal("Final encounter disabled."), true);
+                                    return 1;
                                 })))
                 .then(Commands.literal("phone")
                         .executes(ctx -> {

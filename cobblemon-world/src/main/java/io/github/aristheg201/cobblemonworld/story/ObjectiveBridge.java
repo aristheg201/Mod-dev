@@ -18,6 +18,14 @@ public final class ObjectiveBridge {
         return CampaignService.recordObjective(player, normalize(type), normalize(target), amount);
     }
 
+    public static int cobblemonBattle(ServerPlayer player, String encounterId) {
+        return record(player, "cobblemon_battle", encounterId);
+    }
+
+    public static int cardWorldVisit(ServerPlayer player, String encounterId) {
+        return record(player, "card_world_visit", encounterId);
+    }
+
     public static int cardWorldWin(ServerPlayer player, String encounterId) {
         return record(player, "card_world_battle", encounterId);
     }

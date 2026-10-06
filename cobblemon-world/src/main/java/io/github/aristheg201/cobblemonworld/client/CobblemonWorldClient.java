@@ -11,6 +11,7 @@ public final class CobblemonWorldClient implements ClientModInitializer {
         CWorldClientNetworking.register();
         BossKeybinds.register();
 
+        EntityModelLayerRegistry.registerModelLayer(MysteriousFigureModel.LAYER, MysteriousFigureModel::createBodyLayer);
         EntityModelLayerRegistry.registerModelLayer(TobaModel.LAYER, TobaModel::createBodyLayer);
         EntityRendererRegistry.register(ModBossEntities.MYSTERIOUS_FIGURE, MysteriousFigureRenderer::new);
         EntityRendererRegistry.register(ModBossEntities.TOBA, TobaRenderer::new);

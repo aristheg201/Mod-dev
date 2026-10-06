@@ -16,6 +16,7 @@ import io.github.aristheg201.cobblemonworld.npc.NpcPlacementStore;
 import io.github.aristheg201.cobblemonworld.npc.TrainerBattleService;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import io.github.aristheg201.cobblemonworld.story.ContentRegistry;
+import io.github.aristheg201.cobblemonworld.story.PhoneBootstrapService;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.network.chat.Component;
@@ -45,6 +46,7 @@ public final class CobblemonWorldMod implements ModInitializer {
         NpcDefinitionRegistry.INSTANCE.loadBuiltIns();
 
         CWorldCommands.register();
+        PhoneBootstrapService.register();
         LevelCapHooks.register();
         TrainerBattleService.register();
         IslandWarService.register();
