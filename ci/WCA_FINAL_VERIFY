@@ -21,3 +21,5 @@ Visual/NPC rebuild pass: role-specific massing, street-aligned lots, daily routi
 Retry after robust street-front lot allocation for large venues.
 
 Retry after residential neighborhood lane network expansion for house allocation.
+
+Retry after resilient Minecraft asset caching and download retries.
