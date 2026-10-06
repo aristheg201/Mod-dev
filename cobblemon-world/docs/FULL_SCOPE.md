@@ -23,7 +23,7 @@ RPG skills: Dash, Guard, Break, Purge, Anchor, Partner. The boss requires a cust
 Side quests may require Cobblemon battles, Card World battles and authored chess encounters where those mechanics serve the story rather than appearing as unrelated minigames.
 
 ## League and Factions
-League progression is phone-visible. Factions integrates softly with factions 2.8.0 when installed. Every Saturday a large sky-island war opens in a dedicated dimension: Gate War -> Island Conquest -> Occupation. The owner holds the island until the next war and receives affinity-based Pokemon/rare/legendary spawn bonuses. Island template, affinity, boosts, final-boss coordinates and reward pools are config/data driven.
+League progression is phone-visible. Factions is a first-party Cobblemon World subsystem stored by the mod itself; it does not depend on an external Factions mod. Players can create factions, invite/accept members, manage owner/officer/member roles, leave/disband, and use the Phone's Faction app. Every Saturday a large sky-island war opens in a dedicated dimension: Gate War -> Island Conquest -> Occupation. The owner holds the island until the next war and receives affinity-based Pokemon/rare/legendary spawn bonuses. Island template, affinity, boosts, final-boss coordinates and reward pools are config/data driven.
 
 ## QA contract
 QA runtime must capture the built JAR in Minecraft, including every phone app, custom icons, toast queue, NPC placement, trainer battle start, ???, TOBA transformation/phase two, faction island states, persistence/reconnect, over-cap negative cases and visual defects such as floating feet/clipping/backwards facing.

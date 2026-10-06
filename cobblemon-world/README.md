@@ -8,10 +8,10 @@ Implemented foundation:
 - persistent per-player campaign record
 - persistent no-reset level cap
 - over-cap send-out, battle, capture, natural-spawn and XP enforcement
-- Trainer Phone item
+- native Trainer Phone smartphone item, 3D model, icons and app UI
 - story/contact/message/side-quest registry
 - ??? first-contact script
-- faction 2.8.0 soft bridge
+- native faction persistence, roles, membership and weekly island war
 - Saturday island-war scheduler/data
 - NPC placement model
 - explicit TOBA two-phase encounter state machine
