@@ -27,11 +27,33 @@ jobs:
       - run: test "$(git branch --show-current)" = feature/world-comes-alive
       - name: Compile, tests and remapped jars
         run: ./gradlew verifyWorldComesAlive --console=plain
+      - name: Cache Minecraft runtime assets
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches/fabric-loom/assets
+          key: wca-minecraft-assets-1.21.1-v1
+      - name: Prime Minecraft runtime assets with retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            echo "Minecraft asset download attempt $attempt/5"
+            if ./gradlew downloadAssets --console=plain; then
+              ok=1
+              break
+            fi
+            sleep $((attempt * 10))
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "Minecraft assets could not be downloaded after 5 workflow-level attempts."
+            exit 1
+          fi
       - name: Real client runtime V2 visual QA
         env:
           WCA_QA_SEED: '414212'
           WCA_QA_SURVEY_ONLY: 'false'
-        run: timeout 1500s xvfb-run -a ./gradlew runWorldComesAliveClient --console=plain
+        run: timeout 1500s xvfb-run -a ./gradlew runWorldComesAliveClient --offline --console=plain
       - name: Upload WCA build jars
         uses: actions/upload-artifact@v4
         if: always()
