@@ -19,3 +19,5 @@ Retry after safe citizen travel recovery and safe companion spawn fixes.
 Visual/NPC rebuild pass: role-specific massing, street-aligned lots, daily routines, social visits and relationship progression.
 
 Retry after robust street-front lot allocation for large venues.
+
+Retry after residential neighborhood lane network expansion for house allocation.
