@@ -173,6 +173,9 @@ jobs:
           grep -Fq 'CWORLD_QA_NATIVE_FACTION_CREATE_PASS name=CWorldQA' "$SERVER"
           grep -Fq 'CWORLD_QA_FACTION_SPAWN_PASS' "$SERVER"
           grep -Fq 'CWORLD_QA_NPC_RECOVERY_PASS' "$SERVER"
+          grep -Fq 'CWORLD_NPC_SKIN_APPLIED id=mara_voss skin=mara_voss' "$SERVER"
+          grep -Fq 'CWORLD_TUTORIAL_TOAST category=level_cap title=Level Cap Increased' "$CLIENT"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/entity/boss/toba.png' "$CLIENT"
           grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$SERVER"
           grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$SERVER"
           grep -Fq 'CWORLD_QA_TOBA_TRANSFORM_PASS' "$SERVER"
@@ -229,7 +232,7 @@ jobs:
 
           ## Acceptance gates
           - Trainer Phone home + all 10 apps render in real client.
-          - Top-right Minecraft SystemToast renders outside the Phone.
+          - Top-right Minecraft TutorialToast renders outside the Phone (vanilla tutorial presentation, not a custom desktop panel).
           - Over-cap party blocks a real Cobblemon trainer battle.
           - Legal party starts a real Cobblemon battle in BattleRegistry.
           - Main story reaches Lv.100 and completes scripted side-quest chain.
