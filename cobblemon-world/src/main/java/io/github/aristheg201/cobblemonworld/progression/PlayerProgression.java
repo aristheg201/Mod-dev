@@ -10,6 +10,8 @@ public final class PlayerProgression {
 
     public String currentStory = "prologue";
     public String currentObjective = "";
+    public String leagueTier = "UNRANKED";
+    public int leaguePoints = 0;
 
     public Set<String> storyFlags = new LinkedHashSet<>();
     public Set<String> badges = new LinkedHashSet<>();
@@ -24,6 +26,8 @@ public final class PlayerProgression {
         if (levelCap > max) levelCap = max;
         if (currentStory == null || currentStory.isBlank()) currentStory = "prologue";
         if (currentObjective == null) currentObjective = "";
+        if (leagueTier == null || leagueTier.isBlank()) leagueTier = "UNRANKED";
+        if (leaguePoints < 0) leaguePoints = 0;
         if (storyFlags == null) storyFlags = new LinkedHashSet<>();
         if (badges == null) badges = new LinkedHashSet<>();
         if (contacts == null) contacts = new LinkedHashSet<>();

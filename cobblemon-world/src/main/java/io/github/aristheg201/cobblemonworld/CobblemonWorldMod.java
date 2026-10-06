@@ -4,6 +4,7 @@ import io.github.aristheg201.cobblemonworld.cobblemon.LevelCapHooks;
 import io.github.aristheg201.cobblemonworld.command.CWorldCommands;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 import io.github.aristheg201.cobblemonworld.item.ModItems;
+import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
 import io.github.aristheg201.cobblemonworld.story.ContentRegistry;
 import io.github.aristheg201.cobblemonworld.faction.IslandWarService;
@@ -20,6 +21,7 @@ public final class CobblemonWorldMod implements ModInitializer {
     public void onInitialize() {
         CWorldConfig.load();
         ModItems.register();
+        CWorldNetworking.register();
         CWorldCommands.register();
         LevelCapHooks.register();
         ContentRegistry.INSTANCE.loadBuiltIns();

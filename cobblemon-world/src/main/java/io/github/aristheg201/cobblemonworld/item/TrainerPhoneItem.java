@@ -1,9 +1,6 @@
 package io.github.aristheg201.cobblemonworld.item;
 
-import io.github.aristheg201.cobblemonworld.progression.LevelCapService;
-import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
-import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
-import net.minecraft.network.chat.Component;
+import io.github.aristheg201.cobblemonworld.network.CWorldNetworking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -21,11 +18,7 @@ public final class TrainerPhoneItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            PlayerProgression progression = ProgressionStore.INSTANCE.getOrCreate(serverPlayer.getUUID());
-            serverPlayer.sendSystemMessage(Component.translatable(
-                    "message.cobblemonworld.phone.bootstrap",
-                    LevelCapService.getCap(serverPlayer),
-                    progression.currentStory));
+            CWorldNetworking.openPhone(serverPlayer);
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
