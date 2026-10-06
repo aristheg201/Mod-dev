@@ -23,23 +23,44 @@ public final class SettlementPlanner {
     private String districtFor(String building){return switch(building){case "farmstead","barn"->"farm";case "smithy","bakery"->"craft";case "trading_hall"->"trade";case "market_hall"->"market";case "crowned_inn"->"market";default->"core";};}
     private void lot(SettlementPlan p,String definition,String district,int attempt){var spec=data.buildings.get(definition);Point anchor=p.district(district).center();double best=-Double.MAX_VALUE;Rect selected=null;int facing=0;Point frontage=null;
         List<SettlementPlan.Road> districtRoads=p.roads.stream().filter(r->!r.kind().equals("FOOTPATH")&&(r.from().equals(district)||r.to().equals(district))).toList();
-        for(int candidate=0;candidate<700;candidate++){
+        for(int candidate=0;candidate<960;candidate++){
+            boolean streetCandidate=!districtRoads.isEmpty()&&candidate<720;
             Point center,access;
-            if(!districtRoads.isEmpty()){
+            if(streetCandidate){
                 var road=districtRoads.get(Math.floorMod(candidate,districtRoads.size()));
-                var pts=road.points();int pi=1+Math.floorMod(candidate*3+attempt,Math.max(1,pts.size()-2));
+                var pts=road.points();
+                int usable=Math.max(1,pts.size()-2);
+                int pi=1+Math.floorMod(candidate/Math.max(1,districtRoads.size()),usable);
                 Point prev=pts.get(Math.max(0,pi-1)),sample=pts.get(Math.min(pi,pts.size()-1)),next=pts.get(Math.min(pts.size()-1,pi+1));
                 double dx=next.x()-prev.x(),dz=next.z()-prev.z(),len=Math.max(.001,Math.hypot(dx,dz));
-                double side=(candidate%2==0?1:-1),setback=spec.depth()/2.0+spec.lotMargin()+data.roads.get(road.kind()).width()/2.0+2;
-                double longitudinal=((candidate/2)%5-2)*2.25;
+                double side=((candidate/districtRoads.size())%2==0?1:-1);
+                double setbackBase=Math.max(spec.width(),spec.depth())*.5+spec.lotMargin()+data.roads.get(road.kind()).width()*.5+2;
+                double setback=setbackBase+Math.floorMod(candidate/Math.max(1,districtRoads.size()*usable*2),4)*2.5;
+                double longitudinal=(Math.floorMod(candidate/2,9)-4)*2.25;
                 center=new Point(sample.x()+(-dz/len)*setback*side+(dx/len)*longitudinal,sample.z()+(dx/len)*setback*side+(dz/len)*longitudinal);
                 access=sample;
             }else{
-                double angle=candidate*2.399963229728653+attempt*.3,radius=12+Math.sqrt(candidate)*2.8;
+                int radial=candidate-720;
+                double angle=radial*2.399963229728653+attempt*.3;
+                double radius=14+Math.sqrt(radial)*3.0;
                 center=anchor.plus(Math.cos(angle)*radius,Math.sin(angle)*radius);
                 access=TerrainRouter.nearest(center,p.roads.stream().filter(r->!r.kind().equals("FOOTPATH")).toList());
             }
-            if(!terrain.contains(center,25))continue;int rotation=facing(center,access);int width=rotation%2==0?spec.width():spec.depth(),depth=rotation%2==0?spec.depth():spec.width();Rect building=centered(center,width,depth),lot=building.expand(spec.lotMargin());if(p.lots.stream().anyMatch(l->l.boundary().expand(2).overlaps(lot))||p.publicSpaces.stream().anyMatch(space->space.boundary().overlaps(building.expand(2))))continue;if(p.roads.stream().anyMatch(r->TerrainRouter.crosses(building,r,data.roads.get(r.kind()).width()/2+2)))continue;var probe=new SettlementPlan.Building("probe",definition,building,0,rotation,1,"", "probe",List.of());Point door=probe.local(spec.width()/2.0,spec.depth()-1);var approach=new SettlementPlan.Road("probe","probe",district,"FOOTPATH",List.of(access,door));if(p.buildings.stream().anyMatch(b->TerrainRouter.crosses(b.bounds(),approach,2)))continue;double suit=terrain.suitability(building);if(suit<-100)continue;double score=suit-access.distance(center)*.32-center.distance(anchor)*.18+random.nextDouble()*.3;if(score>best){best=score;selected=building;facing=rotation;frontage=access;}}
+            if(!terrain.contains(center,25))continue;
+            int rotation=facing(center,access);
+            int width=rotation%2==0?spec.width():spec.depth(),depth=rotation%2==0?spec.depth():spec.width();
+            Rect building=centered(center,width,depth),lot=building.expand(spec.lotMargin());
+            if(p.lots.stream().anyMatch(l->l.boundary().expand(2).overlaps(lot))||p.publicSpaces.stream().anyMatch(space->space.boundary().overlaps(building.expand(2))))continue;
+            if(p.roads.stream().anyMatch(r->TerrainRouter.crosses(building,r,data.roads.get(r.kind()).width()/2+2)))continue;
+            var probe=new SettlementPlan.Building("probe",definition,building,0,rotation,1,"","probe",List.of());
+            Point door=probe.local(spec.width()/2.0,spec.depth()-1);
+            var approach=new SettlementPlan.Road("probe","probe",district,"FOOTPATH",List.of(access,door));
+            if(p.buildings.stream().anyMatch(b->TerrainRouter.crosses(b.bounds(),approach,2)))continue;
+            double suit=terrain.suitability(building);if(suit<-100)continue;
+            double frontagePenalty=access.distance(center);
+            double score=suit-frontagePenalty*.30-center.distance(anchor)*.14+(streetCandidate?7.5:0)+random.nextDouble()*.3;
+            if(score>best){best=score;selected=building;facing=rotation;frontage=access;}
+        }
         if(selected==null)throw new PlanningRejectedException("Cannot allocate accessible lot "+definition);String id="building_"+p.buildings.size(),lotId="lot_"+p.lots.size();List<SettlementPlan.Room> rooms=new ArrayList<>();for(var r:spec.rooms())rooms.add(new SettlementPlan.Room(id+"_room_"+rooms.size(),r.type(),new Rect(r.x(),r.z(),r.width(),r.depth()),r.floor(),r.composition(),r.beds()));var building=new SettlementPlan.Building(id,definition,selected,terrain.foundation(selected),facing,spec.floors(),spec.roof(),lotId,List.copyOf(rooms));Point entrance=building.local(spec.width()/2.0,spec.depth()-1),gate=building.local(spec.width()/2.0,spec.depth()+data.facades.get(spec.facade()).porchDepth());double wealth=definition.contains("noble")||definition.equals("civic_hall")?.9:definition.contains("crofter")?.22:.48+Math.floorMod(id.hashCode()+(int)program.seed(),20)*.01;
         List<Rect> obstacles=new ArrayList<>(p.buildings.stream().map(b->b.bounds().expand(1)).toList());obstacles.add(selected.expand(1));var routedApproach=TerrainRouter.tryRoute(frontage,gate,terrain,data.roads.get("FOOTPATH"),obstacles).orElse(null);if(routedApproach==null)throw new PlanningRejectedException("Unbuildable lot approach "+definition);List<Point> approach=new ArrayList<>(routedApproach);approach.add(entrance);var accessRoad=new SettlementPlan.Road("access_"+id,lotId,district,"FOOTPATH",List.copyOf(approach));for(var existing:p.buildings)if(TerrainRouter.crosses(existing.bounds(),accessRoad,1))throw new PlanningRejectedException("Lot access intersects occupied building");p.buildings.add(building);p.lots.add(new SettlementPlan.Lot(lotId,district,spec.type(),selected.expand(spec.lotMargin()),id,frontage,gate,wealth));p.roads.add(accessRoad);
     }
