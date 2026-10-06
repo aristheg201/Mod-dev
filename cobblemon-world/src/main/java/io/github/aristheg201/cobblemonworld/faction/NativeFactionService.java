@@ -71,8 +71,9 @@ public final class NativeFactionService {
         if (faction(player).isPresent()) return new Result(false, "Leave your current faction first.");
         var faction = FactionStore.INSTANCE.byName(factionName).orElse(null);
         if (faction == null) return new Result(false, "Faction not found.");
-        if (!faction.invites.remove(player.getUUID())) return new Result(false, "You do not have an invite from " + faction.name + ".");
+        if (!faction.invites.contains(player.getUUID())) return new Result(false, "You do not have an invite from " + faction.name + ".");
         if (faction.members.size() >= CWorldConfig.INSTANCE.factionMaxMembers) return new Result(false, "Faction member limit reached.");
+        faction.invites.remove(player.getUUID());
         faction.members.put(player.getUUID(), FactionStore.Role.MEMBER);
         FactionStore.INSTANCE.touch();
         return new Result(true, "Joined faction " + faction.name + ".");
