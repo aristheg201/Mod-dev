@@ -1,0 +1,64 @@
+{
+  "pools": {
+    "fire": {
+      "common":["vulpix","growlithe","slugma","litwick","fletchinder"],
+      "rare":["charcadet","larvesta","turtonator"],
+      "legendary":["entei","moltres","heatran"]
+    },
+    "water": {
+      "common":["buizel","wingull","carvanha","frillish","finizen"],
+      "rare":["lapras","milotic","dondozo"],
+      "legendary":["suicune","kyogre","manaphy"]
+    },
+    "grass": {
+      "common":["petilil","deerling","phantump","fomantis","smoliv"],
+      "rare":["ferrothorn","trevenant","applin"],
+      "legendary":["celebi","shaymin","virizion"]
+    },
+    "electric": {
+      "common":["pikachu","shinx","joltik","yamper","pawmi"],
+      "rare":["rotom","toxtricity","electivire"],
+      "legendary":["zapdos","raikou","zekrom"]
+    },
+    "ice": {
+      "common":["swinub","snorunt","cubchoo","bergmite","cetoddle"],
+      "rare":["froslass","weavile","baxcalibur"],
+      "legendary":["articuno","regice","glastrier"]
+    },
+    "dragon": {
+      "common":["dratini","bagon","gible","axew","dreepy"],
+      "rare":["dragonair","gabite","drakloak"],
+      "legendary":["rayquaza","latios","latias"]
+    },
+    "ghost": {
+      "common":["gastly","duskull","shuppet","litwick","greavard"],
+      "rare":["mimikyu","aegislash","ceruledge"],
+      "legendary":["giratina","lunala","spectrier"]
+    },
+    "steel": {
+      "common":["magnemite","aron","bronzor","klink","varoom"],
+      "rare":["scizor","metang","duraludon"],
+      "legendary":["registeel","cobalion","dialga"]
+    },
+    "fairy": {
+      "common":["clefairy","ralts","cottonee","spritzee","tinkatink"],
+      "rare":["togekiss","grimmsnarl","tinkaton"],
+      "legendary":["xerneas","zacian","magearna"]
+    },
+    "ancient": {
+      "common":["omanyte","kabuto","lileep","anorith","tyrunt"],
+      "rare":["aerodactyl","dracovish","archeops"],
+      "legendary":["regigigas","terapagos","zygarde"]
+    },
+    "ultra": {
+      "common":["solrock","lunatone","minior","elgyem","beheeyem"],
+      "rare":["nihilego","buzzwole","pheromosa"],
+      "legendary":["solgaleo","lunala","necrozma"]
+    },
+    "legendary": {
+      "common":["riolu","larvitar","beldum","jangmo-o","frigibax"],
+      "rare":["dragonite","tyranitar","metagross"],
+      "legendary":["mewtwo","rayquaza","arceus"]
+    }
+  }
+}

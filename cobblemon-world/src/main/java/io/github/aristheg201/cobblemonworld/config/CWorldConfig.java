@@ -40,6 +40,21 @@ public final class CWorldConfig {
     public float finalEncounterYaw = 0.0F;
     public double finalEncounterActivationRadius = 8.0;
 
+    // Weekly faction island.
+    public String factionTimezone = "Asia/Bangkok";
+    public int factionIslandRadius = 96;
+    public int factionIslandY = 120;
+    public int factionGateWarMinutes = 30;
+    public int factionConquestMinutes = 60;
+    public int factionGateScoreRequired = 5;
+    public int factionMaxQualified = 8;
+    public int factionCaptureSeconds = 30;
+    public double factionCaptureRadius = 10.0;
+    public int factionIslandBuildBlocksPerTick = 4000;
+    public int factionOccupationSpawnIntervalTicks = 200;
+    public double factionRareBonusChance = 0.20;
+    public double factionLegendaryBonusChance = 0.01;
+
     public static void load() {
         try {
             Files.createDirectories(PATH.getParent());
@@ -75,6 +90,18 @@ public final class CWorldConfig {
         if (defaultLevelCap < 1) defaultLevelCap = 1;
         if (maxLevelCap < defaultLevelCap) maxLevelCap = defaultLevelCap;
         if (naturalSpawnCapFallbackRadius < 16.0) naturalSpawnCapFallbackRadius = 16.0;
+        if (factionIslandRadius < 48) factionIslandRadius = 48;
+        if (factionIslandY < 64) factionIslandY = 64;
+        if (factionGateWarMinutes < 1) factionGateWarMinutes = 1;
+        if (factionConquestMinutes < 1) factionConquestMinutes = 1;
+        if (factionGateScoreRequired < 1) factionGateScoreRequired = 1;
+        if (factionMaxQualified < 1) factionMaxQualified = 1;
+        if (factionCaptureSeconds < 5) factionCaptureSeconds = 5;
+        if (factionCaptureRadius < 3.0) factionCaptureRadius = 3.0;
+        if (factionIslandBuildBlocksPerTick < 100) factionIslandBuildBlocksPerTick = 100;
+        if (factionOccupationSpawnIntervalTicks < 20) factionOccupationSpawnIntervalTicks = 20;
+        factionRareBonusChance = Math.max(0.0, Math.min(1.0, factionRareBonusChance));
+        factionLegendaryBonusChance = Math.max(0.0, Math.min(1.0, factionLegendaryBonusChance));
         if (!"CANCEL".equalsIgnoreCase(overCapSpawnPolicy)) {
             CobblemonWorldMod.LOGGER.warn("Unknown overCapSpawnPolicy '{}'; using CANCEL.", overCapSpawnPolicy);
             overCapSpawnPolicy = "CANCEL";

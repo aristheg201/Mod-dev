@@ -19,6 +19,7 @@ public final class CWorldCommands {
                 Commands.literal("cworld")
                         .then(io.github.aristheg201.cobblemonworld.npc.NpcCommands.node())
                         .then(io.github.aristheg201.cobblemonworld.command.StoryCommands.node())
+                        .then(io.github.aristheg201.cobblemonworld.faction.FactionCommands.node())
                         .then(Commands.literal("cap")
                                 .then(Commands.literal("get")
                                         .executes(ctx -> showCap(ctx.getSource().getPlayerOrException(), ctx.getSource().getPlayerOrException()))
