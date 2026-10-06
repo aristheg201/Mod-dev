@@ -1,0 +1,39 @@
+allprojects { p ->
+    afterEvaluate {
+        if (p.projectDir.name != 'cobblemon-world') return
+
+        def qaClient = p.configurations.findByName('qaClientRuntimeMods') ?: p.configurations.create('qaClientRuntimeMods')
+        def qaServer = p.configurations.findByName('qaServerRuntimeMods') ?: p.configurations.create('qaServerRuntimeMods')
+
+        p.dependencies.add('qaClientRuntimeMods', "net.fabricmc.fabric-api:fabric-api:${p.property('fabric_api_version')}")
+        p.dependencies.add('qaClientRuntimeMods', "com.cobblemon:fabric:${p.property('cobblemon_version')}")
+        p.dependencies.add('qaServerRuntimeMods', "net.fabricmc.fabric-api:fabric-api:${p.property('fabric_api_version')}")
+        p.dependencies.add('qaServerRuntimeMods', "com.cobblemon:fabric:${p.property('cobblemon_version')}")
+
+        if (p.tasks.findByName('runCWorldQaServer') == null) {
+            p.tasks.register('runCWorldQaServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+                dependsOn p.tasks.named('remapJar')
+                mods.from qaServer
+                mods.from p.fileTree('qa-runtime/server-mods') { include '*.jar' }
+                mods.from p.tasks.named('remapJar').flatMap { it.archiveFile }
+                jvmArgs.addAll('-Dcworld.qa.server=true', '-Xmx4G')
+                programArgs.addAll('nogui')
+                runDir = p.file('qa-runtime/server')
+                outputs.upToDateWhen { false }
+            }
+        }
+
+        if (p.tasks.findByName('runCWorldQaClient') == null) {
+            p.tasks.register('runCWorldQaClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+                dependsOn p.tasks.named('remapJar')
+                mods.from qaClient
+                mods.from p.tasks.named('remapJar').flatMap { it.archiveFile }
+                jvmArgs.addAll('-Dcworld.qa.client=true', '-Xmx4G')
+                programArgs.addAll('--server','127.0.0.1','--port','25579','--width','1280','--height','720')
+                runDir = p.file('qa-runtime/client')
+                useXVFB = true
+                outputs.upToDateWhen { false }
+            }
+        }
+    }
+}
