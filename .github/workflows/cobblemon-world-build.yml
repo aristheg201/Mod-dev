@@ -9,6 +9,10 @@ on:
       - '.github/workflows/cobblemon-world-build.yml'
   workflow_dispatch:
 
+concurrency:
+  group: cobblemon-world-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
