@@ -1,0 +1,96 @@
+import java.awt.Color
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
+
+def cworldNpcSkinPalettes = [
+    professor_hale: [0xDCBEA0, 0xEBEBF0, 0x465064, 0xB9B9C3],
+    daycare_mira: [0xE2BC9E, 0x73AA69, 0xEBDCB4, 0x50784B],
+    pokemall_ren: [0xD2AA8C, 0x3C82BE, 0xEBEBF0, 0x235087],
+    bicycle_tomo: [0xCDA582, 0xD7783C, 0x37414B, 0x874623],
+    fashion_elle: [0xEBC3AA, 0xB455A5, 0x23232D, 0x782D6E],
+    rocket_grunt_01: [0xD2AA91, 0x37373C, 0xDC2D2D, 0x19191E],
+    rocket_grunt_02: [0xB99178, 0x3E3E46, 0xDC2D2D, 0x1E1E23],
+    rocket_grunt_03: [0xE1B99B, 0x32323A, 0xDC2D2D, 0x14141C],
+    rocket_admin_vex: [0xCDA087, 0x1C1C24, 0x962337, 0x0C0C14],
+    lab_scientist_iris: [0xD7AF96, 0xEBEBF0, 0x50A5BE, 0xAAB9C8],
+    archaeologist_marlow: [0xC39673, 0x966E46, 0xCDB47D, 0x5F462D],
+    battle_tower_receptionist: [0xE1B9A0, 0x375591, 0xE1E1EB, 0x233769],
+    battle_tower_trainer_01: [0xCDA587, 0x5F78A5, 0x232837, 0x374B73],
+    battle_tower_trainer_02: [0xB48C6E, 0x915F9B, 0x23232D, 0x55375F],
+    battle_tower_trainer_03: [0xE1BEA5, 0x469187, 0x192323, 0x2D5A55],
+    royal_league_receptionist: [0xE6C3AA, 0xEBE1C8, 0x695087, 0xAF9B78],
+    league_elite_01: [0xCDA58C, 0x3C415A, 0xC8AA46, 0x232841],
+    league_elite_02: [0xB99178, 0x5F3778, 0xC8AA46, 0x371E4B],
+    league_elite_03: [0xE1B99B, 0x32647D, 0xC8AA46, 0x1E4155],
+    school_wolf_gatekeeper: [0xC8A082, 0x4B4B50, 0x969BA5, 0x2D2D32],
+    school_wolf_trainer_01: [0xD7AF91, 0x41464B, 0x737D87, 0x23282D],
+    school_wolf_trainer_02: [0xB99173, 0x373C41, 0x7D8791, 0x1E2328],
+    school_wolf_trainer_03: [0xE1B99B, 0x46464B, 0x87919B, 0x28282D],
+    school_wolf_master: [0xC39678, 0x23262A, 0xAFB4BE, 0x121418]
+]
+
+def generatedCWorldNpcSkins = layout.buildDirectory.dir('generated/cworld-npc-skins')
+
+tasks.register('generateCWorldNpcSkins') {
+    outputs.dir generatedCWorldNpcSkins
+    doLast {
+        def root = generatedCWorldNpcSkins.get().asFile
+        root.deleteDir()
+
+        def shade = { int rgb, double factor ->
+            int r = Math.max(0, Math.min(255, (int)(((rgb >> 16) & 255) * factor)))
+            int g = Math.max(0, Math.min(255, (int)(((rgb >> 8) & 255) * factor)))
+            int b = Math.max(0, Math.min(255, (int)((rgb & 255) * factor)))
+            return (r << 16) | (g << 8) | b
+        }
+
+        cworldNpcSkinPalettes.each { String id, List<Integer> p ->
+            int skin = p[0], shirt = p[1], accent = p[2], pants = p[3]
+            def image = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB)
+            def g = image.createGraphics()
+            def fill = { int x1, int y1, int x2, int y2, int rgb ->
+                g.setColor(new Color(rgb))
+                g.fillRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1)
+            }
+
+            [[8,8,15,15,skin],[24,8,31,15,skin],[0,8,7,15,shade(skin,0.72d)],
+             [16,8,23,15,shade(skin,0.72d)],[8,0,15,7,shade(skin,1.12d)],[16,0,23,7,shade(skin,0.72d)]].each { q -> fill(*q) }
+            int hair = shade(accent, 0.55d)
+            fill(8,8,15,10,hair); fill(8,11,9,12,hair); fill(14,11,15,12,hair)
+            fill(10,12,10,12,0x232D37); fill(13,12,13,12,0x232D37)
+
+            [[20,20,27,31,shirt],[32,20,39,31,shade(shirt,0.72d)],[16,20,19,31,shade(shirt,0.72d)],
+             [28,20,31,31,shade(shirt,0.72d)],[20,16,27,19,shade(shirt,1.12d)],[28,16,35,19,shade(shirt,0.72d)]].each { q -> fill(*q) }
+            fill(22,21,25,23,accent); fill(20,29,27,31,shade(shirt,0.82d))
+
+            [[44,20,47,31,shirt],[52,20,55,31,shade(shirt,0.72d)],[40,20,43,31,shade(shirt,0.72d)],
+             [48,20,51,31,shade(shirt,0.72d)],[44,16,47,19,shade(shirt,1.12d)],[48,16,51,19,shade(shirt,0.72d)]].each { q -> fill(*q) }
+            fill(44,28,47,31,skin)
+
+            [[36,52,39,63,shirt],[44,52,47,63,shade(shirt,0.72d)],[32,52,35,63,shade(shirt,0.72d)],
+             [40,52,43,63,shade(shirt,0.72d)],[36,48,39,51,shade(shirt,1.12d)],[40,48,43,51,shade(shirt,0.72d)]].each { q -> fill(*q) }
+            fill(36,60,39,63,skin)
+
+            [[4,20,7,31,pants],[12,20,15,31,shade(pants,0.72d)],[0,20,3,31,shade(pants,0.72d)],
+             [8,20,11,31,shade(pants,0.72d)],[4,16,7,19,shade(pants,1.12d)],[8,16,11,19,shade(pants,0.72d)]].each { q -> fill(*q) }
+            fill(4,29,7,31,0x232328)
+
+            [[20,52,23,63,pants],[28,52,31,63,shade(pants,0.72d)],[16,52,19,63,shade(pants,0.72d)],
+             [24,52,27,63,shade(pants,0.72d)],[20,48,23,51,shade(pants,1.12d)],[24,48,27,51,shade(pants,0.72d)]].each { q -> fill(*q) }
+            fill(20,61,23,63,0x232328)
+            fill(20,32,27,33,accent); fill(44,32,47,33,accent); fill(52,48,55,49,accent)
+
+            g.dispose()
+            def target = new File(root, "assets/cobblemonworld/textures/entity/npc/" + id + ".png")
+            target.parentFile.mkdirs()
+            ImageIO.write(image, "png", target)
+            if (!target.isFile() || target.length() <= 100L) throw new GradleException("Failed to generate NPC skin: " + id)
+        }
+        println "CWORLD_GENERATED_NPC_SKINS_PASS count=" + cworldNpcSkinPalettes.size()
+    }
+}
+
+tasks.named('processResources') {
+    dependsOn 'generateCWorldNpcSkins'
+    from(generatedCWorldNpcSkins)
+}
