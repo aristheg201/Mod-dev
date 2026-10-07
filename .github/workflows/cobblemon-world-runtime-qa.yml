@@ -200,11 +200,9 @@ jobs:
           ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/large_screen.png' "$CLIENT"
           ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/buttons/trainer.png' "$CLIENT"
           ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/elements/home_button.png' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/entity/boss/toba.png' "$CLIENT"
           grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$SERVER"
           grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_TOBA_TRANSFORM_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_TOBA_RPG_PASS vanillaBlocked=true svframeDamage=true' "$SERVER"
+          grep -Fq 'CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false' "$SERVER"
           grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' "$SERVER"
           ! grep -Eq 'CWORLD_QA_FAILED|CWORLD_QA_CLIENT_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' "$SERVER" "$CLIENT"
 
@@ -219,7 +217,7 @@ jobs:
             "09-phone-league.png","10-phone-faction.png","11-toast-overlay.png",
             "12-story-npc.png","13-faction-gate-war.png","14-faction-conquest.png",
             "15-faction-occupation.png","16-npc-recovered.png","17-mysterious-figure.png",
-            "18-toba-phase2.png","18-phone-rpg-final.png",
+            "18-toba-reveal.png","19-phone-story-final.png",
           }
           actual = {p.name for p in shots}
           assert actual == expected, (sorted(expected-actual), sorted(actual-expected))
@@ -267,8 +265,8 @@ jobs:
           - Persisted story NPC is recovered after entity removal.
           - ??? appears at the configured final location.
           - ??? starts a real Phase-I Cobblemon battle.
-          - Phase-I transition spawns TOBA Phase II.
-          - Vanilla damage cannot bypass TOBA; SVFrameLib RPG damage bridge can.
+          - The final Cobblemon battle reveals ??? as TOBA and completes Chapter 8.
+          - No TOBA Phase II encounter is reachable in the current story build.
           - Native Faction core is mandatory in this audit; SVFrameMMO + SVFrameLib remain external RPG hooks.
           EOF
 

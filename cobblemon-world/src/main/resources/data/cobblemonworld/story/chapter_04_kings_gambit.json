@@ -1,6 +1,6 @@
 {
-  "id":"chapter_04_kings_gambit","title":"King's Gambit",
-  "objective":"Reach Selene Kade and survive the strategy trial guarding the fourth seal.",
+  "id":"chapter_04_kings_gambit","title":"The Fourth Seal",
+  "objective":"Reach Selene Kade and get past the fourth seal.",
   "requiredFlags":["seal_03_broken"],
   "completionFlags":["selene_kade_defeated","seal_04_broken"],
   "levelCapOnComplete":47,

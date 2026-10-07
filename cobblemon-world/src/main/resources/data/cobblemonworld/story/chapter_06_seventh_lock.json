@@ -1,6 +1,6 @@
 {
-  "id":"chapter_06_seventh_lock","title":"The Seventh Lock",
-  "objective":"Defeat the Sixth and Seventh Wardens before the resonance cascade reaches the world core.",
+  "id":"chapter_06_seventh_lock","title":"The Last Two Seals",
+  "objective":"Defeat the Sixth and Seventh Wardens.",
   "requiredFlags":["seal_05_broken"],
   "completionFlags":["seal_06_broken","seal_07_broken"],
   "levelCapOnComplete":70,

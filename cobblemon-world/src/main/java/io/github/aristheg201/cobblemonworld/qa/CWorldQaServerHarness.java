@@ -5,9 +5,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import io.github.aristheg201.cobblemonworld.boss.MysteriousFigureEntity;
-import io.github.aristheg201.cobblemonworld.boss.TobaCombatService;
 import io.github.aristheg201.cobblemonworld.boss.TobaEncounterService;
-import io.github.aristheg201.cobblemonworld.boss.TobaEntity;
 import io.github.aristheg201.cobblemonworld.config.CWorldConfig;
 import io.github.aristheg201.cobblemonworld.faction.FactionStore;
 import io.github.aristheg201.cobblemonworld.faction.NativeFactionService;
@@ -93,7 +91,7 @@ public final class CWorldQaServerHarness {
             stage++;
             stageStarted = ticks;
         }
-        if (stage == 24) {
+        if (stage == 23) {
             finish(server);
             return;
         }
@@ -123,11 +121,10 @@ public final class CWorldQaServerHarness {
                 case 17 -> factionSpawnAndPersistence(player);
                 case 18 -> npcRecovery(player);
                 case 19 -> mysteriousFigure(player);
-                case 20 -> phaseOneAndTransform(player);
-                case 21 -> tobaRuntime(player);
-                case 22 -> phone(player, "trainer_card", "18-phone-rpg-final");
-                case 23 -> stopClient(player);
-                case 24 -> finish(server);
+                case 20 -> phaseOneAndReveal(player);
+                case 21 -> phone(player, "story", "19-phone-story-final");
+                case 22 -> stopClient(player);
+                case 23 -> finish(server);
                 default -> {}
             }
         } catch (Throwable t) {
@@ -245,17 +242,20 @@ public final class CWorldQaServerHarness {
 
         require(CampaignService.respondToMessage(player, "mysterious", "last_person", 0),
                 "last_person response failed");
-        require(LevelCapService.getCap(player) == 100, "main story did not unlock Lv.100 cap");
         require(CampaignService.respondToMessage(player, "mysterious", "meet_me", 0),
                 "meet_me response failed");
 
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        require(p.storyFlags.contains("main_story_complete") && p.storyFlags.contains("toba_meeting_revealed"),
-                "final encounter flags missing");
+        require(LevelCapService.getCap(player) == 85, "chapter 8 raised the cap before the TOBA reveal");
+        require("chapter_08_last_person".equals(p.currentStory), "chapter 8 completed before the TOBA reveal");
+        require(p.storyFlags.contains("final_meeting_requested") && p.storyFlags.contains("toba_meeting_revealed"),
+                "final meeting flags missing");
+        require(!p.storyFlags.contains("main_story_complete") && !p.storyFlags.contains("toba_identity_revealed"),
+                "main story completed before the TOBA reveal");
         require(p.completedSideQuests.containsAll(Set.of(
                         "voss_echo", "orin_archive", "rook_black_card", "selene_stalemate", "aurelia_below")),
                 "scripted side-quest chain incomplete");
-        System.out.println("CWORLD_QA_STORY_PASS cap=100 badges=" + p.badges.size()
+        System.out.println("CWORLD_QA_STORY_PRE_REVEAL_PASS cap=85 chapter=" + p.currentStory
                 + " contacts=" + p.contacts.size() + " sidequests=" + p.completedSideQuests.size());
 
         ProgressionStore.INSTANCE.save();
@@ -265,7 +265,7 @@ public final class CWorldQaServerHarness {
         NpcPlacementStore.INSTANCE.load(player.getServer());
         PlayerProgression reloaded = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         require(beforeStory.equals(reloaded.currentStory), "progression disk round-trip changed currentStory");
-        require(reloaded.levelCap == 100, "progression disk round-trip changed cap");
+        require(reloaded.levelCap == 85, "progression disk round-trip changed cap");
         require(NpcPlacementStore.INSTANCE.get("mara_voss") != null, "NPC placement disk round-trip failed");
         System.out.println("CWORLD_QA_PERSISTENCE_PASS story=" + reloaded.currentStory + " cap=" + reloaded.levelCap);
 
@@ -403,45 +403,31 @@ public final class CWorldQaServerHarness {
         control(player, "capture_world", "", "17-mysterious-figure");
     }
 
-    private static void phaseOneAndTransform(ServerPlayer player) {
+    private static void phaseOneAndReveal(ServerPlayer player) {
         MysteriousFigureEntity actor = findMysterious(player);
-        require(actor != null, "??? actor missing before phase one");
+        require(actor != null, "??? actor missing before the final battle");
         TobaEncounterService.beginPhaseOne(player, actor);
         var battle = Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player);
-        require(battle != null, "??? phase-one Cobblemon battle did not register");
+        require(battle != null, "??? Cobblemon battle did not register");
         System.out.println("CWORLD_QA_TOBA_PHASE1_BATTLE_PASS battle=" + battle.getBattleId());
         battle.end();
 
         TobaEncounterService.cobblemonPhaseWon(player);
-        TobaEntity boss = TobaEncounterService.activeBoss(player);
-        require(boss != null && boss.isAlive(), "TOBA phase-two entity was not spawned");
-        // Back the QA camera away after transformation so the artifact proves the whole
-        // boss model exists and renders, instead of showing only a cropped torso.
-        teleport(player, player.serverLevel(), boss.getX() - 12.0, boss.getY(), boss.getZ(), -90.0F, 0.0F);
-        face(player, boss.getX(), boss.getY() + 2.0, boss.getZ());
-        System.out.println("CWORLD_QA_TOBA_TRANSFORM_PASS health=" + boss.getHealth());
-        control(player, "capture_world", "", "18-toba-phase2");
-    }
+        PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
+        require(p.storyFlags.contains("toba_identity_revealed"), "TOBA identity reveal flag missing");
+        require(p.storyFlags.contains("main_story_complete"), "main story did not complete on TOBA reveal");
+        require(!p.storyFlags.contains("toba_phase2_active"), "TOBA phase two is still reachable");
+        require(LevelCapService.getCap(player) == 100, "TOBA reveal did not unlock Lv.100 cap");
+        require("complete".equals(p.currentStory), "chapter 8 did not complete on TOBA reveal");
 
-    private static void tobaRuntime(ServerPlayer player) {
-        TobaEntity boss = TobaEncounterService.activeBoss(player);
-        require(boss != null && boss.isAlive(), "TOBA missing during RPG audit");
-
-        float before = boss.getHealth();
-        boolean vanillaAccepted = boss.hurt(player.damageSources().playerAttack(player), 10.0F);
-        require(!vanillaAccepted && Math.abs(boss.getHealth() - before) < 0.001F,
-                "vanilla damage bypassed TOBA RPG-only gate");
-
-        var rpg = SvFrameRpgBridge.snapshot(player);
-        require(rpg.available() && rpg.libAvailable(), "SVFrame runtime disappeared during TOBA phase");
-        boolean rpgAccepted = boss.applyRpgDamage(player, 8.0F, SvFrameRpgBridge.DamageFlavor.PHYSICAL_SKILL);
-        require(rpgAccepted, "SVFrameLib PlayerMetadata.attack bridge did not handle TOBA RPG damage");
-        TobaCombatService.useSkill(player, "DASH");
-        System.out.println("CWORLD_QA_TOBA_RPG_PASS vanillaBlocked=true svframeDamage=true healthBefore="
-                + before + " healthAfter=" + boss.getHealth() + " profile=" + rpg.classId() + ":" + rpg.level());
-
-        stage++;
-        stageStarted = ticks;
+        MysteriousFigureEntity revealed = findMysterious(player);
+        require(revealed != null && revealed.getCustomName() != null
+                        && "TOBA".equals(revealed.getCustomName().getString()),
+                "mysterious figure was not renamed to TOBA");
+        face(player, revealed.getX(), revealed.getY() + 1.4, revealed.getZ());
+        System.out.println("CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false");
+        System.out.println("CWORLD_QA_STORY_PASS cap=100 ending=TOBA_REVEALED");
+        control(player, "capture_world", "", "18-toba-reveal");
     }
 
     private static void stopClient(ServerPlayer player) {

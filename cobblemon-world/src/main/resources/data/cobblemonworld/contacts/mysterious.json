@@ -6,32 +6,32 @@
     {
       "id":"first_contact",
       "triggerFlag":"phone_obtained",
-      "text":"You've probably noticed the Pokemon behaving strangely. You're not imagining it. There are people making it worse. I can point you toward the first one.",
-      "responses":["Who are you?","Where do I go?"],
+      "text":"You've seen it too. Pokemon are acting wrong. Someone is causing it. I know where the first relay is.",
+      "responses":["Who is this?","Send the location."],
       "questUnlock":"first_signal",
       "setFlag":"prologue_complete"
     },
     {
       "id":"you_are_asking",
       "triggerFlag":"seal_term_revealed",
-      "text":"You've been talking to them. Good. You should question people who tell you where to go and who to fight. Especially me.",
-      "responses":["Does that bother you?","Then tell me the truth."],
+      "text":"Good. Keep asking questions. Especially about me.",
+      "responses":["Then answer one.","Why are you helping me?"],
       "questUnlock":"",
       "setFlag":"mysterious_acknowledged_investigation"
     },
     {
       "id":"last_person",
       "triggerFlag":"false_victory_complete",
-      "text":"It's done. There is one person left.",
+      "text":"The Heart is gone. Don't celebrate yet. There's one person you still need to meet.",
       "responses":["Who?"],
       "questUnlock":"",
-      "setFlag":"main_story_complete"
+      "setFlag":"final_meeting_requested"
     },
     {
       "id":"meet_me",
-      "triggerFlag":"main_story_complete",
-      "text":"Me. Come alone. I'll send the location when it is configured.",
-      "responses":["I'm coming."],
+      "triggerFlag":"final_meeting_requested",
+      "text":"Me. Come alone. I've sent the location.",
+      "responses":["On my way."],
       "questUnlock":"",
       "setFlag":"toba_meeting_revealed"
     }

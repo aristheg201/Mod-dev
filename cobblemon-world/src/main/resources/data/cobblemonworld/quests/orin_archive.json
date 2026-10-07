@@ -1,6 +1,6 @@
 {
-  "id":"orin_archive","title":"The Wrong Translation","giver":"dr_orin",
-  "description":"Recover Orin's original resonance notes and compare the modern translation with the oldest glyphs.",
+  "id":"orin_archive","title":"Original Notes","giver":"dr_orin",
+  "description":"Recover Orin's original notes and check the old glyph.",
   "objectives":[
     {"id":"visit_archive","type":"visit","target":"buried_resonance_archive","amount":1},
     {"id":"recover_glyph","type":"interact","target":"seal_glyph_tablet","amount":1}

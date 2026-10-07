@@ -1,6 +1,6 @@
 {
-  "id":"selene_stalemate","title":"The Board Was the Lock","giver":"selene_kade",
-  "description":"Reconstruct an ancient strategy puzzle without following the winning line that ??? expects.",
+  "id":"selene_stalemate","title":"The Seal Board","giver":"selene_kade",
+  "description":"Rebuild the old board and work out what the winning sequence actually does.",
   "objectives":[
     {"id":"find_board","type":"visit","target":"seal_chess_chamber","amount":1},
     {"id":"solve_board","type":"chess","target":"seal_board_variant","amount":1}

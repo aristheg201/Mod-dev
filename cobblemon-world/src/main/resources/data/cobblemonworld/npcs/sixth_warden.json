@@ -1,7 +1,7 @@
 {
   "id":"sixth_warden","displayName":"Sixth Warden","npcClass":"standard","visualLevel":66,"skill":5,
-  "preBattleText":"Five seals are gone. I will not let you make it six.",
-  "postBattleText":"The sixth lock is broken. Find the last warden.",
+  "preBattleText":"Five seals are already open. This is where you stop.",
+  "postBattleText":"Six.",
   "team":[
     "tyranitar level=62 moves=stoneedge,crunch,earthquake,dragondance",
     "volcarona level=64 moves=fierydance,bugbuzz,quiverdance,gigadrain",

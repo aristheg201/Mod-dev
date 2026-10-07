@@ -1,6 +1,6 @@
 {
-  "id":"chapter_05_league_fault","title":"Fault in the League",
-  "objective":"Challenge Champion Aurelia and uncover why the League concealed the resonance records.",
+  "id":"chapter_05_league_fault","title":"The League Record",
+  "objective":"Defeat Champion Aurelia and get access to the sealed League record.",
   "requiredFlags":["seal_04_broken"],
   "completionFlags":["aurelia_defeated","seal_05_broken"],
   "levelCapOnComplete":58,

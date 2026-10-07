@@ -1,6 +1,6 @@
 {
   "id":"mysterious","displayName":"???","npcClass":"standard","visualLevel":100,"skill":5,
-  "preBattleText":"Good. I needed to know you could survive what comes next.","postBattleText":"",
+  "preBattleText":"You want my name? Beat me first.","postBattleText":"",
   "team":[
     "darkrai level=100 moves=darkpulse,darkvoid,dreameater,nastyplot",
     "giratina level=100 moves=shadowforce,dragonclaw,aurasphere,rest",
@@ -11,6 +11,6 @@
   ],
   "defeatFlag":"mysterious_phase_one_defeated","flagsOnDefeat":[],
   "contactUnlock":"","chapterOnDefeat":"",
-  "requiredChapter":"complete","requiredFlags":["main_story_complete","toba_meeting_revealed"],
+  "requiredChapter":"chapter_08_last_person","requiredFlags":["toba_meeting_revealed"],
   "badge":"","rematchable":false,"specialActor":true
 }

@@ -34,7 +34,7 @@ public final class StoryCommands {
                                                         + " | MANA " + (int)Math.round(rpg.mana()) + "/" + (int)Math.round(rpg.maxMana())
                                                         + " | CDR " + String.format(java.util.Locale.ROOT, "%.1f%%", rpg.cooldownReduction())
                                                         + " | SVFrameLib damage=" + rpg.libAvailable()
-                                                    : "SVFrameMMO not available; TOBA uses fallback resources/damage."
+                                                    : "SVFrameMMO not available."
                                     ), false);
                                     return rpg.available() ? 1 : 0;
                                 })))

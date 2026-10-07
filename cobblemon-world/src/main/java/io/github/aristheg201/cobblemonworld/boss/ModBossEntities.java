@@ -19,15 +19,6 @@ public final class ModBossEntities {
                     .clientTrackingRange(12)
     );
 
-    public static final EntityType<TobaEntity> TOBA = register(
-            "toba",
-            EntityType.Builder.<TobaEntity>of(TobaEntity::new, MobCategory.MONSTER)
-                    .sized(1.8F, 4.4F)
-                    .eyeHeight(3.7F)
-                    .clientTrackingRange(16)
-                    .updateInterval(2)
-    );
-
     private static <T extends net.minecraft.world.entity.Entity> EntityType<T> register(
             String id, EntityType.Builder<T> builder) {
         ResourceLocation location = ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, id);
@@ -37,6 +28,5 @@ public final class ModBossEntities {
 
     public static void register() {
         FabricDefaultAttributeRegistry.register(MYSTERIOUS_FIGURE, MysteriousFigureEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(TOBA, TobaEntity.createAttributes());
     }
 }

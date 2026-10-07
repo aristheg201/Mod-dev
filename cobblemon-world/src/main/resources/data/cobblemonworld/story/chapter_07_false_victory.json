@@ -1,6 +1,6 @@
 {
-  "id":"chapter_07_false_victory","title":"A Perfect Victory",
-  "objective":"Destroy the Resonance Heart and end the crisis exactly as ??? instructed.",
+  "id":"chapter_07_false_victory","title":"The Heart",
+  "objective":"Destroy the Resonance Heart.",
   "requiredFlags":["seal_07_broken"],
   "completionFlags":["resonance_heart_defeated","false_victory_complete"],
   "levelCapOnComplete":85,

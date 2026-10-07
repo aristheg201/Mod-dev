@@ -1,7 +1,7 @@
 {
   "id":"rook","displayName":"Rook","icon":"cobblemonworld:icons/contact_rook",
   "messages":[
-    {"id":"after_defeat","triggerFlag":"rook_defeated","text":"That card you recovered should not exist. Its print date predates the current Card World network, but its back carries the same mark as your anonymous contact.","responses":["Can you trace it?","It is just a symbol."] ,"questUnlock":"rook_black_card","setFlag":"rook_black_card_found"},
-    {"id":"after_card","triggerFlag":"rook_black_card_complete","text":"The duel memory calls the speaker 'the one beneath the board'. Not a trainer. Not a king. Something waiting for every piece to be removed.","responses":["Every piece?","Is the board a seal too?"] ,"questUnlock":"","setFlag":"below_title_hint"}
+    {"id":"after_defeat","triggerFlag":"rook_defeated","text":"That black card predates the current Card World network. It still carries your contact's mark. Let me trace it.","responses":["Do it.","It's just a symbol."],"questUnlock":"rook_black_card","setFlag":"rook_black_card_found"},
+    {"id":"after_card","triggerFlag":"rook_black_card_complete","text":"I found an old duel record. The same title keeps coming up: 'the one below all.' I don't know who it refers to.","responses":["Keep looking.","Could it be ???"],"questUnlock":"","setFlag":"below_title_hint"}
   ]
 }

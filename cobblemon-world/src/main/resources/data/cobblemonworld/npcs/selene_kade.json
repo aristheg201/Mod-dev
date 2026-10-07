@@ -1,7 +1,7 @@
 {
   "id":"selene_kade","displayName":"Selene Kade","npcClass":"standard","visualLevel":47,"skill":4,
-  "preBattleText":"You think you're advancing. I think someone is clearing pieces from a board.",
-  "postBattleText":"Don't celebrate. Solve the board first.",
+  "preBattleText":"One more win, one more guard gone. Let's see if you notice the pattern.",
+  "postBattleText":"Now look at the board again.",
   "team":[
     "slowking level=44 moves=psychic,scald,yawn,slackoff",
     "gallade level=46 moves=psychocut,leafblade,swordsdance,detect",

@@ -1,6 +1,6 @@
 {
-  "id":"chapter_01_signal","title":"Static in the Grass",
-  "objective":"Follow ??? to the first anomaly and defeat Mara Voss.",
+  "id":"chapter_01_signal","title":"First Relay",
+  "objective":"Go to the coordinates from ??? and defeat Mara Voss.",
   "requiredFlags":["prologue_complete"],
   "completionFlags":["mara_voss_defeated","seal_01_broken"],
   "levelCapOnComplete":22,

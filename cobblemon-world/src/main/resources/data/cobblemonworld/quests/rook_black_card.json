@@ -1,6 +1,6 @@
 {
   "id":"rook_black_card","title":"The Black Card","giver":"rook",
-  "description":"Enter a preserved Card World memory and trace a card that predates the network.",
+  "description":"Open the archived Card World memory and trace the black card.",
   "objectives":[
     {"id":"enter_memory","type":"card_world_visit","target":"black_card_memory","amount":1},
     {"id":"win_duel","type":"card_world_battle","target":"archivist_duelist","amount":1}

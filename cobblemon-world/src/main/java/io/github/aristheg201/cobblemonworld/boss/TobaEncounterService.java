@@ -9,8 +9,10 @@ import io.github.aristheg201.cobblemonworld.npc.NpcDefinitionRegistry;
 import io.github.aristheg201.cobblemonworld.npc.TrainerBattleService;
 import io.github.aristheg201.cobblemonworld.progression.PlayerProgression;
 import io.github.aristheg201.cobblemonworld.progression.ProgressionStore;
+import io.github.aristheg201.cobblemonworld.story.CampaignService;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class TobaEncounterService {
     private static final Map<UUID, UUID> ACTIVE_ACTORS = new ConcurrentHashMap<>();
-    private static final Map<UUID, UUID> ACTIVE_BOSSES = new ConcurrentHashMap<>();
     private static MinecraftServer server;
     private static long ticks;
 
@@ -31,12 +32,9 @@ public final class TobaEncounterService {
         ServerLifecycleEvents.SERVER_STARTED.register(s -> server = s);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> {
             for (UUID owner : ACTIVE_ACTORS.keySet()) clearTransientEncounterState(owner);
-            for (UUID owner : ACTIVE_BOSSES.keySet()) clearTransientEncounterState(owner);
             for (UUID entity : ACTIVE_ACTORS.values()) discardEntity(entity);
-            for (UUID entity : ACTIVE_BOSSES.values()) discardEntity(entity);
             ProgressionStore.INSTANCE.save();
             ACTIVE_ACTORS.clear();
-            ACTIVE_BOSSES.clear();
             server = null;
         });
         ServerTickEvents.END_SERVER_TICK.register(TobaEncounterService::tick);
@@ -44,8 +42,9 @@ public final class TobaEncounterService {
 
     public static TobaBossState state(ServerPlayer player) {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        if (p.storyFlags.contains("toba_defeated")) return TobaBossState.DEFEATED;
-        if (p.storyFlags.contains("toba_phase2_active")) return TobaBossState.PHASE_TWO_RPG;
+        if (p.storyFlags.contains("toba_identity_revealed") || p.storyFlags.contains("toba_defeated")) {
+            return TobaBossState.IDENTITY_REVEALED;
+        }
         if (p.storyFlags.contains("mysterious_phase_one_active")) return TobaBossState.PHASE_ONE_COBBLEMON;
         return eligible(player) ? TobaBossState.READY : TobaBossState.LOCKED;
     }
@@ -53,8 +52,8 @@ public final class TobaEncounterService {
     public static boolean eligible(ServerPlayer player) {
         if (!CWorldConfig.INSTANCE.finalEncounterEnabled) return false;
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        return p.storyFlags.contains("main_story_complete")
-                && p.storyFlags.contains("toba_meeting_revealed")
+        return p.storyFlags.contains("toba_meeting_revealed")
+                && !p.storyFlags.contains("toba_identity_revealed")
                 && !p.storyFlags.contains("toba_defeated");
     }
 
@@ -78,13 +77,6 @@ public final class TobaEncounterService {
 
             if (current == TobaBossState.PHASE_ONE_COBBLEMON) {
                 if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) == null) {
-                    resetAfterFailure(player);
-                }
-                continue;
-            }
-
-            if (current == TobaBossState.PHASE_TWO_RPG) {
-                if (activeBoss(player) == null) {
                     resetAfterFailure(player);
                 }
                 continue;
@@ -133,8 +125,7 @@ public final class TobaEncounterService {
         p.storyFlags.add("mysterious_phase_one_active");
         ProgressionStore.INSTANCE.save();
 
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                "???: Good. I needed to know you could survive what comes next."));
+        player.sendSystemMessage(Component.literal("???: You want my name? Beat me first."));
         try {
             BattleBuilder.INSTANCE.pvn(player, proxy);
         } catch (Exception e) {
@@ -150,50 +141,26 @@ public final class TobaEncounterService {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         p.storyFlags.remove("mysterious_phase_one_active");
         p.storyFlags.add("mysterious_phase_one_defeated");
-        p.storyFlags.add("toba_phase2_active");
+        p.storyFlags.remove("toba_phase2_active");
         ProgressionStore.INSTANCE.save();
 
-        MysteriousFigureEntity actor = findEntity(ACTIVE_ACTORS.remove(player.getUUID())) instanceof MysteriousFigureEntity m ? m : null;
-        double x = actor == null ? CWorldConfig.INSTANCE.finalEncounterX : actor.getX();
-        double y = actor == null ? CWorldConfig.INSTANCE.finalEncounterY : actor.getY();
-        double z = actor == null ? CWorldConfig.INSTANCE.finalEncounterZ : actor.getZ();
-        float yaw = actor == null ? CWorldConfig.INSTANCE.finalEncounterYaw : actor.getYRot();
-        if (actor != null) actor.discard();
-
-        TobaEntity boss = new TobaEntity(ModBossEntities.TOBA, player.serverLevel());
-        boss.setOwnerUuid(player.getUUID());
-        boss.moveTo(x, y, z, yaw, 0.0F);
-        if (player.serverLevel().addFreshEntity(boss)) {
-            ACTIVE_BOSSES.put(player.getUUID(), boss.getUUID());
-            TobaCombatService.begin(player);
-            CWorldNetworking.toast(player, "story", "THE ONE BELOW ALL", "Phase II");
-        } else {
-            resetAfterFailure(player);
+        if (findEntity(ACTIVE_ACTORS.get(player.getUUID())) instanceof MysteriousFigureEntity actor) {
+            actor.setCustomName(Component.literal("TOBA"));
+            actor.setCustomNameVisible(true);
         }
+
+        CampaignService.setFlag(player, "toba_identity_revealed");
+        CampaignService.setFlag(player, "main_story_complete");
+        player.sendSystemMessage(Component.literal("TOBA: Now you know my name."));
+        CWorldNetworking.toast(player, "story", "TOBA", "Identity revealed.");
     }
 
     public static TobaEntity activeBoss(ServerPlayer player) {
-        var entity = findEntity(ACTIVE_BOSSES.get(player.getUUID()));
-        return entity instanceof TobaEntity toba ? toba : null;
+        return null;
     }
 
     public static void onTobaDefeated(TobaEntity boss) {
-        UUID ownerId = boss.getOwnerUuid();
-        if (ownerId == null || server == null) return;
-        ServerPlayer player = server.getPlayerList().getPlayer(ownerId);
-        ACTIVE_BOSSES.remove(ownerId);
-        if (player != null) defeat(player);
-    }
-
-    public static void defeat(ServerPlayer player) {
-        PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        p.storyFlags.remove("toba_phase2_active");
-        p.storyFlags.add("toba_defeated");
-        p.currentStory = "postgame";
-        p.currentObjective = "The seals are gone. Decide what the world becomes next.";
-        ProgressionStore.INSTANCE.save();
-        TobaCombatService.reset(player);
-        CWorldNetworking.toast(player, "story", "THE ONE BELOW ALL", "Defeated");
+        if (boss != null) boss.discard();
     }
 
     public static void resetAfterFailure(ServerPlayer player) {
@@ -203,9 +170,7 @@ public final class TobaEncounterService {
         ProgressionStore.INSTANCE.save();
 
         discardEntity(ACTIVE_ACTORS.remove(player.getUUID()));
-        discardEntity(ACTIVE_BOSSES.remove(player.getUUID()));
-        TobaCombatService.reset(player);
-        CWorldNetworking.toast(player, "story", "Final Encounter", "Reset. Return to the meeting point when ready.");
+        CWorldNetworking.toast(player, "story", "Meeting", "Battle reset. Return when ready.");
     }
 
     private static void clearTransientEncounterState(UUID ownerId) {

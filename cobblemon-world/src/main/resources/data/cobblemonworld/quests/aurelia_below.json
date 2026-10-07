@@ -1,6 +1,6 @@
 {
-  "id":"aurelia_below","title":"The Missing Line","giver":"aurelia",
-  "description":"Recover the League's offline record describing what happens when the seventh seal is opened.",
+  "id":"aurelia_below","title":"Missing Entry","giver":"aurelia",
+  "description":"Get the offline League record and read the missing entry.",
   "objectives":[
     {"id":"vault_key","type":"cobblemon_battle","target":"league_vault_keeper","amount":1},
     {"id":"read_record","type":"interact","target":"offline_seventh_record","amount":1}

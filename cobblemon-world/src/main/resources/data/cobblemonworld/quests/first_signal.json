@@ -1,8 +1,6 @@
 {
-  "id":"first_signal",
-  "title":"A Signal Beneath the Noise",
-  "giver":"mysterious",
-  "description":"Investigate the first anomaly identified by ??? without revealing the contact to the League.",
+  "id":"first_signal","title":"First Signal","giver":"mysterious",
+  "description":"Go to the coordinates sent by ??? and check the relay.",
   "objectives":[
     {"id":"reach_site","type":"visit","target":"first_anomaly_site","amount":1},
     {"id":"defeat_guard","type":"cobblemon_battle","target":"mara_voss","amount":1}

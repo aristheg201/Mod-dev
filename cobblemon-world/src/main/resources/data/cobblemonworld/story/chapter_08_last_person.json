@@ -1,8 +1,8 @@
 {
-  "id":"chapter_08_last_person","title":"The Last Person",
-  "objective":"Read the final message from ??? and go to the configured meeting point.",
+  "id":"chapter_08_last_person","title":"The Meeting",
+  "objective":"Meet ??? at the location he sent and find out who he is.",
   "requiredFlags":["false_victory_complete"],
-  "completionFlags":["main_story_complete"],
+  "completionFlags":["toba_identity_revealed"],
   "levelCapOnComplete":100,
   "nextChapter":"",
   "badge":"champion_badge"

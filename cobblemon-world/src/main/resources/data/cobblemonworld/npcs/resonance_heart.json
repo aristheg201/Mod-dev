@@ -1,7 +1,7 @@
 {
   "id":"resonance_heart","displayName":"Resonance Heart","npcClass":"standard","visualLevel":85,"skill":5,
-  "preBattleText":"The final anomaly answers every command you were given. Destroy it, and the world goes quiet.",
-  "postBattleText":"The world is quiet. Too quiet.",
+  "preBattleText":"The Heart is unstable. Destroy it.",
+  "postBattleText":"The signal is gone.",
   "team":[
     "hydreigon level=78 moves=darkpulse,dragonpulse,flamethrower,nastyplot",
     "volcarona level=80 moves=fierydance,bugbuzz,gigadrain,quiverdance",

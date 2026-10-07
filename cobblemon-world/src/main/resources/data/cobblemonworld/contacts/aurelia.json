@@ -1,7 +1,7 @@
 {
   "id":"aurelia","displayName":"Champion Aurelia","icon":"cobblemonworld:icons/contact_aurelia",
   "messages":[
-    {"id":"after_defeat","triggerFlag":"aurelia_defeated","text":"The League kept one record outside the network. Seven catastrophes, seven seals, seven victories by people who believed they were saving everyone. None of those stories recorded what happened after the seventh.","responses":["Find the missing page.","Why hide this?"] ,"questUnlock":"aurelia_below","setFlag":"aurelia_seven_record"},
-    {"id":"after_below","triggerFlag":"aurelia_below_complete","text":"I found the missing line: 'When the last hand opens the last lock, the Below will borrow that hand and stand beneath no one.' I still do not know who your contact is. But stop giving him victories.","responses":["Too late.","I will confront him."] ,"questUnlock":"","setFlag":"last_warning_received"}
+    {"id":"after_defeat","triggerFlag":"aurelia_defeated","text":"The League kept one copy off the network. Seven seals. Seven disasters. The record ends right after the seventh seal opens.","responses":["Show me the rest.","Why was it hidden?"],"questUnlock":"aurelia_below","setFlag":"aurelia_seven_record"},
+    {"id":"after_below","triggerFlag":"aurelia_below_complete","text":"Found the missing entry. The seventh seal releases whoever has been guiding the opener. Stop taking orders from your contact.","responses":["Too late.","I'm going to confront him."],"questUnlock":"","setFlag":"last_warning_received"}
   ]
 }

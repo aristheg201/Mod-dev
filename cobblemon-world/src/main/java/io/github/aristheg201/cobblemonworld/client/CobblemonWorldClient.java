@@ -9,12 +9,9 @@ public final class CobblemonWorldClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         CWorldClientNetworking.register();
-        BossKeybinds.register();
 
         EntityModelLayerRegistry.registerModelLayer(MysteriousFigureModel.LAYER, MysteriousFigureModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(TobaModel.LAYER, TobaModel::createBodyLayer);
         EntityRendererRegistry.register(ModBossEntities.MYSTERIOUS_FIGURE, MysteriousFigureRenderer::new);
-        EntityRendererRegistry.register(ModBossEntities.TOBA, TobaRenderer::new);
 
         if (Boolean.getBoolean("cworld.qa.client")) {
             io.github.aristheg201.cobblemonworld.qa.CWorldQaClientHarness.register();

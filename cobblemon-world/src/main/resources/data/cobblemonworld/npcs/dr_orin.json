@@ -1,7 +1,7 @@
 {
   "id":"dr_orin","displayName":"Dr. Cael Orin","npcClass":"standard","visualLevel":30,"skill":3,
-  "preBattleText":"If you break this chamber, you had better understand what it was holding.",
-  "postBattleText":"The old glyph still bothers me. Read the archive when I send it.",
+  "preBattleText":"If you're here to break the chamber, prove you know what you're touching.",
+  "postBattleText":"I need to recheck the old translation.",
   "team":[
     "magneton level=27 moves=spark,triattack,thunderwave,metalclaw",
     "claydol level=29 moves=psybeam,mudslap,ancientpower,rapidspin",
