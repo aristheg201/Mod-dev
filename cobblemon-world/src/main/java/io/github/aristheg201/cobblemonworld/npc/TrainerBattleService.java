@@ -83,8 +83,7 @@ public final class TrainerBattleService {
         try {
             var resource = TrainerBattleService.class.getClassLoader().getResource(path);
             if (resource == null) {
-                CobblemonWorldMod.LOGGER.error("Missing authored NPC skin {} for {}", path, definition.id());
-                return;
+                throw new IllegalStateException("Missing authored NPC skin " + path + " for " + definition.id());
             }
             npc.loadTexture(resource.toURI(), NPCPlayerModelType.DEFAULT);
             System.out.println("CWORLD_NPC_SKIN_APPLIED id=" + definition.id() + " skin=" + skin);
@@ -96,12 +95,51 @@ public final class TrainerBattleService {
     public static boolean interact(NPCEntity npc, ServerPlayer player, String definitionId) {
         NpcDefinitionRegistry.Definition definition = NpcDefinitionRegistry.INSTANCE.get(definitionId);
         if (definition == null) {
-            player.sendSystemMessage(Component.literal("Unknown story trainer: " + definitionId)
+            player.sendSystemMessage(Component.literal("Unknown story NPC: " + definitionId)
                     .withStyle(ChatFormatting.RED));
             return false;
         }
 
         PlayerProgression progression = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
+        boolean hasTeam = definition.team() != null && definition.team().length > 0;
+
+        if (!hasTeam) {
+            boolean alreadyInteracted = definition.interactionFlag() != null
+                    && !definition.interactionFlag().isBlank()
+                    && progression.storyFlags.contains(definition.interactionFlag());
+            if (alreadyInteracted) {
+                String repeat = definition.postBattleText();
+                if (repeat != null && !repeat.isBlank()) {
+                    player.sendSystemMessage(Component.literal(definition.displayName() + ": " + repeat));
+                }
+                return true;
+            }
+
+            CampaignService.ChallengeGate gate = CampaignService.canChallengeTrainer(player, definition);
+            if (!gate.allowed()) {
+                player.sendSystemMessage(Component.literal(gate.reason()).withStyle(ChatFormatting.YELLOW));
+                return true;
+            }
+
+            String text = definition.preBattleText();
+            if (text != null && !text.isBlank()) {
+                player.sendSystemMessage(Component.literal(definition.displayName() + ": " + text));
+            }
+            if (definition.contactUnlock() != null && !definition.contactUnlock().isBlank()) {
+                CampaignService.unlockContact(player, definition.contactUnlock());
+            }
+            if (definition.questUnlockOnInteract() != null && !definition.questUnlockOnInteract().isBlank()) {
+                CampaignService.activateQuest(player, definition.questUnlockOnInteract());
+            }
+            if (definition.flagsOnInteract() != null) {
+                for (String flag : definition.flagsOnInteract()) CampaignService.setFlag(player, flag);
+            }
+            if (definition.interactionFlag() != null && !definition.interactionFlag().isBlank()) {
+                CampaignService.setFlag(player, definition.interactionFlag());
+            }
+            return true;
+        }
+
         boolean alreadyDefeated = definition.defeatFlag() != null
                 && !definition.defeatFlag().isBlank()
                 && progression.storyFlags.contains(definition.defeatFlag());
@@ -125,10 +163,6 @@ public final class TrainerBattleService {
             player.sendSystemMessage(Component.literal(definition.displayName() + ": " + pre));
         }
 
-        if (definition.team() == null || definition.team().length == 0) {
-            return true;
-        }
-
         try {
             BattleBuilder.INSTANCE.pvn(player, npc);
             return true;
@@ -139,4 +173,4 @@ public final class TrainerBattleService {
             return false;
         }
     }
-}
+
