@@ -41,7 +41,7 @@ dependencies {
     modImplementation("com.cobblemon:fabric:${property("cobblemon_version")}")
 
     // Build-time only: vendor the original Cobblemon Smartphone GUI artwork (MIT).
-    smartphoneVisualAssets("maven.modrinth:n2f1HbK8:KkQzzHhm") {
+    smartphoneVisualAssets("maven.modrinth:n2f1HbK8:w7JqnSrT") {
         isTransitive = false
     }
 
@@ -130,18 +130,9 @@ tasks.processResources {
 
 
 tasks.withType<Jar>().configureEach {
-    // Remapped production JAR must carry the Smartphone artwork itself.
-    // Use a namespace-agnostic matcher because published Modrinth artifacts have
-    // changed their root layout across versions.
+    // Remapped production JAR carries the same root GUI tree that processResources verifies.
     from({ zipTree(smartphoneVisualAssets.singleFile) }) {
-        include("**/textures/gui/**")
-        eachFile {
-            val marker = "textures/gui/"
-            val markerIndex = path.indexOf(marker)
-            if (markerIndex >= 0) {
-                path = "assets/cobblemon_smartphone/textures/gui/" + path.substring(markerIndex + marker.length)
-            }
-        }
+        include("assets/cobblemon_smartphone/textures/gui/**")
         includeEmptyDirs = false
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
