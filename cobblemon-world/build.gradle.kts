@@ -30,7 +30,6 @@ repositories {
     maven("https://api.modrinth.com/maven")
 }
 
-val smartphoneVisualAssets by configurations.creating
 
 dependencies {
     minecraft("net.minecraft:minecraft:${property("minecraft_version")}")
@@ -40,21 +39,48 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("com.cobblemon:fabric:${property("cobblemon_version")}")
 
-    // Build-time only: vendor the original Cobblemon Smartphone GUI artwork (MIT).
-    smartphoneVisualAssets("maven.modrinth:n2f1HbK8:w7JqnSrT") {
-        isTransitive = false
-    }
-
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
 }
 
+val smartphoneSourceCommit = "438161ff9ad1c1c72f1426ec6ee68a3920cab332"
+val smartphoneSourceZip = layout.buildDirectory.file("vendor/cobblemon-smartphone-$smartphoneSourceCommit.zip")
 val generatedSmartphoneAssets = layout.buildDirectory.dir("generated/cobblemon-smartphone-gui")
 
+val downloadSmartphoneSource by tasks.registering {
+    outputs.file(smartphoneSourceZip)
+    doLast {
+        val target = smartphoneSourceZip.get().asFile
+        target.parentFile.mkdirs()
+        if (!target.isFile || target.length() < 1024L) {
+            val url = java.net.URI(
+                "https://codeload.github.com/RapidMesck/cobblemon_smartphone_main/zip/$smartphoneSourceCommit"
+            ).toURL()
+            url.openStream().use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+        check(target.isFile && target.length() > 1024L) {
+            "Failed to download pinned Cobblemon Smartphone source archive"
+        }
+    }
+}
+
 val unpackSmartphoneAssets by tasks.registering(Sync::class) {
+    dependsOn(downloadSmartphoneSource)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
-        include("assets/cobblemon_smartphone/textures/gui/**")
+    from({
+        zipTree(smartphoneSourceZip.get().asFile)
+    }) {
+        include("**/common/src/main/resources/assets/cobblemon_smartphone/textures/gui/**")
+        eachFile {
+            val marker = "common/src/main/resources/"
+            val markerIndex = path.indexOf(marker)
+            if (markerIndex >= 0) {
+                path = path.substring(markerIndex + marker.length)
+            }
+        }
+        includeEmptyDirs = false
     }
     into(generatedSmartphoneAssets)
 }
@@ -126,14 +152,4 @@ tasks.processResources {
             target.writeBytes(java.util.Base64.getDecoder().decode(encoded))
         }
     }
-}
-
-
-tasks.withType<Jar>().configureEach {
-    // Remapped production JAR carries the same root GUI tree that processResources verifies.
-    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
-        include("assets/cobblemon_smartphone/textures/gui/**")
-        includeEmptyDirs = false
-    }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
