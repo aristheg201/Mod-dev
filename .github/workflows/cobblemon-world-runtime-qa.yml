@@ -125,9 +125,10 @@ jobs:
           grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$LOG"
           grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$LOG"
           grep -Fq 'CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false' "$LOG"
-          grep -Fq 'CWORLD_QA_PERF_CLIENT_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_PERF_CLIENT_PASS mode=software-regression' "$LOG"
           grep -Fq 'CWORLD_QA_PERF_SERVER_PASS' "$LOG"
           grep -Fq 'CWORLD_QA_COMPLETE screenshots=31 runtime=singleplayer_integrated' "$LOG"
+          ! grep -Fq "Can't keep up!" "$LOG"
 
           ! grep -Fq 'Failed to load texture: cobblemon_smartphone:' "$LOG"
           ! grep -Eq 'Failed to load texture: cobblemon_smartphone:.*red_smartphone_3d|Missing model.*cobblemonworld:trainer_phone|Unable to load model.*cobblemonworld:trainer_phone' "$LOG"
@@ -213,7 +214,7 @@ jobs:
           - LuckPerms: optional; SVFrame transient permissions must work without it
           - Screenshots expected: 31
           - Phone visual matrix: Home + all 10 apps at GUI Scale 2 and GUI Scale 3
-          - Performance policy: measure client FPS/frame time and integrated-server MSPT without disabling gameplay systems or reducing content to satisfy the gate
+          - Performance policy: integrated-server MSPT and tick-stall checks are hard gates; llvmpipe/Xvfb client FPS is a software-render regression floor, not a hardware-FPS claim
 
           ## Acceptance gates
           - The mod boots as a combined client/server mod in one real singleplayer session; no dedicated QA server is started.
@@ -228,8 +229,9 @@ jobs:
           - Persisted story NPC is recovered after entity removal.
           - ??? appears, starts the final Cobblemon battle, and is revealed as TOBA.
           - No TOBA Phase II encounter is reachable in the current story build.
-          - Client performance clears the headless regression budget.
+          - Software-render client performance clears the CI regression floor; non-software QA uses the stricter hardware budget.
           - Integrated-server average tick time stays at or below 50 ms/tick.
+          - Runtime log contains no Minecraft "Can't keep up!" tick-stall warning.
           - Performance work must not remove objectives, trainer AI, NPC systems, progression, world interactions, battles or presentation features merely to improve benchmark numbers.
           EOF
 
