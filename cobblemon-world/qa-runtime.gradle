@@ -128,22 +128,17 @@ java {
 
 configurations {
     productionRuntimeMods
-    integratedServerRuntimeMods
 }
 
 dependencies {
     productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     productionRuntimeMods "net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20"
     productionRuntimeMods "com.cobblemon:fabric:${project.cobblemon_version}"
-    // Integrated singleplayer QA runs both logical sides in one JVM.
-    // LuckPerms remains a runtime-only requirement of the current SVFrameLib permission layer.
-    integratedServerRuntimeMods "maven.modrinth:Vebnzrzj:oLykW1F8"
 }
 
 tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
     dependsOn tasks.named('remapJar')
     mods.from configurations.productionRuntimeMods
-    mods.from configurations.integratedServerRuntimeMods
     mods.from fileTree('qa-runtime/mods') { include '*.jar' }
     mods.from tasks.named('remapJar').flatMap { it.archiveFile }
     jvmArgs.addAll([
