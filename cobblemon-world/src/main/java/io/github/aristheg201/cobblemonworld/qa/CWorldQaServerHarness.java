@@ -39,12 +39,22 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.lang.reflect.Method;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class CWorldQaServerHarness {
     private static final Set<String> ACKS = ConcurrentHashMap.newKeySet();
+    private static final String[] PHONE_APPS = {
+            "home", "trainer_card", "objective", "story", "side_quests", "level_cap",
+            "badges", "contacts", "messages", "league", "faction"
+    };
+    private static final String[] PHONE_FILES = {
+            "home", "trainer-card", "objective", "story", "side-quests", "level-cap",
+            "badges", "contacts", "messages", "league", "faction"
+    };
+    private static final double MAX_AVERAGE_MSPT = 50.0;
     private static volatile String clientFailure;
 
     private static int stage;
@@ -81,9 +91,9 @@ public final class CWorldQaServerHarness {
         if (stageStarted == 0L) stageStarted = ticks;
         if (ticks - stageStarted > 2400L) fail("Stage timed out: " + stage);
 
-        // Consume client acknowledgements before requiring a connected player.
-        // The final QA command intentionally stops/disconnects the client immediately after
-        // acknowledging qa-client-stop; otherwise stage 23 can never advance to finish().
+        // Consume client acknowledgements before requiring a player. The singleplayer
+        // client stays alive briefly after qa-client-stop so the integrated server can
+        // publish its final evidence before the JVM exits.
         if (awaiting != null) {
             if (!ACKS.remove(awaiting)) return;
             System.out.println("CWORLD_QA_VISUAL_PASS " + awaiting);
@@ -91,7 +101,7 @@ public final class CWorldQaServerHarness {
             stage++;
             stageStarted = ticks;
         }
-        if (stage == 23) {
+        if (stage == 34) {
             finish(server);
             return;
         }
@@ -100,31 +110,34 @@ public final class CWorldQaServerHarness {
         if (player == null) return;
 
         try {
+            if (stage >= 1 && stage <= 21) {
+                if (stage <= 10) {
+                    int appIndex = stage;
+                    phone(player, PHONE_APPS[appIndex], 2,
+                            "%02d-phone-s2-%s".formatted(stage, PHONE_FILES[appIndex]));
+                } else {
+                    int appIndex = stage - 11;
+                    phone(player, PHONE_APPS[appIndex], 3,
+                            "%02d-phone-s3-%s".formatted(stage, PHONE_FILES[appIndex]));
+                }
+                return;
+            }
+
             switch (stage) {
                 case 0 -> bootstrap(player);
-                case 1 -> phone(player, "trainer_card", "01-phone-trainer-card");
-                case 2 -> phone(player, "objective", "02-phone-objective");
-                case 3 -> phone(player, "story", "03-phone-story");
-                case 4 -> phone(player, "side_quests", "04-phone-side-quests");
-                case 5 -> phone(player, "level_cap", "05-phone-level-cap");
-                case 6 -> phone(player, "badges", "06-phone-badges");
-                case 7 -> phone(player, "contacts", "07-phone-contacts");
-                case 8 -> phone(player, "messages", "08-phone-messages");
-                case 9 -> phone(player, "league", "09-phone-league");
-                case 10 -> phone(player, "faction", "10-phone-faction");
-                case 11 -> toast(player);
-                case 12 -> prepareStoryTrainer(player);
-                case 13 -> battleAndStoryAudit(player);
-                case 14 -> factionGate(player);
-                case 15 -> factionConquest(player);
-                case 16 -> factionOccupation(player);
-                case 17 -> factionSpawnAndPersistence(player);
-                case 18 -> npcRecovery(player);
-                case 19 -> mysteriousFigure(player);
-                case 20 -> phaseOneAndReveal(player);
-                case 21 -> phone(player, "story", "19-phone-story-final");
-                case 22 -> stopClient(player);
-                case 23 -> finish(server);
+                case 22 -> toast(player);
+                case 23 -> prepareStoryTrainer(player);
+                case 24 -> battleAndStoryAudit(player);
+                case 25 -> factionGate(player);
+                case 26 -> factionConquest(player);
+                case 27 -> factionOccupation(player);
+                case 28 -> factionSpawnAndPersistence(player);
+                case 29 -> npcRecovery(player);
+                case 30 -> mysteriousFigure(player);
+                case 31 -> phaseOneAndReveal(player);
+                case 32 -> phone(player, "story", 3, "30-phone-s3-story-final");
+                case 33 -> stopClient(player);
+                case 34 -> finish(server);
                 default -> {}
             }
         } catch (Throwable t) {
@@ -150,15 +163,14 @@ public final class CWorldQaServerHarness {
         System.out.println("CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true profile="
                 + rpg.classId() + ":" + rpg.level());
 
-        CWorldNetworking.openPhone(player);
-        control(player, "capture_phone", "home", "00-phone-home");
+        phone(player, "home", 2, "00-phone-s2-home");
     }
 
     private static void toast(ServerPlayer player) {
         String capText = "Lv." + LevelCapService.getCap(player);
         ServerPlayNetworking.send(player, new ToastPayload(
                 "level_cap", "Level Cap Increased", capText));
-        control(player, "capture_toast", capText, "11-toast-overlay");
+        control(player, "capture_toast", capText, "22-toast-overlay");
     }
 
     private static void prepareStoryTrainer(ServerPlayer player) {
@@ -190,7 +202,7 @@ public final class CWorldQaServerHarness {
         NpcPlacementStore.INSTANCE.put(new NpcPlacement(
                 "mara_voss", level.dimension().location().toString(),
                 x, y, z, 180.0F, 0.0F, qaNpc.getUUID().toString()));
-        control(player, "capture_world", "", "12-story-npc");
+        control(player, "capture_world", "", "23-story-npc");
     }
 
     private static void battleAndStoryAudit(ServerPlayer player) {
@@ -293,7 +305,7 @@ public final class CWorldQaServerHarness {
         require(IslandWarStore.INSTANCE.state().phase == IslandWarPhase.GATE_WAR, "island did not enter Gate War");
         require(IslandWarService.join(player), "could not join Gate War");
         require(player.level().dimension().equals(IslandWarService.DIMENSION), "Gate War teleport dimension wrong");
-        control(player, "capture_world", "", "13-faction-gate-war");
+        control(player, "capture_world", "", "24-faction-gate-war");
     }
 
     private static void factionConquest(ServerPlayer player) {
@@ -303,7 +315,7 @@ public final class CWorldQaServerHarness {
         state.phaseStartedEpochMillis = System.currentTimeMillis();
         IslandWarStore.INSTANCE.save();
         require(IslandWarService.join(player), "qualified faction could not join Conquest");
-        control(player, "capture_world", "", "14-faction-conquest");
+        control(player, "capture_world", "", "25-faction-conquest");
     }
 
     private static void factionOccupation(ServerPlayer player) {
@@ -317,7 +329,7 @@ public final class CWorldQaServerHarness {
         CWorldConfig.INSTANCE.factionRareBonusChance = 1.0;
         CWorldConfig.INSTANCE.factionLegendaryBonusChance = 0.0;
         require(IslandWarService.join(player), "owner faction could not enter Occupation");
-        control(player, "capture_world", "", "15-faction-occupation");
+        control(player, "capture_world", "", "26-faction-occupation");
     }
 
     private static void factionSpawnAndPersistence(ServerPlayer player) {
@@ -373,7 +385,7 @@ public final class CWorldQaServerHarness {
             qaNpc = npc;
             face(player, npc.getX(), npc.getY() + 1.3, npc.getZ());
             System.out.println("CWORLD_QA_NPC_RECOVERY_PASS uuid=" + uuid);
-            control(player, "capture_world", "", "16-npc-recovered");
+            control(player, "capture_world", "", "27-npc-recovered");
         } catch (IllegalArgumentException ignored) {
         }
     }
@@ -400,7 +412,7 @@ public final class CWorldQaServerHarness {
         if (actor == null) return;
         face(player, actor.getX(), actor.getY() + 1.4, actor.getZ());
         System.out.println("CWORLD_QA_MYSTERIOUS_SPAWN_PASS x=" + actor.getX() + " y=" + actor.getY() + " z=" + actor.getZ());
-        control(player, "capture_world", "", "17-mysterious-figure");
+        control(player, "capture_world", "", "28-mysterious-figure");
     }
 
     private static void phaseOneAndReveal(ServerPlayer player) {
@@ -427,7 +439,7 @@ public final class CWorldQaServerHarness {
         face(player, revealed.getX(), revealed.getY() + 1.4, revealed.getZ());
         System.out.println("CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false");
         System.out.println("CWORLD_QA_STORY_PASS cap=100 ending=TOBA_REVEALED");
-        control(player, "capture_world", "", "18-toba-reveal");
+        control(player, "capture_world", "", "29-toba-reveal");
     }
 
     private static void stopClient(ServerPlayer player) {
@@ -435,9 +447,14 @@ public final class CWorldQaServerHarness {
     }
 
     private static void finish(MinecraftServer server) {
-        System.out.println("CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server");
+        double averageMspt = server.getAverageTickTimeNanos() / 1_000_000.0;
+        require(averageMspt <= MAX_AVERAGE_MSPT,
+                "Integrated-server tick regression: " + averageMspt + "ms > " + MAX_AVERAGE_MSPT + "ms");
+        System.out.printf(Locale.ROOT,
+                "CWORLD_QA_PERF_SERVER_PASS avg_mspt=%.2f threshold_mspt=%.2f%n",
+                averageMspt, MAX_AVERAGE_MSPT);
+        System.out.println("CWORLD_QA_COMPLETE screenshots=31 runtime=singleplayer_integrated");
         shutdownRequested = true;
-        server.halt(false);
     }
 
     private static void completeVossQuest(ServerPlayer player) {
@@ -475,9 +492,9 @@ public final class CWorldQaServerHarness {
         require(CampaignService.respondToMessage(player, "aurelia", "after_below", 0), "Aurelia follow-up missing");
     }
 
-    private static void phone(ServerPlayer player, String app, String file) {
+    private static void phone(ServerPlayer player, String app, int guiScale, String file) {
         CWorldNetworking.openPhone(player);
-        control(player, "capture_phone", app, file);
+        control(player, "capture_phone", guiScale + "|" + app, file);
     }
 
     private static void control(ServerPlayer player, String action, String primary, String token) {
