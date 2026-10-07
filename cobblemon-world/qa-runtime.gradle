@@ -37,6 +37,7 @@ dependencies {
 }
 
 processResources {
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {
         expand version: project.version
