@@ -163,6 +163,18 @@ public final class CWorldQaServerHarness {
         System.out.println("CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true profile="
                 + rpg.classId() + ":" + rpg.level());
 
+        require(NpcDefinitionRegistry.INSTANCE.all().size() == 33,
+                "NPC catalog size mismatch: " + NpcDefinitionRegistry.INSTANCE.all().size());
+        var professor = NpcDefinitionRegistry.INSTANCE.get("professor_hale");
+        require(professor != null, "Professor Hale definition missing");
+        require(professor.team() == null || professor.team().length == 0, "Professor must be non-battle NPC");
+        var professorNpc = TrainerBattleService.createNpc(player, professor);
+        require(TrainerBattleService.interact(professorNpc, player, "professor_hale"),
+                "Professor interaction failed");
+        require(ProgressionStore.INSTANCE.getOrCreate(player.getUUID()).storyFlags.contains("professor_met"),
+                "Professor interaction flag missing");
+        System.out.println("CWORLD_QA_NPC_CATALOG_PASS count=33 professor=true");
+
         phone(player, "home", 2, "00-phone-s2-home");
     }
 
