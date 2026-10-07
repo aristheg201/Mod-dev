@@ -52,6 +52,7 @@ dependencies {
 val generatedSmartphoneAssets = layout.buildDirectory.dir("generated/cobblemon-smartphone-gui")
 
 val unpackSmartphoneAssets by tasks.registering(Sync::class) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from({ zipTree(smartphoneVisualAssets.singleFile) }) {
         include("assets/cobblemon_smartphone/textures/gui/**")
     }
@@ -59,6 +60,7 @@ val unpackSmartphoneAssets by tasks.registering(Sync::class) {
 }
 
 tasks.processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     inputs.property("version", project.version)
     dependsOn(unpackSmartphoneAssets)
     from(generatedSmartphoneAssets)
