@@ -26,8 +26,10 @@ import java.util.Queue;
 public final class CWorldQaClientHarness {
     private static final Queue<QaControlPayload> QUEUE = new ArrayDeque<>();
     private static final int PERF_WARMUP_TICKS = 120;
-    private static final double MIN_AVERAGE_FPS = 20.0;
-    private static final double MAX_AVERAGE_FRAME_MS = 50.0;
+    private static final double SOFTWARE_MIN_AVERAGE_FPS = 5.0;
+    private static final double SOFTWARE_MAX_AVERAGE_FRAME_MS = 200.0;
+    private static final double HARDWARE_MIN_AVERAGE_FPS = 30.0;
+    private static final double HARDWARE_MAX_AVERAGE_FRAME_MS = 33.34;
 
     private static QaControlPayload current;
     private static int settleTicks;
@@ -203,18 +205,25 @@ public final class CWorldQaClientHarness {
 
         double averageFps = fpsTotal / (double) fpsSamples;
         double averageFrameMs = frameTotalNs / (double) frameSamples / 1_000_000.0;
-        if (averageFps < MIN_AVERAGE_FPS) {
-            fail(client, "Average FPS regression: " + averageFps + " < " + MIN_AVERAGE_FPS);
+        boolean softwareRenderer = "1".equals(System.getenv("LIBGL_ALWAYS_SOFTWARE"));
+        double minimumFps = softwareRenderer ? SOFTWARE_MIN_AVERAGE_FPS : HARDWARE_MIN_AVERAGE_FPS;
+        double maximumFrameMs = softwareRenderer ? SOFTWARE_MAX_AVERAGE_FRAME_MS : HARDWARE_MAX_AVERAGE_FRAME_MS;
+
+        if (averageFps < minimumFps) {
+            fail(client, "Average FPS regression: " + averageFps + " < " + minimumFps
+                    + " mode=" + (softwareRenderer ? "software" : "hardware"));
             return;
         }
-        if (averageFrameMs > MAX_AVERAGE_FRAME_MS) {
-            fail(client, "Average frame-time regression: " + averageFrameMs + "ms > " + MAX_AVERAGE_FRAME_MS + "ms");
+        if (averageFrameMs > maximumFrameMs) {
+            fail(client, "Average frame-time regression: " + averageFrameMs + "ms > " + maximumFrameMs
+                    + "ms mode=" + (softwareRenderer ? "software" : "hardware"));
             return;
         }
 
         System.out.printf(
                 Locale.ROOT,
-                "CWORLD_QA_PERF_CLIENT_PASS avg_fps=%.2f min_fps=%d avg_frame_ms=%.2f samples=%d%n",
+                "CWORLD_QA_PERF_CLIENT_PASS mode=%s avg_fps=%.2f min_fps=%d avg_frame_ms=%.2f samples=%d%n",
+                softwareRenderer ? "software-regression" : "hardware",
                 averageFps,
                 minFps == Integer.MAX_VALUE ? 0 : minFps,
                 averageFrameMs,
