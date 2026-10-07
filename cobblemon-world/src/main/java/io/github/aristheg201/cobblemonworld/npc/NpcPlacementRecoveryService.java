@@ -20,8 +20,6 @@ public final class NpcPlacementRecoveryService {
             if (++ticks % 40L != 0L || server.getPlayerList().getPlayers().isEmpty()) return;
 
             for (NpcPlacement placement : NpcPlacementStore.INSTANCE.all().values()) {
-                if (loaded(server, placement)) continue;
-
                 ResourceLocation dimensionId;
                 try {
                     dimensionId = ResourceLocation.parse(placement.dimension());
@@ -36,14 +34,19 @@ public final class NpcPlacementRecoveryService {
                 var pos = net.minecraft.core.BlockPos.containing(placement.x(), placement.y(), placement.z());
                 if (!level.hasChunkAt(pos)) continue;
 
-                var definition = NpcDefinitionRegistry.INSTANCE.get(placement.id());
-                if (definition == null || definition.specialActor()) continue;
-
+                // Recovery only matters while a player can actually observe/use the NPC.
+                // Check proximity before UUID/entity work so large authored NPC catalogs do
+                // not scan loaded entity maps for remote placements every two seconds.
                 var bootstrapPlayer = level.players().stream()
                         .filter(player -> player.distanceToSqr(placement.x(), placement.y(), placement.z()) <= 160.0 * 160.0)
                         .findFirst()
                         .orElse(null);
                 if (bootstrapPlayer == null) continue;
+
+                if (loadedInExpectedLevel(level, placement)) continue;
+
+                var definition = NpcDefinitionRegistry.INSTANCE.get(placement.id());
+                if (definition == null || definition.specialActor()) continue;
 
                 NPCEntity npc = TrainerBattleService.createNpc(bootstrapPlayer, definition);
                 npc.moveTo(placement.x(), placement.y(), placement.z(), placement.yaw(), placement.pitch());
@@ -58,15 +61,13 @@ public final class NpcPlacementRecoveryService {
         });
     }
 
-    private static boolean loaded(net.minecraft.server.MinecraftServer server, NpcPlacement placement) {
+    private static boolean loadedInExpectedLevel(ServerLevel level, NpcPlacement placement) {
         if (placement.entityUuid() == null || placement.entityUuid().isBlank()) return false;
         try {
             UUID uuid = UUID.fromString(placement.entityUuid());
-            for (ServerLevel level : server.getAllLevels()) {
-                if (level.getEntity(uuid) instanceof NPCEntity) return true;
-            }
+            return level.getEntity(uuid) instanceof NPCEntity;
         } catch (IllegalArgumentException ignored) {
+            return false;
         }
-        return false;
     }
 }
