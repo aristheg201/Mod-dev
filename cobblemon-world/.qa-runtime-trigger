@@ -1,10 +1,5 @@
-singleplayer-runtime-qa-v7
-phone-gui-scale-2-3
-performance-regression-budget
-npc-recovery-local-lookup
-faction-build-time-slice-v2
-svframe-integrated-singleplayer
-svframelib-optional-luckperms
-renderer-aware-client-budget
-no-tick-stall
-verify-console-perf-markers
+singleplayer-runtime-qa-v8
+expanded-npc-catalog-33
+generated-npc-skins-24
+nonbattle-npc-hooks
+rocket-tower-league-wolf-roster
