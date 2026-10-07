@@ -73,6 +73,8 @@ val unpackSmartphoneAssets by tasks.registering(Sync::class) {
         zipTree(smartphoneSourceZip.get().asFile)
     }) {
         include("**/common/src/main/resources/assets/cobblemon_smartphone/textures/gui/**")
+        include("**/common/src/main/resources/assets/cobblemon_smartphone/models/item/red_smartphone_3d.json")
+        include("**/common/src/main/resources/assets/cobblemon_smartphone/textures/item/red_smartphone_3d.png")
         eachFile {
             val marker = "common/src/main/resources/"
             val markerIndex = path.indexOf(marker)
@@ -104,7 +106,9 @@ tasks.processResources {
             "assets/cobblemon_smartphone/textures/gui/buttons/trainer.png",
             "assets/cobblemon_smartphone/textures/gui/buttons/social.png",
             "assets/cobblemon_smartphone/textures/gui/elements/page_dot_on.png",
-            "assets/cobblemon_smartphone/textures/gui/elements/prev_button.png"
+            "assets/cobblemon_smartphone/textures/gui/elements/prev_button.png",
+            "assets/cobblemon_smartphone/models/item/red_smartphone_3d.json",
+            "assets/cobblemon_smartphone/textures/item/red_smartphone_3d.png"
         )
         required.forEach { relative ->
             val file = destinationDir.resolve(relative)
