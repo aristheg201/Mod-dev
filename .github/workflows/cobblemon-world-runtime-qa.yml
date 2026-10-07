@@ -113,6 +113,9 @@ jobs:
           grep -Fq 'CWORLD_QA_SINGLEPLAYER_CREATE_REQUEST world=CWorldQA' "$LOG"
           grep -Fq 'CWORLD_QA_SINGLEPLAYER_CONNECTED CWorldQA' "$LOG"
           grep -Fq 'CWORLD_QA_PHONE_ITEM_PASS inventory=true item=cobblemonworld:trainer_phone' "$LOG"
+          grep -Fq 'CWORLD_GENERATED_NPC_SKINS_PASS count=24' "$CONSOLE"
+          grep -Fq 'CWORLD_NPC_APPEARANCES_PASS count=33 normal=32 special=1' "$LOG"
+          grep -Fq 'CWORLD_QA_NPC_CATALOG_PASS count=33 professor=true' "$LOG"
           grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true' "$LOG"
           grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$LOG"
           grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$LOG"
@@ -129,6 +132,16 @@ jobs:
           grep -Fq 'CWORLD_QA_PERF_CLIENT_PASS mode=software-regression' "$CONSOLE"
           grep -Fq 'CWORLD_QA_PERF_SERVER_PASS' "$CONSOLE"
           grep -Fq 'CWORLD_QA_COMPLETE screenshots=31 runtime=singleplayer_integrated' "$LOG"
+          for SKIN in professor_hale daycare_mira pokemall_ren bicycle_tomo fashion_elle \
+            rocket_grunt_01 rocket_grunt_02 rocket_grunt_03 rocket_admin_vex \
+            lab_scientist_iris archaeologist_marlow battle_tower_receptionist \
+            battle_tower_trainer_01 battle_tower_trainer_02 battle_tower_trainer_03 \
+            royal_league_receptionist league_elite_01 league_elite_02 league_elite_03 \
+            school_wolf_gatekeeper school_wolf_trainer_01 school_wolf_trainer_02 \
+            school_wolf_trainer_03 school_wolf_master
+          do
+            jar tf "$JAR" | grep -Fxq "assets/cobblemonworld/textures/entity/npc/$SKIN.png"
+          done
           ! grep -Fq "Can't keep up!" "$LOG" "$CONSOLE"
 
           ! grep -Fq 'Failed to load texture: cobblemon_smartphone:' "$LOG"
@@ -215,6 +228,7 @@ jobs:
           - LuckPerms: optional; SVFrame transient permissions must work without it
           - Screenshots expected: 31
           - Phone visual matrix: Home + all 10 apps at GUI Scale 2 and GUI Scale 3
+          - NPC catalog: 33 definitions; 32 normal NPCs require authored 64x64 skins and ??? uses its custom special-actor appearance
           - Performance policy: integrated-server MSPT and tick-stall checks are hard gates; llvmpipe/Xvfb client FPS is a software-render regression floor, not a hardware-FPS claim
 
           ## Acceptance gates
