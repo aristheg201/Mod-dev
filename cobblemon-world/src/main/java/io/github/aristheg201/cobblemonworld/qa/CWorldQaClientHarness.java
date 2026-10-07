@@ -7,9 +7,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.toasts.TutorialToast;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 
@@ -83,9 +85,23 @@ public final class CWorldQaClientHarness {
             if (current == null) return;
             waitTicks = 0;
 
-            if ("capture_world".equals(current.action()) || "capture_toast".equals(current.action())) {
+            if ("capture_world".equals(current.action())) {
                 client.setScreen(null);
-                settleTicks = "capture_toast".equals(current.action()) ? 8 : 20;
+                settleTicks = 20;
+            } else if ("capture_toast".equals(current.action())) {
+                client.setScreen(null);
+                // The network toast above proves delivery. Add the same vanilla TutorialToast
+                // locally so the screenshot deterministically captures its presentation.
+                TutorialToast toast = new TutorialToast(
+                        TutorialToast.Icons.RECIPE_BOOK,
+                        Component.literal("Level Cap Increased"),
+                        Component.literal(current.primary() == null || current.primary().isBlank()
+                                ? "Level cap updated"
+                                : current.primary()),
+                        false
+                );
+                client.getTutorial().addTimedToast(toast, 100);
+                settleTicks = 4;
             } else if ("capture_phone".equals(current.action())) {
                 settleTicks = 8;
             } else if ("stop".equals(current.action())) {
