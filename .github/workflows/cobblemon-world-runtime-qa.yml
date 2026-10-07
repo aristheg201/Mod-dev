@@ -89,6 +89,7 @@ jobs:
           cd cobblemon-world
           ! grep -R -E 'FactionBridge|io\.icker\.factions|isModLoaded\("factions"\)|Factions 2\.8\.0|integrationAvailable' src/main docs README.md
           LOG=qa-runtime/client/logs/latest.log
+          CONSOLE=build/runtime-qa-client-console.log
           JAR="$(find build/libs -maxdepth 1 -name 'CobblemonWorld-*.jar' ! -name '*sources*' | head -n 1)"
           test -n "$JAR"
 
@@ -125,10 +126,10 @@ jobs:
           grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$LOG"
           grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$LOG"
           grep -Fq 'CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false' "$LOG"
-          grep -Fq 'CWORLD_QA_PERF_CLIENT_PASS mode=software-regression' "$LOG"
-          grep -Fq 'CWORLD_QA_PERF_SERVER_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_PERF_CLIENT_PASS mode=software-regression' "$CONSOLE"
+          grep -Fq 'CWORLD_QA_PERF_SERVER_PASS' "$CONSOLE"
           grep -Fq 'CWORLD_QA_COMPLETE screenshots=31 runtime=singleplayer_integrated' "$LOG"
-          ! grep -Fq "Can't keep up!" "$LOG"
+          ! grep -Fq "Can't keep up!" "$LOG" "$CONSOLE"
 
           ! grep -Fq 'Failed to load texture: cobblemon_smartphone:' "$LOG"
           ! grep -Eq 'Failed to load texture: cobblemon_smartphone:.*red_smartphone_3d|Missing model.*cobblemonworld:trainer_phone|Unable to load model.*cobblemonworld:trainer_phone' "$LOG"
@@ -138,7 +139,7 @@ jobs:
           ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/large_screen.png' "$LOG"
           ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/buttons/trainer.png' "$LOG"
           ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/elements/home_button.png' "$LOG"
-          ! grep -Eq 'CWORLD_QA_FAILED|CWORLD_QA_CLIENT_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' "$LOG"
+          ! grep -Eq 'CWORLD_QA_FAILED|CWORLD_QA_CLIENT_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' "$LOG" "$CONSOLE"
 
           python3 - <<'PY'
           from pathlib import Path
