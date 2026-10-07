@@ -171,7 +171,9 @@ jobs:
             assets/cobblemon_smartphone/textures/gui/buttons/trainer.png \
             assets/cobblemon_smartphone/textures/gui/buttons/social.png \
             assets/cobblemon_smartphone/textures/gui/elements/page_dot_on.png \
-            assets/cobblemon_smartphone/textures/gui/elements/prev_button.png
+            assets/cobblemon_smartphone/textures/gui/elements/prev_button.png \
+            assets/cobblemon_smartphone/models/item/red_smartphone_3d.json \
+            assets/cobblemon_smartphone/textures/item/red_smartphone_3d.png
           do
             jar tf "$JAR" | grep -Fxq "$ASSET"
           done
@@ -180,6 +182,8 @@ jobs:
           grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$CLIENT"
           grep -Fq 'CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579' "$CLIENT"
           grep -Fq 'CWORLD_QA_CLIENT_CONNECTED CWorldQA' "$CLIENT"
+          grep -Fq 'CWORLD_QA_PHONE_ITEM_PASS inventory=true item=cobblemonworld:trainer_phone' "$SERVER"
+          ! grep -Eq 'Failed to load texture: cobblemon_smartphone:.*red_smartphone_3d|Missing model.*cobblemonworld:trainer_phone|Unable to load model.*cobblemonworld:trainer_phone' "$CLIENT"
           grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true' "$SERVER"
           grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$SERVER"
           grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$SERVER"
