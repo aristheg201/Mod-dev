@@ -1,15 +1,29 @@
 {
-  "id":"rook","displayName":"Rook","npcClass":"standard","visualLevel":38,"skill":4,
-  "preBattleText":"You want the black card? Win it.",
-  "postBattleText":"Take it. Then help me trace it.",
-  "team":[
+  "id": "rook",
+  "displayName": "Rook",
+  "npcClass": "standard",
+  "visualLevel": 38,
+  "skill": 4,
+  "preBattleText": "You want the black card? Win it.",
+  "postBattleText": "Take it. Then help me trace it.",
+  "team": [
     "absol level=35 moves=nightslash,detect,slash,quickattack",
     "gengar level=37 moves=shadowball,hypnosis,confuseray,hex",
     "bisharp level=38 moves=ironhead,nightslash,metalclaw,scaryface"
   ],
-  "defeatFlag":"rook_defeated","flagsOnDefeat":["seal_03_broken"],
-  "contactUnlock":"rook","chapterOnDefeat":"chapter_03_house_of_cards",
-  "requiredChapter":"chapter_03_house_of_cards","requiredFlags":["seal_02_broken"],
-  "skin":"rook",
-  "badge":"black_card_badge","rematchable":false,"specialActor":false
+  "defeatFlag": "rook_defeated",
+  "flagsOnDefeat": [
+    "seal_03_broken",
+    "black_card_obtained"
+  ],
+  "contactUnlock": "rook",
+  "chapterOnDefeat": "chapter_03_house_of_cards",
+  "requiredChapter": "chapter_03_house_of_cards",
+  "requiredFlags": [
+    "seal_02_broken"
+  ],
+  "skin": "rook",
+  "badge": "black_card_badge",
+  "rematchable": false,
+  "specialActor": false
 }

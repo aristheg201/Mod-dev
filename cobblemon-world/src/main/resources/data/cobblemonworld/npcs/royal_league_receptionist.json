@@ -1,0 +1,25 @@
+{
+  "id": "royal_league_receptionist",
+  "displayName": "Royal League Steward",
+  "npcClass": "standard",
+  "visualLevel": 78,
+  "skill": 0,
+  "preBattleText": "Battle Tower qualification confirmed. I will register you for the Royal League gauntlet.",
+  "postBattleText": "Your League registration is active. The Elite are waiting.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "battle_tower_qualified"
+  ],
+  "badge": "",
+  "skin": "royal_league_receptionist",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "royal_league_registered",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

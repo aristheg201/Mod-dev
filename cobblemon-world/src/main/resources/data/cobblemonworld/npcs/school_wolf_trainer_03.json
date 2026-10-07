@@ -1,0 +1,32 @@
+{
+  "id": "school_wolf_trainer_03",
+  "displayName": "Wolf Trialist Hati",
+  "npcClass": "standard",
+  "visualLevel": 94,
+  "skill": 5,
+  "preBattleText": "Third trial: control. Power without control means nothing here.",
+  "postBattleText": "The Master will see you now.",
+  "team": [
+    "ninetales level=92",
+    "glaceon level=93",
+    "lucario level=93",
+    "zoroark level=94"
+  ],
+  "defeatFlag": "school_wolf_trainer_03_defeated",
+  "flagsOnDefeat": [
+    "school_wolf_trials_three_complete"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "school_wolf_trainer_02_defeated"
+  ],
+  "badge": "",
+  "skin": "school_wolf_trainer_03",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

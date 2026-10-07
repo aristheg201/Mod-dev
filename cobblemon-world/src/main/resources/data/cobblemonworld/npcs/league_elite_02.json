@@ -1,0 +1,30 @@
+{
+  "id": "league_elite_02",
+  "displayName": "League Elite Seraph",
+  "npcClass": "standard",
+  "visualLevel": 84,
+  "skill": 5,
+  "preBattleText": "Talent gets trainers here. Discipline gets them past me.",
+  "postBattleText": "One more Elite stands between you and the Champion floor.",
+  "team": [
+    "tyranitar level=82",
+    "gardevoir level=83",
+    "garchomp level=84",
+    "volcarona level=84"
+  ],
+  "defeatFlag": "league_elite_02_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "league_elite_01_defeated"
+  ],
+  "badge": "",
+  "skin": "league_elite_02",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

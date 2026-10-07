@@ -1,0 +1,29 @@
+{
+  "id": "rocket_grunt_01",
+  "displayName": "Rocket Grunt A",
+  "npcClass": "standard",
+  "visualLevel": 42,
+  "skill": 3,
+  "preBattleText": "Wrong hallway, trainer. Turn around.",
+  "postBattleText": "Fine. The next guard will not go down that easily.",
+  "team": [
+    "zubat level=40",
+    "koffing level=41",
+    "raticate level=42"
+  ],
+  "defeatFlag": "rocket_grunt_01_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "rocket_base_unlocked"
+  ],
+  "badge": "",
+  "skin": "rocket_grunt_01",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

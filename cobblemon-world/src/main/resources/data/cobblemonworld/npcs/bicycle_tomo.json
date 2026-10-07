@@ -1,0 +1,25 @@
+{
+  "id": "bicycle_tomo",
+  "displayName": "Tomo - Bicycle Shop",
+  "npcClass": "standard",
+  "visualLevel": 18,
+  "skill": 0,
+  "preBattleText": "Divinos is bigger than it looks on a map. Earn the right milestone and I will help you travel it faster.",
+  "postBattleText": "No shortcut replaces knowing the road.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [],
+  "badge": "",
+  "skin": "bicycle_tomo",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "bicycle_shop_introduced",
+  "flagsOnInteract": [
+    "bicycle_shop_known"
+  ],
+  "questUnlockOnInteract": ""
+}

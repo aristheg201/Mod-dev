@@ -1,0 +1,33 @@
+{
+  "id": "rocket_admin_vex",
+  "displayName": "Rocket Admin Vex",
+  "npcClass": "standard",
+  "visualLevel": 50,
+  "skill": 5,
+  "preBattleText": "You have made enough noise. The records stay with us.",
+  "postBattleText": "Take the access card. You will not like what the lab tells you.",
+  "team": [
+    "honchkrow level=47",
+    "toxicroak level=48",
+    "magnezone level=49",
+    "houndoom level=50"
+  ],
+  "defeatFlag": "rocket_admin_vex_defeated",
+  "flagsOnDefeat": [
+    "rocket_base_cleared",
+    "lab_access_granted"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "rocket_grunt_03_defeated"
+  ],
+  "badge": "",
+  "skin": "rocket_admin_vex",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

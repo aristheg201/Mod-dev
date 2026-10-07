@@ -1,0 +1,27 @@
+{
+  "id": "archaeologist_marlow",
+  "displayName": "Dr. Gideon Marlow",
+  "npcClass": "standard",
+  "visualLevel": 56,
+  "skill": 0,
+  "preBattleText": "That Black Card is an old trainer credential, not a relic. The registry number survived even after the owner's League record was erased.",
+  "postBattleText": "The School of Wolf kept records the League discarded.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "black_card_obtained"
+  ],
+  "badge": "",
+  "skin": "archaeologist_marlow",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "archaeologist_record_complete",
+  "flagsOnInteract": [
+    "black_card_registry_identified"
+  ],
+  "questUnlockOnInteract": ""
+}

@@ -1,0 +1,25 @@
+{
+  "id": "fashion_elle",
+  "displayName": "Elle - Fashion Mall",
+  "npcClass": "standard",
+  "visualLevel": 18,
+  "skill": 0,
+  "preBattleText": "Winning is one thing. Looking like you belong at the Royal League is another.",
+  "postBattleText": "Come back when you want a new look.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [],
+  "badge": "",
+  "skin": "fashion_elle",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "fashion_mall_introduced",
+  "flagsOnInteract": [
+    "fashion_mall_known"
+  ],
+  "questUnlockOnInteract": ""
+}

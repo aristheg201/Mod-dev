@@ -1,0 +1,31 @@
+{
+  "id": "rocket_grunt_03",
+  "displayName": "Rocket Grunt C",
+  "npcClass": "standard",
+  "visualLevel": 46,
+  "skill": 4,
+  "preBattleText": "The lab records are none of your business.",
+  "postBattleText": "The access route is behind me. That is all you are getting.",
+  "team": [
+    "houndoom level=44",
+    "weezing level=45",
+    "crobat level=46"
+  ],
+  "defeatFlag": "rocket_grunt_03_defeated",
+  "flagsOnDefeat": [
+    "rocket_inner_base_reached"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "rocket_grunt_02_defeated"
+  ],
+  "badge": "",
+  "skin": "rocket_grunt_03",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

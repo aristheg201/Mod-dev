@@ -1,0 +1,25 @@
+{
+  "id": "professor_hale",
+  "displayName": "Professor Elias Hale",
+  "npcClass": "standard",
+  "visualLevel": 12,
+  "skill": 0,
+  "preBattleText": "Before you chase badges, learn the region. Use your Phone, keep supplies on you, and come back when you need direction.",
+  "postBattleText": "Keep moving. Divinos rewards trainers who explore instead of following a straight line.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [],
+  "badge": "",
+  "skin": "professor_hale",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "professor_met",
+  "flagsOnInteract": [
+    "divinos_journey_started"
+  ],
+  "questUnlockOnInteract": ""
+}

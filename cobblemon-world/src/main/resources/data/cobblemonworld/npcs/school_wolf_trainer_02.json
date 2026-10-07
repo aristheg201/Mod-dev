@@ -1,0 +1,30 @@
+{
+  "id": "school_wolf_trainer_02",
+  "displayName": "Wolf Trialist Skoll",
+  "npcClass": "standard",
+  "visualLevel": 92,
+  "skill": 5,
+  "preBattleText": "Second trial: uncertainty. Win without knowing which answer comes next.",
+  "postBattleText": "Good. Hati is waiting.",
+  "team": [
+    "umbreon level=90",
+    "absol level=91",
+    "mightyena level=91",
+    "zoroark level=92"
+  ],
+  "defeatFlag": "school_wolf_trainer_02_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "school_wolf_trainer_01_defeated"
+  ],
+  "badge": "",
+  "skin": "school_wolf_trainer_02",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

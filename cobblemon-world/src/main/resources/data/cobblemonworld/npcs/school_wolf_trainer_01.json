@@ -1,0 +1,30 @@
+{
+  "id": "school_wolf_trainer_01",
+  "displayName": "Wolf Trialist Fen",
+  "npcClass": "standard",
+  "visualLevel": 90,
+  "skill": 5,
+  "preBattleText": "First trial: pressure. Show me your team does not break when the pace changes.",
+  "postBattleText": "You held. The second trial will not be as forgiving.",
+  "team": [
+    "lycanroc level=88",
+    "arcanine level=89",
+    "houndoom level=89",
+    "lucario level=90"
+  ],
+  "defeatFlag": "school_wolf_trainer_01_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "school_wolf_entry_granted"
+  ],
+  "badge": "",
+  "skin": "school_wolf_trainer_01",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

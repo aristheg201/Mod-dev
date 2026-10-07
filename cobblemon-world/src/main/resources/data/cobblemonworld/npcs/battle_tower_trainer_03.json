@@ -1,0 +1,32 @@
+{
+  "id": "battle_tower_trainer_03",
+  "displayName": "Tower Ace Orion",
+  "npcClass": "standard",
+  "visualLevel": 76,
+  "skill": 5,
+  "preBattleText": "Final qualification match. Earn the Royal League pass.",
+  "postBattleText": "You are qualified. Take that result to the Royal League.",
+  "team": [
+    "metagross level=74",
+    "dragonite level=75",
+    "gengar level=75",
+    "milotic level=76"
+  ],
+  "defeatFlag": "battle_tower_trainer_03_defeated",
+  "flagsOnDefeat": [
+    "battle_tower_qualified"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "battle_tower_trainer_02_defeated"
+  ],
+  "badge": "",
+  "skin": "battle_tower_trainer_03",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

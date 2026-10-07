@@ -1,0 +1,25 @@
+{
+  "id": "daycare_mira",
+  "displayName": "Mira - Daycare",
+  "npcClass": "standard",
+  "visualLevel": 18,
+  "skill": 0,
+  "preBattleText": "The Daycare can help with breeding and long-term team building. Bring me healthy Pokemon, not just strong ones.",
+  "postBattleText": "Take your time with your team. Not every improvement comes from another battle.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [],
+  "badge": "",
+  "skin": "daycare_mira",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "daycare_introduced",
+  "flagsOnInteract": [
+    "daycare_known"
+  ],
+  "questUnlockOnInteract": ""
+}

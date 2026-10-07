@@ -1,0 +1,30 @@
+{
+  "id": "league_elite_01",
+  "displayName": "League Elite Cassian",
+  "npcClass": "standard",
+  "visualLevel": 80,
+  "skill": 5,
+  "preBattleText": "The League starts here. Win without relying on one answer.",
+  "postBattleText": "Advance.",
+  "team": [
+    "lucario level=78",
+    "aegislash level=79",
+    "salamence level=80",
+    "rotom level=80"
+  ],
+  "defeatFlag": "league_elite_01_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "royal_league_registered"
+  ],
+  "badge": "",
+  "skin": "league_elite_01",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

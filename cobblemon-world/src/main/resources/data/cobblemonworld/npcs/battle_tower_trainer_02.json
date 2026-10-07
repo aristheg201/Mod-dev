@@ -1,0 +1,29 @@
+{
+  "id": "battle_tower_trainer_02",
+  "displayName": "Tower Ace Nyx",
+  "npcClass": "standard",
+  "visualLevel": 74,
+  "skill": 5,
+  "preBattleText": "Second match. Strong teams fail here when they only know one plan.",
+  "postBattleText": "Two wins. The last floor is waiting.",
+  "team": [
+    "garchomp level=72",
+    "gardevoir level=73",
+    "volcarona level=74"
+  ],
+  "defeatFlag": "battle_tower_trainer_02_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "battle_tower_trainer_01_defeated"
+  ],
+  "badge": "",
+  "skin": "battle_tower_trainer_02",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

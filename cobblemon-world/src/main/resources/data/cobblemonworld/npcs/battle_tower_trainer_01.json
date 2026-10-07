@@ -1,0 +1,29 @@
+{
+  "id": "battle_tower_trainer_01",
+  "displayName": "Tower Ace Rowan",
+  "npcClass": "standard",
+  "visualLevel": 72,
+  "skill": 5,
+  "preBattleText": "Tower match one. Show me a team that can adapt.",
+  "postBattleText": "One win. Do not relax.",
+  "team": [
+    "scizor level=70",
+    "rotom level=71",
+    "gastrodon level=72"
+  ],
+  "defeatFlag": "battle_tower_trainer_01_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "battle_tower_registered"
+  ],
+  "badge": "",
+  "skin": "battle_tower_trainer_01",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

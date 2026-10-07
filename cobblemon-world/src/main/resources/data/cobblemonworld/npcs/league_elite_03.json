@@ -1,0 +1,32 @@
+{
+  "id": "league_elite_03",
+  "displayName": "League Elite Kael",
+  "npcClass": "standard",
+  "visualLevel": 88,
+  "skill": 5,
+  "preBattleText": "Last Elite match. Win and the Champion has no reason to refuse you.",
+  "postBattleText": "Go. Aurelia is next.",
+  "team": [
+    "metagross level=86",
+    "dragapult level=87",
+    "milotic level=87",
+    "dragonite level=88"
+  ],
+  "defeatFlag": "league_elite_03_defeated",
+  "flagsOnDefeat": [
+    "aurelia_challenge_ready"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "league_elite_02_defeated"
+  ],
+  "badge": "",
+  "skin": "league_elite_03",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

@@ -1,0 +1,29 @@
+{
+  "id": "rocket_grunt_02",
+  "displayName": "Rocket Grunt B",
+  "npcClass": "standard",
+  "visualLevel": 44,
+  "skill": 3,
+  "preBattleText": "You beat one guard and thought the base was open?",
+  "postBattleText": "Admin Vex is going to hate this.",
+  "team": [
+    "golbat level=42",
+    "muk level=43",
+    "persian level=44"
+  ],
+  "defeatFlag": "rocket_grunt_02_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "rocket_grunt_01_defeated"
+  ],
+  "badge": "",
+  "skin": "rocket_grunt_02",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

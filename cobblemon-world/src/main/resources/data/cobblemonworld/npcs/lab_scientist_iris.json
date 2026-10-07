@@ -1,0 +1,28 @@
+{
+  "id": "lab_scientist_iris",
+  "displayName": "Dr. Iris Vale",
+  "npcClass": "standard",
+  "visualLevel": 48,
+  "skill": 0,
+  "preBattleText": "This access card is genuine. The stolen battle records all point to the same request: someone wanted data on the School of Wolf.",
+  "postBattleText": "I have decoded everything I can. The rest of the trail is outside this laboratory.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "lab_access_granted"
+  ],
+  "badge": "",
+  "skin": "lab_scientist_iris",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "lab_scientist_met",
+  "flagsOnInteract": [
+    "lab_records_decoded",
+    "school_of_wolf_clue_found"
+  ],
+  "questUnlockOnInteract": ""
+}

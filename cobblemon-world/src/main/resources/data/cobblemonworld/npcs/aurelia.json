@@ -1,16 +1,31 @@
 {
-  "id":"aurelia","displayName":"Champion Aurelia","npcClass":"standard","visualLevel":58,"skill":5,
-  "preBattleText":"Beat me and I'll open the sealed League archive.",
-  "postBattleText":"You won. I'll show you the record.",
-  "team":[
+  "id": "aurelia",
+  "displayName": "Champion Aurelia",
+  "npcClass": "standard",
+  "visualLevel": 58,
+  "skill": 5,
+  "preBattleText": "Beat me and I'll open the sealed League archive.",
+  "postBattleText": "You won. I'll show you the record.",
+  "team": [
     "milotic level=54 moves=scald,icebeam,recover,dragontail",
     "gardevoir level=55 moves=psychic,moonblast,calmmind,wish",
     "dragonite level=56 moves=dragonclaw,firepunch,roost,dragondance",
     "lucario level=58 moves=aurasphere,flashcannon,extremespeed,swordsdance"
   ],
-  "defeatFlag":"aurelia_defeated","flagsOnDefeat":["seal_05_broken"],
-  "contactUnlock":"aurelia","chapterOnDefeat":"chapter_05_league_fault",
-  "requiredChapter":"chapter_05_league_fault","requiredFlags":["seal_04_broken"],
-  "skin":"aurelia",
-  "badge":"league_fault_badge","rematchable":false,"specialActor":false
+  "defeatFlag": "aurelia_defeated",
+  "flagsOnDefeat": [
+    "seal_05_broken",
+    "royal_league_complete",
+    "school_of_wolf_unlocked"
+  ],
+  "contactUnlock": "aurelia",
+  "chapterOnDefeat": "chapter_05_league_fault",
+  "requiredChapter": "chapter_05_league_fault",
+  "requiredFlags": [
+    "seal_04_broken"
+  ],
+  "skin": "aurelia",
+  "badge": "league_fault_badge",
+  "rematchable": false,
+  "specialActor": false
 }

@@ -1,0 +1,25 @@
+{
+  "id": "pokemall_ren",
+  "displayName": "Ren - PokeMall",
+  "npcClass": "standard",
+  "visualLevel": 18,
+  "skill": 0,
+  "preBattleText": "Stock up before long trips. Some jobs will ask you to submit real materials, so do not spend everything you gather.",
+  "postBattleText": "Preparation matters more than people think.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [],
+  "badge": "",
+  "skin": "pokemall_ren",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "pokemall_introduced",
+  "flagsOnInteract": [
+    "pokemall_known"
+  ],
+  "questUnlockOnInteract": ""
+}

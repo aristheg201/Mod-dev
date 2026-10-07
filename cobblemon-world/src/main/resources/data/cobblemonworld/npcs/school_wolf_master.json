@@ -1,0 +1,35 @@
+{
+  "id": "school_wolf_master",
+  "displayName": "Master Vargan",
+  "npcClass": "standard",
+  "visualLevel": 96,
+  "skill": 5,
+  "preBattleText": "The League proved you can win. The School asks whether you understand why you keep moving forward.",
+  "postBattleText": "You passed. The old registry is open to you.",
+  "team": [
+    "lycanroc level=94",
+    "lucario level=94",
+    "arcanine level=95",
+    "zoroark level=95",
+    "zacian level=96",
+    "zamazenta level=96"
+  ],
+  "defeatFlag": "school_wolf_master_defeated",
+  "flagsOnDefeat": [
+    "school_trials_complete",
+    "toba_record_access"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "school_wolf_trainer_03_defeated"
+  ],
+  "badge": "",
+  "skin": "school_wolf_master",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}

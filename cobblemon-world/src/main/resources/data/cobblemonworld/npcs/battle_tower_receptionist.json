@@ -1,0 +1,25 @@
+{
+  "id": "battle_tower_receptionist",
+  "displayName": "Mina - Battle Tower",
+  "npcClass": "standard",
+  "visualLevel": 70,
+  "skill": 0,
+  "preBattleText": "Qualification is three consecutive Tower wins. No shortcuts, no substitutions after registration.",
+  "postBattleText": "Your Tower registration is active.",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "divinos_eight_towns_complete"
+  ],
+  "badge": "",
+  "skin": "battle_tower_receptionist",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "battle_tower_registered",
+  "flagsOnInteract": [],
+  "questUnlockOnInteract": ""
+}
