@@ -1,7 +1,9 @@
-singleplayer-runtime-qa-v5
+singleplayer-runtime-qa-v6
 phone-gui-scale-2-3
 performance-regression-budget
 npc-recovery-local-lookup
-faction-build-time-slice
+faction-build-time-slice-v2
 svframe-integrated-singleplayer
 svframelib-optional-luckperms
+renderer-aware-client-budget
+no-tick-stall
