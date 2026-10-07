@@ -46,6 +46,8 @@ public final class IslandWarService {
     };
 
     private static final ArrayDeque<Placement> BUILD_QUEUE = new ArrayDeque<>();
+    private static final int MIN_BUILD_PLACEMENTS_PER_TICK = 256;
+    private static final long BUILD_TIME_BUDGET_NANOS = 2_000_000L;
     private static MinecraftServer server;
     private static long ticks;
 
@@ -441,10 +443,23 @@ public final class IslandWarService {
         ServerLevel island = server.getLevel(DIMENSION);
         if (island == null) return;
 
-        int budget = CWorldConfig.INSTANCE.factionIslandBuildBlocksPerTick;
-        while (budget-- > 0 && !BUILD_QUEUE.isEmpty()) {
+        int configuredLimit = Math.max(1, CWorldConfig.INSTANCE.factionIslandBuildBlocksPerTick);
+        int minimumBeforeTimeCheck = Math.min(configuredLimit, MIN_BUILD_PLACEMENTS_PER_TICK);
+        long started = System.nanoTime();
+        int placed = 0;
+
+        // Preserve the exact authored island and the configured hard cap, but stop large
+        // construction bursts once this tick has spent its small time slice. A minimum
+        // batch guarantees deterministic forward progress even on slower machines.
+        while (placed < configuredLimit && !BUILD_QUEUE.isEmpty()) {
             Placement placement = BUILD_QUEUE.removeFirst();
             island.setBlock(placement.pos(), placement.state(), 3);
+            placed++;
+
+            if (placed >= minimumBeforeTimeCheck
+                    && System.nanoTime() - started >= BUILD_TIME_BUDGET_NANOS) {
+                break;
+            }
         }
 
         if (BUILD_QUEUE.isEmpty()) {
