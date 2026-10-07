@@ -1,6 +1,7 @@
-singleplayer-runtime-qa-v4
+singleplayer-runtime-qa-v5
 phone-gui-scale-2-3
 performance-regression-budget
 npc-recovery-local-lookup
 faction-build-time-slice
 svframe-integrated-singleplayer
+svframelib-optional-luckperms
