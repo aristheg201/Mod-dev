@@ -4,6 +4,8 @@ plugins {
     id("architectury-plugin") version "3.4-SNAPSHOT"
 }
 
+apply(from = "npc-skins.gradle")
+
 group = property("maven_group")!!
 version = property("mod_version")!!
 
