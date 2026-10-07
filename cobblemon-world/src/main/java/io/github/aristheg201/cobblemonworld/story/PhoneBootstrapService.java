@@ -28,14 +28,33 @@ public final class PhoneBootstrapService {
         if (!CWorldConfig.INSTANCE.grantTrainerPhoneOnFirstJoin) return;
 
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        if (p.storyFlags.contains("phone_granted")) return;
+        boolean firstGrant = !p.storyFlags.contains("phone_granted");
+        boolean hasPhysicalPhone = false;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i).is(ModItems.TRAINER_PHONE)) {
+                hasPhysicalPhone = true;
+                break;
+            }
+        }
 
-        ItemStack phone = new ItemStack(ModItems.TRAINER_PHONE);
-        if (!player.addItem(phone)) player.drop(phone, false);
+        if (!hasPhysicalPhone) {
+            ItemStack phone = new ItemStack(ModItems.TRAINER_PHONE);
+            if (!player.addItem(phone)) player.drop(phone, false);
+            System.out.println("CWORLD_PHONE_ITEM_GRANTED player=" + player.getGameProfile().getName()
+                    + " restored=" + (!firstGrant));
+        }
 
-        p.storyFlags.add("phone_granted");
-        ProgressionStore.INSTANCE.save();
+        if (firstGrant) {
+            p.storyFlags.add("phone_granted");
+            ProgressionStore.INSTANCE.save();
+        }
+
         CampaignService.initializePhone(player);
-        CWorldNetworking.toast(player, "story", "Trainer Phone", "A new message is waiting.");
+
+        if (firstGrant) {
+            CWorldNetworking.toast(player, "story", "Trainer Phone", "A new message is waiting.");
+        } else if (!hasPhysicalPhone) {
+            CWorldNetworking.toast(player, "story", "Trainer Phone Restored", "The Trainer Phone was returned to your inventory.");
+        }
     }
 }
