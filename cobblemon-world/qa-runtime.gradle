@@ -2,6 +2,8 @@ plugins {
     id 'fabric-loom' version '1.10.5'
 }
 
+apply from: 'npc-skins.gradle'
+
 version = project.mod_version
 group = project.maven_group
 
