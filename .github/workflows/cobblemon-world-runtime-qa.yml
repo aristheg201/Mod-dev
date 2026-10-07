@@ -31,7 +31,6 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-
       - name: Build SVFrameLib and SVFrameMMO
         shell: bash
         run: |
@@ -46,9 +45,9 @@ jobs:
             cd /tmp/cworld-svframe/SVFrameMMO
             gradle --no-daemon --stacktrace clean build
           )
-          mkdir -p cobblemon-world/qa-runtime/server/mods
-          cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
-          cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/server/mods/
+          mkdir -p cobblemon-world/qa-runtime/mods
+          cp /tmp/cworld-svframe/SVFrameLib/build/libs/SVFrameLib-1.7.1-fabric.jar cobblemon-world/qa-runtime/mods/
+          cp /tmp/cworld-svframe/SVFrameMMO/build/libs/SVFrameMMO-1.13.1-fabric.jar cobblemon-world/qa-runtime/mods/
 
       - name: Install Gradle 8.12 for production QA
         shell: bash
@@ -68,57 +67,7 @@ jobs:
           cd cobblemon-world
           gradle --no-daemon --init-script qa-runtime.init.gradle downloadAssets
 
-      - name: Prepare dedicated server
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p cobblemon-world/qa-runtime/server
-          cat > cobblemon-world/qa-runtime/server/server.properties <<'EOF'
-          online-mode=false
-          server-port=25579
-          view-distance=5
-          simulation-distance=5
-          spawn-protection=0
-          enable-command-block=false
-          EOF
-          echo 'eula=true' > cobblemon-world/qa-runtime/server/eula.txt
-
-      - name: Start dedicated QA server
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd cobblemon-world
-          mkdir -p build qa-runtime/server/logs
-          (
-            gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldServer > build/runtime-qa-server-console.log 2>&1
-          ) &
-          echo $! > build/runtime-qa-server.pid
-          SERVER_PID="$(cat build/runtime-qa-server.pid)"
-
-          for i in $(seq 1 180); do
-            if grep -Fq 'Done (' qa-runtime/server/logs/latest.log 2>/dev/null; then
-              echo "CWORLD_QA_SERVER_READY"
-              exit 0
-            fi
-            if grep -Eq 'CWORLD_QA_FAILED|Exception in server tick loop|Could not execute entrypoint|NoClassDefFoundError|Mixin apply failed|Mod resolution failed|Incompatible mods found|Task .* not found|BUILD FAILED' qa-runtime/server/logs/latest.log build/runtime-qa-server-console.log 2>/dev/null; then
-              cat build/runtime-qa-server-console.log
-              cat qa-runtime/server/logs/latest.log || true
-              exit 1
-            fi
-            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-              cat build/runtime-qa-server-console.log
-              cat qa-runtime/server/logs/latest.log || true
-              echo "Dedicated QA server process exited before readiness" >&2
-              exit 1
-            fi
-            sleep 1
-          done
-          cat build/runtime-qa-server-console.log
-          cat qa-runtime/server/logs/latest.log || true
-          echo "Dedicated QA server did not become ready" >&2
-          exit 1
-
-      - name: Run real client visual/runtime QA
+      - name: Run integrated singleplayer visual/runtime QA
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         shell: bash
@@ -126,32 +75,12 @@ jobs:
           set -euo pipefail
           cd cobblemon-world
           rm -rf qa-runtime/client
-          mkdir -p qa-runtime/client/screenshots
-          timeout --signal=INT --kill-after=20s 300s xvfb-run -a gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldClient > build/runtime-qa-client-console.log 2>&1 || {
+          mkdir -p qa-runtime/client/screenshots build
+          timeout --signal=INT --kill-after=20s 420s xvfb-run -a gradle --no-daemon --stacktrace --init-script qa-runtime.init.gradle runProductionCWorldClient > build/runtime-qa-client-console.log 2>&1 || {
             cat build/runtime-qa-client-console.log
             cat qa-runtime/client/logs/latest.log || true
-            cat qa-runtime/server/logs/latest.log || true
             exit 1
           }
-
-      - name: Wait for server QA completion
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd cobblemon-world
-          SERVER_PID="$(cat build/runtime-qa-server.pid)"
-          for i in $(seq 1 120); do
-            if grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' qa-runtime/server/logs/latest.log; then
-              break
-            fi
-            if grep -Eq 'CWORLD_QA_FAILED|Exception in server tick loop|NoClassDefFoundError|Mixin apply failed' qa-runtime/server/logs/latest.log; then
-              cat qa-runtime/server/logs/latest.log
-              exit 1
-            fi
-            sleep 1
-          done
-          grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' qa-runtime/server/logs/latest.log
-          wait "$SERVER_PID" || true
 
       - name: Verify runtime evidence
         shell: bash
@@ -159,10 +88,10 @@ jobs:
           set -euo pipefail
           cd cobblemon-world
           ! grep -R -E 'FactionBridge|io\.icker\.factions|isModLoaded\("factions"\)|Factions 2\.8\.0|integrationAvailable' src/main docs README.md
-          SERVER=qa-runtime/server/logs/latest.log
-          CLIENT=qa-runtime/client/logs/latest.log
+          LOG=qa-runtime/client/logs/latest.log
           JAR="$(find build/libs -maxdepth 1 -name 'CobblemonWorld-*.jar' ! -name '*sources*' | head -n 1)"
           test -n "$JAR"
+
           for ASSET in \
             assets/cobblemon_smartphone/textures/gui/smartphone_red.png \
             assets/cobblemon_smartphone/textures/gui/home_screen.png \
@@ -177,57 +106,88 @@ jobs:
           do
             jar tf "$JAR" | grep -Fxq "$ASSET"
           done
-          ! grep -Fq 'Failed to load texture: cobblemon_smartphone:' "$CLIENT"
-          grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$SERVER"
-          grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$CLIENT"
-          grep -Fq 'CWORLD_QA_CLIENT_CONNECT_REQUEST 127.0.0.1:25579' "$CLIENT"
-          grep -Fq 'CWORLD_QA_CLIENT_CONNECTED CWorldQA' "$CLIENT"
-          grep -Fq 'CWORLD_QA_PHONE_ITEM_PASS inventory=true item=cobblemonworld:trainer_phone' "$SERVER"
-          ! grep -Eq 'Failed to load texture: cobblemon_smartphone:.*red_smartphone_3d|Missing model.*cobblemonworld:trainer_phone|Unable to load model.*cobblemonworld:trainer_phone' "$CLIENT"
-          grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true' "$SERVER"
-          grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$SERVER"
-          grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$SERVER"
-          grep -Fq 'CWORLD_QA_STORY_PASS cap=100' "$SERVER"
-          grep -Fq 'CWORLD_QA_PERSISTENCE_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_NATIVE_FACTION_CREATE_PASS name=CWorldQA' "$SERVER"
-          grep -Fq 'CWORLD_QA_FACTION_SPAWN_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_NPC_RECOVERY_PASS' "$SERVER"
-          grep -Fq 'CWORLD_NPC_SKIN_APPLIED id=mara_voss skin=mara_voss' "$SERVER"
-          grep -Fq 'CWORLD_TUTORIAL_TOAST category=level_cap title=Level Cap Increased' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/smartphone_red.png' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/home_screen.png' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/large_smartphone_red.png' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/large_screen.png' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/buttons/trainer.png' "$CLIENT"
-          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/elements/home_button.png' "$CLIENT"
-          grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$SERVER"
-          grep -Fq 'CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false' "$SERVER"
-          grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' "$SERVER"
-          ! grep -Eq 'CWORLD_QA_FAILED|CWORLD_QA_CLIENT_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' "$SERVER" "$CLIENT"
+
+          grep -Fq 'CWORLD_QA_CLIENT_DRIVER_LOADED' "$LOG"
+          grep -Fq 'CWORLD_QA_SERVER_DRIVER_LOADED' "$LOG"
+          grep -Fq 'CWORLD_QA_SINGLEPLAYER_CREATE_REQUEST world=CWorldQA' "$LOG"
+          grep -Fq 'CWORLD_QA_SINGLEPLAYER_CONNECTED CWorldQA' "$LOG"
+          grep -Fq 'CWORLD_QA_PHONE_ITEM_PASS inventory=true item=cobblemonworld:trainer_phone' "$LOG"
+          grep -Fq 'CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true' "$LOG"
+          grep -Fq 'CWORLD_QA_LEVEL_CAP_NEGATIVE_PASS use=battle cap=15 pokemon=20' "$LOG"
+          grep -Fq 'CWORLD_QA_COBBLEMON_BATTLE_START_PASS id=mara_voss' "$LOG"
+          grep -Fq 'CWORLD_QA_STORY_PASS cap=100' "$LOG"
+          grep -Fq 'CWORLD_QA_PERSISTENCE_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_NATIVE_FACTION_CREATE_PASS name=CWorldQA' "$LOG"
+          grep -Fq 'CWORLD_QA_FACTION_SPAWN_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_NPC_RECOVERY_PASS' "$LOG"
+          grep -Fq 'CWORLD_NPC_SKIN_APPLIED id=mara_voss skin=mara_voss' "$LOG"
+          grep -Fq 'CWORLD_TUTORIAL_TOAST category=level_cap title=Level Cap Increased' "$LOG"
+          grep -Fq 'CWORLD_QA_MYSTERIOUS_SPAWN_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_TOBA_PHASE1_BATTLE_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_TOBA_REVEAL_PASS cap=100 phase2=false' "$LOG"
+          grep -Fq 'CWORLD_QA_PERF_CLIENT_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_PERF_SERVER_PASS' "$LOG"
+          grep -Fq 'CWORLD_QA_COMPLETE screenshots=31 runtime=singleplayer_integrated' "$LOG"
+
+          ! grep -Fq 'Failed to load texture: cobblemon_smartphone:' "$LOG"
+          ! grep -Eq 'Failed to load texture: cobblemon_smartphone:.*red_smartphone_3d|Missing model.*cobblemonworld:trainer_phone|Unable to load model.*cobblemonworld:trainer_phone' "$LOG"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/smartphone_red.png' "$LOG"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/home_screen.png' "$LOG"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/large_smartphone_red.png' "$LOG"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/large_screen.png' "$LOG"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/buttons/trainer.png' "$LOG"
+          ! grep -Fq 'Failed to load texture: cobblemonworld:textures/gui/elements/home_button.png' "$LOG"
+          ! grep -Eq 'CWORLD_QA_FAILED|CWORLD_QA_CLIENT_FAILED|Exception in thread|Encountered an unexpected exception|NoClassDefFoundError|Mixin apply failed' "$LOG"
 
           python3 - <<'PY'
           from pathlib import Path
           import struct
+
           shots = sorted(Path("qa-runtime/client/screenshots").glob("*.png"))
           expected = {
-            "00-phone-home.png","01-phone-trainer-card.png","02-phone-objective.png",
-            "03-phone-story.png","04-phone-side-quests.png","05-phone-level-cap.png",
-            "06-phone-badges.png","07-phone-contacts.png","08-phone-messages.png",
-            "09-phone-league.png","10-phone-faction.png","11-toast-overlay.png",
-            "12-story-npc.png","13-faction-gate-war.png","14-faction-conquest.png",
-            "15-faction-occupation.png","16-npc-recovered.png","17-mysterious-figure.png",
-            "18-toba-reveal.png","19-phone-story-final.png",
+            "00-phone-s2-home.png",
+            "01-phone-s2-trainer-card.png",
+            "02-phone-s2-objective.png",
+            "03-phone-s2-story.png",
+            "04-phone-s2-side-quests.png",
+            "05-phone-s2-level-cap.png",
+            "06-phone-s2-badges.png",
+            "07-phone-s2-contacts.png",
+            "08-phone-s2-messages.png",
+            "09-phone-s2-league.png",
+            "10-phone-s2-faction.png",
+            "11-phone-s3-home.png",
+            "12-phone-s3-trainer-card.png",
+            "13-phone-s3-objective.png",
+            "14-phone-s3-story.png",
+            "15-phone-s3-side-quests.png",
+            "16-phone-s3-level-cap.png",
+            "17-phone-s3-badges.png",
+            "18-phone-s3-contacts.png",
+            "19-phone-s3-messages.png",
+            "20-phone-s3-league.png",
+            "21-phone-s3-faction.png",
+            "22-toast-overlay.png",
+            "23-story-npc.png",
+            "24-faction-gate-war.png",
+            "25-faction-conquest.png",
+            "26-faction-occupation.png",
+            "27-npc-recovered.png",
+            "28-mysterious-figure.png",
+            "29-toba-reveal.png",
+            "30-phone-s3-story-final.png",
           }
           actual = {p.name for p in shots}
-          assert actual == expected, (sorted(expected-actual), sorted(actual-expected))
+          assert actual == expected, (sorted(expected - actual), sorted(actual - expected))
+          assert len(shots) == 31, len(shots)
+
           for p in shots:
-              data=p.read_bytes()
+              data = p.read_bytes()
               assert data[:8] == b"\x89PNG\r\n\x1a\n", p.name
-              w,h = struct.unpack(">II",data[16:24])
-              assert w >= 1280 and h >= 720, (p.name,w,h)
-              assert len(data) > 15000, (p.name,len(data))
-              print("QA_IMAGE",p.name,w,h,len(data))
+              w, h = struct.unpack(">II", data[16:24])
+              assert w >= 1280 and h >= 720, (p.name, w, h)
+              assert len(data) > 15000, (p.name, len(data))
+              print("QA_IMAGE", p.name, w, h, len(data))
           PY
 
       - name: Write QA report
@@ -236,7 +196,7 @@ jobs:
         run: |
           cd cobblemon-world
           RESULT="FAIL"
-          if [ -f qa-runtime/server/logs/latest.log ] && grep -Fq 'CWORLD_QA_COMPLETE screenshots=20 runtime=dedicated_server' qa-runtime/server/logs/latest.log; then
+          if [ -f qa-runtime/client/logs/latest.log ] && grep -Fq 'CWORLD_QA_COMPLETE screenshots=31 runtime=singleplayer_integrated' qa-runtime/client/logs/latest.log; then
             RESULT="PASS"
           fi
           cat > QA_RUNTIME_REPORT.md <<EOF
@@ -245,29 +205,32 @@ jobs:
           - Result: **$RESULT**
           - Commit: ${{ github.sha }}
           - Run: ${{ github.run_id }}
-          - Runtime: Fabric Loom production-remapped dedicated server + real client/Xvfb
+          - Runtime: one production-remapped Fabric client running a real integrated singleplayer server under Xvfb
           - Cobblemon: 1.8.1
           - Factions: native Cobblemon World subsystem
           - SVFrameLib: 1.7.1
           - SVFrameMMO: 1.13.1
-          - LuckPerms: 5.4.139 Fabric (server-only runtime required by current SVFrameLib PermissionMap)
-          - Screenshots expected: 20
+          - LuckPerms: Fabric runtime required by the current SVFrameLib PermissionMap
+          - Screenshots expected: 31
+          - Phone visual matrix: Home + all 10 apps at GUI Scale 2 and GUI Scale 3
+          - Performance policy: measure client FPS/frame time and integrated-server MSPT without disabling gameplay systems or reducing content to satisfy the gate
 
           ## Acceptance gates
-          - Trainer Phone home + all 10 apps render in real client.
-          - Top-right Minecraft TutorialToast renders outside the Phone (vanilla tutorial presentation, not a custom desktop panel).
+          - The mod boots as a combined client/server mod in one real singleplayer session; no dedicated QA server is started.
+          - Trainer Phone Home + all 10 apps render at GUI Scale 2 and GUI Scale 3.
+          - Top-right Minecraft TutorialToast renders outside the Phone.
           - Over-cap party blocks a real Cobblemon trainer battle.
           - Legal party starts a real Cobblemon battle in BattleRegistry.
-          - Main story reaches Lv.100 and completes scripted side-quest chain.
+          - Main story reaches Lv.100 and completes the scripted side-quest chain.
           - Progression and NPC placement survive disk reload.
-          - Native Cobblemon World faction core creates the QA faction; Gate War, Conquest and Occupation render.
-          - Occupation affinity bonus spawns are present and obey the player's cap.
+          - Native faction Gate War, Conquest and Occupation render in the same singleplayer runtime.
+          - Occupation affinity bonus spawns obey the player's cap.
           - Persisted story NPC is recovered after entity removal.
-          - ??? appears at the configured final location.
-          - ??? starts a real Phase-I Cobblemon battle.
-          - The final Cobblemon battle reveals ??? as TOBA and completes Chapter 8.
+          - ??? appears, starts the final Cobblemon battle, and is revealed as TOBA.
           - No TOBA Phase II encounter is reachable in the current story build.
-          - Native Faction core is mandatory in this audit; SVFrameMMO + SVFrameLib remain external RPG hooks.
+          - Client performance clears the headless regression budget.
+          - Integrated-server average tick time stays at or below 50 ms/tick.
+          - Performance work must not remove objectives, trainer AI, NPC systems, progression, world interactions, battles or presentation features merely to improve benchmark numbers.
           EOF
 
       - name: Upload Cobblemon World runtime QA artifact
@@ -278,10 +241,8 @@ jobs:
           path: |
             cobblemon-world/build/libs/*.jar
             cobblemon-world/QA_RUNTIME_REPORT.md
-            cobblemon-world/build/runtime-qa-server-console.log
             cobblemon-world/build/runtime-qa-client-console.log
-            cobblemon-world/qa-runtime/server/logs/latest.log
             cobblemon-world/qa-runtime/client/logs/latest.log
             cobblemon-world/qa-runtime/client/screenshots/*.png
-            cobblemon-world/qa-runtime/server/world/cobblemonworld/*.json
+            cobblemon-world/qa-runtime/client/saves/CWorldQA/cobblemonworld/*.json
           if-no-files-found: warn
