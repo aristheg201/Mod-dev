@@ -210,7 +210,7 @@ jobs:
           - Factions: native Cobblemon World subsystem
           - SVFrameLib: 1.7.1
           - SVFrameMMO: 1.13.1
-          - LuckPerms: Fabric runtime required by the current SVFrameLib PermissionMap
+          - LuckPerms: optional; SVFrame transient permissions must work without it
           - Screenshots expected: 31
           - Phone visual matrix: Home + all 10 apps at GUI Scale 2 and GUI Scale 3
           - Performance policy: measure client FPS/frame time and integrated-server MSPT without disabling gameplay systems or reducing content to satisfy the gate
