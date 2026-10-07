@@ -156,9 +156,10 @@ public final class CWorldQaServerHarness {
     }
 
     private static void toast(ServerPlayer player) {
+        String capText = "Lv." + LevelCapService.getCap(player);
         ServerPlayNetworking.send(player, new ToastPayload(
-                "level_cap", "Level Cap Increased", "Lv." + LevelCapService.getCap(player)));
-        control(player, "capture_toast", "", "11-toast-overlay");
+                "level_cap", "Level Cap Increased", capText));
+        control(player, "capture_toast", capText, "11-toast-overlay");
     }
 
     private static void prepareStoryTrainer(ServerPlayer player) {
@@ -173,9 +174,15 @@ public final class CWorldQaServerHarness {
         require(CampaignService.canChallengeTrainer(player, mara).allowed(), "Mara did not unlock in chapter 1");
 
         ServerLevel level = player.serverLevel();
-        double x = player.getX();
-        double y = player.getY();
-        double z = player.getZ() + 5.0;
+        int baseX = (int) Math.floor(player.getX());
+        int baseZ = (int) Math.floor(player.getZ());
+        int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, baseX, baseZ) + 1;
+        clearNpcQaStage(level, baseX, ground, baseZ);
+        teleport(player, level, baseX + 0.5, ground, baseZ + 0.5, 0.0F, 0.0F);
+
+        double x = baseX + 0.5;
+        double y = ground;
+        double z = baseZ + 5.5;
         qaNpc = TrainerBattleService.createNpc(player, mara);
         qaNpc.moveTo(x, y, z, 180.0F, 0.0F);
         require(level.addFreshEntity(qaNpc), "Mara QA NPC failed to spawn");
@@ -504,6 +511,17 @@ public final class CWorldQaServerHarness {
                 .filter(actor -> actor.getOwnerUuid() == null || actor.getOwnerUuid().equals(player.getUUID()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private static void clearNpcQaStage(ServerLevel level, int baseX, int ground, int baseZ) {
+        for (int x = baseX - 4; x <= baseX + 4; x++) {
+            for (int z = baseZ - 3; z <= baseZ + 8; z++) {
+                level.setBlockAndUpdate(new BlockPos(x, ground - 1, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                for (int y = ground; y <= ground + 4; y++) {
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
     }
 
     private static void clearFinalEncounterStage(ServerLevel level, int ground) {
