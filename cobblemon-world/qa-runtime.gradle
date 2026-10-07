@@ -18,12 +18,8 @@ repositories {
     maven { url 'https://api.modrinth.com/maven' }
 }
 
-def smartphoneVisualAssets = configurations.create('smartphoneVisualAssets')
 
 dependencies {
-    add(smartphoneVisualAssets.name, "maven.modrinth:n2f1HbK8:KkQzzHhm") {
-        transitive = false
-    }
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
 
@@ -36,24 +32,58 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.11.4"
 }
 
-processResources {
-    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
-    inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
-        expand version: project.version
-    }
+def smartphoneSourceCommit = '438161ff9ad1c1c72f1426ec6ee68a3920cab332'
+def smartphoneSourceZip = layout.buildDirectory.file("vendor/cobblemon-smartphone-${smartphoneSourceCommit}.zip")
+def generatedSmartphoneAssets = layout.buildDirectory.dir('generated/cobblemon-smartphone-gui')
 
-    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
-        include '**/textures/gui/**'
+tasks.register('downloadSmartphoneSource') {
+    outputs.file smartphoneSourceZip
+    doLast {
+        def target = smartphoneSourceZip.get().asFile
+        target.parentFile.mkdirs()
+        if (!target.isFile() || target.length() < 1024L) {
+            def url = new URI(
+                    "https://codeload.github.com/RapidMesck/cobblemon_smartphone_main/zip/${smartphoneSourceCommit}"
+            ).toURL()
+            url.openStream().withCloseable { input ->
+                target.withOutputStream { output ->
+                    output << input
+                }
+            }
+        }
+        if (!target.isFile() || target.length() <= 1024L) {
+            throw new GradleException('Failed to download pinned Cobblemon Smartphone source archive')
+        }
+    }
+}
+
+tasks.register('unpackSmartphoneAssets', Sync) {
+    dependsOn 'downloadSmartphoneSource'
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
+    from({
+        zipTree(smartphoneSourceZip.get().asFile)
+    }) {
+        include '**/common/src/main/resources/assets/cobblemon_smartphone/textures/gui/**'
         eachFile { details ->
-            def marker = 'textures/gui/'
+            def marker = 'common/src/main/resources/'
             def markerIndex = details.path.indexOf(marker)
             if (markerIndex >= 0) {
-                details.path = 'assets/cobblemon_smartphone/textures/gui/' +
-                        details.path.substring(markerIndex + marker.length())
+                details.path = details.path.substring(markerIndex + marker.length())
             }
         }
         includeEmptyDirs = false
+    }
+    into generatedSmartphoneAssets
+}
+
+processResources {
+    dependsOn 'unpackSmartphoneAssets'
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
+    inputs.property 'version', project.version
+    from generatedSmartphoneAssets
+
+    filesMatching('fabric.mod.json') {
+        expand version: project.version
     }
 
     doLast {
@@ -63,29 +93,18 @@ processResources {
             'assets/cobblemon_smartphone/textures/gui/large_smartphone_red.png',
             'assets/cobblemon_smartphone/textures/gui/large_screen.png',
             'assets/cobblemon_smartphone/textures/gui/buttons/trainer.png',
-            'assets/cobblemon_smartphone/textures/gui/elements/home_button.png'
+            'assets/cobblemon_smartphone/textures/gui/buttons/social.png',
+            'assets/cobblemon_smartphone/textures/gui/elements/home_button.png',
+            'assets/cobblemon_smartphone/textures/gui/elements/page_dot_on.png',
+            'assets/cobblemon_smartphone/textures/gui/elements/prev_button.png'
         ].each { relative ->
-            if (!destinationDir.toPath().resolve(relative).toFile().isFile()) {
+            def file = destinationDir.toPath().resolve(relative).toFile()
+            if (!file.isFile() || file.length() <= 100L) {
                 throw new GradleException("Cobblemon Smartphone GUI asset was not vendored: " + relative)
             }
         }
+        println 'CWORLD_SMARTPHONE_ASSETS_PASS count=9'
     }
-}
-
-jar {
-    from({ zipTree(smartphoneVisualAssets.singleFile) }) {
-        include '**/textures/gui/**'
-        eachFile { details ->
-            def marker = 'textures/gui/'
-            def markerIndex = details.path.indexOf(marker)
-            if (markerIndex >= 0) {
-                details.path = 'assets/cobblemon_smartphone/textures/gui/' +
-                        details.path.substring(markerIndex + marker.length())
-            }
-        }
-        includeEmptyDirs = false
-    }
-    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
 }
 
 tasks.withType(JavaCompile).configureEach {
