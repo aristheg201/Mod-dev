@@ -1,3 +1,5 @@
-singleplayer-runtime-qa-v2
+singleplayer-runtime-qa-v3
 phone-gui-scale-2-3
 performance-regression-budget
+npc-recovery-local-lookup
+faction-build-time-slice
