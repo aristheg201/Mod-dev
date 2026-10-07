@@ -46,8 +46,8 @@ public final class IslandWarService {
     };
 
     private static final ArrayDeque<Placement> BUILD_QUEUE = new ArrayDeque<>();
-    private static final int MIN_BUILD_PLACEMENTS_PER_TICK = 256;
-    private static final long BUILD_TIME_BUDGET_NANOS = 2_000_000L;
+    private static final int MIN_BUILD_PLACEMENTS_PER_TICK = 128;
+    private static final long BUILD_TIME_BUDGET_NANOS = 1_500_000L;
     private static MinecraftServer server;
     private static long ticks;
 
@@ -453,7 +453,9 @@ public final class IslandWarService {
         // batch guarantees deterministic forward progress even on slower machines.
         while (placed < configuredLimit && !BUILD_QUEUE.isEmpty()) {
             Placement placement = BUILD_QUEUE.removeFirst();
-            island.setBlock(placement.pos(), placement.state(), 3);
+            // The island is authored terrain, not redstone simulation. Client update without
+            // neighbor cascades keeps the exact final geometry while avoiding large tick spikes.
+            island.setBlock(placement.pos(), placement.state(), 2);
             placed++;
 
             if (placed >= minimumBeforeTimeCheck
