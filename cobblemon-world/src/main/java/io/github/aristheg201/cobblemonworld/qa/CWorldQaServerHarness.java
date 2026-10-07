@@ -146,6 +146,8 @@ public final class CWorldQaServerHarness {
             return;
         }
 
+        System.out.println("CWORLD_QA_PHONE_ITEM_PASS inventory=true item=cobblemonworld:trainer_phone");
+
         var rpg = SvFrameRpgBridge.snapshot(player);
         if (!rpg.available() || !rpg.libAvailable()) return;
         System.out.println("CWORLD_QA_INTEGRATIONS_PASS nativeFaction=true svframemmo=true svframelib=true profile="
