@@ -173,4 +173,4 @@ public final class TrainerBattleService {
             return false;
         }
     }
-
+}
