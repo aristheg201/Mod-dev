@@ -40,6 +40,7 @@ public final class CWorldQaClientHarness {
     private static int worldWaitTicks;
     private static int worldReadyTicks;
     private static int stopCountdown = -1;
+    private static int stopWarmupTicks;
 
     private static long fpsSamples;
     private static long fpsTotal;
@@ -178,6 +179,15 @@ public final class CWorldQaClientHarness {
                 }
                 settleTicks = 12;
             } else if ("stop".equals(current.action())) {
+                // Short dedicated restart/dependency scenarios can finish before the
+                // performance warm-up. Collect real samples before applying the same
+                // threshold; do not turn successful gameplay checks into a teardown crash.
+                if (Boolean.getBoolean("cworld.qa.production")
+                        && (fpsSamples < 20L || frameSamples < 20L) && stopWarmupTicks++ < 200) {
+                    QUEUE.add(current);
+                    current = null;
+                    return;
+                }
                 verifyPerformance(client);
                 ack(client, token(current), true, "singleplayer client stopping");
                 current = null;

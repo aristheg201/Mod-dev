@@ -31,6 +31,18 @@ The official Armors 1.6.0+1.8.1 download has a dependency typo (`1.8.1+1.12.1`).
 
 Build once before running server and client; use `-x remapJar` on their tasks to avoid concurrent remap writes. `-Dcworld.qa.services=true` selects a fresh `qa-runtime/server-services` world for phone, shop, navigation, localization and low-level scaling tests. Combine services with `-Dcworld.qa.restart=true` on both processes to test that world after a real shutdown. `-Dcworld.qa.resume=true` continues the campaign fixture from actual previously earned battle flags. `-Dcworld.qa.noeconomy=true` runs an isolated server with BEconomy omitted and proves purchase rejection. These modes are test-only and must never be enabled on a player server.
 
+On Linux with Xvfb and ripgrep installed, the included helper runs the separate processes and checks the actual outcome logs:
+
+```sh
+python3 tools/prepare_runtime_qa.py
+./gradlew clean build
+xvfb-run -a tools/run_production_qa.sh full
+xvfb-run -a tools/run_production_qa.sh restart
+xvfb-run -a tools/run_production_qa.sh noeconomy
+```
+
+The CobblemonWorld CI workflows use the same wrapper and production profiles. CI was not needed to establish this handoff's local results; a future workflow execution is separate from the supplied runtime evidence.
+
 Screenshots use Minecraft's screenshot helper. The resource-pack QA mode temporarily selects an actual local test pack overriding the Poké Ball item model with Minecraft's diamond texture, then removes it; the item remains a Poké Ball. This checks resource resolution through the normal ItemStack renderer. It creates no synthetic screenshots.
 
 The campaign QA party uses legal Life Orb items, 31 IVs, and a legal 252 Special Attack / 252 Speed / 4 HP EV spread after the scaled endgame defeated the earlier untrained party. Battle damage, enemy AI, and victory events are unchanged. This fixture measures transport and progression, not balance or normal item acquisition.
