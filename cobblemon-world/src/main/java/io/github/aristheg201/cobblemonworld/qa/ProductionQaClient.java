@@ -83,7 +83,10 @@ public final class ProductionQaClient {
     public static int perform(Minecraft mc, QaControlPayload p) {
         if (!p.secondary().equals(token)) { token = p.secondary(); ticks = 0; interacted = false; }
         ticks++;
-        if (ticks == 1 && (p.action().equals("prod_phone") || p.action().equals("prod_shop") || p.action().equals("prod_world"))) mc.getToasts().clear();
+        if (ticks == 1 && (p.action().equals("prod_phone") || p.action().equals("prod_shop") || p.action().equals("prod_world"))) {
+            mc.getToasts().clear();
+            if (!p.action().equals("prod_world")) org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), mc.getWindow().getScreenWidth() - 4, mc.getWindow().getScreenHeight() - 4);
+        }
         switch (p.action()) {
             case "prod_interact" -> {
                 var npc = mc.level.getEntity(Integer.parseInt(p.primary()));

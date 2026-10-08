@@ -289,31 +289,32 @@ public final class ProductionQaServer {
         interact("ren-vi", "pokemall_ren", q -> true);
         capture("32-ren-vi.png", "prod_shop", "");
         add("locale-en", "prod_locale", "en_us", q -> {}, q -> true);
+        scalingSteps();
         if (!Boolean.getBoolean("cworld.qa.services")) campaignSteps(player);
-        else {
-            add("prepare-over-cap-battle-test", "prod_close", "", q -> {
-                LevelCapService.setCap(q, 15);
+        else add("production-services-save-checkpoint", "prod_close", "", q -> {
+            progression(q).storyFlags.add("production_qa_completed");
+            ProgressionStore.INSTANCE.save(); NpcPlacementStore.INSTANCE.save();
+        }, q -> true);
+    }
+    private static void scalingSteps() {
+        add("prepare-over-cap-battle-test", "prod_close", "", q -> {
+            LevelCapService.setCap(q, 15);
+            var team = Cobblemon.INSTANCE.getStorage().getParty(q);
+            team.clearParty();
+            team.set(0, PokemonProperties.Companion.parse("mewtwo level=16 moves=psychic").create(q));
+        }, q -> true);
+        interact("over-cap-trainer-battle-rejected", "mara_voss", q ->
+                Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(q) == null
+                        && Cobblemon.INSTANCE.getStorage().getParty(q).get(0).getLevel() == 16
+                        && !progression(q).storyFlags.contains("mara_voss_defeated"));
+        for (String id : List.of("mara_voss", "dr_orin")) {
+            int level = id.equals("mara_voss") ? 12 : 23;
+            add("scaling-party-" + level, "prod_close", "", q -> {
+                LevelCapService.setCap(q, level);
                 var team = Cobblemon.INSTANCE.getStorage().getParty(q);
-                team.clearParty();
-                team.set(0, PokemonProperties.Companion.parse("mewtwo level=16 moves=psychic").create(q));
+                for (int i = 0; i < 6; i++) team.set(i, PokemonProperties.Companion.parse("mewtwo level=" + level + " moves=aurasphere,icebeam,psychic,flamethrower").create(q));
             }, q -> true);
-            interact("over-cap-trainer-battle-rejected", "mara_voss", q ->
-                    Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(q) == null
-                            && Cobblemon.INSTANCE.getStorage().getParty(q).get(0).getLevel() == 16
-                            && !progression(q).storyFlags.contains("mara_voss_defeated"));
-            for (String id : List.of("mara_voss", "dr_orin")) {
-                int level = id.equals("mara_voss") ? 12 : 23;
-                add("scaling-party-" + level, "prod_close", "", q -> {
-                    LevelCapService.setCap(q, level);
-                    var team = Cobblemon.INSTANCE.getStorage().getParty(q);
-                    for (int i = 0; i < 6; i++) team.set(i, PokemonProperties.Companion.parse("mewtwo level=" + level + " moves=aurasphere,icebeam,psychic,flamethrower").create(q));
-                }, q -> true);
-                interact("progression-" + id, id, q -> progression(q).storyFlags.contains(NpcDefinitionRegistry.INSTANCE.get(id).defeatFlag()));
-            }
-            add("production-services-save-checkpoint", "prod_close", "", q -> {
-                progression(q).storyFlags.add("production_qa_completed");
-                ProgressionStore.INSTANCE.save(); NpcPlacementStore.INSTANCE.save();
-            }, q -> true);
+            interact("progression-" + id, id, q -> progression(q).storyFlags.contains(NpcDefinitionRegistry.INSTANCE.get(id).defeatFlag()));
         }
     }
     private static void missingEconomySteps(ServerPlayer player) {
@@ -331,7 +332,12 @@ public final class ProductionQaServer {
             require(ShopRegistry.registered("cobblemon:life_orb"), "QA held item absent");
             for (int i = 0; i < 6; i++) {
                 var member = PokemonProperties.Companion.parse("mewtwo level=100 moves=aurasphere,icebeam,thunderbolt,flamethrower").create(q);
-                for (var stat : com.cobblemon.mod.common.api.pokemon.stats.Stats.values()) member.setIV(stat, 31);
+                for (var stat : List.of(com.cobblemon.mod.common.api.pokemon.stats.Stats.HP,
+                        com.cobblemon.mod.common.api.pokemon.stats.Stats.ATTACK,
+                        com.cobblemon.mod.common.api.pokemon.stats.Stats.DEFENCE,
+                        com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_ATTACK,
+                        com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_DEFENCE,
+                        com.cobblemon.mod.common.api.pokemon.stats.Stats.SPEED)) member.setIV(stat, 31);
                 member.setEV(com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_ATTACK, 252);
                 member.setEV(com.cobblemon.mod.common.api.pokemon.stats.Stats.SPEED, 252);
                 member.setEV(com.cobblemon.mod.common.api.pokemon.stats.Stats.HP, 4);
