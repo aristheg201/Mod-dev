@@ -1,15 +1,30 @@
 {
-  "id":"sixth_warden","displayName":"Sixth Warden","npcClass":"standard","visualLevel":66,"skill":5,
-  "preBattleText":"Five seals are already open. This is where you stop.",
-  "postBattleText":"Six.",
-  "team":[
+  "id": "sixth_warden",
+  "displayName": "Sixth Warden",
+  "npcClass": "standard",
+  "visualLevel": 66,
+  "skill": 5,
+  "preBattleText": "npc.cobblemonworld.sixth_warden.greeting",
+  "postBattleText": "npc.cobblemonworld.sixth_warden.repeat",
+  "team": [
     "tyranitar level=62 moves=stoneedge,crunch,earthquake,dragondance",
     "volcarona level=64 moves=fierydance,bugbuzz,quiverdance,gigadrain",
     "aegislash level=66 moves=kingsshield,shadowball,flashcannon,sacredsword"
   ],
-  "defeatFlag":"sixth_warden_defeated","flagsOnDefeat":["seal_06_broken"],
-  "contactUnlock":"","chapterOnDefeat":"",
-  "requiredChapter":"chapter_06_seventh_lock","requiredFlags":["seal_05_broken"],
-  "skin":"sixth_warden",
-  "badge":"","rematchable":false,"specialActor":false
+  "defeatFlag": "sixth_warden_defeated",
+  "flagsOnDefeat": [
+    "seal_05_broken",
+    "seal_06_broken",
+    "rocket_base_unlocked"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "chapter_05_league_fault",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "selene_kade_defeated"
+  ],
+  "skin": "sixth_warden",
+  "badge": "",
+  "rematchable": false,
+  "specialActor": false
 }

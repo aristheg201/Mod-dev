@@ -3,6 +3,9 @@ import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 
 def cworldNpcSkinPalettes = [
+    sixth_warden: [0xCDA58B, 0x67513D, 0xD0B165, 0x342C24],
+    harbour_marshal_liora: [0xDBB999, 0x5F8391, 0xD6B45E, 0x354D67],
+    captain_dorian: [0xCBA883, 0x304958, 0xD6B45E, 0x1E303B],
     professor_hale: [0xDCBEA0, 0xEBEBF0, 0x465064, 0xB9B9C3],
     daycare_mira: [0xE2BC9E, 0x73AA69, 0xEBDCB4, 0x50784B],
     pokemall_ren: [0xD2AA8C, 0x3C82BE, 0xEBEBF0, 0x235087],

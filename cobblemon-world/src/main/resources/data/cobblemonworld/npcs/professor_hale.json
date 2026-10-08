@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 12,
   "skill": 0,
-  "preBattleText": "Before you chase badges, learn the region. Use your Phone, keep supplies on you, and come back when you need direction.",
-  "postBattleText": "Keep moving. Divinos rewards trainers who explore instead of following a straight line.",
+  "preBattleText": "npc.cobblemonworld.professor_hale.greeting",
+  "postBattleText": "npc.cobblemonworld.professor_hale.repeat",
   "team": [],
   "defeatFlag": "",
   "flagsOnDefeat": [],
@@ -19,7 +19,8 @@
   "specialActor": false,
   "interactionFlag": "professor_met",
   "flagsOnInteract": [
-    "divinos_journey_started"
+    "divinos_journey_started",
+    "prologue_complete"
   ],
-  "questUnlockOnInteract": ""
+  "questUnlockOnInteract": "first_signal"
 }

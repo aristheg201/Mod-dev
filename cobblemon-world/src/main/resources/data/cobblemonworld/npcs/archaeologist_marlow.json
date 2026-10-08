@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 56,
   "skill": 0,
-  "preBattleText": "That Black Card is an old trainer credential, not a relic. The registry number survived even after the owner's League record was erased.",
-  "postBattleText": "The School of Wolf kept records the League discarded.",
+  "preBattleText": "npc.cobblemonworld.archaeologist_marlow.greeting",
+  "postBattleText": "npc.cobblemonworld.archaeologist_marlow.repeat",
   "team": [],
   "defeatFlag": "",
   "flagsOnDefeat": [],
@@ -13,7 +13,8 @@
   "chapterOnDefeat": "",
   "requiredChapter": "",
   "requiredFlags": [
-    "black_card_obtained"
+    "black_card_obtained",
+    "lab_records_decoded"
   ],
   "badge": "",
   "skin": "archaeologist_marlow",

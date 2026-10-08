@@ -9,4 +9,6 @@ public record NpcPlacement(
         float yaw,
         float pitch,
         String entityUuid
-) {}
+) {
+    public NpcPlacement { pitch = 0; yaw = net.minecraft.util.Mth.wrapDegrees(yaw); }
+}

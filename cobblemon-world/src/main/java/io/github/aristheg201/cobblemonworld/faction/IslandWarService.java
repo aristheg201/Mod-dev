@@ -141,7 +141,7 @@ public final class IslandWarService {
 
         queueIslandBuild();
         IslandWarStore.INSTANCE.save();
-        broadcast("The weekly island has appeared. Affinity: " + state.affinity.toUpperCase(java.util.Locale.ROOT));
+        broadcast(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.started", net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.affinity." + state.affinity)));
         CobblemonWorldMod.LOGGER.info("Started faction island war {} with {} affinity.", weekId, state.affinity);
     }
 
@@ -166,7 +166,7 @@ public final class IslandWarService {
         state.phase = IslandWarPhase.CONQUEST;
         state.phaseStartedEpochMillis = System.currentTimeMillis();
         IslandWarStore.INSTANCE.save();
-        broadcast("Gate War ended. Qualified factions can now contest the five island control points.");
+        broadcast(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.conquest"));
     }
 
     private static void tickCapturePoints() {
@@ -217,7 +217,7 @@ public final class IslandWarService {
                 point.ownerFaction = faction;
                 point.contestingFaction = "";
                 point.progressSeconds = 0;
-                broadcast(faction + " captured control point " + (i + 1) + ".");
+                broadcast(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.captured", faction, i + 1));
             }
         }
 
@@ -258,7 +258,7 @@ public final class IslandWarService {
             state.phase = IslandWarPhase.DORMANT;
             state.phaseStartedEpochMillis = System.currentTimeMillis();
             IslandWarStore.INSTANCE.save();
-            broadcast("Faction Island ended without an owner.");
+            broadcast(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.unclaimed"));
         } else {
             declareOwner(best);
         }
@@ -270,8 +270,8 @@ public final class IslandWarService {
         state.phase = IslandWarPhase.OCCUPATION;
         state.phaseStartedEpochMillis = System.currentTimeMillis();
         IslandWarStore.INSTANCE.save();
-        broadcast(faction + " controls the " + state.affinity.toUpperCase(java.util.Locale.ROOT)
-                + " island until the next Saturday war.");
+        broadcast(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.owner", faction,
+                net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.affinity." + state.affinity)));
     }
 
     public static void recordGateKill(ServerPlayer killer, ServerPlayer victim) {
@@ -287,7 +287,7 @@ public final class IslandWarService {
         if (score >= CWorldConfig.INSTANCE.factionGateScoreRequired
                 && state.qualifiedFactions.size() < CWorldConfig.INSTANCE.factionMaxQualified
                 && state.qualifiedFactions.add(killerFaction)) {
-            NotificationService.faction(killer, killerFaction + " earned island entry.");
+            io.github.aristheg201.cobblemonworld.network.CWorldNetworking.toast(killer, "faction", "toast.cobblemonworld.faction", net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.entry", killerFaction));
         }
         IslandWarStore.INSTANCE.save();
     }
@@ -295,18 +295,18 @@ public final class IslandWarService {
     public static boolean join(ServerPlayer player) {
         String faction = NativeFactionService.factionName(player).orElse("");
         if (faction.isBlank()) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Join or create a faction first."));
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.join_first"));
             return false;
         }
 
         IslandWarState state = IslandWarStore.INSTANCE.state();
         ServerLevel island = player.getServer().getLevel(DIMENSION);
         if (island == null) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Faction island dimension is unavailable."));
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.unavailable"));
             return false;
         }
         if (!state.islandBuilt) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("The island is still materializing."));
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.building"));
             return false;
         }
 
@@ -320,7 +320,7 @@ public final class IslandWarService {
             z = Math.sin(angle) * distance;
         } else if (state.phase == IslandWarPhase.CONQUEST) {
             if (!state.qualifiedFactions.contains(faction)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Your faction did not qualify through Gate War."));
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.not_qualified"));
                 return false;
             }
             int lane = Math.floorMod(faction.hashCode(), 8);
@@ -330,13 +330,13 @@ public final class IslandWarService {
             z = Math.sin(angle) * distance;
         } else if (state.phase == IslandWarPhase.OCCUPATION) {
             if (!state.ownerFaction.equals(faction)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("This island is controlled by " + state.ownerFaction + "."));
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.controlled", state.ownerFaction));
                 return false;
             }
             x = 0.0;
             z = 0.0;
         } else {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("No Faction Island event is active."));
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable("faction.cobblemonworld.war.inactive"));
             return false;
         }
 
@@ -378,10 +378,10 @@ public final class IslandWarService {
         );
     }
 
-    private static void broadcast(String message) {
+    private static void broadcast(net.minecraft.network.chat.Component message) {
         if (server == null) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            NotificationService.faction(player, message);
+            io.github.aristheg201.cobblemonworld.network.CWorldNetworking.toast(player, "faction", "toast.cobblemonworld.faction", message);
         }
     }
 

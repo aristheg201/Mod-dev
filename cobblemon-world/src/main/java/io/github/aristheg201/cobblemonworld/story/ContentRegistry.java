@@ -23,7 +23,7 @@ public final class ContentRegistry {
     private static final String[] CHAPTERS = {
             "prologue", "chapter_01_signal", "chapter_02_under_mountain", "chapter_03_house_of_cards",
             "chapter_04_kings_gambit", "chapter_05_league_fault", "chapter_06_seventh_lock",
-            "chapter_07_false_victory", "chapter_08_last_person"
+            "chapter_07_false_victory", "battle_tower", "royal_league", "school_of_wolf", "chapter_08_last_person"
     };
 
     private final Map<String, ContactDefinition> contacts = new LinkedHashMap<>();
@@ -75,7 +75,8 @@ public final class ContentRegistry {
     }
 
     public record ContactDefinition(String id, String displayName, String icon, MessageNode[] messages) {}
-    public record MessageNode(String id, String triggerFlag, String text, String[] responses, String questUnlock, String setFlag) {}
+    public record MessageNode(String id, String triggerFlag, String text, String[] responses, String questUnlock, String setFlag, ResponseChoice[] choices) {}
+    public record ResponseChoice(String text, String nextNode, String questUnlock, String setFlag) {}
     public record QuestDefinition(String id, String title, String giver, String description, Objective[] objectives, String completionFlag) {}
     public record Objective(String id, String type, String target, int amount) {}
     public record StoryChapterDefinition(

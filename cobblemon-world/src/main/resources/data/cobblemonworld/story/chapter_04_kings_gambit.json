@@ -1,9 +1,12 @@
 {
-  "id":"chapter_04_kings_gambit","title":"The Fourth Seal",
-  "objective":"Reach Selene Kade and get past the fourth seal.",
-  "requiredFlags":["seal_03_broken"],
-  "completionFlags":["selene_kade_defeated","seal_04_broken"],
-  "levelCapOnComplete":47,
-  "nextChapter":"chapter_05_league_fault",
-  "badge":"gambit_badge"
+  "id": "chapter_04_kings_gambit",
+  "title": "story.cobblemonworld.chapter_04_kings_gambit.title",
+  "objective": "story.cobblemonworld.chapter_04_kings_gambit.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "selene_kade_defeated"
+  ],
+  "levelCapOnComplete": 47,
+  "nextChapter": "chapter_05_league_fault",
+  "badge": "gambit_badge"
 }

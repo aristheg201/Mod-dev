@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 96,
   "skill": 5,
-  "preBattleText": "The League proved you can win. The School asks whether you understand why you keep moving forward.",
-  "postBattleText": "You passed. The old registry is open to you.",
+  "preBattleText": "npc.cobblemonworld.school_wolf_master.greeting",
+  "postBattleText": "npc.cobblemonworld.school_wolf_master.repeat",
   "team": [
     "lycanroc level=94",
     "lucario level=94",
@@ -17,10 +17,11 @@
   "defeatFlag": "school_wolf_master_defeated",
   "flagsOnDefeat": [
     "school_trials_complete",
-    "toba_record_access"
+    "toba_record_access",
+    "toba_meeting_revealed"
   ],
   "contactUnlock": "",
-  "chapterOnDefeat": "",
+  "chapterOnDefeat": "school_of_wolf",
   "requiredChapter": "",
   "requiredFlags": [
     "school_wolf_trainer_03_defeated"

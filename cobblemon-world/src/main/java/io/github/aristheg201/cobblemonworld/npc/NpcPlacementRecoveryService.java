@@ -32,7 +32,9 @@ public final class NpcPlacementRecoveryService {
                 if (level == null) continue;
 
                 var pos = net.minecraft.core.BlockPos.containing(placement.x(), placement.y(), placement.z());
-                if (!level.hasChunkAt(pos)) continue;
+                // A chunk can be present while its saved entities are still loading asynchronously.
+                // Wait for that load to finish before deciding the authored NPC is missing.
+                if (!level.hasChunkAt(pos) || !level.areEntitiesLoaded(new net.minecraft.world.level.ChunkPos(pos).toLong())) continue;
 
                 // Recovery only matters while a player can actually observe/use the NPC.
                 // Check proximity before UUID/entity work so large authored NPC catalogs do
@@ -49,13 +51,14 @@ public final class NpcPlacementRecoveryService {
                 if (definition == null || definition.specialActor()) continue;
 
                 NPCEntity npc = TrainerBattleService.createNpc(bootstrapPlayer, definition);
-                npc.moveTo(placement.x(), placement.y(), placement.z(), placement.yaw(), placement.pitch());
+                npc.moveTo(placement.x(), placement.y(), placement.z(), placement.yaw(), 0.0F);
+                AnchoredNpcService.authoredPose(npc, placement.yaw());
                 if (!level.addFreshEntity(npc)) continue;
 
                 NpcPlacementStore.INSTANCE.put(new NpcPlacement(
                         placement.id(), placement.dimension(),
                         placement.x(), placement.y(), placement.z(),
-                        placement.yaw(), placement.pitch(), npc.getUUID().toString()
+                        placement.yaw(), 0.0F, npc.getUUID().toString()
                 ));
             }
         });

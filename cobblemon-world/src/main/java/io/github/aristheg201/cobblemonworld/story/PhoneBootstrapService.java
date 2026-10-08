@@ -52,9 +52,9 @@ public final class PhoneBootstrapService {
         CampaignService.initializePhone(player);
 
         if (firstGrant) {
-            CWorldNetworking.toast(player, "story", "Trainer Phone", "A new message is waiting.");
+            CWorldNetworking.toast(player, "story", "ui.cobblemonworld.trainer_phone", "toast.cobblemonworld.phone_waiting");
         } else if (!hasPhysicalPhone) {
-            CWorldNetworking.toast(player, "story", "Trainer Phone Restored", "The Trainer Phone was returned to your inventory.");
+            CWorldNetworking.toast(player, "story", "toast.cobblemonworld.phone_restored", "toast.cobblemonworld.phone_returned");
         }
     }
 }

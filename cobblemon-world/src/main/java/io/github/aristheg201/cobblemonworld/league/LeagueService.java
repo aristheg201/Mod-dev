@@ -19,7 +19,7 @@ public final class LeagueService {
         ProgressionStore.INSTANCE.save();
 
         if (!p.leagueTier.equals(before)) {
-            CWorldNetworking.toast(player, "league", "League Promotion", p.leagueTier);
+            CWorldNetworking.toast(player, "league", "toast.cobblemonworld.league_promotion", "league.cobblemonworld.tier." + p.leagueTier.toLowerCase(java.util.Locale.ROOT));
         }
     }
 
@@ -31,7 +31,7 @@ public final class LeagueService {
         p.leagueTier = tierFor(p.leaguePoints, p.badges.size());
         ProgressionStore.INSTANCE.save();
         if (!p.leagueTier.equals(before)) {
-            CWorldNetworking.toast(player, "league", "League Promotion", p.leagueTier);
+            CWorldNetworking.toast(player, "league", "toast.cobblemonworld.league_promotion", "league.cobblemonworld.tier." + p.leagueTier.toLowerCase(java.util.Locale.ROOT));
         }
     }
 

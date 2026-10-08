@@ -1,0 +1,5 @@
+/qa-runtime/
+/.gradle/
+/build/
+/run/
+/tools/__pycache__/

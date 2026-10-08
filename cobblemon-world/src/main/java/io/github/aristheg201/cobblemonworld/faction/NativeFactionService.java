@@ -46,93 +46,93 @@ public final class NativeFactionService {
 
     public static Result create(ServerPlayer player, String requestedName) {
         String name = sanitizeName(requestedName);
-        if (name == null) return new Result(false, "Faction name must be 2-24 characters and use letters, numbers, spaces, _ or -.");
-        if (faction(player).isPresent()) return new Result(false, "You are already in a faction.");
-        if (FactionStore.INSTANCE.byName(name).isPresent()) return new Result(false, "That faction name is already taken.");
+        if (name == null) return new Result(false, "faction.cobblemonworld.invalid_name");
+        if (faction(player).isPresent()) return new Result(false, "faction.cobblemonworld.already_member");
+        if (FactionStore.INSTANCE.byName(name).isPresent()) return new Result(false, "faction.cobblemonworld.name_taken");
 
         var data = new FactionStore.FactionData(UUID.randomUUID(), name, player.getUUID());
         FactionStore.INSTANCE.put(data);
-        return new Result(true, "Created faction " + name + ".");
+        return new Result(true, "faction.cobblemonworld.created", List.of(name));
     }
 
     public static Result invite(ServerPlayer actor, ServerPlayer target) {
         var faction = faction(actor).orElse(null);
-        if (faction == null) return new Result(false, "You are not in a faction.");
+        if (faction == null) return new Result(false, "faction.cobblemonworld.not_member");
         var role = faction.role(actor.getUUID());
-        if (role == null || !role.canManageMembers()) return new Result(false, "Only owners and officers can invite players.");
-        if (faction(target).isPresent()) return new Result(false, target.getGameProfile().getName() + " is already in a faction.");
-        if (faction.members.size() >= CWorldConfig.INSTANCE.factionMaxMembers) return new Result(false, "Faction member limit reached.");
+        if (role == null || !role.canManageMembers()) return new Result(false, "faction.cobblemonworld.invite_permission");
+        if (faction(target).isPresent()) return new Result(false, "faction.cobblemonworld.target_member", List.of(target.getGameProfile().getName()));
+        if (faction.members.size() >= CWorldConfig.INSTANCE.factionMaxMembers) return new Result(false, "faction.cobblemonworld.member_limit");
         faction.invites.add(target.getUUID());
         FactionStore.INSTANCE.touch();
-        return new Result(true, "Invited " + target.getGameProfile().getName() + " to " + faction.name + ".");
+        return new Result(true, "faction.cobblemonworld.invited", List.of(target.getGameProfile().getName(), faction.name));
     }
 
     public static Result accept(ServerPlayer player, String factionName) {
-        if (faction(player).isPresent()) return new Result(false, "Leave your current faction first.");
+        if (faction(player).isPresent()) return new Result(false, "faction.cobblemonworld.leave_first");
         var faction = FactionStore.INSTANCE.byName(factionName).orElse(null);
-        if (faction == null) return new Result(false, "Faction not found.");
-        if (!faction.invites.contains(player.getUUID())) return new Result(false, "You do not have an invite from " + faction.name + ".");
-        if (faction.members.size() >= CWorldConfig.INSTANCE.factionMaxMembers) return new Result(false, "Faction member limit reached.");
+        if (faction == null) return new Result(false, "faction.cobblemonworld.not_found");
+        if (!faction.invites.contains(player.getUUID())) return new Result(false, "faction.cobblemonworld.no_invite", List.of(faction.name));
+        if (faction.members.size() >= CWorldConfig.INSTANCE.factionMaxMembers) return new Result(false, "faction.cobblemonworld.member_limit");
         faction.invites.remove(player.getUUID());
         faction.members.put(player.getUUID(), FactionStore.Role.MEMBER);
         FactionStore.INSTANCE.touch();
-        return new Result(true, "Joined faction " + faction.name + ".");
+        return new Result(true, "faction.cobblemonworld.joined", List.of(faction.name));
     }
 
     public static Result leave(ServerPlayer player) {
         var faction = faction(player).orElse(null);
-        if (faction == null) return new Result(false, "You are not in a faction.");
-        if (player.getUUID().equals(faction.owner)) return new Result(false, "The owner must transfer ownership or disband the faction.");
+        if (faction == null) return new Result(false, "faction.cobblemonworld.not_member");
+        if (player.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.owner_leave");
         faction.members.remove(player.getUUID());
         faction.invites.remove(player.getUUID());
         FactionStore.INSTANCE.touch();
-        return new Result(true, "Left faction " + faction.name + ".");
+        return new Result(true, "faction.cobblemonworld.left", List.of(faction.name));
     }
 
     public static Result kick(ServerPlayer actor, ServerPlayer target) {
         var faction = faction(actor).orElse(null);
-        if (faction == null) return new Result(false, "You are not in a faction.");
+        if (faction == null) return new Result(false, "faction.cobblemonworld.not_member");
         var actorRole = faction.role(actor.getUUID());
         var targetRole = faction.role(target.getUUID());
-        if (targetRole == null) return new Result(false, "That player is not in your faction.");
-        if (target.getUUID().equals(faction.owner)) return new Result(false, "The owner cannot be kicked.");
-        if (actorRole == FactionStore.Role.MEMBER || actorRole == null) return new Result(false, "You cannot kick members.");
+        if (targetRole == null) return new Result(false, "faction.cobblemonworld.not_your_member");
+        if (target.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.cannot_kick_owner");
+        if (actorRole == FactionStore.Role.MEMBER || actorRole == null) return new Result(false, "faction.cobblemonworld.kick_permission");
         if (actorRole == FactionStore.Role.OFFICER && targetRole != FactionStore.Role.MEMBER) {
-            return new Result(false, "Officers can only kick members.");
+            return new Result(false, "faction.cobblemonworld.officer_kick");
         }
         faction.members.remove(target.getUUID());
         FactionStore.INSTANCE.touch();
-        return new Result(true, "Removed " + target.getGameProfile().getName() + " from " + faction.name + ".");
+        return new Result(true, "faction.cobblemonworld.removed", List.of(target.getGameProfile().getName(), faction.name));
     }
 
     public static Result setOfficer(ServerPlayer owner, ServerPlayer target, boolean officer) {
         var faction = faction(owner).orElse(null);
-        if (faction == null || !owner.getUUID().equals(faction.owner)) return new Result(false, "Only the faction owner can change officer rank.");
-        if (!faction.members.containsKey(target.getUUID())) return new Result(false, "That player is not in your faction.");
-        if (target.getUUID().equals(faction.owner)) return new Result(false, "Owner rank cannot be changed.");
+        if (faction == null || !owner.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.rank_permission");
+        if (!faction.members.containsKey(target.getUUID())) return new Result(false, "faction.cobblemonworld.not_your_member");
+        if (target.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.owner_rank");
         faction.members.put(target.getUUID(), officer ? FactionStore.Role.OFFICER : FactionStore.Role.MEMBER);
         FactionStore.INSTANCE.touch();
-        return new Result(true, target.getGameProfile().getName() + (officer ? " promoted to officer." : " demoted to member."));
+        return new Result(true, officer ? "faction.cobblemonworld.promoted" : "faction.cobblemonworld.demoted", List.of(target.getGameProfile().getName()));
     }
 
     public static Result transfer(ServerPlayer owner, ServerPlayer target) {
         var faction = faction(owner).orElse(null);
-        if (faction == null || !owner.getUUID().equals(faction.owner)) return new Result(false, "Only the faction owner can transfer ownership.");
-        if (!faction.members.containsKey(target.getUUID())) return new Result(false, "Target must be a faction member.");
-        if (target.getUUID().equals(faction.owner)) return new Result(false, "Target is already the owner.");
+        if (faction == null || !owner.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.transfer_permission");
+        if (!faction.members.containsKey(target.getUUID())) return new Result(false, "faction.cobblemonworld.target_required");
+        if (target.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.already_owner");
         faction.members.put(owner.getUUID(), FactionStore.Role.OFFICER);
         faction.owner = target.getUUID();
         faction.members.put(target.getUUID(), FactionStore.Role.OWNER);
         FactionStore.INSTANCE.touch();
-        return new Result(true, "Transferred ownership to " + target.getGameProfile().getName() + ".");
+        return new Result(true, "faction.cobblemonworld.transferred", List.of(target.getGameProfile().getName()));
     }
 
     public static Result disband(ServerPlayer owner) {
         var faction = faction(owner).orElse(null);
-        if (faction == null || !owner.getUUID().equals(faction.owner)) return new Result(false, "Only the faction owner can disband the faction.");
+        if (faction == null || !owner.getUUID().equals(faction.owner)) return new Result(false, "faction.cobblemonworld.disband_permission");
         String name = faction.name;
         FactionStore.INSTANCE.remove(faction.id);
-        return new Result(true, "Disbanded faction " + name + ".");
+        return new Result(true, "faction.cobblemonworld.disbanded", List.of(name));
     }
 
     public static List<String> pendingInvites(ServerPlayer player) {
@@ -151,5 +151,10 @@ public final class NativeFactionService {
         return name;
     }
 
-    public record Result(boolean success, String message) {}
+    public record Result(boolean success, String message, List<String> arguments) {
+        public Result(boolean success, String message) { this(success, message, List.of()); }
+        public net.minecraft.network.chat.MutableComponent component() {
+            return net.minecraft.network.chat.Component.translatable(message, arguments.toArray());
+        }
+    }
 }

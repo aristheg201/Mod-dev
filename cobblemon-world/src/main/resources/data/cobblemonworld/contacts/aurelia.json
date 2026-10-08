@@ -1,7 +1,117 @@
 {
-  "id":"aurelia","displayName":"Champion Aurelia","icon":"cobblemonworld:icons/contact_aurelia",
-  "messages":[
-    {"id":"after_defeat","triggerFlag":"aurelia_defeated","text":"The League kept one copy off the network. Seven seals. Seven disasters. The record ends right after the seventh seal opens.","responses":["Show me the rest.","Why was it hidden?"],"questUnlock":"aurelia_below","setFlag":"aurelia_seven_record"},
-    {"id":"after_below","triggerFlag":"aurelia_below_complete","text":"Found the missing entry. The seventh seal releases whoever has been guiding the opener. Stop taking orders from your contact.","responses":["Too late.","I'm going to confront him."],"questUnlock":"","setFlag":"last_warning_received"}
+  "id": "aurelia",
+  "displayName": "Champion Aurelia",
+  "icon": "cobblemonworld:icons/contact_aurelia",
+  "messages": [
+    {
+      "id": "after_defeat_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.aurelia.after_defeat_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.aurelia.after_defeat_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.aurelia.after_defeat_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat",
+      "triggerFlag": "aurelia_defeated",
+      "text": "dialogue.cobblemonworld.aurelia.after_defeat",
+      "responses": [],
+      "questUnlock": "aurelia_below",
+      "setFlag": "aurelia_seven_record",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.aurelia.after_defeat.choice0",
+          "nextNode": "after_defeat_reply_1",
+          "questUnlock": "aurelia_below",
+          "setFlag": "aurelia_seven_record"
+        },
+        {
+          "text": "dialogue.cobblemonworld.aurelia.after_defeat.choice1",
+          "nextNode": "after_defeat_reply_2",
+          "questUnlock": "aurelia_below",
+          "setFlag": "dialogue:aurelia:after_defeat:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.aurelia.after_defeat.choice2",
+          "nextNode": "after_defeat_reply_3",
+          "questUnlock": "aurelia_below",
+          "setFlag": "dialogue:aurelia:after_defeat:2"
+        }
+      ]
+    },
+    {
+      "id": "after_below_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.aurelia.after_below_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_below_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.aurelia.after_below_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_below_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.aurelia.after_below_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_below",
+      "triggerFlag": "aurelia_below_complete",
+      "text": "dialogue.cobblemonworld.aurelia.after_below",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "last_warning_received",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.aurelia.after_below.choice0",
+          "nextNode": "after_below_reply_1",
+          "questUnlock": "",
+          "setFlag": "last_warning_received"
+        },
+        {
+          "text": "dialogue.cobblemonworld.aurelia.after_below.choice1",
+          "nextNode": "after_below_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:aurelia:after_below:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.aurelia.after_below.choice2",
+          "nextNode": "after_below_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:aurelia:after_below:2"
+        }
+      ]
+    }
   ]
 }

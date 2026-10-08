@@ -1,9 +1,15 @@
 {
-  "id":"first_signal","title":"First Signal","giver":"mysterious",
-  "description":"Go to the coordinates sent by ??? and check the relay.",
-  "objectives":[
-    {"id":"reach_site","type":"visit","target":"first_anomaly_site","amount":1},
-    {"id":"defeat_guard","type":"cobblemon_battle","target":"mara_voss","amount":1}
+  "id": "first_signal",
+  "title": "quest.cobblemonworld.first_signal.title",
+  "giver": "mysterious",
+  "description": "quest.cobblemonworld.first_signal.description",
+  "objectives": [
+    {
+      "id": "defeat_guard",
+      "type": "cobblemon_battle",
+      "target": "mara_voss",
+      "amount": 1
+    }
   ],
-  "completionFlag":"first_signal_complete"
+  "completionFlag": "first_signal_complete"
 }

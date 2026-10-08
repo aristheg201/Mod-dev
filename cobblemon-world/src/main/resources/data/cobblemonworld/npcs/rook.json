@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 38,
   "skill": 4,
-  "preBattleText": "You want the black card? Win it.",
-  "postBattleText": "Take it. Then help me trace it.",
+  "preBattleText": "npc.cobblemonworld.rook.greeting",
+  "postBattleText": "npc.cobblemonworld.rook.repeat",
   "team": [
     "absol level=35 moves=nightslash,detect,slash,quickattack",
     "gengar level=37 moves=shadowball,hypnosis,confuseray,hex",
@@ -18,9 +18,9 @@
   ],
   "contactUnlock": "rook",
   "chapterOnDefeat": "chapter_03_house_of_cards",
-  "requiredChapter": "chapter_03_house_of_cards",
+  "requiredChapter": "",
   "requiredFlags": [
-    "seal_02_broken"
+    "dr_orin_defeated"
   ],
   "skin": "rook",
   "badge": "black_card_badge",

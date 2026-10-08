@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 88,
   "skill": 5,
-  "preBattleText": "Last Elite match. Win and the Champion has no reason to refuse you.",
-  "postBattleText": "Go. Aurelia is next.",
+  "preBattleText": "npc.cobblemonworld.league_elite_03.greeting",
+  "postBattleText": "npc.cobblemonworld.league_elite_03.repeat",
   "team": [
     "metagross level=86",
     "dragapult level=87",

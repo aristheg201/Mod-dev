@@ -1,0 +1,29 @@
+{
+  "id": "harbour_marshal_liora",
+  "displayName": "Harbour Marshal Liora",
+  "npcClass": "standard",
+  "visualLevel": 70,
+  "skill": 0,
+  "preBattleText": "npc.cobblemonworld.harbour_marshal_liora.greeting",
+  "postBattleText": "npc.cobblemonworld.harbour_marshal_liora.repeat",
+  "team": [],
+  "defeatFlag": "",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "seventh_warden_defeated",
+    "black_card_registry_identified",
+    "lab_records_decoded"
+  ],
+  "badge": "",
+  "skin": "harbour_marshal_liora",
+  "rematchable": false,
+  "specialActor": false,
+  "interactionFlag": "town8_route_confirmed",
+  "flagsOnInteract": [
+    "town8_qualifier_ready"
+  ],
+  "questUnlockOnInteract": ""
+}

@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 42,
   "skill": 3,
-  "preBattleText": "Wrong hallway, trainer. Turn around.",
-  "postBattleText": "Fine. The next guard will not go down that easily.",
+  "preBattleText": "npc.cobblemonworld.rocket_grunt_01.greeting",
+  "postBattleText": "npc.cobblemonworld.rocket_grunt_01.repeat",
   "team": [
     "zubat level=40",
     "koffing level=41",
@@ -17,6 +17,7 @@
   "chapterOnDefeat": "",
   "requiredChapter": "",
   "requiredFlags": [
+    "sixth_warden_defeated",
     "rocket_base_unlocked"
   ],
   "badge": "",

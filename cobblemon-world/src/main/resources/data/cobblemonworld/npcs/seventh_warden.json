@@ -1,16 +1,31 @@
 {
-  "id":"seventh_warden","displayName":"Seventh Warden","npcClass":"standard","visualLevel":70,"skill":5,
-  "preBattleText":"If you beat me, nothing is left guarding the last seal.",
-  "postBattleText":"That's the seventh. Find out who wanted them open.",
-  "team":[
+  "id": "seventh_warden",
+  "displayName": "Seventh Warden",
+  "npcClass": "standard",
+  "visualLevel": 70,
+  "skill": 5,
+  "preBattleText": "npc.cobblemonworld.seventh_warden.greeting",
+  "postBattleText": "npc.cobblemonworld.seventh_warden.repeat",
+  "team": [
     "dragapult level=66 moves=dragondarts,phantomforce,uturn,thunderwave",
     "metagross level=68 moves=meteormash,zenheadbutt,earthquake,bulletpunch",
     "salamence level=69 moves=dragonclaw,flamethrower,roost,dragondance",
     "garchomp level=70 moves=earthquake,dragonclaw,stoneedge,swordsdance"
   ],
-  "defeatFlag":"seventh_warden_defeated","flagsOnDefeat":["seal_07_broken"],
-  "contactUnlock":"","chapterOnDefeat":"chapter_06_seventh_lock",
-  "requiredChapter":"chapter_06_seventh_lock","requiredFlags":["seal_06_broken"],
-  "skin":"seventh_warden",
-  "badge":"","rematchable":false,"specialActor":false
+  "defeatFlag": "seventh_warden_defeated",
+  "flagsOnDefeat": [
+    "seal_07_broken"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "chapter_06_seventh_lock",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "archaeologist_record_complete",
+    "black_card_registry_identified",
+    "lab_records_decoded"
+  ],
+  "skin": "seventh_warden",
+  "badge": "",
+  "rematchable": false,
+  "specialActor": false
 }

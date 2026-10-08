@@ -2,27 +2,29 @@
   "id": "aurelia",
   "displayName": "Champion Aurelia",
   "npcClass": "standard",
-  "visualLevel": 58,
+  "visualLevel": 88,
   "skill": 5,
-  "preBattleText": "Beat me and I'll open the sealed League archive.",
-  "postBattleText": "You won. I'll show you the record.",
+  "preBattleText": "npc.cobblemonworld.aurelia.greeting",
+  "postBattleText": "npc.cobblemonworld.aurelia.repeat",
   "team": [
-    "milotic level=54 moves=scald,icebeam,recover,dragontail",
-    "gardevoir level=55 moves=psychic,moonblast,calmmind,wish",
-    "dragonite level=56 moves=dragonclaw,firepunch,roost,dragondance",
-    "lucario level=58 moves=aurasphere,flashcannon,extremespeed,swordsdance"
+    "milotic level=85 moves=scald,icebeam,recover,dragontail",
+    "gardevoir level=86 moves=psychic,moonblast,calmmind,wish",
+    "dragonite level=87 moves=dragonclaw,firepunch,roost,dragondance",
+    "lucario level=88 moves=aurasphere,flashcannon,extremespeed,swordsdance"
   ],
   "defeatFlag": "aurelia_defeated",
   "flagsOnDefeat": [
-    "seal_05_broken",
+    "aurelia_champion_defeated",
     "royal_league_complete",
     "school_of_wolf_unlocked"
   ],
   "contactUnlock": "aurelia",
-  "chapterOnDefeat": "chapter_05_league_fault",
-  "requiredChapter": "chapter_05_league_fault",
+  "chapterOnDefeat": "royal_league",
+  "requiredChapter": "",
   "requiredFlags": [
-    "seal_04_broken"
+    "league_elite_03_defeated",
+    "royal_league_registered",
+    "divinos_eight_towns_complete"
   ],
   "skin": "aurelia",
   "badge": "league_fault_badge",

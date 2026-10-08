@@ -1,15 +1,29 @@
 {
-  "id":"selene_kade","displayName":"Selene Kade","npcClass":"standard","visualLevel":47,"skill":4,
-  "preBattleText":"One more win, one more guard gone. Let's see if you notice the pattern.",
-  "postBattleText":"Now look at the board again.",
-  "team":[
+  "id": "selene_kade",
+  "displayName": "Selene Kade",
+  "npcClass": "standard",
+  "visualLevel": 47,
+  "skill": 4,
+  "preBattleText": "npc.cobblemonworld.selene_kade.greeting",
+  "postBattleText": "npc.cobblemonworld.selene_kade.repeat",
+  "team": [
     "slowking level=44 moves=psychic,scald,yawn,slackoff",
     "gallade level=46 moves=psychocut,leafblade,swordsdance,detect",
     "metagross level=47 moves=meteormash,zenheadbutt,bulletpunch,agility"
   ],
-  "defeatFlag":"selene_kade_defeated","flagsOnDefeat":["seal_04_broken"],
-  "contactUnlock":"selene_kade","chapterOnDefeat":"chapter_04_kings_gambit",
-  "requiredChapter":"chapter_04_kings_gambit","requiredFlags":["seal_03_broken"],
-  "skin":"selene_kade",
-  "badge":"gambit_badge","rematchable":false,"specialActor":false
+  "defeatFlag": "selene_kade_defeated",
+  "flagsOnDefeat": [
+    "seal_04_broken"
+  ],
+  "contactUnlock": "selene_kade",
+  "chapterOnDefeat": "chapter_04_kings_gambit",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "rook_defeated",
+    "black_card_obtained"
+  ],
+  "skin": "selene_kade",
+  "badge": "gambit_badge",
+  "rematchable": false,
+  "specialActor": false
 }

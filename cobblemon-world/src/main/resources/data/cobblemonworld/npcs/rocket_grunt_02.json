@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 44,
   "skill": 3,
-  "preBattleText": "You beat one guard and thought the base was open?",
-  "postBattleText": "Admin Vex is going to hate this.",
+  "preBattleText": "npc.cobblemonworld.rocket_grunt_02.greeting",
+  "postBattleText": "npc.cobblemonworld.rocket_grunt_02.repeat",
   "team": [
     "golbat level=42",
     "muk level=43",

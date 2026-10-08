@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class TobaEncounterService {
     private static final Map<UUID, UUID> ACTIVE_ACTORS = new ConcurrentHashMap<>();
+    private static final Map<UUID, UUID> ACTIVE_PROXIES = new ConcurrentHashMap<>();
+    private static final java.util.List<net.minecraft.world.entity.Entity> LOADED_ACTORS = new java.util.ArrayList<>();
     private static MinecraftServer server;
     private static long ticks;
 
@@ -30,11 +32,18 @@ public final class TobaEncounterService {
 
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTED.register(s -> server = s);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+            if (entity instanceof MysteriousFigureEntity || (entity instanceof NPCEntity npc
+                    && npc.getInteraction() instanceof io.github.aristheg201.cobblemonworld.npc.CWorldNpcInteraction interaction
+                    && interaction.definitionId().equals("mysterious"))) LOADED_ACTORS.add(entity);
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> {
             for (UUID owner : ACTIVE_ACTORS.keySet()) clearTransientEncounterState(owner);
             for (UUID entity : ACTIVE_ACTORS.values()) discardEntity(entity);
+            for (UUID entity : ACTIVE_PROXIES.values()) discardEntity(entity);
             ProgressionStore.INSTANCE.save();
             ACTIVE_ACTORS.clear();
+            ACTIVE_PROXIES.clear(); LOADED_ACTORS.clear();
             server = null;
         });
         ServerTickEvents.END_SERVER_TICK.register(TobaEncounterService::tick);
@@ -52,7 +61,9 @@ public final class TobaEncounterService {
     public static boolean eligible(ServerPlayer player) {
         if (!CWorldConfig.INSTANCE.finalEncounterEnabled) return false;
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        return p.storyFlags.contains("toba_meeting_revealed")
+        return p.storyFlags.contains("school_trials_complete")
+                && p.storyFlags.contains("toba_record_access")
+                && p.storyFlags.contains("toba_meeting_revealed")
                 && !p.storyFlags.contains("toba_identity_revealed")
                 && !p.storyFlags.contains("toba_defeated");
     }
@@ -70,6 +81,10 @@ public final class TobaEncounterService {
     }
 
     private static void tick(MinecraftServer server) {
+        for (var entity : LOADED_ACTORS) {
+            if (!ACTIVE_ACTORS.containsValue(entity.getUUID()) && !ACTIVE_PROXIES.containsValue(entity.getUUID())) entity.discard();
+        }
+        LOADED_ACTORS.clear();
         if (++ticks % 20L != 0L) return;
 
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -105,31 +120,40 @@ public final class TobaEncounterService {
         );
         if (player.serverLevel().addFreshEntity(actor)) {
             ACTIVE_ACTORS.put(player.getUUID(), actor.getUUID());
-            CWorldNetworking.toast(player, "story", "???", "You finally came.");
+            CWorldNetworking.toast(player, "story", "???", "story.cobblemonworld.final.arrived");
         }
     }
 
     public static void beginPhaseOne(ServerPlayer player, MysteriousFigureEntity actor) {
         if (state(player) != TobaBossState.READY) return;
+        if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) return;
 
         var definition = NpcDefinitionRegistry.INSTANCE.get("mysterious");
         if (definition == null) return;
 
         NPCEntity proxy = TrainerBattleService.createNpc(player, definition);
+        TrainerBattleService.prepareBattleParty(proxy, player, definition);
         proxy.setInvisible(true);
         proxy.setCustomNameVisible(false);
         proxy.moveTo(actor.getX(), actor.getY(), actor.getZ(), actor.getYRot(), actor.getXRot());
         if (!player.serverLevel().addFreshEntity(proxy)) return;
+        ACTIVE_PROXIES.put(player.getUUID(), proxy.getUUID());
 
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         p.storyFlags.add("mysterious_phase_one_active");
         ProgressionStore.INSTANCE.save();
 
-        player.sendSystemMessage(Component.literal("???: You want my name? Beat me first."));
+        player.sendSystemMessage(Component.literal("???: ").append(Component.translatable("story.cobblemonworld.final.challenge")));
         try {
-            BattleBuilder.INSTANCE.pvn(player, proxy);
+            var result = BattleBuilder.INSTANCE.pvn(player, proxy);
+            if (!(result instanceof com.cobblemon.mod.common.battles.SuccessfulBattleStart)) {
+                proxy.discard(); ACTIVE_PROXIES.remove(player.getUUID()); p.storyFlags.remove("mysterious_phase_one_active"); ProgressionStore.INSTANCE.save();
+                player.sendSystemMessage(Component.translatable("service.cobblemonworld.battle_failed"));
+            }
         } catch (Exception e) {
+            io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.error("Final trainer battle failed for {}", player.getUUID(), e);
             proxy.discard();
+            ACTIVE_PROXIES.remove(player.getUUID());
             p.storyFlags.remove("mysterious_phase_one_active");
             ProgressionStore.INSTANCE.save();
         }
@@ -142,6 +166,7 @@ public final class TobaEncounterService {
         p.storyFlags.remove("mysterious_phase_one_active");
         p.storyFlags.add("mysterious_phase_one_defeated");
         p.storyFlags.remove("toba_phase2_active");
+        discardEntity(ACTIVE_PROXIES.remove(player.getUUID()));
         ProgressionStore.INSTANCE.save();
 
         if (findEntity(ACTIVE_ACTORS.get(player.getUUID())) instanceof MysteriousFigureEntity actor) {
@@ -151,8 +176,8 @@ public final class TobaEncounterService {
 
         CampaignService.setFlag(player, "toba_identity_revealed");
         CampaignService.setFlag(player, "main_story_complete");
-        player.sendSystemMessage(Component.literal("TOBA: Now you know my name."));
-        CWorldNetworking.toast(player, "story", "TOBA", "Identity revealed.");
+        player.sendSystemMessage(Component.literal("TOBA: ").append(Component.translatable("story.cobblemonworld.final.name")));
+        CWorldNetworking.toast(player, "story", "TOBA", "story.cobblemonworld.final.revealed");
     }
 
     public static TobaEntity activeBoss(ServerPlayer player) {
@@ -170,7 +195,8 @@ public final class TobaEncounterService {
         ProgressionStore.INSTANCE.save();
 
         discardEntity(ACTIVE_ACTORS.remove(player.getUUID()));
-        CWorldNetworking.toast(player, "story", "Meeting", "Battle reset. Return when ready.");
+        discardEntity(ACTIVE_PROXIES.remove(player.getUUID()));
+        CWorldNetworking.toast(player, "story", "story.cobblemonworld.final.meeting", "story.cobblemonworld.final.retry");
     }
 
     private static void clearTransientEncounterState(UUID ownerId) {

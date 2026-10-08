@@ -46,7 +46,7 @@ public final class MysteriousFigureEntity extends PathfinderMob {
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!level().isClientSide && player instanceof ServerPlayer serverPlayer) {
             if (ownerUuid != null && !ownerUuid.equals(serverPlayer.getUUID())) {
-                serverPlayer.sendSystemMessage(Component.literal("??? does not acknowledge you."));
+                serverPlayer.sendSystemMessage(Component.translatable("story.cobblemonworld.final.other_player"));
                 return InteractionResult.CONSUME;
             }
             TobaEncounterService.beginPhaseOne(serverPlayer, this);
@@ -68,6 +68,12 @@ public final class MysteriousFigureEntity extends PathfinderMob {
 
     @Override
     public boolean isPushable() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldBeSaved() {
+        // This actor belongs to a live story encounter, never to the persistent map roster.
         return false;
     }
 }

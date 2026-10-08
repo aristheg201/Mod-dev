@@ -1,0 +1,44 @@
+[
+  {
+    "filename": "BEconomy-1.5.jar",
+    "modId": "beconomy",
+    "metadataVersion": "${version}",
+    "sha256": "4bb230061c515317e53e181ded7bab702b9988436dc326020eb83608b816a75c",
+    "source": "libs/BEconomy-1.5.jar (supplied user attachment; server-only)"
+  },
+  {
+    "filename": "CobblemonMapKitMod-1.0.9-SNAPSHOT.jar",
+    "modId": "mapkit",
+    "metadataVersion": "1.0.9-SNAPSHOT",
+    "sha256": "9c1b91d04e1cca8736e25e6ad90299a73ec9c480c3a642832fb43a9daac1e00c",
+    "url": "https://cdn.modrinth.com/data/88rQFbH3/versions/Ta6Lj0N5/CobblemonMapKitMod-1.0.9-SNAPSHOT.jar"
+  },
+  {
+    "filename": "cobblemon-armors-1.6.0+1.8.1.jar",
+    "modId": "cobblemonarmors",
+    "metadataVersion": "1.6.0+1.8.1",
+    "sha256": "460b0ef2828747ee81640e5870ba0507aef709baf57cfed01dd1421f203724df",
+    "url": "https://cdn.modrinth.com/data/WwDbGW1s/versions/cmjDnQgO/cobblemon-armors-1.6.0%2B1.8.1.jar"
+  },
+  {
+    "filename": "cobblemonarmory-1.5.4-fabric-1.21.1.jar",
+    "modId": "cobblemonarmory",
+    "metadataVersion": "1.5.4",
+    "sha256": "657e684836dc2aea6a947706a0b12eb94a99d07c1023099797d96ad12806577d",
+    "url": "https://cdn.modrinth.com/data/2GSJkNsi/versions/PtHN23gq/cobblemonarmory-1.5.4-fabric-1.21.1.jar"
+  },
+  {
+    "filename": "geckolib-fabric-1.21.1-4.9.2.jar",
+    "modId": "geckolib",
+    "metadataVersion": "4.9.2",
+    "sha256": "eac4cf55e1cb99b22cb91ea87c774d2a670c1711a80f4aff50e6ad56b6c58e7e",
+    "url": "https://cdn.modrinth.com/data/8BmcQJ2H/versions/dnJdtm0u/geckolib-fabric-1.21.1-4.9.2.jar"
+  },
+  {
+    "filename": "placeholder-api-2.4.2+1.21.jar",
+    "modId": "placeholder-api",
+    "metadataVersion": "2.4.2+1.21",
+    "sha256": "c0187ee299527ac7a3e0b1e83601dcdc0de631e286fe41e6be1a75958ea8e443",
+    "url": "https://cdn.modrinth.com/data/eXts2L7r/versions/U5bhVym2/placeholder-api-2.4.2%2B1.21.jar"
+  }
+]

@@ -1,9 +1,15 @@
 {
-  "id":"aurelia_below","title":"Missing Entry","giver":"aurelia",
-  "description":"Get the offline League record and read the missing entry.",
-  "objectives":[
-    {"id":"vault_key","type":"cobblemon_battle","target":"league_vault_keeper","amount":1},
-    {"id":"read_record","type":"interact","target":"offline_seventh_record","amount":1}
+  "id": "aurelia_below",
+  "title": "quest.cobblemonworld.aurelia_below.title",
+  "giver": "aurelia",
+  "description": "quest.cobblemonworld.aurelia_below.description",
+  "objectives": [
+    {
+      "id": "gameplay",
+      "type": "interact",
+      "target": "school_wolf_gatekeeper",
+      "amount": 1
+    }
   ],
-  "completionFlag":"aurelia_below_complete"
+  "completionFlag": "aurelia_below_complete"
 }

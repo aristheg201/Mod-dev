@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 90,
   "skill": 5,
-  "preBattleText": "First trial: pressure. Show me your team does not break when the pace changes.",
-  "postBattleText": "You held. The second trial will not be as forgiving.",
+  "preBattleText": "npc.cobblemonworld.school_wolf_trainer_01.greeting",
+  "postBattleText": "npc.cobblemonworld.school_wolf_trainer_01.repeat",
   "team": [
     "lycanroc level=88",
     "arcanine level=89",

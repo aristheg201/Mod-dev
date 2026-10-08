@@ -1,7 +1,117 @@
 {
-  "id":"selene_kade","displayName":"Selene Kade","icon":"cobblemonworld:icons/contact_selene_kade",
-  "messages":[
-    {"id":"after_defeat","triggerFlag":"selene_kade_defeated","text":"Look at your route. Every win removes another guard. That's not a coincidence.","responses":["What are you seeing?","Show me."],"questUnlock":"selene_stalemate","setFlag":"selene_sequence_noticed"},
-    {"id":"after_stalemate","triggerFlag":"selene_stalemate_complete","text":"The board only opens when every defender is gone. Whoever is guiding you wants it cleared.","responses":["???","Can we stop it?"],"questUnlock":"","setFlag":"board_clear_revealed"}
+  "id": "selene_kade",
+  "displayName": "Selene Kade",
+  "icon": "cobblemonworld:icons/contact_selene_kade",
+  "messages": [
+    {
+      "id": "after_defeat_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.selene_kade.after_defeat_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.selene_kade.after_defeat_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.selene_kade.after_defeat_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat",
+      "triggerFlag": "selene_kade_defeated",
+      "text": "dialogue.cobblemonworld.selene_kade.after_defeat",
+      "responses": [],
+      "questUnlock": "selene_stalemate",
+      "setFlag": "selene_sequence_noticed",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.selene_kade.after_defeat.choice0",
+          "nextNode": "after_defeat_reply_1",
+          "questUnlock": "selene_stalemate",
+          "setFlag": "selene_sequence_noticed"
+        },
+        {
+          "text": "dialogue.cobblemonworld.selene_kade.after_defeat.choice1",
+          "nextNode": "after_defeat_reply_2",
+          "questUnlock": "selene_stalemate",
+          "setFlag": "dialogue:selene_kade:after_defeat:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.selene_kade.after_defeat.choice2",
+          "nextNode": "after_defeat_reply_3",
+          "questUnlock": "selene_stalemate",
+          "setFlag": "dialogue:selene_kade:after_defeat:2"
+        }
+      ]
+    },
+    {
+      "id": "after_stalemate_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_stalemate_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_stalemate_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_stalemate",
+      "triggerFlag": "selene_stalemate_complete",
+      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "board_clear_revealed",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.selene_kade.after_stalemate.choice0",
+          "nextNode": "after_stalemate_reply_1",
+          "questUnlock": "",
+          "setFlag": "board_clear_revealed"
+        },
+        {
+          "text": "dialogue.cobblemonworld.selene_kade.after_stalemate.choice1",
+          "nextNode": "after_stalemate_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:selene_kade:after_stalemate:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.selene_kade.after_stalemate.choice2",
+          "nextNode": "after_stalemate_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:selene_kade:after_stalemate:2"
+        }
+      ]
+    }
   ]
 }

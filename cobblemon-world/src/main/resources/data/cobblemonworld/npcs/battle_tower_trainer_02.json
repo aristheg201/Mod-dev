@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 74,
   "skill": 5,
-  "preBattleText": "Second match. Strong teams fail here when they only know one plan.",
-  "postBattleText": "Two wins. The last floor is waiting.",
+  "preBattleText": "npc.cobblemonworld.battle_tower_trainer_02.greeting",
+  "postBattleText": "npc.cobblemonworld.battle_tower_trainer_02.repeat",
   "team": [
     "garchomp level=72",
     "gardevoir level=73",

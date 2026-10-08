@@ -1,0 +1,194 @@
+{
+  "categories": [
+    "all",
+    "supplies"
+  ],
+  "requiredFlags": [],
+  "excludedItems": [],
+  "entries": [
+    {
+      "id": "poke_ball",
+      "item": "cobblemon:poke_ball",
+      "quantity": 16,
+      "price": 20,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 0,
+      "available": true
+    },
+    {
+      "id": "great_ball",
+      "item": "cobblemon:great_ball",
+      "quantity": 8,
+      "price": 30,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 1,
+      "available": true
+    },
+    {
+      "id": "ultra_ball",
+      "item": "cobblemon:ultra_ball",
+      "quantity": 8,
+      "price": 45,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 2,
+      "available": true
+    },
+    {
+      "id": "potion",
+      "item": "cobblemon:potion",
+      "quantity": 8,
+      "price": 16,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 3,
+      "available": true
+    },
+    {
+      "id": "super_potion",
+      "item": "cobblemon:super_potion",
+      "quantity": 6,
+      "price": 24,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 4,
+      "available": true
+    },
+    {
+      "id": "revive",
+      "item": "cobblemon:revive",
+      "quantity": 4,
+      "price": 40,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 5,
+      "available": true
+    },
+    {
+      "id": "antidote",
+      "item": "cobblemon:antidote",
+      "quantity": 4,
+      "price": 8,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 7,
+      "available": true
+    },
+    {
+      "id": "paralyze_heal",
+      "item": "cobblemon:paralyze_heal",
+      "quantity": 4,
+      "price": 8,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 8,
+      "available": true
+    },
+    {
+      "id": "burn_heal",
+      "item": "cobblemon:burn_heal",
+      "quantity": 4,
+      "price": 8,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 9,
+      "available": true
+    },
+    {
+      "id": "awakening",
+      "item": "cobblemon:awakening",
+      "quantity": 4,
+      "price": 8,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 10,
+      "available": true
+    },
+    {
+      "id": "ice_heal",
+      "item": "cobblemon:ice_heal",
+      "quantity": 4,
+      "price": 8,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 11,
+      "available": true
+    },
+    {
+      "id": "full_heal",
+      "item": "cobblemon:full_heal",
+      "quantity": 4,
+      "price": 16,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 12,
+      "available": true
+    },
+    {
+      "id": "ether",
+      "item": "cobblemon:ether",
+      "quantity": 2,
+      "price": 20,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 13,
+      "available": true
+    },
+    {
+      "id": "nest_ball",
+      "item": "cobblemon:nest_ball",
+      "quantity": 8,
+      "price": 24,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 14,
+      "available": true
+    },
+    {
+      "id": "dusk_ball",
+      "item": "cobblemon:dusk_ball",
+      "quantity": 8,
+      "price": 32,
+      "categories": [
+        "supplies"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 15,
+      "available": true
+    }
+  ],
+  "id": "pokemall_ren",
+  "npc": "pokemall_ren",
+  "titleKey": "shop.cobblemonworld.pokemall.title",
+  "descriptionKey": "shop.cobblemonworld.pokemall.description"
+}

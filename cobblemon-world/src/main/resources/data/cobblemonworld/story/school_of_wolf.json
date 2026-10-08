@@ -1,0 +1,12 @@
+{
+  "id": "school_of_wolf",
+  "title": "story.cobblemonworld.school_of_wolf.title",
+  "objective": "story.cobblemonworld.school_of_wolf.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "school_trials_complete"
+  ],
+  "levelCapOnComplete": 100,
+  "nextChapter": "chapter_08_last_person",
+  "badge": ""
+}

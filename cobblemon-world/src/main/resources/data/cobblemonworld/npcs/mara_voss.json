@@ -1,15 +1,29 @@
 {
-  "id":"mara_voss","displayName":"Mara Voss","npcClass":"standard","visualLevel":22,"skill":3,
-  "preBattleText":"You shouldn't know this place. Tell me who sent you.",
-  "postBattleText":"Check your phone. I want to know how you found us.",
-  "team":[
+  "id": "mara_voss",
+  "displayName": "Mara Voss",
+  "npcClass": "standard",
+  "visualLevel": 22,
+  "skill": 3,
+  "preBattleText": "npc.cobblemonworld.mara_voss.greeting",
+  "postBattleText": "npc.cobblemonworld.mara_voss.repeat",
+  "team": [
     "zubat level=19 moves=wingattack,bite,confuseray,quickguard",
     "houndour level=20 moves=ember,bite,roar,smog",
     "luxio level=22 moves=spark,bite,thunderwave,quickattack"
   ],
-  "defeatFlag":"mara_voss_defeated","flagsOnDefeat":["seal_01_broken"],
-  "contactUnlock":"mara_voss","chapterOnDefeat":"chapter_01_signal",
-  "requiredChapter":"chapter_01_signal","requiredFlags":["prologue_complete"],
-  "skin":"mara_voss",
-  "badge":"relay_badge","rematchable":false,"specialActor":false
+  "defeatFlag": "mara_voss_defeated",
+  "flagsOnDefeat": [
+    "seal_01_broken"
+  ],
+  "contactUnlock": "mara_voss",
+  "chapterOnDefeat": "chapter_01_signal",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "professor_met",
+    "prologue_complete"
+  ],
+  "skin": "mara_voss",
+  "badge": "relay_badge",
+  "rematchable": false,
+  "specialActor": false
 }

@@ -68,22 +68,24 @@ public final class TrainerPhoneScreen extends Screen {
     private static final ResourceLocation DOT_OFF = tex("textures/gui/elements/page_dot_off.png");
 
     private static final List<App> APPS = List.of(
-            new App("Trainer Card", "trainer_card", "trainer"),
-            new App("Objective", "objective", "gps"),
-            new App("Current Story", "story", "patchouli"),
-            new App("Side Quests", "side_quests", "structure_compass"),
-            new App("Level Cap", "level_cap", "pokeinfo"),
-            new App("Badges", "badges", "pokedex"),
-            new App("Contacts", "contacts", "social"),
-            new App("Messages", "messages", "cloud"),
-            new App("League", "league", "cobbledollars"),
-            new App("Faction", "faction", "waystone")
+            new App("ui.cobblemonworld.trainer_card", "trainer_card", "trainer"),
+            new App("ui.cobblemonworld.objective", "objective", "gps"),
+            new App("ui.cobblemonworld.current_story", "story", "patchouli"),
+            new App("ui.cobblemonworld.side_quests", "side_quests", "structure_compass"),
+            new App("ui.cobblemonworld.level_cap", "level_cap", "pokeinfo"),
+            new App("ui.cobblemonworld.badges", "badges", "pokedex"),
+            new App("ui.cobblemonworld.contacts", "contacts", "social"),
+            new App("ui.cobblemonworld.messages", "messages", "cloud"),
+            new App("ui.cobblemonworld.league", "league", "cobbledollars"),
+            new App("ui.cobblemonworld.faction", "faction", "waystone")
     );
 
-    private final CWorldNetworking.PhoneSnapshot snapshot;
+    private CWorldNetworking.PhoneSnapshot snapshot;
     private String selected = "home";
     private int homePage;
     private int messageIndex;
+    private int responseScroll;
+    private int transcriptScroll = Integer.MAX_VALUE;
     private int contactIndex;
     private int questIndex;
     private int smallX;
@@ -93,9 +95,25 @@ public final class TrainerPhoneScreen extends Screen {
     private EditBox factionMember;
 
     public TrainerPhoneScreen(String json) {
-        super(Component.literal("Trainer Phone"));
+        super(Component.translatable("ui.cobblemonworld.trainer_phone"));
         snapshot = GSON.fromJson(json, CWorldNetworking.PhoneSnapshot.class);
         messageIndex = newestUnreadIndex(snapshot.messages());
+    }
+
+    public void qaClickReply(int index) {
+        qaSelectApp("messages"); responseScroll = Math.max(0, index - 1);
+        mouseClicked(largeX + CONTENT_X + 18, top + 141 + (index - responseScroll) * 18, 0);
+    }
+    public void qaPinQuest() {
+        qaSelectApp("side_quests");
+        mouseClicked(largeX + CONTENT_X + 20, top + 165, 0);
+    }
+    public void update(String json) {
+        String contact = message() == null ? "" : message().contactId();
+        snapshot = GSON.fromJson(json, CWorldNetworking.PhoneSnapshot.class);
+        for (int i = 0; i < snapshot.messages().size(); i++) if (snapshot.messages().get(i).contactId().equals(contact)) messageIndex = i;
+        responseScroll = 0; transcriptScroll = Integer.MAX_VALUE;
+        updateFields();
     }
 
     @Override
@@ -105,14 +123,14 @@ public final class TrainerPhoneScreen extends Screen {
         largeX = (width - LARGE_W) / 2;
         top = (height - H) / 2;
 
-        factionName = new EditBox(font, largeX + 35, top + 108, 111, 14, Component.literal("Faction name"));
-        factionName.setHint(Component.literal("Faction name"));
+        factionName = new EditBox(font, largeX + 35, top + 108, 111, 14, Component.translatable("ui.cobblemonworld.faction_name"));
+        factionName.setHint(Component.translatable("ui.cobblemonworld.faction_name"));
         factionName.setBordered(false);
         factionName.setMaxLength(24);
         addRenderableWidget(factionName);
 
-        factionMember = new EditBox(font, largeX + 35, top + 108, 111, 14, Component.literal("Player name"));
-        factionMember.setHint(Component.literal("Player name"));
+        factionMember = new EditBox(font, largeX + 35, top + 108, 111, 14, Component.translatable("ui.cobblemonworld.player_name"));
+        factionMember.setHint(Component.translatable("ui.cobblemonworld.player_name"));
         factionMember.setBordered(false);
         factionMember.setMaxLength(24);
         addRenderableWidget(factionMember);
@@ -207,7 +225,7 @@ public final class TrainerPhoneScreen extends Screen {
 
     private void renderBadge(GuiGraphics g, int count, int bx, int by) {
         String label = count > 99 ? "99+" : Integer.toString(count);
-        int badgeW = Math.max(10, font.width(label) / 2 + 4);
+        int badgeW = Math.max(10, font.width(ui(label)) / 2 + 4);
         int badgeX = bx + BUTTON_SIZE - badgeW;
         g.fill(badgeX, by, bx + BUTTON_SIZE, by + 10, DANGER);
         scaledText(g, label, badgeX + 2, by + 2, 0.5F, WHITE);
@@ -221,7 +239,7 @@ public final class TrainerPhoneScreen extends Screen {
             int bx = smallX + GRID_START_X + (local % GRID_COLUMNS) * BUTTON_SPACING;
             int by = top + GRID_START_Y + (local / GRID_COLUMNS) * BUTTON_SPACING;
             if (inside(mouseX, mouseY, bx, by, BUTTON_SIZE, BUTTON_SIZE)) {
-                g.renderTooltip(font, Component.literal(APPS.get(i).label()), mouseX, mouseY);
+                g.renderTooltip(font, Component.translatable(APPS.get(i).label()), mouseX, mouseY);
                 return;
             }
         }
@@ -232,9 +250,9 @@ public final class TrainerPhoneScreen extends Screen {
         blit(g, LARGE_SCREEN, largeX, top, LARGE_W, H);
 
         boolean backHover = inside(mouseX, mouseY, largeX + BACK_X - 2, top + BACK_Y - 2, 34, 12);
-        g.drawString(font, "Back", largeX + BACK_X, top + BACK_Y, backHover ? GOLD : WHITE, false);
+        g.drawString(font, ui("ui.cobblemonworld.back"), largeX + BACK_X, top + BACK_Y, backHover ? GOLD : WHITE, false);
 
-        String appTitle = appLabel(selected);
+        String appTitle = ui(appLabel(selected));
         g.drawString(font, appTitle, largeX + (LARGE_W - font.width(appTitle)) / 2, top + BACK_Y, WHITE, false);
 
         int x = largeX + CONTENT_X;
@@ -256,14 +274,14 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     private void renderTrainerCard(GuiGraphics g, int x, int y) {
-        section(g, x, y, CONTENT_W, 18, "TRAINER");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.trainer");
         int cy = y + 18;
         surface(g, x, cy, CONTENT_W, 118);
         g.drawString(font, snapshot.trainerName(), x + 8, cy + 8, CONTENT_TEXT, false);
-        field(g, "Level Cap", "Lv." + snapshot.levelCap(), x + 8, cy + 27, CONTENT_W - 16);
-        field(g, "Badges", Integer.toString(snapshot.badges().size()), x + 8, cy + 43, CONTENT_W - 16);
-        field(g, "League", snapshot.leagueTier(), x + 8, cy + 59, CONTENT_W - 16);
-        field(g, "Faction", snapshot.faction().name(), x + 8, cy + 75, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.level_cap", "Lv." + snapshot.levelCap(), x + 8, cy + 27, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.badges", Integer.toString(snapshot.badges().size()), x + 8, cy + 43, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.league", snapshot.leagueTier(), x + 8, cy + 59, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.faction", snapshot.faction().name(), x + 8, cy + 75, CONTENT_W - 16);
         if (snapshot.rpg() != null && snapshot.rpg().available()) {
             field(g, "RPG", snapshot.rpg().classId() + " Lv." + snapshot.rpg().level(), x + 8, cy + 91, CONTENT_W - 16);
             String meters = "STA " + whole(snapshot.rpg().stamina()) + "/" + whole(snapshot.rpg().maxStamina())
@@ -273,159 +291,176 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     private void renderObjective(GuiGraphics g, int x, int y) {
-        section(g, x, y, CONTENT_W, 18, "CURRENT OBJECTIVE");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.current_objective");
         surface(g, x, y + 18, CONTENT_W, 126);
-        wrapped(g, safe(snapshot.story().objective(), "No tracked objective"), x + 8, y + 30, CONTENT_W - 16, 12, CONTENT_TEXT);
+        wrapped(g, safe(snapshot.story().objective(), "ui.cobblemonworld.no_tracked_objective"), x + 8, y + 30, CONTENT_W - 16, 12, CONTENT_TEXT);
     }
 
     private void renderStory(GuiGraphics g, int x, int y) {
         section(g, x, y, CONTENT_W, 18, snapshot.story().title());
         surface(g, x, y + 18, CONTENT_W, 126);
-        g.drawString(font, human(snapshot.story().id()), x + 8, y + 28, CONTENT_GOLD, false);
+
         g.fill(x + 8, y + 42, x + CONTENT_W - 8, y + 43, 0xFFB4DCDD);
-        wrapped(g, safe(snapshot.story().objective(), "Story complete."), x + 8, y + 51, CONTENT_W - 16, 10, CONTENT_TEXT);
+        wrapped(g, safe(snapshot.story().objective(), "ui.cobblemonworld.story_complete"), x + 8, y + 51, CONTENT_W - 16, 10, CONTENT_TEXT);
     }
 
     private void renderQuest(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var q = quest();
-        section(g, x, y, CONTENT_W, 18, "SIDE QUESTS");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.side_quests");
         surface(g, x, y + 18, CONTENT_W, 126);
         if (q == null) {
-            g.drawString(font, "No side quests yet.", x + 8, y + 31, CONTENT_DIM, false);
+            g.drawString(font, ui("ui.cobblemonworld.no_side_quests_yet"), x + 8, y + 31, CONTENT_DIM, false);
             return;
         }
-        g.drawString(font, (q.completed() ? "Complete - " : "") + q.title(), x + 8, y + 29,
+        g.drawString(font, (q.completed() ? ui("ui.cobblemonworld.completed_prefix") : "") + ui(q.title()), x + 8, y + 29,
                 q.completed() ? 0xFF397A4A : CONTENT_TEXT, false);
         g.drawString(font, q.giver() + "   " + q.progress() + "/" + q.required(), x + 8, y + 43, CONTENT_DIM, false);
         wrapped(g, q.description(), x + 8, y + 58, CONTENT_W - 16, 7, CONTENT_TEXT);
         renderPager(g, questIndex, snapshot.quests().size(), mouseX, mouseY);
-        if (!q.completed()) button(g, x + 52, top + 161, 68, 16, "Track Quest", mouseX, mouseY);
+        if (!q.completed()) button(g, x + 8, top + 161, 155, 16, "ui.cobblemonworld.pin_to_objective", mouseX, mouseY);
     }
 
     private void renderLevelCap(GuiGraphics g, int x, int y) {
-        section(g, x, y, CONTENT_W, 18, "LEVEL CAP");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.level_cap");
         surface(g, x, y + 18, CONTENT_W, 126);
         String cap = "Lv." + snapshot.levelCap();
         g.drawString(font, cap, x + (CONTENT_W - font.width(cap)) / 2, y + 30, CONTENT_GOLD, false);
         g.fill(x + 28, y + 46, x + CONTENT_W - 28, y + 48, SECTION_TITLE_BG);
         wrapped(g,
-                "Pokemon above your cap keep their real level, but cannot spawn naturally, be caught, sent out, gain XP, or enter battle until the cap catches up.",
+                "ui.cobblemonworld.cap_explanation",
                 x + 8, y + 58, CONTENT_W - 16, 9, CONTENT_TEXT);
     }
 
     private void renderBadges(GuiGraphics g, int x, int y) {
-        section(g, x, y, CONTENT_W, 18, "BADGES");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.badges");
         surface(g, x, y + 18, CONTENT_W, 126);
         if (snapshot.badges().isEmpty()) {
-            g.drawString(font, "No badges yet.", x + 8, y + 31, CONTENT_DIM, false);
+            g.drawString(font, ui("ui.cobblemonworld.no_badges_yet"), x + 8, y + 31, CONTENT_DIM, false);
             return;
         }
         int cy = y + 29;
         for (String badge : snapshot.badges()) {
             if (cy > top + CONTENT_BOTTOM - 13) break;
             g.fill(x + 8, cy + 1, x + 16, cy + 9, CONTENT_GOLD);
-            g.drawString(font, human(badge), x + 22, cy, CONTENT_TEXT, false);
+            g.drawString(font, ui("badge.cobblemonworld." + badge), x + 22, cy, CONTENT_TEXT, false);
             cy += 14;
         }
     }
 
     private void renderContact(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var c = contact();
-        section(g, x, y, CONTENT_W, 18, "CONTACTS");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.contacts");
         surface(g, x, y + 18, CONTENT_W, 126);
         if (c == null) {
-            g.drawString(font, "No contacts yet.", x + 8, y + 31, CONTENT_DIM, false);
+            g.drawString(font, ui("ui.cobblemonworld.no_contacts_yet"), x + 8, y + 31, CONTENT_DIM, false);
             return;
         }
         g.fill(x + 8, y + 28, x + 34, y + 54, SECTION_CONTENT_ALT);
         String initials = initials(c.displayName());
         g.drawString(font, initials, x + 21 - font.width(initials) / 2, y + 37, SECTION_TITLE_BG, false);
         g.drawString(font, c.displayName(), x + 42, y + 30, CONTENT_TEXT, false);
-        g.drawString(font, c.unread() > 0 ? c.unread() + " unread" : "Up to date", x + 42, y + 43,
+        g.drawString(font, c.unread() > 0 ? Component.translatable("ui.cobblemonworld.unread", c.unread()).getString() : ui("ui.cobblemonworld.up_to_date"), x + 42, y + 43,
                 c.unread() > 0 ? DANGER : CONTENT_DIM, false);
         g.fill(x + 8, y + 62, x + CONTENT_W - 8, y + 63, 0xFFB4DCDD);
-        wrapped(g, "Story contacts unlock after major battles and investigations.",
+        wrapped(g, "ui.cobblemonworld.story_contacts_unlock_after_major_battles_and_investigations",
                 x + 8, y + 72, CONTENT_W - 16, 6, CONTENT_TEXT);
         renderPager(g, contactIndex, snapshot.contacts().size(), mouseX, mouseY);
     }
 
     private void renderMessage(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var m = message();
-        section(g, x, y, CONTENT_W, 18, "MESSAGES");
-        if (m == null) {
-            surface(g, x, y + 18, CONTENT_W, 126);
-            g.drawString(font, "No messages yet.", x + 8, y + 31, CONTENT_DIM, false);
-            return;
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.messages");
+        surface(g, x, y + 18, CONTENT_W, 126);
+        if (m == null) { g.drawString(font, ui("ui.cobblemonworld.no_messages_yet"), x + 8, y + 31, CONTENT_DIM, false); return; }
+        var turns = snapshot.messages().stream().filter(t -> t.contactId().equals(m.contactId())).toList();
+        var reply = activeReply(m.contactId());
+        int bodyBottom = reply == null ? top + 172 : top + 132;
+        int cy = y + 23;
+        java.util.List<TranscriptLine> lines = new java.util.ArrayList<>();
+        for (var turn : turns) {
+            lines.add(new TranscriptLine(turn.sender(), true));
+            for (var text : font.split(Component.translatable(turn.text()), CONTENT_W - 18))
+                lines.add(new TranscriptLine(text, false));
+            lines.add(new TranscriptLine("", false));
         }
-
-        int headerY = y + 18;
-        g.fill(x, headerY, x + CONTENT_W, headerY + 22, 0xFF243D49);
-        g.drawString(font, m.sender(), x + 8, headerY + 7, WHITE, false);
-        if (m.unread()) g.fill(x + CONTENT_W - 15, headerY + 6, x + CONTENT_W - 7, headerY + 14, DANGER);
-
-        int bodyY = headerY + 22;
-        int responseCount = m.unread() ? Math.min(2, m.responses().size()) : 0;
-        int bodyH = responseCount > 0 ? 75 : 105;
-        surface(g, x, bodyY, CONTENT_W, bodyH);
-        wrapped(g, m.text(), x + 8, bodyY + 8, CONTENT_W - 16, responseCount > 0 ? 7 : 10, CONTENT_TEXT);
-
-        if (responseCount > 0) {
-            for (int i = 0; i < responseCount; i++) {
-                button(g, x + 8, top + 154 + i * 19, CONTENT_W - 16, 16, m.responses().get(i), mouseX, mouseY);
-            }
+        int visible = Math.max(1, (bodyBottom - cy) / 11);
+        int maxScroll = Math.max(0, lines.size() - visible);
+        transcriptScroll = Math.min(transcriptScroll, maxScroll);
+        for (int i = transcriptScroll; i < Math.min(lines.size(), transcriptScroll + visible); i++) {
+            var line = lines.get(i);
+            int ly = cy + (i - transcriptScroll) * 11;
+            if (line.value() instanceof net.minecraft.util.FormattedCharSequence seq) g.drawString(font, seq, x + 8, ly, CONTENT_TEXT, false);
+            else g.drawString(font, line.value().toString(), x + 8, ly, line.sender() ? SECTION_TITLE_BG : CONTENT_TEXT, false);
+        }
+        if (maxScroll > 0) g.fill(x + CONTENT_W - 4, cy + transcriptScroll * (bodyBottom - cy - 8) / Math.max(1,maxScroll), x + CONTENT_W - 2, cy + 8 + transcriptScroll * (bodyBottom - cy - 8) / Math.max(1,maxScroll), SECTION_TITLE_BG);
+        if (reply != null) {
+            responseScroll = Math.min(responseScroll, Math.max(0, reply.responses().size() - 2));
+            for (int i = 0; i < 2 && i + responseScroll < reply.responses().size(); i++)
+                button(g, x + 8, top + 136 + i * 18, CONTENT_W - 16, 16, reply.responses().get(i + responseScroll), mouseX, mouseY);
+            if (reply.responses().size() > 2) g.drawString(font, "↕", x + CONTENT_W - 8, top + 145, CONTENT_DIM, false);
         }
         renderPager(g, messageIndex, snapshot.messages().size(), mouseX, mouseY);
     }
+    private record TranscriptLine(Object value, boolean sender) {}
+    private CWorldNetworking.MessageView activeReply(String contact) {
+        CWorldNetworking.MessageView reply = null;
+        for (var m : snapshot.messages()) if (m.contactId().equals(contact) && !m.responses().isEmpty()) reply = m;
+        return reply;
+    }
 
     private void renderLeague(GuiGraphics g, int x, int y) {
-        section(g, x, y, CONTENT_W, 18, "LEAGUE");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.league");
         surface(g, x, y + 18, CONTENT_W, 126);
-        String tier = snapshot.leagueTier();
+        String tier = ui("league.cobblemonworld.tier." + snapshot.leagueTier().toLowerCase(Locale.ROOT));
         g.drawString(font, tier, x + (CONTENT_W - font.width(tier)) / 2, y + 31, CONTENT_GOLD, false);
-        String points = snapshot.leaguePoints() + " League Points";
+        String points = Component.translatable("league.cobblemonworld.points", snapshot.leaguePoints()).getString();
         g.drawString(font, points, x + (CONTENT_W - font.width(points)) / 2, y + 48, CONTENT_TEXT, false);
         g.fill(x + 28, y + 66, x + CONTENT_W - 28, y + 68, SECTION_TITLE_BG);
-        wrapped(g, "Main-story milestones award League Points. Eight major badges or 800 points reaches Champion tier.",
+        wrapped(g, "ui.cobblemonworld.main_story_milestones_award_league_points__eight_major_badges_or_800_points_reaches_champion_tier",
                 x + 8, y + 78, CONTENT_W - 16, 6, CONTENT_TEXT);
     }
 
     private void renderFaction(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
         var f = snapshot.faction();
-        section(g, x, y, CONTENT_W, 18, "FACTION");
+        section(g, x, y, CONTENT_W, 18, "ui.cobblemonworld.faction");
         surface(g, x, y + 18, CONTENT_W, 126);
 
         boolean none = "No Faction".equals(f.name());
         if (none) {
-            g.drawString(font, "No faction yet.", x + 8, y + 30, CONTENT_TEXT, false);
-            g.drawString(font, "Create one or accept an invitation.", x + 8, y + 44, CONTENT_DIM, false);
+            g.drawString(font, ui("ui.cobblemonworld.no_faction_yet"), x + 8, y + 30, CONTENT_TEXT, false);
+            g.drawString(font, ui("ui.cobblemonworld.create_one_or_accept_an_invitation"), x + 8, y + 44, CONTENT_DIM, false);
             fieldBox(g, largeX + 31, top + 104, 119, 20);
-            button(g, largeX + 155, top + 105, 35, 18, "Create", mouseX, mouseY);
+            button(g, largeX + 155, top + 105, 35, 18, "ui.cobblemonworld.create", mouseX, mouseY);
             if (f.pendingInvites() != null && !f.pendingInvites().isEmpty()) {
-                g.drawString(font, "Invite: " + f.pendingInvites().get(0), x + 8, top + 135, CONTENT_GOLD, false);
-                button(g, x + 8, top + 150, CONTENT_W - 16, 18, "Accept Invite", mouseX, mouseY);
+                g.drawString(font, Component.translatable("ui.cobblemonworld.invitation", f.pendingInvites().get(0)).getString(), x + 8, top + 135, CONTENT_GOLD, false);
+                button(g, x + 8, top + 150, CONTENT_W - 16, 18, "ui.cobblemonworld.accept_invite", mouseX, mouseY);
             }
             return;
         }
 
         g.drawString(font, f.name(), x + 8, y + 29, CONTENT_TEXT, false);
-        g.drawString(font, f.role() + " - " + f.memberCount() + " members", x + 8, y + 43, CONTENT_DIM, false);
-        field(g, "Island", f.phase(), x + 8, y + 59, CONTENT_W - 16);
-        field(g, "Affinity", f.affinity().toUpperCase(Locale.ROOT), x + 8, y + 75, CONTENT_W - 16);
-        field(g, "Gate", f.gateScore() + (f.qualified() ? " - QUALIFIED" : ""), x + 8, y + 91, CONTENT_W - 16);
-        field(g, "Control", f.controlPoints() + "/5", x + 8, y + 107, CONTENT_W - 16);
+        g.drawString(font, Component.translatable("ui.cobblemonworld.faction_members", Component.translatable("faction.cobblemonworld.role." + f.role().toLowerCase(Locale.ROOT)), f.memberCount()).getString(), x + 8, y + 43, CONTENT_DIM, false);
+        field(g, "ui.cobblemonworld.island", ui("faction.cobblemonworld.phase." + f.phase().toLowerCase(Locale.ROOT)), x + 8, y + 59, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.affinity", ui("faction.cobblemonworld.affinity." + f.affinity().toLowerCase(Locale.ROOT)), x + 8, y + 75, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.gate", f.gateScore() + (f.qualified() ? " - " + ui("ui.cobblemonworld.qualified") : ""), x + 8, y + 91, CONTENT_W - 16);
+        field(g, "ui.cobblemonworld.control", f.controlPoints() + "/5", x + 8, y + 107, CONTENT_W - 16);
 
         boolean staff = "OWNER".equals(f.role()) || "OFFICER".equals(f.role());
         if (staff) {
             fieldBox(g, largeX + 31, top + 137, 119, 20);
-            button(g, largeX + 155, top + 138, 35, 18, "Invite", mouseX, mouseY);
+            button(g, largeX + 155, top + 138, 35, 18, "ui.cobblemonworld.invite", mouseX, mouseY);
         }
-        button(g, x + 8, top + 166, 72, 18, "Join Island", mouseX, mouseY);
-        button(g, x + 91, top + 166, 72, 18, "OWNER".equals(f.role()) ? "Disband" : "Leave", mouseX, mouseY);
+        button(g, x + 8, top + 166, 72, 18, "ui.cobblemonworld.join_island", mouseX, mouseY);
+        button(g, x + 91, top + 166, 72, 18, "OWNER".equals(f.role()) ? "ui.cobblemonworld.disband" : "ui.cobblemonworld.leave", mouseX, mouseY);
+    }
+
+    private static String ui(String text) {
+        return Component.translatable(text).getString();
     }
 
     private void section(GuiGraphics g, int x, int y, int w, int h, String title) {
         g.fill(x, y, x + w, y + h, SECTION_TITLE_BG);
-        String shown = font.plainSubstrByWidth(safe(title, ""), w - 12);
+        String shown = font.plainSubstrByWidth(ui(safe(title, "")), w - 12);
         g.drawString(font, shown, x + 6, y + 5, WHITE, false);
     }
 
@@ -434,8 +469,8 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     private void field(GuiGraphics g, String label, String value, int x, int y, int w) {
-        g.drawString(font, label, x, y, CONTENT_DIM, false);
-        String shown = font.plainSubstrByWidth(safe(value, "-"), Math.max(20, w - font.width(label) - 12));
+        g.drawString(font, ui(label), x, y, CONTENT_DIM, false);
+        String shown = font.plainSubstrByWidth(ui(safe(value, "-")), Math.max(20, w - font.width(ui(label)) - 12));
         g.drawString(font, shown, x + w - font.width(shown), y, CONTENT_TEXT, false);
         g.fill(x, y + 11, x + w, y + 12, 0xFFD0E9EA);
     }
@@ -450,7 +485,7 @@ public final class TrainerPhoneScreen extends Screen {
 
     private void wrapped(GuiGraphics g, String text, int x, int y, int width, int maxLines, int color) {
         int line = 0;
-        for (var seq : font.split(Component.literal(safe(text, "")), width)) {
+        for (var seq : font.split(Component.translatable(safe(text, "")), width)) {
             g.drawString(font, seq, x, y + line * 11, color, false);
             if (++line >= maxLines) break;
         }
@@ -468,7 +503,7 @@ public final class TrainerPhoneScreen extends Screen {
         boolean hover = inside(mouseX, mouseY, x, y, w, h);
         int bg = hover ? HOVER_CYAN : SECTION_TITLE_BG;
         g.fill(x, y, x + w, y + h, bg);
-        String shown = font.plainSubstrByWidth(label, w - 8);
+        String shown = font.plainSubstrByWidth(ui(label), w - 8);
         g.drawString(font, shown, x + (w - font.width(shown)) / 2, y + (h - font.lineHeight) / 2, WHITE, false);
     }
 
@@ -514,11 +549,11 @@ public final class TrainerPhoneScreen extends Screen {
 
         if ("messages".equals(selected)) {
             var m = message();
-            if (m != null && m.unread()) {
-                int responseCount = Math.min(2, m.responses().size());
-                for (int i = 0; i < responseCount; i++) {
-                    if (inside(mx, my, largeX + CONTENT_X + 8, top + 154 + i * 19, CONTENT_W - 16, 16)) {
-                        ClientPlayNetworking.send(new PhoneActionPayload("respond", m.key(), Integer.toString(i)));
+            var reply = m == null ? null : activeReply(m.contactId());
+            if (reply != null) {
+                for (int i = 0; i < 2 && i + responseScroll < reply.responses().size(); i++) {
+                    if (inside(mx, my, largeX + CONTENT_X + 8, top + 136 + i * 18, CONTENT_W - 16, 16)) {
+                        ClientPlayNetworking.send(new PhoneActionPayload("respond", reply.key(), Integer.toString(i + responseScroll)));
                         return true;
                     }
                 }
@@ -526,6 +561,7 @@ public final class TrainerPhoneScreen extends Screen {
             int delta = pagerDelta(mx, my, snapshot.messages().size());
             if (delta != 0) {
                 messageIndex = Math.floorMod(messageIndex + delta, snapshot.messages().size());
+                responseScroll = 0; transcriptScroll = Integer.MAX_VALUE;
                 return true;
             }
         }
@@ -541,8 +577,8 @@ public final class TrainerPhoneScreen extends Screen {
         if ("side_quests".equals(selected)) {
             var q = quest();
             if (q != null && !q.completed()
-                    && inside(mx, my, largeX + CONTENT_X + 52, top + 161, 68, 16)) {
-                ClientPlayNetworking.send(new PhoneActionPayload("track_quest", q.id(), ""));
+                    && inside(mx, my, largeX + CONTENT_X + 8, top + 161, 155, 16)) {
+                ClientPlayNetworking.send(new PhoneActionPayload("pin_objective", q.id(), ""));
                 return true;
             }
             int delta = pagerDelta(mx, my, snapshot.quests().size());
@@ -588,6 +624,12 @@ public final class TrainerPhoneScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if ("messages".equals(selected) && verticalAmount != 0) {
+            var m = message(); var reply = m == null ? null : activeReply(m.contactId());
+            if (mouseY >= top + 133 && reply != null) responseScroll = Math.max(0, Math.min(Math.max(0, reply.responses().size() - 2), responseScroll + (verticalAmount < 0 ? 1 : -1)));
+            else transcriptScroll = Math.max(0, transcriptScroll + (verticalAmount < 0 ? 2 : -2));
+            return true;
+        }
         if (!"home".equals(selected) || verticalAmount == 0.0) {
             return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
         }
@@ -657,8 +699,8 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     private static String appLabel(String id) {
-        for (App app : APPS) if (app.id().equals(id)) return app.label();
-        return "Trainer Phone";
+        for (App app : APPS) if (app.id().equals(id)) return ui(app.label());
+        return "ui.cobblemonworld.trainer_phone";
     }
 
     private static String initials(String value) {
@@ -714,7 +756,21 @@ public final class TrainerPhoneScreen extends Screen {
     }
 
     public void qaSelectApp(String id) {
-        select(id == null || id.isBlank() ? "home" : id);
+        String target = id == null || id.isBlank() ? "home" : id;
+        if (selected.equals(target)) return;
+        if (!selected.equals("home")) mouseClicked(largeX + BACK_X, top + BACK_Y, 0);
+        if (target.equals("home")) return;
+        for (int i = 0; i < APPS.size(); i++) if (APPS.get(i).id().equals(target)) {
+            int page = i / PER_PAGE;
+            while (homePage < page) mouseClicked(smallX + FOOTER_NEXT_X + 2, top + FOOTER_Y + 2, 0);
+            while (homePage > page) mouseClicked(smallX + FOOTER_PREV_X + 2, top + FOOTER_Y + 2, 0);
+            int local = i % PER_PAGE;
+            mouseClicked(smallX + GRID_START_X + local % GRID_COLUMNS * BUTTON_SPACING + 8,
+                    top + GRID_START_Y + local / GRID_COLUMNS * BUTTON_SPACING + 8, 0);
+            if (!selected.equals(target)) throw new IllegalStateException("Phone app click did not open " + target);
+            return;
+        }
+        throw new IllegalArgumentException("Unknown phone app " + target);
     }
 
     public String qaSelectedApp() {

@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 70,
   "skill": 0,
-  "preBattleText": "Qualification is three consecutive Tower wins. No shortcuts, no substitutions after registration.",
-  "postBattleText": "Your Tower registration is active.",
+  "preBattleText": "npc.cobblemonworld.battle_tower_receptionist.greeting",
+  "postBattleText": "npc.cobblemonworld.battle_tower_receptionist.repeat",
   "team": [],
   "defeatFlag": "",
   "flagsOnDefeat": [],
@@ -13,6 +13,7 @@
   "chapterOnDefeat": "",
   "requiredChapter": "",
   "requiredFlags": [
+    "town8_qualifier_defeated",
     "divinos_eight_towns_complete"
   ],
   "badge": "",

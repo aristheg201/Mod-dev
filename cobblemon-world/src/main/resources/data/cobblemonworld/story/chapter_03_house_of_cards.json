@@ -1,9 +1,13 @@
 {
-  "id":"chapter_03_house_of_cards","title":"The Black Card",
-  "objective":"Enter Card World, defeat Rook, and recover the black card.",
-  "requiredFlags":["seal_02_broken"],
-  "completionFlags":["rook_defeated","seal_03_broken"],
-  "levelCapOnComplete":38,
-  "nextChapter":"chapter_04_kings_gambit",
-  "badge":"black_card_badge"
+  "id": "chapter_03_house_of_cards",
+  "title": "story.cobblemonworld.chapter_03_house_of_cards.title",
+  "objective": "story.cobblemonworld.chapter_03_house_of_cards.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "rook_defeated",
+    "black_card_obtained"
+  ],
+  "levelCapOnComplete": 38,
+  "nextChapter": "chapter_04_kings_gambit",
+  "badge": "black_card_badge"
 }

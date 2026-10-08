@@ -1,7 +1,117 @@
 {
-  "id":"mara_voss","displayName":"Mara Voss","icon":"cobblemonworld:icons/contact_mara_voss",
-  "messages":[
-    {"id":"after_defeat","triggerFlag":"mara_voss_defeated","text":"That relay was off-grid. Nobody outside my unit knew where it was. Who sent you?","responses":["A contact.","Why do you care?"],"questUnlock":"voss_echo","setFlag":"voss_suspicious"},
-    {"id":"after_echo","triggerFlag":"voss_echo_complete","text":"I found the same routing signature in League traffic from twelve years ago. Your contact has been around much longer than this crisis.","responses":["How long?","What else did you find?"],"questUnlock":"","setFlag":"voss_found_old_signal"}
+  "id": "mara_voss",
+  "displayName": "Mara Voss",
+  "icon": "cobblemonworld:icons/contact_mara_voss",
+  "messages": [
+    {
+      "id": "after_defeat_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mara_voss.after_defeat_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mara_voss.after_defeat_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mara_voss.after_defeat_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat",
+      "triggerFlag": "mara_voss_defeated",
+      "text": "dialogue.cobblemonworld.mara_voss.after_defeat",
+      "responses": [],
+      "questUnlock": "voss_echo",
+      "setFlag": "voss_suspicious",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mara_voss.after_defeat.choice0",
+          "nextNode": "after_defeat_reply_1",
+          "questUnlock": "voss_echo",
+          "setFlag": "voss_suspicious"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mara_voss.after_defeat.choice1",
+          "nextNode": "after_defeat_reply_2",
+          "questUnlock": "voss_echo",
+          "setFlag": "dialogue:mara_voss:after_defeat:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mara_voss.after_defeat.choice2",
+          "nextNode": "after_defeat_reply_3",
+          "questUnlock": "voss_echo",
+          "setFlag": "dialogue:mara_voss:after_defeat:2"
+        }
+      ]
+    },
+    {
+      "id": "after_echo_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mara_voss.after_echo_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_echo_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mara_voss.after_echo_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_echo_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mara_voss.after_echo_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_echo",
+      "triggerFlag": "voss_echo_complete",
+      "text": "dialogue.cobblemonworld.mara_voss.after_echo",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "voss_found_old_signal",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mara_voss.after_echo.choice0",
+          "nextNode": "after_echo_reply_1",
+          "questUnlock": "",
+          "setFlag": "voss_found_old_signal"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mara_voss.after_echo.choice1",
+          "nextNode": "after_echo_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mara_voss:after_echo:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mara_voss.after_echo.choice2",
+          "nextNode": "after_echo_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mara_voss:after_echo:2"
+        }
+      ]
+    }
   ]
 }

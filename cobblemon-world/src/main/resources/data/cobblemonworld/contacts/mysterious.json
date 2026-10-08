@@ -1,39 +1,464 @@
 {
-  "id":"mysterious",
-  "displayName":"???",
-  "icon":"cobblemonworld:icons/contact_unknown",
-  "messages":[
+  "id": "mysterious",
+  "displayName": "???",
+  "icon": "cobblemonworld:icons/contact_unknown",
+  "messages": [
     {
-      "id":"first_contact",
-      "triggerFlag":"phone_obtained",
-      "text":"You've seen it too. Pokemon are acting wrong. Someone is causing it. I know where the first relay is.",
-      "responses":["Who is this?","Send the location."],
-      "questUnlock":"first_signal",
-      "setFlag":"prologue_complete"
+      "id": "first_contact_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
     },
     {
-      "id":"you_are_asking",
-      "triggerFlag":"seal_term_revealed",
-      "text":"Good. Keep asking questions. Especially about me.",
-      "responses":["Then answer one.","Why are you helping me?"],
-      "questUnlock":"",
-      "setFlag":"mysterious_acknowledged_investigation"
+      "id": "first_contact_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
     },
     {
-      "id":"last_person",
-      "triggerFlag":"false_victory_complete",
-      "text":"The Heart is gone. Don't celebrate yet. There's one person you still need to meet.",
-      "responses":["Who?"],
-      "questUnlock":"",
-      "setFlag":"final_meeting_requested"
+      "id": "first_contact_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
     },
     {
-      "id":"meet_me",
-      "triggerFlag":"final_meeting_requested",
-      "text":"Me. Come alone. I've sent the location.",
-      "responses":["On my way."],
-      "questUnlock":"",
-      "setFlag":"toba_meeting_revealed"
+      "id": "first_contact",
+      "triggerFlag": "phone_obtained",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact",
+      "responses": [],
+      "questUnlock": "first_signal",
+      "setFlag": "prologue_complete",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact.choice0",
+          "nextNode": "first_contact_reply_1",
+          "questUnlock": "first_signal",
+          "setFlag": "prologue_complete"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact.choice1",
+          "nextNode": "first_contact_reply_2",
+          "questUnlock": "first_signal",
+          "setFlag": "dialogue:mysterious:first_contact:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact.choice2",
+          "nextNode": "first_contact_reply_3",
+          "questUnlock": "first_signal",
+          "setFlag": "dialogue:mysterious:first_contact:2"
+        }
+      ]
+    },
+    {
+      "id": "you_are_asking_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.you_are_asking_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "you_are_asking_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.you_are_asking_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "you_are_asking_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.you_are_asking_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "you_are_asking",
+      "triggerFlag": "seal_term_revealed",
+      "text": "dialogue.cobblemonworld.mysterious.you_are_asking",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "mysterious_acknowledged_investigation",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.you_are_asking.choice0",
+          "nextNode": "you_are_asking_reply_1",
+          "questUnlock": "",
+          "setFlag": "mysterious_acknowledged_investigation"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.you_are_asking.choice1",
+          "nextNode": "you_are_asking_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:you_are_asking:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.you_are_asking.choice2",
+          "nextNode": "you_are_asking_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:you_are_asking:2"
+        }
+      ]
+    },
+    {
+      "id": "last_person_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.last_person_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "last_person_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.last_person_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "last_person_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.last_person_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "last_person",
+      "triggerFlag": "school_trials_complete",
+      "text": "dialogue.cobblemonworld.mysterious.last_person",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "final_meeting_requested",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.last_person.choice0",
+          "nextNode": "last_person_reply_1",
+          "questUnlock": "",
+          "setFlag": "final_meeting_requested"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.last_person.choice1",
+          "nextNode": "last_person_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:last_person:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.last_person.choice2",
+          "nextNode": "last_person_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:last_person:2"
+        }
+      ]
+    },
+    {
+      "id": "meet_me_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.meet_me_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "meet_me_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.meet_me_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "meet_me_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.meet_me_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "meet_me",
+      "triggerFlag": "final_meeting_requested",
+      "text": "dialogue.cobblemonworld.mysterious.meet_me",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "toba_meeting_revealed",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.meet_me.choice0",
+          "nextNode": "meet_me_reply_1",
+          "questUnlock": "",
+          "setFlag": "toba_meeting_revealed"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.meet_me.choice1",
+          "nextNode": "meet_me_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:meet_me:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.meet_me.choice2",
+          "nextNode": "meet_me_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:meet_me:2"
+        }
+      ]
+    },
+    {
+      "id": "first_contact_who_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_who_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_who_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_who_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_who_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_who_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_who",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_who",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_who.choice0",
+          "nextNode": "first_contact_who_reply_1",
+          "questUnlock": "",
+          "setFlag": ""
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_who.choice1",
+          "nextNode": "first_contact_who_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:first_contact_who:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_who.choice2",
+          "nextNode": "first_contact_who_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:first_contact_who:2"
+        }
+      ]
+    },
+    {
+      "id": "first_contact_what_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_what_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_what_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_what_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_what_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_what_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_what",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_what",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_what.choice0",
+          "nextNode": "first_contact_what_reply_1",
+          "questUnlock": "",
+          "setFlag": ""
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_what.choice1",
+          "nextNode": "first_contact_what_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:first_contact_what:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_what.choice2",
+          "nextNode": "first_contact_what_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:first_contact_what:2"
+        }
+      ]
+    },
+    {
+      "id": "first_contact_why_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_why_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_why_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_why_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_why_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_why_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "first_contact_why",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_why",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_why.choice0",
+          "nextNode": "first_contact_why_reply_1",
+          "questUnlock": "",
+          "setFlag": ""
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_why.choice1",
+          "nextNode": "first_contact_why_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:first_contact_why:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.mysterious.first_contact_why.choice2",
+          "nextNode": "first_contact_why_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:mysterious:first_contact_why:2"
+        }
+      ]
+    },
+    {
+      "id": "first_contact_trust",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_trust",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "first_contact_lead",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_lead",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "first_contact_dodge",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.first_contact_dodge",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "asking_answer",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.asking_answer",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "asking_help",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.asking_help",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "asking_involved",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.asking_involved",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "meet_me_ready",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.meet_me_ready",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
+    },
+    {
+      "id": "meet_me_name",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.mysterious.meet_me_name",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "",
+      "choices": []
     }
   ]
 }

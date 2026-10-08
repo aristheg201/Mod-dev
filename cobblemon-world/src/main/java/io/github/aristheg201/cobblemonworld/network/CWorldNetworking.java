@@ -21,6 +21,11 @@ public final class CWorldNetworking {
     private CWorldNetworking() {}
 
     public static void register() {
+        PayloadTypeRegistry.playS2C().register(NavigationPayload.TYPE, NavigationPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(ShopSnapshotPayload.TYPE, ShopSnapshotPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ShopBuyPayload.TYPE, ShopBuyPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(ShopBuyPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> io.github.aristheg201.cobblemonworld.shop.ShopService.buy(context.player(), payload)));
         PayloadTypeRegistry.playS2C().register(PhoneSnapshotPayload.TYPE, PhoneSnapshotPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(ToastPayload.TYPE, ToastPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(QaControlPayload.TYPE, QaControlPayload.CODEC);
@@ -37,7 +42,8 @@ public final class CWorldNetworking {
         ServerPlayNetworking.registerGlobalReceiver(QaAckPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> {
                     if (Boolean.getBoolean("cworld.qa.server")) {
-                        io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.onAck(context.player(), payload);
+                        if (Boolean.getBoolean("cworld.qa.production")) io.github.aristheg201.cobblemonworld.qa.ProductionQaServer.ack(payload);
+                        else io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.onAck(context.player(), payload);
                     }
                 }));
     }
@@ -55,37 +61,32 @@ public final class CWorldNetworking {
                 String[] key = splitMessageKey(payload.primary());
                 if (key != null) CampaignService.markRead(player, key[0], key[1]);
             }
-            case "track_quest" -> {
-                var quest = ContentRegistry.INSTANCE.quest(payload.primary());
-                if (quest != null) {
-                    PlayerProgression progression = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-                    progression.currentObjective = quest.description();
-                    ProgressionStore.INSTANCE.save();
-                    toast(player, "objective", "Objective Tracked", quest.title());
-                }
+            case "pin_objective", "track_quest" -> {
+                if (io.github.aristheg201.cobblemonworld.story.ObjectiveService.pin(player, payload.primary()))
+                    toast(player, "objective", "objective.cobblemonworld.pinned", "objective.cobblemonworld.pinned_hint");
             }
             case "faction_create" -> {
                 var result = NativeFactionService.create(player, payload.primary());
-                toast(player, "faction", result.success() ? "Faction Created" : "Faction Error", result.message());
+                toast(player, "faction", result.success() ? "toast.cobblemonworld.faction_created" : "toast.cobblemonworld.faction_error", result.component());
             }
             case "faction_invite" -> {
                 ServerPlayer target = player.getServer().getPlayerList().getPlayerByName(payload.primary());
                 var result = target == null
-                        ? new NativeFactionService.Result(false, "Player is not online.")
+                        ? new NativeFactionService.Result(false, "faction.cobblemonworld.offline")
                         : NativeFactionService.invite(player, target);
-                toast(player, "faction", result.success() ? "Faction Invite" : "Faction Error", result.message());
+                toast(player, "faction", result.success() ? "toast.cobblemonworld.faction_invite" : "toast.cobblemonworld.faction_error", result.component());
             }
             case "faction_accept" -> {
                 var result = NativeFactionService.accept(player, payload.primary());
-                toast(player, "faction", result.success() ? "Faction Joined" : "Faction Error", result.message());
+                toast(player, "faction", result.success() ? "toast.cobblemonworld.faction_joined" : "toast.cobblemonworld.faction_error", result.component());
             }
             case "faction_leave" -> {
                 var result = NativeFactionService.leave(player);
-                toast(player, "faction", result.success() ? "Faction Left" : "Faction Error", result.message());
+                toast(player, "faction", result.success() ? "toast.cobblemonworld.faction_left" : "toast.cobblemonworld.faction_error", result.component());
             }
             case "faction_disband" -> {
                 var result = NativeFactionService.disband(player);
-                toast(player, "faction", result.success() ? "Faction Disbanded" : "Faction Error", result.message());
+                toast(player, "faction", result.success() ? "toast.cobblemonworld.faction_disbanded" : "toast.cobblemonworld.faction_error", result.component());
             }
             case "faction_island_join" -> IslandWarService.join(player);
             default -> {}
@@ -101,9 +102,8 @@ public final class CWorldNetworking {
     public static void openPhone(ServerPlayer player) {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
 
-        List<MessageView> messages = new ArrayList<>();
-        for (String key : p.readMessages) addMessage(messages, key, false);
-        for (String key : p.unreadMessages) addMessage(messages, key, true);
+        io.github.aristheg201.cobblemonworld.story.ObjectiveService.resolve(p);
+        List<MessageView> messages = io.github.aristheg201.cobblemonworld.story.DialogueService.views(p);
 
         List<ContactView> contacts = new ArrayList<>();
         for (String id : p.contacts) {
@@ -111,7 +111,7 @@ public final class CWorldNetworking {
             if (contact == null) continue;
             int unread = 0;
             for (String key : p.unreadMessages) if (key.startsWith(id + ":")) unread++;
-            contacts.add(new ContactView(id, contact.displayName(), contact.icon(), unread));
+            contacts.add(new ContactView(id, io.github.aristheg201.cobblemonworld.story.DialogueService.contactName(p, id), contact.icon(), unread));
         }
 
         List<QuestView> quests = new ArrayList<>();
@@ -127,17 +127,17 @@ public final class CWorldNetworking {
                             p.questProgress.getOrDefault(id + ":" + objective.id(), 0));
                 }
             }
-            quests.add(new QuestView(id, quest.title(), quest.giver(), quest.description(), completed, required, false));
+            quests.add(new QuestView(id, quest.title(), giverName(quest.giver()), quest.description(), completed, required, false));
         }
         for (String id : p.completedSideQuests) {
             var quest = ContentRegistry.INSTANCE.quest(id);
-            if (quest != null) quests.add(new QuestView(id, quest.title(), quest.giver(), quest.description(), 1, 1, true));
+            if (quest != null) quests.add(new QuestView(id, quest.title(), giverName(quest.giver()), quest.description(), 1, 1, true));
         }
 
         var chapter = ContentRegistry.INSTANCE.chapter(p.currentStory);
         StoryView story = new StoryView(
                 p.currentStory,
-                chapter == null ? p.currentStory : chapter.title(),
+                chapter == null ? "story.cobblemonworld.complete.title" : chapter.title(),
                 p.currentObjective
         );
 
@@ -170,6 +170,13 @@ public final class CWorldNetworking {
         ServerPlayNetworking.send(player, new PhoneSnapshotPayload(GSON.toJson(snapshot)));
     }
 
+    private static String giverName(String id) {
+        var definition = io.github.aristheg201.cobblemonworld.npc.NpcDefinitionRegistry.INSTANCE.get(id);
+        if (definition != null) return definition.displayName();
+        var contact = ContentRegistry.INSTANCE.contact(id);
+        return contact == null ? "" : contact.displayName();
+    }
+
     private static void addMessage(List<MessageView> output, String key, boolean unread) {
         String[] split = splitMessageKey(key);
         if (split == null) return;
@@ -187,7 +194,11 @@ public final class CWorldNetworking {
     }
 
     public static void toast(ServerPlayer player, String category, String title, String body) {
-        ServerPlayNetworking.send(player, new ToastPayload(category, title, body));
+        toast(player, category, title, net.minecraft.network.chat.Component.translatable(body));
+    }
+
+    public static void toast(ServerPlayer player, String category, String title, net.minecraft.network.chat.Component body) {
+        ServerPlayNetworking.send(player, new ToastPayload(category, net.minecraft.network.chat.Component.translatable(title), body));
     }
 
     public record StoryView(String id, String title, String objective) {}

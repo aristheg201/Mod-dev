@@ -1,0 +1,26 @@
+{
+  "categories": [
+    "all",
+    "transport"
+  ],
+  "requiredFlags": [],
+  "excludedItems": [],
+  "entries": [
+    {
+      "id": "bicycle",
+      "item": "mapkit:bicycle",
+      "quantity": 1,
+      "price": 500,
+      "categories": [
+        "transport"
+      ],
+      "requiredFlags": [],
+      "sortOrder": 0,
+      "available": true
+    }
+  ],
+  "id": "bicycle_tomo",
+  "npc": "bicycle_tomo",
+  "titleKey": "shop.cobblemonworld.bicycle.title",
+  "descriptionKey": "shop.cobblemonworld.bicycle.description"
+}

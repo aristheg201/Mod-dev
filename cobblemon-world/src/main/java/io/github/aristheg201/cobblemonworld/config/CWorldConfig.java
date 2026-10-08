@@ -21,6 +21,9 @@ public final class CWorldConfig {
     public int defaultLevelCap = 15;
     public int maxLevelCap = 100;
     public boolean grantTrainerPhoneOnFirstJoin = true;
+    /** Rebuild each trainer's party for the challenger, retaining its authored relative levels. */
+    public boolean scaleTrainerLevels = true;
+    public int trainerLevelOffset = 0;
 
     public boolean blockOverCapSendOut = true;
     public boolean blockOverCapBattles = true;
@@ -92,6 +95,7 @@ public final class CWorldConfig {
     private void normalize() {
         if (defaultLevelCap < 1) defaultLevelCap = 1;
         if (maxLevelCap < defaultLevelCap) maxLevelCap = defaultLevelCap;
+        trainerLevelOffset = Math.max(-20, Math.min(20, trainerLevelOffset));
         if (naturalSpawnCapFallbackRadius < 16.0) naturalSpawnCapFallbackRadius = 16.0;
         if (factionMaxMembers < 2) factionMaxMembers = 2;
         if (factionIslandRadius < 48) factionIslandRadius = 48;

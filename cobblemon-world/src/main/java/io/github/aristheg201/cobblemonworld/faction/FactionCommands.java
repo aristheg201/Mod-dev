@@ -66,7 +66,7 @@ public final class FactionCommands {
     }
 
     private static int send(ServerPlayer player, NativeFactionService.Result result) {
-        player.sendSystemMessage(Component.literal(result.message())
+        player.sendSystemMessage(result.component()
                 .withStyle(result.success() ? ChatFormatting.GREEN : ChatFormatting.RED));
         return result.success() ? 1 : 0;
     }

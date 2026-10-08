@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 94,
   "skill": 5,
-  "preBattleText": "Third trial: control. Power without control means nothing here.",
-  "postBattleText": "The Master will see you now.",
+  "preBattleText": "npc.cobblemonworld.school_wolf_trainer_03.greeting",
+  "postBattleText": "npc.cobblemonworld.school_wolf_trainer_03.repeat",
   "team": [
     "ninetales level=92",
     "glaceon level=93",

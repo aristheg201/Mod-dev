@@ -13,8 +13,19 @@ public final class CWorldClientNetworking {
     private CWorldClientNetworking() {}
 
     public static void register() {
+        ObjectiveHud.register();
+        ClientPlayNetworking.registerGlobalReceiver(io.github.aristheg201.cobblemonworld.network.NavigationPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> ObjectiveHud.receive(payload.json())));
+        ClientPlayNetworking.registerGlobalReceiver(io.github.aristheg201.cobblemonworld.network.ShopSnapshotPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    if (payload.open()) context.client().setScreen(new io.github.aristheg201.cobblemonworld.client.screen.ShopScreen(payload.json()));
+                    else if (context.client().screen instanceof io.github.aristheg201.cobblemonworld.client.screen.ShopScreen shop) shop.update(payload.json());
+                }));
         ClientPlayNetworking.registerGlobalReceiver(PhoneSnapshotPayload.TYPE, (payload, context) ->
-                context.client().execute(() -> context.client().setScreen(new TrainerPhoneScreen(payload.json()))));
+                context.client().execute(() -> {
+                    if (context.client().screen instanceof TrainerPhoneScreen phone) phone.update(payload.json());
+                    else context.client().setScreen(new TrainerPhoneScreen(payload.json()));
+                }));
 
         ClientPlayNetworking.registerGlobalReceiver(ToastPayload.TYPE, (payload, context) ->
                 context.client().execute(() -> showToast(payload)));
@@ -41,12 +52,12 @@ public final class CWorldClientNetworking {
         };
         TutorialToast toast = new TutorialToast(
                 icon,
-                Component.literal(payload.title()),
-                Component.literal(payload.body()),
+                payload.title(),
+                payload.body(),
                 false
         );
         mc.getTutorial().addTimedToast(toast, 100);
         System.out.println("CWORLD_TUTORIAL_TOAST category=" + payload.category()
-                + " title=" + payload.title());
+                + " title=" + payload.title().getString());
     }
 }

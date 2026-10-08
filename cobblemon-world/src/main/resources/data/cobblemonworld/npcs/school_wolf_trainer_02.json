@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 92,
   "skill": 5,
-  "preBattleText": "Second trial: uncertainty. Win without knowing which answer comes next.",
-  "postBattleText": "Good. Hati is waiting.",
+  "preBattleText": "npc.cobblemonworld.school_wolf_trainer_02.greeting",
+  "postBattleText": "npc.cobblemonworld.school_wolf_trainer_02.repeat",
   "team": [
     "umbreon level=90",
     "absol level=91",

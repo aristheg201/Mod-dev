@@ -1,9 +1,15 @@
 {
-  "id":"orin_archive","title":"Original Notes","giver":"dr_orin",
-  "description":"Recover Orin's original notes and check the old glyph.",
-  "objectives":[
-    {"id":"visit_archive","type":"visit","target":"buried_resonance_archive","amount":1},
-    {"id":"recover_glyph","type":"interact","target":"seal_glyph_tablet","amount":1}
+  "id": "orin_archive",
+  "title": "quest.cobblemonworld.orin_archive.title",
+  "giver": "dr_orin",
+  "description": "quest.cobblemonworld.orin_archive.description",
+  "objectives": [
+    {
+      "id": "gameplay",
+      "type": "interact",
+      "target": "rook",
+      "amount": 1
+    }
   ],
-  "completionFlag":"orin_archive_complete"
+  "completionFlag": "orin_archive_complete"
 }

@@ -16,6 +16,9 @@ public final class CWorldCommands {
 
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
+                Commands.literal("cworldresetobjective").executes(ctx ->
+                        io.github.aristheg201.cobblemonworld.story.ObjectiveService.reset(ctx.getSource().getPlayerOrException()))));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
                 Commands.literal("cworld")
                         .then(io.github.aristheg201.cobblemonworld.npc.NpcCommands.node())
                         .then(io.github.aristheg201.cobblemonworld.command.StoryCommands.node())

@@ -1,7 +1,117 @@
 {
-  "id":"rook","displayName":"Rook","icon":"cobblemonworld:icons/contact_rook",
-  "messages":[
-    {"id":"after_defeat","triggerFlag":"rook_defeated","text":"That black card predates the current Card World network. It still carries your contact's mark. Let me trace it.","responses":["Do it.","It's just a symbol."],"questUnlock":"rook_black_card","setFlag":"rook_black_card_found"},
-    {"id":"after_card","triggerFlag":"rook_black_card_complete","text":"I found an old duel record. The same title keeps coming up: 'the one below all.' I don't know who it refers to.","responses":["Keep looking.","Could it be ???"],"questUnlock":"","setFlag":"below_title_hint"}
+  "id": "rook",
+  "displayName": "Rook",
+  "icon": "cobblemonworld:icons/contact_rook",
+  "messages": [
+    {
+      "id": "after_defeat_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.rook.after_defeat_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.rook.after_defeat_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.rook.after_defeat_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat",
+      "triggerFlag": "rook_defeated",
+      "text": "dialogue.cobblemonworld.rook.after_defeat",
+      "responses": [],
+      "questUnlock": "rook_black_card",
+      "setFlag": "rook_black_card_found",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.rook.after_defeat.choice0",
+          "nextNode": "after_defeat_reply_1",
+          "questUnlock": "rook_black_card",
+          "setFlag": "rook_black_card_found"
+        },
+        {
+          "text": "dialogue.cobblemonworld.rook.after_defeat.choice1",
+          "nextNode": "after_defeat_reply_2",
+          "questUnlock": "rook_black_card",
+          "setFlag": "dialogue:rook:after_defeat:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.rook.after_defeat.choice2",
+          "nextNode": "after_defeat_reply_3",
+          "questUnlock": "rook_black_card",
+          "setFlag": "dialogue:rook:after_defeat:2"
+        }
+      ]
+    },
+    {
+      "id": "after_card_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.rook.after_card_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_card_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.rook.after_card_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_card_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.rook.after_card_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_card",
+      "triggerFlag": "rook_black_card_complete",
+      "text": "dialogue.cobblemonworld.rook.after_card",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "below_title_hint",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.rook.after_card.choice0",
+          "nextNode": "after_card_reply_1",
+          "questUnlock": "",
+          "setFlag": "below_title_hint"
+        },
+        {
+          "text": "dialogue.cobblemonworld.rook.after_card.choice1",
+          "nextNode": "after_card_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:rook:after_card:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.rook.after_card.choice2",
+          "nextNode": "after_card_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:rook:after_card:2"
+        }
+      ]
+    }
   ]
 }

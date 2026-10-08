@@ -23,7 +23,7 @@ public final class NpcDefinitionRegistry {
             "royal_league_receptionist", "league_elite_01", "league_elite_02", "league_elite_03",
             "school_wolf_gatekeeper", "school_wolf_trainer_01", "school_wolf_trainer_02",
             "school_wolf_trainer_03", "school_wolf_master",
-            "sixth_warden", "seventh_warden", "resonance_heart", "mysterious"
+            "sixth_warden", "seventh_warden", "harbour_marshal_liora", "captain_dorian", "mysterious"
     };
 
     private static final Map<String, String> SPECIAL_ACTOR_TEXTURES = Map.of(

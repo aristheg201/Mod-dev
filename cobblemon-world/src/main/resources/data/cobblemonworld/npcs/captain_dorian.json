@@ -1,0 +1,30 @@
+{
+  "id": "captain_dorian",
+  "displayName": "Captain Dorian Pike",
+  "npcClass": "standard",
+  "visualLevel": 70,
+  "skill": 5,
+  "preBattleText": "npc.cobblemonworld.captain_dorian.greeting",
+  "postBattleText": "npc.cobblemonworld.captain_dorian.repeat",
+  "team": [
+    "pelipper level=67 moves=hurricane,surf,roost,uturn",
+    "kingdra level=68 moves=dragonpulse,surf,icebeam,focusenergy",
+    "magnezone level=68 moves=thunderbolt,flashcannon,voltswitch,thunderwave",
+    "ferrothorn level=69 moves=powerwhip,gyroball,leechseed,protect",
+    "dragonite level=70 moves=dragonclaw,extremespeed,roost,dragondance"
+  ],
+  "defeatFlag": "town8_qualifier_defeated",
+  "flagsOnDefeat": [
+    "divinos_eight_towns_complete"
+  ],
+  "contactUnlock": "",
+  "chapterOnDefeat": "chapter_07_false_victory",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "town8_qualifier_ready"
+  ],
+  "skin": "captain_dorian",
+  "badge": "",
+  "rematchable": false,
+  "specialActor": false
+}

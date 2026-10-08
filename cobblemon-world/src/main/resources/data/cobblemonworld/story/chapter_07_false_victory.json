@@ -1,9 +1,12 @@
 {
-  "id":"chapter_07_false_victory","title":"The Heart",
-  "objective":"Destroy the Resonance Heart.",
-  "requiredFlags":["seal_07_broken"],
-  "completionFlags":["resonance_heart_defeated","false_victory_complete"],
-  "levelCapOnComplete":85,
-  "nextChapter":"chapter_08_last_person",
-  "badge":"world_savior_badge"
+  "id": "chapter_07_false_victory",
+  "title": "story.cobblemonworld.chapter_07_false_victory.title",
+  "objective": "story.cobblemonworld.chapter_07_false_victory.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "town8_qualifier_defeated"
+  ],
+  "levelCapOnComplete": 75,
+  "nextChapter": "battle_tower",
+  "badge": "world_savior_badge"
 }

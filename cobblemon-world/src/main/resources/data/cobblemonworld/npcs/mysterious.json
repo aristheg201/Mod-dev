@@ -1,7 +1,12 @@
 {
-  "id":"mysterious","displayName":"???","npcClass":"standard","visualLevel":100,"skill":5,
-  "preBattleText":"You want my name? Beat me first.","postBattleText":"",
-  "team":[
+  "id": "mysterious",
+  "displayName": "???",
+  "npcClass": "standard",
+  "visualLevel": 100,
+  "skill": 5,
+  "preBattleText": "npc.cobblemonworld.mysterious.greeting",
+  "postBattleText": "npc.cobblemonworld.mysterious.repeat",
+  "team": [
     "darkrai level=100 moves=darkpulse,darkvoid,dreameater,nastyplot",
     "giratina level=100 moves=shadowforce,dragonclaw,aurasphere,rest",
     "necrozma level=100 moves=photongeyser,psychic,stealthrock,moonlight",
@@ -9,8 +14,17 @@
     "mewtwo level=100 moves=psystrike,aurasphere,icebeam,recover",
     "arceus level=100 moves=judgment,earthpower,icebeam,recover"
   ],
-  "defeatFlag":"mysterious_phase_one_defeated","flagsOnDefeat":[],
-  "contactUnlock":"","chapterOnDefeat":"",
-  "requiredChapter":"chapter_08_last_person","requiredFlags":["toba_meeting_revealed"],
-  "badge":"","rematchable":false,"specialActor":true
+  "defeatFlag": "mysterious_phase_one_defeated",
+  "flagsOnDefeat": [],
+  "contactUnlock": "",
+  "chapterOnDefeat": "",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "school_trials_complete",
+    "toba_record_access",
+    "toba_meeting_revealed"
+  ],
+  "badge": "",
+  "rematchable": false,
+  "specialActor": true
 }

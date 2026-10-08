@@ -1,9 +1,14 @@
 {
-  "id":"chapter_06_seventh_lock","title":"The Last Two Seals",
-  "objective":"Defeat the Sixth and Seventh Wardens.",
-  "requiredFlags":["seal_05_broken"],
-  "completionFlags":["seal_06_broken","seal_07_broken"],
-  "levelCapOnComplete":70,
-  "nextChapter":"chapter_07_false_victory",
-  "badge":"seventh_lock_badge"
+  "id": "chapter_06_seventh_lock",
+  "title": "story.cobblemonworld.chapter_06_seventh_lock.title",
+  "objective": "story.cobblemonworld.chapter_06_seventh_lock.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "lab_records_decoded",
+    "archaeologist_record_complete",
+    "seventh_warden_defeated"
+  ],
+  "levelCapOnComplete": 70,
+  "nextChapter": "chapter_07_false_victory",
+  "badge": "seventh_lock_badge"
 }

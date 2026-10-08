@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 80,
   "skill": 5,
-  "preBattleText": "The League starts here. Win without relying on one answer.",
-  "postBattleText": "Advance.",
+  "preBattleText": "npc.cobblemonworld.league_elite_01.greeting",
+  "postBattleText": "npc.cobblemonworld.league_elite_01.repeat",
   "team": [
     "lucario level=78",
     "aegislash level=79",

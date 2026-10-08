@@ -35,6 +35,7 @@ public final class CampaignService {
 
         evaluateMessageTriggers(player, flag);
         autoCompleteCurrentChapter(player);
+        ObjectiveService.sync(player, true);
         return true;
     }
 
@@ -66,6 +67,7 @@ public final class CampaignService {
         if (p.readMessages.contains(key) || p.unreadMessages.contains(key)) return;
 
         p.contacts.add(contactId);
+        DialogueService.ensureNpcTurn(p, contactId, messageId);
         if (p.unreadMessages.add(key)) {
             var definition = ContentRegistry.INSTANCE.contact(contactId);
             NotificationService.message(player, definition == null ? contactId : definition.displayName());
@@ -74,26 +76,7 @@ public final class CampaignService {
     }
 
     public static boolean respondToMessage(ServerPlayer player, String contactId, String messageId, int responseIndex) {
-        PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        String key = messageKey(contactId, messageId);
-        if (!p.unreadMessages.contains(key)) return false;
-
-        var message = ContentRegistry.INSTANCE.message(contactId, messageId);
-        if (message == null) return false;
-        String[] responses = message.responses() == null ? new String[0] : message.responses();
-        if (responses.length > 0 && (responseIndex < 0 || responseIndex >= responses.length)) return false;
-
-        p.unreadMessages.remove(key);
-        p.readMessages.add(key);
-        ProgressionStore.INSTANCE.save();
-
-        if (message.questUnlock() != null && !message.questUnlock().isBlank()) {
-            activateQuest(player, message.questUnlock());
-        }
-        if (message.setFlag() != null && !message.setFlag().isBlank()) {
-            setFlag(player, message.setFlag());
-        }
-        return true;
+        return DialogueService.respond(player, contactId, messageId, responseIndex);
     }
 
     public static boolean markRead(ServerPlayer player, String contactId, String messageId) {
@@ -144,7 +127,7 @@ public final class CampaignService {
             }
         }
 
-        if (changed > 0) ProgressionStore.INSTANCE.save();
+        if (changed > 0) { ProgressionStore.INSTANCE.save(); ObjectiveService.sync(player, true); }
         return changed;
     }
 
@@ -161,7 +144,7 @@ public final class CampaignService {
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         if (!p.activeSideQuests.remove(quest.id())) return;
         p.completedSideQuests.add(quest.id());
-        NotificationService.objective(player, "Side Quest Complete: " + quest.title());
+        NotificationService.objective(player, "toast.cobblemonworld.quest_complete");
         ProgressionStore.INSTANCE.save();
         if (quest.completionFlag() != null && !quest.completionFlag().isBlank()) {
             setFlag(player, quest.completionFlag());
@@ -179,7 +162,7 @@ public final class CampaignService {
             return new ChallengeGate(false, "This encounter unlocks during: " + name + ".");
         }
         if (!hasAllFlags(p, definition.requiredFlags())) {
-            return new ChallengeGate(false, "You have not reached the required story state for this encounter.");
+            return new ChallengeGate(false, "service.cobblemonworld.locked");
         }
         return new ChallengeGate(true, "");
     }
@@ -214,12 +197,14 @@ public final class CampaignService {
         if (chapter == null) throw new IllegalArgumentException("Unknown chapter: " + chapterId);
 
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        if (p.storyFlags.contains("chapter_complete:" + chapterId)) return;
+        if (p.storyFlags.contains("story_route_complete:" + chapterId)) return;
         if (!chapterId.equals(p.currentStory)) return;
         if (!hasAllFlags(p, chapter.requiredFlags()) || !hasAllFlags(p, chapter.completionFlags())) return;
 
+        boolean newReward = !p.storyFlags.contains("chapter_complete:" + chapterId);
         p.storyFlags.add("chapter_complete:" + chapterId);
-        LeagueService.awardChapter(player, chapterId);
+        p.storyFlags.add("story_route_complete:" + chapterId);
+        if (newReward) LeagueService.awardChapter(player, chapterId);
 
         if (chapter.badge() != null && !chapter.badge().isBlank() && p.badges.add(chapter.badge())) {
             NotificationService.badge(player, chapter.badge());
@@ -242,6 +227,8 @@ public final class CampaignService {
         }
 
         ProgressionStore.INSTANCE.save();
+        ObjectiveService.sync(player, true);
+        autoCompleteCurrentChapter(player);
     }
 
     private static void autoCompleteCurrentChapter(ServerPlayer player) {

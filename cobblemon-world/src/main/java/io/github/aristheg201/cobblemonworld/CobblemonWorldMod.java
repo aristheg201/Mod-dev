@@ -34,6 +34,7 @@ public final class CobblemonWorldMod implements ModInitializer {
         ModItems.register();
         ModBossEntities.register();
         CWorldNetworking.register();
+        io.github.aristheg201.cobblemonworld.shop.ShopService.register();
         TobaEncounterService.register();
 
         NPCInteractConfiguration.Companion.register(
@@ -47,9 +48,11 @@ public final class CobblemonWorldMod implements ModInitializer {
 
         CWorldCommands.register();
         PhoneBootstrapService.register();
+        io.github.aristheg201.cobblemonworld.story.ObjectiveService.register();
         LevelCapHooks.register();
         TrainerBattleService.register();
         NpcPlacementRecoveryService.register();
+        io.github.aristheg201.cobblemonworld.npc.AnchoredNpcService.register();
         NativeFactionService.register();
         IslandWarService.register();
 
@@ -63,7 +66,8 @@ public final class CobblemonWorldMod implements ModInitializer {
         });
 
         if (Boolean.getBoolean("cworld.qa.server")) {
-            io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.register();
+            if (Boolean.getBoolean("cworld.qa.production")) io.github.aristheg201.cobblemonworld.qa.ProductionQaServer.register();
+            else io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.register();
         }
 
         LOGGER.info("Cobblemon World initialized. Default level cap: {}", CWorldConfig.INSTANCE.defaultLevelCap);

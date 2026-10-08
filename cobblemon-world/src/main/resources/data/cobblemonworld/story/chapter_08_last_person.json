@@ -1,9 +1,12 @@
 {
-  "id":"chapter_08_last_person","title":"The Meeting",
-  "objective":"Meet ??? at the location he sent and find out who he is.",
-  "requiredFlags":["false_victory_complete"],
-  "completionFlags":["toba_identity_revealed"],
-  "levelCapOnComplete":100,
-  "nextChapter":"",
-  "badge":"champion_badge"
+  "id": "chapter_08_last_person",
+  "title": "story.cobblemonworld.chapter_08_last_person.title",
+  "objective": "story.cobblemonworld.chapter_08_last_person.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "toba_identity_revealed"
+  ],
+  "levelCapOnComplete": 100,
+  "nextChapter": "",
+  "badge": "champion_badge"
 }

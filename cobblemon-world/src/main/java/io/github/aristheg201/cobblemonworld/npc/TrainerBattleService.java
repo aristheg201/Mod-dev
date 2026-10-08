@@ -1,6 +1,7 @@
 package io.github.aristheg201.cobblemonworld.npc;
 
 import com.cobblemon.mod.common.api.Priority;
+import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.npc.NPCClasses;
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
@@ -95,11 +96,19 @@ public final class TrainerBattleService {
     public static boolean interact(NPCEntity npc, ServerPlayer player, String definitionId) {
         NpcDefinitionRegistry.Definition definition = NpcDefinitionRegistry.INSTANCE.get(definitionId);
         if (definition == null) {
-            player.sendSystemMessage(Component.literal("Unknown story NPC: " + definitionId)
+            player.sendSystemMessage(Component.translatable("service.cobblemonworld.unavailable")
                     .withStyle(ChatFormatting.RED));
             return false;
         }
 
+        AnchoredNpcService.facePlayer(npc, player);
+        var accessGate = CampaignService.canChallengeTrainer(player, definition);
+        if (!accessGate.allowed()) {
+            player.sendSystemMessage(Component.translatable(accessGate.reason()).withStyle(ChatFormatting.YELLOW));
+            return true;
+        }
+        io.github.aristheg201.cobblemonworld.story.ObjectiveBridge.interact(player, definitionId);
+        boolean serviced = NpcService.dispatch(npc, player, definitionId);
         PlayerProgression progression = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         boolean hasTeam = definition.team() != null && definition.team().length > 0;
 
@@ -108,22 +117,23 @@ public final class TrainerBattleService {
                     && !definition.interactionFlag().isBlank()
                     && progression.storyFlags.contains(definition.interactionFlag());
             if (alreadyInteracted) {
+                if (serviced) return true;
                 String repeat = definition.postBattleText();
                 if (repeat != null && !repeat.isBlank()) {
-                    player.sendSystemMessage(Component.literal(definition.displayName() + ": " + repeat));
+                    player.sendSystemMessage(Component.literal(definition.displayName() + ": ").append(Component.translatable(repeat)));
                 }
                 return true;
             }
 
             CampaignService.ChallengeGate gate = CampaignService.canChallengeTrainer(player, definition);
             if (!gate.allowed()) {
-                player.sendSystemMessage(Component.literal(gate.reason()).withStyle(ChatFormatting.YELLOW));
+                player.sendSystemMessage(Component.translatable(gate.reason()).withStyle(ChatFormatting.YELLOW));
                 return true;
             }
 
             String text = definition.preBattleText();
-            if (text != null && !text.isBlank()) {
-                player.sendSystemMessage(Component.literal(definition.displayName() + ": " + text));
+            if (!serviced && text != null && !text.isBlank()) {
+                player.sendSystemMessage(Component.literal(definition.displayName() + ": ").append(Component.translatable(text)));
             }
             if (definition.contactUnlock() != null && !definition.contactUnlock().isBlank()) {
                 CampaignService.unlockContact(player, definition.contactUnlock());
@@ -147,30 +157,59 @@ public final class TrainerBattleService {
         if (alreadyDefeated && !definition.rematchable()) {
             String text = definition.postBattleText();
             if (text != null && !text.isBlank()) {
-                player.sendSystemMessage(Component.literal(definition.displayName() + ": " + text));
+                player.sendSystemMessage(Component.literal(definition.displayName() + ": ").append(Component.translatable(text)));
             }
             return true;
         }
 
         CampaignService.ChallengeGate gate = CampaignService.canChallengeTrainer(player, definition);
         if (!gate.allowed()) {
-            player.sendSystemMessage(Component.literal(gate.reason()).withStyle(ChatFormatting.YELLOW));
+            player.sendSystemMessage(Component.translatable(gate.reason()).withStyle(ChatFormatting.YELLOW));
             return true;
         }
 
         String pre = definition.preBattleText();
         if (pre != null && !pre.isBlank()) {
-            player.sendSystemMessage(Component.literal(definition.displayName() + ": " + pre));
+            player.sendSystemMessage(Component.literal(definition.displayName() + ": ").append(Component.translatable(pre)));
         }
 
         try {
-            BattleBuilder.INSTANCE.pvn(player, npc);
-            return true;
+            // Never replace a shared NPC party while another player is fighting it.
+            if (npc.isInBattle() || Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
+                player.sendSystemMessage(Component.translatable("service.cobblemonworld.battle_busy"));
+                return true;
+            }
+            prepareBattleParty(npc, player, definition);
+            var result = BattleBuilder.INSTANCE.pvn(player, npc);
+            if (result instanceof com.cobblemon.mod.common.battles.SuccessfulBattleStart) return true;
+            player.sendSystemMessage(Component.translatable("service.cobblemonworld.battle_failed").withStyle(ChatFormatting.RED));
+            return false;
         } catch (Exception e) {
             CobblemonWorldMod.LOGGER.error("Failed to start trainer battle {} for {}", definitionId, player.getGameProfile().getName(), e);
-            player.sendSystemMessage(Component.literal("Could not start this trainer battle.")
+            player.sendSystemMessage(Component.translatable("service.cobblemonworld.battle_failed")
                     .withStyle(ChatFormatting.RED));
             return false;
         }
+    }
+
+    public static void prepareBattleParty(NPCEntity npc, ServerPlayer player, NpcDefinitionRegistry.Definition definition) {
+        var party = new NPCPartyStore(npc);
+        int slot = 0, authoredAce = 1, playerAce = 1;
+        for (String spec : definition.team()) {
+            if (spec == null || spec.isBlank() || slot >= 6) continue;
+            var member = PokemonProperties.Companion.parse(spec).create(player);
+            authoredAce = Math.max(authoredAce, member.getLevel());
+            party.set(slot++, member);
+        }
+        for (var member : Cobblemon.INSTANCE.getStorage().getParty(player))
+            playerAce = Math.max(playerAce, member.getLevel());
+        var config = io.github.aristheg201.cobblemonworld.config.CWorldConfig.INSTANCE;
+        if (config.scaleTrainerLevels) {
+            for (var member : party) {
+                member.setLevel(TrainerLevelScaling.level(member.getLevel(), authoredAce, playerAce, config.trainerLevelOffset));
+                member.heal();
+            }
+        }
+        npc.setParty(party);
     }
 }

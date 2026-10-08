@@ -1,9 +1,12 @@
 {
-  "id":"chapter_01_signal","title":"First Relay",
-  "objective":"Go to the coordinates from ??? and defeat Mara Voss.",
-  "requiredFlags":["prologue_complete"],
-  "completionFlags":["mara_voss_defeated","seal_01_broken"],
-  "levelCapOnComplete":22,
-  "nextChapter":"chapter_02_under_mountain",
-  "badge":"relay_badge"
+  "id": "chapter_01_signal",
+  "title": "story.cobblemonworld.chapter_01_signal.title",
+  "objective": "story.cobblemonworld.chapter_01_signal.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "mara_voss_defeated"
+  ],
+  "levelCapOnComplete": 22,
+  "nextChapter": "chapter_02_under_mountain",
+  "badge": "relay_badge"
 }

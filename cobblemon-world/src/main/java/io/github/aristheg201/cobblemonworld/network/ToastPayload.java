@@ -6,16 +6,19 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-public record ToastPayload(String category, String title, String body) implements CustomPacketPayload {
+public record ToastPayload(String category, net.minecraft.network.chat.Component title, net.minecraft.network.chat.Component body) implements CustomPacketPayload {
+    public ToastPayload(String category, String title, String body) {
+        this(category, net.minecraft.network.chat.Component.translatable(title), net.minecraft.network.chat.Component.translatable(body));
+    }
     public static final Type<ToastPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(CobblemonWorldMod.MOD_ID, "toast"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ToastPayload> CODEC = StreamCodec.of(
             (buf, payload) -> {
                 buf.writeUtf(payload.category(), 64);
-                buf.writeUtf(payload.title(), 256);
-                buf.writeUtf(payload.body(), 1024);
+                net.minecraft.network.chat.ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buf, payload.title());
+                net.minecraft.network.chat.ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buf, payload.body());
             },
-            buf -> new ToastPayload(buf.readUtf(64), buf.readUtf(256), buf.readUtf(1024))
+            buf -> new ToastPayload(buf.readUtf(64), net.minecraft.network.chat.ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buf), net.minecraft.network.chat.ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buf))
     );
 
     @Override

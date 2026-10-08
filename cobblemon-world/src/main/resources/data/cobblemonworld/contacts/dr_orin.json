@@ -1,7 +1,117 @@
 {
-  "id":"dr_orin","displayName":"Dr. Cael Orin","icon":"cobblemonworld:icons/contact_dr_orin",
-  "messages":[
-    {"id":"after_defeat","triggerFlag":"dr_orin_defeated","text":"I was wrong about the chamber. It wasn't powering anything. It was holding something shut. I need my original notes.","responses":["Holding what?","Find the notes."],"questUnlock":"orin_archive","setFlag":"orin_doubts_anchor"},
-    {"id":"after_archive","triggerFlag":"orin_archive_complete","text":"Found it. The old glyph doesn't mean anchor. It means seal. We've been opening them.","responses":["What's behind them?","Does ??? know?"],"questUnlock":"","setFlag":"seal_term_revealed"}
+  "id": "dr_orin",
+  "displayName": "Dr. Cael Orin",
+  "icon": "cobblemonworld:icons/contact_dr_orin",
+  "messages": [
+    {
+      "id": "after_defeat_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.dr_orin.after_defeat_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.dr_orin.after_defeat_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.dr_orin.after_defeat_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_defeat",
+      "triggerFlag": "dr_orin_defeated",
+      "text": "dialogue.cobblemonworld.dr_orin.after_defeat",
+      "responses": [],
+      "questUnlock": "orin_archive",
+      "setFlag": "orin_doubts_anchor",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.dr_orin.after_defeat.choice0",
+          "nextNode": "after_defeat_reply_1",
+          "questUnlock": "orin_archive",
+          "setFlag": "orin_doubts_anchor"
+        },
+        {
+          "text": "dialogue.cobblemonworld.dr_orin.after_defeat.choice1",
+          "nextNode": "after_defeat_reply_2",
+          "questUnlock": "orin_archive",
+          "setFlag": "dialogue:dr_orin:after_defeat:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.dr_orin.after_defeat.choice2",
+          "nextNode": "after_defeat_reply_3",
+          "questUnlock": "orin_archive",
+          "setFlag": "dialogue:dr_orin:after_defeat:2"
+        }
+      ]
+    },
+    {
+      "id": "after_archive_reply_1",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.dr_orin.after_archive_reply_1",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_archive_reply_2",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.dr_orin.after_archive_reply_2",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_archive_reply_3",
+      "triggerFlag": "",
+      "text": "dialogue.cobblemonworld.dr_orin.after_archive_reply_3",
+      "responses": [],
+      "choices": [],
+      "questUnlock": "",
+      "setFlag": ""
+    },
+    {
+      "id": "after_archive",
+      "triggerFlag": "orin_archive_complete",
+      "text": "dialogue.cobblemonworld.dr_orin.after_archive",
+      "responses": [],
+      "questUnlock": "",
+      "setFlag": "seal_term_revealed",
+      "choices": [
+        {
+          "text": "dialogue.cobblemonworld.dr_orin.after_archive.choice0",
+          "nextNode": "after_archive_reply_1",
+          "questUnlock": "",
+          "setFlag": "seal_term_revealed"
+        },
+        {
+          "text": "dialogue.cobblemonworld.dr_orin.after_archive.choice1",
+          "nextNode": "after_archive_reply_2",
+          "questUnlock": "",
+          "setFlag": "dialogue:dr_orin:after_archive:1"
+        },
+        {
+          "text": "dialogue.cobblemonworld.dr_orin.after_archive.choice2",
+          "nextNode": "after_archive_reply_3",
+          "questUnlock": "",
+          "setFlag": "dialogue:dr_orin:after_archive:2"
+        }
+      ]
+    }
   ]
 }

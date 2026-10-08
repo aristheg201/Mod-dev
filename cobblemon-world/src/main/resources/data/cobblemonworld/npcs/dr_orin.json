@@ -1,15 +1,28 @@
 {
-  "id":"dr_orin","displayName":"Dr. Cael Orin","npcClass":"standard","visualLevel":30,"skill":3,
-  "preBattleText":"If you're here to break the chamber, prove you know what you're touching.",
-  "postBattleText":"I need to recheck the old translation.",
-  "team":[
+  "id": "dr_orin",
+  "displayName": "Dr. Cael Orin",
+  "npcClass": "standard",
+  "visualLevel": 30,
+  "skill": 3,
+  "preBattleText": "npc.cobblemonworld.dr_orin.greeting",
+  "postBattleText": "npc.cobblemonworld.dr_orin.repeat",
+  "team": [
     "magneton level=27 moves=spark,triattack,thunderwave,metalclaw",
     "claydol level=29 moves=psybeam,mudslap,ancientpower,rapidspin",
     "porygon2 level=30 moves=psybeam,recover,agility,discharge"
   ],
-  "defeatFlag":"dr_orin_defeated","flagsOnDefeat":["seal_02_broken"],
-  "contactUnlock":"dr_orin","chapterOnDefeat":"chapter_02_under_mountain",
-  "requiredChapter":"chapter_02_under_mountain","requiredFlags":["seal_01_broken"],
-  "skin":"dr_orin",
-  "badge":"resonance_badge","rematchable":false,"specialActor":false
+  "defeatFlag": "dr_orin_defeated",
+  "flagsOnDefeat": [
+    "seal_02_broken"
+  ],
+  "contactUnlock": "dr_orin",
+  "chapterOnDefeat": "chapter_02_under_mountain",
+  "requiredChapter": "",
+  "requiredFlags": [
+    "mara_voss_defeated"
+  ],
+  "skin": "dr_orin",
+  "badge": "resonance_badge",
+  "rematchable": false,
+  "specialActor": false
 }

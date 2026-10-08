@@ -11,6 +11,10 @@ public final class PlayerProgression {
     public int levelCap = CWorldConfig.INSTANCE.defaultLevelCap;
 
     public String currentStory = "prologue";
+    public int storyRouteSchema;
+    public java.util.List<io.github.aristheg201.cobblemonworld.story.DialogueService.Turn> dialogueHistory = new java.util.ArrayList<>();
+    public int objectiveSchema;
+    public io.github.aristheg201.cobblemonworld.story.PinnedObjective pinnedObjective;
     public String currentObjective = "";
     public String leagueTier = "UNRANKED";
     public int leaguePoints = 0;
@@ -25,6 +29,7 @@ public final class PlayerProgression {
     public Map<String, Integer> questProgress = new LinkedHashMap<>();
 
     public void normalize() {
+        if (dialogueHistory == null) dialogueHistory = new java.util.ArrayList<>();
         int max = CWorldConfig.INSTANCE.maxLevelCap;
         if (levelCap < 1) levelCap = 1;
         if (levelCap > max) levelCap = max;

@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 46,
   "skill": 4,
-  "preBattleText": "The lab records are none of your business.",
-  "postBattleText": "The access route is behind me. That is all you are getting.",
+  "preBattleText": "npc.cobblemonworld.rocket_grunt_03.greeting",
+  "postBattleText": "npc.cobblemonworld.rocket_grunt_03.repeat",
   "team": [
     "houndoom level=44",
     "weezing level=45",

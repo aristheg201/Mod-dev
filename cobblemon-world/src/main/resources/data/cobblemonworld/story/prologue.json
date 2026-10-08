@@ -1,9 +1,12 @@
 {
-  "id":"prologue","title":"Unknown Number",
-  "objective":"Reply to the unknown message on your Trainer Phone.",
-  "requiredFlags":["phone_obtained"],
-  "completionFlags":["prologue_complete"],
-  "levelCapOnComplete":15,
-  "nextChapter":"chapter_01_signal",
-  "badge":""
+  "id": "prologue",
+  "title": "story.cobblemonworld.prologue.title",
+  "objective": "story.cobblemonworld.prologue.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "professor_met"
+  ],
+  "levelCapOnComplete": 15,
+  "nextChapter": "chapter_01_signal",
+  "badge": ""
 }

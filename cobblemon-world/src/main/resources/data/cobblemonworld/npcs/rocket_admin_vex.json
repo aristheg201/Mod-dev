@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 50,
   "skill": 5,
-  "preBattleText": "You have made enough noise. The records stay with us.",
-  "postBattleText": "Take the access card. You will not like what the lab tells you.",
+  "preBattleText": "npc.cobblemonworld.rocket_admin_vex.greeting",
+  "postBattleText": "npc.cobblemonworld.rocket_admin_vex.repeat",
   "team": [
     "honchkrow level=47",
     "toxicroak level=48",

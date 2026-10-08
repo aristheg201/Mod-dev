@@ -1,9 +1,15 @@
 {
-  "id":"voss_echo","title":"Old Signal","giver":"mara_voss",
-  "description":"Help Mara trace the old routing signature.",
-  "objectives":[
-    {"id":"recover_relay_log","type":"interact","target":"league_relay_archive","amount":1},
-    {"id":"defeat_cleaner","type":"cobblemon_battle","target":"relay_cleaner","amount":1}
+  "id": "voss_echo",
+  "title": "quest.cobblemonworld.voss_echo.title",
+  "giver": "mara_voss",
+  "description": "quest.cobblemonworld.voss_echo.description",
+  "objectives": [
+    {
+      "id": "gameplay",
+      "type": "interact",
+      "target": "dr_orin",
+      "amount": 1
+    }
   ],
-  "completionFlag":"voss_echo_complete"
+  "completionFlag": "voss_echo_complete"
 }

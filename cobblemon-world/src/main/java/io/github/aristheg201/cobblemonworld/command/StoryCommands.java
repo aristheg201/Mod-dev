@@ -88,6 +88,8 @@ public final class StoryCommands {
                             return 1;
                         }))
                 .then(Commands.literal("objective")
+                        .then(Commands.literal("reset").executes(ctx ->
+                                io.github.aristheg201.cobblemonworld.story.ObjectiveService.reset(ctx.getSource().getPlayerOrException())))
                         .then(Commands.literal("record")
                                 .requires(s -> s.hasPermission(2))
                                 .then(Commands.argument("player", EntityArgument.player())

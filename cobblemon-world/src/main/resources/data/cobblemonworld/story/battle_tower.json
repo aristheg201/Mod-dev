@@ -1,0 +1,12 @@
+{
+  "id": "battle_tower",
+  "title": "story.cobblemonworld.battle_tower.title",
+  "objective": "story.cobblemonworld.battle_tower.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "battle_tower_qualified"
+  ],
+  "levelCapOnComplete": 85,
+  "nextChapter": "royal_league",
+  "badge": ""
+}

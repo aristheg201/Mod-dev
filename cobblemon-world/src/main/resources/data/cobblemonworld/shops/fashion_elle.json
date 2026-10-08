@@ -1,0 +1,188 @@
+{
+  "categories": [
+    "all",
+    "accessories",
+    "armor",
+    "weapons",
+    "materials",
+    "shiny"
+  ],
+  "requiredFlags": [],
+  "excludedItems": [
+    "cobblemonarmory:cobblemon_armory"
+  ],
+  "entries": [],
+  "id": "fashion_elle",
+  "npc": "fashion_elle",
+  "titleKey": "shop.cobblemonworld.fashion.title",
+  "descriptionKey": "shop.cobblemonworld.fashion.description",
+  "registryNamespaces": [
+    "cobblemonarmory",
+    "cobblemonarmors"
+  ],
+  "rules": [
+    {
+      "pattern": "zacian_sword",
+      "categories": [
+        "weapons"
+      ],
+      "price": 500
+    },
+    {
+      "pattern": "shiny_rayquaza_armor_helmet",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 360
+    },
+    {
+      "pattern": "shiny_rayquaza_armor_chestplate",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 450
+    },
+    {
+      "pattern": "shiny_rayquaza_armor_leggings",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 410
+    },
+    {
+      "pattern": "shiny_rayquaza_armor_boots",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 360
+    },
+    {
+      "pattern": "rayquaza_armor_helmet",
+      "categories": [
+        "armor"
+      ],
+      "price": 250
+    },
+    {
+      "pattern": "rayquaza_armor_chestplate",
+      "categories": [
+        "armor"
+      ],
+      "price": 320
+    },
+    {
+      "pattern": "rayquaza_armor_leggings",
+      "categories": [
+        "armor"
+      ],
+      "price": 290
+    },
+    {
+      "pattern": "rayquaza_armor_boots",
+      "categories": [
+        "armor"
+      ],
+      "price": 250
+    },
+    {
+      "pattern": "shiny_.*_helmet",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 180
+    },
+    {
+      "pattern": "shiny_.*_chestplate",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 260
+    },
+    {
+      "pattern": "shiny_.*_leggings",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 220
+    },
+    {
+      "pattern": "shiny_.*_boots",
+      "categories": [
+        "armor",
+        "shiny"
+      ],
+      "price": 180
+    },
+    {
+      "pattern": ".*_helmet",
+      "categories": [
+        "armor"
+      ],
+      "price": 90
+    },
+    {
+      "pattern": ".*_chestplate",
+      "categories": [
+        "armor"
+      ],
+      "price": 130
+    },
+    {
+      "pattern": ".*_leggings",
+      "categories": [
+        "armor"
+      ],
+      "price": 110
+    },
+    {
+      "pattern": ".*_boots",
+      "categories": [
+        "armor"
+      ],
+      "price": 90
+    },
+    {
+      "pattern": ".*(sword|hammer|shield|gloves)",
+      "categories": [
+        "weapons"
+      ],
+      "price": 220
+    },
+    {
+      "pattern": ".*(hat|crown|glasses|scarf|accessory)",
+      "categories": [
+        "accessories"
+      ],
+      "price": 70
+    },
+    {
+      "pattern": ".*smithing_upgrade.*",
+      "categories": [
+        "materials"
+      ],
+      "price": 75
+    },
+    {
+      "pattern": ".*(rayquaza|metagross).*",
+      "categories": [
+        "materials"
+      ],
+      "price": 50
+    },
+    {
+      "pattern": ".*",
+      "categories": [
+        "materials"
+      ],
+      "price": 25
+    }
+  ],
+  "overrides": {}
+}

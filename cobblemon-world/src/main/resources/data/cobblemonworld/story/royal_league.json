@@ -1,0 +1,13 @@
+{
+  "id": "royal_league",
+  "title": "story.cobblemonworld.royal_league.title",
+  "objective": "story.cobblemonworld.royal_league.objective",
+  "requiredFlags": [],
+  "completionFlags": [
+    "royal_league_complete",
+    "league_elite_03_defeated"
+  ],
+  "levelCapOnComplete": 92,
+  "nextChapter": "school_of_wolf",
+  "badge": ""
+}

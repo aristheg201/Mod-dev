@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 76,
   "skill": 5,
-  "preBattleText": "Final qualification match. Earn the Royal League pass.",
-  "postBattleText": "You are qualified. Take that result to the Royal League.",
+  "preBattleText": "npc.cobblemonworld.battle_tower_trainer_03.greeting",
+  "postBattleText": "npc.cobblemonworld.battle_tower_trainer_03.repeat",
   "team": [
     "metagross level=74",
     "dragonite level=75",
@@ -17,7 +17,7 @@
     "battle_tower_qualified"
   ],
   "contactUnlock": "",
-  "chapterOnDefeat": "",
+  "chapterOnDefeat": "battle_tower",
   "requiredChapter": "",
   "requiredFlags": [
     "battle_tower_trainer_02_defeated"

@@ -58,7 +58,8 @@ public final class NpcCommands {
         removeLoadedEntity(player.getServer(), NpcPlacementStore.INSTANCE.get(id));
 
         NPCEntity npc = TrainerBattleService.createNpc(player, definition);
-        npc.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+        npc.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0F);
+        AnchoredNpcService.authoredPose(npc, player.getYRot());
         if (!player.serverLevel().addFreshEntity(npc)) {
             player.sendSystemMessage(Component.literal("Failed to spawn NPC '" + id + "'.")
                     .withStyle(ChatFormatting.RED));
@@ -69,7 +70,7 @@ public final class NpcCommands {
         NpcPlacement placement = new NpcPlacement(
                 id, dimension,
                 player.getX(), player.getY(), player.getZ(),
-                player.getYRot(), player.getXRot(),
+                player.getYRot(), 0.0F,
                 npc.getUUID().toString()
         );
         NpcPlacementStore.INSTANCE.put(placement);
@@ -88,13 +89,11 @@ public final class NpcCommands {
         }
         NPCEntity npc = getLoadedEntity(player.getServer(), old);
         if (npc != null) {
-            npc.setYRot(player.getYRot());
-            npc.setYHeadRot(player.getYRot());
-            npc.setXRot(player.getXRot());
+            AnchoredNpcService.authoredPose(npc, player.getYRot());
         }
         NpcPlacement updated = new NpcPlacement(
                 old.id(), old.dimension(), old.x(), old.y(), old.z(),
-                player.getYRot(), player.getXRot(), old.entityUuid());
+                player.getYRot(), 0.0F, old.entityUuid());
         NpcPlacementStore.INSTANCE.put(updated);
         player.sendSystemMessage(Component.literal("NPC '" + id + "' now faces your current direction.")
                 .withStyle(ChatFormatting.GREEN));

@@ -66,6 +66,11 @@ public final class CWorldQaClientHarness {
             return;
         }
 
+        if (Boolean.getBoolean("cworld.qa.production") && client.player != null && client.player.isDeadOrDying()) {
+            client.player.respawn();
+            client.setScreen(null);
+            return;
+        }
         if (client.player == null) {
             if (!worldCreateRequested) {
                 if (!atlasReady(client)) {
@@ -76,19 +81,33 @@ public final class CWorldQaClientHarness {
 
                 worldCreateRequested = true;
                 worldWaitTicks = 0;
+                if (Boolean.getBoolean("cworld.qa.multiplayer")) {
+                    String address = "127.0.0.1:25571";
+                    net.minecraft.client.gui.screens.ConnectScreen.startConnecting(client.screen, client,
+                            net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(address),
+                            new net.minecraft.client.multiplayer.ServerData("Production QA", address,
+                                    net.minecraft.client.multiplayer.ServerData.Type.OTHER), false, null);
+                    System.out.println("CWORLD_QA_MULTIPLAYER_CONNECT_REQUEST " + address);
+                    return;
+                }
 
                 LevelSettings settings = new LevelSettings(
                         "Cobblemon World QA",
                         GameType.SURVIVAL,
                         false,
                         Difficulty.NORMAL,
-                        true,
+                        !Boolean.getBoolean("cworld.qa.production"),
                         new GameRules(),
                         WorldDataConfiguration.DEFAULT
                 );
                 WorldOptions options = new WorldOptions(0xC0BB1E5L, true, false);
 
                 System.out.println("CWORLD_QA_CLIENT_ATLAS_READY");
+                if (Boolean.getBoolean("cworld.qa.restart")) {
+                    System.out.println("CWORLD_QA_SINGLEPLAYER_REOPEN_REQUEST world=CWorldQA");
+                    client.createWorldOpenFlows().openWorld("CWorldQA", () -> client.stop());
+                    return;
+                }
                 System.out.println("CWORLD_QA_SINGLEPLAYER_CREATE_REQUEST world=CWorldQA");
                 client.createWorldOpenFlows().createFreshLevel(
                         "CWorldQA",
@@ -109,6 +128,12 @@ public final class CWorldQaClientHarness {
         }
 
         if (worldWaitTicks >= 0) {
+            if (Boolean.getBoolean("cworld.qa.production")) {
+                client.options.tutorialStep = net.minecraft.client.tutorial.TutorialSteps.NONE;
+                client.getTutorial().stop();
+                client.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.HIDDEN);
+                client.getToasts().clear();
+            }
             System.out.println("CWORLD_QA_SINGLEPLAYER_CONNECTED " + client.player.getGameProfile().getName());
             worldWaitTicks = -1;
             worldReadyTicks = 0;
@@ -119,6 +144,7 @@ public final class CWorldQaClientHarness {
         if (client.level == null || ++worldReadyTicks < 60) return;
 
         samplePerformance(client);
+        ProductionQaClient.autoBattle(client);
 
         if (capturing) return;
 
@@ -159,6 +185,8 @@ public final class CWorldQaClientHarness {
                 // its final QA/performance evidence before the client shuts the JVM down.
                 stopCountdown = 60;
                 return;
+            } else if (current.action().startsWith("prod_")) {
+                settleTicks = 0;
             } else {
                 fail(client, "Unknown QA control action: " + current.action());
                 return;
@@ -171,6 +199,12 @@ public final class CWorldQaClientHarness {
             return;
         }
 
+        if (current.action().startsWith("prod_")) {
+            int result = ProductionQaClient.perform(client, current);
+            if (result == 2) capture(client, current.secondary());
+            else if (result == 1) { ack(client, token(current), true, "normal client input completed"); current = null; }
+            return;
+        }
         if ("capture_phone".equals(current.action())) {
             if (!(client.screen instanceof TrainerPhoneScreen phone)) return;
             phone.qaSelectApp(phoneApp(current.primary()));

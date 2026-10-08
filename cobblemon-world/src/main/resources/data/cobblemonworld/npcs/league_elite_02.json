@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 84,
   "skill": 5,
-  "preBattleText": "Talent gets trainers here. Discipline gets them past me.",
-  "postBattleText": "One more Elite stands between you and the Champion floor.",
+  "preBattleText": "npc.cobblemonworld.league_elite_02.greeting",
+  "postBattleText": "npc.cobblemonworld.league_elite_02.repeat",
   "team": [
     "tyranitar level=82",
     "gardevoir level=83",

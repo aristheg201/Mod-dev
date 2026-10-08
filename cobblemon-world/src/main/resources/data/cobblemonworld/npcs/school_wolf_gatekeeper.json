@@ -4,8 +4,8 @@
   "npcClass": "standard",
   "visualLevel": 90,
   "skill": 0,
-  "preBattleText": "Royal League clearance confirmed. The School accepts your request. Pass the three trials and the Master will see you.",
-  "postBattleText": "The trials are inside. The School does not repeat warnings.",
+  "preBattleText": "npc.cobblemonworld.school_wolf_gatekeeper.greeting",
+  "postBattleText": "npc.cobblemonworld.school_wolf_gatekeeper.repeat",
   "team": [],
   "defeatFlag": "",
   "flagsOnDefeat": [],
@@ -13,7 +13,9 @@
   "chapterOnDefeat": "",
   "requiredChapter": "",
   "requiredFlags": [
-    "school_of_wolf_unlocked"
+    "royal_league_complete",
+    "league_elite_03_defeated",
+    "divinos_eight_towns_complete"
   ],
   "badge": "",
   "skin": "school_wolf_gatekeeper",

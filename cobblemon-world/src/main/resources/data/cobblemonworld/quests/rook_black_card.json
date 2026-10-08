@@ -1,9 +1,15 @@
 {
-  "id":"rook_black_card","title":"The Black Card","giver":"rook",
-  "description":"Open the archived Card World memory and trace the black card.",
-  "objectives":[
-    {"id":"enter_memory","type":"card_world_visit","target":"black_card_memory","amount":1},
-    {"id":"win_duel","type":"card_world_battle","target":"archivist_duelist","amount":1}
+  "id": "rook_black_card",
+  "title": "quest.cobblemonworld.rook_black_card.title",
+  "giver": "rook",
+  "description": "quest.cobblemonworld.rook_black_card.description",
+  "objectives": [
+    {
+      "id": "gameplay",
+      "type": "interact",
+      "target": "archaeologist_marlow",
+      "amount": 1
+    }
   ],
-  "completionFlag":"rook_black_card_complete"
+  "completionFlag": "rook_black_card_complete"
 }

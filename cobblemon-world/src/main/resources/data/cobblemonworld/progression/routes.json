@@ -1,0 +1,152 @@
+[
+  {
+    "npc": "professor_hale",
+    "completeFlag": "professor_met",
+    "objectiveKey": "objective.cobblemonworld.main.professor_hale"
+  },
+  {
+    "npc": "mara_voss",
+    "completeFlag": "mara_voss_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.mara_voss"
+  },
+  {
+    "npc": "dr_orin",
+    "completeFlag": "dr_orin_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.dr_orin"
+  },
+  {
+    "npc": "rook",
+    "completeFlag": "rook_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.rook"
+  },
+  {
+    "npc": "selene_kade",
+    "completeFlag": "selene_kade_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.selene_kade"
+  },
+  {
+    "npc": "sixth_warden",
+    "completeFlag": "sixth_warden_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.sixth_warden"
+  },
+  {
+    "npc": "rocket_grunt_01",
+    "completeFlag": "rocket_grunt_01_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.rocket_grunt_01"
+  },
+  {
+    "npc": "rocket_grunt_02",
+    "completeFlag": "rocket_grunt_02_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.rocket_grunt_02"
+  },
+  {
+    "npc": "rocket_grunt_03",
+    "completeFlag": "rocket_grunt_03_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.rocket_grunt_03"
+  },
+  {
+    "npc": "rocket_admin_vex",
+    "completeFlag": "rocket_admin_vex_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.rocket_admin_vex"
+  },
+  {
+    "npc": "lab_scientist_iris",
+    "completeFlag": "lab_scientist_met",
+    "objectiveKey": "objective.cobblemonworld.main.lab_scientist_iris"
+  },
+  {
+    "npc": "archaeologist_marlow",
+    "completeFlag": "archaeologist_record_complete",
+    "objectiveKey": "objective.cobblemonworld.main.archaeologist_marlow"
+  },
+  {
+    "npc": "seventh_warden",
+    "completeFlag": "seventh_warden_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.seventh_warden"
+  },
+  {
+    "npc": "harbour_marshal_liora",
+    "completeFlag": "town8_route_confirmed",
+    "objectiveKey": "objective.cobblemonworld.main.harbour_marshal_liora"
+  },
+  {
+    "npc": "captain_dorian",
+    "completeFlag": "town8_qualifier_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.captain_dorian"
+  },
+  {
+    "npc": "battle_tower_receptionist",
+    "completeFlag": "battle_tower_registered",
+    "objectiveKey": "objective.cobblemonworld.main.battle_tower_receptionist"
+  },
+  {
+    "npc": "battle_tower_trainer_01",
+    "completeFlag": "battle_tower_trainer_01_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.battle_tower_trainer_01"
+  },
+  {
+    "npc": "battle_tower_trainer_02",
+    "completeFlag": "battle_tower_trainer_02_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.battle_tower_trainer_02"
+  },
+  {
+    "npc": "battle_tower_trainer_03",
+    "completeFlag": "battle_tower_trainer_03_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.battle_tower_trainer_03"
+  },
+  {
+    "npc": "royal_league_receptionist",
+    "completeFlag": "royal_league_registered",
+    "objectiveKey": "objective.cobblemonworld.main.royal_league_receptionist"
+  },
+  {
+    "npc": "league_elite_01",
+    "completeFlag": "league_elite_01_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.league_elite_01"
+  },
+  {
+    "npc": "league_elite_02",
+    "completeFlag": "league_elite_02_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.league_elite_02"
+  },
+  {
+    "npc": "league_elite_03",
+    "completeFlag": "league_elite_03_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.league_elite_03"
+  },
+  {
+    "npc": "aurelia",
+    "completeFlag": "aurelia_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.aurelia"
+  },
+  {
+    "npc": "school_wolf_gatekeeper",
+    "completeFlag": "school_wolf_entry_granted",
+    "objectiveKey": "objective.cobblemonworld.main.school_wolf_gatekeeper"
+  },
+  {
+    "npc": "school_wolf_trainer_01",
+    "completeFlag": "school_wolf_trainer_01_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.school_wolf_trainer_01"
+  },
+  {
+    "npc": "school_wolf_trainer_02",
+    "completeFlag": "school_wolf_trainer_02_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.school_wolf_trainer_02"
+  },
+  {
+    "npc": "school_wolf_trainer_03",
+    "completeFlag": "school_wolf_trainer_03_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.school_wolf_trainer_03"
+  },
+  {
+    "npc": "school_wolf_master",
+    "completeFlag": "school_wolf_master_defeated",
+    "objectiveKey": "objective.cobblemonworld.main.school_wolf_master"
+  },
+  {
+    "npc": "mysterious",
+    "completeFlag": "toba_identity_revealed",
+    "objectiveKey": "objective.cobblemonworld.main.mysterious"
+  }
+]

@@ -7,31 +7,31 @@ public final class NotificationService {
     private NotificationService() {}
 
     public static void message(ServerPlayer player, String sender) {
-        CWorldNetworking.toast(player, "message", "New Message", sender);
+        CWorldNetworking.toast(player, "message", "toast.cobblemonworld.message", sender);
     }
 
     public static void contact(ServerPlayer player, String contact) {
-        CWorldNetworking.toast(player, "contact", "New Contact", contact);
+        CWorldNetworking.toast(player, "contact", "toast.cobblemonworld.contact", contact);
     }
 
     public static void objective(ServerPlayer player, String objective) {
-        CWorldNetworking.toast(player, "objective", "Objective Updated", objective);
+        CWorldNetworking.toast(player, "objective", "toast.cobblemonworld.objective", objective);
     }
 
     public static void story(ServerPlayer player, String story) {
-        CWorldNetworking.toast(player, "story", "Story Updated", story);
+        CWorldNetworking.toast(player, "story", "toast.cobblemonworld.story", story);
     }
 
     public static void badge(ServerPlayer player, String badge) {
-        CWorldNetworking.toast(player, "badge", "Badge Acquired", humanize(badge));
+        CWorldNetworking.toast(player, "badge", "toast.cobblemonworld.badge", "badge.cobblemonworld." + badge);
     }
 
     public static void levelCap(ServerPlayer player, int cap) {
-        CWorldNetworking.toast(player, "level_cap", "Level Cap Increased", "Lv." + cap);
+        CWorldNetworking.toast(player, "level_cap", "toast.cobblemonworld.level_cap", "Lv." + cap);
     }
 
     public static void faction(ServerPlayer player, String text) {
-        CWorldNetworking.toast(player, "faction", "Faction Event", text);
+        CWorldNetworking.toast(player, "faction", "toast.cobblemonworld.faction", text);
     }
 
     private static String humanize(String id) {
