@@ -31,6 +31,12 @@ public final class CobblemonWorldMod implements ModInitializer {
     @Override
     public void onInitialize() {
         CWorldConfig.load();
+        io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE.load();
+        io.github.aristheg201.cobblemonworld.narrative.ConversationService.register();
+        io.github.aristheg201.cobblemonworld.narrative.PoiStore.register();
+        io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.register();
+        io.github.aristheg201.cobblemonworld.narrative.SeasonalSightings.register();
+        io.github.aristheg201.cobblemonworld.narrative.PersonalActors.register();
         ModItems.register();
         ModBossEntities.register();
         CWorldNetworking.register();
@@ -59,6 +65,7 @@ public final class CobblemonWorldMod implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             ProgressionStore.INSTANCE.load(server);
             NpcPlacementStore.INSTANCE.load(server);
+            io.github.aristheg201.cobblemonworld.narrative.PoiStore.load(server);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             ProgressionStore.INSTANCE.save(server);
@@ -66,7 +73,8 @@ public final class CobblemonWorldMod implements ModInitializer {
         });
 
         if (Boolean.getBoolean("cworld.qa.server")) {
-            if (Boolean.getBoolean("cworld.qa.production")) io.github.aristheg201.cobblemonworld.qa.ProductionQaServer.register();
+            if (Boolean.getBoolean("cworld.qa.narrative")) io.github.aristheg201.cobblemonworld.qa.NarrativeQaServer.register();
+            else if (Boolean.getBoolean("cworld.qa.production")) io.github.aristheg201.cobblemonworld.qa.ProductionQaServer.register();
             else io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.register();
         }
 

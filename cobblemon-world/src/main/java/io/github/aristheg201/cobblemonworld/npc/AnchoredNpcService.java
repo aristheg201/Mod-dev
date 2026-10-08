@@ -26,6 +26,7 @@ public final class AnchoredNpcService {
             // Re-placing/removing an NPC whose former chunk is unloaded must not bring back
             // its old saved entity later. Check after the placement command has saved its UUID.
             for (var npc : LOADED) {
+                if (io.github.aristheg201.cobblemonworld.narrative.PersonalActors.owner(npc) != null) continue;
                 var interaction = (CWorldNpcInteraction) npc.getInteraction();
                 var definition = NpcDefinitionRegistry.INSTANCE.get(interaction.definitionId());
                 if (definition == null) { npc.discard(); continue; }
@@ -42,6 +43,12 @@ public final class AnchoredNpcService {
                 UUID uuid;
                 try { uuid = UUID.fromString(placement.entityUuid()); } catch (IllegalArgumentException e) { continue; }
                 if (!(level.getEntity(uuid) instanceof NPCEntity npc)) continue;
+                tickPose(npc, placement);
+            }
+        });
+    }
+    public static void tickPose(NPCEntity npc, NpcPlacement placement) {
+        var level=npc.level(); var server=npc.getServer(); UUID uuid=npc.getUUID();
                 if (npc.distanceToSqr(placement.x(), placement.y(), placement.z()) > 0.0001) {
                     npc.setPos(placement.x(), placement.y(), placement.z());
                 }
@@ -63,8 +70,6 @@ public final class AnchoredNpcService {
                 npc.setYRot(Mth.approachDegrees(npc.getYRot(), body, 5));
                 npc.setYBodyRot(npc.getYRot());
                 npc.setYHeadRot(Mth.approachDegrees(npc.getYHeadRot(), head, 6));
-            }
-        });
     }
     private static float facing(NPCEntity npc, ServerPlayer player) {
         return (float) Math.toDegrees(Math.atan2(-(player.getX() - npc.getX()), player.getZ() - npc.getZ()));

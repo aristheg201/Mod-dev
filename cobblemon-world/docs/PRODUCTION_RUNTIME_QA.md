@@ -1,87 +1,95 @@
-# Production runtime QA — 2026-10-08
+# Production and narrative runtime QA — 2026-10-08
 
-## Artifact and method
+## Artifact, provenance and method
 
-The delivered production-remapped artifact is `CobblemonWorld-0.2.0-internal.20261008.jar`, SHA-256 `16251dc86a98d7462d3b3171f218ee089d4039a87b05a9e7459dac0f9882a093`.
+The delivered production-remapped artifact is `CobblemonWorld-0.3.0-internal.20261008.jar`, SHA-256 `6a69eeb0b1d3bf8bed98a342e205e7abe62214360ea95d70675bc568b929b0bc`. The release manifest records the delivered SHA-256 and exact Git commit. All work is in `aristheg201/Mod-dev`, branch `feature/cobblemon-world-rpg-20261006`, module `cobblemon-world`.
 
-The 147-stage full campaign ran on candidate SHA-256 `e9d1b008e36977adee09b9a7c3b870023b6094a7997c9ffc07badb39fb6270b1`. Short restart/dependency profiles subsequently exposed a QA teardown error: the legacy client performance check ran before it had 20 real samples. The final build adds a bounded wait for those samples, without changing thresholds. Its only changed JAR entry is the opt-in `qa/CWorldQaClientHarness.class`; every gameplay, networking and resource entry is byte-identical to the full-run candidate. Restart and missing-economy profiles are rerun on the final JAR. Full-run screenshots/logs retain their original candidate identity; they are not presented as a second full campaign on the final hash.
+Testing uses an actual Minecraft client and a separate Fabric dedicated server, both loading the remapped artifact. `CWorldQA` is a survival player with no operator permission. The isolated, offline server binds localhost. Opt-in fixtures author blank platforms/NPC placements, supply items and legal Pokémon, and set balances; they are disabled in normal play. Actual entity/block interactions, GUI mouse handlers, purchase packets, native capture and Cobblemon move/switch choices exercise gameplay. Trainer wins are native battle outcomes, not injected victory flags. Peaceful mode prevents ambient mobs from interrupting transport checks.
 
-Testing uses an actual Fabric Minecraft client and a separate dedicated server, both loading this remapped JAR. The player is `CWorldQA`, survival, with an empty operator list. The isolated server binds localhost, uses offline authentication, and runs peaceful mode to keep ambient mobs from interrupting transport tests. The server fixture prepares NPC locations, currency balances, inventory states and legal Pokémon parties. Shop purchases, dialogue replies, phone controls, NPC interaction and battle actions travel through the actual client/server paths. Battle progression is checked from real Cobblemon victories; it is not granted by injecting victory flags.
+The expanded campaign was exercised over resumed diagnostic sessions. `narrative-attempt9` covers opening through Marlow's photograph (main stages 1–38), including an actual Mara loss and rematch. Its earlier 0.3 diagnostic revision is not represented as a complete run on the delivered hash. The `61e30492f6e740533da70a9f0d96ab02e408acd4fbe8c983917b1e93b8906d72` candidate covers stages 39–70, eleven complete regular side chains and Weather Duo stages 1–20, then an actual loss at its Kyogre guardian. That loss left the chain at stage 21, with no Legendary claim. The final JAR resumes that same saved world using legal Focus Sashes on the QA player's party, leaving the opposing roster/AI unchanged.
 
-The opt-in test driver coordinates the client and server and captures Minecraft's actual framebuffer at 1280×720. It does not synthesize screenshots. QA properties are disabled in normal play. The full gameplay-candidate campaign ran from 03:20 to 03:45 UTC on 2026-10-08 in a fresh world and finished all 147 stages with no QA failure. The final-JAR restart and missing-economy runs finished at 06:33 and 06:35 UTC respectively, and both client/server tasks exited successfully. One additional live battle capture used the X11 framebuffer directly. Raw logs are supplied with the visual evidence.
+The final artifact differs from the 61e304 candidate in exactly six JAR entries: English/Vietnamese locale files and four opt-in QA classes. Gameplay classes and canonical world data are byte-identical. The locale change gives 29 trainers distinct win/loss prose and removes obsolete seal references. The QA changes add early gate assertions, stronger stored-reward checks, native PC screenshots and the rain-counter held item. The raw entry comparison is included with the evidence. The driver’s `main=178` log field counts all finished IDs, including side stages and battle markers; it is not a count of main-story stages. Final opening, services, real process restart and missing-economy profiles are separately identified; an interrupted diagnostic run is not labeled a successful completed profile.
 
-Local unit/data validation supplements these runtime results. Eight transaction/scaling tests passed. A separate unpacked source checkout built with the included wrapper and generated a byte-identical remapped JAR. No GitHub Actions compile-fix loop was used.
+Screenshots come from Minecraft's framebuffer at 1280×720 using its screenshot API, with occasional direct X11 framebuffer captures. No screenshots were manufactured. An index states each image's path and provenance. Local tests and content validators supplement, rather than replace, runtime evidence.
 
-## Tested versions
+## Exact tested runtime
 
-| Component | Exact tested version |
+| Component | Version |
 |---|---|
 | Minecraft | 1.21.1 |
 | Fabric Loader | 0.18.4 |
 | Fabric API | 0.116.17+1.21.1 |
 | Cobblemon | 1.8.1+1.21.1 |
-| Java | Eclipse Temurin 21.0.12.1+1, Java 21 |
+| Java | Eclipse Temurin 21.0.12.1+1 |
 | Gradle / Loom | 8.12 / 1.10.5 |
 | Fabric Language Kotlin | 1.13.6+kotlin.2.2.20 |
-| BEconomy | Supplied 1.5, `org.krripe.beconomy` API; upstream metadata literally says `${version}` |
+| BEconomy | Supplied 1.5 API; upstream metadata contains the literal `${version}` |
 | Cobblemon Armory | 1.5.4 Fabric 1.21.1 |
-| Cobblemon Armors | Official 1.6.0+1.8.1 Modrinth release |
-| Cobblemon Map Kit | 1.0.9-SNAPSHOT, artifact from the user's 1.0.9 version link |
+| Cobblemon Armors | Official 1.6.0+1.8.1 release from the supplied Modrinth link |
+| Cobblemon Map Kit | 1.0.9-SNAPSHOT from the supplied 1.0.9 release link |
 | GeckoLib | 4.9.2 Fabric 1.21.1 |
 | Placeholder API | 2.4.2+1.21 |
 
-Dependency filenames, download URLs and SHA-256 values are in `RUNTIME_DEPENDENCIES.json`. The official Armors download declares a mistyped Cobblemon dependency, `1.8.1+1.12.1`; the isolated QA uses Fabric's metadata override to declare `1.8.1+1.21.1`. Its item classes were not patched. The user's separately named `01-cobblemon-armors-1.6.0-1.8.1-compat.jar` was not available for binary comparison.
+`RUNTIME_DEPENDENCIES.json` contains filenames, URLs and hashes. The official Armors release mistypes its Cobblemon dependency as `1.8.1+1.12.1`; QA uses Fabric's metadata override for `1.8.1+1.21.1`, without patching item classes. The separately named server compatibility JAR was not supplied for binary comparison. SVFrame integrations were absent.
 
-## Feature results
+## Runtime results
 
-`PASS` means the stated path was exercised in the actual game. It does not imply every possible multiplayer or failure permutation was tested.
+PASS applies only to the stated, actually exercised path. Final-profile logs identify exact coverage. The services profile completed 92 steps on the final JAR. Services restart completed four steps; missing-economy completed three. All final client/server tasks exited successfully. Weather completion and native-PC verification ended at 11:48 UTC, independent reward restart at 11:54, fresh opening at 11:52, services at 11:58, services restart at 12:00 and missing economy at 12:01.
 
-| Feature | Status | Actual evidence and scope |
+| Feature | Status | Evidence and practical scope |
 |---|---|---|
-| First-party Trainer Phone | PASS | Normal mouse navigation opened Trainer Card, Objective, Current Story, Side Quests, Level Cap, Badges, Contacts, Messages, League and Faction. Home and app screenshots are included. |
-| Branching Messages | PASS | Multiple choices rendered; scrolling reached reply 2; choosing it saved the named `CWorldQA` reply, generated the branch-specific NPC response and quest state, and refreshed the phone. Reopening retained the transcript. The speaker remained `???` before reveal. |
-| Vietnamese and English | PASS | Actual locale reloads, Vietnamese Messages/Faction/Ren screenshots, and English restore. Shop controls, status, objective text and dialogue use translation keys. Third-party item translations remain owned by those mods. |
-| Mira healing | PASS | Fixture Pokémon began at 1 HP. Ordinary NPC interaction restored actual party health to its maximum. |
-| NPC anchor and pitch | PASS | Placement with a downward player view produced pitch 0. Forced displacement returned to the stored anchor. Authored yaw 72 persisted through a placement-store reload. The actual NPC stands upright and faces the player after interaction. |
-| Ren PokéMall | PASS | Ordinary interaction opened the dedicated shop screen with 15 resolved entries, real item models, canonical bundle prices and BeastCoin balance. No clickable-chat shop or phone snapshot was used. |
-| Elle fashion inventory | PASS | Runtime registry audit exactly matched all 262 eligible registered items: 209 Armory and 53 Armors. Only Armory's internal creative marker was excluded. The implementation derives inventory from the registry; 262 is an observed result, not a hardcoded target. |
-| Elle controls and visuals | PASS | All, Accessories, Armor, Weapons, Materials and Shiny filters exercised. Actual wheel scrolling reached row 9; selected-item details rendered for Zacian Sword and an Armors item. Screens captured at GUI scales 2 and 3. |
-| ItemStack/resource-pack rendering | PASS | Actual Armory/Armors models rendered. Enabling a real test resource pack changed the selected Poké Ball's model to the diamond texture while retaining its Poké Ball name/identity; disabling it restored normal resources. Before/after screenshots supplied. |
-| Tomo bicycle service | PASS | MapKit registered `mapkit:bicycle`. Clicking BUY with exactly 500 BeastCoin granted one bicycle and left zero BC. Missing-item availability also matched the registry in an earlier actual run without MapKit. |
-| Explicit BeastCoin isolation | PASS | Purchases changed BeastCoin while the independently configured HunterCoin balance remained 9000. The fixture made HunterCoin primary to catch incorrect fallback. |
-| Zero/insufficient/exact/high balance | PASS | 0 and 19 BC rejected a 20 BC bundle; exactly 20 granted 16 Poké Balls and left 0; higher-balance purchases debited exactly 20. Updated balance appeared without closing the shop. |
-| Full inventory | PASS | All available slots filled; purchase granted no Poké Balls and left 80 BC unchanged. |
-| Grant failure and exact refund | PASS | Explicit QA-only post-grant fault injection exercised inventory rollback and refund. Balance returned to exactly 80 and no purchased items remained. No normal production fault injection is enabled. |
-| Rapid double-click | PASS | Two rapid C2S requests produced one 16-ball grant and one 20 BC debit; the second request was rejected. |
-| Malformed request / canonical pricing | PASS | Negative quantity and an unknown entry were rejected with no debit/grant. The C2S payload supplies shop, entry and quantity only; there is no client price field. |
-| Data-driven default prices | PASS | The runtime fashion audit checked every reachable entry's category and 1–500 BC price. All explicit Ren items resolved. PokéMall baseline bundles, 500 BC bicycle and 500 BC Zacian Sword appeared in the real client. Owner overrides/reload are documented. |
-| Stable pinned objective | PASS | Pin saved quest/objective/target identity on the server. The phone refreshed immediately and closing it already showed navigation, without reconnecting or reopening. |
-| Live navigation | PASS | Actual screenshots show yaw-relative arrow changes and distance changes while moving. Re-placing Mara changed the resolved target to the placement store's new coordinates. |
-| Unplaced/different-dimension targets | PASS | Unplaced target displayed unavailable. Moving the authored placement to the Nether produced the different-dimension state; returning it restored the live target. |
-| Objective reset | PASS | Both `/cworld story objective reset` and `/cworldresetobjective` worked through non-OP player command packets and immediately cleared the side pin/resynced the main target. Commands are not shown in story copy. |
-| Level-cap battle rejection | PASS | A level-16 party under cap 15 could not begin Mara's battle; the Pokémon's actual level stayed 16 and no victory flag was granted. |
-| Trainer scaling | PASS | Actual battles logged player/trainer ace pairs 12/12 for Mara, 23/23 for Orin and 100/100 throughout campaign testing. Authored relative level gaps and clamping also passed unit tests. |
-| Native faction basics | PASS | Normal phone requests created the player's native faction, rejected owner leave, and disbanded it. Faction phone views worked in both languages. |
-| Optional SVFrame absence | PASS | Phone and gameplay ran with SVFrame integrations absent; native systems remained functional. |
-| Town 1–7 progression | PASS | Actual Mara, Orin, Rook, Selene, Sixth Warden, all three Rocket grunts, Vex and Seventh Warden victories; Iris and Marlow interaction hooks advanced the ordered chain. |
-| Town 8 qualifier and Tower lock | PASS | Battle Tower rejected access both before the circuit and after Seventh Warden. Harbour Marshal Liora confirmed the seven-town record; actual Captain Dorian victory completed the qualifier and unlocked Mina's Tower registration. |
-| Battle Tower ordered trainers | PASS | Mina registration followed by actual Rowan → Nyx → Orion victories; Royal League registration unlocked afterward. |
-| Royal League | PASS | Steward registration followed by actual Cassian → Seraph → Kael → Champion Aurelia victories, then School of Wolf unlock. |
-| School of Wolf | PASS | Bran registration followed by actual Fen → Skoll → Hati → Master Vargan victories, with the TOBA record/meeting requirements granted by those gameplay hooks. |
-| Story-spawned final encounter | PASS | After Wolf completion, the configured story service spawned exactly one mysterious actor. Ordinary interaction started its real Cobblemon battle; victory revealed TOBA and completed the main story. Before/after screenshots supplied. |
-| Real process restart / reconnect | PASS | Both processes relaunched on the final JAR. Saved Mira anchor/pitch/yaw 72 recovered, the named reply/transcript remained saved, and balance 60 plus 16 purchased Poké Balls persisted. Four stages and clean client/server exit passed after the QA warm-up fix. |
-| Missing BEconomy | PASS | The final JAR ran with BEconomy omitted. Ordinary Ren interaction opened the real disabled shop, the authoritative snapshot reported economy unavailable, and a purchase request granted no Poké Balls. All three stages and clean process exit passed. |
+| 70-stage campaign | PASS, combined revisions | Actual ordered stage paths across the recorded sessions: opening, towns 2–8, Rocket investigation, False Victory, Tower/League, Wolf, separate archive records, cast reactions, final battle, explanation and epilogue. Not one uninterrupted final-hash run. |
+| Dialogue box / branching | PASS | Real dedicated dialogue screen, four personality choices, response-specific turns/effects, named player reply, continued scene, Vietnamese wrap and Orin's long-text wheel scroll. Conversations remain out of ordinary chat. |
+| Conversation journal | PASS | Archive conversation closed/reopened with the same player reply and transcript; the real History control displayed persisted conversation lines. |
+| Soft personality memory | PASS, answer effects; callbacks limited | Persisted answer tendencies include sarcastic 45, serious 33, polite 38, greedy 36, chaotic 2 and sleepy 2 in the completed run. The final scene uses the sarcastic callback; not every tendency/scene combination or historical callback wording was checked. |
+| Mara loss / rematch / scaling | PASS | Actual loss with player/trainer ace 5/5 preserved the main step; native rematch ace 100/100 won. An upgraded six-member postgame rematch completed. |
+| Competitive authored teams | PASS, configuration and transport | Runtime factory resolved all 145 members across 30 teams. Native battle snapshots audit actual IVs, EVs, nature, ability, moves, held items and skill 5. All major trainers launched real battles. This is not a human difficulty rating. |
+| Town 8 / False Victory | PASS | Liora's local arc, harbour manifest inspection, Dorian's actual rain-team qualifier and recognition/Mara follow-up preceded Tower registration. |
+| Battle Tower | PASS | Registration then actual Rowan → Nyx → Orion victories, with distinct conversations/teams. |
+| Royal League | PASS | Steward then Cassian → Seraph → Kael → Aurelia victories and Aurelia aftermath, before Wolf access. |
+| School of Wolf | PASS | Bran → Fen, actual trail inspection, Skoll, consumed delivery supplies, Hati, Vargan. Vargan unlocked access without silently completing archive inspections. |
+| Archive / TOBA / epilogue | PASS | Three separate lecterns, cast reaction scene, final unknown contact, story-spawned encounter, actual native trainer victory, identity/explanation, consequence and Hale/Mara epilogue. No active resonance-heart progression. |
+| Regular side content | PASS, 11 complete chains | VAR, Con nhà người ta, Thông não, scam, delivery, Magikarp rescue, Ren's labels, Mara postgame, harbour parody, old man's warnings and sleep. Actual mixed mechanics and persistence; 32 additional regular chains remain unplayed end-to-end. |
+| Native capture / rescue / heal | PASS | Thrown native Poké Ball caught wild Magikarp; the canonical species capture hook advanced the chain, then Mira restored its actual health. |
+| Recoverable scam | PASS | Risky dialogue debited 10 BC, gave a real dead bush and hid the owner-bound trader; investigation/confrontation completed with the refundable loss and ordinary chain reward. |
+| Weather Duo investigation / sightings | PASS, stages 1–20 | Actual coastal/inland interactions, relic deliveries, native uncatchable/unbattleable Groudon and Kyogre sightings, guardian battle and balance restoration. First sighting camera framing is close; PC/model captures provide clearer reward views. |
+| Weather Duo guardian loss safety | PASS | Kyogre guardian beat the fixture party; loss count became 1, cursor stayed at stage 21, and claims remained empty. Opposing stats/AI were not weakened for retry. |
+| Both Legendary rewards / quality / duplicate guard | PASS | Final resume completed Weather Duo 21–24. Groudon and Kyogre each routed to native PC with a full party; level 70, intended nature/ability, six IV 25, four moves and repeated claim attempts verified. |
+| Legendary real restart / native PC | PASS | Both processes restarted again, read the same saved UUIDs exactly once, verified reward quality and selected each actual Pokémon through native PC mouse input. Zero remaining quest stages were replayed. |
+| Fresh final opening / first unknown message | PASS | Fresh final-JAR save completed all 11 Act-0 stages plus the intentional Mara loss. First contact was absent before the investigation and present afterward; native rematch/win and new outcome prose exercised. |
+| Early Tower/League/Wolf/final gates | PASS | Fresh final services world interacted with Tower, League, Bran and Vargan before prerequisites; blocked dialogue exposed no actionable stage/rematch. Final eligibility stayed false before archive. |
+| First-party Phone / branching Messages | PASS | Final services opened Trainer Card, Objective, Current Story, Side Quests, Level Cap, Badges, Contacts, Messages, League and Faction. Reply 2 saved named CWorldQA, branch-specific response/effect and transcript. |
+| Dedicated Ren / Elle / Tomo shops | PASS | Ordinary final-JAR interactions opened independent ShopScreen. Ren bundle purchase and Tomo exact-500-BC bicycle grant worked; Elle showed actual ItemStacks, categories, detail, scroll and maintained state. |
+| Full Armory + Armors reachability | PASS | Independent final runtime registry/catalog equality audit matched 262 eligible items: 209 Armory plus 53 Armors. Internal creative marker excluded; counts observed, not hardcoded. Every entry had a category and canonical 1–500 BC price. |
+| BeastCoin transactions | PASS | Final 0/19/20/high balance cases, HunterCoin-primary isolation (9000 unchanged), full inventory rejection, injected post-grant inventory rollback/exact refund, rapid two-request rejection, unknown entry and negative quantity all exercised with actual C2S requests. |
+| Resource pack / GUI scales / languages | PASS | Final real resource pack changed the selected Poké Ball model to diamond and disabling restored it. Elle ran at GUI scales 2/3; English and Vietnamese reloads showed localized Phone, Messages, Faction and Ren controls. |
+| NPC anchor / facing / yaw / restart | PASS | Downward placement normalized pitch 0; forced displacement returned to anchor. Interaction faced the player, authored yaw 72 survived store reload and a real client/server process restart. Recovery verified location, pitch 0 and yaw tolerance under 0.1°. |
+| Stable pin / immediate navigation | PASS | New-chain pins and final legacy pin saved stable identity and resynced immediately. Actual HUD showed yaw-relative arrow/moving distance; re-placing Mara resolved the new store position. Missing placement and Nether target states handled; both reset aliases updated immediately. |
+| Native faction basics | PASS | Final normal Phone requests created a native faction, rejected owner leave and disbanded it. Native state remains first-party; multiplayer permutations remain unproven. |
+| Shop / message real restart | PASS | Final services restart completed four steps: Mira placement/orientation recovered, named reply-2 transcript survived, and 60 BC plus 16 purchased Poké Balls remained. |
+| Missing BEconomy | PASS | Final artifact launched client/server without BEconomy. Ordinary Ren interaction opened the real disabled shop; snapshot reported economy unavailable and a purchase request granted no item. All three steps and clean process exit passed. |
 
-## Limits and unproven coverage
+## Build and content validation
 
-- **UNPROVEN — campaign difficulty and reward pacing:** legal, admin-prepared Mewtwo parties exercise battle transport and progression. They do not represent normal Pokémon acquisition or establish fair battle difficulty. Scaling is tested; campaign balance needs ordinary playtesting.
-- **UNPROVEN — multiplayer faction invites, accept, role changes, scheduled island-war capture and combat:** the native implementations and persistence remain present; this pass exercised single-player create/owner-leave/disband and phone views, not a full multi-faction event.
-- **UNPROVEN — installed SVFrameLib/SVFrameMMO integrations:** the exact ecosystem binaries were not supplied. Their absence fallback was exercised.
-- **UNPROVEN — migration of the user's real production save:** no production world was supplied. Compatibility code preserves legacy flags/placements/messages/objective fallbacks, but a fresh QA world and its restart cannot establish migration of that particular save.
-- **UNPROVEN — complete over-cap capture/natural-spawn/experience permutations:** the actual over-cap trainer rejection passed; this run did not test every level-cap hook.
-- **UNPROVEN — every possible datapack reload/owner override, currency-backend outage or repeated rollback failure:** runtime full-inventory/refund/double-click paths and local transaction tests passed; rare external API failure combinations were not all injected in Minecraft.
-- **UNPROVEN — audible feedback:** this headless client has no usable OpenAL output device. UI success feedback and screen state were exercised, but audible sound was not evaluated.
+Twelve JUnit tests cover narrative structure/identity, transactions and level scaling. The Python content validator checks 70 main stages, 43 regular substantial chains, the separate 24-stage season, 369 scenes, 30 teams, unique stable IDs, graph destinations, localization parity, progression gates, reward references and shop price limits. Runtime registry construction checks actual species/form moves, abilities, items and team configuration. Static validation alone is not marked runtime PASS.
 
-No medieval reference image was present in the supplied files; the original shop follows the requested wood/parchment/red-and-gold direction. Visual quality is subjective; actual screenshots are supplied for review. Endgame encounter coordinates must be configured by the map owner; the test fixture configured its own isolated encounter location and did not manually place `mysterious` as a persistent NPC.
+The included source was separately copied/unpacked outside the working checkout and built locally with Java 21, Gradle/Loom and the documented dependencies. The independent final-source build generated the exact same `6a69eeb0b1d3bf8bed98a342e205e7abe62214360ea95d70675bc568b929b0bc` remapped JAR. The release records the final source archive checksum separately. No GitHub Actions compile-fix loop was used.
 
-The isolated offline client logs failed Mojang public-key requests and lack of an audio device; these did not prevent gameplay paths. Earlier interrupted or failed diagnostic runs are not represented as successful final-artifact tests.
+## UNPROVEN and limits
+
+- **UNPROVEN — human battle difficulty and normal reward pacing.** Legal fixture parties exercise native strategy/progression; they do not establish fair ordinary campaign balance or farming time.
+- **UNPROVEN — final-revision main stages 12–38 as one repeat run.** Those stages were actually played in the earlier 0.3 diagnostic session; final opening and the 61e304 resumed run cover the remaining campaign. The report does not claim one complete campaign on the final hash.
+- **UNPROVEN — all 43 regular chains end-to-end.** Eleven full chains plus Weather Duo are runtime targets; the other 32 have authored content/validated hooks, not full player-path proof.
+- **UNPROVEN — every trainer loss/rematch, response permutation and tendency callback.** Mara and the Kyogre guardian losses are exercised; other loss voices are authored, not individually played.
+- **UNPROVEN — multiplayer faction invites/accept/roles, full island-war event and owner-instance appearance isolation.** Existing native implementations remain; a single client cannot prove multi-faction combat or concurrent actor visibility.
+- **UNPROVEN — installed SVFrameLib/SVFrameMMO compatibility.** Absence fallback runs; matching installed binaries were unavailable.
+- **UNPROVEN — migration of the user's production world.** No production save was supplied. Null-safe legacy inference and local migration tests do not prove that particular world.
+- **UNPROVEN — abrupt process crash at the cross-store Legendary insertion boundary.** Progression JSON and native Cobblemon storage have no shared atomic transaction. Reserved UUID reconciliation prevents duplicate insertion while delivered claims never recreate traded/released Pokémon. Clean restart is tested separately; sudden-crash recovery needs storage-boundary fault injection/operator reconciliation.
+- **UNPROVEN — completely exhausted PC, rare storage/backend failure, repeated currency refund failure, every owner reload/override and every level-cap capture/spawn/experience permutation.** Do not infer those from one full-inventory test.
+- **UNPROVEN — audible feedback.** The software-rendered Xvfb client has no usable OpenAL device. Screen state/success feedback is visible; sound was not heard.
+
+The map owner must author NPC/POI locations and the final meeting anchor. No production world or medieval reference image was supplied. Visual direction uses original wood/parchment/red-and-gold assets. Screenshots are actual QA platforms rather than an invented finished map. The existing separate second boss phase was already inactive in the base; this pass proves the final native trainer battle and aftermath, not a new two-phase boss.
+
+Groudon/Kyogre are native species with valid battle/storage data, but Cobblemon 1.8.1 contains no model/texture/poser assets for either. The actual PC therefore displays its upstream Substitute fallback, as the supplied screenshots show. A compatible Pokémon resource pack can supply their models; this pass does not claim they have native dedicated visuals.
+
+Upstream warnings include offline Mojang public-key lookup failure, missing audio device, an Armory glove texture and a Cobblemon recoil animation. These are recorded, not hidden. None is by itself evidence of a CobblemonWorld purchase/dialogue/progression success.

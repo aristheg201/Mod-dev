@@ -17,8 +17,7 @@
   "defeatFlag": "school_wolf_master_defeated",
   "flagsOnDefeat": [
     "school_trials_complete",
-    "toba_record_access",
-    "toba_meeting_revealed"
+    "toba_archive_unlocked"
   ],
   "contactUnlock": "",
   "chapterOnDefeat": "school_of_wolf",

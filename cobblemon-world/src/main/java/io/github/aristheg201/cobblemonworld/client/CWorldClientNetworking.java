@@ -14,6 +14,11 @@ public final class CWorldClientNetworking {
 
     public static void register() {
         ObjectiveHud.register();
+        ClientPlayNetworking.registerGlobalReceiver(io.github.aristheg201.cobblemonworld.network.ConversationPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    if (context.client().screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen dialogue) dialogue.update(payload.json());
+                    else context.client().setScreen(new io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen(payload.json()));
+                }));
         ClientPlayNetworking.registerGlobalReceiver(io.github.aristheg201.cobblemonworld.network.NavigationPayload.TYPE, (payload, context) ->
                 context.client().execute(() -> ObjectiveHud.receive(payload.json())));
         ClientPlayNetworking.registerGlobalReceiver(io.github.aristheg201.cobblemonworld.network.ShopSnapshotPayload.TYPE, (payload, context) ->

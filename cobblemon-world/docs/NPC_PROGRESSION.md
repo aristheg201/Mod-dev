@@ -54,7 +54,7 @@ Physical order inside the base:
 4. `rocket_admin_vex`
 5. `lab_scientist_iris`
 
-Flow: enter base -> Grunt A -> Grunt B -> Grunt C -> Admin Vex -> research/lab access -> Dr. Iris Vale -> School of Wolf clue.
+Flow: informant -> delivery access -> Grunt A -> inspect shift records -> Grunt B -> lower-level security/Grunt C -> Admin Vex -> Dr. Iris Vale -> original terminal evidence -> escape route -> aftermath. Iris is a coerced former League researcher; the records lead to Town 7 before the later School of Wolf arc.
 
 ## 6. Town 7 / Archaeologist + Seventh Warden
 
@@ -68,7 +68,7 @@ Flow: Black Card + lab clue -> Dr. Gideon Marlow -> Black Card registry identifi
 ## 7. Town 8 / Harbour qualifier
 
 - `harbour_marshal_liora` — Harbour Marshal Liora registers the challenger after Seventh Warden, the Black Card registry, and the laboratory evidence. Interaction grants `town8_qualifier_ready`.
-- `captain_dorian` — Captain Dorian Pike is the final coastal qualifier. His authored team is Pelipper, Kingdra, Magnezone, Ferrothorn and Dragonite. Server-side victory grants `town8_qualifier_defeated` and `divinos_eight_towns_complete`.
+- `captain_dorian` — Captain Dorian Pike is the final coastal qualifier. His authored team is Pelipper, Ferrothorn, Kingdra, Barraskewda, Swampert and Scizor. Server-side victory grants `town8_qualifier_defeated` and `divinos_eight_towns_complete`.
 
 Flow: Seventh Warden -> Liora -> Dorian -> eight-town circuit complete -> Battle Tower. The receptionist requires both Town 8 victory flags. All trainer levels scale to the current challenger while preserving authored level gaps; teams, moves, skills and gates remain data-driven.
 
@@ -101,7 +101,7 @@ Aurelia comes after all three Elite members, not as an ordinary map trainer inse
 4. `school_wolf_trainer_03`
 5. `school_wolf_master`
 
-Flow: Bran/Gatekeeper -> Fen -> Skoll -> Hati -> Master Vargan -> School trials complete -> TOBA record -> final story.
+Flow: Bran/Gatekeeper -> Fen -> authored trail inspection -> Skoll -> emergency-supply delivery -> Hati -> Master Vargan -> archive access -> three separate records -> Hale, Mara, Orin and Aurelia reactions -> unknown contact -> meeting -> final battle -> explanation -> consequences -> epilogue. Vargan does not grant archive discoveries or reveal TOBA.
 
 ## 11. Final `???`
 

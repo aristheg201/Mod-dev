@@ -108,6 +108,14 @@ public final class TrainerPhoneScreen extends Screen {
         qaSelectApp("side_quests");
         mouseClicked(largeX + CONTENT_X + 20, top + 165, 0);
     }
+    public void qaPinQuest(String id) {
+        qaSelectApp("side_quests");
+        for(int i=0;i<snapshot.quests().size();i++){
+            if(quest()!=null && quest().id().equals(id)){qaPinQuest();return;}
+            mouseClicked(largeX+165,top+182,0);
+        }
+        throw new IllegalStateException("Quest unavailable in actual phone: "+id);
+    }
     public void update(String json) {
         String contact = message() == null ? "" : message().contactId();
         snapshot = GSON.fromJson(json, CWorldNetworking.PhoneSnapshot.class);

@@ -57,6 +57,10 @@ public final class NpcCommands {
 
         removeLoadedEntity(player.getServer(), NpcPlacementStore.INSTANCE.get(id));
 
+        if (io.github.aristheg201.cobblemonworld.narrative.PersonalActors.personal(id)) {
+            NpcPlacementStore.INSTANCE.put(new NpcPlacement(id, player.level().dimension().location().toString(), player.getX(), player.getY(), player.getZ(), player.getYRot(), 0, new UUID(0,0).toString()));
+            return 1;
+        }
         NPCEntity npc = TrainerBattleService.createNpc(player, definition);
         npc.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0F);
         AnchoredNpcService.authoredPose(npc, player.getYRot());

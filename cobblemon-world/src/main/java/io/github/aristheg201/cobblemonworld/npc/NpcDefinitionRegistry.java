@@ -53,6 +53,13 @@ public final class NpcDefinitionRegistry {
                 throw new IllegalStateException("Failed to load " + path, e);
             }
         }
+        for (var actor : io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE.data.actors()) {
+            if (definitions.containsKey(actor.id())) continue;
+            var team = io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE.teams.get(actor.team());
+            String[] specs = team == null ? new String[0] : java.util.Arrays.stream(team.members()).map(m -> m.species() + " level=" + m.level()).toArray(String[]::new);
+            var definition = new Definition(actor.id(), actor.name(), "standard", 50, 5, "", "", specs, actor.id() + "_defeated", new String[0], "", "", "", new String[0], "", actor.skin(), true, false, "", new String[0], "");
+            validateAppearance(definition); normal++; definitions.put(actor.id(), definition);
+        }
         CobblemonWorldMod.LOGGER.info("Loaded {} Cobblemon World NPC definitions.", definitions.size());
         System.out.println("CWORLD_NPC_APPEARANCES_PASS count=" + definitions.size()
                 + " normal=" + normal + " special=" + special);

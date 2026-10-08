@@ -46,6 +46,11 @@ public final class TobaEncounterService {
             ACTIVE_PROXIES.clear(); LOADED_ACTORS.clear();
             server = null;
         });
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler,s) -> {
+            clearTransientEncounterState(handler.player.getUUID());
+            discardEntity(ACTIVE_ACTORS.remove(handler.player.getUUID()));
+            discardEntity(ACTIVE_PROXIES.remove(handler.player.getUUID()));
+        });
         ServerTickEvents.END_SERVER_TICK.register(TobaEncounterService::tick);
     }
 
@@ -61,7 +66,8 @@ public final class TobaEncounterService {
     public static boolean eligible(ServerPlayer player) {
         if (!CWorldConfig.INSTANCE.finalEncounterEnabled) return false;
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
-        return p.storyFlags.contains("school_trials_complete")
+        return (p.narrative.schema == 0 || io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.main(p) != null && "mysterious".equals(io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.main(p).target()))
+                && p.storyFlags.contains("school_trials_complete")
                 && p.storyFlags.contains("toba_record_access")
                 && p.storyFlags.contains("toba_meeting_revealed")
                 && !p.storyFlags.contains("toba_identity_revealed")
@@ -99,6 +105,8 @@ public final class TobaEncounterService {
 
             if (current == TobaBossState.READY && isAtConfiguredLocation(player)) {
                 ensureMysteriousActor(player);
+            } else if (current == TobaBossState.IDENTITY_REVEALED && (!isAtConfiguredLocation(player) || io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.state(player).narrative.finished.contains("final_explanation"))) {
+                discardEntity(ACTIVE_ACTORS.remove(player.getUUID()));
             } else if (current == TobaBossState.READY) {
                 discardEntity(ACTIVE_ACTORS.remove(player.getUUID()));
             }
@@ -124,6 +132,12 @@ public final class TobaEncounterService {
         }
     }
 
+    public static void beginFromConversation(ServerPlayer player) {
+        UUID id = ACTIVE_ACTORS.get(player.getUUID());
+        if (id == null) return;
+        var actor = player.serverLevel().getEntity(id);
+        if (actor instanceof MysteriousFigureEntity figure) beginPhaseOne(player, figure);
+    }
     public static void beginPhaseOne(ServerPlayer player, MysteriousFigureEntity actor) {
         if (state(player) != TobaBossState.READY) return;
         if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) return;
@@ -143,7 +157,7 @@ public final class TobaEncounterService {
         p.storyFlags.add("mysterious_phase_one_active");
         ProgressionStore.INSTANCE.save();
 
-        player.sendSystemMessage(Component.literal("???: ").append(Component.translatable("story.cobblemonworld.final.challenge")));
+
         try {
             var result = BattleBuilder.INSTANCE.pvn(player, proxy);
             if (!(result instanceof com.cobblemon.mod.common.battles.SuccessfulBattleStart)) {
@@ -175,8 +189,8 @@ public final class TobaEncounterService {
         }
 
         CampaignService.setFlag(player, "toba_identity_revealed");
-        CampaignService.setFlag(player, "main_story_complete");
-        player.sendSystemMessage(Component.literal("TOBA: ").append(Component.translatable("story.cobblemonworld.final.name")));
+        CampaignService.setFlag(player, "toba_battle_won");
+
         CWorldNetworking.toast(player, "story", "TOBA", "story.cobblemonworld.final.revealed");
     }
 

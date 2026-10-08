@@ -47,6 +47,35 @@ public final class ContentRegistry {
             load("data/cobblemonworld/story/" + id + ".json", StoryChapterDefinition.class, d -> chapters.put(d.id(), d));
         }
 
+        var narrative = io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE;
+        for (var actor : narrative.data.actors()) {
+            var messages = new java.util.ArrayList<MessageNode>();
+            var old = contacts.get(actor.id());
+            if (old != null && old.messages() != null) messages.addAll(java.util.List.of(old.messages()));
+            for (var stage : narrative.data.campaign()) if (stage.target().equals(actor.id())) {
+                var scene = narrative.scenes.get(stage.scene());
+                var facts = narrative.node(scene, "facts");
+                if (facts != null) {
+                    var replies = new ResponseChoice[3];
+                    String[] traits = {"serious", "sarcastic", "polite"};
+                    var opening = narrative.node(scene, scene.start());
+                    for (int i=0;i<3;i++) {
+                        String branchId="follow_answer_"+stage.id()+"_"+i;
+                        String response="narrative.actor."+actor.id()+".greeting";
+                        for(var option:opening.choices())if(traits[i].equals(option.personality()) && option.next()!=null) {
+                            var branch=narrative.node(scene,option.next());if(branch!=null)response=branch.text();break;
+                        }
+                        replies[i]=new ResponseChoice("narrative.phone."+traits[i],branchId,"","phone_reply_"+stage.id()+"_"+i);
+                        messages.add(new MessageNode(branchId,"",response,new String[0],"","",new ResponseChoice[0]));
+                    }
+                    messages.add(new MessageNode("follow_"+stage.id(),"narrative_stage_"+stage.id(),facts.text(),
+                            new String[]{"narrative.phone.serious","narrative.phone.sarcastic","narrative.phone.polite"},"","phone_answer_"+stage.id(),replies));
+                    // Readable legacy destination from the first narrative prototype.
+                    messages.add(new MessageNode("follow_answer_"+stage.id(),"","narrative.actor."+actor.id()+".greeting",new String[0],"","",new ResponseChoice[0]));
+                }
+            }
+            contacts.put(actor.id(), new ContactDefinition(actor.id(), actor.name(), old == null ? "trainer" : old.icon(), messages.toArray(MessageNode[]::new)));
+        }
         CobblemonWorldMod.LOGGER.info("Loaded {} contacts, {} quests and {} story chapters.",
                 contacts.size(), quests.size(), chapters.size());
     }

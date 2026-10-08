@@ -37,12 +37,15 @@ public final class ObjectiveService {
         });
     }
     public static PinnedObjective main(PlayerProgression p) {
+        if (p.narrative.schema >= 1) return io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.objective(p, "main");
         for (Route route : routes) if (!p.storyFlags.contains(route.completeFlag())) {
             return new PinnedObjective("main", route.npc(), "npc", route.npc(), "", route.objectiveKey());
         }
         return null;
     }
     private static PinnedObjective quest(PlayerProgression p, String questId) {
+        var expanded = io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.objective(p, questId);
+        if (expanded != null) return expanded;
         var q = ContentRegistry.INSTANCE.quest(questId);
         if (q == null || !p.activeSideQuests.contains(questId) || q.objectives() == null) return null;
         for (var o : q.objectives()) if (p.questProgress.getOrDefault(questId + ":" + o.id(), 0) < o.amount()) {
@@ -54,6 +57,7 @@ public final class ObjectiveService {
     public static boolean pin(ServerPlayer player, String questId) {
         var p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         var objective = quest(p, questId);
+        if (objective == null && io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.activate(player, questId)) objective = quest(p,questId);
         if (objective == null) return false;
         p.pinnedObjective = objective; p.objectiveSchema = 1; p.currentObjective = objective.textKey();
         ProgressionStore.INSTANCE.save(); sync(player, true); return true;
@@ -93,6 +97,13 @@ public final class ObjectiveService {
         var p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
         var o = resolve(p);
         if (o == null) return new Navigation("", "", "", "", 0, 0, 0, "none");
+        if ("poi".equals(o.targetType())) {
+            var point = io.github.aristheg201.cobblemonworld.narrative.PoiStore.PLACES.get(o.npcId());
+            var def = io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE.pois.get(o.npcId());
+            String label = def == null ? "" : def.name();
+            if (point == null) return new Navigation(o.questId(), o.objectiveId(), label, "", 0, 0, 0, "unavailable");
+            return new Navigation(o.questId(), o.objectiveId(), label, point.dimension(), point.x(), point.y(), point.z(), point.dimension().equals(player.level().dimension().location().toString()) ? "ready" : "dimension");
+        }
         var definition = NpcDefinitionRegistry.INSTANCE.get(o.npcId());
         if ("mysterious".equals(o.npcId())) {
             var cfg = io.github.aristheg201.cobblemonworld.config.CWorldConfig.INSTANCE;

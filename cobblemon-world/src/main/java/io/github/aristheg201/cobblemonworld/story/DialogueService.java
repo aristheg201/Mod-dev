@@ -36,6 +36,8 @@ public final class DialogueService {
         ensureNpcTurn(p, contact, nodeId);
         p.unreadMessages.remove(key); p.readMessages.add(key);
         p.dialogueHistory.add(new Turn(contact, nodeId, index, player.getGameProfile().getName(), true, ""));
+        if(nodeId.startsWith("follow_") && !nodeId.startsWith("follow_answer_") && index>=0 && index<3)
+            p.narrative.personality.merge(new String[]{"serious","sarcastic","polite"}[index],1,(a,b)->Math.min(1000,a+b));
         ProgressionStore.INSTANCE.save();
         String quest = first(choice.questUnlock(), node.questUnlock());
         String flag = first(choice.setFlag(), node.setFlag());

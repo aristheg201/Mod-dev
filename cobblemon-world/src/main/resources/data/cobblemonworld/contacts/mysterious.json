@@ -32,7 +32,7 @@
     },
     {
       "id": "first_contact",
-      "triggerFlag": "phone_obtained",
+      "triggerFlag": "unknown_contact_received",
       "text": "dialogue.cobblemonworld.mysterious.first_contact",
       "responses": [],
       "questUnlock": "first_signal",
@@ -87,7 +87,7 @@
     },
     {
       "id": "you_are_asking",
-      "triggerFlag": "seal_term_revealed",
+      "triggerFlag": "narrative_stage_orin_summary",
       "text": "dialogue.cobblemonworld.mysterious.you_are_asking",
       "responses": [],
       "questUnlock": "",
@@ -142,7 +142,7 @@
     },
     {
       "id": "last_person",
-      "triggerFlag": "school_trials_complete",
+      "triggerFlag": "cast_archive_informed",
       "text": "dialogue.cobblemonworld.mysterious.last_person",
       "responses": [],
       "questUnlock": "",

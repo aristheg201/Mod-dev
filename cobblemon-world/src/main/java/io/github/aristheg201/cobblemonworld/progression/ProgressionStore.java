@@ -60,8 +60,10 @@ public final class ProgressionStore {
         save();
     }
 
-    public synchronized void save() {
-        if (server == null || saveFile == null) return;
+    public synchronized void save() { saveChecked(); }
+
+    public synchronized boolean saveChecked() {
+        if (server == null || saveFile == null) return false;
 
         try {
             Files.createDirectories(saveFile.getParent());
@@ -75,8 +77,10 @@ public final class ProgressionStore {
             } catch (AtomicMoveNotSupportedException ignored) {
                 Files.move(temp, saveFile, StandardCopyOption.REPLACE_EXISTING);
             }
+            return true;
         } catch (IOException e) {
             CobblemonWorldMod.LOGGER.error("Failed to save progression data to {}", saveFile, e);
+            return false;
         }
     }
 

@@ -5,9 +5,12 @@ set -euo pipefail
 CWORLD_QA_PROFILE=${1:-full}
 if [[ $# -gt 0 ]]; then shift; fi
 case "$CWORLD_QA_PROFILE" in
-    full) CWORLD_QA_FLAGS=() ;;
+    full|narrative) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true) ;;
+    opening) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true -Dcworld.qa.opening=true) ;;
+    services) CWORLD_QA_FLAGS=(-Dcworld.qa.services=true) ;;
+    narrative-resume|narrative-restart) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true -Dcworld.qa.resume=true) ;;
     restart|noeconomy) CWORLD_QA_FLAGS=("-Dcworld.qa.${CWORLD_QA_PROFILE}=true") ;;
-    *) echo 'Usage: run_production_qa.sh full|restart|noeconomy [Gradle JVM arguments]' >&2; exit 2 ;;
+    *) echo 'Usage: run_production_qa.sh narrative|narrative-resume|narrative-restart|opening|services|restart|noeconomy [Gradle JVM arguments]' >&2; exit 2 ;;
 esac
 cd "$(dirname "$0")/.."
 : "${DISPLAY:?Run with a real display or xvfb-run}"
@@ -28,9 +31,9 @@ rg -q 'Done \(' "$CWORLD_QA_SERVER_LOG"
 ./gradlew "$@" -Dorg.gradle.jvmargs=-Xmx1G "${CWORLD_QA_FLAGS[@]}" --no-daemon runProductionCWorldClient -x remapJar > "$CWORLD_QA_CLIENT_LOG" 2>&1
 wait "$CWORLD_QA_SERVER_PID"
 CWORLD_QA_SERVER_PID=''
-if rg -q 'CWORLD_PROD_QA_FAIL' "$CWORLD_QA_SERVER_LOG" "$CWORLD_QA_CLIENT_LOG"; then
-    rg 'CWORLD_PROD_QA_FAIL' "$CWORLD_QA_SERVER_LOG" "$CWORLD_QA_CLIENT_LOG"
+if rg -q 'CWORLD_(PROD|NARRATIVE)_QA_FAIL' "$CWORLD_QA_SERVER_LOG" "$CWORLD_QA_CLIENT_LOG"; then
+    rg 'CWORLD_(PROD|NARRATIVE)_QA_FAIL' "$CWORLD_QA_SERVER_LOG" "$CWORLD_QA_CLIENT_LOG"
     exit 1
 fi
-rg -q 'CWORLD_PROD_QA_FINISHED' "$CWORLD_QA_SERVER_LOG"
-rg 'CWORLD_PROD_QA_(PASS|FINISHED)' "$CWORLD_QA_SERVER_LOG"
+rg -q 'CWORLD_(PROD|NARRATIVE)_QA_FINISHED' "$CWORLD_QA_SERVER_LOG"
+rg 'CWORLD_(PROD|NARRATIVE)_QA_(PASS|FINISHED)' "$CWORLD_QA_SERVER_LOG"

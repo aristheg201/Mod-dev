@@ -46,7 +46,7 @@ public final class ProductionQaClient {
             var opposite = request.getActivePokemon().getOppositeOpponent();
             if (!(opposite instanceof com.cobblemon.mod.common.client.battle.ActiveClientBattlePokemon target) || target.getBattlePokemon() == null) return;
             var move = moves.stream().max(Comparator.comparingDouble(m -> qaMoveScore(m.getId(), target.getBattlePokemon()))).orElseThrow();
-            request.setResponse(new MoveActionResponse(move.getId(), opposite.getPNX(), null));
+            request.setResponse(new MoveActionResponse(move.getId(), move.getId().equals("splash") ? null : opposite.getPNX(), null));
         }
         if (request.getResponse() != null) battle.checkForFinishedChoosing();
     }
@@ -81,6 +81,7 @@ public final class ProductionQaClient {
     }
     /** 0 waits, 1 acknowledges, 2 captures the actual framebuffer through the normal screenshot helper. */
     public static int perform(Minecraft mc, QaControlPayload p) {
+        if (p.action().equals("prod_narrative")) return NarrativeQaClient.perform(mc,p);
         if (!p.secondary().equals(token)) { token = p.secondary(); ticks = 0; interacted = false; }
         ticks++;
         if (ticks == 1 && (p.action().equals("prod_phone") || p.action().equals("prod_shop") || p.action().equals("prod_world"))) {
@@ -88,6 +89,12 @@ public final class ProductionQaClient {
             if (!p.action().equals("prod_world")) org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), mc.getWindow().getScreenWidth() - 4, mc.getWindow().getScreenHeight() - 4);
         }
         switch (p.action()) {
+            case "prod_dialogue" -> {
+                if (!(mc.screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen dialogue)) return 0;
+                if (p.primary().equals("blocked") && dialogue.snapshot().choices().stream().anyMatch(c -> c.id().startsWith("stage:") || c.id().equals("rematch")))
+                    throw new IllegalStateException("Locked progression NPC exposed an actionable story or battle choice");
+                return ticks > 20 ? 2 : 0;
+            }
             case "prod_interact" -> {
                 var npc = mc.level.getEntity(Integer.parseInt(p.primary()));
                 if (npc == null) return 0;

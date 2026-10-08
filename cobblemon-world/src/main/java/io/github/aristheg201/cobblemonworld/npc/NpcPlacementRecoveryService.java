@@ -48,7 +48,7 @@ public final class NpcPlacementRecoveryService {
                 if (loadedInExpectedLevel(level, placement)) continue;
 
                 var definition = NpcDefinitionRegistry.INSTANCE.get(placement.id());
-                if (definition == null || definition.specialActor()) continue;
+                if (definition == null || definition.specialActor() || io.github.aristheg201.cobblemonworld.narrative.PersonalActors.personal(definition.id())) continue;
 
                 NPCEntity npc = TrainerBattleService.createNpc(bootstrapPlayer, definition);
                 npc.moveTo(placement.x(), placement.y(), placement.z(), placement.yaw(), 0.0F);

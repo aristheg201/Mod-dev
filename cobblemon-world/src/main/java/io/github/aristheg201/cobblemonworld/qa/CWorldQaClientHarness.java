@@ -204,7 +204,7 @@ public final class CWorldQaClientHarness {
         }
 
         waitTicks++;
-        if (waitTicks > 360) {
+        if (waitTicks > (current.action().equals("prod_narrative") ? 12000 : 360)) {
             fail(client, "Timed out preparing " + current.action() + " " + current.primary());
             return;
         }

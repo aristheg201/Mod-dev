@@ -38,8 +38,8 @@ public final class ObjectiveHud {
             double dx = t.x() - mc.player.getX(), dz = t.z() - mc.player.getZ();
             if (ready) {
                 long distance = Math.round(Math.sqrt(dx * dx + dz * dz + Math.pow(t.y() - mc.player.getY(), 2)));
-                text = Component.translatable("objective.cobblemonworld.distance", t.label(), distance).getString();
-            } else text = Component.translatable("objective.cobblemonworld." + (t.status().equals("dimension") ? "dimension" : "unavailable"), t.label()).getString();
+                text = Component.translatable("objective.cobblemonworld.distance", Component.translatable(t.label()).getString(), distance).getString();
+            } else text = Component.translatable("objective.cobblemonworld." + (t.status().equals("dimension") ? "dimension" : "unavailable"), Component.translatable(t.label()).getString()).getString();
             text = mc.font.plainSubstrByWidth(text, Math.max(100, mc.getWindow().getGuiScaledWidth() - 60));
             int w = mc.font.width(text) + 31, x = (mc.getWindow().getGuiScaledWidth() - w) / 2;
             int y = mc.getWindow().getGuiScaledHeight() - 69;

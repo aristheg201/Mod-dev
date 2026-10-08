@@ -95,6 +95,8 @@ dependencies {
 }
 
 tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+    // A previous process exit is not evidence that the saved world was exercised again.
+    outputs.upToDateWhen { false }
     dependsOn tasks.named('remapJar')
     mods.from configurations.productionRuntimeMods
     mods.from fileTree('qa-runtime/mods') {
@@ -108,6 +110,8 @@ tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientPr
         '-Dcworld.qa.integrated=false',
         '-Dcworld.qa.multiplayer=true',
         '-Dcworld.qa.production=true',
+        '-Dcworld.qa.narrative=' + System.getProperty('cworld.qa.narrative', 'false'),
+        '-Dcworld.qa.opening=' + System.getProperty('cworld.qa.opening', 'false'),
         '-Dcworld.qa.noeconomy=' + System.getProperty('cworld.qa.noeconomy', 'false'),
         '-Dcworld.qa.services=' + System.getProperty('cworld.qa.services', 'false'),
         '-Dcworld.qa.resume=' + System.getProperty('cworld.qa.resume', 'false'),
@@ -127,6 +131,7 @@ tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientPr
 }
 
 tasks.register('runProductionCWorldServer', net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+    outputs.upToDateWhen { false }
     dependsOn tasks.named('remapJar')
     mods.from configurations.productionRuntimeMods
     mods.from fileTree('qa-runtime/mods') {
@@ -135,6 +140,8 @@ tasks.register('runProductionCWorldServer', net.fabricmc.loom.task.prod.ServerPr
     }
     mods.from tasks.named('remapJar').flatMap { it.archiveFile }
     jvmArgs.addAll(['-Dcworld.qa.server=true', '-Dcworld.qa.production=true',
+        '-Dcworld.qa.narrative=' + System.getProperty('cworld.qa.narrative', 'false'),
+        '-Dcworld.qa.opening=' + System.getProperty('cworld.qa.opening', 'false'),
         '-Dcworld.qa.noeconomy=' + System.getProperty('cworld.qa.noeconomy', 'false'),
         '-Dcworld.qa.services=' + System.getProperty('cworld.qa.services', 'false'),
         '-Dcworld.qa.resume=' + System.getProperty('cworld.qa.resume', 'false'),
@@ -142,7 +149,7 @@ tasks.register('runProductionCWorldServer', net.fabricmc.loom.task.prod.ServerPr
     ['http.proxyHost', 'http.proxyPort', 'https.proxyHost', 'https.proxyPort', 'javax.net.ssl.trustStore'].each { key ->
         if (System.getProperty(key)) jvmArgs.add('-D' + key + '=' + System.getProperty(key))
     }
-    runDir = file(Boolean.getBoolean('cworld.qa.noeconomy') ? 'qa-runtime/server-no-economy' : (Boolean.getBoolean('cworld.qa.services') ? 'qa-runtime/server-services' : 'qa-runtime/server'))
+    runDir = file(Boolean.getBoolean('cworld.qa.narrative') ? (Boolean.getBoolean('cworld.qa.opening') ? 'qa-runtime/server-narrative-opening' : 'qa-runtime/server-narrative') : Boolean.getBoolean('cworld.qa.noeconomy') ? 'qa-runtime/server-no-economy' : (Boolean.getBoolean('cworld.qa.services') ? 'qa-runtime/server-services' : 'qa-runtime/server'))
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {

@@ -26,7 +26,7 @@ for entry in json.loads((root / 'docs/RUNTIME_DEPENDENCIES.json').read_text()):
     print('Verified', target.name)
 
 dependency_override = {'version': 1, 'overrides': {'cobblemonarmors': {'+depends': {'cobblemon': '1.8.1+1.21.1'}}}}
-for name in ('server', 'server-services', 'server-no-economy', 'client'):
+for name in ('server', 'server-services', 'server-narrative', 'server-narrative-opening', 'server-no-economy', 'client'):
     directory = root / 'qa-runtime' / name
     directory.mkdir(parents=True, exist_ok=True)
     config = directory / 'config'
@@ -43,7 +43,7 @@ for name in ('server', 'server-services', 'server-no-economy', 'client'):
             'server-ip=127.0.0.1', 'server-port=25571', 'online-mode=false',
             'gamemode=survival', 'difficulty=peaceful', 'spawn-protection=0',
             'view-distance=6', 'simulation-distance=4', 'max-players=3',
-            'level-name=CWorldQA', 'level-seed=20261008', 'enable-command-block=false', ''
+            ('level-name=CWorldNarrativeQA' if directory.name == 'server-narrative' else 'level-name=CWorldQA'), 'level-seed=20261008', 'enable-command-block=false', ''
         ])
     }
     for name, content in files.items():

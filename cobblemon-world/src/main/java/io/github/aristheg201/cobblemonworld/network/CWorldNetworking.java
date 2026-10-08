@@ -42,7 +42,8 @@ public final class CWorldNetworking {
         ServerPlayNetworking.registerGlobalReceiver(QaAckPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> {
                     if (Boolean.getBoolean("cworld.qa.server")) {
-                        if (Boolean.getBoolean("cworld.qa.production")) io.github.aristheg201.cobblemonworld.qa.ProductionQaServer.ack(payload);
+                        if (Boolean.getBoolean("cworld.qa.narrative")) io.github.aristheg201.cobblemonworld.qa.NarrativeQaServer.ack(payload);
+                        else if (Boolean.getBoolean("cworld.qa.production")) io.github.aristheg201.cobblemonworld.qa.ProductionQaServer.ack(payload);
                         else io.github.aristheg201.cobblemonworld.qa.CWorldQaServerHarness.onAck(context.player(), payload);
                     }
                 }));
@@ -50,6 +51,7 @@ public final class CWorldNetworking {
 
     private static void handleAction(ServerPlayer player, PhoneActionPayload payload) {
         switch (payload.action()) {
+            case "accept_narrative_quest" -> io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.activate(player, payload.primary());
             case "respond" -> {
                 String[] key = splitMessageKey(payload.primary());
                 if (key == null) return;
@@ -134,10 +136,19 @@ public final class CWorldNetworking {
             if (quest != null) quests.add(new QuestView(id, quest.title(), giverName(quest.giver()), quest.description(), 1, 1, true));
         }
 
+        for (var chain : io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE.chains.values()) {
+            String stageId = p.narrative.chains.get(chain.id());
+            if (stageId != null) {
+                var stage = io.github.aristheg201.cobblemonworld.narrative.NarrativeRegistry.INSTANCE.stages.get(stageId);
+                int index = 0; for (int i=0;i<chain.stages().length;i++) if (chain.stages()[i].id().equals(stageId)) index=i;
+                quests.add(new QuestView(chain.id(), chain.title(), giverName(chain.giver()), stage.objective(), index, chain.stages().length, false));
+            } else if (io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.available(player, chain)) quests.add(new QuestView(chain.id(), chain.title(), giverName(chain.giver()), chain.stages()[0].objective(), 0, chain.stages().length, false));
+            else if (p.narrative.completedChains.contains(chain.id())) quests.add(new QuestView(chain.id(), chain.title(), giverName(chain.giver()), chain.stages()[chain.stages().length-1].objective(), chain.stages().length, chain.stages().length, true));
+        }
         var chapter = ContentRegistry.INSTANCE.chapter(p.currentStory);
         StoryView story = new StoryView(
                 p.currentStory,
-                chapter == null ? "story.cobblemonworld.complete.title" : chapter.title(),
+                io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.main(p) != null ? io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.main(p).title() : chapter == null ? "story.cobblemonworld.complete.title" : chapter.title(),
                 p.currentObjective
         );
 

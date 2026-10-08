@@ -148,7 +148,7 @@ public final class ProductionQaServer {
         move(p, x - 3, 3, -135);
     }
     private static void interact(String name, String id, Predicate<ServerPlayer> verify) {
-        STEPS.add(new Step(name, "prod_interact", () -> {
+        STEPS.add(new Step(name, name.equals("professor-gameplay") ? "prod_narrative" : "prod_interact", () -> {
             var p = NpcPlacementStore.INSTANCE.get(id);
             // Newly placed entities can join the chunk's visible entity lookup on the next tick.
             if (active == null && qaServer != null) {
@@ -157,7 +157,7 @@ public final class ProductionQaServer {
                     if (found instanceof NPCEntity npc) { active = npc; break; }
                 }
             }
-            return active == null ? "" : Integer.toString(active.getId());
+            return active == null ? "" : name.equals("professor-gameplay") ? new com.google.gson.Gson().toJson(new NarrativeQaServer.Control("hale_phone","talk",active.getId(),0,0,0,"")) : Integer.toString(active.getId());
         }, p -> place(p, id), verify));
     }
     private static void prepare(ServerPlayer player) {
@@ -179,6 +179,19 @@ public final class ProductionQaServer {
         var pokemon = PokemonProperties.Companion.parse("pikachu level=5 moves=thundershock,quickattack").create(player);
         pokemon.setCurrentHealth(1); party.set(0, pokemon);
 
+        interact("professor-gameplay", "professor_hale", q -> progression(q).storyFlags.contains("professor_met"));
+        if (Boolean.getBoolean("cworld.qa.services")) {
+            interact("gate-tower-before-eight-towns", "battle_tower_receptionist", q -> !progression(q).storyFlags.contains("battle_tower_registered"));
+            capture("gate-tower-before-eight-towns.png", "prod_dialogue", "blocked");
+            interact("gate-league-before-tower", "royal_league_receptionist", q -> !progression(q).storyFlags.contains("royal_league_registered"));
+            capture("gate-league-before-tower.png", "prod_dialogue", "blocked");
+            interact("gate-school-before-league", "school_wolf_gatekeeper", q -> !progression(q).storyFlags.contains("school_wolf_entry_granted"));
+            capture("gate-school-before-league.png", "prod_dialogue", "blocked");
+            interact("gate-vargan-before-trials", "school_wolf_master", q -> !progression(q).storyFlags.contains("school_wolf_master_defeated") && Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(q) == null);
+            capture("gate-vargan-before-trials.png", "prod_dialogue", "blocked");
+            add("gate-final-before-archive", "prod_close", "", q -> {}, q -> !io.github.aristheg201.cobblemonworld.boss.TobaEncounterService.eligible(q) && !progression(q).storyFlags.contains("toba_identity_revealed"));
+        }
+        add("legacy-side-quest-fixture","prod_close","",q -> CampaignService.activateQuest(q,"first_signal"),q -> progression(q).activeSideQuests.contains("first_signal"));
         capture("01-phone-home-en.png", "prod_phone", "home");
         add("native-faction-create", "prod_faction", "faction_create", q -> {}, q -> io.github.aristheg201.cobblemonworld.faction.NativeFactionService.faction(q).isPresent());
         capture("01-phone-native-faction.png", "prod_phone", "faction");
@@ -191,7 +204,7 @@ public final class ProductionQaServer {
         capture("04-phone-quest-pin.png", "prod_phone", "side_quests");
         add("05-pin-objective.png", "prod_pin", "", q -> {}, q -> progression(q).pinnedObjective != null && progression(q).pinnedObjective.questId().equals("first_signal"));
         capture("06-compass-unplaced.png", "prod_world", "");
-        interact("professor-gameplay", "professor_hale", q -> progression(q).storyFlags.contains("professor_met"));
+
         interact("mira-party-heal", "daycare_mira", q -> pokemon.getCurrentHealth() == pokemon.getMaxHealth());
         capture("07-service-npc-upright.png", "prod_world", "");
         add("npc-anchor-restores-displacement", "prod_close", "", q -> active.setPos(active.getX() + 3, active.getY() + 1, active.getZ()), q -> {
@@ -253,7 +266,7 @@ public final class ProductionQaServer {
             require(ShopRegistry.INSTANCE.entries("bicycle_tomo").getFirst().available() == available, "Bicycle availability must match actual registry");
             System.out.println("CWORLD_PROD_QA_BICYCLE_REGISTERED " + available); return true;
         });
-        add("navigation-placed-target", "prod_close", "", q -> { place(q, "mara_voss"); ObjectiveService.reset(q); }, q -> ObjectiveService.navigation(q).status().equals("ready"));
+        add("navigation-placed-target", "prod_close", "", q -> { place(q, "mara_voss"); ObjectiveService.reset(q); ObjectiveService.pin(q,"first_signal"); }, q -> ObjectiveService.navigation(q).status().equals("ready"));
         capture("24a-pin-placed-target-phone.png", "prod_phone", "side_quests");
         add("24b-pin-placed-target.png", "prod_pin", "", q -> {}, q -> progression(q).pinnedObjective != null);
         capture("25-compass-immediate.png", "prod_world", "");
@@ -289,7 +302,7 @@ public final class ProductionQaServer {
         interact("ren-vi", "pokemall_ren", q -> true);
         capture("32-ren-vi.png", "prod_shop", "");
         add("locale-en", "prod_locale", "en_us", q -> {}, q -> true);
-        scalingSteps();
+        if (!Boolean.getBoolean("cworld.qa.services")) scalingSteps();
         if (!Boolean.getBoolean("cworld.qa.services")) campaignSteps(player);
         else add("production-services-save-checkpoint", "prod_close", "", q -> {
             progression(q).storyFlags.add("production_qa_completed");

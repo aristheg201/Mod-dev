@@ -49,7 +49,7 @@ public final class MysteriousFigureEntity extends PathfinderMob {
                 serverPlayer.sendSystemMessage(Component.translatable("story.cobblemonworld.final.other_player"));
                 return InteractionResult.CONSUME;
             }
-            TobaEncounterService.beginPhaseOne(serverPlayer, this);
+            io.github.aristheg201.cobblemonworld.narrative.ConversationService.openFinal(serverPlayer);
         }
         return InteractionResult.sidedSuccess(level().isClientSide);
     }

@@ -100,6 +100,7 @@ public final class ShopService {
             result = "economy";
         }
         if (result.equals("success")) {
+            io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.event(player, "buy", request.shop());
             try {
                 ObjectiveBridge.record(player, "purchase", entry.item(), stack.getCount());
                 ObjectiveBridge.record(player, "get_item", entry.item(), stack.getCount());
