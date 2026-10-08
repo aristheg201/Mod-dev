@@ -1,3 +1,11 @@
+# Saved-NPC production fix: 0.3.1
+
+Saved Professor Hale and service NPCs now recover their CobblemonWorld interaction, name, skin, authored facing and anchor in place. Native default interactions are repaired using the placement UUID and dimension, without replacing the entity or resetting story, parties, quests or faction data. An unrelated native NPC with the same visible name is not claimed.
+
+Map NPCs are marked persistent at creation and during entity loading, before vanilla can distance-despawn them. Recovery also waits for a nearby, ticking, fully loaded entity chunk and a sustained missing interval before replacing a genuinely absent NPC. This prevents a transient chunk transition from changing placement UUIDs.
+
+The load path, startup path and server interaction callback restore native behavior through normal source/API integration. No bytecode patch, reflection helper, chat conversation or command shop is introduced. Build and tested coverage are recorded in `NPC_BINDING_HOTFIX_QA.md`; the previous narrative report below covers the 0.3 release.
+
 # Production and narrative changelog: 0.3
 
 The campaign now has seven Acts and 70 gameplay stages, with a substantial Rocket investigation, Town 8, False Victory, ordered Tower/League progression, an archive after Vargan, a final explanation and an epilogue. Recurring contacts and response-specific phone follow-ups preserve the first-party Trainer Phone.

@@ -76,7 +76,8 @@ public final class ProductionQaServer {
                 LOCATIONS.put(placement.id(), (int) Math.round((placement.x() - 4) / 18));
             require(!player.hasPermissions(2), "QA player must be non-OP, with cheats disabled");
             System.out.println("CWORLD_PROD_QA_NON_OP_CONFIRMED player=" + player.getGameProfile().getName());
-            if (Boolean.getBoolean("cworld.qa.noeconomy")) missingEconomySteps(player);
+            if (Boolean.getBoolean("cworld.qa.npcBinding")) npcBindingSteps(player);
+            else if (Boolean.getBoolean("cworld.qa.noeconomy")) missingEconomySteps(player);
             else if (Boolean.getBoolean("cworld.qa.restart")) restartSteps(player);
             else if (Boolean.getBoolean("cworld.qa.resume")) campaignSteps(player);
             else prepare(player);
@@ -405,6 +406,95 @@ public final class ProductionQaServer {
         try { var out = Path.of("qa-runtime/catalog-registry-audit.txt"); Files.createDirectories(out.getParent()); Files.write(out, actual); }
         catch (Exception e) { throw new IllegalStateException(e); }
         System.out.println("CWORLD_PROD_QA_REGISTRY_CATALOG_MATCH count=" + actual.size()); return true;
+    }
+    private static final List<String> BINDING_ACTORS = List.of("professor_hale", "pokemall_ren", "fashion_elle", "bicycle_tomo", "daycare_mira");
+    private static void npcBindingSteps(ServerPlayer player) {
+        var cfg = CWorldConfig.INSTANCE; cfg.finalEncounterEnabled = false; CWorldConfig.save();
+        clearInventory(player);
+        if (Boolean.getBoolean("cworld.qa.npcBindingFixture")) {
+            var p = progression(player);
+            p.narrative = new io.github.aristheg201.cobblemonworld.narrative.NarrativeState();
+            p.narrative.schema = 1; p.narrative.main = "hale_phone";
+            p.storyFlags.remove("professor_met"); p.storyFlags.add("npc_binding_save_sentinel");
+            p.narrative.personality.put("polite", 3);
+            p.narrative.completedChains.add("courier_lost_stamp");
+            for (String id : BINDING_ACTORS) {
+                add("binding-fixture-place-" + id, "prod_close", "", q -> place(q, id), q -> true);
+                STEPS.add(new Step("binding-fixture-corrupt-" + id, id.equals("professor_hale") ? "prod_interact" : "prod_close", () -> Integer.toString(active.getId()), q -> {
+                    active.setInteraction(id.equals("pokemall_ren") ? active.getNpc().getInteraction() : null);
+                    active.unloadTexture();
+                    System.out.println("CWORLD_NPC_BINDING_FIXTURE id=" + id + " uuid=" + active.getUUID());
+                }, q -> true));
+                if (id.equals("professor_hale")) capture("binding-before-native-default.png", "prod_native_dialogue", "");
+            }
+            add("binding-fixture-unowned-same-name", "prod_close", "", q -> {
+                var npc = new NPCEntity(q.level()); npc.setNpc(com.cobblemon.mod.common.api.npc.NPCClasses.INSTANCE.getByName("standard")); npc.initialize(12);
+                npc.setCustomName(net.minecraft.network.chat.Component.literal("Professor Elias Hale")); npc.setNoAi(true);
+                npc.moveTo(2, 120, 5, 72, 0); q.serverLevel().addFreshEntity(npc);
+                try { Files.writeString(q.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("binding-unowned-uuid.txt"), npc.getUUID().toString()); }
+                catch (Exception e) { throw new IllegalStateException(e); }
+            }, q -> true);
+            add("binding-fixture-save", "prod_close", "", q -> {
+                ProgressionStore.INSTANCE.save(); NpcPlacementStore.INSTANCE.save();
+                try { Files.writeString(q.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("binding-before-placements.json"), new com.google.gson.Gson().toJson(NpcPlacementStore.INSTANCE.all())); }
+                catch (Exception e) { throw new IllegalStateException(e); }
+            }, q -> progression(q).storyFlags.contains("npc_binding_save_sentinel"));
+            return;
+        }
+        require(progression(player).storyFlags.contains("npc_binding_save_sentinel"), "Saved story sentinel was lost");
+        require(progression(player).narrative.personality.getOrDefault("polite", 0) >= 3, "Saved personality was reset");
+        require(progression(player).narrative.completedChains.contains("courier_lost_stamp"), "Saved quest state was reset");
+        currency = api().getCurrencyList().stream().map(c -> c.getCurrencyType()).filter(c -> c.equalsIgnoreCase("BeastCoin")).findFirst().orElseThrow();
+        capture("binding-locale-vietnamese", "prod_locale", "vi_vn");
+        Map<String, NpcPlacement> original;
+        try {
+            var type = new com.google.gson.reflect.TypeToken<Map<String, NpcPlacement>>(){}.getType();
+            original = new com.google.gson.Gson().fromJson(Files.readString(player.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("binding-before-placements.json")), type);
+        } catch (Exception e) { throw new IllegalStateException(e); }
+        for (String id : BINDING_ACTORS) {
+            var saved = original.get(id); require(saved != null, "Missing saved binding fixture " + id);
+            STEPS.add(new Step("binding-click-saved-" + id, "prod_interact", () -> {
+                var found = player.serverLevel().getEntity(UUID.fromString(saved.entityUuid()));
+                if (!(found instanceof NPCEntity npc)) return ""; active = npc; return Integer.toString(npc.getId());
+            }, q -> {
+                move(q, saved.x() - 3, saved.z() + 3, -135);
+                if (id.equals("daycare_mira")) {
+                    var party = Cobblemon.INSTANCE.getStorage().getParty(q); party.clearParty();
+                    var pokemon = PokemonProperties.Companion.parse("pikachu level=5").create(q); pokemon.setCurrentHealth(1); party.set(0, pokemon);
+                }
+            }, q -> {
+                var current = NpcPlacementStore.INSTANCE.get(id);
+                require(saved.entityUuid().equals(current.entityUuid()), "Repair replaced the existing NPC UUID " + id);
+                if (!(active.getInteraction() instanceof CWorldNpcInteraction c) || !c.definitionId().equals(id)) return false;
+                require(active.getXRot() == 0 && active.isNoAi() && active.isPersistenceRequired() && active.distanceToSqr(saved.x(), saved.y(), saved.z()) < .001, "Repair changed the authored anchor/pose " + id);
+                var tag = active.saveWithoutId(new net.minecraft.nbt.CompoundTag()).getCompound("NPCPlayerTexture");
+                String skin = NpcDefinitionRegistry.INSTANCE.get(id).skin();
+                try (var stream = ProductionQaServer.class.getClassLoader().getResourceAsStream("assets/cobblemonworld/textures/entity/npc/" + skin + ".png")) {
+                    require(stream != null && Arrays.equals(tag.getByteArray("Texture"), stream.readAllBytes()) && tag.getString("Model").equals("DEFAULT"), "Repair did not restore the actual authored skin " + id);
+                } catch (java.io.IOException e) { throw new IllegalStateException(e); }
+                System.out.println("CWORLD_NPC_BINDING_VERIFIED id=" + id + " uuid=" + active.getUUID() + " skinBytes=" + tag.getByteArray("Texture").length);
+                return true;
+            }));
+            if (id.equals("professor_hale")) {
+                capture("binding-after-hale-dialogue.png", "prod_binding_dialogue", "professor_hale");
+                if (!Boolean.getBoolean("cworld.qa.restart")) {
+                    STEPS.add(new Step("binding-hale-real-story-choice", "prod_narrative", () -> new com.google.gson.Gson().toJson(new NarrativeQaServer.Control("hale_phone", "talk", active.getId(), 0, 0, 0, "")), q -> {}, q -> progression(q).narrative.finished.contains("hale_phone") && progression(q).storyFlags.contains("professor_met")));
+                }
+                capture("binding-after-hale-upright.png", "prod_binding_world", "professor_hale");
+            } else if (!id.equals("daycare_mira")) {
+                capture("binding-after-shop-" + id + ".png", "prod_binding_shop", id);
+            } else {
+                add("binding-mira-real-heal", "prod_binding_heal", "", q -> {}, q -> Cobblemon.INSTANCE.getStorage().getParty(q).get(0).isFullHealth());
+                capture("binding-after-mira-upright.png", "prod_binding_world", "daycare_mira");
+            }
+        }
+        add("binding-unowned-name-not-adopted", "prod_close", "", q -> move(q, -1, 8, -135), q -> {
+            try {
+                var uuid = UUID.fromString(Files.readString(q.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("binding-unowned-uuid.txt")));
+                return q.serverLevel().getEntity(uuid) instanceof NPCEntity npc && !(npc.getInteraction() instanceof CWorldNpcInteraction);
+            } catch (Exception e) { throw new IllegalStateException(e); }
+        });
+        add("binding-save-preserved", "prod_close", "", q -> {}, q -> progression(q).storyFlags.contains("npc_binding_save_sentinel") && progression(q).narrative.personality.getOrDefault("polite", 0) >= 3 && progression(q).narrative.completedChains.contains("courier_lost_stamp"));
     }
     private static void restartSteps(ServerPlayer p) {
         require(progression(p).storyFlags.contains("production_qa_completed"), "Fresh run did not save completion checkpoint");

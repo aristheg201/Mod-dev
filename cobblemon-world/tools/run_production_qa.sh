@@ -7,10 +7,12 @@ if [[ $# -gt 0 ]]; then shift; fi
 case "$CWORLD_QA_PROFILE" in
     full|narrative) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true) ;;
     opening) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true -Dcworld.qa.opening=true) ;;
+    binding-upgrade) CWORLD_QA_FLAGS=(-Dcworld.qa.npcBinding=true) ;;
+    binding-restart) CWORLD_QA_FLAGS=(-Dcworld.qa.npcBinding=true -Dcworld.qa.restart=true) ;;
     services) CWORLD_QA_FLAGS=(-Dcworld.qa.services=true) ;;
     narrative-resume|narrative-restart) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true -Dcworld.qa.resume=true) ;;
     restart|noeconomy) CWORLD_QA_FLAGS=("-Dcworld.qa.${CWORLD_QA_PROFILE}=true") ;;
-    *) echo 'Usage: run_production_qa.sh narrative|narrative-resume|narrative-restart|opening|services|restart|noeconomy [Gradle JVM arguments]' >&2; exit 2 ;;
+    *) echo 'Usage: run_production_qa.sh narrative|narrative-resume|narrative-restart|opening|services|restart|noeconomy|binding-upgrade|binding-restart [Gradle JVM arguments]' >&2; exit 2 ;;
 esac
 cd "$(dirname "$0")/.."
 : "${DISPLAY:?Run with a real display or xvfb-run}"

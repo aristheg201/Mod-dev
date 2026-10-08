@@ -1,4 +1,6 @@
-# Production and narrative runtime QA — 2026-10-08
+# Production and narrative runtime QA — 0.3 baseline, 2026-10-08
+
+The current 0.3.1 saved-NPC repair and its exact-artifact runtime checks are in [NPC_BINDING_HOTFIX_QA.md](NPC_BINDING_HOTFIX_QA.md). The evidence below belongs to the previous 0.3 artifact; it is preserved rather than relabeled as a full new campaign run. The reported restart test did not re-click the saved NPCs and did not cover the default-dialogue regression shown by the player.
 
 ## Artifact, provenance and method
 

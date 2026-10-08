@@ -89,6 +89,33 @@ public final class ProductionQaClient {
             if (!p.action().equals("prod_world")) org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), mc.getWindow().getScreenWidth() - 4, mc.getWindow().getScreenHeight() - 4);
         }
         switch (p.action()) {
+            case "prod_native_dialogue" -> {
+                if (!(mc.screen instanceof com.cobblemon.mod.common.client.gui.dialogue.DialogueScreen)) return 0;
+                System.out.println("CWORLD_NPC_BINDING_NATIVE_DEFAULT_REPRODUCED");
+                return ticks > 20 ? 2 : 0;
+            }
+            case "prod_binding_dialogue" -> {
+                if (!(mc.screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen d)) return 0;
+                if (!d.snapshot().speaker().equals("Professor Elias Hale") || d.snapshot().choices().isEmpty()) throw new IllegalStateException("Saved Hale did not open his authored dialogue");
+                return ticks > 20 ? 2 : 0;
+            }
+            case "prod_binding_shop" -> {
+                if (!(mc.screen instanceof ShopScreen shop)) return 0;
+                if (!shop.qaSnapshot().id().equals(p.primary()) || shop.qaSnapshot().entries().isEmpty()) throw new IllegalStateException("Saved merchant did not open the canonical catalog");
+                return ticks > 20 ? 2 : 0;
+            }
+            case "prod_binding_heal" -> {
+                if (mc.screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen dialogue) {
+                    if (!interacted) {
+                        for (int i = 0; i < dialogue.snapshot().choices().size(); i++) if (dialogue.snapshot().choices().get(i).id().equals("service")) {
+                            dialogue.qaClick(i); interacted = true; break;
+                        }
+                        if (!interacted) throw new IllegalStateException("Saved Mira did not offer her heal service");
+                    }
+                }
+                return ticks > 20 ? 1 : 0;
+            }
+            case "prod_binding_world" -> { if (ticks == 1) mc.setScreen(null); return ticks > 20 ? 2 : 0; }
             case "prod_dialogue" -> {
                 if (!(mc.screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen dialogue)) return 0;
                 if (p.primary().equals("blocked") && dialogue.snapshot().choices().stream().anyMatch(c -> c.id().startsWith("stage:") || c.id().equals("rematch")))

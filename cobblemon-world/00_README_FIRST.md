@@ -4,6 +4,8 @@ This is the full source module for Minecraft 1.21.1, Fabric Loader 0.18.4, Fabri
 
 Build: `./gradlew clean build`. Install the regular remapped JAR from `build/libs`; do not install source/dev JARs. The included BEconomy 1.5 JAR is a compile-only API dependency. BEconomy and optional item mods are separate runtime installations.
 
+This 0.3.1 handoff includes the saved-NPC dialogue/persistence fix. Read `docs/NPC_BINDING_HOTFIX_QA.md` for its real restart tests and installation steps; the 0.3 campaign QA is retained as historical evidence.
+
 Start with `README.md` and `docs/PRODUCTION_BUILD.md`. Read `docs/narrative/CAMPAIGN_FLOW.md`, `MAIN_STAGES.md`, `SIDE_CHAINS.md`, `WEATHER_DUO.md`, `TRAINER_TEAMS.md` and `SAVE_MIGRATION.md` for shipped content and map authoring. Actual runtime status and limitations are in `docs/PRODUCTION_RUNTIME_QA.md`; counts and compilation are not runtime proof.
 
 All changes belong to `feature/cobblemon-world-rpg-20261006`. The release manifest supplies the exact final commit and checksums. Historical handoff documents are preserved under `docs/handoff-reference`; production architecture uses normal source, native Cobblemon APIs and dedicated dialogue/shop payloads and screens.

@@ -62,6 +62,7 @@ public final class TrainerBattleService {
 
         npc.setNpc(npcClass);
         npc.initialize(Math.max(1, definition.visualLevel()));
+        npc.setPersistenceRequired();
         npc.setCustomName(Component.literal(definition.displayName()));
         npc.setCustomNameVisible(true);
         npc.setNoAi(true);
@@ -81,7 +82,7 @@ public final class TrainerBattleService {
         return npc;
     }
 
-    private static void applyAuthoredSkin(NPCEntity npc, NpcDefinitionRegistry.Definition definition) {
+    static void applyAuthoredSkin(NPCEntity npc, NpcDefinitionRegistry.Definition definition) {
         String skin = definition.skin();
         if (skin == null || skin.isBlank()) return;
 

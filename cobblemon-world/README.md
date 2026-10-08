@@ -6,6 +6,8 @@ CobblemonWorld owns its Trainer Phone, seven-Act campaign, dedicated NPC dialogu
 
 Build with `./gradlew clean build` using Java 21. Install the regular production-remapped JAR from `build/libs`; source/dev JARs are not runtime mods. See [production build and QA instructions](docs/PRODUCTION_BUILD.md) for exact dependencies, optional-mod handling, shop overrides, trainer scaling and test fixture controls. See the delivered runtime report for exercised player paths and explicit UNPROVEN coverage.
 
+Version 0.3.1 repairs saved map NPCs that fall back to Cobblemon’s default “Hello, I’m…” dialogue. Placement UUIDs restore the authored interaction and skin on the existing entity; map NPCs are also marked persistent before their first despawn tick. See [NPC repair and actual runtime evidence](docs/NPC_BINDING_HOTFIX_QA.md).
+
 Existing flags, contacts, messages, quests, placements and faction saves are retained. Story/objective migration selects valid gameplay targets; legacy compatibility IDs are not rendered as player-facing copy. Town 8's Harbour Marshal Liora and Captain Dorian qualify the player before Battle Tower, Royal League, School of Wolf and the story-spawned final encounter.
 
 The expanded content has 70 main stages, 43 substantial regular side chains, a 24-stage Weather Duo season and 30 authored competitive rosters. Counts describe shipped data; actual runtime coverage is separately reported. Both Groudon and Kyogre are one-time postgame partnership rewards after the complete seasonal investigation and guardian challenges.

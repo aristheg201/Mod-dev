@@ -11,3 +11,10 @@ The scammer uses a world-authored anchor and owner-bound runtime instances. Prog
 Seasonal entitlements preserve a reserved UUID before storage insertion, then a delivered state. Releasing or trading an obtained reward cannot reset its claim. BeastCoin rewards retain pending entitlements when BEconomy is absent; prepared but uncertain credits are held for reconciliation and logged, rather than automatically credited twice.
 
 Test coverage and runtime limitations are recorded in the runtime QA report. Do not assume migration from an unknown production world was exercised merely because synthetic save tests pass.
+
+
+## Saved native NPC repair in 0.3.1
+
+The UUID and dimension in `cobblemonworld/npc_placements.json` are authoritative. Existing matching Cobblemon NPC entities receive their authored interaction and skin on load, even if their saved interaction is absent, native default dialogue, or an obsolete configuration. The same UUID, location, authored yaw and all player progression remain. Marking the NPC persistent prevents native distance despawn. Already missing entities still use recovery; no NPC is rebound merely because its name resembles an authored character.
+
+Install the same remapped JAR on client and server and restart both. Keep world data and NPC placements. Do not reset progression or re-place the map NPCs as part of this update. The player's actual production world has not been supplied; its exact migration remains UNPROVEN. The report exercises an isolated save containing real persisted NPCs with the same class-default dialogue failure.

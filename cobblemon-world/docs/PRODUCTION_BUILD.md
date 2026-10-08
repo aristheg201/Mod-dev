@@ -58,3 +58,8 @@ Content is authored in `src/main/resources/data/cobblemonworld/narrative/world.j
 Every inspection/travel target is listed in `world.json.pois`. Stand above the intended lectern/location and use the admin-only `/cworldpoi place <id>` command. Points save with dimension and block position in the world’s `cobblemonworld/narrative_points.json`; relocating one updates live navigation. NPC anchors remain in the existing placement file. The scammer is an owner-bound temporary actor at an authored anchor. Its interaction is protected per player; multi-player rendering isolation requires separate verification.
 
 The native battle audit in narrative QA inspects the Pokémon copies actually used by Cobblemon before moves begin, including IVs, EVs, nature, ability, moves and held item. It writes `live-trainer-teams.jsonl` in the narrative server run directory. Registry/data validators remain supplemental checks and do not establish runtime PASS.
+
+
+## 0.3.1 saved-NPC check
+
+`tools/run_production_qa.sh binding-upgrade` and `binding-restart` run the isolated saved-NPC repair driver. Both use `qa-runtime/server-npc-binding` and normal non-OP client interactions. The input save must contain the five diagnosed NPC placements and the original fixture identity file. The before-greeting reproduction was run on the historical pre-fix QA binary; it is not an expected output of the fixed version. See `NPC_BINDING_HOTFIX_QA.md` for exact artifact evidence, limits and installation.

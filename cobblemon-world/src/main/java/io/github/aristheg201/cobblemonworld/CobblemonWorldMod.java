@@ -58,6 +58,7 @@ public final class CobblemonWorldMod implements ModInitializer {
         LevelCapHooks.register();
         TrainerBattleService.register();
         NpcPlacementRecoveryService.register();
+        io.github.aristheg201.cobblemonworld.npc.NpcBindingService.register();
         io.github.aristheg201.cobblemonworld.npc.AnchoredNpcService.register();
         NativeFactionService.register();
         IslandWarService.register();

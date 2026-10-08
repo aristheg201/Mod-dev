@@ -15,19 +15,31 @@ import java.util.*;
 public final class AnchoredNpcService {
     private record Attention(UUID player, long until) {}
     private static final Map<UUID, Attention> ATTENTION = new HashMap<>();
-    private static final List<NPCEntity> LOADED = new ArrayList<>();
+    private static final Set<NPCEntity> LOADED = new LinkedHashSet<>();
     private AnchoredNpcService() {}
     public static void register() {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> { ATTENTION.clear(); LOADED.clear(); });
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
-            if (entity instanceof NPCEntity npc && npc.getInteraction() instanceof CWorldNpcInteraction) LOADED.add(npc);
+            if (entity instanceof NPCEntity npc) {
+                var placement = NpcBindingService.placement(npc);
+                // Bind during load, before vanilla gets its first despawn tick.
+                if (placement == null || !NpcBindingService.restore(npc, placement, true)) LOADED.add(npc);
+            }
+        });
+        // Spawn chunks can load before the placement store's SERVER_STARTED callback.
+        // Resolve them on the first tick, after all persisted stores are available.
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            for (var level : server.getAllLevels()) for (var entity : level.getAllEntities())
+                if (entity instanceof NPCEntity npc) LOADED.add(npc);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             // Re-placing/removing an NPC whose former chunk is unloaded must not bring back
             // its old saved entity later. Check after the placement command has saved its UUID.
             for (var npc : LOADED) {
                 if (io.github.aristheg201.cobblemonworld.narrative.PersonalActors.owner(npc) != null) continue;
-                var interaction = (CWorldNpcInteraction) npc.getInteraction();
+                var saved = NpcBindingService.placement(npc);
+                if (saved != null && NpcBindingService.restore(npc, saved, true)) continue;
+                if (!(npc.getInteraction() instanceof CWorldNpcInteraction interaction)) continue;
                 var definition = NpcDefinitionRegistry.INSTANCE.get(interaction.definitionId());
                 if (definition == null) { npc.discard(); continue; }
                 if (definition != null && definition.specialActor()) continue;
@@ -43,6 +55,7 @@ public final class AnchoredNpcService {
                 UUID uuid;
                 try { uuid = UUID.fromString(placement.entityUuid()); } catch (IllegalArgumentException e) { continue; }
                 if (!(level.getEntity(uuid) instanceof NPCEntity npc)) continue;
+                if (!NpcBindingService.restore(npc, placement, false)) continue;
                 tickPose(npc, placement);
             }
         });
