@@ -519,6 +519,35 @@ public final class ProductionQaServer {
         add("restart-economy-verification", "prod_close", "", q -> {
             currency = api().getCurrencyList().stream().map(c -> c.getCurrencyType()).filter(c -> c.equalsIgnoreCase("BeastCoin")).findFirst().orElseThrow();
         }, q -> money(q, 60) && count(q, "cobblemon:poke_ball") == 16);
+        add("runtime-schema1-ren-migration-with-no-reward", "prod_close", "", q -> {
+            var original = progression(q);
+            var checkpointJson = new com.google.gson.Gson().toJson(original);
+            var n=original.narrative;n.schema=1;n.main="ren_supplies";
+            var flags=new HashSet<>(original.storyFlags);
+            var finished=new HashSet<>(n.finished);var claims=new HashMap<>(n.claims);
+            var history=new ArrayList<>(n.transcript);
+            var quests=new HashSet<>(original.activeSideQuests);
+            BigDecimal coins=api().getBalance(q.getUUID(),currency);
+            ProgressionStore.INSTANCE.save();ProgressionStore.INSTANCE.load(q.getServer());
+            io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.migrate(q);
+            var migrated=progression(q);
+            require(migrated.narrative.schema==2 && migrated.narrative.main.equals("lan_errand"),"Wrong live migration cursor");
+            require(flags.equals(migrated.storyFlags) && finished.equals(migrated.narrative.finished) && claims.equals(migrated.narrative.claims)
+                    && history.equals(migrated.narrative.transcript) && quests.equals(migrated.activeSideQuests),"Migration changed unrelated saved state");
+            io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.migrate(q);
+            require(api().getBalance(q.getUUID(),currency).compareTo(coins)==0,"Migration granted currency");
+            // Restore the isolated fixture's checkpoint after asserting the real save load/migrate path.
+            var before=new com.google.gson.Gson().fromJson(checkpointJson,PlayerProgression.class);
+            migrated.narrative=before.narrative;ProgressionStore.INSTANCE.save();
+        }, q -> true);
+        STEPS.add(new Step("runtime-over-cap-ui-rejection.png","prod_cap_rejection",()->active==null?"":Integer.toString(active.getId()),q->{
+            clearInventory(q);place(q,"mara_voss");
+            var n=progression(q).narrative;n.main="mara_first";
+            LevelCapService.setCap(q,15);
+            var party=Cobblemon.INSTANCE.getStorage().getParty(q);party.clearParty();
+            party.set(0,PokemonProperties.Companion.parse("mewtwo level=16 moves=psychic").create(q));
+        },q->Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(q)==null && LevelCapService.getCap(q)==15
+                && Cobblemon.INSTANCE.getStorage().getParty(q).get(0).getLevel()==16 && !progression(q).narrative.finished.contains("mara_first")));
     }
     private static void require(boolean condition, String message) { if (!condition) throw new IllegalStateException("CWORLD_PROD_QA_FAILED " + message); }
 }

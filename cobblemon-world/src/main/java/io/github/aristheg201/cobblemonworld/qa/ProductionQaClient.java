@@ -91,6 +91,20 @@ public final class ProductionQaClient {
             if (!p.action().equals("prod_world")) org.lwjgl.glfw.GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), mc.getWindow().getScreenWidth() - 4, mc.getWindow().getScreenHeight() - 4);
         }
         switch (p.action()) {
+            case "prod_cap_rejection" -> {
+                if (!interacted) {
+                    var npc=mc.level.getEntity(Integer.parseInt(p.primary()));
+                    if(npc==null)return 0;
+                    mc.gameMode.interact(mc.player,npc,InteractionHand.MAIN_HAND);interacted=true;ticks=0;
+                }
+                if(!(mc.screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen dialogue) || ticks<12)return 0;
+                var snapshot=dialogue.snapshot();
+                if(snapshot.status().equals("battle.cobblemonworld.over_cap"))return 2;
+                int index=-1;
+                for(int i=0;i<snapshot.choices().size();i++)if(snapshot.choices().get(i).id().equals("stage:mara_first") || snapshot.choices().get(i).id().equals("accept") || snapshot.choices().get(i).id().equals("finish")) {index=i;break;}
+                if(index>=0) {dialogue.qaClick(index);ticks=0;}
+                return 0;
+            }
             case "prod_native_dialogue" -> {
                 if (!(mc.screen instanceof com.cobblemon.mod.common.client.gui.dialogue.DialogueScreen)) return 0;
                 System.out.println("CWORLD_NPC_BINDING_NATIVE_DEFAULT_REPRODUCED");

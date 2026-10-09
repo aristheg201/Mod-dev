@@ -53,3 +53,7 @@ tasks.register('runQaClient',net.fabricmc.loom.task.prod.ClientProductionRunTask
  runDir=file(System.getProperty('svrtp.qa.clientDir','qa-runtime/client'));useXVFB=false
 }
 tasks.named('processQaResources') { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+
+// Real processes have side effects; a previous launch is never a cached QA pass.
+tasks.named('runQaServer') { outputs.upToDateWhen { false } }
+tasks.named('runQaClient') { outputs.upToDateWhen { false } }

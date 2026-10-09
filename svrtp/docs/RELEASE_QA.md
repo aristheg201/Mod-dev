@@ -24,14 +24,14 @@ The actual remapped server JAR was tested with real graphical Minecraft clients,
 | Hazard, headroom, void and border checks | PASS | Runtime block/collision checks in actual worlds; not all naturally generated biomes |
 | GUI scales 2 and 3 | PASS | Genuine screenshots of the native menu and bitmap resource-pack skin |
 | Config and journal automated tests | PASS | Five JUnit cases; not gameplay evidence |
-| Two simultaneous genuine clients | NOT TESTED | Earlier attempts failed in fixture preparation; separate final-run results, if available, accompany this report |
-| Active native Cobblemon battle | NOT TESTED | Guard exists; a successful final native-battle fixture must be logged before PASS |
-| Restart/reconnect durable cooldown | NOT TESTED | Journal unit tests are not a real restart |
+| Two simultaneous genuine clients | PASS | Actual overlapping requests, peak 2, correct fees and dimensions; observed local mean latency 1,117 ms including arrival-confirmation interval |
+| Active native Cobblemon battle | PASS | Real native PvE battle starts, RTP is rejected without charge and the same battle remains active |
+| Restart/reconnect durable cooldown | PASS | Both genuine clients reconnect after a normal dedicated-server shutdown/start; durable cooldown blocks both requests with no further debit |
 | Pending disconnect / external dimension change | NOT TESTED | Cleanup implemented; no completed end-to-end case logged |
 | Production normal-use tick impact | NOT TESTED | No deployed production profile or matched-load before/after comparison |
 | Real production OP/non-OP destinations | NOT TESTED | Production game TCP unavailable; internal tests waived human assistance |
 
-The 13 core run completed with normal dedicated-server shutdown. Failed concurrent fixture runs are retained: one client connected before its atlas was ready; another used a neighbourhood that was not FULL on disk and correctly failed its searches without fees. That second disposable test server later spun in vanilla chunk-save shutdown and was stopped locally after evidence capture. The cause is unresolved; do not treat it as successful restart evidence or attribute it to a production mod without isolation. One RAM-limit event occurred when too many internal clients, servers and builds overlapped; production was unaffected.
+The 13 core run completed with normal dedicated-server shutdown. The final two-client run and its subsequent durable-cooldown restart also completed with normal server shutdown; their separate logs accompany the core evidence. These local averages are not a production performance comparison. Failed concurrent fixture runs are retained: one client connected before its atlas was ready; another used a neighbourhood that was not FULL on disk and correctly failed its searches without fees. That second disposable test server later spun in vanilla chunk-save shutdown and was stopped locally after evidence capture. The cause is unresolved; do not treat it as successful restart evidence or attribute it to a production mod without isolation. One RAM-limit event occurred when too many internal clients, servers and builds overlapped; production was unaffected.
 
 ## Safety and operational limits
 
