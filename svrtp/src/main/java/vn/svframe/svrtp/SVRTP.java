@@ -32,6 +32,9 @@ public final class SVRTP implements ModInitializer {
     MinecraftServer server;
     final Map<UUID,Job> jobs=new LinkedHashMap<>();
     final Map<String,ArrayDeque<BlockPos>> cache=new HashMap<>();
+    final Map<String,IndexSnapshot> indexes=new HashMap<>();
+    final java.util.concurrent.ExecutorService indexIo=new java.util.concurrent.ThreadPoolExecutor(1,1,0L,java.util.concurrent.TimeUnit.MILLISECONDS,
+            new java.util.concurrent.ArrayBlockingQueue<>(3),r->{Thread t=new Thread(r,"svrtp-region-index");t.setDaemon(true);return t;});
     final Map<UUID,Long> lastCommand=new HashMap<>();
     int ioPending;
     long completed,failed,rejectedCandidates,loadedChunks,totalLatencyMillis,peakConcurrent;
@@ -40,8 +43,9 @@ public final class SVRTP implements ModInitializer {
         try {config=Config.load(configFile);}catch(Exception e) {LOG.error("Invalid svrtp configuration; commands are disabled",e);configValid=false;config=new Config();}
         ServerLifecycleEvents.SERVER_STARTED.register(s->{server=s;try {journal=Journal.load(s.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("svrtp/journal.json"));}
             catch(Exception e) {healthy=false;LOG.error("Cannot load RTP transaction journal; refusing paid RTP",e);}
-            LOG.info("SVRTP 1.0.1: server-side chest menu, pregenerated-only async loading, ChunkyBorder={}",Integrations.installed("chunkyborder"));});
-        ServerLifecycleEvents.SERVER_STOPPING.register(s->{for(var job:new ArrayList<>(jobs.values()))fail(job,"Server đang dừng.","Server is stopping.");});
+            LOG.info("SVRTP 1.0.2: server-side chest menu, indexed pregenerated-only async loading, ChunkyBorder={}",Integrations.installed("chunkyborder"));});
+        ServerLifecycleEvents.SERVER_STOPPING.register(s->{for(var job:new ArrayList<>(jobs.values()))fail(job,"Server đang dừng.","Server is stopping.");
+            for(var index:indexes.values())index.future.cancel(true);indexIo.shutdownNow();});
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerTickEvents.START_SERVER_TICK.register(s->{
             // Catch a delayed border/plugin correction before the next entity tick can
@@ -56,10 +60,10 @@ public final class SVRTP implements ModInitializer {
             var root=Commands.literal("rtp").executes(c->{open(c.getSource().getPlayerOrException(),null);return 1;});
             for(String alias:List.of("resource","nether","end"))root.then(Commands.literal(alias).executes(c->{open(c.getSource().getPlayerOrException(),alias);return 1;}));
             root.then(Commands.literal("reload").requires(c->c.getEntity()==null?c.hasPermission(2):c.getEntity() instanceof ServerPlayer p && Integrations.permission(p,config.permissions.admin)).executes(c->{
-                try {var next=Config.load(configFile);for(var j:new ArrayList<>(jobs.values()))fail(j,"Cấu hình đang được tải lại.","Configuration is reloading.");config=next;configValid=true;cache.clear();c.getSource().sendSuccess(()->Component.literal(text("Đã tải lại cấu hình SVRTP.","SVRTP configuration reloaded.")),false);}
+                try {var next=Config.load(configFile);for(var j:new ArrayList<>(jobs.values()))fail(j,"Cấu hình đang được tải lại.","Configuration is reloading.");config=next;configValid=true;cache.clear();for(var i:indexes.values())i.future.cancel(true);indexes.clear();c.getSource().sendSuccess(()->Component.literal(text("Đã tải lại cấu hình SVRTP.","SVRTP configuration reloaded.")),false);}
                 catch(Exception e) {LOG.error("Rejected SVRTP reload; keeping previous configuration",e);c.getSource().sendFailure(Component.literal(text("Cấu hình không hợp lệ; giữ bản trước đó.","Invalid configuration; previous settings kept.")));}return 1;}));
             root.then(Commands.literal("status").requires(c->c.getEntity()==null?c.hasPermission(2):c.getEntity() instanceof ServerPlayer p && Integrations.permission(p,config.permissions.admin)).executes(c->{
-                for(var e:config.destinations.entrySet()) {var d=e.getValue();boolean exists=dimension(d)!=null;c.getSource().sendSuccess(()->Component.literal(e.getKey()+": "+d.dimension+" enabled="+d.enabled+" valid="+exists),false);}
+                for(var e:config.destinations.entrySet()) {var d=e.getValue();boolean exists=dimension(d)!=null;var i=indexes.get(e.getKey());String terrain=i==null?"not indexed":i.future.isCompletedExceptionally()?"index failed":i.future.isDone()?Integer.toString(i.future.getNow(List.of()).size()):"indexing";c.getSource().sendSuccess(()->Component.literal(e.getKey()+": "+d.dimension+" enabled="+d.enabled+" valid="+exists+" terrainCandidates="+terrain),false);}
                 c.getSource().sendSuccess(()->Component.literal("SVRTP completed="+completed+" failed="+failed+" candidatesRejected="+rejectedCandidates+" asyncLoads="+loadedChunks+" pending="+jobs.size()+" ioPending="+ioPending+" peak="+peakConcurrent+" meanLatencyMs="+(completed==0?0:totalLatencyMillis/completed)),false);return 1;}));
             dispatcher.register(root);
         });
@@ -131,52 +135,61 @@ public final class SVRTP implements ModInitializer {
                 if(j.chunk==null) {nextCandidate(j);continue;}
                 if(!j.target.dimensionType().hasCeiling()) {
                     int y=j.chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,j.x&15,j.z&15)+1;
-                    if(SafeLanding.valid(j.target,j.player,j.x,y,j.z))commit(j,new BlockPos(j.x,y,j.z));else reject(j);
+                    if(SafeLanding.valid(j.target,j.player,j.x,y,j.z))commit(j,new BlockPos(j.x,y,j.z));else unsafeColumn(j);
                 } else {
                     // One bounded section per work unit; no whole-column loop on a tick.
                     int end=Math.max(j.target.getMinBuildHeight()+1,j.scanY-16);
                     boolean found=false;
                     for(int y=j.scanY;y>end;y--)if(SafeLanding.valid(j.target,j.player,j.x,y,j.z)) {commit(j,new BlockPos(j.x,y,j.z));found=true;break;}
-                    if(!found) {j.scanY=end;if(end<=j.target.getMinBuildHeight()+1)reject(j);}
+                    if(!found) {j.scanY=end;if(end<=j.target.getMinBuildHeight()+1)unsafeColumn(j);}
                 }
             }catch(Exception e) {LOG.error("RTP failed player={} alias={} attempts={}",j.player.getUUID(),j.alias,j.attempts,e);fail(j,"Không thể hoàn tất RTP. Hãy thử lại sau.","RTP could not be completed. Try again later.");}
         }
     }
     private void nextCandidate(Job j) {
-        if(j.attempts++>=j.rules.performance.maxAttemptsPerRequest) {fail(j,"Không tìm được vị trí phù hợp. Hãy thử lại sau.","No suitable location was found. Try again later.");return;}
+        if(j.attempts>=j.rules.performance.maxAttemptsPerRequest) {fail(j,"Không tìm được điểm đáp an toàn trong terrain đã tạo. Phí chưa bị trừ.","No safe landing was found in existing terrain. No payment was taken.");return;}
+        if(ioPending>=j.rules.performance.maxConcurrentRequests)return;
         var candidates=cache.computeIfAbsent(j.alias,k->new ArrayDeque<>());
-        BlockPos cached=candidates.pollFirst();
+        BlockPos cached=Math.random()<.25?candidates.pollFirst():null;
         if(cached!=null && insideRadius(j,cached.getX(),cached.getZ())) {j.x=cached.getX();j.z=cached.getZ();}
         else {
-            double min=j.destination.minRadius,max=j.destination.maxRadius;
-            double radius=Math.sqrt(min*min+Math.random()*(max*max-min*min)),angle=Math.random()*Math.PI*2;
-            int rawX=(int)Math.floor(j.destination.centerX+Math.cos(angle)*radius),rawZ=(int)Math.floor(j.destination.centerZ+Math.sin(angle)*radius);
-            j.x=(rawX&~15)+3+(int)(Math.random()*10);j.z=(rawZ&~15)+3+(int)(Math.random()*10);
+            if(j.index==null) {
+                var index=indexes.get(j.alias);long now=System.currentTimeMillis();
+                if(index==null || index.rules!=j.rules || index.expires<now) {
+                    Path folder=net.minecraft.world.level.dimension.DimensionType.getStorageFolder(j.target.dimension(),server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)).resolve("region");
+                    index=new IndexSnapshot(j.rules,now+60000,java.util.concurrent.CompletableFuture.supplyAsync(()->{
+                        try{return ChunkIndex.read(folder,j.destination);}catch(java.io.IOException e){throw new java.util.concurrent.CompletionException(e);}
+                    },indexIo));indexes.put(j.alias,index);
+                }
+                j.index=index.future;
+            }
+            if(!j.index.isDone())return;
+            var disk=j.index.getNow(List.of());
+            if(disk.isEmpty()) {j.rejections.merge("no_existing_neighbourhood",1,Integer::sum);fail(j,"Vùng RTP chưa có đủ terrain đã tạo trong bán kính cấu hình. Phí chưa bị trừ.","The RTP range has no suitable pregenerated chunk neighbourhood. No payment was taken.");return;}
+            int selected=(int)(Math.random()*disk.size());
+            for(int n=0;n<=j.selected.size() && j.selected.contains(selected);n++)selected=(selected+1)%disk.size();
+            if(!j.selected.add(selected)) {fail(j,"Đã kiểm tra hết terrain hiện có trong vùng RTP. Phí chưa bị trừ.","All existing RTP terrain candidates were checked. No payment was taken.");return;}
+            var p=disk.get(selected);j.x=p.x*16+3+(int)(Math.random()*10);j.z=p.z*16+3+(int)(Math.random()*10);
         }
-        if(!insideRadius(j,j.x,j.z) || !Integrations.border(j.target,j.x+.5,j.z+.5,3)) {rejectedCandidates++;return;}
+        j.attempts++;j.columnTry=0;
+        if(!insideRadius(j,j.x,j.z) || !Integrations.border(j.target,j.x+.5,j.z+.5,3)) {j.rejections.merge("radius_or_border",1,Integer::sum);rejectedCandidates++;return;}
         var pos=new ChunkPos(j.x>>4,j.z>>4);var loaded=j.target.getChunkSource().getChunkNow(pos.x,pos.z);
         if(loaded!=null) {hold(j,pos);j.chunk=loaded;j.scanY=Math.min(119,j.target.getMaxBuildHeight()-6);return;}
-        if(ioPending>=j.rules.performance.maxConcurrentRequests) {j.attempts--;return;}
         j.waiting=true;ioPending++;
-        // Disk read is asynchronous. Only existing FULL terrain may acquire a loading ticket.
+        // Pure read-only disk preflight runs off-thread. Use Minecraft's actual
+        // status halo; neighbours need their native dependency stage, not FULL.
         java.util.concurrent.CompletableFuture<Boolean> read;
         try {
-            // A FULL center alone is insufficient: activating it may request its
-            // neighbours. Verify a bounded 5x5 pregenerated neighbourhood first.
-            var reads=new ArrayList<java.util.concurrent.CompletableFuture<Boolean>>();
-            for(int dx=-2;dx<=2;dx++)for(int dz=-2;dz<=2;dz++) {
-                var neighbour=new ChunkPos(pos.x+dx,pos.z+dz);
-                reads.add(j.target.getChunkSource().chunkMap.read(neighbour).thenApply(nbt->
-                        nbt.isPresent() && nbt.get().getString("Status").equals("minecraft:full")));
-            }
-            read=java.util.concurrent.CompletableFuture.allOf(reads.toArray(java.util.concurrent.CompletableFuture[]::new))
-                    .thenApply(unused->reads.stream().allMatch(f->f.getNow(false)));
+            Path folder=net.minecraft.world.level.dimension.DimensionType.getStorageFolder(j.target.dimension(),server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)).resolve("region");
+            read=java.util.concurrent.CompletableFuture.supplyAsync(()->{
+                try{return ChunkIndex.validate(folder,pos);}catch(java.io.IOException e){throw new java.util.concurrent.CompletionException(e);}
+            },indexIo);
         }
         catch(RuntimeException e) {ioPending--;j.waiting=false;throw e;}
         read.whenComplete((pregenerated,error)->server.execute(()->{
             ioPending--;if(jobs.get(j.player.getUUID())!=j)return;
             if(error!=null) {j.waiting=false;LOG.warn("RTP chunk read rejected dimension={} chunk={}",j.target.dimension().location(),pos,error);reject(j);return;}
-            if(!Boolean.TRUE.equals(pregenerated)) {j.waiting=false;reject(j);return;}
+            if(!Boolean.TRUE.equals(pregenerated)) {j.waiting=false;j.rejections.merge("incomplete_dependency_halo",1,Integer::sum);reject(j);return;}
             hold(j,pos);ioPending++;
             java.util.concurrent.CompletableFuture<ChunkResult<net.minecraft.world.level.chunk.ChunkAccess>> load;
             try {load=j.target.getChunkSource().getChunkFuture(pos.x,pos.z,ChunkStatus.FULL,true);}
@@ -197,8 +210,14 @@ public final class SVRTP implements ModInitializer {
     private void release(Job j) {if(j.ticket!=null) {j.target.getChunkSource().removeRegionTicket(TICKET,j.ticket,0,j.player.getUUID());j.ticket=null;}
         if(j.originTicket!=null) {j.originWorld.getChunkSource().removeRegionTicket(TICKET,j.originTicket,0,j.player.getUUID());j.originTicket=null;}j.chunk=null;}
     private void reject(Job j) {rejectedCandidates++;release(j);}
+    private void unsafeColumn(Job j) {
+        j.rejections.merge("unsafe_surface",1,Integer::sum);
+        if(++j.columnTry<4) {j.x=(j.x&~15)+3+(int)(Math.random()*10);j.z=(j.z&~15)+3+(int)(Math.random()*10);j.scanY=Math.min(119,j.target.getMaxBuildHeight()-6);
+            if(!insideRadius(j,j.x,j.z)) {j.rejections.merge("radius_or_border",1,Integer::sum);reject(j);}}
+        else reject(j);
+    }
     private void commit(Job j,BlockPos pos)throws Exception {
-        if(!eligible(j.player) || !SafeLanding.valid(j.target,j.player,pos.getX(),pos.getY(),pos.getZ()) || !SafeLanding.origin(j.originWorld,j.player)) {fail(j,"Vị trí hoặc trạng thái đã thay đổi. RTP bị hủy.","Your position or state changed. RTP cancelled.");return;}
+        if(!eligible(j.player) || !insideRadius(j,pos.getX(),pos.getZ()) || !SafeLanding.valid(j.target,j.player,pos.getX(),pos.getY(),pos.getZ()) || !SafeLanding.origin(j.originWorld,j.player)) {fail(j,"Vị trí hoặc trạng thái đã thay đổi. RTP bị hủy.","Your position or state changed. RTP cancelled.");return;}
         // Capture the latest safe source immediately before the charge, not where the search began.
         j.origin=j.player.position();j.yaw=j.player.getYRot();j.pitch=j.player.getXRot();
         j.originTicket=new ChunkPos(j.player.blockPosition());j.originWorld.getChunkSource().addRegionTicket(TICKET,j.originTicket,0,j.player.getUUID());
@@ -246,12 +265,14 @@ public final class SVRTP implements ModInitializer {
             }catch(Exception e) {healthy=false;LOG.error("RTP refund needs reconciliation player={} amount={} currency={}",j.player.getUUID(),j.amount,j.currency,e);tell(j.player,"Chưa xác nhận được hoàn phí. Quản trị viên cần đối chiếu giao dịch.","Refund could not be confirmed. An administrator must reconcile the transaction.");}
         }
         failed++;release(j);jobs.remove(j.player.getUUID());tell(j.player,vi,en);
-        LOG.info("RTP rejected player={} alias={} attempts={} charged={} reason={}",j.player.getUUID(),j.alias,j.attempts,j.charged,en);
+        LOG.info("RTP rejected player={} alias={} attempts={} charged={} reason={} candidateRejections={}",j.player.getUUID(),j.alias,j.attempts,j.charged,en,j.rejections);
     }
+    private record IndexSnapshot(Config rules,long expires,java.util.concurrent.CompletableFuture<List<ChunkPos>> future) {}
     private static final class Job {
         final ServerPlayer player;final ServerLevel target,originWorld;final String alias,currency;final BigInteger amount;
         final Config.Destination destination;final Config rules;final long started=System.nanoTime();
-        int attempts,x,z,scanY,arrivalTick;boolean waiting,charged,arriving;ChunkPos ticket,originTicket;LevelChunk chunk;BlockPos landing;
+        int attempts,x,z,scanY,arrivalTick,columnTry;boolean waiting,charged,arriving;ChunkPos ticket,originTicket;LevelChunk chunk;BlockPos landing;
+        java.util.concurrent.CompletableFuture<List<ChunkPos>> index;final Set<Integer> selected=new HashSet<>();final Map<String,Integer> rejections=new LinkedHashMap<>();
         Vec3 origin;float yaw,pitch;Integrations.Wallet wallet;
         Job(ServerPlayer p,ServerLevel world,String alias,String currency,BigInteger amount,Config.Destination d,Config c) {
             player=p;target=world;originWorld=p.serverLevel();this.alias=alias;this.currency=currency;this.amount=amount;destination=d;rules=c;

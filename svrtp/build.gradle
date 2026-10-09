@@ -1,5 +1,5 @@
 plugins { id 'fabric-loom' version '1.10.5' }
-version = '1.0.1'
+version = '1.0.2'
 group = 'vn.svframe'
 base { archivesName = 'svrtp' }
 repositories {
@@ -37,17 +37,19 @@ dependencies {
 }
 tasks.register('runQaServer',net.fabricmc.loom.task.prod.ServerProductionRunTask) {
  dependsOn remapJar,remapQaJar
- mods.from configurations.qaRuntimeMods
- mods.from tasks.remapJar.archiveFile
+ mods.setFrom(configurations.qaRuntimeMods, providers.provider { System.getProperty('svrtp.qa.releaseJar')?file(System.getProperty('svrtp.qa.releaseJar')):tasks.remapJar.archiveFile.get().asFile })
  mods.from tasks.remapQaJar.archiveFile
+ mods.from fileTree(System.getProperty('svrtp.qa.terrainMods','qa-runtime/terrain-mods')) { include '*.jar' }
  mods.from fileTree('qa-runtime/mods') { include '*.jar' }
- jvmArgs.addAll(['-Dsvrtp.qa.server=true','-Dsvrtp.qa.rules='+System.getProperty('svrtp.qa.rules','false'),'-Dsvrtp.qa.origin='+System.getProperty('svrtp.qa.origin','false'),'-Dsvrtp.qa.concurrent='+System.getProperty('svrtp.qa.concurrent','false'),'-Dsvrtp.qa.resume='+System.getProperty('svrtp.qa.resume','false'),'-Xmx1280m','-XX:ActiveProcessorCount=2'])
+ jvmArgs.addAll(['-Dsvrtp.qa.server=true','-Dsvrtp.qa.natural='+System.getProperty('svrtp.qa.natural','false'),'-Dsvrtp.qa.rules='+System.getProperty('svrtp.qa.rules','false'),'-Dsvrtp.qa.origin='+System.getProperty('svrtp.qa.origin','false'),'-Dsvrtp.qa.concurrent='+System.getProperty('svrtp.qa.concurrent','false'),'-Dsvrtp.qa.resume='+System.getProperty('svrtp.qa.resume','false'),'-Xmx1280m','-XX:ActiveProcessorCount=2'])
+ if(System.getProperty('svrtp.qa.jfr'))jvmArgs.add('-XX:StartFlightRecording=filename='+System.getProperty('svrtp.qa.jfr')+',settings=profile,dumponexit=true,maxsize=128m')
  runDir=file(System.getProperty('svrtp.qa.serverDir','qa-runtime/server'))
 }
 tasks.register('runQaClient',net.fabricmc.loom.task.prod.ClientProductionRunTask) {
  dependsOn remapQaJar
  mods.from configurations.qaRuntimeMods
  mods.from tasks.remapQaJar.archiveFile
+ mods.from fileTree(System.getProperty('svrtp.qa.terrainMods','qa-runtime/terrain-mods')) { include '*.jar' }
  jvmArgs.addAll(['-Dsvrtp.qa.client=true','-Xmx1280m','-XX:ActiveProcessorCount=2'])
  programArgs.addAll(['--username',System.getProperty('svrtp.qa.username','SVRTPQA'),'--width','1280','--height','720'])
  runDir=file(System.getProperty('svrtp.qa.clientDir','qa-runtime/client'));useXVFB=false

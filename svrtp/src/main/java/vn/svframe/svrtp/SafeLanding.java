@@ -22,16 +22,19 @@ final class SafeLanding {
         var box=new AABB(x+.5-player.getBbWidth()/2,y,z+.5-player.getBbWidth()/2,
                 x+.5+player.getBbWidth()/2,y+player.getBbHeight(),z+.5+player.getBbWidth()/2);
         if(!world.noCollision(player,box))return false;
-        // A 5x5 dry floor with three clear blocks rejects tiny caves, lava edges and immediate drops.
-        for(int dx=-2;dx<=2;dx++)for(int dz=-2;dz<=2;dz++) {
-            if(!support(world,floor.offset(dx,0,dz)))return false;
-            for(int dy=0;dy<3;dy++) {
-                var pos=new BlockPos(x+dx,y+dy,z+dz);var state=world.getBlockState(pos);
+        // Real terrain may slope by one block. Validate a dry 3x3 neighbourhood
+        // with normal step heights instead of requiring a perfectly flat 5x5 plaza.
+        for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++) {
+            int surface=Integer.MIN_VALUE;
+            for(int fy=y;fy>=y-2;fy--)if(support(world,new BlockPos(x+dx,fy,z+dz))) {surface=fy;break;}
+            if(surface==Integer.MIN_VALUE)return false;
+            for(int dy=1;dy<=2;dy++) {
+                var pos=new BlockPos(x+dx,surface+dy,z+dz);var state=world.getBlockState(pos);
                 if(!state.getFluidState().isEmpty() || hazard(state) || !state.getCollisionShape(world,pos).isEmpty())return false;
             }
         }
         // The Nether needs a genuinely open space above the pocket, not the roof or a sealed 3-high tunnel.
-        if(world.dimensionType().hasCeiling())for(int dy=3;dy<6;dy++) {
+        if(world.dimensionType().hasCeiling())for(int dy=2;dy<6;dy++) {
             var pos=new BlockPos(x,y+dy,z);var state=world.getBlockState(pos);
             if(!state.getFluidState().isEmpty() || !state.getCollisionShape(world,pos).isEmpty())return false;
         }

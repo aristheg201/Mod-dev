@@ -24,6 +24,7 @@ public final class ServerDriver implements ModInitializer {
     @Override public void onInitialize() {
         if(!Boolean.getBoolean("svrtp.qa.server"))return;
         if(Boolean.getBoolean("svrtp.qa.rules")) {SpawnRuleDriver.register();return;}
+        if(Boolean.getBoolean("svrtp.qa.natural")) {new NaturalDriver().onInitialize();return;}
         if(Boolean.getBoolean("svrtp.qa.origin")) {new OriginDriver().onInitialize();return;}
         if(Boolean.getBoolean("svrtp.qa.concurrent")) {new ConcurrentDriver().onInitialize();return;}
         CommandRegistrationCallback.EVENT.register((d,a,e)->d.register(Commands.literal("svrtpqatest").then(Commands.literal("ack").then(Commands.argument("step",IntegerArgumentType.integer()).executes(c->{
