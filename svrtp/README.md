@@ -1,6 +1,8 @@
-# SVRTP 1.0.0 — Fabric 1.21.1
+# SVRTP 1.0.1 — Fabric 1.21.1
 
 Java 21, Fabric Loader 0.18.4 and Fabric API. Install the remapped release JAR on the **server only**. Players need no SVRTP client mod. BEconomy and CobbleDollars provide the two payment choices; unavailable economies fail safely.
+
+1.0.1 separates the source/rollback check from random-arrival validation. Players may start on a dry solid slab, carpet, a chunk edge, or ordinary uneven terrain. The exact source bounding box must have safe collision support, clear headroom, loaded blocks and a permitted border position. Random destinations still require the existing 5x5 safe landing surface; rollback preserves the exact fractional source position.
 
 `/rtp` opens a native six-row chest menu. Choose Resource, Nether or End, then choose **5 BeastCoin** or **50,000 CobbleDollars**. `/rtp resource`, `/rtp nether` and `/rtp end` open the corresponding payment menu. The server validates each click. Inventory transfers through the menu are disabled.
 

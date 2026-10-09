@@ -40,7 +40,7 @@ public final class SVRTP implements ModInitializer {
         try {config=Config.load(configFile);}catch(Exception e) {LOG.error("Invalid svrtp configuration; commands are disabled",e);configValid=false;config=new Config();}
         ServerLifecycleEvents.SERVER_STARTED.register(s->{server=s;try {journal=Journal.load(s.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("svrtp/journal.json"));}
             catch(Exception e) {healthy=false;LOG.error("Cannot load RTP transaction journal; refusing paid RTP",e);}
-            LOG.info("SVRTP 1.0.0: server-side chest menu, pregenerated-only async loading, ChunkyBorder={}",Integrations.installed("chunkyborder"));});
+            LOG.info("SVRTP 1.0.1: server-side chest menu, pregenerated-only async loading, ChunkyBorder={}",Integrations.installed("chunkyborder"));});
         ServerLifecycleEvents.SERVER_STOPPING.register(s->{for(var job:new ArrayList<>(jobs.values()))fail(job,"Server đang dừng.","Server is stopping.");});
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerTickEvents.START_SERVER_TICK.register(s->{
@@ -105,7 +105,7 @@ public final class SVRTP implements ModInitializer {
         long remaining=journal.cooldowns.getOrDefault(p.getUUID(),0L)-now;
         if(remaining>0) {tell(p,"Bạn cần chờ thêm "+((remaining+999)/1000)+" giây.","Please wait "+((remaining+999)/1000)+" seconds.");return;}
         if(!eligible(p))return;
-        if(!SafeLanding.origin(p.serverLevel(),p)) {tell(p,"Hãy đứng trên nền an toàn, rộng và khô trước khi RTP.","Stand on a wide, dry, safe floor before using RTP.");return;}
+        if(!SafeLanding.origin(p.serverLevel(),p)) {tell(p,"Hãy đứng yên trên nền chắc chắn, không có nước hoặc dung nham trước khi RTP.","Stand on solid ground without water or lava before using RTP.");return;}
         var amount=BigInteger.valueOf(currency.equals("beastcoin")?config.prices.beastCoin:config.prices.cobbleDollars);
         try {if(Integrations.wallet(p,currency).balance().compareTo(amount)<0) {tell(p,"Bạn không đủ tiền cho lựa chọn này.","You do not have enough money for this option.");return;}}
         catch(Exception e) {LOG.warn("RTP economy unavailable player={} currency={}",p.getUUID(),currency,e);tell(p,"Loại tiền này hiện chưa khả dụng.","This currency is currently unavailable.");return;}
@@ -216,8 +216,7 @@ public final class SVRTP implements ModInitializer {
         boolean correct=p.serverLevel()==j.target && p.position().distanceToSqr(Vec3.atBottomCenterOf(j.landing))<(server.getTickCount()==j.arrivalTick?4:64)
                 && SafeLanding.valid(j.target,p,p.blockPosition().getX(),p.blockPosition().getY(),p.blockPosition().getZ());
         if(!correct) {
-            var source=new BlockPos((int)Math.floor(j.origin.x),(int)Math.floor(j.origin.y),(int)Math.floor(j.origin.z));
-            if(SafeLanding.valid(j.originWorld,p,source.getX(),source.getY(),source.getZ()))p.teleportTo(j.originWorld,j.origin.x,j.origin.y,j.origin.z,j.yaw,j.pitch);
+            if(SafeLanding.restorable(j.originWorld,p,j.origin))p.teleportTo(j.originWorld,j.origin.x,j.origin.y,j.origin.z,j.yaw,j.pitch);
             else LOG.error("RTP rollback location became unsafe player={} source={}; administrator attention required",p.getUUID(),j.originWorld.dimension().location());
             fail(j,"Điểm đến bị thay đổi hoặc không an toàn. Phí RTP được hoàn nếu giao dịch thành công.","The arrival was displaced or unsafe. A successful RTP charge will be refunded.");return;
         }
@@ -235,8 +234,7 @@ public final class SVRTP implements ModInitializer {
         if(jobs.get(j.player.getUUID())!=j)return;
         if(j.charged) {
             if(j.arriving) {
-                var source=BlockPos.containing(j.origin);
-                if(SafeLanding.valid(j.originWorld,j.player,source.getX(),source.getY(),source.getZ()))j.player.teleportTo(j.originWorld,j.origin.x,j.origin.y,j.origin.z,j.yaw,j.pitch);
+                if(SafeLanding.restorable(j.originWorld,j.player,j.origin))j.player.teleportTo(j.originWorld,j.origin.x,j.origin.y,j.origin.z,j.yaw,j.pitch);
                 else LOG.error("Cannot restore safe source for cancelled paid RTP player={}",j.player.getUUID());
             }
             try {

@@ -23,6 +23,8 @@ public final class ServerDriver implements ModInitializer {
     final String[] currencies={"bc","bc","cd","cd","bc","bc","bc","bc","bc","cd","bc","bc","cd"};
     @Override public void onInitialize() {
         if(!Boolean.getBoolean("svrtp.qa.server"))return;
+        if(Boolean.getBoolean("svrtp.qa.rules")) {SpawnRuleDriver.register();return;}
+        if(Boolean.getBoolean("svrtp.qa.origin")) {new OriginDriver().onInitialize();return;}
         if(Boolean.getBoolean("svrtp.qa.concurrent")) {new ConcurrentDriver().onInitialize();return;}
         CommandRegistrationCallback.EVENT.register((d,a,e)->d.register(Commands.literal("svrtpqatest").then(Commands.literal("ack").then(Commands.argument("step",IntegerArgumentType.integer()).executes(c->{
             if(c.getSource().getPlayerOrException()==player && IntegerArgumentType.getInteger(c,"step")==step)ack=true;return 1;})))));
@@ -107,7 +109,11 @@ public final class ServerDriver implements ModInitializer {
             Files.writeString(path,Config.JSON.toJson(cfg));s.getCommands().performPrefixedCommand(s.createCommandSourceStack(),"rtp reload");
         }
         if(step==6) {var u=net.luckperms.api.LuckPermsProvider.get().getUserManager().getUser(player.getUUID());u.data().add(net.luckperms.api.node.Node.builder("svrtp.use.end").value(false).build());}
-        if(step==8 || step==10)player.teleportTo(s.overworld(),7.5,120,7.5,0,0);
+        if(step==8)player.teleportTo(s.overworld(),7.5,120,7.5,0,0);
+        if(step==10) {
+            s.overworld().setBlockAndUpdate(new BlockPos(7,119,7),Blocks.STONE_SLAB.defaultBlockState());
+            player.teleportTo(s.overworld(),7.5,119.5,7.5,0,0);
+        }
         if(step==9)s.getPlayerList().op(player.getGameProfile());
         if(step==11)Integrations.wallet(player,"beastcoin").debit(Integrations.wallet(player,"beastcoin").balance());
         if(step==12) {
@@ -130,6 +136,7 @@ public final class ServerDriver implements ModInitializer {
         if(!player.serverLevel().dimension().location().toString().equals(expected))throw new IllegalStateException("Wrong destination expected="+expected);
         if(paid && !SafeLanding.origin(player.serverLevel(),player))throw new IllegalStateException("Unsafe arrival");
         if(step==10 && (!injected || player.getHealth()!=beforeHealth))throw new IllegalStateException("Unsafe correction was not restored without damage");
+        if(step==10 && Math.abs(player.getY()-119.5)>0.001)throw new IllegalStateException("Rollback lost fractional slab source height");
         if(step==12) {
             var mod=(SVRTP)net.fabricmc.loader.api.FabricLoader.getInstance().getEntrypoints("main",ModInitializer.class).stream().filter(m->m instanceof SVRTP).findFirst().orElseThrow();
             if(mod.loadedChunks<1 || player.getX()<1536)throw new IllegalStateException("Async load did not complete");

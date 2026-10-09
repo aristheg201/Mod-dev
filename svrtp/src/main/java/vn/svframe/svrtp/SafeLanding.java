@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 final class SafeLanding {
     private SafeLanding() {}
@@ -50,8 +51,32 @@ final class SafeLanding {
                 || s.is(Blocks.END_PORTAL) || s.is(Blocks.END_GATEWAY) || s.is(Blocks.TNT);
     }
     static boolean origin(ServerLevel world,ServerPlayer p) {
-        // Source validation also uses loaded blocks only; restoration is never an unchecked emergency teleport.
-        var pos=p.blockPosition();
-        return valid(world,p,pos.getX(),pos.getY(),pos.getZ()) && world.noCollision(p,p.getBoundingBox());
+        return restorable(world,p,p.position());
+    }
+    /** Validate the exact source feet and body, not the much wider random-arrival surface. */
+    static boolean restorable(ServerLevel world,ServerPlayer p,Vec3 position) {
+        if(!Double.isFinite(position.x) || !Double.isFinite(position.y) || !Double.isFinite(position.z))return false;
+        AABB body=p.getBoundingBox().move(position.subtract(p.position()));
+        if(body.minY<=world.getMinBuildHeight() || body.maxY>=world.getMaxBuildHeight())return false;
+        if(!Integrations.border(world,position.x,position.z,p.getBbWidth()/2.0))return false;
+        // A thin probe below the feet accepts real support from slabs, stairs and carpets.
+        // It also rejects hovering, fluids and dangerous floors without requiring a 5x5 plaza.
+        AABB feet=new AABB(body.minX,body.minY-0.0625,body.minZ,body.maxX,body.minY,body.maxZ);
+        int minX=(int)Math.floor(body.minX),maxX=(int)Math.floor(body.maxX-1.0e-7);
+        int minZ=(int)Math.floor(body.minZ),maxZ=(int)Math.floor(body.maxZ-1.0e-7);
+        int minY=(int)Math.floor(feet.minY),maxY=(int)Math.floor(body.maxY-1.0e-7);
+        for(int cx=minX>>4;cx<=maxX>>4;cx++)for(int cz=minZ>>4;cz<=maxZ>>4;cz++)
+            if(world.getChunkSource().getChunkNow(cx,cz)==null)return false;
+        boolean supported=false;
+        for(int x=minX;x<=maxX;x++)for(int z=minZ;z<=maxZ;z++)for(int y=minY;y<=maxY;y++) {
+            BlockPos pos=new BlockPos(x,y,z);BlockState state=world.getBlockState(pos);
+            if(hazard(state) || !state.getFluidState().isEmpty())return false;
+            for(AABB local:state.getCollisionShape(world,pos).toAabbs()) {
+                AABB collision=local.move(x,y,z);
+                if(collision.intersects(body))return false;
+                if(collision.intersects(feet))supported=true;
+            }
+        }
+        return supported && world.noCollision(p,body);
     }
 }
