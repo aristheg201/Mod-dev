@@ -20,7 +20,7 @@ These results refer to internal real Minecraft gameplay, unless explicitly marke
 | Repeated old-revision shop click | PASS | One debit/delivery for the duplicate request |
 | Failed grant refund | PASS | Controlled failure injection; native economy balance restored |
 | Elle complete available catalog | PASS | 262 registered Armory/Armors items enumerated; registry equality, categories and scrolling/scales captured |
-| Actual purchase from Elle | NOT TESTED | Catalog/UI verified; a completed fashion purchase was not individually asserted |
+| Actual purchase from Elle | PASS | Real custom shop click delivers registered Zacian sword, with exact server-authoritative BeastCoin debit; same run includes actual SVFrameLib/MMO JARs and LuckPerms |
 | Tomo actual bicycle purchase | PASS | Registered MapKit bicycle delivered with exact debit |
 | Mira actual heal/service | PASS | Native Pokémon health restored; custom conversation service action |
 | Phone apps and native factions | PASS | Trainer Card, Objective, Story, Level Cap, Badges, Contacts, League, Faction; actual create/owner-leave rejection/disband |
@@ -37,7 +37,8 @@ These results refer to internal real Minecraft gameplay, unless explicitly marke
 | Full dialogue coherence editorial review | NOT TESTED | Vietnamese authored graphs/transcripts rewritten; automated full-graph validation PASS, not a claim of exhaustive human review |
 | All side quests, seasonal rewards and NPC interactions | NOT TESTED | Current runtime coverage is supplied individually; incomplete coverage cannot be called full PASS |
 | Dedicated server/client initialization | PASS | Remapped JAR with exact Cobblemon and supported native dependencies |
-| Complete production modpack compatibility | NOT TESTED | 213-mod pack / SVFrameLib / SVFrameMMO not run end-to-end locally; live deployment not performed |
+| SVFrameLib 1.7.1 / SVFrameMMO 1.13.1 opening compatibility | PASS | Supplied HP-fix JARs plus LuckPerms: complete 11-step opening, actual Mara loss/retry/victory and investigation; local default configs, not production data |
+| Complete production modpack compatibility | NOT TESTED | Entire 213-mod pack and production configuration not run end-to-end; live deployment not performed |
 | Production gameplay acceptance | NOT TESTED | Panel/profiling access worked, raw game TCP unavailable; user requested internal testing |
 
 A separate real restart run completed **6 stages**, verifying NPC anchor recovery, saved dialogue, currency/inventory, actual schema-1 save migration and over-cap UI rejection. Services run completed **93 stages** with `CWORLD_PROD_QA_FINISHED`, followed by normal client and server shutdown. All 19 JUnit tests passed; narrative/static data validation passed. These are separate evidence categories.

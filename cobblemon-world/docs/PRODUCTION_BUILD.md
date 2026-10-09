@@ -63,3 +63,5 @@ The native battle audit in narrative QA inspects the Pokémon copies actually us
 ## 0.3.1 saved-NPC check
 
 `tools/run_production_qa.sh binding-upgrade` and `binding-restart` run the isolated saved-NPC repair driver. Both use `qa-runtime/server-npc-binding` and normal non-OP client interactions. The input save must contain the five diagnosed NPC placements and the original fixture identity file. The before-greeting reproduction was run on the historical pre-fix QA binary; it is not an expected output of the fixed version. See `NPC_BINDING_HOTFIX_QA.md` for exact artifact evidence, limits and installation.
+
+The `fashion` QA profile performs an actual registered Armory purchase through the custom screen. It requires a prepared internal service world and BEconomy. The optional cross-mod opening fixture uses the exact supplied server-side SVFrameLib/MMO JARs and LuckPerms; SVFrameLib references LuckPerms on player login despite not declaring it in its metadata. Do not run any QA profile on production.

@@ -76,7 +76,8 @@ public final class ProductionQaServer {
                 LOCATIONS.put(placement.id(), (int) Math.round((placement.x() - 4) / 18));
             require(!player.hasPermissions(2), "QA player must be non-OP, with cheats disabled");
             System.out.println("CWORLD_PROD_QA_NON_OP_CONFIRMED player=" + player.getGameProfile().getName());
-            if (Boolean.getBoolean("cworld.qa.npcBinding")) npcBindingSteps(player);
+            if (Boolean.getBoolean("cworld.qa.fashion")) fashionSteps();
+            else if (Boolean.getBoolean("cworld.qa.npcBinding")) npcBindingSteps(player);
             else if (Boolean.getBoolean("cworld.qa.noeconomy")) missingEconomySteps(player);
             else if (Boolean.getBoolean("cworld.qa.restart")) restartSteps(player);
             else if (Boolean.getBoolean("cworld.qa.resume")) campaignSteps(player);
@@ -502,6 +503,16 @@ public final class ProductionQaServer {
             } catch (Exception e) { throw new IllegalStateException(e); }
         });
         add("binding-save-preserved", "prod_close", "", q -> {}, q -> progression(q).storyFlags.contains("npc_binding_save_sentinel") && progression(q).narrative.personality.getOrDefault("polite", 0) >= 3 && progression(q).narrative.completedChains.contains("courier_lost_stamp"));
+    }
+    private static void fashionSteps() {
+        add("restart-fashion-wallet", "prod_close", "", q -> {clearInventory(q);currency=api().getCurrencyList().stream().map(c->c.getCurrencyType()).filter(c->c.equalsIgnoreCase("BeastCoin")).findFirst().orElseThrow();balance(q,500);}, q -> money(q,500));
+        interact("restart-elle-real-shop", "fashion_elle", q -> auditCatalog());
+        capture("restart-elle-registered-selection.png", "prod_shop", "select:cobblemonarmory:zacian_sword");
+        add("restart-elle-real-purchase.png", "prod_buy", "click", q -> {}, q -> {
+            var entry=ShopRegistry.INSTANCE.entries("fashion_elle").stream().filter(e->e.item().equals("cobblemonarmory:zacian_sword")).findFirst().orElseThrow();
+            return money(q,500-entry.price()) && count(q,entry.item())==1;
+        });
+        add("restart-fashion-wallet-checkpoint", "prod_close", "", q -> balance(q,60), q -> true);
     }
     private static void restartSteps(ServerPlayer p) {
         require(progression(p).storyFlags.contains("production_qa_completed"), "Fresh run did not save completion checkpoint");

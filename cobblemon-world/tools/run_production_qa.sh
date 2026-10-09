@@ -10,6 +10,7 @@ case "$CWORLD_QA_PROFILE" in
     binding-upgrade) CWORLD_QA_FLAGS=(-Dcworld.qa.npcBinding=true) ;;
     binding-restart) CWORLD_QA_FLAGS=(-Dcworld.qa.npcBinding=true -Dcworld.qa.restart=true) ;;
     services) CWORLD_QA_FLAGS=(-Dcworld.qa.services=true) ;;
+    fashion) CWORLD_QA_FLAGS=(-Dcworld.qa.fashion=true) ;;
     narrative-resume|narrative-restart) CWORLD_QA_FLAGS=(-Dcworld.qa.narrative=true -Dcworld.qa.resume=true) ;;
     restart|noeconomy) CWORLD_QA_FLAGS=("-Dcworld.qa.${CWORLD_QA_PROFILE}=true") ;;
     *) echo 'Usage: run_production_qa.sh narrative|narrative-resume|narrative-restart|opening|services|restart|noeconomy|binding-upgrade|binding-restart [Gradle JVM arguments]' >&2; exit 2 ;;
