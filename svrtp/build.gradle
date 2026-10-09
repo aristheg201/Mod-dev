@@ -1,0 +1,55 @@
+plugins { id 'fabric-loom' version '1.10.5' }
+version = '1.0.0'
+group = 'vn.svframe'
+base { archivesName = 'svrtp' }
+repositories {
+ mavenCentral()
+ maven { url 'https://maven.cobblemon.com/releases' }
+ maven { url 'https://maven.wispforest.io/releases' }
+}
+dependencies {
+ minecraft 'com.mojang:minecraft:1.21.1'
+ mappings loom.officialMojangMappings()
+ modImplementation 'net.fabricmc:fabric-loader:0.18.4'
+ modImplementation 'net.fabricmc.fabric-api:fabric-api:0.116.17+1.21.1'
+ modCompileOnly files('libs/Cobblemon-fabric-1.8.1+1.21.1.jar')
+ modCompileOnly 'net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20'
+ modCompileOnly files('libs/Chunky-Fabric-1.4.23.jar', 'libs/ChunkyBorder-1.2.18.jar', 'libs/CobbleDollars-fabric-2.0.0+Beta-6.1+1.21.1.jar')
+ compileOnly files('libs/BEconomy-1.5.jar')
+ compileOnly 'net.luckperms:api:5.4'
+ testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+ testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+java { toolchain.languageVersion = JavaLanguageVersion.of(21); withSourcesJar() }
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 21 }
+processResources { filesMatching('fabric.mod.json') { expand version: project.version } }
+test { useJUnitPlatform() }
+tasks.withType(AbstractArchiveTask).configureEach { preserveFileTimestamps = false; reproducibleFileOrder = true }
+
+sourceSets { qa { java.srcDir 'src/qa/java'; resources.srcDir 'src/qa/resources'; compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output; runtimeClasspath += sourceSets.main.runtimeClasspath } }
+tasks.register('qaJar',Jar) { archiveClassifier='qa-driver'; from sourceSets.qa.output }
+tasks.register('remapQaJar',net.fabricmc.loom.task.RemapJarTask) { dependsOn qaJar; inputFile=tasks.qaJar.archiveFile; archiveClassifier='qa-driver-remapped' }
+configurations { qaRuntimeMods }
+dependencies {
+ qaRuntimeMods 'net.fabricmc.fabric-api:fabric-api:0.116.17+1.21.1'
+ qaRuntimeMods 'net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20'
+ qaRuntimeMods files('libs/Cobblemon-fabric-1.8.1+1.21.1.jar','libs/BEconomy-1.5.jar','libs/CobbleDollars-fabric-2.0.0+Beta-6.1+1.21.1.jar','libs/Chunky-Fabric-1.4.23.jar','libs/ChunkyBorder-1.2.18.jar')
+}
+tasks.register('runQaServer',net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+ dependsOn remapJar,remapQaJar
+ mods.from configurations.qaRuntimeMods
+ mods.from tasks.remapJar.archiveFile
+ mods.from tasks.remapQaJar.archiveFile
+ mods.from fileTree('qa-runtime/mods') { include '*.jar' }
+ jvmArgs.addAll(['-Dsvrtp.qa.server=true','-Dsvrtp.qa.concurrent='+System.getProperty('svrtp.qa.concurrent','false'),'-Dsvrtp.qa.resume='+System.getProperty('svrtp.qa.resume','false'),'-Xmx1280m','-XX:ActiveProcessorCount=2'])
+ runDir=file(System.getProperty('svrtp.qa.serverDir','qa-runtime/server'))
+}
+tasks.register('runQaClient',net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+ dependsOn remapQaJar
+ mods.from configurations.qaRuntimeMods
+ mods.from tasks.remapQaJar.archiveFile
+ jvmArgs.addAll(['-Dsvrtp.qa.client=true','-Xmx1280m','-XX:ActiveProcessorCount=2'])
+ programArgs.addAll(['--username',System.getProperty('svrtp.qa.username','SVRTPQA'),'--width','1280','--height','720'])
+ runDir=file(System.getProperty('svrtp.qa.clientDir','qa-runtime/client'));useXVFB=false
+}
+tasks.named('processQaResources') { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }

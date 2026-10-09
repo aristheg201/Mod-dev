@@ -1,0 +1,53 @@
+{
+  "configVersion": 1,
+  "destinations": {
+    "resource": {
+      "enabled": true,
+      "dimension": "minigamedim:minigame",
+      "minRadius": 1500,
+      "maxRadius": 12000,
+      "cooldownSeconds": 60,
+      "centerX": 0,
+      "centerZ": 0
+    },
+    "nether": {
+      "enabled": true,
+      "dimension": "minecraft:the_nether",
+      "minRadius": 300,
+      "maxRadius": 6000,
+      "cooldownSeconds": 60,
+      "centerX": 0,
+      "centerZ": 0
+    },
+    "end": {
+      "enabled": true,
+      "dimension": "minecraft:the_end",
+      "minRadius": 1500,
+      "maxRadius": 10000,
+      "cooldownSeconds": 60,
+      "centerX": 0,
+      "centerZ": 0
+    }
+  },
+  "performance": {
+    "maxConcurrentRequests": 2,
+    "maxAttemptsPerRequest": 24,
+    "requestTimeoutSeconds": 15,
+    "safeLocationCacheSize": 256,
+    "maxValidationWorkPerTick": 4,
+    "allowChunkGeneration": false
+  },
+  "prices": {
+    "beastCoin": 5,
+    "cobbleDollars": 50000
+  },
+  "permissions": {
+    "use": "svrtp.use",
+    "resource": "svrtp.use.resource",
+    "nether": "svrtp.use.nether",
+    "end": "svrtp.use.end",
+    "admin": "svrtp.admin"
+  },
+  "language": "vi",
+  "resourcePackGui": true
+}

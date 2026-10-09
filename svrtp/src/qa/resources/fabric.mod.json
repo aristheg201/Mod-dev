@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"svrtp_qa","version":"1.0.0","name":"SVRTP Internal QA Driver","environment":"*","entrypoints":{"main":["vn.svframe.svrtp.qa.CommonDriver"],"client":["vn.svframe.svrtp.qa.ClientDriver"]},"depends":{"fabric-api":"*","minecraft":"1.21.1"}}

@@ -1,0 +1,7 @@
+{
+ "schemaVersion":1,"id":"svrtp","version":"${version}","name":"SVRTP",
+ "description":"Bounded server-side random teleportation with optional BeastCoin or CobbleDollars payment.",
+ "environment":"server","entrypoints":{"main":["vn.svframe.svrtp.SVRTP"]},
+ "depends":{"fabricloader":">=0.18.4","minecraft":"~1.21.1","java":">=21","fabric-api":"*"},
+ "suggests":{"chunkyborder":"*","beconomy":"*","cobbledollars":"*","luckperms":"*","cobblemon":"*"}
+}
