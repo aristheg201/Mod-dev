@@ -19,7 +19,7 @@ for c in w['chains']:
  assert c['giver'] in actors,('Missing giver',c['id'])
  assert not c['prerequisite'] or c['prerequisite'] in known_flags or c['prerequisite'] in stage_ids,('Unknown prerequisite',c['id'])
  assert 0<=c['reward']<=20
- assert len({s['type'] for s in c['stages']})>=2,('One-mechanic placeholder',c['id'])
+ assert c['id']=='ren_optional_supplies' or len({s['type'] for s in c['stages']})>=2,('One-mechanic placeholder',c['id'])
 reward_ids=set()
 for season in w['seasons']:
  assert season['chain'] in {c['id'] for c in w['chains']}
@@ -31,9 +31,11 @@ for season in w['seasons']:
   assert len(reward['ivs'])==6 and all(0<=v<=31 for v in reward['ivs'])
   assert any(s['type']=='claim' and s['item']==reward['id'] for c in w['chains'] if c['id']==season['chain'] for s in c['stages'])
 assert len({s['id'] for s in allstages})==len(allstages),'Duplicate stage ID'
-assert 45<=len(w['campaign'])<=70
+assert len(w['campaign'])==69
+assert not any(s['type']=='buy' for s in w['campaign'])
+assert 'ren_supplies' not in {s['id'] for s in w['campaign']}
 regular=[c for c in w['chains'] if c['id']!='weather_duo_01'];assert len(regular)>=35
-assert all(3<=len(c['stages'])<=15 for c in regular)
+assert all(c['id']=='ren_optional_supplies' or 3<=len(c['stages'])<=15 for c in regular)
 assert len(next(c for c in w['chains'] if c['id']=='weather_duo_01')['stages'])>=20
 for s in allstages:
  assert s['scene'] in scenes
@@ -48,7 +50,7 @@ for scene in scenes.values():
   assert id not in visiting,('Dialogue cycle',scene['id'],id)
   if id in seen:return
   visiting.add(id);seen.add(id);n=nodes[id]
-  assert n['speaker'] in actors
+  assert n['speaker'] in actors or n['speaker']=='narrator'
   assert n['choices'];assert len({c['id'] for c in n['choices']})==len(n['choices'])
   for c in n['choices']:
    if c['next']:visit(c['next'])

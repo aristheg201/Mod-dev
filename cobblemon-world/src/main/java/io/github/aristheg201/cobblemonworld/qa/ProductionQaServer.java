@@ -181,6 +181,11 @@ public final class ProductionQaServer {
         pokemon.setCurrentHealth(1); party.set(0, pokemon);
 
         interact("professor-gameplay", "professor_hale", q -> progression(q).storyFlags.contains("professor_met"));
+        if(net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("pebbles-crates"))
+            add("crate-particles-do-not-load-remote-terrain", "prod_close", "", q -> {}, q -> {
+                for(var world:q.getServer().getAllLevels())if(world.getChunkSource().getChunkNow(256,0)!=null)return false;
+                return true;
+            });
         if (Boolean.getBoolean("cworld.qa.services")) {
             interact("gate-tower-before-eight-towns", "battle_tower_receptionist", q -> !progression(q).storyFlags.contains("battle_tower_registered"));
             capture("gate-tower-before-eight-towns.png", "prod_dialogue", "blocked");
@@ -192,7 +197,9 @@ public final class ProductionQaServer {
             capture("gate-vargan-before-trials.png", "prod_dialogue", "blocked");
             add("gate-final-before-archive", "prod_close", "", q -> {}, q -> !io.github.aristheg201.cobblemonworld.boss.TobaEncounterService.eligible(q) && !progression(q).storyFlags.contains("toba_identity_revealed"));
         }
-        add("legacy-side-quest-fixture","prod_close","",q -> CampaignService.activateQuest(q,"first_signal"),q -> progression(q).activeSideQuests.contains("first_signal"));
+        add("legacy-side-quest-and-phone-message-fixture","prod_close","",q -> {
+            CampaignService.activateQuest(q,"first_signal");CampaignService.queueMessage(q,"mysterious","first_contact");
+        },q -> progression(q).activeSideQuests.contains("first_signal") && progression(q).unreadMessages.contains("mysterious:first_contact"));
         capture("01-phone-home-en.png", "prod_phone", "home");
         add("native-faction-create", "prod_faction", "faction_create", q -> {}, q -> io.github.aristheg201.cobblemonworld.faction.NativeFactionService.faction(q).isPresent());
         capture("01-phone-native-faction.png", "prod_phone", "faction");

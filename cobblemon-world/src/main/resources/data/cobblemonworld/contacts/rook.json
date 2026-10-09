@@ -6,7 +6,7 @@
     {
       "id": "after_defeat_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.rook.after_defeat_reply_1",
+      "text": "narrative.v032.phone.rook.after_defeat.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -15,7 +15,7 @@
     {
       "id": "after_defeat_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.rook.after_defeat_reply_2",
+      "text": "narrative.v032.phone.rook.after_defeat.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -24,7 +24,7 @@
     {
       "id": "after_defeat_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.rook.after_defeat_reply_3",
+      "text": "narrative.v032.phone.rook.after_defeat.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -33,25 +33,25 @@
     {
       "id": "after_defeat",
       "triggerFlag": "rook_defeated",
-      "text": "dialogue.cobblemonworld.rook.after_defeat",
+      "text": "narrative.v032.phone.rook.after_defeat.line",
       "responses": [],
       "questUnlock": "rook_black_card",
       "setFlag": "rook_black_card_found",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.rook.after_defeat.choice0",
+          "text": "narrative.v032.phone.rook.after_defeat.choice0",
           "nextNode": "after_defeat_reply_1",
           "questUnlock": "rook_black_card",
           "setFlag": "rook_black_card_found"
         },
         {
-          "text": "dialogue.cobblemonworld.rook.after_defeat.choice1",
+          "text": "narrative.v032.phone.rook.after_defeat.choice1",
           "nextNode": "after_defeat_reply_2",
           "questUnlock": "rook_black_card",
           "setFlag": "dialogue:rook:after_defeat:1"
         },
         {
-          "text": "dialogue.cobblemonworld.rook.after_defeat.choice2",
+          "text": "narrative.v032.phone.rook.after_defeat.choice2",
           "nextNode": "after_defeat_reply_3",
           "questUnlock": "rook_black_card",
           "setFlag": "dialogue:rook:after_defeat:2"
@@ -61,7 +61,7 @@
     {
       "id": "after_card_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.rook.after_card_reply_1",
+      "text": "narrative.v032.phone.rook.after_card.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -70,7 +70,7 @@
     {
       "id": "after_card_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.rook.after_card_reply_2",
+      "text": "narrative.v032.phone.rook.after_card.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -79,7 +79,7 @@
     {
       "id": "after_card_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.rook.after_card_reply_3",
+      "text": "narrative.v032.phone.rook.after_card.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -88,25 +88,25 @@
     {
       "id": "after_card",
       "triggerFlag": "rook_black_card_complete",
-      "text": "dialogue.cobblemonworld.rook.after_card",
+      "text": "narrative.v032.phone.rook.after_card.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "below_title_hint",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.rook.after_card.choice0",
+          "text": "narrative.v032.phone.rook.after_card.choice0",
           "nextNode": "after_card_reply_1",
           "questUnlock": "",
           "setFlag": "below_title_hint"
         },
         {
-          "text": "dialogue.cobblemonworld.rook.after_card.choice1",
+          "text": "narrative.v032.phone.rook.after_card.choice1",
           "nextNode": "after_card_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:rook:after_card:1"
         },
         {
-          "text": "dialogue.cobblemonworld.rook.after_card.choice2",
+          "text": "narrative.v032.phone.rook.after_card.choice2",
           "nextNode": "after_card_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:rook:after_card:2"

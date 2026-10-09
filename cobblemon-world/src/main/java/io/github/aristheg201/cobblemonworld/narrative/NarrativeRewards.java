@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 public final class NarrativeRewards {
     public record Payment(int amount,String state,String before){}
     public static void offer(ServerPlayer p,String id,int amount){
+        if(amount<=0)return;
         var ledger=NarrativeEngine.state(p).narrative.payments;
         ledger.putIfAbsent(id,new Payment(amount,"pending",""));ProgressionStore.INSTANCE.save();retry(p);
     }

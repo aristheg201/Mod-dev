@@ -16,7 +16,9 @@ First major trainer:
 
 - `mara_voss`
 
-Flow: Professor Hale / early gameplay / phone/resource objectives -> Mara Voss.
+Flow in 0.3.2: Hale activates the Phone → Mira checks the party → Lan asks for three apples → deliver the apples to Hale → Mara introduction → first Mara challenge → inspect the training log → Hale → the unknown message → Mara → Orin.
+
+Ren, Elle and Tomo are optional services. The Ren purchase tutorial is a separate zero-reward side activity and never gates Mara. Existing schema-1 saves at `ren_supplies` migrate to `lan_errand` once; completed purchases remain recorded.
 
 ## 1. Town 2
 

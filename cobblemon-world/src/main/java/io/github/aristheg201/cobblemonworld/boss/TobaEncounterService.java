@@ -132,25 +132,33 @@ public final class TobaEncounterService {
         }
     }
 
-    public static void beginFromConversation(ServerPlayer player) {
+    public static TrainerBattleService.BattleAttempt beginFromConversation(ServerPlayer player) {
         UUID id = ACTIVE_ACTORS.get(player.getUUID());
-        if (id == null) return;
+        if (id == null) return rejected(player,"battle.cobblemonworld.unavailable");
         var actor = player.serverLevel().getEntity(id);
-        if (actor instanceof MysteriousFigureEntity figure) beginPhaseOne(player, figure);
+        if (actor instanceof MysteriousFigureEntity figure) return beginPhaseOne(player, figure);
+        return rejected(player,"battle.cobblemonworld.unavailable");
     }
-    public static void beginPhaseOne(ServerPlayer player, MysteriousFigureEntity actor) {
-        if (state(player) != TobaBossState.READY) return;
-        if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) return;
+    private static TrainerBattleService.BattleAttempt rejected(ServerPlayer player,String reason) {
+        io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.info("Final trainer action rejected player={} reason={}",player.getUUID(),reason);
+        return new TrainerBattleService.BattleAttempt(false,reason);
+    }
+    public static TrainerBattleService.BattleAttempt beginPhaseOne(ServerPlayer player, MysteriousFigureEntity actor) {
+        if (state(player) != TobaBossState.READY) return rejected(player,"battle.cobblemonworld.story_locked");
+        if (!actor.isAlive() || actor.level()!=player.level() || actor.distanceToSqr(player)>64
+                || actor.getOwnerUuid()!=null && !actor.getOwnerUuid().equals(player.getUUID()))
+            return rejected(player,"battle.cobblemonworld.unavailable");
+        if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null)
+            return rejected(player,"battle.cobblemonworld.player_busy");
 
         var definition = NpcDefinitionRegistry.INSTANCE.get("mysterious");
-        if (definition == null) return;
+        if (definition == null) return rejected(player,"battle.cobblemonworld.unavailable");
 
         NPCEntity proxy = TrainerBattleService.createNpc(player, definition);
-        TrainerBattleService.prepareBattleParty(proxy, player, definition);
         proxy.setInvisible(true);
         proxy.setCustomNameVisible(false);
         proxy.moveTo(actor.getX(), actor.getY(), actor.getZ(), actor.getYRot(), actor.getXRot());
-        if (!player.serverLevel().addFreshEntity(proxy)) return;
+        if (!player.serverLevel().addFreshEntity(proxy)) return rejected(player,"battle.cobblemonworld.unavailable");
         ACTIVE_PROXIES.put(player.getUUID(), proxy.getUUID());
 
         PlayerProgression p = ProgressionStore.INSTANCE.getOrCreate(player.getUUID());
@@ -159,17 +167,20 @@ public final class TobaEncounterService {
 
 
         try {
-            var result = BattleBuilder.INSTANCE.pvn(player, proxy);
-            if (!(result instanceof com.cobblemon.mod.common.battles.SuccessfulBattleStart)) {
+            // Apply the same authoritative level-cap, party, binding and native
+            // battle-result checks as every other trainer, including Mara.
+            var result = TrainerBattleService.tryStartBattle(proxy,player,"mysterious");
+            if (!result.started()) {
                 proxy.discard(); ACTIVE_PROXIES.remove(player.getUUID()); p.storyFlags.remove("mysterious_phase_one_active"); ProgressionStore.INSTANCE.save();
-                player.sendSystemMessage(Component.translatable("service.cobblemonworld.battle_failed"));
             }
+            return result;
         } catch (Exception e) {
             io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.error("Final trainer battle failed for {}", player.getUUID(), e);
             proxy.discard();
             ACTIVE_PROXIES.remove(player.getUUID());
             p.storyFlags.remove("mysterious_phase_one_active");
             ProgressionStore.INSTANCE.save();
+            return rejected(player,"battle.cobblemonworld.unavailable");
         }
     }
 

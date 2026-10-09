@@ -59,6 +59,7 @@ public final class ProductionQaClient {
         double score = template.getPower() * (type.equals("psychic") ? 1.5 : 1);
         var strong = switch (type) {
             case "fighting" -> Set.of("normal", "ice", "rock", "dark", "steel");
+            case "grass" -> Set.of("water", "ground", "rock");
             case "ice" -> Set.of("grass", "ground", "flying", "dragon");
             case "fire" -> Set.of("grass", "ice", "bug", "steel");
             case "electric" -> Set.of("water", "flying");
@@ -66,6 +67,7 @@ public final class ProductionQaClient {
         };
         var weak = switch (type) {
             case "fighting" -> Set.of("poison", "flying", "psychic", "bug", "fairy");
+            case "grass" -> Set.of("fire", "grass", "poison", "flying", "bug", "dragon", "steel");
             case "ice" -> Set.of("fire", "water", "ice", "steel");
             case "fire" -> Set.of("fire", "water", "rock", "dragon");
             case "electric" -> Set.of("electric", "grass", "dragon");
@@ -126,6 +128,13 @@ public final class ProductionQaClient {
                 var npc = mc.level.getEntity(Integer.parseInt(p.primary()));
                 if (npc == null) return 0;
                 if (!interacted) { mc.gameMode.interact(mc.player, npc, InteractionHand.MAIN_HAND); interacted = true; ticks = 1; }
+                if (mc.screen instanceof io.github.aristheg201.cobblemonworld.client.screen.DialogueScreen dialogue && ticks > 10) {
+                    // Service QA must use the same explicit menu choice as a player;
+                    // interacting alone no longer bypasses the conversation screen.
+                    for(int i=0;i<dialogue.snapshot().choices().size();i++)if(dialogue.snapshot().choices().get(i).id().equals("service")) {
+                        dialogue.qaClick(i);ticks=1;return 0;
+                    }
+                }
                 return ticks > 12 ? 1 : 0;
             }
             case "prod_phone" -> {
@@ -171,11 +180,11 @@ public final class ProductionQaClient {
                 if (!(mc.screen instanceof ShopScreen shop)) return 0;
                 if (ticks == 1) {
                     if (p.primary().equals("double")) {
-                        ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", 1));
-                        ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", 1));
-                    } else if (p.primary().equals("invalid")) ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", -100));
-                    else if (p.primary().equals("unknown")) ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball:price=0", 1));
-                    else if (p.primary().equals("request")) ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", 1));
+                        ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", 1,shop.qaSnapshot().session(),shop.qaSnapshot().revision(),java.util.UUID.randomUUID()));
+                        ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", 1,shop.qaSnapshot().session(),shop.qaSnapshot().revision(),java.util.UUID.randomUUID()));
+                    } else if (p.primary().equals("invalid")) ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", -100,shop.qaSnapshot().session(),shop.qaSnapshot().revision(),java.util.UUID.randomUUID()));
+                    else if (p.primary().equals("unknown")) ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball:price=0", 1,shop.qaSnapshot().session(),shop.qaSnapshot().revision(),java.util.UUID.randomUUID()));
+                    else if (p.primary().equals("request")) ClientPlayNetworking.send(new ShopBuyPayload(shop.qaSnapshot().id(), "poke_ball", 1,shop.qaSnapshot().session(),shop.qaSnapshot().revision(),java.util.UUID.randomUUID()));
                     else shop.qaClickBuy();
                 }
                 return ticks > 20 ? 2 : 0;

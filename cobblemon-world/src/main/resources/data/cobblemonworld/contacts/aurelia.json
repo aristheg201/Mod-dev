@@ -6,7 +6,7 @@
     {
       "id": "after_defeat_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.aurelia.after_defeat_reply_1",
+      "text": "narrative.v032.phone.aurelia.after_defeat.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -15,7 +15,7 @@
     {
       "id": "after_defeat_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.aurelia.after_defeat_reply_2",
+      "text": "narrative.v032.phone.aurelia.after_defeat.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -24,7 +24,7 @@
     {
       "id": "after_defeat_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.aurelia.after_defeat_reply_3",
+      "text": "narrative.v032.phone.aurelia.after_defeat.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -33,25 +33,25 @@
     {
       "id": "after_defeat",
       "triggerFlag": "aurelia_defeated",
-      "text": "dialogue.cobblemonworld.aurelia.after_defeat",
+      "text": "narrative.v032.phone.aurelia.after_defeat.line",
       "responses": [],
       "questUnlock": "aurelia_below",
       "setFlag": "aurelia_seven_record",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.aurelia.after_defeat.choice0",
+          "text": "narrative.v032.phone.aurelia.after_defeat.choice0",
           "nextNode": "after_defeat_reply_1",
           "questUnlock": "aurelia_below",
           "setFlag": "aurelia_seven_record"
         },
         {
-          "text": "dialogue.cobblemonworld.aurelia.after_defeat.choice1",
+          "text": "narrative.v032.phone.aurelia.after_defeat.choice1",
           "nextNode": "after_defeat_reply_2",
           "questUnlock": "aurelia_below",
           "setFlag": "dialogue:aurelia:after_defeat:1"
         },
         {
-          "text": "dialogue.cobblemonworld.aurelia.after_defeat.choice2",
+          "text": "narrative.v032.phone.aurelia.after_defeat.choice2",
           "nextNode": "after_defeat_reply_3",
           "questUnlock": "aurelia_below",
           "setFlag": "dialogue:aurelia:after_defeat:2"
@@ -61,7 +61,7 @@
     {
       "id": "after_below_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.aurelia.after_below_reply_1",
+      "text": "narrative.v032.phone.aurelia.after_below.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -70,7 +70,7 @@
     {
       "id": "after_below_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.aurelia.after_below_reply_2",
+      "text": "narrative.v032.phone.aurelia.after_below.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -79,7 +79,7 @@
     {
       "id": "after_below_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.aurelia.after_below_reply_3",
+      "text": "narrative.v032.phone.aurelia.after_below.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -88,25 +88,25 @@
     {
       "id": "after_below",
       "triggerFlag": "aurelia_below_complete",
-      "text": "dialogue.cobblemonworld.aurelia.after_below",
+      "text": "narrative.v032.phone.aurelia.after_below.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "last_warning_received",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.aurelia.after_below.choice0",
+          "text": "narrative.v032.phone.aurelia.after_below.choice0",
           "nextNode": "after_below_reply_1",
           "questUnlock": "",
           "setFlag": "last_warning_received"
         },
         {
-          "text": "dialogue.cobblemonworld.aurelia.after_below.choice1",
+          "text": "narrative.v032.phone.aurelia.after_below.choice1",
           "nextNode": "after_below_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:aurelia:after_below:1"
         },
         {
-          "text": "dialogue.cobblemonworld.aurelia.after_below.choice2",
+          "text": "narrative.v032.phone.aurelia.after_below.choice2",
           "nextNode": "after_below_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:aurelia:after_below:2"

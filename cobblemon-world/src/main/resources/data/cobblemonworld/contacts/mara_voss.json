@@ -6,7 +6,7 @@
     {
       "id": "after_defeat_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mara_voss.after_defeat_reply_1",
+      "text": "narrative.v032.phone.mara_voss.after_defeat.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -15,7 +15,7 @@
     {
       "id": "after_defeat_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mara_voss.after_defeat_reply_2",
+      "text": "narrative.v032.phone.mara_voss.after_defeat.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -24,7 +24,7 @@
     {
       "id": "after_defeat_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mara_voss.after_defeat_reply_3",
+      "text": "narrative.v032.phone.mara_voss.after_defeat.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -33,25 +33,25 @@
     {
       "id": "after_defeat",
       "triggerFlag": "mara_voss_defeated",
-      "text": "dialogue.cobblemonworld.mara_voss.after_defeat",
+      "text": "narrative.v032.phone.mara_voss.after_defeat.line",
       "responses": [],
       "questUnlock": "voss_echo",
       "setFlag": "voss_suspicious",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mara_voss.after_defeat.choice0",
+          "text": "narrative.v032.phone.mara_voss.after_defeat.choice0",
           "nextNode": "after_defeat_reply_1",
           "questUnlock": "voss_echo",
           "setFlag": "voss_suspicious"
         },
         {
-          "text": "dialogue.cobblemonworld.mara_voss.after_defeat.choice1",
+          "text": "narrative.v032.phone.mara_voss.after_defeat.choice1",
           "nextNode": "after_defeat_reply_2",
           "questUnlock": "voss_echo",
           "setFlag": "dialogue:mara_voss:after_defeat:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mara_voss.after_defeat.choice2",
+          "text": "narrative.v032.phone.mara_voss.after_defeat.choice2",
           "nextNode": "after_defeat_reply_3",
           "questUnlock": "voss_echo",
           "setFlag": "dialogue:mara_voss:after_defeat:2"
@@ -61,7 +61,7 @@
     {
       "id": "after_echo_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mara_voss.after_echo_reply_1",
+      "text": "narrative.v032.phone.mara_voss.after_echo.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -70,7 +70,7 @@
     {
       "id": "after_echo_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mara_voss.after_echo_reply_2",
+      "text": "narrative.v032.phone.mara_voss.after_echo.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -79,7 +79,7 @@
     {
       "id": "after_echo_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mara_voss.after_echo_reply_3",
+      "text": "narrative.v032.phone.mara_voss.after_echo.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -88,25 +88,25 @@
     {
       "id": "after_echo",
       "triggerFlag": "voss_echo_complete",
-      "text": "dialogue.cobblemonworld.mara_voss.after_echo",
+      "text": "narrative.v032.phone.mara_voss.after_echo.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "voss_found_old_signal",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mara_voss.after_echo.choice0",
+          "text": "narrative.v032.phone.mara_voss.after_echo.choice0",
           "nextNode": "after_echo_reply_1",
           "questUnlock": "",
           "setFlag": "voss_found_old_signal"
         },
         {
-          "text": "dialogue.cobblemonworld.mara_voss.after_echo.choice1",
+          "text": "narrative.v032.phone.mara_voss.after_echo.choice1",
           "nextNode": "after_echo_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mara_voss:after_echo:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mara_voss.after_echo.choice2",
+          "text": "narrative.v032.phone.mara_voss.after_echo.choice2",
           "nextNode": "after_echo_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mara_voss:after_echo:2"

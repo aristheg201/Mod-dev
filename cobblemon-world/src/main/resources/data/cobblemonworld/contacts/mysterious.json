@@ -6,7 +6,7 @@
     {
       "id": "first_contact_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_reply_1",
+      "text": "narrative.v032.phone.mysterious.first_contact.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -15,7 +15,7 @@
     {
       "id": "first_contact_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_reply_2",
+      "text": "narrative.v032.phone.mysterious.first_contact.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -24,7 +24,7 @@
     {
       "id": "first_contact_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_reply_3",
+      "text": "narrative.v032.phone.mysterious.first_contact.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -33,25 +33,25 @@
     {
       "id": "first_contact",
       "triggerFlag": "unknown_contact_received",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact",
+      "text": "narrative.v032.phone.mysterious.first_contact.line",
       "responses": [],
       "questUnlock": "first_signal",
       "setFlag": "prologue_complete",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact.choice0",
+          "text": "narrative.v032.phone.mysterious.first_contact.choice0",
           "nextNode": "first_contact_reply_1",
           "questUnlock": "first_signal",
           "setFlag": "prologue_complete"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact.choice1",
+          "text": "narrative.v032.phone.mysterious.first_contact.choice1",
           "nextNode": "first_contact_reply_2",
           "questUnlock": "first_signal",
           "setFlag": "dialogue:mysterious:first_contact:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact.choice2",
+          "text": "narrative.v032.phone.mysterious.first_contact.choice2",
           "nextNode": "first_contact_reply_3",
           "questUnlock": "first_signal",
           "setFlag": "dialogue:mysterious:first_contact:2"
@@ -61,7 +61,7 @@
     {
       "id": "you_are_asking_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.you_are_asking_reply_1",
+      "text": "narrative.v032.phone.mysterious.you_are_asking.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -70,7 +70,7 @@
     {
       "id": "you_are_asking_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.you_are_asking_reply_2",
+      "text": "narrative.v032.phone.mysterious.you_are_asking.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -79,7 +79,7 @@
     {
       "id": "you_are_asking_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.you_are_asking_reply_3",
+      "text": "narrative.v032.phone.mysterious.you_are_asking.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -88,25 +88,25 @@
     {
       "id": "you_are_asking",
       "triggerFlag": "narrative_stage_orin_summary",
-      "text": "dialogue.cobblemonworld.mysterious.you_are_asking",
+      "text": "narrative.v032.phone.mysterious.you_are_asking.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "mysterious_acknowledged_investigation",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.you_are_asking.choice0",
+          "text": "narrative.v032.phone.mysterious.you_are_asking.choice0",
           "nextNode": "you_are_asking_reply_1",
           "questUnlock": "",
           "setFlag": "mysterious_acknowledged_investigation"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.you_are_asking.choice1",
+          "text": "narrative.v032.phone.mysterious.you_are_asking.choice1",
           "nextNode": "you_are_asking_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:you_are_asking:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.you_are_asking.choice2",
+          "text": "narrative.v032.phone.mysterious.you_are_asking.choice2",
           "nextNode": "you_are_asking_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:you_are_asking:2"
@@ -116,7 +116,7 @@
     {
       "id": "last_person_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.last_person_reply_1",
+      "text": "narrative.v032.phone.mysterious.last_person.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -125,7 +125,7 @@
     {
       "id": "last_person_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.last_person_reply_2",
+      "text": "narrative.v032.phone.mysterious.last_person.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -134,7 +134,7 @@
     {
       "id": "last_person_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.last_person_reply_3",
+      "text": "narrative.v032.phone.mysterious.last_person.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -143,25 +143,25 @@
     {
       "id": "last_person",
       "triggerFlag": "cast_archive_informed",
-      "text": "dialogue.cobblemonworld.mysterious.last_person",
+      "text": "narrative.v032.phone.mysterious.last_person.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "final_meeting_requested",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.last_person.choice0",
+          "text": "narrative.v032.phone.mysterious.last_person.choice0",
           "nextNode": "last_person_reply_1",
           "questUnlock": "",
           "setFlag": "final_meeting_requested"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.last_person.choice1",
+          "text": "narrative.v032.phone.mysterious.last_person.choice1",
           "nextNode": "last_person_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:last_person:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.last_person.choice2",
+          "text": "narrative.v032.phone.mysterious.last_person.choice2",
           "nextNode": "last_person_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:last_person:2"
@@ -171,7 +171,7 @@
     {
       "id": "meet_me_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.meet_me_reply_1",
+      "text": "narrative.v032.phone.mysterious.meet_me.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -180,7 +180,7 @@
     {
       "id": "meet_me_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.meet_me_reply_2",
+      "text": "narrative.v032.phone.mysterious.meet_me.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -189,7 +189,7 @@
     {
       "id": "meet_me_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.meet_me_reply_3",
+      "text": "narrative.v032.phone.mysterious.meet_me.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -198,25 +198,25 @@
     {
       "id": "meet_me",
       "triggerFlag": "final_meeting_requested",
-      "text": "dialogue.cobblemonworld.mysterious.meet_me",
+      "text": "narrative.v032.phone.mysterious.meet_me.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "toba_meeting_revealed",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.meet_me.choice0",
+          "text": "narrative.v032.phone.mysterious.meet_me.choice0",
           "nextNode": "meet_me_reply_1",
           "questUnlock": "",
           "setFlag": "toba_meeting_revealed"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.meet_me.choice1",
+          "text": "narrative.v032.phone.mysterious.meet_me.choice1",
           "nextNode": "meet_me_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:meet_me:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.meet_me.choice2",
+          "text": "narrative.v032.phone.mysterious.meet_me.choice2",
           "nextNode": "meet_me_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:meet_me:2"
@@ -226,7 +226,7 @@
     {
       "id": "first_contact_who_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_who_reply_1",
+      "text": "narrative.v032.phone.mysterious.first_contact_who.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -235,7 +235,7 @@
     {
       "id": "first_contact_who_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_who_reply_2",
+      "text": "narrative.v032.phone.mysterious.first_contact_who.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -244,7 +244,7 @@
     {
       "id": "first_contact_who_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_who_reply_3",
+      "text": "narrative.v032.phone.mysterious.first_contact_who.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -253,25 +253,25 @@
     {
       "id": "first_contact_who",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_who",
+      "text": "narrative.v032.phone.mysterious.first_contact_who.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_who.choice0",
+          "text": "narrative.v032.phone.mysterious.first_contact_who.choice0",
           "nextNode": "first_contact_who_reply_1",
           "questUnlock": "",
           "setFlag": ""
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_who.choice1",
+          "text": "narrative.v032.phone.mysterious.first_contact_who.choice1",
           "nextNode": "first_contact_who_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:first_contact_who:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_who.choice2",
+          "text": "narrative.v032.phone.mysterious.first_contact_who.choice2",
           "nextNode": "first_contact_who_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:first_contact_who:2"
@@ -281,7 +281,7 @@
     {
       "id": "first_contact_what_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_what_reply_1",
+      "text": "narrative.v032.phone.mysterious.first_contact_what.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -290,7 +290,7 @@
     {
       "id": "first_contact_what_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_what_reply_2",
+      "text": "narrative.v032.phone.mysterious.first_contact_what.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -299,7 +299,7 @@
     {
       "id": "first_contact_what_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_what_reply_3",
+      "text": "narrative.v032.phone.mysterious.first_contact_what.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -308,25 +308,25 @@
     {
       "id": "first_contact_what",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_what",
+      "text": "narrative.v032.phone.mysterious.first_contact_what.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_what.choice0",
+          "text": "narrative.v032.phone.mysterious.first_contact_what.choice0",
           "nextNode": "first_contact_what_reply_1",
           "questUnlock": "",
           "setFlag": ""
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_what.choice1",
+          "text": "narrative.v032.phone.mysterious.first_contact_what.choice1",
           "nextNode": "first_contact_what_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:first_contact_what:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_what.choice2",
+          "text": "narrative.v032.phone.mysterious.first_contact_what.choice2",
           "nextNode": "first_contact_what_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:first_contact_what:2"
@@ -336,7 +336,7 @@
     {
       "id": "first_contact_why_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_why_reply_1",
+      "text": "narrative.v032.phone.mysterious.first_contact_why.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -345,7 +345,7 @@
     {
       "id": "first_contact_why_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_why_reply_2",
+      "text": "narrative.v032.phone.mysterious.first_contact_why.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -354,7 +354,7 @@
     {
       "id": "first_contact_why_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_why_reply_3",
+      "text": "narrative.v032.phone.mysterious.first_contact_why.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -363,25 +363,25 @@
     {
       "id": "first_contact_why",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.mysterious.first_contact_why",
+      "text": "narrative.v032.phone.mysterious.first_contact_why.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_why.choice0",
+          "text": "narrative.v032.phone.mysterious.first_contact_why.choice0",
           "nextNode": "first_contact_why_reply_1",
           "questUnlock": "",
           "setFlag": ""
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_why.choice1",
+          "text": "narrative.v032.phone.mysterious.first_contact_why.choice1",
           "nextNode": "first_contact_why_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:first_contact_why:1"
         },
         {
-          "text": "dialogue.cobblemonworld.mysterious.first_contact_why.choice2",
+          "text": "narrative.v032.phone.mysterious.first_contact_why.choice2",
           "nextNode": "first_contact_why_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:mysterious:first_contact_why:2"

@@ -83,7 +83,7 @@ public final class CWorldQaClientHarness {
                 worldCreateRequested = true;
                 worldWaitTicks = 0;
                 if (Boolean.getBoolean("cworld.qa.multiplayer")) {
-                    String address = "127.0.0.1:25571";
+                    String address = System.getProperty("cworld.qa.address", "127.0.0.1:25571");
                     net.minecraft.client.gui.screens.ConnectScreen.startConnecting(client.screen, client,
                             net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(address),
                             new net.minecraft.client.multiplayer.ServerData("Production QA", address,

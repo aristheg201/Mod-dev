@@ -32,17 +32,9 @@ public final class NarrativeEngine {
     }
     public static void migrate(ServerPlayer player){
         var p=state(player);var n=p.narrative;var r=NarrativeRegistry.INSTANCE;
-        if(n.schema>=1)return;
-        int skip=0;
-        for(int i=0;i<r.data.campaign().length;i++){
-            var s=r.data.campaign()[i];
-            if(s.legacyFlag()!=null && !s.legacyFlag().isBlank() && p.storyFlags.contains(s.legacyFlag()))skip=i+1;
-        }
-        if(p.storyFlags.contains("main_story_complete"))skip=r.data.campaign().length;
-        for(int i=0;i<skip;i++){var stage=r.data.campaign()[i];n.finished.add(stage.id());if(stage.type().equals("battle"))n.finished.add("battle:"+stage.target());if(stage.flags()!=null)p.storyFlags.addAll(java.util.List.of(stage.flags()));}
-        n.main=skip<r.data.campaign().length?r.data.campaign()[skip].id():"";n.schema=1;
+        if(!NarrativeMigration.apply(n,p.storyFlags,r.data.campaign()))return;
         ProgressionStore.INSTANCE.save();
-        io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.info("Narrative migration player={} inferred={} next={}",player.getUUID(),skip,n.main);
+        io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.info("Narrative migration player={} schema={} next={}",player.getUUID(),n.schema,n.main);
     }
     public static NarrativeRegistry.Stage main(PlayerProgression p){return NarrativeRegistry.INSTANCE.stages.get(p.narrative.main);}
     public static List<NarrativeRegistry.Stage> active(ServerPlayer p){var n=state(p).narrative;var out=new ArrayList<NarrativeRegistry.Stage>();var main=main(state(p));if(main!=null)out.add(main);

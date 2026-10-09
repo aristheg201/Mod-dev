@@ -1,28 +1,27 @@
 # Campaign flow
 
 
-Seven Acts group 70 stages into chapters. Stages advance only from their own matching conversation, completed battle, inspected authored point, service, inventory delivery or purchase.
+Seven Acts group 69 stages into chapters. Stages advance only from their own matching conversation, completed battle, inspected authored point, service, inventory delivery or an authored service. Purchases are optional side activities.
 
 New saves begin with Hale. Legacy flags infer completed preceding stages without discarding contacts, messages, quests, placements or faction data.
 
 
 ## Act 0
 
-A number to call → Before the road → First-day supplies → The forgotten basket → Science needs lunch → A rival on the same road → The First Challenge → The missing second → What he will not say → A message from nobody → Do not go alone
+A number to call → Before the road → The forgotten basket → Science needs lunch → A rival on the same road → The First Challenge → The missing second → What he will not say → A message from nobody → Do not go alone
 
 | # | Stable stage ID | Mechanic | Target | Objective |
 |---|---|---|---|---|
 | 1 | `hale_phone` | talk | Professor Elias Hale | Talk to Hale about the journey and your Trainer Phone. |
 | 2 | `mira_visit` | heal | Mira - Daycare | Ask Mira to check and heal your Pokémon party. |
-| 3 | `ren_supplies` | buy | Ren - PokeMall | Buy a supply bundle from Ren’s shop. |
-| 4 | `lan_errand` | talk | Cô Lan | Ask Lan what Hale forgot. |
-| 5 | `hale_lunch` | deliver | Professor Elias Hale | Deliver 3 apples to Hale. |
-| 6 | `mara_intro` | talk | Mara Voss | Meet Mara at the practice field. |
-| 7 | `mara_first` | battle | Mara Voss | Win your first proper challenge against Mara. |
-| 8 | `field_fault` | inspect | Practice log | Inspect the practice-field log after the battle. |
-| 9 | `hale_fault` | talk | Professor Elias Hale | Tell Hale what the practice log showed. |
-| 10 | `unknown_first` | talk | Bác Phúc | Ask Phuc about the abandoned practice-field mailbox. |
-| 11 | `mara_aftermath` | talk | Mara Voss | Show Mara the strange message before leaving for town two. |
+| 3 | `lan_errand` | talk | Cô Lan | Ask Lan what Hale forgot. |
+| 4 | `hale_lunch` | deliver | Professor Elias Hale | Deliver 3 apples to Hale. |
+| 5 | `mara_intro` | talk | Mara Voss | Meet Mara at the practice field. |
+| 6 | `mara_first` | battle | Mara Voss | Win your first proper challenge against Mara. |
+| 7 | `field_fault` | inspect | Practice log | Inspect the practice-field log after the battle. |
+| 8 | `hale_fault` | talk | Professor Elias Hale | Tell Hale what the practice log showed. |
+| 9 | `unknown_first` | talk | Bác Phúc | Ask Phuc about the abandoned practice-field mailbox. |
+| 10 | `mara_aftermath` | talk | Mara Voss | Show Mara the strange message before leaving for town two. |
 
 
 ## Act I

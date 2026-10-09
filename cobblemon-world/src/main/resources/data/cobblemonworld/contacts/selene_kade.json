@@ -6,7 +6,7 @@
     {
       "id": "after_defeat_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.selene_kade.after_defeat_reply_1",
+      "text": "narrative.v032.phone.selene_kade.after_defeat.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -15,7 +15,7 @@
     {
       "id": "after_defeat_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.selene_kade.after_defeat_reply_2",
+      "text": "narrative.v032.phone.selene_kade.after_defeat.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -24,7 +24,7 @@
     {
       "id": "after_defeat_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.selene_kade.after_defeat_reply_3",
+      "text": "narrative.v032.phone.selene_kade.after_defeat.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -33,25 +33,25 @@
     {
       "id": "after_defeat",
       "triggerFlag": "selene_kade_defeated",
-      "text": "dialogue.cobblemonworld.selene_kade.after_defeat",
+      "text": "narrative.v032.phone.selene_kade.after_defeat.line",
       "responses": [],
       "questUnlock": "selene_stalemate",
       "setFlag": "selene_sequence_noticed",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.selene_kade.after_defeat.choice0",
+          "text": "narrative.v032.phone.selene_kade.after_defeat.choice0",
           "nextNode": "after_defeat_reply_1",
           "questUnlock": "selene_stalemate",
           "setFlag": "selene_sequence_noticed"
         },
         {
-          "text": "dialogue.cobblemonworld.selene_kade.after_defeat.choice1",
+          "text": "narrative.v032.phone.selene_kade.after_defeat.choice1",
           "nextNode": "after_defeat_reply_2",
           "questUnlock": "selene_stalemate",
           "setFlag": "dialogue:selene_kade:after_defeat:1"
         },
         {
-          "text": "dialogue.cobblemonworld.selene_kade.after_defeat.choice2",
+          "text": "narrative.v032.phone.selene_kade.after_defeat.choice2",
           "nextNode": "after_defeat_reply_3",
           "questUnlock": "selene_stalemate",
           "setFlag": "dialogue:selene_kade:after_defeat:2"
@@ -61,7 +61,7 @@
     {
       "id": "after_stalemate_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate_reply_1",
+      "text": "narrative.v032.phone.selene_kade.after_stalemate.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -70,7 +70,7 @@
     {
       "id": "after_stalemate_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate_reply_2",
+      "text": "narrative.v032.phone.selene_kade.after_stalemate.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -79,7 +79,7 @@
     {
       "id": "after_stalemate_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate_reply_3",
+      "text": "narrative.v032.phone.selene_kade.after_stalemate.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -88,25 +88,25 @@
     {
       "id": "after_stalemate",
       "triggerFlag": "selene_stalemate_complete",
-      "text": "dialogue.cobblemonworld.selene_kade.after_stalemate",
+      "text": "narrative.v032.phone.selene_kade.after_stalemate.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "board_clear_revealed",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.selene_kade.after_stalemate.choice0",
+          "text": "narrative.v032.phone.selene_kade.after_stalemate.choice0",
           "nextNode": "after_stalemate_reply_1",
           "questUnlock": "",
           "setFlag": "board_clear_revealed"
         },
         {
-          "text": "dialogue.cobblemonworld.selene_kade.after_stalemate.choice1",
+          "text": "narrative.v032.phone.selene_kade.after_stalemate.choice1",
           "nextNode": "after_stalemate_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:selene_kade:after_stalemate:1"
         },
         {
-          "text": "dialogue.cobblemonworld.selene_kade.after_stalemate.choice2",
+          "text": "narrative.v032.phone.selene_kade.after_stalemate.choice2",
           "nextNode": "after_stalemate_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:selene_kade:after_stalemate:2"

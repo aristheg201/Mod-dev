@@ -62,7 +62,7 @@ public final class NarrativeQaClient {
             if(!captured && age>20){screenshot(mc,token);captured=true;shop.qaClickBuy();}
             return captured && age>60?1:0;
         }
-        if(control.kind().equals("heal") && interacted && age>40){screenshot(mc,token);return 1;}
+        if(control.kind().equals("heal") && interacted && mc.screen==null && age>100){screenshot(mc,token);return 1;}
         if(mc.screen instanceof DialogueScreen dialogue){
             var snapshot=dialogue.snapshot();String key=snapshot.text()+":"+snapshot.revision();
             if(!key.equals(lastNode)){lastNode=key;nodeAge=0;}nodeAge++;

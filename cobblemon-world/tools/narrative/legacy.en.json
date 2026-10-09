@@ -1,0 +1,1478 @@
+{
+  "arrival": {
+    "start": "The research room is open. Hale has cleared the desk by the door.",
+    "facts": "Nobody needs you to save the world today. Go say hello first."
+  },
+  "hale_phone": {
+    "start": "Do not stay up until three and blame your Pokémon for being tired. The phone is for calling for help, not staying up later.",
+    "facts": "Mira looks after Pokémon nearby. Ren sells travel supplies. Mara wants a proper battle. First, I have a small errand."
+  },
+  "mira_visit": {
+    "start": "Bring the whole team over. Nobody has to pretend they are fine while hurt.",
+    "facts": "Mira heals the entire party. You can return whenever you are out of battle."
+  },
+  "ren_supplies": {
+    "start": "Discount? Yes. The discount is zero. There, saved us both a question.",
+    "facts": "Choose a bundle in the shop. The price and BeastCoin balance are on the counter. Short on money? A side job can help."
+  },
+  "lan_errand": {
+    "start": "Hale forgot his lunch. Third time this week. Do not tell him I am counting.",
+    "facts": "Take him three apples. Science is not a substitute for lunch. Mara has asked about you twice."
+  },
+  "hale_lunch": {
+    "start": "Lan sent you? I meant to read one more page. Then another.",
+    "facts": "Thank you. Mara is at the practice field. You do not have to win to begin, but you need to understand your team."
+  },
+  "mara_intro": {
+    "start": "I thought you had run away. I did not wait all morning to watch you choose a phone case.",
+    "facts": "I battle to find out what I am missing. You should too. Prepare your team and come back."
+  },
+  "mara_first": {
+    "start": "Hold on. Stand still. I need about thirty-six VAR angles before you make that face.",
+    "facts": "No referee is saving you. We battle fairly. If you lose, heal and rematch; your progress stays safe."
+  },
+  "field_fault": {
+    "start": "The log records two battle endings a second apart. The camera has only one. The Pokémon did nothing wrong.",
+    "facts": "An old account confirmed the result before the battle ended. Its name is hidden, but the account predates the field."
+  },
+  "hale_fault": {
+    "start": "I have seen this format before. No, it is not something you should chase alone.",
+    "facts": "Orin keeps copies of the old records in the second town. Ask him. If a stranger messages you, do not share your location."
+  },
+  "unknown_first": {
+    "start": "Someone asked me to hand this over. No name, no face. Of course I asked. They said, “Hale will understand.”",
+    "facts": "The message reads: “Do not repair the log. Keep the original. Last time, they changed the winner’s name too.” Sender: ???. Mara needs to see this."
+  },
+  "mara_aftermath": {
+    "start": "Beating me does not make you good at spotting scams. Do not send your home address to three question marks.",
+    "facts": "I will keep a copy of the log. You go see Orin. If the copies change, we will know someone edited them. And I am winning the next battle."
+  },
+  "orin_arrival": {
+    "start": "The shelf is still here. The books are gone. Someone asked to clear old papers, then took the tournament results.",
+    "facts": "A copy is on the reading desk. Check its borrowing stamp before you see Orin."
+  },
+  "orin_records": {
+    "start": "Seven books were borrowed on the same day by a League office. A name was cut out of an awards photograph.",
+    "facts": "The verification signature matches the practice account. Orin can compare the record structure without guessing who was in the photograph."
+  },
+  "orin_challenge": {
+    "start": "I prepared a short explanation. Thirty-two minutes. Judging by your face, we should use a practical demonstration.",
+    "facts": "My team uses status and switching tempo. Look beyond the damage on the first turn. Hale always skips that part when he is worried."
+  },
+  "orin_summary": {
+    "start": "Short version: someone edited the records deliberately. The machine did not fail. They knew exactly whom to erase. A record has three parts: the sender, the received instruction, and the acknowledgment time. A wrong timestamp asks us to check the clock. A wrong name in independent copies asks us to check the transfer path. Here, identical edits appear in two archives with different backup schedules. The editor knew which copies would be compared. Hale believed secrecy would prevent the system being reused. I objected, but I did not send a copy outside either. Two people can debate for years and both fail to do what mattered. I am not asking you to choose the better professor. I am asking you to demand evidence from both. Look at the sheet: the practice-field and library signatures match. That part is testable. Everything else remains a question, not a conclusion.",
+    "facts": "Rook has a Black Card for the old League depots. Do not trust his first price. And do not tell Hale I explained it faster than he did."
+  },
+  "rook_contact": {
+    "start": "I deliver parcels, not secrets. But it is hard not to notice the same black card stamp on every unlogged crate.",
+    "facts": "Rook receives those crates at the exchange. There is an invoice in the old depot. Check it first, before he calls this a misunderstanding."
+  },
+  "black_invoice": {
+    "start": "The Black Card grants emergency transport access to Wardens. Rook’s copy was used after closing by someone absent from the duty roster.",
+    "facts": "The card is not magic. It is a traded access credential. One destination is a Rocket warehouse in town six."
+  },
+  "rook_battle": {
+    "start": "I did not steal it. I am managing someone’s assets. Before you ask: yes, the owner is unaware.",
+    "facts": "Beat me and the card is yours. I need someone who will take it to the right door, not open every door they find."
+  },
+  "rook_warning": {
+    "start": "Selene says the depot has been closed for years. The invoice is from last week. Someone is leaving part of the truth out.",
+    "facts": "Iris once paid me to smuggle out a record copy. I charged her, and kept a copy. Do not give me that look. The copy might save someone."
+  },
+  "selene_local": {
+    "start": "A League truck came through at night. By morning the leaves were scorched. Selene says it was not the League. I know who signed the gate log.",
+    "facts": "The log is at the guard shelter. It does not prove Selene guilty. It proves the truck was here."
+  },
+  "selene_log": {
+    "start": "Selene authorized medical supplies. The actual order was changed to record-storage equipment. The amendment came from a League office.",
+    "facts": "Rook was right about the truck. Selene was right about its original cargo. Someone wants them blaming each other."
+  },
+  "selene_battle": {
+    "start": "You look as though you have already picked a culprit. Try staying clear-headed when the battle stops going your way.",
+    "facts": "Helping once does not make me your ally. But I will not let someone use my signature to hurt people."
+  },
+  "selene_aftermath": {
+    "start": "Wardens oversee hazardous areas and emergency depot access. If someone copied a card, they need to know first.",
+    "facts": "I sent Mara a copy of the log. She asked why I had not battled you sooner. At least you two are consistent."
+  },
+  "warden_ranger": {
+    "start": "Pokémon avoid the road those crates take. They are not afraid of people. They react to something inside the truck.",
+    "facts": "The station logged every arrival. Read the duty board, then report to the Warden. The title means staying to work when everyone else runs."
+  },
+  "warden_log": {
+    "start": "Three opening orders bear the name of an employee who left years ago. Someone still uses his credentials.",
+    "facts": "The Warden can revoke that access, but the depot must remain available for rescues. The forgery exploits the system’s most necessary part."
+  },
+  "warden_six": {
+    "start": "I keep the rescue route open and make sure people entering dangerous areas can bring their teams home.",
+    "facts": "This battle tests switching and keeping a team alive. Afterward you get permission to investigate, not destroy everything inside."
+  },
+  "warden_orders": {
+    "start": "Rocket leased the depot through a shipping company. We need evidence, not a second fire.",
+    "facts": "Duc works the night shift in town six. Ask him for a way in. If Iris is downstairs, get her out before you worry about the equipment."
+  },
+  "rocket_informant": {
+    "start": "They moved machines below the warehouse. Night workers hear battles, but the morning log says there was no activity.",
+    "facts": "The side door accepts a Black Card. The delivery board shows the lower-level route. Do not trust the main ledger; Vex checks it every morning."
+  },
+  "rocket_route": {
+    "start": "The “fragile cargo” is record-copying equipment. The basement has its own power feed, invisible to the main meter.",
+    "facts": "A delivery passes three checkpoints. The Black Card opens the door, not the guards’ trust."
+  },
+  "rocket_guard1": {
+    "start": "Stop! ...Procedure says I have to say that. Whether you actually stop is apparently not HR’s department.",
+    "facts": "No, “Giovanni is handsome” is not the password. I do not express personal opinions at work. Battle."
+  },
+  "rocket_overhear": {
+    "start": "Vex: “Do not erase the battle. Erase the participant. The machine needs the battle history.” Iris: “You will trap Pokémon in corrupted records.”",
+    "facts": "Iris is being forced to make Rocket’s stolen access look legitimate. One repeatedly erased record has a name beginning with T."
+  },
+  "rocket_guard2": {
+    "start": "Password? Do not say thirty-six VAR angles. The last shift had to file an incident report over that.",
+    "facts": "I switch to buy time. If you only think about this turn, you will run out of Pokémon before reaching Iris."
+  },
+  "rocket_guard3": {
+    "start": "Your map does not show this room. No room means no prisoner. Convenient, is it not?",
+    "facts": "Vex is on the other side. I do not know what her machine does. I do know nobody here is allowed to quit."
+  },
+  "rocket_vex": {
+    "start": "The League erases names and calls it stability. I sell those names back. Which side do you think is cleaner?",
+    "facts": "The machine uses battle logs to forge access. Destroying the original records will not make you a hero."
+  },
+  "iris_rescue": {
+    "start": "I worked for the League. I altered a report to keep our research group open. Rocket found the original and forced me to keep going.",
+    "facts": "I am responsible, not an innocent prisoner. I hid the real record in a separate reader. Take it, then we leave through the delivery entrance."
+  },
+  "iris_terminal": {
+    "start": "The record names an erased trainer: TOBA. Hale, Aurelia and someone from the School of Wolf signed it. No reason is recorded.",
+    "facts": "Iris keeps a copy; you keep the original. This is not the whole truth. Marlow in town seven knows the archive system that predates the current League."
+  },
+  "marlow_account": {
+    "start": "Orin trusts digital copies. I trust paper because erasing it takes scissors. Annoyingly, both are missing the same person.",
+    "facts": "The Black Card is an old rescue credential, not a Rocket invention. The old photo board still has an imprint the scanner missed."
+  },
+  "marlow_photo": {
+    "start": "TOBA stood beside Hale in a rescue team. The date matches an incident the League records call an exercise.",
+    "facts": "The Seventh Warden oversees the incident site. Earn access through his test instead of guessing and charging in."
+  },
+  "warden_seven": {
+    "start": "I know something was hidden. I also know sending someone unprepared in there will create another incident to hide.",
+    "facts": "Go to town eight’s port afterward. Liora holds the last rescue voyage log. She will not accept a rumor in place of evidence."
+  },
+  "liora_harbour": {
+    "start": "Everybody here knows somebody. Nobody gets port access just because they know Hale. Show me the record.",
+    "facts": "A rescue ship returned one person short. The original manifest is on the operations board. Dorian will host the final qualifier after you inspect it."
+  },
+  "harbour_manifest": {
+    "start": "TOBA never boarded. Someone changed that to “did not participate.” Those are not the same statement.",
+    "facts": "Liora cannot open the restricted archive. Complete the circuit to enter the Battle Tower, which still holds the team’s final battle confirmation."
+  },
+  "dorian_qualifier": {
+    "start": "Harbor Breathing, First Form: deploy Pelipper! ...Yes, I know you guessed. You still have to beat the rain team.",
+    "facts": "Eight towns have put their names behind this journey. The harbor is the last stop. I need to know you can keep your team standing when the weather turns."
+  },
+  "false_victory": {
+    "start": "Congratulations. I mean it. I had a whole insult ready, but today you get to win the conversation too.",
+    "facts": "Hale sent congratulations. Ren saved a spot on his counter. Then the log changed again: your result was signed by TOBA. Today. The missing trainer just signed it. The Battle Tower owes us an explanation."
+  },
+  "tower_entry": {
+    "start": "Everybody here has won somewhere. The waiting chairs remind them they still have to wait their turn.",
+    "facts": "Rowan, Nyx, Orion. In that order. Each keeps a different confirmation record. There is no shortcut to the League."
+  },
+  "tower_rowan": {
+    "start": "I watch turn one to see whether you have thought about turn two.",
+    "facts": "My record names TOBA as the winner. The public record omits the battle. Prove you can create an opening, then read it yourself."
+  },
+  "tower_nyx": {
+    "start": "Impatient opponents usually do the hard work for me.",
+    "facts": "The League called that battle void. My system awarded the full points. Someone wanted the victory preserved and the winner gone."
+  },
+  "tower_orion": {
+    "start": "I do not need you to trust the League. I need you to distinguish a mistake from a signed decision.",
+    "facts": "Aurelia ordered the record sealed, not erased. Ask why the order changed before you call her the culprit."
+  },
+  "league_entry": {
+    "start": "Aurelia knows you are coming. She asked us to preserve your record, including the parts this office dislikes.",
+    "facts": "Cassian, Seraph, Kael, then Champion Aurelia. Battle to reach the answers, not to make everyone stop asking."
+  },
+  "elite_cassian": {
+    "start": "I preserve the losers’ records too. A region forgets them quickly.",
+    "facts": "TOBA won inside the test facility. The result was retained because the rescue system needed it. We removed the participant because we did not know whether they could be saved."
+  },
+  "elite_seraph": {
+    "start": "A document can be accurate in every word and still lie. I have written some of those.",
+    "facts": "The office changed a sealing order into deletion. I cannot prove Aurelia did not know. Her title cannot shield her from the question."
+  },
+  "elite_kael": {
+    "start": "We left the test chamber. TOBA stayed to keep the Pokémon team alive. The surviving account is too convenient for those who came home.",
+    "facts": "Vargan opposed closing the archive. Aurelia chose silence to stop anyone repeating the experiment. Both choices cost them a forgotten person."
+  },
+  "champion_aurelia": {
+    "start": "Hale, Mara, Iris, and even an unsigned letter from Rook told me about you. None of them said you should stop.",
+    "facts": "I battle with the Champion’s team. Afterward I answer in my own name. I will not pass your questions to someone else again."
+  },
+  "aurelia_aftermath": {
+    "start": "I sealed the record to stop the experiment being repeated. I knew when it was erased. I let the silence continue because it was easier than admitting whom I had left behind.",
+    "facts": "TOBA is not a password. It is a person who trusted us. Vargan holds the original at the School of Wolf. You have the right to ask him. I have the duty to make my part public."
+  },
+  "wolf_bran": {
+    "start": "Champions still have to read the rules. I know. Terrible news.",
+    "facts": "Fen tests combat discipline. Skoll asks you to read a trail before battling. Hati requires rescue supplies before a battle. No hidden stat bonuses."
+  },
+  "wolf_fen": {
+    "start": "Hitting hard is easy. Knowing when not to hit is harder.",
+    "facts": "Standard Cobblemon rules. I test switching, recovery and keeping the team alive beyond one impressive turn. Then read Skoll’s trail."
+  },
+  "wolf_track": {
+    "start": "The boot prints turn back. The Pokémon tracks continue. The group turned around after losing contact, not because the person ahead wished to stay.",
+    "facts": "This trail rehearses an old rescue. Skoll wants you to notice that no answer does not mean nobody still needs help."
+  },
+  "wolf_skoll": {
+    "start": "You saw where the rescuers turned back. Now show me you can see when an opponent will switch.",
+    "facts": "I use pivots and priority. No supernatural guesses required. Watch what your opponent has already done."
+  },
+  "wolf_supply": {
+    "start": "No, this is not a potato exam. I want to know whether you carried a share for the person you are rescuing.",
+    "facts": "The supplies are actually consumed, not returned after a line of dialogue. Prepare, then battle. Rescuers cannot live on enthusiasm."
+  },
+  "wolf_hati": {
+    "start": "Some teams excel at dragging battles out. Sometimes someone needs you finished before dark.",
+    "facts": "I use speed and pressure. Keep a clear head. Vargan will ask what you learned, not whether it looked impressive."
+  },
+  "wolf_vargan": {
+    "start": "You are late. Three minutes is still late. I have no watch, but I enjoy blaming people. Now battle.",
+    "facts": "Defeating me opens the archive. It does not make you understand everything. The truth is in three records, not a congratulatory speech."
+  },
+  "archive_record1": {
+    "start": "TOBA volunteered to enter the test chamber and rescue trapped Pokémon. No order forced him.",
+    "facts": "Hale wrote: “I promised to keep the way home open.” The record ends when the system lost contact."
+  },
+  "archive_record2": {
+    "start": "The last battle has two timestamps, just like the practice-field fault. The public copy kept one. This copy kept both.",
+    "facts": "TOBA kept transmitting rescue instructions after the team withdrew. Nobody verified he was alive. Nobody proved he had died."
+  },
+  "archive_record3": {
+    "start": "Aurelia ordered secrecy. The office changed it to deletion. Vargan kept the original. Hale received the altered copy and stayed silent.",
+    "facts": "There is no single villain who makes everyone else innocent. Ask Hale. He still owes TOBA the promise to keep the way home open."
+  },
+  "archive_hale": {
+    "start": "I thought one more day would bring a certain answer. A day became a week. Then I chose the answer I could live with most easily.",
+    "facts": "I am not asking you to forget. I am asking you to bring someone. Tell Mara, Aurelia and Orin. If the sender is TOBA, we will listen."
+  },
+  "final_unknown": {
+    "start": "??? calls the archive desk: “I know you read it. Hale told part of the truth. So did Aurelia. I need you to hear the rest.”",
+    "facts": "Mara: “Seventy-two VAR angles. This is serious.” Orin confirms the signature. Aurelia asks you to stay in contact. Follow the meeting point on your phone. Bring someone with you."
+  },
+  "final_confrontation": {
+    "start": "You kept the original. Good. I helped you, hid things from you, and used you to open doors I could not open myself.",
+    "facts": "I still have a battle with no loser recorded. Battle me. Afterward you will know my name and the rest of the truth."
+  },
+  "final_explanation": {
+    "start": "TOBA: “My Pokémon brought me through an emergency exit. I survived, but my record did not. Every attempt to return identified me as an impostor.”",
+    "facts": "“I did not control time. I kept an old copy and inserted confirmations when the door opened. Rocket reopened the system to sell its access. I used them. And you.”"
+  },
+  "final_choice": {
+    "start": "I will restore TOBA’s name, preserve the Rocket evidence and answer for the old order. I cannot ask you to call that enough.",
+    "facts": "Iris will testify. Rook hands over his copy without charging this time. Vargan opens the archive to investigators. The erased person no longer has to prove he exists."
+  },
+  "epilogue_hale": {
+    "start": "You said you would sleep for three days after TOBA. I recorded it. Not to win an argument. To know this time that you really came home.",
+    "facts": "Orin sent me the long explanation. Mara wants a rematch tomorrow. Iris needs a new office. Life will not return to exactly what it was. It will have room for someone who was erased."
+  },
+  "epilogue_mara": {
+    "start": "Saved the world. Rematch tomorrow. You just saved the world, so you get today off. Perfectly reasonable.",
+    "facts": "Hale says come home for dinner. Rook says do not ask about money. Selene says live decently. The harbor has strange weather reports, but today you really get to rest."
+  },
+  "var_36.1": {
+    "start": "Two people won one battle. According to those two people.",
+    "facts": "Ask Bao, then Minh. Volume is not evidence."
+  },
+  "var_36.2": {
+    "start": "I ordered the move first. Definitely. Three people saw it.",
+    "facts": "I just do not remember whether the turn bell rang before or after. Keep that quiet."
+  },
+  "var_36.3": {
+    "start": "Bao remembers the spectators, not the paralysis.",
+    "facts": "The field camera is still running. Watch the previous turn too."
+  },
+  "var_36.4": {
+    "start": "Thirty-six camera angles show the same thing: Thunder Wave on the previous turn.",
+    "facts": "Nobody cheated. Bao forgot the status. Tuan has evidence, but the two trainers should talk."
+  },
+  "var_36.5": {
+    "start": "After thirty-six VAR angles, I confirm that reading the status bar benefits society.",
+    "facts": "No extra defeat awarded. They agree to rematch after learning the rule. You are not their referee forever."
+  },
+  "other_peoples_child.1": {
+    "start": "Other children have badges already. Bao is still struggling at the field.",
+    "facts": "Please talk to him. I do not know when concern turned into pressure."
+  },
+  "other_peoples_child.2": {
+    "start": "I keep trying to win a battle that makes Mum stop comparing me. I stopped looking at the other team.",
+    "facts": "I want to learn to stay calm. Mira says start by looking after my team."
+  },
+  "other_peoples_child.3": {
+    "start": "Bao has been here all morning. He remembers every Pokémon’s name, just not the things he does well.",
+    "facts": "The food is ready. Give him a proper practice battle, not a pretend victory."
+  },
+  "other_peoples_child.4": {
+    "start": "This time I am watching the status bar, not Mum.",
+    "facts": "If you win, I learn what I am missing. I will earn my first badge myself."
+  },
+  "other_peoples_child.5": {
+    "start": "Look at other children— Bao said “Mum.” I heard him. This time I really heard him.",
+    "facts": "I will ask how his battle went, not how many someone else won. Thank you for not making him another comparison."
+  },
+  "old_man_worries.1": {
+    "start": "Watch the road. Someone told me I worried too much. He is at Mira’s now.",
+    "facts": "The warning sign at the bend fell down. Check who still uses that route."
+  },
+  "old_man_worries.2": {
+    "start": "The sign warns that the bridge is slippery after rain. Fresh boot prints go straight past it.",
+    "facts": "Nam made a delivery this morning. Ask him before deciding Phuc only scares children."
+  },
+  "old_man_worries.3": {
+    "start": "I did not fall. The parcel fell. I just accompanied it.",
+    "facts": "Take Binh two planks to fix the sign. Not cardboard, which I may have tried."
+  },
+  "old_man_worries.4": {
+    "start": "Real wood. Finally. An invoice does not survive rain as a road sign.",
+    "facts": "Phuc asked for a repair last week. Tell him someone finally did it."
+  },
+  "old_man_worries.5": {
+    "start": "Well? ...You think I worried for a reason? I will accept that.",
+    "facts": "I will still tell you to be careful. Not because you are weak. Because someone wants you home."
+  },
+  "short_explanation.1": {
+    "start": "I need three people to understand the same explanation. Hale calls that overambitious.",
+    "facts": "Ask Linh what she understands about battle records. No leading questions."
+  },
+  "short_explanation.2": {
+    "start": "A record means the machine knows everything? Why will it not sit my exams?",
+    "facts": "I confused recording with predicting. Show me a real example."
+  },
+  "short_explanation.3": {
+    "start": "The example records orders and receipt times. It does not read a trainer’s thoughts.",
+    "facts": "One bad line does not turn a machine into an oracle. Take the example to Phuc."
+  },
+  "short_explanation.4": {
+    "start": "The machine is a market ledger. If it names the wrong buyer, check the writer, not the paper.",
+    "facts": "Orin could have said that first. Perhaps he charges by the word."
+  },
+  "short_explanation.5": {
+    "start": "A machine records what happened. It does not decide what should happen. Ten seconds. I did it.",
+    "facts": "Yes, that would have been quicker from the start. No, do not send Hale that sentence. He will frame it."
+  },
+  "shady_business.1": {
+    "start": "Rare goods. Once in a lifetime. Absolute trust. A trial costs just 10 BeastCoin.",
+    "facts": "Pay 10 BC to test it, or refuse and find an existing victim. Lost money can be recovered. There is no treasure in this box."
+  },
+  "shady_business.2": {
+    "start": "“Enjoy being salty!” That is what he said when I opened the box and found a dead bush.",
+    "facts": "I kept the receipt. He moves his stall every week. His partner still receives goods at Nam’s depot."
+  },
+  "shady_business.3": {
+    "start": "The recipient is Dat himself. Adding “agency” does not make him another person.",
+    "facts": "The depot has unsold boxes. Read their labels to prove he knew what was inside."
+  },
+  "shady_business.4": {
+    "start": "The stock label says “decorative dead bush.” The invoice says “ancient Pokémon artifact.” Both bear the same signature.",
+    "facts": "It was no mix-up. Bring the evidence and battle to stop him threatening the witnesses."
+  },
+  "shady_business.5": {
+    "start": "I was testing customer knowledge. Tests have fees.",
+    "facts": "Yes, that sounds worse out loud. Win and I return the money and all the invoices."
+  },
+  "shady_business.6": {
+    "start": "He paid everyone back. I made him put “dead bush” on the sign. Once in a lifetime, indeed.",
+    "facts": "Your 10 BC is refunded if you paid it. The investigation reward is separate. Next time, ask to see the goods first."
+  },
+  "delivery_hell.1": {
+    "start": "Deliver to “Mai.” There are three Mais. The sender said I would know. I looked. I do not know.",
+    "facts": "Ask Mai on the street first. Do not hand it to anyone and leave me the paperwork."
+  },
+  "delivery_hell.2": {
+    "start": "I did not order it. But I will take it if it is a refund.",
+    "facts": "The inner label names a weather laboratory. Doctor Mai is at the harbor. Not me."
+  },
+  "delivery_hell.3": {
+    "start": "I ordered a sensor, not an empty box. Which box did Nam give you?",
+    "facts": "Binh saw a Wingull carry off the wrapping. Ask where it dropped it."
+  },
+  "delivery_hell.4": {
+    "start": "The sensor is intact. The Wingull took the string for its nest. The sender wrote a bad name, the courier skipped the seal, the recipient waited six days.",
+    "facts": "Everybody contributed. Bring Mai three fresh strings to repackage the sensor and end the blame cycle."
+  },
+  "delivery_hell.5": {
+    "start": "The parcel reached its recipient. This week’s first logistical miracle.",
+    "facts": "I signed my full name. Nam was reminded to check seals. The Wingull will not be prosecuted for illiteracy."
+  },
+  "sleep_is_joy.1": {
+    "start": "You stay up, the lights stay on, the Pokémon stay awake. This is a cause-and-effect lesson, not recreational scolding.",
+    "facts": "Mira knows their rest schedule. Ask her before blaming mysterious energy."
+  },
+  "sleep_is_joy.2": {
+    "start": "The Snorlax can sleep. The others wake whenever the delivery bell rings.",
+    "facts": "Inspect the bell outside the lab. Fix the noise before looking for medicine."
+  },
+  "sleep_is_joy.3": {
+    "start": "The bell rings when no deliveries are scheduled. Nam used an alarm clock as a delivery schedule.",
+    "facts": "Bring Mira wool for the resting area. Hale will change delivery hours instead of asking everyone to endure it."
+  },
+  "sleep_is_joy.4": {
+    "start": "A quiet spot with no bell. They fell asleep before I finished explaining.",
+    "facts": "Tell Hale. You are also allowed to sleep without a quest proving its usefulness."
+  },
+  "sleep_is_joy.5": {
+    "start": "Sleep is joy, what does an old man know? That you still have a journey tomorrow. And that you are trying not to yawn.",
+    "facts": "I will turn the lights off early. No need to promise three days of sleep. Start with one good night."
+  },
+  "bread_queue.1": {
+    "start": "Bread vanishes before opening. The thief even tidies the tray.",
+    "facts": "Next: Ask Minh who visits the bakery before dawn."
+  },
+  "bread_queue.2": {
+    "start": "Bao feeds the street Pokémon. He paid on day one and thought that covered later days.",
+    "facts": "Next: Inspect the bakery order book."
+  },
+  "bread_queue.3": {
+    "start": "The payment covered one day. Quynh could not trace it because the order was unnamed.",
+    "facts": "Next: Bring 8 wheat for the street Pokémon batch."
+  },
+  "bread_queue.4": {
+    "start": "We can share the work. I cannot buy flour with secret generosity.",
+    "facts": "Next: Ask Bao to write his name and collection time."
+  },
+  "bread_queue.5": {
+    "start": "I thought helping needed no explanation. The person helping me deserves one too.",
+    "facts": "Quynh reserves a daily portion. Bao cleans the trays. Nobody has to guess whether kindness is theft."
+  },
+  "mira_missing_bell.1": {
+    "start": "The Pokémon keeps pulling my sleeve. Its bell is broken, so everyone thinks it needs nothing.",
+    "facts": "Next: Inspect the bedside call bell."
+  },
+  "mira_missing_bell.2": {
+    "start": "A knot silences it. A neighbor asked for less noise and forgot to undo it.",
+    "facts": "Next: Ask Phuc who tied the bell."
+  },
+  "mira_missing_bell.3": {
+    "start": "I tied it. I will undo it. Wanting quiet does not mean someone else must suffer silently.",
+    "facts": "Next: Bring 2 strings for replacement call bells."
+  },
+  "mira_missing_bell.4": {
+    "start": "The new bells are within reach. I will test them, not just check they exist.",
+    "facts": "Next: Tell Phuc the patient can call Mira now."
+  },
+  "mira_missing_bell.5": {
+    "start": "I apologized. It still pulls my sleeve. I think this time it wants me to stay.",
+    "facts": "Phuc stays to tell a story. Mira adds bell checks to the shift. A small fault stops being invisible."
+  },
+  "tomo_spare_parts.1": {
+    "start": "Good bike. Wrong owner on the maintenance sheet. The customer thinks it is stolen.",
+    "facts": "Next: Ask Nam about the bicycle delivery label."
+  },
+  "tomo_spare_parts.2": {
+    "start": "I put two labels on one bike. Saving paper did not save trouble.",
+    "facts": "Next: Compare the bicycle numbers in the service ledger."
+  },
+  "tomo_spare_parts.3": {
+    "start": "The frame number is right. Two service forms were stapled together.",
+    "facts": "Next: Bring Tomo 4 iron ingots for the repair stand."
+  },
+  "tomo_spare_parts.4": {
+    "start": "The customer can inspect the frame number directly. “Good bike” is not proof.",
+    "facts": "Next: Ask Nam to separate the labels and sign a corrected receipt."
+  },
+  "tomo_spare_parts.5": {
+    "start": "One bike, one name. It sounds like a newly discovered law.",
+    "facts": "Tomo restores trust with accurate records. The maintenance story remains available without MapKit; the shop clearly shows the unavailable bicycle."
+  },
+  "elle_mended_scarf.1": {
+    "start": "Linh wanted to look like a famous trainer. Someone mocked her weak team. She returned the scarf without explaining.",
+    "facts": "Next: Ask Linh what she wants to wear for herself."
+  },
+  "elle_mended_scarf.2": {
+    "start": "I liked the color. That is all. I was not pretending to be Champion.",
+    "facts": "Next: Inspect Elle’s scarf repair pattern."
+  },
+  "elle_mended_scarf.3": {
+    "start": "The pattern keeps the color but removes the League emblem. Linh wants her own scarf.",
+    "facts": "Next: Bring Elle 4 strings for the repair."
+  },
+  "elle_mended_scarf.4": {
+    "start": "Fashion. This time it is not an excuse for the price. It means choosing who you see in the mirror.",
+    "facts": "Next: Tell Linh the scarf is ready."
+  },
+  "elle_mended_scarf.5": {
+    "start": "I will still train. I do not need enough badges to like a color.",
+    "facts": "Linh returns to the counter. Elle does not make the whole catalog free; she helps one person stop needing permission to be herself."
+  },
+  "library_blank_page.1": {
+    "start": "The cover returned, the author page did not. I want to know who disappeared before buying a replacement.",
+    "facts": "Next: Inspect the imprint on the next page."
+  },
+  "library_blank_page.2": {
+    "start": "Kim’s name remains impressed on the paper. The book describes caring for stressed Pokémon.",
+    "facts": "Next: Ask Kim why her name was removed."
+  },
+  "library_blank_page.3": {
+    "start": "My first article had an error. People never stopped mentioning it. I removed my name instead of fixing it.",
+    "facts": "Next: Bring An 3 paper for Kim’s correction notice."
+  },
+  "library_blank_page.4": {
+    "start": "The correction stays beside the book and names its author. We need not pretend the error never existed.",
+    "facts": "Next: Ask Kim to sign the correction."
+  },
+  "library_blank_page.5": {
+    "start": "My name returns beside the corrected mistake. I can live with that better than a blank page.",
+    "facts": "An preserves both versions to show how knowledge improves. Kim stops hiding useful work."
+  },
+  "exam_morning.1": {
+    "start": "I memorized the move names. When a Pokémon appeared, all I remembered was the examiner coughing.",
+    "facts": "Next: Ask Orin how to practice without rote memorization."
+  },
+  "exam_morning.2": {
+    "start": "Read a situation and explain your move. Memorized names cannot fill an empty reason.",
+    "facts": "Next: Inspect the practice scenario at the study desk."
+  },
+  "exam_morning.3": {
+    "start": "The opponent just used Protect. Use the tempo instead of repeating your strongest attack.",
+    "facts": "Next: Complete the demonstration battle with Minh."
+  },
+  "exam_morning.4": {
+    "start": "I will demonstrate the person who repeats a strong move. Show Linh why that is not enough.",
+    "facts": "Next: Ask Linh to explain the key turn in her own words."
+  },
+  "exam_morning.5": {
+    "start": "I know why I chose it. If it fails, I know what to fix. That is easier to breathe through.",
+    "facts": "Linh retakes the exam with her own reasoning. Orin finally receives a genuinely short explanation."
+  },
+  "orin_hale_coffee.1": {
+    "start": "Hale says I invited him to that debate. I invited discussion, not twelve coffees.",
+    "facts": "Next: Hear Hale’s version of the debate."
+  },
+  "orin_hale_coffee.2": {
+    "start": "Orin said “until it is clear.” I thought leaving before clarity was forbidden.",
+    "facts": "Next: Inspect the receipt and café note."
+  },
+  "orin_hale_coffee.3": {
+    "start": "The receipt reads: “Paid by both gentlemen. Please stop arguing.”",
+    "facts": "Next: Bring Quynh 2 cocoa beans for a fresh conversation."
+  },
+  "orin_hale_coffee.4": {
+    "start": "One drink each. Debate does not count as lunch.",
+    "facts": "Next: Ask Orin to meet Hale without choosing a winner."
+  },
+  "orin_hale_coffee.5": {
+    "start": "All right. This time I will ask whether he slept before asking whether he was right.",
+    "facts": "They pay separately and sit together. An old disagreement stops being their only reason to meet."
+  },
+  "rook_returned_wallet.1": {
+    "start": "Rook knew my wallet was missing before I did. Start with that suspicious fact.",
+    "facts": "Next: Ask Rook whether he has Tram’s wallet."
+  },
+  "rook_returned_wallet.2": {
+    "start": "I temporarily borrowed it to prevent theft. Legal definitions are so emotional.",
+    "facts": "Next: Inspect the lost-property ledger."
+  },
+  "rook_returned_wallet.3": {
+    "start": "The wallet is at the counter. Rook kept the receipt to claim a management fee.",
+    "facts": "Next: Tell Tram where the wallet is."
+  },
+  "rook_returned_wallet.4": {
+    "start": "If he had handed over the receipt, I would have thanked him. Holding it makes me want to charge interest.",
+    "facts": "Next: Make Rook return the receipt without a fee."
+  },
+  "rook_returned_wallet.5": {
+    "start": "Fine. Civil operation concluded. Tram says she will remember me at tax time. Unpleasant.",
+    "facts": "Tram retrieves the intact wallet. Rook receives a very short thank-you and a very long warning."
+  },
+  "courier_route.1": {
+    "start": "I pass the same junction three times. The map says so. I did not invent it.",
+    "facts": "Next: Inspect the old courier route map."
+  },
+  "courier_route.2": {
+    "start": "A bridge is closed but still on the map. Nam detours back to an address already served.",
+    "facts": "Next: Visit Binh’s dock to confirm the open route."
+  },
+  "courier_route.3": {
+    "start": "The dock has a new route. Nobody told Nam because everyone assumed somebody had.",
+    "facts": "Next: Deliver 2 paper for Nam’s revised route sheet."
+  },
+  "courier_route.4": {
+    "start": "I removed the extra junction. The map finally stops making me meet myself.",
+    "facts": "Next: Ask Binh to notify Nam when the port route changes."
+  },
+  "courier_route.5": {
+    "start": "I wrote down the notification recipient. “Someone probably knows” is not a person.",
+    "facts": "Nam reaches the addresses on time. Binh now has an actual person to notify, rather than a circle of guesses."
+  },
+  "selene_wrong_rumor.1": {
+    "start": "Someone saw an envelope and added an amount. I want to know which part they actually saw.",
+    "facts": "Next: Ask Selene about the envelope."
+  },
+  "selene_wrong_rumor.2": {
+    "start": "A medicine list. I will not expose it in the street just to prove I took no bribe.",
+    "facts": "Next: Inspect the redacted medical receipt."
+  },
+  "selene_wrong_rumor.3": {
+    "start": "Price and quantity match the stock. Patient names are unnecessary to verify spending.",
+    "facts": "Next: Ask Kim to confirm the medicine shipment."
+  },
+  "selene_wrong_rumor.4": {
+    "start": "The shipment arrived intact. I will not expose patients to feed a rumor.",
+    "facts": "Next: Tell Yen the conclusion without exposing patients."
+  },
+  "selene_wrong_rumor.5": {
+    "start": "I will correct it wherever I repeated it. Silence is not a correction.",
+    "facts": "Yen makes the spending public while protecting patients. Selene is not declared a saint; the truth is simply restored."
+  },
+  "garden_water.1": {
+    "start": "I water at night; Yen waters in the morning. We both think the other takes our share.",
+    "facts": "Next: Ask Yen when the pump actually runs."
+  },
+  "garden_water.2": {
+    "start": "The pump stops at midnight. Luc has been using only the water left in the pipes.",
+    "facts": "Next: Inspect the shared pump schedule."
+  },
+  "garden_water.3": {
+    "start": "The public sign says overnight. The operating schedule changed to daytime.",
+    "facts": "Next: Bring 2 iron ingots to repair the schedule sign."
+  },
+  "garden_water.4": {
+    "start": "I need the right hours more than a won argument. The plants do not care about my pride.",
+    "facts": "Next: Agree on a watering schedule with Yen."
+  },
+  "garden_water.5": {
+    "start": "Luc takes afternoons. I take mornings. Both names go on the sign.",
+    "facts": "Both gardens receive water. Updating one sign solves what arguments could not."
+  },
+  "mara_missed_call.1": {
+    "start": "I was not checking on you. Just... checking that your phone still works.",
+    "facts": "Next: Ask Hale why Mara is worried."
+  },
+  "mara_missed_call.2": {
+    "start": "Someone from her old group stopped answering once. Then never returned. Do not laugh at concern.",
+    "facts": "Next: Inspect Mara’s practice-field meeting note."
+  },
+  "mara_missed_call.3": {
+    "start": "“You do not need to win. Just show up.” Written, crossed out, written again.",
+    "facts": "Next: Rematch Mara at the practice field."
+  },
+  "mara_missed_call.4": {
+    "start": "I still want to win. Worrying about you has not made my team gentler.",
+    "facts": "Next: Agree with Mara how to check in on long trips."
+  },
+  "mara_missed_call.5": {
+    "start": "One message is enough. No essay. No thirty-six photographic proofs of life.",
+    "facts": "You agree on a check-in time. Mara still calls you a rival, without making that word conceal all her concern."
+  },
+  "ranger_lost_boot.1": {
+    "start": "I found one boot. People are imagining every bad ending before looking for the other.",
+    "facts": "Next: Inspect the muddy forest tracks."
+  },
+  "ranger_lost_boot.2": {
+    "start": "Bare footprints lead back to the station, not deeper into the forest. The hiker abandoned a stuck boot.",
+    "facts": "Next: Visit Vu’s station to check for the returned hiker."
+  },
+  "ranger_lost_boot.3": {
+    "start": "The hiker is drying socks here. The radio died. Nobody asked a name, so I did not know a search was underway.",
+    "facts": "Next: Bring Hanh 2 white wool for the station’s warm supplies."
+  },
+  "ranger_lost_boot.4": {
+    "start": "We end a search with the name of the returned person, not “probably fine.”",
+    "facts": "Next: Ask Vu to log arrivals by name."
+  },
+  "ranger_lost_boot.5": {
+    "start": "I will log the uninjured too. Being unharmed does not mean nobody is looking for you.",
+    "facts": "The hiker returns safely. The stations agree on a reporting procedure instead of rumors and guesses."
+  },
+  "firewatch_false_alarm.1": {
+    "start": "The first three were cooking smoke. Nobody got up for the fourth.",
+    "facts": "Next: Inspect the firewatch sensor."
+  },
+  "firewatch_false_alarm.2": {
+    "start": "The sensor points at a kitchen and away from the forest. False alarms do not prove the idea useless.",
+    "facts": "Next: Ask the Warden to relocate the sensor."
+  },
+  "firewatch_false_alarm.3": {
+    "start": "Fix the false source, then practice again. Do not punish people for learning what the machine taught them.",
+    "facts": "Next: Bring Vu 2 redstone for the revised alarm."
+  },
+  "firewatch_false_alarm.4": {
+    "start": "I will test it against heat in the correct area. This time the station responds because it knows why.",
+    "facts": "Next: Confirm Hanh received the test alert."
+  },
+  "firewatch_false_alarm.5": {
+    "start": "The alert names the station and location. No bell that asks everyone to guess.",
+    "facts": "Trust in the alarm returns through repair and practice. Vu no longer has to shout louder to be heard."
+  },
+  "warehouse_unpaid.1": {
+    "start": "Vex says the shift never existed. My back remembers carrying crates all night.",
+    "facts": "Next: Inspect the discarded clock cards."
+  },
+  "warehouse_unpaid.2": {
+    "start": "The workers remain on paper, not in the computer. Rocket erased shifts to hide shipments.",
+    "facts": "Next: Ask Tram to reconcile the hours."
+  },
+  "warehouse_unpaid.3": {
+    "start": "I can count labor. I do not need to call the company legitimate to know it owes wages.",
+    "facts": "Next: Bring Chau 3 paper for the wage claim."
+  },
+  "warehouse_unpaid.4": {
+    "start": "A copy for every worker. No single copy for an authority to conveniently lose.",
+    "facts": "Next: Tell Duc the claim is filed and who holds copies."
+  },
+  "warehouse_unpaid.5": {
+    "start": "I do not have the money today. I have proof I worked. I will hold on to that first.",
+    "facts": "The quest does not pretend a legal claim resolves instantly. Duc now has evidence, representation and deletion-resistant copies."
+  },
+  "iris_first_repair.1": {
+    "start": "I can write a long apology. Kim needs accurate medicine data. Start where living people benefit.",
+    "facts": "Next: Ask Kim which data is missing."
+  },
+  "iris_first_repair.2": {
+    "start": "I do not need Iris to appear innocent. I need her to identify what was altered.",
+    "facts": "Next: Inspect Iris’s original dosage table."
+  },
+  "iris_first_repair.3": {
+    "start": "A row was reduced to hide missing stock. Iris marks it with the same signature used on the false report.",
+    "facts": "Next: Deliver 4 paper for Iris’s station corrections."
+  },
+  "iris_first_repair.4": {
+    "start": "My name is on every copy. Anyone wondering why to trust me can compare the original.",
+    "facts": "Next: Confirm Kim received the corrected table."
+  },
+  "iris_first_repair.5": {
+    "start": "I use the correction and keep the old version. Repair does not mean the mistake never happened.",
+    "facts": "Iris begins useful work after Rocket, with someone checking it. A dialogue click does not absolve her."
+  },
+  "mechanic_silent_motor.1": {
+    "start": "Every fault report was counted against my shift. Now I hear the noise and pretend not to.",
+    "facts": "Next: Inspect the crossed-out motor repair notes."
+  },
+  "mechanic_silent_motor.2": {
+    "start": "Son reported the same fault four times. Approval changed “repair needed” to “operator error.”",
+    "facts": "Next: Ask Chau to protect fault reporting."
+  },
+  "mechanic_silent_motor.3": {
+    "start": "If reporting is punished, the depot learns of faults only when somebody gets hurt.",
+    "facts": "Next: Bring Son 3 iron ingots for the motor housing."
+  },
+  "mechanic_silent_motor.4": {
+    "start": "This form names the broken machine. I sign as the repairer, not the scapegoat.",
+    "facts": "Next: Confirm the test shift was correctly logged."
+  },
+  "mechanic_silent_motor.5": {
+    "start": "The fault report goes in the safety file, not the penalties sheet.",
+    "facts": "The motor is repaired and future faults can be reported. Son no longer chooses between pay and safety."
+  },
+  "marlow_false_tablet.1": {
+    "start": "It is ancient enough that the paint is still wet. Orin says not to judge by smell. I dislike that he is right.",
+    "facts": "Next: Compare the museum catalog drawings."
+  },
+  "marlow_false_tablet.2": {
+    "start": "The inscription repeats last year’s printing error. The fake was copied from a book, not a tablet.",
+    "facts": "Next: Ask Huong who donated it."
+  },
+  "marlow_false_tablet.3": {
+    "start": "The donor wanted no money. He wanted his family’s name on a prestigious display.",
+    "facts": "Next: Bring Huong 3 paper for corrected labels."
+  },
+  "marlow_false_tablet.4": {
+    "start": "I will label it a modern reconstruction. The family can be named without changing the object’s age.",
+    "facts": "Next: Tell Marlow how the tablet will be displayed."
+  },
+  "marlow_false_tablet.5": {
+    "start": "The fake has its own true story. We need not discard it to make history look tidy.",
+    "facts": "The display states the true age and provenance, including how the wish to be remembered can distort history."
+  },
+  "photo_without_face.1": {
+    "start": "He wants proof he attended the rescue, but cannot bear seeing himself that day.",
+    "facts": "Next: Ask the Warden about the rescue-team photograph."
+  },
+  "photo_without_face.2": {
+    "start": "I stood at the edge. The one who did not return stood in the middle. I avoided looking at both.",
+    "facts": "Next: Inspect the uncut contact sheet."
+  },
+  "photo_without_face.3": {
+    "start": "Some smile, some look exhausted, some turn away. Nobody resembles a perfect symbol.",
+    "facts": "Next: Bring Ly 2 paper for a complete print."
+  },
+  "photo_without_face.4": {
+    "start": "I will print the entire frame. No extra heroism, no removal.",
+    "facts": "Next: Invite the Warden to receive the complete photo."
+  },
+  "photo_without_face.5": {
+    "start": "I will keep it. Not as proof I was good. As a reminder I was there and still owe work.",
+    "facts": "The Warden receives a photo containing everyone. Ly respects both the subject’s consent and the truth of the frame."
+  },
+  "museum_open_hours.1": {
+    "start": "I open while they are at school and close before they leave. Then I report a lack of interest in history.",
+    "facts": "Next: Ask Linh when she can visit."
+  },
+  "museum_open_hours.2": {
+    "start": "Afternoons. I should not skip lessons to prove I like learning something else.",
+    "facts": "Next: Inspect the visit-time ledger."
+  },
+  "museum_open_hours.3": {
+    "start": "Students appear only on holidays. The request for late hours sits beneath a report about poor attendance.",
+    "facts": "Next: Bring Huong 2 redstone for the afternoon-shift bell."
+  },
+  "museum_open_hours.4": {
+    "start": "One late afternoon each week, with a named attendant. Not a promise on a sign and nothing else.",
+    "facts": "Next: Tell Linh the new opening hours."
+  },
+  "museum_open_hours.5": {
+    "start": "I will invite Bao. He fears being quizzed. I told him this time we get to ask the adults.",
+    "facts": "The museum accommodates students and daytime workers. Huong changes how she measures interest before blaming visitors."
+  },
+  "harbour_lost_catch.1": {
+    "start": "The crate was here when I returned. Everyone says it is mine because I fish. Nobody asked where I had been.",
+    "facts": "Next: Inspect the crate’s voyage tag."
+  },
+  "harbour_lost_catch.2": {
+    "start": "It names Hoa’s vessel. Water blurred the return time, so the receiver thought it was still at sea.",
+    "facts": "Next: Ask Hoa who should receive the catch."
+  },
+  "harbour_lost_catch.3": {
+    "start": "The rescue team ordered a meal. I assumed the dock staff would collect it.",
+    "facts": "Next: Deliver 2 oak planks for a covered collection point."
+  },
+  "harbour_lost_catch.4": {
+    "start": "I will sign for this shipment. Next time name a recipient, not “somebody at the dock.”",
+    "facts": "Next: Tell Thao the catch has a recipient."
+  },
+  "harbour_lost_catch.5": {
+    "start": "Good. I do not need to win the argument. I need people to ask before deciding next time.",
+    "facts": "The meal reaches the rescue team. Thao stops being responsible for explaining a mistake that was not hers."
+  },
+  "harbour_breathing.1": {
+    "start": "Harbor Breathing, Second Form: blooming Cloyster. Terrifying name. Perfectly legal team.",
+    "facts": "Next: Ask Dorian how Hai’s team can be answered."
+  },
+  "harbour_breathing.2": {
+    "start": "Hai likes setting up and sweeping. Learn when to deny setup, not the name he shouts.",
+    "facts": "Next: Inspect the harbor Shell Smash training board."
+  },
+  "harbour_breathing.3": {
+    "start": "Power rises while defenses fall. Priority and forced switches are answers; banning the move is not.",
+    "facts": "Next: Defeat Hai’s setup team."
+  },
+  "harbour_breathing.4": {
+    "start": "I invented a third form. Deal with the second first.",
+    "facts": "Next: Tell Dorian the training session is finished."
+  },
+  "harbour_breathing.5": {
+    "start": "Hai lost and is renaming the move. At least he is adjusting the team, not only the volume.",
+    "facts": "Hai learns to protect the setup turn instead of shouting louder. The challenge comes from strategy, not cheated stats."
+  },
+  "tower_waiting_chair.1": {
+    "start": "Rowan keeps it for a friend who stopped competing. People assume it is a privilege.",
+    "facts": "Next: Ask Rowan whether he wants to invite his friend back."
+  },
+  "tower_waiting_chair.2": {
+    "start": "I waited for him to win before inviting him. I should have invited him first.",
+    "facts": "Next: Inspect the old entry card in the waiting room."
+  },
+  "tower_waiting_chair.3": {
+    "start": "Observers may enter without competing. Nobody explained that right to the defeated trainer.",
+    "facts": "Next: Deliver 2 paper for an invitation without a battle requirement."
+  },
+  "tower_waiting_chair.4": {
+    "start": "I wrote “watching is welcome.” Friends should not need results as admission tickets.",
+    "facts": "Next: Give Rowan the invitation to send."
+  },
+  "tower_waiting_chair.5": {
+    "start": "This chair can be used even if he never wins another battle. I understood that rather late.",
+    "facts": "A chair is reserved for a person, not their victories. Observer admission becomes part of the welcome instructions."
+  },
+  "nyx_clock.1": {
+    "start": "I once waited a week for an answer. Then I decided everything must be measurable. I overdid it.",
+    "facts": "Next: Ask the receptionist what Nyx has been missing."
+  },
+  "nyx_clock.2": {
+    "start": "Lunch. Friends. Good battles, because she only watched their duration.",
+    "facts": "Next: Inspect the lunch invitation with no end time."
+  },
+  "nyx_clock.3": {
+    "start": "Rowan wrote: “Come when hungry. Leave when ready.” Nyx crossed both out.",
+    "facts": "Next: Rematch Nyx and finish the patient-tempo challenge."
+  },
+  "nyx_clock.4": {
+    "start": "No bonus for finishing fast. Find the right move even if it looks poor on a clock.",
+    "facts": "Next: Remind Nyx about lunch."
+  },
+  "nyx_clock.5": {
+    "start": "I will go. I will bring the watch. This time it stays in my pocket.",
+    "facts": "Nyx does not transform after one battle. She tries setting aside one habit for one meal."
+  },
+  "orion_public_record.1": {
+    "start": "A trainer fears his family seeing it. I will not erase it, but I have not figured out how to help.",
+    "facts": "Next: Ask Bao how a loss can be read differently."
+  },
+  "orion_public_record.2": {
+    "start": "Record that I switched correctly too. “Lost” alone does not show what I did well.",
+    "facts": "Next: Inspect the annotated-loss template."
+  },
+  "orion_public_record.3": {
+    "start": "The template preserves results and adds good turns, errors to improve and the trainer’s own account.",
+    "facts": "Next: Deliver 3 paper for annotated records."
+  },
+  "orion_public_record.4": {
+    "start": "I will preserve the result and what helps someone want another battle.",
+    "facts": "Next: Ask Bao to review the new record."
+  },
+  "orion_public_record.5": {
+    "start": "I still lost. Reading it no longer makes me feel my whole self was that loss.",
+    "facts": "Orion adds verifiable annotations, neither erasing a mistake nor letting it define a person."
+  },
+  "cassian_family_name.1": {
+    "start": "They lost a tournament and worked at the harbor. Their family spoke as if they had died.",
+    "facts": "Next: Ask Binh whether he wants his name restored."
+  },
+  "cassian_family_name.2": {
+    "start": "I am not missing. I chose a steady wage. I do not need them calling it a fall.",
+    "facts": "Next: Inspect the family register’s unaltered copy."
+  },
+  "cassian_family_name.3": {
+    "start": "The copy retains the name and old occupation. There is room for the new work without removing the person.",
+    "facts": "Next: Deliver 2 paper for the revision Binh approved."
+  },
+  "cassian_family_name.4": {
+    "start": "I will write “dockworker,” not “failed former trainer.” It is an occupation, not a verdict.",
+    "facts": "Next: Tell Binh his name returns with his chosen work."
+  },
+  "cassian_family_name.5": {
+    "start": "Good. Tomorrow I still go to work, no longer as somebody else’s deleted footnote.",
+    "facts": "The family acknowledges a living person rather than an expired result. Cassian confronts history close to home."
+  },
+  "seraph_unsigned_order.1": {
+    "start": "Three families moved because of this order. Nobody signed it because everyone claimed to be awaiting approval.",
+    "facts": "Next: Inspect the original relocation order."
+  },
+  "seraph_unsigned_order.2": {
+    "start": "The draft was photocopied without its cover. The recipients thought it final.",
+    "facts": "Next: Ask Yen how the families were affected."
+  },
+  "seraph_unsigned_order.3": {
+    "start": "They packed their belongings. A correction cannot return three days of worry.",
+    "facts": "Next: Deliver 3 paper for a signed cancellation notice."
+  },
+  "seraph_unsigned_order.4": {
+    "start": "I will sign and deliver it personally. No more documents that make them guess what is real.",
+    "facts": "Next: Confirm the families received the cancellation."
+  },
+  "seraph_unsigned_order.5": {
+    "start": "They keep both versions. If someone claims no order existed, they can ask with evidence.",
+    "facts": "Seraph takes responsibility for her office’s communication. A correction does not remove the families’ right to question it."
+  },
+  "kael_empty_uniform.1": {
+    "start": "I kept it because it still fits. Easier than admitting I did not want to remember who wore it with me.",
+    "facts": "Next: Ask Elle whether the uniform names can be restored."
+  },
+  "kael_empty_uniform.2": {
+    "start": "Yes. Kael chooses whose names stay. I do not choose someone’s memories for them.",
+    "facts": "Next: Inspect the names beneath the seam."
+  },
+  "kael_empty_uniform.3": {
+    "start": "TOBA’s name was not burned away. Kael sewed a patch over it.",
+    "facts": "Next: Deliver 3 strings for the uniform seam."
+  },
+  "kael_empty_uniform.4": {
+    "start": "I will remove the cover, not make a new uniform. The old needle marks remain.",
+    "facts": "Next: Ask Kael to receive the uniform and explain his choice."
+  },
+  "kael_empty_uniform.5": {
+    "start": "I will keep the name. I will not ask for praise for finally uncovering it.",
+    "facts": "Kael can wear the uniform without hiding a person. The repaired seam marks a decision, not a cure for memory."
+  },
+  "aurelia_public_day.1": {
+    "start": "I am used to answering from a podium. People below seldom get a second question.",
+    "facts": "Next: Ask Duc what he would ask the Champion."
+  },
+  "aurelia_public_day.2": {
+    "start": "Why must I prove my case when my papers disappear, but wait when the office loses them?",
+    "facts": "Next: Inspect the League’s unfiltered question box."
+  },
+  "aurelia_public_day.3": {
+    "start": "Hard questions were moved to “off topic.” The meeting could be perfectly calm if nobody asked what mattered.",
+    "facts": "Next: Deliver 4 paper for public written answers."
+  },
+  "aurelia_public_day.4": {
+    "start": "I will include the rejected questions. Unanswered ones get a named owner and due date, not an off-topic label.",
+    "facts": "Next: Tell Duc his question has an accountable recipient."
+  },
+  "aurelia_public_day.5": {
+    "start": "I will attend. You should not have to ask for me forever.",
+    "facts": "Aurelia holds one meeting without a podium and answers in her own name. Duc gets a follow-up, not ceremonial permission to speak."
+  },
+  "bran_open_gate.1": {
+    "start": "A girl wanted rescue training. No badges, so I sent her away. Then I saw her help someone on the slope.",
+    "facts": "Next: Ask Linh why she came to the School."
+  },
+  "bran_open_gate.2": {
+    "start": "I want to learn how to help before becoming the strongest. Not everything can wait for a badge.",
+    "facts": "Next: Inspect the rescue-course admission rules."
+  },
+  "bran_open_gate.3": {
+    "start": "League access is required for combat trials, not first aid. Bran used one gate for everyone.",
+    "facts": "Next: Bring 2 paper for separate course notices."
+  },
+  "bran_open_gate.4": {
+    "start": "I will state each course’s requirements. No proving a grand achievement just to learn a small useful skill.",
+    "facts": "Next: Tell Linh she can attend first aid."
+  },
+  "bran_open_gate.5": {
+    "start": "I still want to pass the trials someday. Today I can start learning.",
+    "facts": "Bran preserves the endgame trial gate while opening the appropriate rescue course."
+  },
+  "vargan_watch.1": {
+    "start": "I do not. I say it so you think about punctuality. Bran says that is terrible.",
+    "facts": "Next: Ask Bran what late arrivals actually cause."
+  },
+  "vargan_watch.2": {
+    "start": "The team cannot tell whether to wait or start a search. That is the reason, not a right to scold students.",
+    "facts": "Next: Inspect the School’s expected-return log."
+  },
+  "vargan_watch.3": {
+    "start": "The log lists expected times and recipients. Vargan left his own line blank.",
+    "facts": "Next: Bring Vargan 1 redstone for a return-time reminder."
+  },
+  "vargan_watch.4": {
+    "start": "I will log my return time. No, that does not mean you may arrive late.",
+    "facts": "Next: Confirm Bran has Vargan’s return time."
+  },
+  "vargan_watch.5": {
+    "start": "For once I know where he went without interpreting an insult.",
+    "facts": "Vargan follows the rule he demands from others. He remains severe, a little less arbitrary."
+  },
+  "wolf_two_routes.1": {
+    "start": "Fast for someone running. Not for someone carried. The old map measured only one kind of feet.",
+    "facts": "Next: Inspect the stretcher-route slope marker."
+  },
+  "wolf_two_routes.2": {
+    "start": "The path fits a person, not a stretcher. The distance calculation omitted width.",
+    "facts": "Next: Visit Hati to confirm the alternate route."
+  },
+  "wolf_two_routes.3": {
+    "start": "Longer, but it gets the person home. Time is not the only number.",
+    "facts": "Next: Deliver 2 oak planks for stretcher-route signs."
+  },
+  "wolf_two_routes.4": {
+    "start": "I will mark both routes and their users. The longer route is not meaninglessly slow.",
+    "facts": "Next: Tell Hati the stretcher route is marked."
+  },
+  "wolf_two_routes.5": {
+    "start": "Newcomers no longer have to get stuck to learn the difference.",
+    "facts": "The School marks two routes by purpose. Skoll measures success in people returned, not distance records."
+  },
+  "last_person_letter.1": {
+    "start": "This letter has a full name. He asks you to go nowhere. Only whether the people in the photograph still meet.",
+    "facts": "Next: Ask Hale whether he wants to answer TOBA."
+  },
+  "last_person_letter.2": {
+    "start": "I want to write sorry on every line. He also asks how I eat and sleep. I will answer that too.",
+    "facts": "Next: Ask Aurelia what she wants to send besides a report."
+  },
+  "last_person_letter.3": {
+    "start": "An unconditional invitation. No title. No attempt to persuade him to forgive me.",
+    "facts": "Next: Deliver 3 paper for the group’s replies."
+  },
+  "last_person_letter.4": {
+    "start": "Three letters stay separate. No collective apology that hides who wrote it.",
+    "facts": "Next: Ask Mara about life after the mystery."
+  },
+  "last_person_letter.5": {
+    "start": "The world still has work. People can still sit down for a meal together. The second may be harder than we thought.",
+    "facts": "TOBA answers in his own name. There is no new assignment in the letter, just someone learning to return."
+  },
+  "weather_duo_01.1": {
+    "start": "Three stations report drought. The port reports three days of rain. I will not call it normal to avoid work.",
+    "facts": "Ask the port and forest station. We need effects on people, not only a neat chart."
+  },
+  "weather_duo_01.2": {
+    "start": "The boats cannot leave. Fish come close to shore, but nobody can safely catch them.",
+    "facts": "The tide gauge exceeds seasonal levels. Read it, then ask Hanh about the river."
+  },
+  "weather_duo_01.3": {
+    "start": "The tide rises every six hours regardless of wind. Something beyond the sea is driving a rhythm.",
+    "facts": "This does not prove Kyogre is at fault. Compare the inland record first."
+  },
+  "weather_duo_01.4": {
+    "start": "Pokémon gather at the station because the river is dry. I need water storage before a legendary name.",
+    "facts": "Prepare station supplies, then inspect the river marker."
+  },
+  "weather_duo_01.5": {
+    "start": "Enough for storage. Later arrivals will not compete with those who waited all morning.",
+    "facts": "This helps today. To help next week, find the cause."
+  },
+  "weather_duo_01.6": {
+    "start": "The river falls exactly when the harbor tide rises. The effects share a rhythm.",
+    "facts": "Orin can compare this with the old weather records."
+  },
+  "weather_duo_01.7": {
+    "start": "Land is not fighting sea. An old regulator sends two conflicting instructions. That is the short version.",
+    "facts": "Marlow has the regulator drawings. It predates Rocket’s machine."
+  },
+  "weather_duo_01.8": {
+    "start": "It monitored Pokémon refuges, not controlled gods. It had geological and tidal reference modules.",
+    "facts": "The cavern tablet shows the first module. Do not pull it out because it looks impressive."
+  },
+  "weather_duo_01.9": {
+    "start": "The geological socket is empty. Fresh tool marks, not ancient weathering.",
+    "facts": "An invoice sends the module to the port. Rook knows who buys old equipment."
+  },
+  "weather_duo_01.10": {
+    "start": "A group called it a cheap sensor. I sold the transport route. No, that does not make me innocent.",
+    "facts": "Mai received their data. Ask what they attached to the new machine."
+  },
+  "weather_duo_01.11": {
+    "start": "I accepted an untraceable sensor to get fast results. The two modules were plugged into separate machines.",
+    "facts": "The forest machine calls for heat response. The harbor calls for water. Groudon and Kyogre answer false emergency signals, not a war."
+  },
+  "weather_duo_01.12": {
+    "start": "Fresh tracks circle the dry basin. Groudon does not chase people. It returns whenever the machine transmits.",
+    "facts": "Khoa guards the inner route. Find the second module before fighting a Pokémon over a cause it did not create."
+  },
+  "weather_duo_01.13": {
+    "start": "The old crew used low tide. The tide ignores the schedule now. I need station clearance, not a hero swimming alone.",
+    "facts": "The shrine board keeps a copy of the tidal reference. Inspect the authored shrine point."
+  },
+  "weather_duo_01.14": {
+    "start": "The water module was moved to the research depot. Its tool marks match the land site. One project split the system to sell separate data.",
+    "facts": "Nhi keeps the Kyogre observations. Show her this reference."
+  },
+  "weather_duo_01.15": {
+    "start": "It came to help Pokémon trapped in flooding. The signal continued, so it kept raising the water.",
+    "facts": "The shrine observation confirms it. Visiting does not grant you Kyogre."
+  },
+  "weather_duo_01.16": {
+    "start": "The current comes from the refuge entrance, not the fishing boats. A false alert turned rescue behavior into disaster.",
+    "facts": "Iris can separate the original from a looping signal. Ask her to analyze both machines."
+  },
+  "weather_duo_01.17": {
+    "start": "Do not erase data. Stop transmission, reconnect both reference modules, then send a matching completion acknowledgment.",
+    "facts": "I need two redstone for the acknowledgment circuit. Hale and Mai must review it, not just trust me."
+  },
+  "weather_duo_01.18": {
+    "start": "The circuit preserves a copy before transmission. This time the decision can be checked.",
+    "facts": "Khoa wants to test your team discipline before granting inner access. Battle him."
+  },
+  "weather_duo_01.19": {
+    "start": "This is not instant ownership of Groudon. Prove you can approach without ruining a rescue.",
+    "facts": "After winning, inspect the central regulator. Both branches must converge."
+  },
+  "weather_duo_01.20": {
+    "start": "Both modules return to one circuit. The false alert closes without erasing who removed the modules.",
+    "facts": "Nhi confirms the sea is falling. Hanh confirms the river is returning. The false calls have stopped. Take Nhi’s final challenge."
+  },
+  "weather_duo_01.21": {
+    "start": "Khoa tested endurance. I test whether you can change tempo against the tide.",
+    "facts": "Both guardians confirm your preparation. The Pokémon are no longer compelled by a machine. We will authorize both partnerships, separately."
+  },
+  "weather_duo_01.22": {
+    "start": "Groudon has accepted a partnership. It is not a trophy taken from the regulator.",
+    "facts": "One claim per season. A full party sends it to the PC. Kyogre remains independently available."
+  },
+  "weather_duo_01.23": {
+    "start": "The rain is gentler. For once I am glad to hear someone complain about sunshine.",
+    "facts": "Claim Kyogre once per season. Check the PC if your party is full. Both entitlements remain separate."
+  },
+  "weather_duo_01.24": {
+    "start": "I published my error in accepting untraceable equipment. Good weather must not become a reason to stop asking.",
+    "facts": "Mara: “At least the weather is not trying to kill us today.” Hale: “Do not tease Groudon.” Rook refunds his transport fee. Iris preserves verification. Both Pokémon have a place in your journey."
+  },
+  "fish_out_of_water.1": {
+    "start": "Hanh reported a Magikarp in a drying pool. People say it should evolve and fly away. That is not fish care.",
+    "facts": "Visit the pool and catch a Magikarp with an ordinary Poké Ball. We rescue it through capture, not a dialogue gift."
+  },
+  "fish_out_of_water.2": {
+    "start": "Keep your distance and use a Poké Ball. The Pokémon must actually be captured in this area.",
+    "facts": "Move Magikarp into your party if it went to the PC, then visit Mira."
+  },
+  "fish_out_of_water.3": {
+    "start": "It gets the same care as any other Pokémon. It need not promise to become Gyarados to deserve rescue.",
+    "facts": "Inspect the pool marker before other Pokémon return."
+  },
+  "fish_out_of_water.4": {
+    "start": "The side channel is open. The pool is still small; people cannot release Pokémon here and simply leave.",
+    "facts": "Hanh will monitor the water. You may keep and care for the Magikarp you caught."
+  },
+  "fish_out_of_water.5": {
+    "start": "Good. One Pokémon rescued. It does not need world-saving music to matter.",
+    "facts": "Hanh monitors the pool. The captured Magikarp remains yours; quest completion does not delete it."
+  },
+  "ren_missing_labels.1": {
+    "start": "Two crates share a color. Their labels got wet. I could guess, but customers would swallow the consequences.",
+    "facts": "Ask Nam for the sender, then inspect the depot receipt."
+  },
+  "ren_missing_labels.2": {
+    "start": "I wrapped the outside without photographing the inner label. This time I will not blame a Wingull.",
+    "facts": "The warehouse receipt has the correct batch numbers. It is at the receiving desk."
+  },
+  "ren_missing_labels.3": {
+    "start": "One crate is healing stock, the other care supplies. Similar boxes do not make them substitutes.",
+    "facts": "Collect three paper sheets for Ren to make separate labels."
+  },
+  "ren_missing_labels.4": {
+    "start": "The label must stay readable when separated from the crate.",
+    "facts": "Deliver the paper to Ren for actual use."
+  },
+  "ren_missing_labels.5": {
+    "start": "The correctly labeled batch is back on sale. Not selling the wrong item is customer care too.",
+    "facts": "Ren keeps label photos and batch numbers. Nam updates his procedure. Customers need not investigate every potion."
+  },
+  "mara_postgame.1": {
+    "start": "I did not ask for thirty extra levels. I built more tempo options and a team that works together.",
+    "facts": "Read the new training board before the battle. I do not hide the rules."
+  },
+  "mara_postgame.2": {
+    "start": "Six members, full EVs and role-specific items. Levels still match the challenger’s strongest Pokémon.",
+    "facts": "Return to Mara. She has both pivot routes and priority finishers."
+  },
+  "mara_postgame.3": {
+    "start": "Seventy-two VAR angles. Not because I think you cheat. Because I want to remember this one.",
+    "facts": "This does not repeat the campaign reward. This rematch chain has its own one-time reward."
+  },
+  "mara_postgame.4": {
+    "start": "I heard the field. No faulty machine. Just two people who still want another game. I like that.",
+    "facts": "Meet Mara to arrange the next one. You do not need to save the world to see each other."
+  },
+  "mara_postgame.5": {
+    "start": "Tomorrow. Or the weekend. You may have other plans. So may I. I will still want to win.",
+    "facts": "Mara remains a postgame rival. Her full rematch team remains available after the quest."
+  },
+  "outcome.mara_voss.win": {
+    "start": "All right. I lost. Tomorrow I review every turn. Today you really won.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.mara_voss.loss": {
+    "start": "Thirty-six VAR replays cannot save this one. Heal and return. I will be here.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.dr_orin.win": {
+    "start": "You listened and tested it. Better than memorizing me.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.dr_orin.loss": {
+    "start": "You received the battle explanation. We can shorten it to three turns to improve.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rook.win": {
+    "start": "Fine. Fine to have underestimated you. No, that was not an apology.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rook.loss": {
+    "start": "A loss leaves you with... your belt. Do not look at me like that. Rematches are free.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.selene_kade.win": {
+    "start": "You waited for the right final turn. I respect that you did not need to be right at any cost.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.selene_kade.loss": {
+    "start": "You decided first and watched the battle second. Reverse that next time.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.sixth_warden.win": {
+    "start": "You kept your team together when the plan broke. That is what the rescue route needs.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.sixth_warden.loss": {
+    "start": "Not yet. I need someone who brings Pokémon home, not the first person to rush in.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_grunt_01.win": {
+    "start": "I will write “opponent refused to halt.” For once, the report is entirely accurate.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_grunt_01.loss": {
+    "start": "I won. Procedure now allows me to say “halt” again.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_grunt_02.win": {
+    "start": "Fine, you pass. Winning still will not put “Giovanni is handsome” in my report.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_grunt_02.loss": {
+    "start": "Wrong password, wrong switch. I can only help you with one of those.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_grunt_03.win": {
+    "start": "The door is behind me. If you find Iris, get her out. I will not sign off on this anymore.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_grunt_03.loss": {
+    "start": "The door stays locked. Heal your team; I do not pad my record with fainted Pokémon.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_admin_vex.win": {
+    "start": "Beating me does not erase the copies already sold. Iris can tell you what must be preserved.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.rocket_admin_vex.loss": {
+    "start": "You came with a plan. I won by making you abandon it.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.seventh_warden.win": {
+    "start": "You did not leave a Pokémon behind when the plan changed. Liora needs that at the harbor.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.seventh_warden.loss": {
+    "start": "Your team gave out before the return route opened. That cannot happen on a rescue.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.captain_dorian.win": {
+    "start": "Eight towns, all accounted for. I sign the result. Pelipper wants food, so that ends the ceremony.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.captain_dorian.loss": {
+    "start": "Rain team wins. I will spare you the Third Form. You have suffered enough.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.battle_tower_trainer_01.win": {
+    "start": "You kept tempo after losing your lead. Nyx will test whether you can keep your patience.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.battle_tower_trainer_01.loss": {
+    "start": "You gave up one turn of tempo and spent three trying to recover it. Expensive.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.battle_tower_trainer_02.win": {
+    "start": "You waited long enough to strike. Nobody gets to alter this battle’s order.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.battle_tower_trainer_02.loss": {
+    "start": "Trick Room did not break the clock. You forgot to ask who benefited from it.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.battle_tower_trainer_03.win": {
+    "start": "The Tower records both names. Your result will not vanish because someone dislikes it.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.battle_tower_trainer_03.loss": {
+    "start": "You read the team, but not the weather. We play both.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.league_elite_01.win": {
+    "start": "Keep this record. Even the turns I would rather forget belong in an honest account.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.league_elite_01.loss": {
+    "start": "An old turn repeats because you have not changed your answer. That is what battle history is for.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.league_elite_02.win": {
+    "start": "You won within the rules, without privilege. I will attest to that before any committee.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.league_elite_02.loss": {
+    "start": "Fair rules do not promise victory. They promise the next attempt will be counted honestly.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.league_elite_03.win": {
+    "start": "I remember your winning turn clearly. This time I will not pretend to forget.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.league_elite_03.loss": {
+    "start": "Get up. I do not need a graceful performance of defeat. Look after your team first.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.aurelia.win": {
+    "start": "I keep my promise. No title stands between you and the answer now.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.aurelia.loss": {
+    "start": "Not today. One defeat does not close this door.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_trainer_01.win": {
+    "start": "You stopped when you needed to. Take that composure onto Skoll’s trail.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_trainer_01.loss": {
+    "start": "You attacked when your team needed a breath. Discipline begins with knowing when to stop.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_trainer_02.win": {
+    "start": "You read the next direction before I switched. Hati is waiting for your preparations.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_trainer_02.loss": {
+    "start": "You found the trail signs and missed the battle signs. Observation does not end at the door.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_trainer_03.win": {
+    "start": "You prepared and used what you prepared. Vargan may not praise that. I will.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_trainer_03.loss": {
+    "start": "Having the supplies is not enough. You must keep the one carrying them standing.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_master.win": {
+    "start": "The door is open. Walk through it yourself. I will not read the truth for you.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.school_wolf_master.loss": {
+    "start": "You lost. I say it to be certain. Heal, then show me you read the battle.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.mysterious.win": {
+    "start": "This result keeps the winner and the loser. I will not erase my part.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.mysterious.loss": {
+    "start": "You still have the right to ask. First keep your team standing.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town1_bao.win": {
+    "start": "I accept this loss. No blaming VAR. ...Fine, one replay, that is all.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town1_bao.loss": {
+    "start": "I won! Wait, no conclusions yet. We still need to review the disputed match.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town1_minh.win": {
+    "start": "I lost, but I know which turn went wrong. I want to improve, not become somebody else.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town1_minh.loss": {
+    "start": "I won. Next time Mum compares me to someone else, I will point to my own team.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town3_shady_trader.win": {
+    "start": "Fine, the goods are in the depot. “Temporary safekeeping” will not get me out of this one.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town3_shady_trader.loss": {
+    "start": "I won. No, I am not selling a “guaranteed victory” upgrade. Stop looking at me like that.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town8_trainer_hai.win": {
+    "start": "Well, that stings. Me, I mean. Your team battled better than I named my techniques.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.town8_trainer_hai.loss": {
+    "start": "Harbor Breathing worked. I would shout again, but Cloyster is giving me a look.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.weather_guardian_groudon.win": {
+    "start": "You held under pressure without breaking the return path. I will accompany you to the chamber.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.weather_guardian_groudon.loss": {
+    "start": "The strata will not yield to impatience. Heal, then find solid footing.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.weather_guardian_kyogre.win": {
+    "start": "You kept your team together through the rain. Once the regulator is stable, I will witness the meeting.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  },
+  "outcome.weather_guardian_kyogre.loss": {
+    "start": "The tide will not wait for your plan. You can still choose when to switch.",
+    "facts": "Heal before returning for a rematch. I will still accept your challenge."
+  }
+}

@@ -33,7 +33,7 @@ public final class DialogueScreen extends Screen {
         if(!historyMode)return font.split(Component.translatable(snapshot.text()),488);
         var lines=new java.util.ArrayList<net.minecraft.util.FormattedCharSequence>();
         if(snapshot.history()!=null)for(var line:snapshot.history()) {
-            lines.addAll(font.split(Component.literal(line.speaker()+": ").append(Component.translatable(line.text())),488));
+            lines.addAll(font.split(Component.translatable(line.speaker()).append(": ").append(Component.translatable(line.text())),488));
             lines.add(net.minecraft.util.FormattedCharSequence.EMPTY);
         }
         if(lines.isEmpty())lines.addAll(font.split(Component.translatable("narrative.cobblemonworld.no_history"),488));
@@ -49,7 +49,7 @@ public final class DialogueScreen extends Screen {
         g.blit(BOARD,0,55,14,panelHeight-69,0,55,14,257,W,340);
         g.blit(BOARD,W-14,55,14,panelHeight-69,W-14,55,14,257,W,340);
         g.blit(BOARD,0,panelHeight-14,0,326,W,14,W,340);
-        g.drawString(font,snapshot.speaker(),29,24,0xFFFFE6A7,true);
+        g.drawString(font,Component.translatable(snapshot.speaker()),29,24,0xFFFFE6A7,true);
         g.drawString(font,Component.translatable("narrative.cobblemonworld.conversation"),29,42,0xFFE4C583,false);
         g.drawString(font,"×",522,24,0xFFFFE6A7,false);
         g.fill(408,22,508,42,mx>=408&&mx<508&&my>=22&&my<42?0xFF9B4241:0xFF63302D);
@@ -70,7 +70,8 @@ public final class DialogueScreen extends Screen {
         for(int i=0;i<visible;i++){
             var option=snapshot.choices().get(i+choiceScroll);int y=choiceY+i*23;boolean hover=mx>=30 && mx<519 && my>=y && my<y+21;
             g.fill(30,y,520,y+21,0xFF795735);g.fill(31,y+1,519,y+20,waiting?0xFFC4B38C:hover?0xFF9B4241:0xFFE4D3AA);g.fill(32,y+2,518,y+3,0x88FFFFFF);
-            g.drawString(font,font.plainSubstrByWidth(Component.translatable(option.text()).getString(),468),39,y+7,hover?0xFFFFE6BD:INK,false);
+            var label=option.optional()?Component.translatable("narrative.cobblemonworld.optional_choice",Component.translatable(option.text())):Component.translatable(option.text());
+            g.drawString(font,font.plainSubstrByWidth(label.getString(),468),39,y+7,hover?0xFFFFE6BD:INK,false);
         }
         if(!historyMode && snapshot.choices().size()>4){g.fill(527,choiceY,531,choiceY+89,0xFFAA8A57);int y=choiceY+choiceScroll*69/Math.max(1,snapshot.choices().size()-4);g.fill(526,y,532,y+20,0xFF8C3540);}
         if(!snapshot.status().isBlank())g.drawString(font,Component.translatable(snapshot.status()),30,panelHeight-25,0xFF8C3540,false);
@@ -89,7 +90,6 @@ public final class DialogueScreen extends Screen {
         choiceScroll=Math.max(0,index-3);mouseClicked(left+275*scale,top+(choiceY+(index-choiceScroll)*23+10)*scale,0);}
     public void choose(int index){if(index<0 || index>=snapshot.choices().size() || waiting)return;
         var option=snapshot.choices().get(index);waiting=true;ClientPlayNetworking.send(new ConversationChoicePayload(snapshot.session(),snapshot.revision(),option.id()));
-        if(option.id().equals("leave") || option.id().equals("finish") || option.id().equals("rematch") || option.id().equals("service"))onClose();
     }
     public boolean mouseScrolled(double x,double y,double horizontal,double vertical){int my=(int)((y-top)/scale);
         if(historyMode || my<choiceY)textScroll=Math.max(0,textScroll+(vertical<0?1:-1));else choiceScroll=Math.max(0,Math.min(Math.max(0,snapshot.choices().size()-4),choiceScroll+(vertical<0?1:-1)));return true;}

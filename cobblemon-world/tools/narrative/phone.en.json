@@ -1,0 +1,223 @@
+{
+  "mara_voss:after_defeat": [
+    "Our battle ended once. The log has two finishing times. I kept the video; could you check the original record at the training field?",
+    [
+      "How far apart are the times?",
+      "Is there a cut in the video?",
+      "I will compare the record with your video."
+    ],
+    [
+      "One second. A confirmation was sent before the battle actually ended.",
+      "No. I watched it again; it runs continuously from the opening to the end.",
+      "Good. Keep the originals. Do not change the times just to make them match."
+    ]
+  ],
+  "mara_voss:after_echo": [
+    "I kept another copy of the video. Hale wants to compare Orin's records; I can send my part when they need it.",
+    [
+      "Did you see anyone change the log?",
+      "Could you send Orin the video directly?",
+      "I will keep the copies as they are."
+    ],
+    [
+      "No. I saw a discrepancy. I am not naming someone without evidence.",
+      "Yes. Tell me when Orin has the file and I will send the camera's timestamps too.",
+      "Right. Note the differences separately; do not erase a copy."
+    ]
+  ],
+  "dr_orin:after_defeat": [
+    "I copied the records we need to compare. Rook has a Black Card tied to an old access entry. We need to examine both.",
+    [
+      "Does the card prove who accessed the system?",
+      "What should I ask Rook?",
+      "I will examine the card before drawing a conclusion."
+    ],
+    [
+      "Not yet. It proves access was available. Its current holder may not be the person who used it.",
+      "Where he obtained it and when. If those answers conflict, preserve both.",
+      "Exactly. An object does not explain how it was used."
+    ]
+  ],
+  "dr_orin:after_archive": [
+    "The comparison is saved separately. The file's administrative labels do not prove its account of events is accurate.",
+    [
+      "May I share the comparison?",
+      "Is anything confidential?",
+      "I will bring both the original and the comparison."
+    ],
+    [
+      "Yes. Include the source and copying date so the reader can identify the version.",
+      "Unrelated people's personal information. We need evidence of these events, not their entire lives.",
+      "Good. That lets someone check how we reached our conclusions."
+    ]
+  ],
+  "rook:after_defeat": [
+    "You have the Black Card. I kept the receipt. Show Selene the card before asking about its confirmation mark.",
+    [
+      "Why keep the receipt?",
+      "Will Selene recognize the card?",
+      "I will ask her about the mark."
+    ],
+    [
+      "To prove I bought it rather than made it. Those are different, even if you dislike the seller.",
+      "She can read the mark. Whether she recognizes its user is a question for her.",
+      "Fine. If she disagrees with me, send her exact words. I dislike being quoted halfway."
+    ]
+  ],
+  "rook:after_card": [
+    "Marlow wants to compare the card with Iris's lab records. I handed over the receipt; ask the records' keeper about the rest.",
+    [
+      "Did you keep a copy of the receipt?",
+      "Why do we need Iris's records?",
+      "I will compare both."
+    ],
+    [
+      "Yes. This time I noted the handover date too, so we need not argue about who sent what first.",
+      "I know how the card was sold. Iris knows how it was used in the laboratory.",
+      "Ask me about the sale. Do not make me answer for her about the lab."
+    ]
+  ],
+  "selene_kade:after_defeat": [
+    "I recorded the card's confirmation mark. The Town 5 Wardens keep some area-access records; compare it with theirs.",
+    [
+      "Could the mark be copied?",
+      "What should I bring to the Wardens?",
+      "I will ask them about that access entry."
+    ],
+    [
+      "Yes. That is why I recorded where and when it appeared, not just its shape.",
+      "The card copy and these notes. Show both before naming a suspect.",
+      "All right. If they do not remember, do not press them to choose a name."
+    ]
+  ],
+  "selene_kade:after_stalemate": [
+    "Rocket has reportedly taken the Town 6 lab. Iris is still there. I am checking a way to reach her.",
+    [
+      "Is that report confirmed?",
+      "How can I help keep contact?",
+      "I will check whether Iris is safe."
+    ],
+    [
+      "The blocked entrance is confirmed. I do not yet know everyone still inside.",
+      "Keep your phone on. If you reach Iris, let her speak directly rather than passing her account through several people.",
+      "Be careful. Her safety comes first; the records come after that."
+    ]
+  ],
+  "aurelia:after_defeat": [
+    "Your result has been recorded. Bran keeps the School of Wolf files; I will send him the confirmation you need.",
+    [
+      "What does Bran know about this file?",
+      "Must I repeat the League challenge?",
+      "I will meet Bran with the confirmation."
+    ],
+    [
+      "He knows the school's intake and storage procedures. I will answer for decisions made by the League.",
+      "No. Your result stands. We are handling records, not changing the battle outcome.",
+      "If the school needs to verify my signature, ask them to contact me directly."
+    ]
+  ],
+  "aurelia:after_below": [
+    "I sent the copy to the school. Its trials are the school's responsibility; they cannot replace my explanation of the old decisions.",
+    [
+      "Who should I ask about the trials?",
+      "Will the old files remain intact?",
+      "I will keep competition separate from the investigation."
+    ],
+    [
+      "Bran receives visitors and can direct you to each trial's examiner.",
+      "Yes. Add corrections separately. Do not rewrite the old file as though the mistaken decision never existed.",
+      "Thank you. I must make the same distinction when I answer the investigators."
+    ]
+  ],
+  "mysterious:first_contact": [
+    "I saw the record you brought Hale. The early confirmation is not the field clock's fault. I kept an older copy for comparison.",
+    [
+      "Where did you obtain that record?",
+      "How can I check your older copy?",
+      "I will compare it, but I am not taking your word for it."
+    ],
+    [
+      "I once had access to those files. I will include the source information so you need not trust a message alone.",
+      "Keep your copy and ask Orin to read the confirmation timestamps. Compare signatures as well as times when you receive mine.",
+      "That is fair. I want the record examined, not your agreement before you see it."
+    ]
+  ],
+  "mysterious:you_are_asking": [
+    "Orin has compared the confirmation. You are looking in the right place. I still have the old access copy.",
+    [
+      "Does your copy match Orin's?",
+      "Why have you not handed it over yet?",
+      "I will record the unresolved differences."
+    ],
+    [
+      "The timestamps match. We need Rook's card to interpret the signature and access rights fully.",
+      "Its chain of custody needs recording. Without a source, someone could call it a newly inserted copy.",
+      "Record what matches too, when you compare it with mine."
+    ]
+  ],
+  "mysterious:last_person": [
+    "The group has been told about the archive. I want to meet after you read it. There are things I must explain myself.",
+    [
+      "Which parts should I read first?",
+      "Will you explain how you used us too?",
+      "I will read the files before agreeing to meet."
+    ],
+    [
+      "The old order, Selene's copy and Iris's account. Read them together, not just the part bearing my name.",
+      "Yes. I used your investigation to reopen access. I will not leave that out.",
+      "All right. I will send the meeting point through this conversation."
+    ]
+  ],
+  "mysterious:meet_me": [
+    "The meeting point is on your phone. Keep the records you compared. I will answer in front of them, not ask you to leave them behind.",
+    [
+      "May I tell the group where we are meeting?",
+      "Do I need to return the files to you?",
+      "I will come and keep the comparison copies."
+    ],
+    [
+      "Yes. I want witnesses. You need not hide the meeting from everyone.",
+      "No. Keep them. If I need to see an entry, we can read it there.",
+      "Keep them with you while we talk."
+    ]
+  ],
+  "mysterious:first_contact_who": [
+    "I am not giving my name in this message. Check the old access rights first; they left a trace in the file.",
+    [
+      "Where is that trace?",
+      "Will you let Orin examine it?",
+      "I will check the trace before asking more."
+    ],
+    [
+      "At the confirmation dated before the training field opened. Keep the surrounding lines so its source can be checked.",
+      "Yes. I want someone holding an independent copy to read it with you.",
+      "Point to whatever still does not match when you ask again."
+    ]
+  ],
+  "mysterious:first_contact_what": [
+    "I want you to preserve the original and compare it with Orin's records. That is my request; it does not commit you to anything else.",
+    [
+      "What if the copies do not match?",
+      "May I show this copy to Hale?",
+      "I agree to check the record."
+    ],
+    [
+      "Record the differences. Do not edit either copy; we need to know when each discrepancy appeared.",
+      "Yes. He already received part of it and can examine its source.",
+      "You can stop if my account contradicts the file."
+    ]
+  ],
+  "mysterious:first_contact_why": [
+    "Part of the file treats a former access holder as a fabrication. I need that checked against older records, rather than accepted because it is already written down.",
+    [
+      "Is there evidence against that conclusion?",
+      "Do you want us to erase the old conclusion?",
+      "I will examine the evidence first."
+    ],
+    [
+      "An access right predates the account's recorded creation. Orin can help verify those times.",
+      "No. Keep it so we can see who concluded that and why. A mistake needs an explanation, not an erased trace.",
+      "I will provide my copy for comparison."
+    ]
+  ]
+}

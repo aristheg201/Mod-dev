@@ -35,11 +35,13 @@ public final class PoiStore {
             .executes(ctx->{ServerPlayer p=ctx.getSource().getPlayerOrException();String id=StringArgumentType.getString(ctx,"id");if(!NarrativeRegistry.INSTANCE.pois.containsKey(id))return 0;
                 BlockPos pos=p.blockPosition().below();PLACES.put(id,new Position(p.level().dimension().location().toString(),pos.getX(),pos.getY(),pos.getZ()));save();return 1;})))));
         UseBlockCallback.EVENT.register((player,world,hand,hit)->{
-            if(!(player instanceof ServerPlayer p))return InteractionResult.PASS;
+            if(!(player instanceof ServerPlayer p) || hand!=net.minecraft.world.InteractionHand.MAIN_HAND)return InteractionResult.PASS;
             for(var e:PLACES.entrySet())if(e.getValue().dimension().equals(world.dimension().location().toString()) && e.getValue().block().equals(hit.getBlockPos())){
                 var definition=NarrativeRegistry.INSTANCE.pois.get(e.getKey());
                 if(definition!=null && (definition.block()==null || definition.block().isBlank() || net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(world.getBlockState(hit.getBlockPos()).getBlock()).toString().equals(definition.block()))){
-                    return ConversationService.openPoint(p,e.getKey())?InteractionResult.SUCCESS:InteractionResult.PASS;
+                    // Several authored objectives may share a lectern. An inactive
+                    // point must not mask a later active point at the same block.
+                    if(ConversationService.openPoint(p,e.getKey()))return InteractionResult.SUCCESS;
                 }
             }return InteractionResult.PASS;
         });

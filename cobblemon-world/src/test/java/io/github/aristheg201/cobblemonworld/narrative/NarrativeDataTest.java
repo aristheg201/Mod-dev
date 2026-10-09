@@ -13,9 +13,10 @@ class NarrativeDataTest {
     }
     @Test void everyShippedSceneHasReachableChoicesAndEverySubstantialChainHasMultipleMechanics(){
         var registry=new NarrativeRegistry();assertDoesNotThrow(registry::load);
-        assertEquals(70,registry.data.campaign().length);
+        assertEquals(69,registry.data.campaign().length);
         long substantive=Arrays.stream(registry.data.chains()).filter(c->!c.id().equals("weather_duo_01")).count();assertTrue(substantive>=35);
         for(var chain:registry.data.chains()){
+            if(chain.id().equals(NarrativeMigration.OPTIONAL_SUPPLIES)) continue;
             assertTrue(chain.stages().length>=3,chain.id());
             assertTrue(Arrays.stream(chain.stages()).map(NarrativeRegistry.Stage::type).distinct().count()>=2,chain.id());
             for(var stage:chain.stages())assertTrue(registry.scenes.containsKey(stage.scene()),stage.id());

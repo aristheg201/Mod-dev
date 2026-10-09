@@ -27,7 +27,7 @@ public final class NarrativeQaServer {
     private record Step(NarrativeRegistry.Stage stage,String chain,boolean loss){}
     private static final List<Step> STEPS=new ArrayList<>();private static final Set<String> ACK=new HashSet<>();
     private static final Map<String,Integer> PLACED=new LinkedHashMap<>();
-    private static int index,age,joinedAge,pcEvidence;private static boolean initialized,sent,finished,liveTeamLogged;private static String token;private static NPCEntity npc;
+    private static int index,age,joinedAge,pcEvidence,lossesBefore,retries;private static boolean initialized,sent,finished,liveTeamLogged;private static String token;private static NPCEntity npc;
     public static void register(){LiveTrainerAudit.register();ServerLifecycleEvents.SERVER_STARTED.register(s->s.setDifficulty(net.minecraft.world.Difficulty.PEACEFUL,true));ServerTickEvents.END_SERVER_TICK.register(NarrativeQaServer::tick);}
     public static void ack(QaAckPayload p){if(!p.ok())throw new IllegalStateException("CWORLD_NARRATIVE_QA_FAILED "+p.token()+" "+p.detail());ACK.add(p.token());}
     private static void tick(MinecraftServer server){
@@ -60,9 +60,9 @@ public final class NarrativeQaServer {
         }
         var step=STEPS.get(index);var s=step.stage();
         if(!sent){
-            age=0;liveTeamLogged=false;token=(step.loss()?"loss-":step.chain().isBlank()?"main-":"side-")+s.id()+".png";
+            age=0;liveTeamLogged=false;token=(step.loss()?"loss-":step.chain().isBlank()?"main-":"side-")+s.id()+(retries>0?"-retry-"+retries:"")+".png";
             Control control=prepare(p,step);if(control==null)return;
-            sent=true;System.out.println("CWORLD_NARRATIVE_QA_BEGIN "+token+" nonOp="+!p.hasPermissions(2));
+            lossesBefore=NarrativeEngine.state(p).narrative.losses.getOrDefault(s.target(),0);sent=true;System.out.println("CWORLD_NARRATIVE_QA_BEGIN "+token+" nonOp="+!p.hasPermissions(2));
             ServerPlayNetworking.send(p,new QaControlPayload("prod_narrative",new Gson().toJson(control),token));
         }
         age++;
@@ -73,7 +73,10 @@ public final class NarrativeQaServer {
         boolean complete=step.loss()?NarrativeEngine.state(p).narrative.losses.getOrDefault(s.target(),0)>0 && !NarrativeEngine.state(p).narrative.finished.contains(s.id()):NarrativeEngine.state(p).narrative.finished.contains(s.id());
         if(ACK.contains(token) && complete){
             if(s.id().equals("unknown_first") && !NarrativeEngine.state(p).unreadMessages.contains("mysterious:first_contact"))throw new IllegalStateException("First unknown message failed to arrive after the investigation");
-            System.out.println("CWORLD_NARRATIVE_QA_PASS "+token+" objective="+s.type());ACK.remove(token);index++;sent=false;
+            System.out.println("CWORLD_NARRATIVE_QA_PASS "+token+" objective="+s.type());ACK.remove(token);index++;sent=false;retries=0;
+        }else if(!step.loss() && s.type().equals("battle") && ACK.contains(token) && NarrativeEngine.state(p).narrative.losses.getOrDefault(s.target(),0)>lossesBefore){
+            if(++retries>3)throw new IllegalStateException("CWORLD_NARRATIVE_QA_FAILED three legitimate retry losses "+token);
+            System.out.println("CWORLD_NARRATIVE_QA_RETRY after native loss target="+s.target()+" attempt="+retries);ACK.remove(token);sent=false;
         }else if(age>12000)throw new IllegalStateException("CWORLD_NARRATIVE_QA_FAILED timeout="+token+" current="+NarrativeEngine.state(p).narrative.main+" ACK="+ACK.contains(token));
     }
     private static void initialize(ServerPlayer p){
@@ -96,13 +99,18 @@ public final class NarrativeQaServer {
         for(var stage:NarrativeRegistry.INSTANCE.stages.values())if(java.util.Set.of("deliver","collect").contains(stage.type()) && !BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(stage.item())))throw new IllegalStateException("Unresolved narrative item "+stage.item());
         for(var s:NarrativeRegistry.INSTANCE.data.campaign())if(!n.finished.contains(s.id()) && (!Boolean.getBoolean("cworld.qa.opening") || s.act().equals("0"))){
             if(s.id().equals("mara_first"))STEPS.add(new Step(s,"",true));STEPS.add(new Step(s,"",false));}
-        if(!Boolean.getBoolean("cworld.qa.opening"))for(String id:List.of("var_36","other_peoples_child","short_explanation","shady_business","delivery_hell","fish_out_of_water","ren_missing_labels","mara_postgame","harbour_breathing","old_man_worries","sleep_is_joy","weather_duo_01")){
+        if(!Boolean.getBoolean("cworld.qa.opening"))for(String id:NarrativeRegistry.INSTANCE.chains.keySet()){
             var c=NarrativeRegistry.INSTANCE.chains.get(id);if(!n.completedChains.contains(id))for(var s:c.stages())if(!n.finished.contains(s.id()))STEPS.add(new Step(s,id,false));}
         System.out.println("CWORLD_NARRATIVE_QA_NON_OP_CONFIRMED player="+p.getGameProfile().getName()+" steps="+STEPS.size());
     }
     private static Control prepare(ServerPlayer p,Step step){
         var s=step.stage();npc=null;
-        if(s.type().equals("battle")){party(p,step.loss());if(s.target().equals("weather_guardian_kyogre"))for(var mon:Cobblemon.INSTANCE.getStorage().getParty(p))mon.swapHeldItem(new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse("cobblemon:focus_sash"))),false,false);}else if(Cobblemon.INSTANCE.getStorage().getParty(p).get(0)==null)party(p,false);
+        if(s.type().equals("battle")){party(p,step.loss());
+            if(s.target().equals("mysterious"))for(var mon:Cobblemon.INSTANCE.getStorage().getParty(p)) {
+                mon.getMoveSet().clear();for(String move:List.of("psystrike","aurasphere","icebeam","flamethrower"))mon.getMoveSet().add(com.cobblemon.mod.common.api.moves.Moves.getByName(move).create());
+            }
+            if(s.target().equals("weather_guardian_kyogre"))for(var mon:Cobblemon.INSTANCE.getStorage().getParty(p))mon.swapHeldItem(new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse("cobblemon:focus_sash"))),false,false);
+        }else if(Cobblemon.INSTANCE.getStorage().getParty(p).get(0)==null)party(p,false);
         if(s.type().equals("heal")){
             var party=Cobblemon.INSTANCE.getStorage().getParty(p);
             if("magikarp".equals(s.item())){var pc=Cobblemon.INSTANCE.getStorage().getPC(p);for(var mon:pc)if(mon.getSpecies().getName().equalsIgnoreCase("magikarp")){
@@ -143,13 +151,13 @@ public final class NarrativeQaServer {
         p.serverLevel().setBlockAndUpdate(BlockPos.containing(x+dx,119,dz),Blocks.STONE_BRICKS.defaultBlockState());
         for(int y=120;y<126;y++)p.serverLevel().setBlockAndUpdate(BlockPos.containing(x+dx,y,dz),Blocks.AIR.defaultBlockState());}}
     private static void party(ServerPlayer p,boolean lose){
-        LevelCapService.setCap(p,lose?15:100);
+        int legalLevel=Math.max(5,LevelCapService.getCap(p));
         var party=Cobblemon.INSTANCE.getStorage().getParty(p);party.clearParty();
         if(lose){var mon=PokemonProperties.Companion.parse("magikarp level=5 moves=splash").create(p);mon.setCurrentHealth(1);party.set(0,mon);return;}
         for(int i=0;i<6;i++){
-            var mon=PokemonProperties.Companion.parse("mewtwo level=100 nature=timid moves=aurasphere,icebeam,thunderbolt,flamethrower").create(p);
+            var mon=PokemonProperties.Companion.parse("mewtwo level="+legalLevel+" nature=timid moves=energyball,icebeam,thunderbolt,flamethrower").create(p);
             for(var stat:CompetitiveTeams.STATS)mon.setIV(stat,31);mon.setEV(CompetitiveTeams.STATS[3],252);mon.setEV(CompetitiveTeams.STATS[5],252);mon.setEV(CompetitiveTeams.STATS[0],4);
-            mon.swapHeldItem(new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse("cobblemon:life_orb"))),false,false);party.set(i,mon);
+            mon.swapHeldItem(new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse("cobblemon:focus_sash"))),false,false);party.set(i,mon);
         }
     }
     private static void verifyClaims(ServerPlayer p){

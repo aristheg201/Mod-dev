@@ -1,0 +1,223 @@
+{
+  "mara_voss:after_defeat": [
+    "Trận vừa rồi kết thúc đúng một lần. Nhật ký lại ghi hai mốc giờ. Tôi đang giữ video; cậu xem bản ghi ở sân tập giúp tôi nhé.",
+    [
+      "Hai mốc giờ lệch nhau bao lâu?",
+      "Video có bị cắt đoạn nào không?",
+      "Tôi sẽ đối chiếu bản ghi với video."
+    ],
+    [
+      "Một giây. Không nhiều, nhưng có một xác nhận được gửi trước lúc trận đấu kết thúc.",
+      "Tôi đã xem lại. Video liền mạch từ lúc bắt đầu đến lúc đội tôi ngừng đấu.",
+      "Được. Cứ giữ bản gốc, đừng sửa giờ cho chúng khớp nhau."
+    ]
+  ],
+  "mara_voss:after_echo": [
+    "Tôi đã giữ thêm một bản video. Hale muốn đối chiếu hồ sơ của Orin; tôi sẽ gửi phần của tôi nếu ông ấy cần.",
+    [
+      "Cậu có thấy ai sửa bản ghi không?",
+      "Tôi nhờ cậu gửi video trực tiếp cho Orin được chứ?",
+      "Tôi sẽ giữ nguyên các bản đang có."
+    ],
+    [
+      "Không. Tôi chỉ thấy kết quả lệch. Tôi không muốn gọi tên ai khi chưa có bằng chứng.",
+      "Được. Nhắn tôi khi Orin nhận hồ sơ, tôi sẽ gửi cùng mốc giờ của máy quay.",
+      "Ừ. Có khác biệt thì ghi riêng, đừng xóa bản nào."
+    ]
+  ],
+  "dr_orin:after_defeat": [
+    "Tôi đã sao lại phần hồ sơ cần đối chiếu. Rook giữ chiếc Thẻ Đen liên quan đến một lần truy cập cũ; chúng ta cần kiểm tra cả hai.",
+    [
+      "Thẻ đó chứng minh ai đã truy cập à?",
+      "Tôi nên hỏi Rook điều gì?",
+      "Tôi sẽ kiểm tra thẻ trước khi kết luận."
+    ],
+    [
+      "Chưa. Nó chứng minh có quyền truy cập. Người giữ thẻ bây giờ có thể không phải người đã dùng nó.",
+      "Nguồn gốc và thời điểm anh ta nhận thẻ. Nếu hai câu trả lời không khớp, giữ lại cả hai.",
+      "Đúng. Một vật chứng không thay thế lời giải thích về cách nó được dùng."
+    ]
+  ],
+  "dr_orin:after_archive": [
+    "Bản đối chiếu đã được lưu riêng. Những thuật ngữ trong hồ sơ là nhãn quản lý, không phải bằng chứng rằng sự việc được ghi đúng.",
+    [
+      "Tôi có thể trích bản đối chiếu cho người khác xem không?",
+      "Có mục nào cần giữ kín không?",
+      "Tôi sẽ mang cả bản gốc lẫn bản đối chiếu."
+    ],
+    [
+      "Có. Ghi rõ nguồn và ngày tạo bản sao để người sau biết mình đang đọc phiên bản nào.",
+      "Thông tin cá nhân của người không liên quan. Ta cần chứng minh sự việc, không công bố mọi thứ họ từng làm.",
+      "Tốt. Như vậy người đọc có thể kiểm tra cách chúng ta đi đến kết luận."
+    ]
+  ],
+  "rook:after_defeat": [
+    "Cậu đã lấy Thẻ Đen rồi. Tôi giữ lại hóa đơn. Nếu hỏi Selene về dấu xác nhận, cứ đưa thẻ cho cô ấy xem trước.",
+    [
+      "Anh vẫn giữ hóa đơn để làm gì?",
+      "Selene có nhận ra chiếc thẻ này không?",
+      "Tôi sẽ hỏi cô ấy về dấu xác nhận."
+    ],
+    [
+      "Để chứng minh tôi mua nó, không tự làm ra nó. Hai chuyện đó khác nhau, kể cả khi cậu chẳng thích người bán.",
+      "Cô ấy biết cách đọc dấu. Nhận ra người dùng hay không thì cậu phải hỏi cô ấy.",
+      "Được. Nếu cô ấy nói khác tôi, nhắn lại nguyên câu. Tôi không thích bị trích thiếu một nửa."
+    ]
+  ],
+  "rook:after_card": [
+    "Marlow muốn đối chiếu thẻ với hồ sơ của Iris. Tôi đã giao bản hóa đơn; phần còn lại cậu nên hỏi người giữ hồ sơ.",
+    [
+      "Anh có giữ bản sao hóa đơn không?",
+      "Vì sao phải cần hồ sơ của Iris?",
+      "Tôi sẽ đối chiếu cả hai trước."
+    ],
+    [
+      "Có. Lần này tôi ghi cả ngày giao bản sao, khỏi phải cãi nhau về việc ai đưa trước.",
+      "Tôi biết thẻ được bán thế nào. Iris biết nó đã được dùng ở phòng thí nghiệm ra sao.",
+      "Ừ. Cứ hỏi tôi phần mua bán. Đừng bắt tôi trả lời thay cô ấy chuyện trong phòng thí nghiệm."
+    ]
+  ],
+  "selene_kade:after_defeat": [
+    "Tôi đã ghi lại dấu xác nhận trên thẻ. Warden ở thị trấn 5 giữ một phần hồ sơ tiếp cận khu vực; cậu cần đối chiếu với họ.",
+    [
+      "Dấu xác nhận có thể bị sao chép không?",
+      "Tôi cần mang gì cho Warden?",
+      "Tôi sẽ hỏi họ về lần tiếp cận đó."
+    ],
+    [
+      "Có thể. Vì thế tôi ghi cả thời điểm và nơi dấu xuất hiện, không chỉ hình của nó.",
+      "Bản thẻ và phần ghi chú này. Cho họ xem cả hai trước khi nói cậu nghi ai.",
+      "Được. Nếu họ không nhớ, đừng ép họ chọn một cái tên."
+    ]
+  ],
+  "selene_kade:after_stalemate": [
+    "Có tin Rocket đã chiếm phòng thí nghiệm ở thị trấn 6. Iris còn ở đó. Tôi đang kiểm tra đường liên lạc với cô ấy.",
+    [
+      "Tin đó đã được xác nhận chưa?",
+      "Tôi có thể giúp giữ liên lạc thế nào?",
+      "Tôi sẽ tới kiểm tra tình hình của Iris."
+    ],
+    [
+      "Việc họ chặn lối vào đã được xác nhận. Tôi chưa biết tất cả những người còn bên trong.",
+      "Giữ điện thoại mở. Nếu gặp Iris, để cô ấy tự kể; tôi không muốn lời của cô ấy bị chuyển qua nhiều người.",
+      "Cẩn thận. Mục tiêu trước mắt là biết cô ấy có an toàn không, rồi mới thu thập hồ sơ."
+    ]
+  ],
+  "aurelia:after_defeat": [
+    "Kết quả trận đấu đã được ghi nhận. Bran đang giữ phần hồ sơ của Trường Sói; tôi sẽ gửi cho ông ấy bản xác nhận cậu cần.",
+    [
+      "Bran biết gì về hồ sơ này?",
+      "Tôi có phải làm lại thử thách Liên Minh không?",
+      "Tôi sẽ gặp Bran với bản xác nhận."
+    ],
+    [
+      "Ông ấy biết việc tiếp nhận và lưu trữ tại trường. Những quyết định thuộc Liên Minh, tôi sẽ tự giải trình.",
+      "Không. Kết quả của cậu đã được công nhận. Chúng ta đang xử lý hồ sơ, không thay đổi kết quả trận đấu.",
+      "Được. Nếu trường cần xác minh chữ ký, bảo họ liên lạc trực tiếp với tôi."
+    ]
+  ],
+  "aurelia:after_below": [
+    "Tôi đã chuyển bản sao cho Trường Sói. Các bài kiểm tra ở đó thuộc trách nhiệm của trường; chúng không thể thay thế phần giải trình của tôi.",
+    [
+      "Tôi nên hỏi ai về các bài kiểm tra?",
+      "Hồ sơ cũ sẽ được giữ nguyên chứ?",
+      "Tôi sẽ phân biệt việc thi đấu với việc điều tra."
+    ],
+    [
+      "Bran tiếp nhận người đến trường. Ông ấy sẽ chỉ cậu tới đúng người phụ trách từng bài.",
+      "Có. Ta ghi bản bổ sung riêng; không được sửa bản cũ để làm như quyết định sai chưa từng tồn tại.",
+      "Cảm ơn cậu. Tôi cũng phải làm như vậy khi trả lời nhóm điều tra."
+    ]
+  ],
+  "mysterious:first_contact": [
+    "Tôi đã thấy bản ghi cậu mang cho Hale. Phần xác nhận sớm không phải do đồng hồ sân tập. Tôi giữ một bản cũ để cậu đối chiếu.",
+    [
+      "Anh lấy bản ghi đó từ đâu?",
+      "Tôi có thể kiểm tra bản cũ bằng cách nào?",
+      "Tôi sẽ đối chiếu, nhưng chưa tin lời anh ngay."
+    ],
+    [
+      "Tôi từng có quyền đọc hồ sơ đó. Tôi sẽ đưa phần nguồn gốc cùng bản sao, để cậu không phải tin chỉ vì tôi nhắn.",
+      "Giữ bản cậu đang có và hỏi Orin cách đọc mốc xác nhận. Khi có bản của tôi, đối chiếu cả thời điểm lẫn chữ ký.",
+      "Được. Cứ kiểm tra. Tôi muốn bản ghi được đọc lại, không muốn cậu nhận lời trước khi thấy nó."
+    ]
+  ],
+  "mysterious:you_are_asking": [
+    "Orin đã đối chiếu được phần xác nhận. Cậu đang hỏi đúng chỗ. Tôi vẫn giữ bản sao của lần truy cập cũ.",
+    [
+      "Bản của anh có trùng với bản Orin giữ không?",
+      "Vì sao anh chưa giao bản sao ngay?",
+      "Tôi sẽ giữ riêng những điểm chưa khớp."
+    ],
+    [
+      "Phần thời điểm trùng. Chữ ký và quyền truy cập cần thêm thẻ của Rook để đọc hết.",
+      "Vì tôi cần ghi lại cách nó đến tay cậu. Nếu thiếu nguồn, người khác có thể gọi nó là một bản chèn mới.",
+      "Ừ. Khi đối chiếu bản của tôi, ghi lại cả điều khớp và điều không khớp."
+    ]
+  ],
+  "mysterious:last_person": [
+    "Nhóm đã được thông báo về hồ sơ lưu trữ. Tôi muốn gặp cậu sau khi cậu đọc xong phần đó. Có những việc tôi phải tự giải thích.",
+    [
+      "Tôi cần đọc xong phần nào trước?",
+      "Anh sẽ giải thích cả việc đã dùng chúng tôi chứ?",
+      "Tôi sẽ đọc hồ sơ rồi mới nhận lời gặp."
+    ],
+    [
+      "Phần lệnh cũ, bản của Selene và lời Iris. Đọc chúng cùng nhau; đừng chỉ đọc đoạn có tên tôi.",
+      "Có. Tôi đã tận dụng việc cậu điều tra để mở lại đường truy cập. Tôi không định bỏ qua phần đó.",
+      "Được. Điểm hẹn sẽ được gửi qua cùng cuộc trò chuyện này."
+    ]
+  ],
+  "mysterious:meet_me": [
+    "Tôi đã gửi điểm hẹn trên điện thoại. Hãy giữ những bản cậu đã đối chiếu. Tôi sẽ trả lời trước chúng, không đề nghị cậu để chúng lại.",
+    [
+      "Tôi có thể cho nhóm biết điểm hẹn không?",
+      "Tôi có cần giao lại hồ sơ cho anh không?",
+      "Tôi sẽ tới, nhưng vẫn giữ các bản đối chiếu."
+    ],
+    [
+      "Có. Tôi muốn chuyện này có người làm chứng. Cậu không cần tới mà giấu mọi người.",
+      "Không. Cậu giữ chúng. Nếu tôi cần xem một mục, chúng ta sẽ xem tại chỗ.",
+      "Được. Cứ giữ chúng trong tay khi nói chuyện với tôi."
+    ]
+  ],
+  "mysterious:first_contact_who": [
+    "Tôi chưa công bố tên ở tin nhắn này. Cậu có thể kiểm tra quyền truy cập cũ trước; nó có để lại dấu trong hồ sơ.",
+    [
+      "Dấu đó nằm ở phần nào?",
+      "Anh có đồng ý để Orin kiểm tra nó không?",
+      "Tôi sẽ kiểm tra dấu trước khi hỏi tiếp."
+    ],
+    [
+      "Phần xác nhận có thời điểm trước ngày mở sân. Giữ cả dòng phía trên và phía dưới để đối chiếu nguồn.",
+      "Có. Tôi muốn một người giữ bản độc lập đọc nó cùng cậu.",
+      "Được. Khi hỏi tiếp, cứ chỉ vào phần cậu chưa thấy khớp."
+    ]
+  ],
+  "mysterious:first_contact_what": [
+    "Tôi muốn cậu giữ bản gốc và đối chiếu với hồ sơ của Orin. Đó là việc tôi nhờ; cậu chưa phải hứa điều gì khác.",
+    [
+      "Nếu hai bản không khớp thì sao?",
+      "Tôi có được đưa bản này cho Hale không?",
+      "Tôi đồng ý kiểm tra bản ghi."
+    ],
+    [
+      "Ghi lại chỗ khác nhau. Đừng tự sửa bản nào; ta cần biết sự khác biệt xuất hiện từ lúc nào.",
+      "Có. Ông ấy đã nhận một phần và có thể kiểm tra nguồn của nó.",
+      "Được. Cậu có thể dừng lại nếu thấy lời tôi khác với hồ sơ."
+    ]
+  ],
+  "mysterious:first_contact_why": [
+    "Một phần hồ sơ đang coi người từng giữ quyền truy cập là giả mạo. Tôi cần nó được kiểm tra bằng bản cũ, không chỉ bằng kết luận đã ghi sẵn.",
+    [
+      "Có bằng chứng nào đi ngược kết luận đó?",
+      "Anh muốn chúng tôi xóa kết luận cũ à?",
+      "Tôi sẽ xem bằng chứng trước."
+    ],
+    [
+      "Có một quyền truy cập xuất hiện trước ngày tài khoản được ghi là tạo mới. Orin có thể giúp kiểm tra thời điểm.",
+      "Không. Giữ nó để biết ai đã kết luận và dựa vào đâu. Nếu sai, phải bổ sung giải trình, không xóa dấu cũ.",
+      "Được. Tôi sẽ đưa phần tôi giữ để cậu đối chiếu."
+    ]
+  ]
+}

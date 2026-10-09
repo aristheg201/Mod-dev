@@ -105,8 +105,6 @@ public final class TrainerBattleService {
         AnchoredNpcService.facePlayer(npc, player);
         io.github.aristheg201.cobblemonworld.story.ObjectiveBridge.interact(player, definitionId);
         io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.migrate(player);
-        boolean hasConversation = io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.active(player).stream().anyMatch(s -> s.target().equals(definitionId) && (s.type().equals("talk") || s.type().equals("deliver") || s.type().equals("claim")));
-        if (!hasConversation && NpcService.dispatch(npc, player, definitionId)) return true;
         return io.github.aristheg201.cobblemonworld.narrative.ConversationService.openNpc(player, npc, definitionId);
     }
 
@@ -124,17 +122,55 @@ public final class TrainerBattleService {
     }
 
     public static boolean startBattle(NPCEntity npc, ServerPlayer player, String definitionId) {
+        var result = tryStartBattle(npc, player, definitionId);
+        if (!result.started()) player.sendSystemMessage(Component.translatable(result.reason()).withStyle(ChatFormatting.RED));
+        return result.started();
+    }
+
+    public record BattleAttempt(boolean started, String reason) {}
+
+    private static BattleAttempt rejected(ServerPlayer player, String definitionId, String reason) {
+        CobblemonWorldMod.LOGGER.info("Trainer action rejected player={} trainer={} reason={}", player.getUUID(), definitionId, reason);
+        return new BattleAttempt(false, reason);
+    }
+
+    public static BattleAttempt tryStartBattle(NPCEntity npc, ServerPlayer player, String definitionId) {
         var definition = NpcDefinitionRegistry.INSTANCE.get(definitionId);
-        if (definition == null || !io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.battleAllowed(player, definitionId)) return false;
+        if (definition == null || !npc.isAlive() || npc.level() != player.level() || npc.distanceToSqr(player) > 64
+                || !(npc.getInteraction() instanceof CWorldNpcInteraction binding) || !definitionId.equals(binding.definitionId()))
+            return rejected(player, definitionId, "battle.cobblemonworld.unavailable");
+        if (!io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.battleAllowed(player, definitionId))
+            return rejected(player, definitionId, "battle.cobblemonworld.story_locked");
         var gate = CampaignService.canChallengeTrainer(player, definition);
-        if (!gate.allowed()) return false;
+        if (!gate.allowed()) return rejected(player, definitionId, "battle.cobblemonworld.story_locked");
         try {
-            if (hasLiveBattle(npc) || Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) return false;
+            if (!player.isAlive()) return rejected(player, definitionId, "battle.cobblemonworld.unavailable");
+            if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null)
+                return rejected(player, definitionId, "battle.cobblemonworld.player_busy");
+            if (hasLiveBattle(npc)) return rejected(player, definitionId, "battle.cobblemonworld.trainer_busy");
+            if (io.github.aristheg201.cobblemonworld.progression.LevelCapService.firstOverCapPartyPokemon(player) != null)
+                return rejected(player, definitionId, "battle.cobblemonworld.over_cap");
+            boolean healthy = false;
+            for (var pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) if (pokemon.getCurrentHealth() > 0) healthy = true;
+            if (!healthy) return rejected(player, definitionId, "battle.cobblemonworld.no_party");
             prepareBattleParty(npc, player, definition);
-            return BattleBuilder.INSTANCE.pvn(player, npc) instanceof com.cobblemon.mod.common.battles.SuccessfulBattleStart;
+            var result = BattleBuilder.INSTANCE.pvn(player, npc);
+            if (result instanceof com.cobblemon.mod.common.battles.SuccessfulBattleStart) {
+                CobblemonWorldMod.LOGGER.info("Trainer battle started player={} trainer={} npc={}", player.getUUID(), definitionId, npc.getUUID());
+                return new BattleAttempt(true, "");
+            }
+            if (result instanceof com.cobblemon.mod.common.battles.ErroredBattleStart failure) {
+                for (var error : failure.getErrors()) {
+                    if (error instanceof com.cobblemon.mod.common.battles.CanceledError) return rejected(player, definitionId, "battle.cobblemonworld.cancelled");
+                    if (error instanceof com.cobblemon.mod.common.battles.NoPartyError || error instanceof com.cobblemon.mod.common.battles.InsufficientPokemonError)
+                        return rejected(player, definitionId, "battle.cobblemonworld.no_party");
+                }
+                CobblemonWorldMod.LOGGER.warn("Cobblemon rejected trainer battle player={} trainer={} errors={}", player.getUUID(), definitionId, failure.getErrors());
+            }
+            return rejected(player, definitionId, "battle.cobblemonworld.unavailable");
         } catch (Exception e) {
             CobblemonWorldMod.LOGGER.error("Failed trainer battle {} for {}", definitionId, player.getUUID(), e);
-            return false;
+            return rejected(player, definitionId, "battle.cobblemonworld.unavailable");
         }
     }
 

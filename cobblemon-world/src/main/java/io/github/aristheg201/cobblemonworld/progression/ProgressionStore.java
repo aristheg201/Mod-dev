@@ -23,6 +23,7 @@ public final class ProgressionStore {
     private final Map<String, PlayerProgression> players = new HashMap<>();
     private MinecraftServer server;
     private Path saveFile;
+    private boolean loadFailed;
 
     private ProgressionStore() {}
 
@@ -32,6 +33,7 @@ public final class ProgressionStore {
                 .resolve("cobblemonworld")
                 .resolve("progression.json");
         players.clear();
+        loadFailed = false;
 
         if (!Files.exists(saveFile)) {
             CobblemonWorldMod.LOGGER.info("No Cobblemon World progression save exists yet; starting fresh.");
@@ -40,19 +42,21 @@ public final class ProgressionStore {
 
         try {
             RootData data = GSON.fromJson(Files.readString(saveFile, StandardCharsets.UTF_8), RootData.class);
-            if (data != null && data.players != null) {
-                players.putAll(data.players);
-                players.values().forEach(PlayerProgression::normalize);
-            }
+            if (data == null || data.players == null || data.players.values().stream().anyMatch(java.util.Objects::isNull))
+                throw new IOException("Progression root or player entry is missing");
+            players.putAll(data.players);
+            players.values().forEach(PlayerProgression::normalize);
             CobblemonWorldMod.LOGGER.info("Loaded Cobblemon World progression for {} players.", players.size());
         } catch (Exception e) {
+            loadFailed = true;
+            players.clear();
             CobblemonWorldMod.LOGGER.error("Failed to load progression data from {}. Existing file was left untouched.", saveFile, e);
         }
     }
 
     public synchronized PlayerProgression getOrCreate(UUID playerId) {
+        if (loadFailed) throw new IllegalStateException("Progression could not be loaded; writes are locked to preserve the existing save");
         PlayerProgression progression = players.computeIfAbsent(playerId.toString(), ignored -> new PlayerProgression());
-        progression.normalize();
         return progression;
     }
 
@@ -63,7 +67,7 @@ public final class ProgressionStore {
     public synchronized void save() { saveChecked(); }
 
     public synchronized boolean saveChecked() {
-        if (server == null || saveFile == null) return false;
+        if (server == null || saveFile == null || loadFailed) return false;
 
         try {
             Files.createDirectories(saveFile.getParent());

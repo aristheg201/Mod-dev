@@ -1,7 +1,7 @@
 # Substantial side stories
 
 
-43 regular chains plus the 24-stage seasonal story. One-step errands are not included. All regular chains have at least five stages. The one-time regular reward is 20 BeastCoin; an optional ten-BeastCoin scam is separately refunded on completion.
+43 regular chains, one optional Ren tutorial, and the 24-stage seasonal story. The Ren tutorial has one stage and zero currency reward. The one-time regular reward is 20 BeastCoin; an optional ten-BeastCoin scam is separately refunded on completion.
 
 A chain can be accepted at its giver or through the phone’s Pin to Objective action when prerequisites hold. Pinning accepts an available chain, records its stable stage ID and immediately sends navigation.
 
@@ -521,3 +521,11 @@ Giver: Mara Voss. Prerequisite: `main_story_complete`. 5 stages. Reward: 20 BC o
 | 3 | `mara_postgame.3` | battle | Mara Voss | Defeat Mara’s postgame rematch team. |
 | 4 | `mara_postgame.4` | talk | Professor Elias Hale | Tell Hale you both returned to the practice field. |
 | 5 | `mara_postgame.5` | talk | Mara Voss | Arrange the next battle without needing a crisis. |
+
+## Optional: supplies at PokéMall / Tùy chọn: mua vật dụng tại PokéMall
+
+Giver: Ren - PokeMall. Prerequisite: `professor_met`. 1 stages. Reward: 0 BC once.
+
+| # | Stable stage ID | Mechanic | Target | Objective |
+|---|---|---|---|---|
+| 1 | `ren_supplies` | buy | Ren - PokeMall | Buy a supply bundle from Ren’s shop. |

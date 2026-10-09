@@ -55,21 +55,25 @@ public final class ContentRegistry {
             for (var stage : narrative.data.campaign()) if (stage.target().equals(actor.id())) {
                 var scene = narrative.scenes.get(stage.scene());
                 var facts = narrative.node(scene, "facts");
+                if(facts==null)facts=narrative.node(scene,"accepted");
+                if(stage.type().equals("battle")) {
+                    var outcome=narrative.scenes.get("outcome."+actor.id()+".win");
+                    if(outcome!=null)facts=narrative.node(outcome,outcome.start());
+                }
                 if (facts != null) {
                     var replies = new ResponseChoice[3];
-                    String[] traits = {"serious", "sarcastic", "polite"};
                     var opening = narrative.node(scene, scene.start());
+                    var question=java.util.Arrays.stream(opening.choices()).filter(c->"ask".equals(c.id())).findFirst().orElse(null);
+                    var answer=narrative.node(scene,"answer");
+                    String[] texts={question==null?"narrative.phone.serious":question.text(),"narrative.phone.read","narrative.phone.later"};
+                    String[] answers={answer==null?facts.text():answer.text(),"narrative.phone.read_ack","narrative.phone.later_ack"};
                     for (int i=0;i<3;i++) {
                         String branchId="follow_answer_"+stage.id()+"_"+i;
-                        String response="narrative.actor."+actor.id()+".greeting";
-                        for(var option:opening.choices())if(traits[i].equals(option.personality()) && option.next()!=null) {
-                            var branch=narrative.node(scene,option.next());if(branch!=null)response=branch.text();break;
-                        }
-                        replies[i]=new ResponseChoice("narrative.phone."+traits[i],branchId,"","phone_reply_"+stage.id()+"_"+i);
-                        messages.add(new MessageNode(branchId,"",response,new String[0],"","",new ResponseChoice[0]));
+                        replies[i]=new ResponseChoice(texts[i],branchId,"","phone_reply_"+stage.id()+"_"+i);
+                        messages.add(new MessageNode(branchId,"",answers[i],new String[0],"","",new ResponseChoice[0]));
                     }
                     messages.add(new MessageNode("follow_"+stage.id(),"narrative_stage_"+stage.id(),facts.text(),
-                            new String[]{"narrative.phone.serious","narrative.phone.sarcastic","narrative.phone.polite"},"","phone_answer_"+stage.id(),replies));
+                            texts,"","phone_answer_"+stage.id(),replies));
                     // Readable legacy destination from the first narrative prototype.
                     messages.add(new MessageNode("follow_answer_"+stage.id(),"","narrative.actor."+actor.id()+".greeting",new String[0],"","",new ResponseChoice[0]));
                 }

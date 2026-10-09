@@ -118,7 +118,8 @@ tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientPr
         '-Dcworld.qa.npcBindingFixture=' + System.getProperty('cworld.qa.npcBindingFixture', 'false'),
         '-Dcworld.qa.resume=' + System.getProperty('cworld.qa.resume', 'false'),
         '-Dcworld.qa.restart=' + System.getProperty('cworld.qa.restart', 'false'),
-        '-Xmx3G'
+        '-Dcworld.qa.address=' + System.getProperty('cworld.qa.address', '127.0.0.1:25571'),
+        '-Xmx2G', '-XX:ActiveProcessorCount=2'
     ])
     programArgs.addAll([
         '--width', '1280',
@@ -128,7 +129,7 @@ tasks.register('runProductionCWorldClient', net.fabricmc.loom.task.prod.ClientPr
     ['http.proxyHost', 'http.proxyPort', 'https.proxyHost', 'https.proxyPort', 'javax.net.ssl.trustStore'].each { key ->
         if (System.getProperty(key)) jvmArgs.add('-D' + key + '=' + System.getProperty(key))
     }
-    runDir = file('qa-runtime/client')
+    runDir = file(System.getProperty('cworld.qa.clientDir', 'qa-runtime/client'))
     useXVFB = false
 }
 
@@ -149,11 +150,11 @@ tasks.register('runProductionCWorldServer', net.fabricmc.loom.task.prod.ServerPr
         '-Dcworld.qa.npcBinding=' + System.getProperty('cworld.qa.npcBinding', 'false'),
         '-Dcworld.qa.npcBindingFixture=' + System.getProperty('cworld.qa.npcBindingFixture', 'false'),
         '-Dcworld.qa.resume=' + System.getProperty('cworld.qa.resume', 'false'),
-                   '-Dcworld.qa.restart=' + System.getProperty('cworld.qa.restart', 'false'), '-Xmx2G'])
+                   '-Dcworld.qa.restart=' + System.getProperty('cworld.qa.restart', 'false'), '-Xmx2G', '-XX:ActiveProcessorCount=2'])
     ['http.proxyHost', 'http.proxyPort', 'https.proxyHost', 'https.proxyPort', 'javax.net.ssl.trustStore'].each { key ->
         if (System.getProperty(key)) jvmArgs.add('-D' + key + '=' + System.getProperty(key))
     }
-    runDir = file(Boolean.getBoolean('cworld.qa.npcBinding') ? 'qa-runtime/server-npc-binding' : Boolean.getBoolean('cworld.qa.narrative') ? (Boolean.getBoolean('cworld.qa.opening') ? 'qa-runtime/server-narrative-opening' : 'qa-runtime/server-narrative') : Boolean.getBoolean('cworld.qa.noeconomy') ? 'qa-runtime/server-no-economy' : (Boolean.getBoolean('cworld.qa.services') ? 'qa-runtime/server-services' : 'qa-runtime/server'))
+    runDir = file(System.getProperty('cworld.qa.serverDir',Boolean.getBoolean('cworld.qa.npcBinding') ? 'qa-runtime/server-npc-binding' : Boolean.getBoolean('cworld.qa.narrative') ? (Boolean.getBoolean('cworld.qa.opening') ? 'qa-runtime/server-narrative-opening' : 'qa-runtime/server-narrative') : Boolean.getBoolean('cworld.qa.noeconomy') ? 'qa-runtime/server-no-economy' : (Boolean.getBoolean('cworld.qa.services') ? 'qa-runtime/server-services' : 'qa-runtime/server')))
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {

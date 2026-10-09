@@ -1,0 +1,71 @@
+arrival|Hale ngẩng lên khi bạn bước tới bàn nghiên cứu.
+hale_phone|Ta đã lưu số rồi. Cầm điện thoại nhé; Mira sẽ giúp cậu kiểm tra đội trước chuyến đi.
+mira_visit|Được, đưa đội lại đây. Mình sẽ kiểm tra từng Pokémon.
+ren_supplies|Đây là quầy hàng. Giá ghi cạnh từng món; bạn chỉ mua những gì mình cần.
+lan_errand|Cảm ơn cháu. Nhớ đưa táo tận tay ông ấy giúp cô.
+hale_lunch|Ta nhận đủ rồi. Cảm ơn cậu, và nhắn Lan là ta đang ăn nhé. Mara chờ ở sân tập.
+mara_intro|Được. Tôi ở sân tập; khi nào đội sẵn sàng, cậu quay lại nhận trận.
+mara_first|Vậy bắt đầu. Tôi sẽ không giữ lại nước đi tốt nhất đâu.
+field_fault|Bạn giữ lại hai thời điểm và chữ ký của tài khoản cũ để đối chiếu với Hale.
+hale_fault|Được. Ta báo Orin trước để ông ấy chuẩn bị hồ sơ đối chiếu.
+unknown_first|Ừ, cho Mara xem nguyên tin nhắn. Đừng chỉ kể lại một phần.
+mara_aftermath|Được. Tôi sẽ báo ngay nếu bản nhật ký ở đây có thay đổi.
+orin_arrival|Bản sao nằm trên bàn đọc. Bạn chú ý ngày mượn và chữ ký nhận sách nhé.
+orin_records|Bạn ghi lại phần chữ ký và ngày mượn để đưa cho Orin.
+orin_challenge|Được. Chúng ta bắt đầu; hãy quan sát những lần đội tôi đổi Pokémon.
+orin_summary|Mang cả bản ở sân và bản thư viện. Đừng để Rook chỉ trả lời một nửa câu hỏi.
+rook_contact|Được. Nhìn cả giờ mở kho, không chỉ tên món hàng.
+black_invoice|Bạn giữ bản hóa đơn có giờ mở kho và điểm nhận hàng của Rocket.
+rook_battle|Vậy đấu thôi. Cậu thắng, tôi giao thẻ cùng biên nhận.
+rook_warning|Được. Mang biên nhận theo; tôi không muốn cô ấy chỉ nghe lời tôi qua cậu.
+selene_local|Sổ để trong chòi. Bạn nhớ đối chiếu món hàng trên giấy và trên lệnh giao.
+selene_log|Bạn giữ hai bản có nội dung khác nhau để đưa cho Selene.
+selene_battle|Được. Sau trận, tôi sẽ giúp cậu truy lệnh đã đổi món hàng.
+selene_aftermath|Tốt. Tôi gửi bản cho Mara trong lúc cậu đi.
+warden_ranger|Cảm ơn bạn. Nếu ngày giờ khớp, báo Warden giúp tôi trước chuyến xe tới.
+warden_log|Bạn đánh dấu ba lệnh dùng tài khoản đã nghỉ để báo Warden.
+warden_six|Vậy bắt đầu. Ta muốn thấy cả đội của cậu còn sức khi trận kết thúc.
+warden_orders|Ta báo trạm giữ liên lạc. Đưa Iris ra trước nếu tìm thấy cô ấy.
+rocket_informant|Được. Tôi đánh dấu cửa phụ, cậu xem đường xuống trên bảng rồi hãy vào.
+rocket_route|Bạn giữ lối qua ba chốt và vị trí phòng Iris trên bản giao hàng.
+rocket_guard1|Được. Tôi giữ chốt bằng trận đấu này.
+rocket_overhear|Bạn lưu nguyên đoạn trao đổi và tìm đường đến phòng Iris.
+rocket_guard2|Vậy bắt đầu. Tôi vẫn chưa nhận lệnh mở cửa cho cậu.
+rocket_guard3|Được. Thắng tôi, cậu qua cửa này.
+rocket_vex|Vậy đấu. Tôi sẽ không giao máy chỉ vì cậu kể cho tôi nghe điều đúng.
+iris_rescue|Tôi chỉ máy đọc cho cậu. Lấy bản gốc rồi chúng ta đi cùng nhau.
+iris_terminal|Giữ bản gốc này. Tôi mang bản sao ra ngoài để không còn một kho duy nhất có thể xóa nó.
+marlow_account|Ta đặt ảnh cạnh bản quét. Cậu xem phần dấu ép chữ ở dưới ngày chụp.
+marlow_photo|Bạn ghi lại ngày chụp và vị trí TOBA đứng cạnh Hale để hỏi Warden.
+warden_seven|Được. Qua bài thử này, ta cấp quyền để cậu tới cảng đọc hồ sơ.
+liora_harbour|Tôi ghi chuyến tàu cần đối chiếu. Đọc danh sách rồi gặp Dorian nhé.
+harbour_manifest|Bạn giữ cả bản gốc và dòng đã bị đổi để tiếp tục điều tra.
+dorian_qualifier|Vậy bắt đầu vòng cảng. Đội mưa của tôi vào sân.
+false_victory|Được. Báo tôi khi Tower đối chiếu xong; tôi vẫn giữ chữ ký mới ở đây.
+tower_entry|Tôi ghi bạn vào bài thử của Rowan. Hồ sơ sẽ mở theo kết quả từng trận.
+tower_rowan|Được. Sau trận, cậu nhận bản xác nhận tôi đang giữ.
+tower_nyx|Vậy bắt đầu. Tôi muốn xem cậu chọn đúng lúc hành động.
+tower_orion|Được. Qua trận này, cậu có bản lệnh để hỏi Aurelia trực tiếp.
+league_entry|Tôi xác nhận lượt của bạn. Cassian là người giữ lời chứng đầu tiên.
+elite_cassian|Được. Sau trận, tôi ghi rõ phần mình biết vào bản lời chứng.
+elite_seraph|Vậy bắt đầu. Tôi sẽ giao bản có cả lệnh giữ kín và lệnh đã đổi.
+elite_kael|Được. Tôi sẽ không bỏ phần TOBA ở lại khỏi lời chứng nữa.
+champion_aurelia|Ta nhận lời thách đấu. Sau trận, cậu sẽ nghe câu trả lời của ta.
+aurelia_aftermath|Ta gửi quyền đọc hồ sơ đến School. Vargan biết cậu sẽ tới.
+wolf_bran|Ta ghi tên cậu vào bài thử của Fen. Cậu có thể xem lại thứ tự trên điện thoại.
+wolf_fen|Vậy bắt đầu. Ta muốn thấy cậu biết giữ đội, không chỉ tấn công.
+wolf_track|Bạn ghi lại hướng dấu chân quay đầu và phần chưa thể kết luận.
+wolf_skoll|Được. Tôi bắt đầu bài thử quan sát đối thủ.
+wolf_supply|Tôi kiểm đếm rồi đưa vật tư vào kho. Phần đã nhận sẽ được ghi lại.
+wolf_hati|Vậy bắt đầu. Vargan sẽ nhận kết quả sau bài thử này.
+wolf_vargan|Ta nhận lời. Thắng trận này, cậu đọc cả ba bản ghi.
+archive_record1|Bạn giữ lời hứa của Hale cùng thời điểm mất kết nối trước khi đọc tiếp.
+archive_record2|Bạn ghi lại các lệnh vẫn được gửi sau lúc nhóm rút.
+archive_record3|Bạn giữ phần trách nhiệm riêng của từng người để hỏi Hale.
+archive_hale|Ta sẽ báo cả nhóm. Lần này không để một người phải tự tìm đường về.
+final_unknown|Bạn xác nhận điểm hẹn và lưu kênh liên lạc với nhóm.
+final_confrontation|Được. Trận này sẽ có bản ghi với cả hai người tham gia.
+final_explanation|Cứ mang lời tôi về và kiểm chứng. Tôi sẽ đứng tên cho phần mình đã làm.
+final_choice|Ta ghi xác nhận của cậu cùng các lời chứng. Những quyết định cũ cũng được giữ lại.
+epilogue_hale|Ta cất sách đây. Bữa tối này không cần thêm một hồ sơ nào cả.
+epilogue_mara|Được. Nhắn một ngày cụ thể nhé, để tôi không lại đợi cậu cả buổi.

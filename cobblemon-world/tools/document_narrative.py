@@ -8,13 +8,13 @@ def stage_table(stages):
  out=['| # | Stable stage ID | Mechanic | Target | Objective |','|---|---|---|---|---|']
  for i,s in enumerate(stages,1):out.append(f"| {i} | `{s['id']}` | {s['type']} | {name.get(s['target'],s['target'])} | {en[s['objective']]} |")
  return '\n'.join(out)
-write('MAIN_STAGES.md','# Main campaign: 70 stages\n\n'+stage_table(w['campaign']))
-flow=['# Campaign flow\n','Seven Acts group 70 stages into chapters. Stages advance only from their own matching conversation, completed battle, inspected authored point, service, inventory delivery or purchase.','New saves begin with Hale. Legacy flags infer completed preceding stages without discarding contacts, messages, quests, placements or faction data.']
+write('MAIN_STAGES.md','# Main campaign: 69 stages\n\n'+stage_table(w['campaign']))
+flow=['# Campaign flow\n','Seven Acts group 69 stages into chapters. Stages advance only from their own matching conversation, completed battle, inspected authored point, service, inventory delivery or an authored service. Purchases are optional side activities.','New saves begin with Hale. Legacy flags infer completed preceding stages without discarding contacts, messages, quests, placements or faction data.']
 for act,ss in __import__('itertools').groupby(w['campaign'],key=lambda s:s['act']):
  ss=list(ss);flow.append(f"\n## Act {act}\n\n"+' → '.join(en[s['title']] for s in ss)+'\n\n'+stage_table(ss))
 flow.append('\nThe eight-town qualifier precedes False Victory and the Tower. Tower registration precedes Rowan, Nyx and Orion. League registration precedes Cassian, Seraph, Kael and Aurelia. Aurelia’s aftermath precedes Bran and the School. Vargan grants archive access; all three records, Hale’s account and the final call remain separate objectives. Winning the final battle opens the explanation and restoration scenes; the epilogue unlocks postgame.')
 write('CAMPAIGN_FLOW.md','\n\n'.join(flow))
-side=['# Substantial side stories\n','43 regular chains plus the 24-stage seasonal story. One-step errands are not included. All regular chains have at least five stages. The one-time regular reward is 20 BeastCoin; an optional ten-BeastCoin scam is separately refunded on completion.','A chain can be accepted at its giver or through the phone’s Pin to Objective action when prerequisites hold. Pinning accepts an available chain, records its stable stage ID and immediately sends navigation.']
+side=['# Substantial side stories\n','43 regular chains, one optional Ren tutorial, and the 24-stage seasonal story. The Ren tutorial has one stage and zero currency reward. The one-time regular reward is 20 BeastCoin; an optional ten-BeastCoin scam is separately refunded on completion.','A chain can be accepted at its giver or through the phone’s Pin to Objective action when prerequisites hold. Pinning accepts an available chain, records its stable stage ID and immediately sends navigation.']
 for c in w['chains']:
  if c['id']=='weather_duo_01':continue
  side.append(f"## {en[c['title']]} / {vi[c['title']]}\n\nGiver: {name[c['giver']]}. Prerequisite: `{c['prerequisite']}`. {len(c['stages'])} stages. Reward: {c['reward']} BC once.\n\n"+stage_table(c['stages']))
@@ -42,8 +42,8 @@ for t in w['teams']:
 write('TRAINER_TEAMS.md','\n\n'.join(teams))
 write('CHARACTER_ARCS.md','''# Character arcs
 
-- Hale moves from parental concern and avoidance to naming his failure and keeping contact. Sleep jokes soften his relationship without replacing accountability.
-- Mara appears in the opening, unknown-contact aftermath, Selene’s correspondence, False Victory, final call and epilogue. VAR is a rivalry callback. Two side stories develop worry and postgame rematches.
+- Hale moves from parental concern and avoidance to naming his failure and keeping contact. His distraction appears in small practical details; serious admissions stay serious.
+- Mara appears in the opening, unknown-contact aftermath, Selene’s correspondence, False Victory, final call and epilogue. Her humor is brief and situation-specific. Two side stories develop worry and postgame rematches.
 - Orin connects independent records, admits that being right in an argument did not mean doing enough, and actually provides a short explanation when asked. His teaching and coffee disputes add relationships with Hale and Marlow.
 - Rook explains Black Card as institutional access, smuggled Iris’s evidence for a fee and kept a useful copy. His morally flexible language does not absolve exploitation. Wallet, weather and later-letter stories confront the costs.
 - Selene’s contradictory account is resolved through a changed shipment, not a random allegiance twist. Medical-privacy and rumor stories preserve her controlled skepticism.
@@ -53,7 +53,7 @@ write('CHARACTER_ARCS.md','''# Character arcs
 - Vargan retains the originals and opposes the League’s silence. He grants access rather than every revelation. School trails, supplies, first aid and return-time rules give his institution a purpose beyond battles.
 - ??? helps and manipulates, preserves the practice log and uses the player to reopen access. TOBA was rescued physically but erased administratively. The final explanation restores a person rather than introducing an unexplained magic identity. The postgame letter lets him communicate without another assignment.
 
-The six soft tendencies are serious, sarcastic, greedy, sleepy, chaotic and polite. Server-resolved answers update bounded counts. Rook, Hale and the final unknown contact have callbacks when relevant tendencies recur. Conversations may converge mechanically while retaining different replies and a persisted transcript.
+Old personality counters remain in saves. Authored choices now record direct, careful, cautious and curious responses where relevant. Server-resolved answers update bounded counts. Conversations may converge mechanically while retaining different replies and a persisted transcript.
 ''')
 write('SAVE_MIGRATION.md','''# Save migration and authored map points
 
@@ -71,9 +71,9 @@ Test coverage and runtime limitations are recorded in the runtime QA report. Do 
 ''')
 write('NARRATIVE_CHANGELOG.md','''# Narrative expansion
 
-- Added seven Acts with 70 matching gameplay stages, including a full Rocket investigation, Town 8, False Victory, archive inspections, final explanation and epilogue.
+- Added seven Acts with 70 matching gameplay stages, with shopping moved into an optional Ren tutorial, including a full Rocket investigation, Town 8, False Victory, archive inspections, final explanation and epilogue.
 - Added 43 substantial side chains and the 24-stage Weather Duo season.
-- Added a dedicated first-party dialogue screen with four personality-bearing choices, server-held revisions, wrapped/scrollable text, response turns, a scrollable conversation journal and persistent cursors/history.
+- Added a dedicated first-party dialogue screen with coherent acceptance, question and refusal branches, server-held revisions, wrapped/scrollable text, response turns, a scrollable conversation journal and persistent cursors/history.
 - Appended cast contacts and response-specific event-triggered phone follow-ups while retaining legacy message IDs. The first unknown message arrives after the opening investigation; the final call follows the archive and cast reactions.
 - Added 30 competitive rosters with perfect-IV defaults, explicit exceptions, progressive EVs, legal form-aware moves, held items, native StrongBattleAI and player-relative levels.
 - Added 29 distinct trainer win/loss voices, safe rematches and Mara’s postgame roster; removed generic outcome boilerplate and obsolete seal references.

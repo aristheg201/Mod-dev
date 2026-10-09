@@ -38,7 +38,7 @@ public final class ShopScreen extends Screen {
     }
     public void update(String json) {
         ShopSnapshot next = GSON.fromJson(json, ShopSnapshot.class);
-        if (!next.id().equals(snapshot.id())) return;
+        if (!next.id().equals(snapshot.id()) || !next.session().equals(snapshot.session()) || next.revision()<snapshot.revision()) return;
         snapshot = next; buying = false;
         row = Math.min(row, maxRow());
         if (entry() == null && !filtered().isEmpty()) selected = filtered().getFirst().id();
@@ -169,7 +169,7 @@ public final class ShopScreen extends Screen {
         if (hit(mx, my, 443, 262, 24, 20)) { quantity = Math.min(16, quantity + 1); return true; }
         if (hit(mx, my, 374, 289, 152, 25) && affordable(entry()) && !buying) {
             buying = true; requestAt = System.currentTimeMillis();
-            ClientPlayNetworking.send(new ShopBuyPayload(snapshot.id(), selected, quantity));
+            ClientPlayNetworking.send(new ShopBuyPayload(snapshot.id(), selected, quantity,snapshot.session(),snapshot.revision(),java.util.UUID.randomUUID()));
             return true;
         }
         return true;

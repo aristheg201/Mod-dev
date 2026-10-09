@@ -54,10 +54,16 @@ public final class CWorldNetworking {
             case "accept_narrative_quest" -> io.github.aristheg201.cobblemonworld.narrative.NarrativeEngine.activate(player, payload.primary());
             case "respond" -> {
                 String[] key = splitMessageKey(payload.primary());
-                if (key == null) return;
+                boolean accepted=false;
                 try {
-                    CampaignService.respondToMessage(player, key[0], key[1], Integer.parseInt(payload.secondary()));
-                } catch (NumberFormatException ignored) {}
+                    if(key!=null)accepted=CampaignService.respondToMessage(player, key[0], key[1], Integer.parseInt(payload.secondary()));
+                } catch (NumberFormatException invalid) {
+                    io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.info("Phone reply rejected player={} reason=invalid_choice",player.getUUID());
+                }
+                if(!accepted) {
+                    io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.info("Phone reply rejected player={} reason=stale_or_unavailable_message",player.getUUID());
+                    toast(player,"story","narrative.cobblemonworld.stale","narrative.cobblemonworld.stale");
+                }
             }
             case "mark_read" -> {
                 String[] key = splitMessageKey(payload.primary());

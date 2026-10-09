@@ -30,7 +30,12 @@ public final class ShopService {
         if (!Boolean.getBoolean("cworld.qa.production")) throw new IllegalStateException("QA fault injection disabled");
         failNextGrant = true;
     }
-    private record Session(String shop, UUID npc, long expires) {}
+    private static final class Session {
+        final String shop;final UUID npc,id=UUID.randomUUID();long expires;int revision;
+        final Set<UUID> processed=new LinkedHashSet<>();
+        Session(String shop,UUID npc,long expires) {this.shop=shop;this.npc=npc;this.expires=expires;}
+        String shop(){return shop;}UUID npc(){return npc;}long expires(){return expires;}
+    }
     private ShopService() {}
     public static void register() {
         ShopRegistry.register();
@@ -65,18 +70,29 @@ public final class ShopService {
         var session = SESSIONS.get(player.getUUID());
         var definition = ShopRegistry.INSTANCE.get(request.shop());
         long now = player.serverLevel().getGameTime();
-        if (definition == null) return;
+        if (definition == null) {
+            CobblemonWorldMod.LOGGER.info("Shop action rejected player={} reason=unknown_shop",player.getUUID());
+            if(session!=null) {var current=ShopRegistry.INSTANCE.get(session.shop);if(current!=null)send(player,current,"invalid",false);}
+            return;
+        }
         if (session == null || !session.shop().equals(request.shop())) {
             if (access(player, definition.requiredFlags())) send(player, definition, "access", false);
             return;
         }
+        if(!session.id.equals(request.session()) || session.revision!=request.revision() || session.processed.contains(request.requestId())) {
+            CobblemonWorldMod.LOGGER.info("Shop action rejected player={} shop={} reason=stale_or_duplicate revision={}",player.getUUID(),definition.id(),request.revision());
+            send(player,definition,"stale",false);return;
+        }
         var npc = player.serverLevel().getEntity(session.npc());
-        if (!(npc instanceof NPCEntity) || !npc.isAlive() || player.distanceToSqr(npc) > 64 || now > session.expires() || !player.isAlive()
+        if (!(npc instanceof NPCEntity merchant) || !npc.isAlive()
+                || !(merchant.getInteraction() instanceof io.github.aristheg201.cobblemonworld.npc.CWorldNpcInteraction binding)
+                || !definition.npc().equals(binding.definitionId())
+                || player.distanceToSqr(npc) > 64 || now > session.expires() || !player.isAlive()
                 || !access(player, definition.requiredFlags())) { send(player, definition, "access", false); SESSIONS.remove(player.getUUID()); return; }
         Long previous = LAST_PURCHASE.get(player.getUUID());
         if (previous != null && now - previous < 8) { send(player, definition, "busy", false); return; }
         LAST_PURCHASE.put(player.getUUID(), now);
-        SESSIONS.put(player.getUUID(), new Session(session.shop(), session.npc(), now + 2400));
+        session.expires=now+2400;
         if (request.quantity() < 1 || request.quantity() > 16) { send(player, definition, "invalid", false); return; }
         var entry = ShopRegistry.INSTANCE.entries(definition.id()).stream().filter(e -> e.id().equals(request.entry())).findFirst().orElse(null);
         if (entry == null || !access(player, entry.requiredFlags())) { send(player, definition, "entry", false); return; }
@@ -85,6 +101,8 @@ public final class ShopService {
         if (wallet == null) { send(player, definition, "economy", false); return; }
         var stack = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(entry.item())), Math.multiplyExact(entry.quantity(), request.quantity()));
         String result;
+        session.processed.add(request.requestId());while(session.processed.size()>256)session.processed.remove(session.processed.iterator().next());
+        session.revision++;
         try {
             var inventory = new InventoryGrant(player, stack);
             boolean inject = Boolean.getBoolean("cworld.qa.production") && failNextGrant; failNextGrant = false;
@@ -108,6 +126,7 @@ public final class ShopService {
                 CobblemonWorldMod.LOGGER.error("Purchase completed, but its objective hook failed for {} item={}", player.getUUID(), entry.item(), e);
             }
         }
+        CobblemonWorldMod.LOGGER.info("Shop action resolved player={} shop={} entry={} quantity={} result={} revision={}",player.getUUID(),definition.id(),entry.id(),request.quantity(),result,session.revision);
         send(player, definition, result, false);
     }
     private static void send(ServerPlayer player, ShopDefinition d, String result, boolean open) {
@@ -117,8 +136,10 @@ public final class ShopService {
         catch (RuntimeException e) { CobblemonWorldMod.LOGGER.warn("BeastCoin balance lookup failed for {}", player.getUUID(), e); }
         var npc = NpcDefinitionRegistry.INSTANCE.get(d.npc());
         var entries = ShopRegistry.INSTANCE.entries(d.id()).stream().filter(e -> access(player, e.requiredFlags())).toList();
+        var session=SESSIONS.get(player.getUUID());
         var snapshot = new ShopSnapshot(d.id(), d.titleKey(), d.descriptionKey(), npc == null ? "" : npc.displayName(),
-                balance == null ? "" : balance.stripTrailingZeros().toPlainString(), balance != null, d.categories(), entries, result);
+                balance == null ? "" : balance.stripTrailingZeros().toPlainString(), balance != null, d.categories(), entries, result,
+                session==null?new UUID(0,0):session.id,session==null?-1:session.revision);
         ServerPlayNetworking.send(player, new ShopSnapshotPayload(GSON.toJson(snapshot), open));
     }
 }

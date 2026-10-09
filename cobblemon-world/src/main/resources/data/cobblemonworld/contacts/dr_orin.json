@@ -6,7 +6,7 @@
     {
       "id": "after_defeat_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.dr_orin.after_defeat_reply_1",
+      "text": "narrative.v032.phone.dr_orin.after_defeat.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -15,7 +15,7 @@
     {
       "id": "after_defeat_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.dr_orin.after_defeat_reply_2",
+      "text": "narrative.v032.phone.dr_orin.after_defeat.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -24,7 +24,7 @@
     {
       "id": "after_defeat_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.dr_orin.after_defeat_reply_3",
+      "text": "narrative.v032.phone.dr_orin.after_defeat.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -33,25 +33,25 @@
     {
       "id": "after_defeat",
       "triggerFlag": "dr_orin_defeated",
-      "text": "dialogue.cobblemonworld.dr_orin.after_defeat",
+      "text": "narrative.v032.phone.dr_orin.after_defeat.line",
       "responses": [],
       "questUnlock": "orin_archive",
       "setFlag": "orin_doubts_anchor",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.dr_orin.after_defeat.choice0",
+          "text": "narrative.v032.phone.dr_orin.after_defeat.choice0",
           "nextNode": "after_defeat_reply_1",
           "questUnlock": "orin_archive",
           "setFlag": "orin_doubts_anchor"
         },
         {
-          "text": "dialogue.cobblemonworld.dr_orin.after_defeat.choice1",
+          "text": "narrative.v032.phone.dr_orin.after_defeat.choice1",
           "nextNode": "after_defeat_reply_2",
           "questUnlock": "orin_archive",
           "setFlag": "dialogue:dr_orin:after_defeat:1"
         },
         {
-          "text": "dialogue.cobblemonworld.dr_orin.after_defeat.choice2",
+          "text": "narrative.v032.phone.dr_orin.after_defeat.choice2",
           "nextNode": "after_defeat_reply_3",
           "questUnlock": "orin_archive",
           "setFlag": "dialogue:dr_orin:after_defeat:2"
@@ -61,7 +61,7 @@
     {
       "id": "after_archive_reply_1",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.dr_orin.after_archive_reply_1",
+      "text": "narrative.v032.phone.dr_orin.after_archive.reply0",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -70,7 +70,7 @@
     {
       "id": "after_archive_reply_2",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.dr_orin.after_archive_reply_2",
+      "text": "narrative.v032.phone.dr_orin.after_archive.reply1",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -79,7 +79,7 @@
     {
       "id": "after_archive_reply_3",
       "triggerFlag": "",
-      "text": "dialogue.cobblemonworld.dr_orin.after_archive_reply_3",
+      "text": "narrative.v032.phone.dr_orin.after_archive.reply2",
       "responses": [],
       "choices": [],
       "questUnlock": "",
@@ -88,25 +88,25 @@
     {
       "id": "after_archive",
       "triggerFlag": "orin_archive_complete",
-      "text": "dialogue.cobblemonworld.dr_orin.after_archive",
+      "text": "narrative.v032.phone.dr_orin.after_archive.line",
       "responses": [],
       "questUnlock": "",
       "setFlag": "seal_term_revealed",
       "choices": [
         {
-          "text": "dialogue.cobblemonworld.dr_orin.after_archive.choice0",
+          "text": "narrative.v032.phone.dr_orin.after_archive.choice0",
           "nextNode": "after_archive_reply_1",
           "questUnlock": "",
           "setFlag": "seal_term_revealed"
         },
         {
-          "text": "dialogue.cobblemonworld.dr_orin.after_archive.choice1",
+          "text": "narrative.v032.phone.dr_orin.after_archive.choice1",
           "nextNode": "after_archive_reply_2",
           "questUnlock": "",
           "setFlag": "dialogue:dr_orin:after_archive:1"
         },
         {
-          "text": "dialogue.cobblemonworld.dr_orin.after_archive.choice2",
+          "text": "narrative.v032.phone.dr_orin.after_archive.choice2",
           "nextNode": "after_archive_reply_3",
           "questUnlock": "",
           "setFlag": "dialogue:dr_orin:after_archive:2"

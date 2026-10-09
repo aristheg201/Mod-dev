@@ -15,7 +15,11 @@ public final class NpcService {
     }
     public static boolean dispatch(NPCEntity npc, ServerPlayer player, String id) {
         if (ShopService.open(player, npc, id)) { rememberService(player,id); return true; }
-        if (!"daycare_mira".equals(id)) return false;
+        if (!"daycare_mira".equals(id)) {
+            player.sendSystemMessage(Component.translatable("service.cobblemonworld.unavailable"));
+            io.github.aristheg201.cobblemonworld.CobblemonWorldMod.LOGGER.info("NPC service rejected player={} npc={} reason=unavailable_or_locked",player.getUUID(),id);
+            return false;
+        }
         if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
             player.sendSystemMessage(Component.translatable("service.cobblemonworld.heal.battle"));
             return true;

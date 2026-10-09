@@ -34,7 +34,7 @@ public final class NarrativeRegistry {
             stages.clear(); chains.clear(); scenes.clear(); teams.clear(); pois.clear();
             for (Stage s : data.campaign()) addStage(s);
             for (Chain c : data.chains()) {
-                if (chains.put(c.id(), c) != null || c.stages().length < 3 || c.reward() < 0 || c.reward() > 20)
+                if (chains.put(c.id(), c) != null || c.stages().length < 1 || c.reward() < 0 || c.reward() > 20)
                     throw new IllegalStateException("Invalid substantial chain " + c.id());
                 for (Stage s : c.stages()) addStage(s);
             }
@@ -57,7 +57,16 @@ public final class NarrativeRegistry {
             for(Reward reward:season.rewards())if(!rewardIds.add(reward.id()) || reward.ivs().length!=6 || Arrays.stream(reward.ivs()).anyMatch(v->v<0||v>31))throw new IllegalStateException("Invalid seasonal reward " + reward.id());
         }
         for (Stage s : stages.values()) if (!scenes.containsKey(s.scene())) throw new IllegalStateException("Missing scene " + s.scene());
+        Set<String> speakers=new HashSet<>(Set.of("narrator"));
+        for(var actor:data.actors())if(!speakers.add(actor.id()))throw new IllegalStateException("Duplicate actor " + actor.id());
+        for(var stage:stages.values()){
+            if(!speakers.contains(stage.target()) && !pois.containsKey(stage.target()))throw new IllegalStateException("Missing target for stage " + stage.id());
+            if((stage.type().equals("deliver") || stage.type().equals("collect")) && (stage.item()==null || !stage.item().matches("[a-z0-9_.-]+:[a-z0-9_./-]+")))throw new IllegalStateException("Invalid delivery item " + stage.id());
+        }
+        for(var stage:data.campaign())if(stage.type().equals("buy"))throw new IllegalStateException("Purchases belong to optional activities: " + stage.id());
         for (Scene s : scenes.values()) {
+            Set<String> nodeIds=new HashSet<>();
+            for(var n:s.nodes())if(!nodeIds.add(n.id()) || !speakers.contains(n.speaker()))throw new IllegalStateException("Invalid node or speaker " + s.id() + ":" + n.id());
             if (node(s,s.start()) == null) throw new IllegalStateException("Missing scene start " + s.id());
             Set<String> visited = new HashSet<>(); ArrayDeque<String> queue = new ArrayDeque<>(); queue.add(s.start());
             while (!queue.isEmpty()) {
@@ -66,6 +75,7 @@ public final class NarrativeRegistry {
                 Set<String> ids = new HashSet<>();
                 for (Choice c : n.choices()) {
                     if (!ids.add(c.id()) || c.text() == null) throw new IllegalStateException("Invalid dialogue choice " + s.id());
+                    if(!Set.of("","finish","battle","scam","close").contains(c.action()))throw new IllegalStateException("Unknown dialogue action " + s.id() + ":" + c.action());
                     if (c.next() != null && !c.next().isBlank()) {
                         if (node(s,c.next()) == null) throw new IllegalStateException("Broken dialogue destination " + s.id() + ":" + c.next());
                         queue.add(c.next());
