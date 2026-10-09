@@ -31,11 +31,13 @@ These results refer to internal real Minecraft gameplay, unless explicitly marke
 | Schema-1 0.3.1 save migrates in runtime | PASS | Controlled schema-1 Ren fixture saved, reloaded and migrated by the actual server; histories, claims, flags and side quests retained, no currency reward; three unit cases also PASS. Actual production accounts remain NOT TESTED |
 | Schema-0 0.3.0 save migration in runtime | NOT TESTED | Legacy inference unit test PASS; no native schema-0 fixture run |
 | Two players progress independently | NOT TESTED | One campaign QA account used; RTP two-client cases are not story independence |
-| Closing/reopening cannot duplicate every reward | NOT TESTED | Refusal graph/unit checks and claimed-state guards tested; exhaustive runtime replay is incomplete |
+| Legendary claim replay | PASS | Server repeats actual claim checks and verifies exactly one of each Legendary in native storage; genuine PC GUI selects both |
+| Every possible reward replay | NOT TESTED | Refusal graph/unit checks PASS; exhaustive runtime replay of all reward types is incomplete |
 | Vietnamese display and UI scales | PASS | Actual screens, dialogue player/NPC replies, shop scales 2/3 and Phone locale captures |
 | No raw keys anywhere in gameplay | NOT TESTED | Complete authored localization/reference validation PASS, sampled screenshots clean; exhaustive UI review is incomplete |
 | Full dialogue coherence editorial review | NOT TESTED | Vietnamese authored graphs/transcripts rewritten; automated full-graph validation PASS, not a claim of exhaustive human review |
-| All side quests, seasonal rewards and NPC interactions | NOT TESTED | Current runtime coverage is supplied individually; incomplete coverage cannot be called full PASS |
+| All authored narrative side chains | PASS | All 45 chains / 241 optional stages observed across saved runtime runs; includes native Legendary claims and PC selection, capture/heal, collect, postgame rematch and Ren optional purchase. Supplies/placement fixtures are documented |
+| Every NPC and every possible service/UI action | NOT TESTED | Full narrative stage coverage is not an exhaustive test of all unused NPC/menu branches |
 | Dedicated server/client initialization | PASS | Remapped JAR with exact Cobblemon and supported native dependencies |
 | SVFrameLib 1.7.1 / SVFrameMMO 1.13.1 opening compatibility | PASS | Supplied HP-fix JARs plus LuckPerms: complete 11-step opening, actual Mara loss/retry/victory and investigation; local default configs, not production data |
 | Complete production modpack compatibility | NOT TESTED | Entire 213-mod pack and production configuration not run end-to-end; live deployment not performed |

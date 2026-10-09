@@ -12,11 +12,11 @@ import java.util.*;
 
 /** Real entity/block interaction, real screen mouse handlers and Cobblemon's normal move-choice API. */
 public final class NarrativeQaClient {
-    private static String token="";private static int age,nodeAge,afterBattle;private static boolean interacted,hadBattle,captured,pendingFinish,phoneOpened,phonePinned;
+    private static String token="";private static int age,nodeAge,afterBattle;private static boolean interacted,hadBattle,captured,pendingFinish,phoneOpened,phonePinned,shopPurchased;
     private static String expectedReply="";private static int historyFrames;private static final Set<String> REOPENED=new HashSet<>();
     private static String lastNode="";private static final Set<String> SHOTS=new HashSet<>();
     public static int perform(Minecraft mc,QaControlPayload packet){
-        if(!token.equals(packet.secondary())){token=packet.secondary();age=0;nodeAge=0;interacted=false;phoneOpened=false;phonePinned=false;hadBattle=false;captured=false;pendingFinish=false;afterBattle=0;lastNode="";mc.setScreen(null);mc.getToasts().clear();}
+        if(!token.equals(packet.secondary())){token=packet.secondary();age=0;nodeAge=0;interacted=false;phoneOpened=false;phonePinned=false;hadBattle=false;captured=false;shopPurchased=false;pendingFinish=false;afterBattle=0;lastNode="";mc.setScreen(null);mc.getToasts().clear();}
         age++;if(pendingFinish){if(age<40)return 0;screenshot(mc,"world-"+token);return 1;}var control=new Gson().fromJson(packet.primary(),NarrativeQaServer.Control.class);
         if(!control.offer().isBlank() && control.stage().equals(control.offer()+".1") && !phonePinned){
             if(!phoneOpened && age>15){mc.player.getInventory().selected=0;mc.gameMode.useItem(mc.player,InteractionHand.MAIN_HAND);phoneOpened=true;age=0;return 0;}
@@ -59,8 +59,8 @@ public final class NarrativeQaClient {
             interacted=true;age=0;return 0;
         }
         if(mc.screen instanceof ShopScreen shop){
-            if(!captured && age>20){screenshot(mc,token);captured=true;shop.qaClickBuy();}
-            return captured && age>60?1:0;
+            if(!shopPurchased && age>20){screenshot(mc,"shop-"+token);shopPurchased=true;shop.qaClickBuy();}
+            return shopPurchased && age>60?1:0;
         }
         if(control.kind().equals("heal") && interacted && mc.screen==null && age>100){screenshot(mc,token);return 1;}
         if(mc.screen instanceof DialogueScreen dialogue){
@@ -88,7 +88,7 @@ public final class NarrativeQaClient {
             }
             if(index>=snapshot.choices().size())index=0;
             String choice=snapshot.choices().get(index).id();dialogue.qaClick(index);nodeAge=0;
-            if(choice.equals("finish") && !control.kind().equals("battle")){if(control.stage().equals("weather_duo_01.12") || control.stage().equals("weather_duo_01.16")){pendingFinish=true;age=0;return 0;}return 1;}
+            if(choice.equals("finish") && !control.kind().equals("battle") && !control.kind().equals("buy")){if(control.stage().equals("weather_duo_01.12") || control.stage().equals("weather_duo_01.16")){pendingFinish=true;age=0;return 0;}return 1;}
             return 0;
         }
         if(age>300 && interacted && !control.kind().equals("battle"))return 1;
