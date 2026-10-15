@@ -1,0 +1,13 @@
+plugins { id 'fabric-loom' version '1.9-SNAPSHOT' }
+version='1.8.2.1'
+group='svperf.trainerbattle'
+base { archivesName='trainerbattle-svperf-dirty-async' }
+repositories { mavenCentral(); maven { url='https://maven.fabricmc.net/' } }
+dependencies {
+    minecraft 'com.mojang:minecraft:1.21.1'
+    mappings 'net.fabricmc:yarn:1.21.1+build.3:v2'
+    modImplementation 'net.fabricmc:fabric-loader:0.18.4'
+    compileOnly files(project.property('trainerBattleJar'))
+}
+java { toolchain.languageVersion=JavaLanguageVersion.of(21) }
+tasks.withType(JavaCompile).configureEach { options.release=21 }
