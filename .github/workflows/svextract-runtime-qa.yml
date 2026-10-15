@@ -1,0 +1,73 @@
+name: SVEXTRACT Dedicated Server Runtime QA
+
+on:
+  push:
+    branches:
+      - build/svextract-checkpoint-20261015
+    paths:
+      - 'svextract/**'
+      - '.github/workflows/svextract-runtime-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dedicated-server-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+      - name: Prepare isolated Minecraft test server
+        working-directory: svextract
+        shell: bash
+        run: |
+          mkdir -p run-server
+          printf 'eula=true\n' > run-server/eula.txt
+          printf 'server-ip=127.0.0.1\nonline-mode=false\nmax-players=2\nview-distance=4\nsimulation-distance=4\nspawn-protection=0\n' > run-server/server.properties
+      - name: Boot Fabric dedicated server and verify ready message
+        shell: bash
+        working-directory: svextract
+        run: |
+          set -eu
+          timeout --signal=INT 240s gradle --no-daemon --console=plain runServer > runtime-qa-server.log 2>&1 &
+          launcher_pid=$!
+          ready=0
+          for attempt in $(seq 1 110); do
+            if grep -E 'Done \([0-9.,]+s\)! For help' runtime-qa-server.log >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$launcher_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -eq 1 ]; then
+            echo "PASS: real Fabric dedicated server reached readiness"
+            sleep 5
+          else
+            echo "::error::Fabric dedicated server did not reach ready state"
+            tail -n 150 runtime-qa-server.log || true
+          fi
+          kill -INT "$launcher_pid" 2>/dev/null || true
+          wait "$launcher_pid" 2>/dev/null || true
+          test "$ready" -eq 1
+      - name: Upload genuine server startup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svextract-dedicated-server-qa
+          path: |
+            svextract/runtime-qa-server.log
+            svextract/run-server/logs/**
+            svextract/run-server/crash-reports/**
+          if-no-files-found: warn
+          retention-days: 14
