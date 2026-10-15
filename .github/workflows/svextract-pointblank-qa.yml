@@ -1,0 +1,115 @@
+name: SVEXTRACT Point Blank Integration QA
+
+on:
+  push:
+    branches:
+      - build/svextract-checkpoint-20261015
+    paths:
+      - 'svextract/**'
+      - '.github/workflows/svextract-pointblank-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pointblank-server-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+      - name: Download and verify official Point Blank and GeckoLib JARs
+        working-directory: svextract
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.parse,json,hashlib,time,pathlib
+          folder=pathlib.Path("run-server/mods")
+          folder.mkdir(parents=True,exist_ok=True)
+          headers={"User-Agent":"SVEXTRACT-Fabric-QA/0.1 (GitHub Actions)"}
+          def get_json(url):
+              for attempt in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers=headers)
+                      with urllib.request.urlopen(req,timeout=35) as response:
+                          return json.load(response)
+                  except Exception:
+                      if attempt==2:raise
+                      time.sleep(3*(attempt+1))
+          def install(record,name):
+              assert "1.21.1" in record["game_versions"], name+" does not support 1.21.1"
+              assert "fabric" in record["loaders"], name+" does not support Fabric"
+              files=[f for f in record["files"] if f.get("primary")] or record["files"]
+              file=next(f for f in files if f["filename"].endswith(".jar"))
+              request=urllib.request.Request(file["url"],headers=headers)
+              with urllib.request.urlopen(request,timeout=120) as response:data=response.read()
+              for algorithm,expected in file.get("hashes",{}).items():
+                  if algorithm in ("sha512","sha1"):
+                      actual=getattr(hashlib,algorithm)(data).hexdigest()
+                      assert actual==expected, name+" hash mismatch: "+algorithm
+              target=folder/(name+".jar")
+              target.write_bytes(data)
+              return {"name":name,"version":record["version_number"],"size":len(data),
+                      "sha256":hashlib.sha256(data).hexdigest(),"source":"Modrinth version API"}
+          pointblank=get_json("https://api.modrinth.com/v2/version/7FaixPLu")
+          assert pointblank["version_number"]=="2.2.0","Unexpected Point Blank version"
+          results=[install(pointblank,"pointblank")]
+          query=urllib.parse.urlencode({"loaders":json.dumps(["fabric"]),"game_versions":json.dumps(["1.21.1"])})
+          geckos=get_json("https://api.modrinth.com/v2/project/geckolib/version?"+query)
+          assert geckos,"No compatible GeckoLib version returned"
+          results.append(install(geckos[0],"geckolib"))
+          pathlib.Path("pointblank-qa-manifest.json").write_text(json.dumps(results,indent=2)+"\n")
+          print("Installed verified Point Blank 2.2.0 and GeckoLib for isolated QA.")
+          PY
+      - name: Prepare ephemeral server
+        working-directory: svextract
+        run: |
+          mkdir -p run-server
+          printf 'eula=true\n' > run-server/eula.txt
+          printf 'server-ip=127.0.0.1\nonline-mode=false\nmax-players=2\nview-distance=4\nsimulation-distance=4\n' > run-server/server.properties
+      - name: Boot server and verify live Point Blank integration
+        working-directory: svextract
+        shell: bash
+        run: |
+          set -eu
+          timeout --signal=INT 240s gradle --no-daemon --console=plain runServer > pointblank-runtime.log 2>&1 &
+          pid=$!
+          ready=0
+          for attempt in $(seq 1 100); do
+            if grep -Fq 'Point Blank installed: true' pointblank-runtime.log && grep -E 'Done \([0-9.,]+s\)! For help' pointblank-runtime.log >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          sleep 4
+          if grep -Fq 'SVEXTRACT disabled:' pointblank-runtime.log; then ready=0; fi
+          if [ "$ready" -eq 1 ]; then
+            echo "PASS: Point Blank 2.2.0, GeckoLib and SVEXTRACT initialized together"
+          else
+            echo "::error::Point Blank integration runtime test failed"
+            tail -n 160 pointblank-runtime.log || true
+          fi
+          kill -INT "$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+          test "$ready" -eq 1
+      - name: Upload actual compatibility QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svextract-pointblank-runtime-qa
+          path: |
+            svextract/pointblank-qa-manifest.json
+            svextract/pointblank-runtime.log
+            svextract/run-server/logs/**
+            svextract/run-server/crash-reports/**
+          if-no-files-found: warn
+          retention-days: 14
