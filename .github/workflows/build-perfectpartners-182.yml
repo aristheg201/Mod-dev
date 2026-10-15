@@ -106,3 +106,55 @@ jobs:
           path: output/*
           if-no-files-found: error
           retention-days: 30
+
+      - name: Dedicated server startup smoke test - Cobblemon 1.8.2
+        run: |
+          set -euo pipefail
+          BASE="$PWD"
+          mkdir -p /tmp/pp-smoke/mods
+          cp output/PerfectPartners-Fabric-1.2.1-Cobblemon1.8.2-SVFIX1.jar /tmp/pp-smoke/mods/
+          python3 - <<'PY'
+          import json,urllib.request
+          headers={'User-Agent':'SVArcade-compat-smoke/1.0'}
+          def get(url):
+              with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=90) as h: return h.read()
+          versions=json.loads(get('https://api.modrinth.com/v2/project/cobblemon/version'))
+          matches=[v for v in versions if '1.8.2' in v['version_number'] and 'fabric' in v['loaders'] and '1.21.1' in v['game_versions']]
+          assert matches,'no supported Cobblemon 1.8.2 Fabric release'
+          selected=matches[0];f=next((f for f in selected['files'] if f.get('primary')),selected['files'][0])
+          open('/tmp/pp-smoke/mods/cobblemon-1.8.2.jar','wb').write(get(f['url']))
+          print('Minecraft smoke target: Cobblemon',selected['version_number'])
+          PY
+          curl -fsSL --retry 3 'https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.116.17+1.21.1/fabric-api-0.116.17+1.21.1.jar' -o /tmp/pp-smoke/mods/fabric-api.jar
+          curl -fsSL --retry 3 'https://maven.fabricmc.net/net/fabricmc/fabric-language-kotlin/1.13.7+kotlin.2.2.21/fabric-language-kotlin-1.13.7+kotlin.2.2.21.jar' -o /tmp/pp-smoke/mods/fabric-language-kotlin.jar
+          curl -fsSL --retry 3 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar' -o /tmp/pp-smoke/fabric-installer.jar
+          cd /tmp/pp-smoke
+          java -jar fabric-installer.jar server -mcversion 1.21.1 -loader 0.18.4 -downloadMinecraft
+          printf 'eula=true\n' > eula.txt
+          printf 'online-mode=false\nmax-tick-time=-1\nview-distance=2\nsimulation-distance=2\n' > server.properties
+          java -Xms512M -Xmx3G -jar fabric-server-launch.jar nogui > startup.log 2>&1 &
+          pid=$!
+          started=0
+          for i in $(seq 1 100); do
+            if grep -Eq 'Done \(' startup.log; then
+              started=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          printf '%s\n' '--- Final Minecraft log ---'
+          tail -n 140 startup.log
+          if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" || true
+          fi
+          if [ "$started" != 1 ]; then
+            echo 'FAIL: Fabric server never reached the Done startup marker.'
+            exit 1
+          fi
+          if grep -Eq 'InvalidMixinException|MixinApplyError|Exception while loading entries|A mod crashed on startup' startup.log; then
+            echo 'FAIL: Mixin or entrypoint error despite Done marker.'
+            exit 1
+          fi
+          echo 'PASS: Dedicated server reached Done with Cobblemon 1.8.2 and Perfect Partners patched Beauty mixin.'
