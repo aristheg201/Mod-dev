@@ -1,0 +1,9 @@
+{
+  "schemaVersion":1,
+  "id":"svextractqa",
+  "version":"1.0.0",
+  "name":"SVEXTRACT native automated QA client",
+  "environment":"client",
+  "entrypoints":{"client":["dev.svextract.qa.NativeMissionQa"]},
+  "depends":{"svextract":"*"}
+}

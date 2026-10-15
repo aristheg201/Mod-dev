@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "svextract",
+  "version": "${version}",
+  "name": "SVEXTRACT: Fracture Protocol",
+  "description": "Server-authoritative extraction missions with isolated worlds and bounded workloads. Early development build.",
+  "authors": ["SVEXTRACT contributors"],
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.svextract.SvExtract"],
+    "client": ["dev.svextract.client.SvExtractClient"]
+  },
+  "mixins": ["svextract.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${loader_min_version}",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": { "pointblank": "2.2.0", "geckolib": ">=4.5.8" }
+}

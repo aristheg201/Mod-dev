@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "svextract:block/supply_crate"
+    },
+    "open=true": {
+      "model": "svextract:block/supply_crate_open"
+    }
+  }
+}

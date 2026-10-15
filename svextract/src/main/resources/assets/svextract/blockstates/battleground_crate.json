@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "svextract:block/battleground_crate"
+    },
+    "open=true": {
+      "model": "svextract:block/battleground_crate_open"
+    }
+  }
+}

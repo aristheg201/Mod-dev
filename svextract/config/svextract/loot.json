@@ -1,0 +1,504 @@
+{
+  "caches": [
+    {
+      "id": "platform_ammunition",
+      "x": -4,
+      "y": 65,
+      "z": -4,
+      "item": "pointblank:ammo9mm",
+      "count": 8,
+      "choices": [
+        {
+          "item": "pointblank:ammo9mm",
+          "count": 8,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 5,
+          "weight": 3
+        },
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 2,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "workshop_salvage",
+      "x": 4,
+      "y": 65,
+      "z": -4,
+      "item": "minecraft:copper_ingot",
+      "count": 4,
+      "choices": [
+        {
+          "item": "minecraft:copper_ingot",
+          "count": 4,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:redstone",
+          "count": 9,
+          "weight": 3
+        },
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 5,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "abandoned_sidearm",
+      "x": 32,
+      "y": 65,
+      "z": -4,
+      "item": "pointblank:glock17",
+      "count": 1,
+      "choices": [
+        {
+          "item": "pointblank:glock17",
+          "count": 1,
+          "weight": 6
+        },
+        {
+          "item": "pointblank:ammo9mm",
+          "count": 12,
+          "weight": 5
+        },
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 4,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "platform_locker",
+      "x": -32,
+      "y": 65,
+      "z": -4,
+      "item": "minecraft:iron_ingot",
+      "count": 7,
+      "choices": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 7,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 2,
+          "weight": 2
+        },
+        {
+          "item": "minecraft:compass",
+          "count": 1,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "signal_substation",
+      "x": -20,
+      "y": 65,
+      "z": 16,
+      "item": "minecraft:redstone",
+      "count": 12,
+      "choices": [
+        {
+          "item": "minecraft:redstone",
+          "count": 12,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 4,
+          "weight": 2
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 1,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "drainage_supplies",
+      "x": -8,
+      "y": 65,
+      "z": 22,
+      "item": "minecraft:copper_ingot",
+      "count": 6,
+      "choices": [
+        {
+          "item": "minecraft:copper_ingot",
+          "count": 6,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:ender_pearl",
+          "count": 1,
+          "weight": 2
+        },
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 2,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "research_cabinet",
+      "x": 18,
+      "y": 65,
+      "z": 22,
+      "item": "minecraft:amethyst_shard",
+      "count": 8,
+      "choices": [
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 8,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:echo_shard",
+          "count": 1,
+          "weight": 1
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 2,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "foundry_safe",
+      "x": 30,
+      "y": 65,
+      "z": -20,
+      "item": "minecraft:gold_ingot",
+      "count": 5,
+      "choices": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 5,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:netherite_scrap",
+          "count": 1,
+          "weight": 1
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 4,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "service_cache",
+      "x": 18,
+      "y": 65,
+      "z": -16,
+      "item": "pointblank:ammo9mm",
+      "count": 16,
+      "choices": [
+        {
+          "item": "pointblank:ammo9mm",
+          "count": 16,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:golden_apple",
+          "count": 1,
+          "weight": 1
+        },
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 8,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "maintenance_case",
+      "x": -26,
+      "y": 65,
+      "z": -18,
+      "item": "minecraft:iron_ingot",
+      "count": 9,
+      "choices": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 9,
+          "weight": 6
+        },
+        {
+          "item": "pointblank:glock17",
+          "count": 1,
+          "weight": 1
+        },
+        {
+          "item": "minecraft:lapis_lazuli",
+          "count": 8,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "clinic_medication",
+      "x": -33,
+      "y": 65,
+      "z": 17,
+      "item": "minecraft:golden_apple",
+      "count": 1,
+      "choices": [
+        {
+          "item": "minecraft:golden_apple",
+          "count": 1,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:honey_bottle",
+          "count": 3,
+          "weight": 5
+        },
+        {
+          "item": "minecraft:glistering_melon_slice",
+          "count": 6,
+          "weight": 4
+        }
+      ]
+    },
+    {
+      "id": "quarantine_records",
+      "x": -30,
+      "y": 65,
+      "z": 3,
+      "item": "minecraft:paper",
+      "count": 12,
+      "choices": [
+        {
+          "item": "minecraft:paper",
+          "count": 12,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 4,
+          "weight": 2
+        },
+        {
+          "item": "minecraft:compass",
+          "count": 1,
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "id": "radio_relay_components",
+      "x": -29,
+      "y": 65,
+      "z": -25,
+      "item": "minecraft:redstone",
+      "count": 16,
+      "choices": [
+        {
+          "item": "minecraft:redstone",
+          "count": 16,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:quartz",
+          "count": 8,
+          "weight": 3
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 2,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "checkpoint_lockbox",
+      "x": 23,
+      "y": 65,
+      "z": -24,
+      "item": "minecraft:iron_ingot",
+      "count": 9,
+      "choices": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 9,
+          "weight": 6
+        },
+        {
+          "item": "pointblank:ammo9mm",
+          "count": 24,
+          "weight": 5
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 6,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "security_dispatch",
+      "x": 30,
+      "y": 65,
+      "z": -24,
+      "item": "minecraft:gold_ingot",
+      "count": 4,
+      "choices": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 4,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:ender_eye",
+          "count": 1,
+          "weight": 1
+        },
+        {
+          "item": "minecraft:crossbow",
+          "count": 1,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "research_evidence",
+      "x": 29,
+      "y": 65,
+      "z": 23,
+      "item": "minecraft:amethyst_shard",
+      "count": 10,
+      "choices": [
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 10,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:echo_shard",
+          "count": 2,
+          "weight": 1
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 2,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "freight_salvage",
+      "x": -10,
+      "y": 65,
+      "z": 24,
+      "item": "minecraft:copper_ingot",
+      "count": 12,
+      "choices": [
+        {
+          "item": "minecraft:copper_ingot",
+          "count": 12,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 8,
+          "weight": 5
+        },
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 3,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "freight_manifest",
+      "x": -17,
+      "y": 65,
+      "z": 24,
+      "item": "minecraft:compass",
+      "count": 1,
+      "choices": [
+        {
+          "item": "minecraft:compass",
+          "count": 1,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 4,
+          "weight": 2
+        },
+        {
+          "item": "minecraft:ender_pearl",
+          "count": 2,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "platform_maintenance",
+      "x": -3,
+      "y": 65,
+      "z": 16,
+      "item": "minecraft:iron_ingot",
+      "count": 12,
+      "choices": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 12,
+          "weight": 6
+        },
+        {
+          "item": "minecraft:lapis_lazuli",
+          "count": 8,
+          "weight": 2
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 1,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "operations_fieldkit",
+      "x": 10,
+      "y": 65,
+      "z": 3,
+      "item": "minecraft:golden_apple",
+      "count": 2,
+      "choices": [
+        {
+          "item": "minecraft:golden_apple",
+          "count": 2,
+          "weight": 6
+        },
+        {
+          "item": "pointblank:ammo9mm",
+          "count": 20,
+          "weight": 5
+        },
+        {
+          "item": "minecraft:totem_of_undying",
+          "count": 1,
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

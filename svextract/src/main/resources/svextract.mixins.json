@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.svextract.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["ServiceNpcGuardMixin", "PlayerGuardMixin", "ServerPlayerGuardMixin", "ScreenHandlerGuardMixin", "PlayerManagerAccess", "ItemGuardMixin", "NetworkGuardMixin", "WorldGuardMixin", "NaturalSpawnGuardMixin", "PointBlankNoiseMixin", "PointBlankTransactionGuardMixin", "PointBlankDamageTypeMixin", "PointBlankTimingMixin", "CobblemonCompanionMixin", "ServerTickTimerMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

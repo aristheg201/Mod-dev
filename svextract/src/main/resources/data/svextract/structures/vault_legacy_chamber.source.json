@@ -1,0 +1,11 @@
+{
+  "id": "vault_legacy_haven",
+  "name": "Haven-9 \u2014 recovered Vault sanctuary",
+  "authorRepository": "https://github.com/Iskallia/Vault-public",
+  "sourceRevision": "a22f15c9cd41ea2e7de66c3d76ff1f4c83dea92b",
+  "sourcePath": "src/main/resources/data/the_vault/structures/vault/rooms/big1.nbt",
+  "sourceUrl": "https://raw.githubusercontent.com/Iskallia/Vault-public/a22f15c9cd41ea2e7de66c3d76ff1f4c83dea92b/src/main/resources/data/the_vault/structures/vault/rooms/big1.nbt",
+  "sha256": "46b45b7c4572073809499dae39ecb12ff588df9b08492cf1ccf7e8593f6a0f03",
+  "upstreamGeneration": "legacy Vault-public room, not current remastered map",
+  "conversionPolicy": "preserve compatible block states; omit block entity/entity payloads; replace spawners and generation markers with air; add protected mission-control walkway"
+}

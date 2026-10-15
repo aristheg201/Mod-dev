@@ -1,0 +1,15 @@
+diff --git a/SVFrameMMO/src/main/java/vn/svframe/svframemmo/SVFrameMMO.java b/SVFrameMMO/src/main/java/vn/svframe/svframemmo/SVFrameMMO.java
+index e33cb40..5ecb7d7 100644
+--- a/SVFrameMMO/src/main/java/vn/svframe/svframemmo/SVFrameMMO.java
++++ b/SVFrameMMO/src/main/java/vn/svframe/svframemmo/SVFrameMMO.java
+@@ -150,7 +150,9 @@ public final class SVFrameMMO implements ModInitializer {
+             TEMPORARY_SKILLS.clear(handler.player.getUuid());
+             CLASS_TRIGGERS.detach(handler.player.getUuid());
+             PLAYER_DATA.quit(handler.player);
+-            EXTERNAL_PROGRESSION.save();
++            // SERVER_STOPPING has already flushed and closed this writer before vanilla
++            // disconnects players. A second save then fails despite the durable final flush.
++            if (EXTERNAL_PROGRESSION.isStarted()) EXTERNAL_PROGRESSION.save();
+         });
+         ServerTickEvents.END_SERVER_TICK.register(server -> {
+             tick++;

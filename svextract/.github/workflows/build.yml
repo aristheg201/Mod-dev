@@ -1,0 +1,64 @@
+name: SVEXTRACT Fabric build and tests
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/**"
+      - "gradle/**"
+      - "tools/**"
+      - "config/**"
+      - "gradlew"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "gradle/**"
+      - "tools/**"
+      - "config/**"
+      - "gradlew"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+
+jobs:
+  build:
+    name: Build and unit-test (Java 21)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Run pure Java engine tests (no downloads required)
+        run: bash tools/test_core_engines.sh
+      - name: Compile and verify deterministic map geometry against API stubs
+        run: bash tools/test_map_density.sh
+      - name: Verify Gradle release checksum and version
+        run: ./gradlew --version --no-daemon
+      - name: Compile, unit-test and remap
+        run: ./gradlew clean test remapJar --no-daemon --stacktrace
+      - name: Verify remapped artifact exists
+        run: |
+          find build/libs -maxdepth 1 -type f -name '*.jar' -print
+          test -n "$(find build/libs -maxdepth 1 -type f -name '*.jar' -not -name '*-dev.jar' -not -name '*-sources.jar' -print -quit)"
+      - name: Upload Fabric artifacts and test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svextract-fabric-build-${{ github.run_number }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            build/libs/*.jar
+            build/test-results/test/**
+            build/reports/tests/**

@@ -1,0 +1,55 @@
+> Historical record of the pre-rebuild bundle. Current architecture and requirements are in README.md, docs/REBUILD_TRACKER.md and docs/MAPS.md. Old screenshots and benchmarks do not verify the current modular artifact. The all-mods bundle is retired.
+
+# Accurate implementation status
+
+Production readiness has not passed. The playable baseline is solo, no-loss Dead Signal Training, with recorded native gameplay evidence. Compilation and component tests are not proof of the complete Fracture Protocol product. Every requested production requirement has an individual row in `qa/acceptance/confirmation.csv`.
+
+The latest artifact failed Fabric's default 60-second mod-discovery deadline on this environment. A diagnostic run with `-Dfabric.debug.discoveryTimeout=180` discovered the 79 nested mods in approximately 104 seconds and initialized the dedicated server and both hubs. That override does not pass the normal startup gate. Native runtime sessions subsequently disappeared after an exec-server `pong_timeout`; no container OOM kills were recorded. See `qa/reports/current-runtime-blockers.json`.
+
+## Verified
+
+- Remapped unified private JAR and separate common/client entrypoints initialize in real dedicated Fabric and native Fabric client environments with all four built SVFrame modules, Point Blank, GeckoLib, BEconomy and Cobblemon.
+- Actual class registry discovery reports seven installed classes: ARCANE_MAGE, HUMAN, MAGE, MARKSMAN, PALADIN, ROGUE, WARRIOR. The adapter iterates the registry; it does not hardcode these identities. These defaults contain no Death Knight class.
+- One explicitly identified automated native client accepted the physical NPC mission and completed power repair, research train investigation, physical data core recovery, held the train evacuation position and returned to Haven-9. The real post-mission screen rendered.
+- SQLite audit shows the extraction closed once and Training progress 1/1/1. An earlier interrupted no-loss death settlement recovered and closed without a reward. Unit regressions test replay, conflicts, reopen recovery, queue backpressure and inventory components.
+- The real Point Blank Glock model renders and its reload consumed 17 actual 9mm rounds into the 17-round magazine. Warrior maximum HP after extraction was 24. After a real server restart/reconnection and a later mission death it remained 24. Native firearm firing consumed a round; the original 16-round gun magazine and 47 loose rounds returned after no-loss death recovery.
+- Original station/hub geometry, data core texture/model, evacuation sound, English/Vietnamese labels ship natively. No external resource pack is needed.
+- A 92.01-second idle native profiler interval reported 1841 ticks / 20.01 TPS. This is not proof of combat load or multiplayer capacity.
+- The actual authored legacy Vault Hunters room now surrounds Haven-9 and rendered in the native client. See `vault-haven-mission-control-final.png`. This is one pinned legacy room, not modern Vault Hunters maps or monster behavior.
+- One recorded raid restored its tracked terminal change in 0.57228 ms, returned the pooled instance to READY and released all retained tickets. This does not validate crash cleanup, destructive maps or long-duration stability.
+
+## Implemented, requiring more runtime verification
+
+- Configurable client bindings for briefing (J), squad status, carried loot, and lending a firearm to the Pokémon companion. The three additional actions default to unassigned, use server commands, and ignore presses while screens are open. English/Vietnamese labels are included. Native Controls-menu and keypress verification remains outstanding. The standalone Loader floor is 0.18.4; the build and private Kotlin bundle remain on 0.19.5.
+
+- Bounded hostile SVFrameMobs encounters and friendly iron-golem escort, reduced director decisions, cached gunfire awareness, finite real Point Blank gun magazines for actors. Separate role counters now record hostile and friendly firing and actual health decreases. Companion-specific firing remains unverified. Real player fire processing has timing counters; the later native MP5 test reloaded but did not produce recorded player fire requests.
+- One owned Cobblemon companion admission/identity checks, recall across transitions, firearm loan and shown-item rendering, actor hitscan firing through Point Blank's hit pipeline. No Pokémon is cloned or moved between owners/stores. Companion gunfire is not yet verified in the recorded first mission.
+- Point Blank damage-source classification uses its existing one hit invocation for SVFrameLib. No additional damage call is made. Live damage/headshot/armor comparisons across all classes remain unverified.
+- Stats refresh uses authoritative SVFrameMMO resource APIs and its existing prelogin stat restore. All installed class abilities, reconnect/restart health, effects/cooldowns and healing camera behavior need broader native QA.
+- Staged cleanup, orphan entity removal, ticket release, safe inventory locks and crash recovery have source/unit coverage; long-run cycles, abrupt crash injection and adversarial modded backpack tests remain outstanding.
+- Delta HUD, version handshake, validated reload, admission thresholds and server telemetry exist. Tactical map, squad UI and general vendor/storage menus do not.
+- Skyrim's complete supplied ZIP passed offline import checks: 164 authored overworld regions installed into the separate `svextract:skyrim` dimension, excluding player/entity ownership stores and source settings. The dedicated server prepared author spawn `(4834,97,4574)`. The native client timed out before map rendering. Skyrim mission return, spawn walkability and visual quality remain unverified. Importing terrain does not create completed mission content.
+- Hub preparation uses bounded native asynchronous chunk futures and transient tickets, replacing blocking chunk requests. A matched before/after runtime comparison has not passed.
+- Physical Redline supply caches provide real Point Blank ammunition, an initialized sidearm and copper salvage with raid/item identities. Successful settlement combines surviving carried loot and reserved equipment before durable delivery. Death/abort discard the new loot and restore Training equipment. Component tests cover exact composition and full inventories; native loot use/extraction/recovery remains unverified. Loot configuration loads at startup; general live content reload is unfinished.
+- Protected-hub `/svextract squad invite <player>`, `accept`, `leave` and status commands implement expiring invitations and durable party membership. SQLite revision checks reject stale lobby writes; component tests cover reopen recovery. There is no native multi-client party or squad deployment result yet.
+- Matchmaking component tests cover up to 60 Battleground combatants, solo/four-player squads, suitable-player filtering and 5v5 bot fill after exactly two minutes. Full real Versus rosters may start earlier. The roster component is not connected to an exposed playable match queue or arena. No 60-player server capacity is claimed.
+
+## Not implemented
+
+Playable Battleground and Versus engines, their arenas/issued kits, bot AI at the 60-slot roster size, economy-only payouts, battle royale zone/round mechanics, Blackglass/PvPvE, live squad matchmaking, squad down/revive, risky player looting, insurance, equipment identities for trading, BEconomy purchases/rewards, merchants, crafting/research, personal hideouts, faction contracts, story chapters, bosses/Stationmaster, Ironfall and the other planned missions. All eleven configurable objective kinds, branching content packs and full four-tier AI/pathfinding budgets are unfinished. Suppressor attenuation and configurable class gun modifiers are unfinished. The objective graph is currently native code rather than a general editable content loader.
+
+The user's latest rules specify PUBG-style Battlegrounds up to 50–60 combatants, solo and squads of four, with bot fill; Versus is 5v5 with bot fill after two minutes. Battleground/Versus have no loot or personal equipment risk and grant economy rewards only; the intended implementation uses issued kits. Extraction has loot, capture objectives, respawns and gear loss. The existing no-loss Training loop is a separate onboarding/test mode. Competitive rules and risk ownership remain unfinished.
+
+Azeroth's supplied torrent was inspected: its map archive is 6.98 GB and has no HTTP web seeds. No BitTorrent peer access is available, so it has not been downloaded/applied. Mowzie's available loader builds are Forge/NeoForge; its monsters and the modern Vault Hunters monster assets have not been ported. The actual compatible Point Blank assets remain inside the private nested upstream JAR. Large author worlds are installed as save data, not embedded in the mod JAR or supplied as a resource pack.
+
+## Production acceptance
+
+Not passed. No human multiplayer sessions or 20-player workload have been tested. No Gate C/D/E/F stress/stability result exists. Gate B is partial until actual player firearm damage, skills and corrected bots are exercised. Native QA has startup/resource-contention connection failures, OpenAL unavailable, a Cobblemon named-development Kotlin remapping failure, upstream missing-model/datafixer warnings, and a shutdown external-skill writer warning with an isolated source fix. See QA logs for the exact events; none is hidden by a successful build.
+
+The default capacity remains one solo Training mission. Do not use this alpha for production equipment-risk gameplay or expand concurrency based on idle measurements.
+
+The earlier benchmark summary records failed mission p95 values (57.89 / 70.83 ms). The Skyrim preparation run also had startup/migration stalls and native configuration-phase timeouts. Its later zero-player snapshot reported 17.61 TPS, p95 36.08 ms and p99 109.63 ms while sharing the container with a software-rendered client and build work. This is not an isolated baseline or a passed performance gate. See `qa/reports/skyrim-preparation-qa.json`. Thirty-four Java regressions and seven importer safety tests passed; load, risk ownership and multiplayer acceptance remain open.
+
+The diagnostic asynchronous-preparation snapshot also failed: 13.27 TPS, p95 95.12 ms and p99 854.26 ms, with zero players and no active mission. Its rolling window includes preparation/startup work, so it is not a matched steady-state comparison. Storing already-compressed nested JARs increased the artifact from 177 MB to 194 MB and preserved all entry bytes; both outer compression layouts still failed normal discovery. No startup, firearm or TPS optimization improvement is claimed.
+
+The prior complete private bundle initialized and shut down the dedicated test server with the MMO shutdown patch. Source/native smoke tests and the stored shutdown log support that fix; exhaustive class resource and shutdown/reconnect behavior still needs verification. A subsequent exec transport interruption recovered, but it did not turn the failed native map/client checks into passes.

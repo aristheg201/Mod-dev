@@ -1,0 +1,37 @@
+diff --git a/SVFrameMobs/src/main/java/vn/svframe/svframemobs/SVFrameMobs.java b/SVFrameMobs/src/main/java/vn/svframe/svframemobs/SVFrameMobs.java
+index f351fe6..c14311d 100644
+--- a/SVFrameMobs/src/main/java/vn/svframe/svframemobs/SVFrameMobs.java
++++ b/SVFrameMobs/src/main/java/vn/svframe/svframemobs/SVFrameMobs.java
+@@ -31,6 +31,7 @@ import java.nio.file.*;
+ import java.util.*;
+ 
+ public final class SVFrameMobs implements ModInitializer {
++    private static SVFrameMobs instance;
+     private static final Logger LOG = LoggerFactory.getLogger("SVFrameMobs");
+     private static final String TAG = "svframemobs:";
+     private final Map<UUID, MobEntity> active = new LinkedHashMap<>();
+@@ -39,6 +40,7 @@ public final class SVFrameMobs implements ModInitializer {
+     private int triggerDepth;
+ 
+     @Override public void onInitialize() {
++        instance = this;
+         vn.svframe.svframemobs.mythic.MythicRuntime.instance().install();
+         folder = FabricLoader.getInstance().getConfigDir().resolve("SVFrameMobs/mobs");
+         try {
+@@ -81,6 +83,16 @@ public final class SVFrameMobs implements ModInitializer {
+                 })) )));
+         LOG.info("Loaded {} native mob definitions", definitions.size());
+     }
++    /** Mission integrations must supply their own bounded spawn admission policy. */
++    public static Set<String> registeredMobIds() {
++        return instance == null ? Set.of() : Set.copyOf(instance.definitions.keySet());
++    }
++    /** Uses the same validated definition, collision, attribute, equipment and skill pipeline as the admin command. */
++    public static MobEntity spawnMissionMob(String key, ServerWorld world, Vec3d position) {
++        if (instance == null) throw new IllegalStateException("SVFrameMobs is not initialized");
++        if (!world.getServer().isOnThread()) throw new IllegalStateException("Mission mobs must spawn on the server thread");
++        return instance.spawn(key, world, position);
++    }
+     private void reload() throws Exception {
+         Map<String, MobDefinition> parsed = new LinkedHashMap<>();
+         try (var files = Files.list(folder)) {

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "svextract:block/stash_terminal"
+    },
+    "open=true": {
+      "model": "svextract:block/stash_terminal_open"
+    }
+  }
+}

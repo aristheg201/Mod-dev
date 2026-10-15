@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "requirePointBlank": true,
+  "performance": {
+    "instanceCapacity": 1,
+    "blocksPerTick": 128,
+    "chunksPerTick": 1,
+    "maxEnemiesPerInstance": 8,
+    "spawnRequestsPerTick": 1,
+    "aiDecisionIntervalTicks": 20,
+    "noiseCooldownTicks": 10,
+    "hudIntervalTicks": 10,
+    "handshakeTimeoutTicks": 200,
+    "databaseQueueCapacity": 64,
+    "databaseShutdownSeconds": 15,
+    "completionsPerTick": 4,
+    "telemetrySamples": 2400,
+    "admissionP95Ms": 40,
+    "maxSnapshotBytes": 2097152,
+    "actorShotRequestsPerDecision": 2,
+    "commandCooldownTicks": 40
+  },
+  "mission": {
+    "timeoutSeconds": 900,
+    "extractionSeconds": 15,
+    "regionSpacing": 512,
+    "enemySpawnIntervalTicks": 200,
+    "noiseRadius": 48.0,
+    "activationRadius": 40.0,
+    "friendlyBots": 1,
+    "botGun": "pointblank:glock17",
+    "actorShotIntervalTicks": 40,
+    "actorGunRange": 32
+  }
+}
