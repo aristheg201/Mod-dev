@@ -56,4 +56,26 @@ jobs:
           c='com.cobblemon.mod.common.item.interactive.EVIncreaseItem'
           r=subprocess.run(['javap','-classpath','/tmp/cobblemon.jar','-p',c],capture_output=True,text=True)
           print('EVINCREASEITEM SIGNATURE exit',r.returncode,'OUTPUT:',r.stdout[:5000],'ERROR',r.stderr[:4000])
+          targets=[
+              'BerryJuiceItem','CandyItem','EVIncreaseItem','ElixirItem','EnergyRootItem',
+              'FreshStartMochiItem','HealPowderItem','HyperTrainingItem','LinkCableItem',
+              'MintItem','PonigiriItem','PotionItem','RemedyItem','ReviveItem','StatusCureItem'
+          ]
+          for target in targets:
+              name='com.cobblemon.mod.common.item.interactive.'+target
+              p=subprocess.run(['javap','-classpath','/tmp/cobblemon.jar','-p',name],capture_output=True,text=True)
+              header=next((x.strip() for x in p.stdout.splitlines() if x.startswith('public ') or x.startswith('final ')),p.stderr.strip()[:160])
+              print('TARGET_CLASS',target,p.returncode,header)
+          with zipfile.ZipFile('/tmp/cobblemon.jar') as cjar:
+              possibles=[]
+              for name in cjar.namelist():
+                  if name.endswith('.class') and name.startswith('com/cobblemon/mod/common/item/'):
+                      if ('Vitamin' in name or 'EVIncrease' in name or 'Mochi' in name
+                          or b'com/cobblemon/mod/common/item/interactive/EVIncreaseItem' in cjar.read(name)):
+                          possibles.append(name.replace('/','.').removesuffix('.class'))
+              print('POTENTIAL EV IMPLEMENTORS',possibles)
+              for name in possibles[:60]:
+                  p=subprocess.run(['javap','-p','-classpath','/tmp/cobblemon.jar',name],capture_output=True,text=True)
+                  print('POSSIBLE_IMPL',name,p.stdout[:1300])
+
           PY
