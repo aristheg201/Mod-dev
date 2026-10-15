@@ -38,9 +38,13 @@ public final class SvExtract implements ModInitializer {
         catch(Exception e){throw new IllegalStateException("Cannot install the SVFrameMobs Redline definition",e);}
         Protocol.register();
         ServerLifecycleEvents.SERVER_STARTED.register(server->{
-            try {runtime=new MissionRuntime(server,ServerConfig.load(configPath()));}
-            catch(Exception e){LOGGER.error("SVEXTRACT disabled: initialization failed; inspect dimensions/configuration/database. No missions admitted.",e);}
-            LOGGER.info("SVEXTRACT {} initialized; Point Blank installed: {}. Mode admission follows validated profiles and workload budgets.",VERSION,Integrations.pointBlankLoaded());
+            try {
+                runtime=new MissionRuntime(server,ServerConfig.load(configPath()));
+                LOGGER.info("SVEXTRACT {} initialized; Point Blank installed: {}. Mode admission follows validated profiles and workload budgets.",VERSION,Integrations.pointBlankLoaded());
+            } catch(Exception e) {
+                runtime=null;
+                LOGGER.error("SVEXTRACT disabled: initialization failed; inspect dimensions/configuration/database. No missions admitted.",e);
+            }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server->{if(runtime!=null){try{runtime.close();}catch(Exception e){LOGGER.error("SVEXTRACT shutdown requires journal recovery",e);}finally{runtime=null;}}});
         ServerTickEvents.START_SERVER_TICK.register(server->{if(runtime!=null)runtime.startTick();});

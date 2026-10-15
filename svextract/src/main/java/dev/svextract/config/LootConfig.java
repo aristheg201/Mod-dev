@@ -65,6 +65,34 @@ public record LootConfig(List<Cache> caches) {
         cache("operations_fieldkit",10,3,"minecraft:golden_apple",2,
             new WeightedLoot.Entry("pointblank:ammo9mm",20,5),new WeightedLoot.Entry("minecraft:totem_of_undying",1,1))));
     }
+    /**
+     * Resolve optional-mod loot once at server initialization, never during a raid.
+     * Missing optional items are omitted; unrelated missing items still fail validation.
+     */
+    public LootConfig filterAvailable(java.util.function.Predicate<String> registered,
+                                      java.util.function.Predicate<String> optionalUnavailable) {
+        Objects.requireNonNull(registered);
+        Objects.requireNonNull(optionalUnavailable);
+        List<Cache> compatible=new ArrayList<>();
+        for (Cache cache:caches) {
+            List<WeightedLoot.Entry> choices=new ArrayList<>();
+            for (WeightedLoot.Entry entry:cache.choices()) {
+                if (registered.test(entry.item())) choices.add(entry);
+                else if (!optionalUnavailable.test(entry.item()))
+                    throw new IllegalArgumentException("loot.json cache "+cache.id()+": unknown item "+entry.item());
+            }
+            if (choices.isEmpty()) {
+                if (!registered.test("minecraft:iron_ingot"))
+                    throw new IllegalArgumentException("No safe fallback for optional loot cache "+cache.id());
+                choices.add(new WeightedLoot.Entry("minecraft:iron_ingot",1,1));
+            }
+            WeightedLoot.Entry primary=choices.getFirst();
+            compatible.add(new Cache(cache.id(),cache.x(),cache.y(),cache.z(),
+                    primary.item(),primary.count(),choices));
+        }
+        return new LootConfig(compatible);
+    }
+
     public WeightedLoot.Entry roll(Cache cache,UUID raid){return WeightedLoot.choose(raid,cache.id(),cache.choices());}
     public static LootConfig load(Path path) throws IOException {
         var json=new GsonBuilder().setPrettyPrinting().create();

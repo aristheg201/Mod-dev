@@ -184,7 +184,16 @@ public final class MissionRuntime implements AutoCloseable {
         }
         skyrimX=skySpawn[0];skyrimY=skySpawn[1];skyrimZ=skySpawn[2];
         gameModes=GameModes.load(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("svextract/modes.json"));
-        lootConfig=LootConfig.load(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("svextract/loot.json"));
+        LootConfig configuredLoot=LootConfig.load(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("svextract/loot.json"));
+        lootConfig=configuredLoot.filterAvailable(name->{
+            Identifier key=Identifier.of(name);
+            return net.minecraft.registry.Registries.ITEM.containsId(key)
+                    &&net.minecraft.registry.Registries.ITEM.get(key)!=net.minecraft.item.Items.AIR;
+        },name->!Integrations.pointBlankLoaded()&&name.startsWith("pointblank:"));
+        int configuredEntries=configuredLoot.caches().stream().mapToInt(c->c.choices().size()).sum();
+        int availableEntries=lootConfig.caches().stream().mapToInt(c->c.choices().size()).sum();
+        if(availableEntries<configuredEntries)
+            SvExtract.LOGGER.warn("Omitted {} unavailable optional-mod loot entries; default caches remain usable.",configuredEntries-availableEntries);
         for(var cache:lootConfig.caches()){
             for(var choice:cache.choices()){
                 Identifier item=Identifier.of(choice.item());

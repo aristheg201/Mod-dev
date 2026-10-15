@@ -51,10 +51,19 @@ jobs:
             sleep 2
           done
           if [ "$ready" -eq 1 ]; then
-            echo "PASS: real Fabric dedicated server reached readiness"
             sleep 5
+            if grep -Fq 'SVEXTRACT disabled:' runtime-qa-server.log; then
+              echo "::error::Minecraft started, but SVEXTRACT disabled its own mission runtime"
+              ready=0
+            elif ! grep -Fq 'initialized; Point Blank installed:' runtime-qa-server.log; then
+              echo "::error::Minecraft started without SVEXTRACT mission runtime success confirmation"
+              ready=0
+            fi
+          fi
+          if [ "$ready" -eq 1 ]; then
+            echo "PASS: Minecraft server AND SVEXTRACT mission runtime initialized"
           else
-            echo "::error::Fabric dedicated server did not reach ready state"
+            echo "::error::Fabric dedicated server or SVEXTRACT mission runtime failed startup"
             tail -n 150 runtime-qa-server.log || true
           fi
           kill -INT "$launcher_pid" 2>/dev/null || true

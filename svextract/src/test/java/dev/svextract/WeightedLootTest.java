@@ -22,6 +22,30 @@ class WeightedLootTest {
         }
     }
 
+    @Test void optionalPointBlankLootCanBeFilteredWhenPointBlankIsAbsent() {
+        var filtered=LootConfig.defaults().filterAvailable(
+                id->id.startsWith("minecraft:"),id->id.startsWith("pointblank:"));
+        assertEquals(20,filtered.caches().size());
+        assertTrue(filtered.caches().stream()
+                .allMatch(c->c.choices().stream().allMatch(choice->choice.item().startsWith("minecraft:"))));
+    }
+
+    @Test void missingUnrelatedLootIsStillRejected() {
+        var invalid=new LootConfig(List.of(new LootConfig.Cache("bad",0,65,0,"missing:unknown",1)));
+        assertThrows(IllegalArgumentException.class,
+                ()->invalid.filterAvailable(id->id.startsWith("minecraft:"),
+                        id->id.startsWith("pointblank:")));
+    }
+
+    @Test void optionalOnlyLootCacheKeepsItsLocationUsingSafeFallback() {
+        var modOnly=new LootConfig(List.of(new LootConfig.Cache("gun_cache",5,65,7,"pointblank:glock17",1)));
+        var filtered=modOnly.filterAvailable(id->id.startsWith("minecraft:"),
+                id->id.startsWith("pointblank:"));
+        assertEquals("minecraft:iron_ingot",filtered.caches().getFirst().item());
+        assertEquals(5,filtered.caches().getFirst().x());
+        assertEquals(7,filtered.caches().getFirst().z());
+    }
+
     @Test void perRaidRollIsStableAndOnlyChoosesValidatedEntries() {
         var cfg=LootConfig.defaults();
         for(int i=0;i<100;i++){
