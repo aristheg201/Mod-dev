@@ -1,0 +1,47 @@
+name: SVEXTRACT Fabric Build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - build/svextract-checkpoint-20261015
+    paths:
+      - 'svextract/**'
+      - '.github/workflows/svextract-build.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify actual source is present
+        shell: bash
+        run: |
+          test -f svextract/build.gradle || { echo 'SVEXTRACT source not uploaded yet'; exit 1; }
+          test -f svextract/gradlew
+          test -f svextract/gradle/wrapper/gradle-wrapper.jar
+      - name: Run source smoke tests
+        working-directory: svextract
+        shell: bash
+        run: |
+          bash tools/test_core_engines.sh
+          bash tools/test_map_density.sh
+      - name: Build, test, remap
+        working-directory: svextract
+        run: bash ./gradlew clean test remapJar --no-daemon --stacktrace
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: svextract-fabric-${{ github.run_number }}
+          path: |
+            svextract/build/libs/*.jar
+            svextract/build/reports/tests/**
+          if-no-files-found: warn
+          retention-days: 14
