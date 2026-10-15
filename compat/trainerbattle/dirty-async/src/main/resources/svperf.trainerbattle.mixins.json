@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "svperf.trainerbattle.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BattleHistoryStorageMixin",
+    "BattleHistoryMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
