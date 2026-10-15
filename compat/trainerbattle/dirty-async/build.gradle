@@ -7,6 +7,7 @@ dependencies {
     minecraft 'com.mojang:minecraft:1.21.1'
     mappings 'net.fabricmc:yarn:1.21.1+build.3:v2'
     modImplementation 'net.fabricmc:fabric-loader:0.18.4'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.116.17+1.21.1'
     compileOnly files(project.property('trainerBattleJar'))
 }
 java { toolchain.languageVersion=JavaLanguageVersion.of(21) }
