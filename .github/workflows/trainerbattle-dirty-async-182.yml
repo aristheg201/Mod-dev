@@ -1,0 +1,81 @@
+name: Trainer Battle 1.8.2 Dirty Async Compatibility
+
+on:
+  push:
+    branches: [fix/trainerbattle-cobblemon-1.8.2-dirty-only]
+    paths:
+      - 'compat/trainerbattle/dirty-async/**'
+      - '.github/workflows/trainerbattle-dirty-async-182.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Build patch against exact custom binary
+        run: |
+          set -euo pipefail
+          J="$GITHUB_WORKSPACE/downloads/cobblemon-trainer-battle-1.11.13+1.8.0-SVPERF-ASYNC-SAVE.jar"
+          test -f "$J"
+          cd compat/trainerbattle/dirty-async
+          gradle --no-daemon clean build "-PtrainerBattleJar=$J"
+          P=$(find build/libs -type f -name '*.jar' ! -name '*sources*' ! -name '*dev*' | head -n1)
+          test -n "$P"
+          mkdir -p "$GITHUB_WORKSPACE/output"
+          export ORIGINAL="$J" PATCH="$PWD/$P" TARGET="$GITHUB_WORKSPACE/output/Cobblemon-TrainerBattle-1.8.2-SVPERF-DIRTY-ASYNC.jar"
+          python3 - <<'PY'
+          import os, json, zipfile, hashlib
+          original=os.environ['ORIGINAL']; patch=os.environ['PATCH']; target=os.environ['TARGET']
+          def digest(b): return hashlib.sha256(b).hexdigest()
+          with zipfile.ZipFile(original) as base, zipfile.ZipFile(patch) as overlay, zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as output:
+              meta=json.loads(base.read('fabric.mod.json'))
+              assert meta['id']=='cobblemontrainerbattle'
+              assert meta['custom']['svperf:trainerbattle_async_save_hotfix']=='1'
+              meta['depends']['cobblemon']='1.8.2+1.21.1'
+              meta['mixins']=[m for m in meta.get('mixins',[]) if m!='svperf.trainerbattle.mixins.json']
+              meta['mixins'].append('svperf.trainerbattle.mixins.json')
+              meta.setdefault('custom',{})['svperf:dirty_only_182']='1'
+              overlay_files={}
+              for entry in overlay.namelist():
+                  if entry.startswith('svperf/trainerbattle/') and entry.endswith('.class') or entry=='svperf.trainerbattle.mixins.json':
+                      overlay_files[entry]=overlay.read(entry)
+              assert 'svperf/trainerbattle/DirtySaveController.class' in overlay_files
+              assert 'svperf/trainerbattle/mixin/BattleHistoryMixin.class' in overlay_files
+              assert 'svperf/trainerbattle/mixin/BattleHistoryStorageMixin.class' in overlay_files
+              for name in base.namelist():
+                  if name=='fabric.mod.json' or name in overlay_files or name.endswith('/'):
+                      continue
+                  if name.startswith('META-INF/') and (name.endswith('.SF') or name.endswith('.RSA') or name.endswith('.DSA')):
+                      continue
+                  output.writestr(name,base.read(name))
+              for name, data in overlay_files.items(): output.writestr(name,data)
+              output.writestr('fabric.mod.json',json.dumps(meta,indent=2)+'\n')
+          with zipfile.ZipFile(original) as a,zipfile.ZipFile(target) as b:
+              assert b.testzip() is None
+              for name in a.namelist():
+                  if name.endswith('.class') and not name.startswith('svperf/trainerbattle/'):
+                      assert digest(a.read(name))==digest(b.read(name)),name
+              md=json.loads(b.read('fabric.mod.json'))
+              assert md['depends']['cobblemon']=='1.8.2+1.21.1'
+              assert md['custom']['svperf:dirty_only_182']=='1'
+              mix=json.loads(b.read('svperf.trainerbattle.mixins.json'))
+              assert 'BattleHistoryMixin' in mix['mixins']
+          print('Validated existing trainer battle bytecode preserved, compatible metadata, and injected dirty-only mixins')
+          PY
+          sha256sum "$TARGET" > "$GITHUB_WORKSPACE/output/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trainerbattle-cobblemon-182-dirty-only
+          path: output/*
+          if-no-files-found: error
