@@ -11,9 +11,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class WeightedLootTest {
     @TempDir Path directory;
 
-    @Test void defaultsProvideTenDistinctSearchableCaches() {
+    @Test void defaultsProvideTwentyDistinctSearchableCaches() {
         var caches=LootConfig.defaults().caches();
-        assertEquals(10,caches.size());
+        assertEquals(20,caches.size());
         Set<String> ids=new HashSet<>(),positions=new HashSet<>();
         for(var cache:caches){
             assertTrue(ids.add(cache.id()));
